@@ -105,6 +105,21 @@ endif(USE_<name of resource 2>)
 #...
 ##### end finding system dependencies #####
 
+##### finding package dependencies #####
+find_package(FrameworkFinder REQUIRED COMPONENTS <package 1> <package 2> ...)
+list(APPEND EXTERNAL_INCLUDE_DIRS ${<package 1>_INCLUDE_DIRS})
+list(APPEND EXTERNAL_LIB_DIRS ${<package 1>_LINK_DIRECTORIES})
+list(APPEND EXTERNAL_LIBS ${<package 1>_LIBRARIES})
+list(APPEND EXTERNAL_APP_DIRS ${<package 1>_APP_DIRS})
+list(APPEND EXTERNAL_APPS ${<package 1>_APPLICATIONS})
+
+list(APPEND EXTERNAL_INCLUDE_DIRS ${<package 2>_INCLUDE_DIRS})
+list(APPEND EXTERNAL_LIB_DIRS ${<package 2>_LINK_DIRECTORIES})
+list(APPEND EXTERNAL_LIBS ${<package 2>_LIBRARIES})
+#...
+
+##### end finding package dependencies #####
+
 # if all dependencies are satisfied
 include_directories(include)
 include_directories(${EXTERNAL_INCLUDE_DIRS})
