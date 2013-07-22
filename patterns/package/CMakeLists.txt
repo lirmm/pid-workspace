@@ -116,6 +116,8 @@ list(APPEND EXTERNAL_APPS ${<package 1>_APPLICATIONS})
 list(APPEND EXTERNAL_INCLUDE_DIRS ${<package 2>_INCLUDE_DIRS})
 list(APPEND EXTERNAL_LIB_DIRS ${<package 2>_LINK_DIRECTORIES})
 list(APPEND EXTERNAL_LIBS ${<package 2>_LIBRARIES})
+list(APPEND EXTERNAL_APP_DIRS ${<package 2>_APP_DIRS})
+list(APPEND EXTERNAL_APPS ${<package 2>_APPLICATIONS})
 #...
 
 ##### end finding package dependencies #####
