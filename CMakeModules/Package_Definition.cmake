@@ -48,7 +48,10 @@ endif(USE_LOCAL_DEPLOYMENT)
 
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_FRAMEWORK_PATH})
 
-set(${PROJECT_NAME}_COMPONENTS "")
+set(${PROJECT_NAME}_COMPONENTS "" CACHE INTERNAL "")
+set(${PROJECT_NAME}_COMPONENTS_HEADERS "" CACHE INTERNAL "")
+set(${PROJECT_NAME}_COMPONENTS_LIBS "" CACHE INTERNAL "")
+set(${PROJECT_NAME}_COMPONENTS_APPS "" CACHE INTERNAL "")
 
 ##### finding system dependencies #####
 SET(${PROJECT_NAME}_EXTERNAL_INCLUDE_DIRS "")
@@ -65,11 +68,13 @@ set ( ${PROJECT_NAME}_INSTALL_CONFIG_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/config)
 set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share)
 set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin)
 
-if(CMAKE_BUILD_TYPE MATCHES Release)
+if(${CMAKE_BINARY_DIR} MATCHES release)
+set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
 set ( INSTALL_PATH_SUFFIX release)
-elseif(CMAKE_BUILD_TYPE MATCHES Debug)
+elseif(${CMAKE_BINARY_DIR} MATCHES debug)
+set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
 set ( INSTALL_PATH_SUFFIX debug)
-endif(CMAKE_BUILD_TYPE MATCHES Release)
+endif(${CMAKE_BINARY_DIR} MATCHES release)
 
 endmacro(declare_package)
 
@@ -111,15 +116,41 @@ list(APPEND CPACK_GENERATOR DEB)
 endif(UNIX AND NOT APPLE)
 include(CPack)
 
-file(COPY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
-	DESTINATION ${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX})
 
-if(UNIX AND NOT APPLE)
-file(COPY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.deb
-	DESTINATION ${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX})
+if(UNIX AND NOT APPLE) #linux install
+add_custom_target(package_install
+			COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
+				${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
+			DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
+			COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.deb
+				${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.deb
+			DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
+			COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.deb in ${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX}"
+		)
+else(UNIX AND NOT APPLE) #apple install
+add_custom_target(package_install
+		   	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
+				${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
+			COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tag.gz in ${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX}" 						 
+		)
 endif(UNIX AND NOT APPLE)
 
+#creating a global build command
+add_custom_target(build 
+			COMMAND ${CMAKE_BUILD_TOOL} 
+			COMMAND ${CMAKE_BUILD_TOOL} install
+			COMMAND ${CMAKE_BUILD_TOOL} package
+			COMMAND ${CMAKE_BUILD_TOOL} package_install
+		) 
+
+else(GENERATE_INSTALLER)
+add_custom_target(build 
+			COMMAND ${CMAKE_BUILD_TOOL} 
+			COMMAND ${CMAKE_BUILD_TOOL} install
+		) 
+
 endif(GENERATE_INSTALLER)
+
 
 endmacro(build_package)
 
@@ -134,8 +165,8 @@ macro(buildPureHeaderComponent c_name)
 	install(DIRECTORY ${${PROJECT_NAME}_COMP_HEADER_${c_name}_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.h")
 	install(DIRECTORY ${${PROJECT_NAME}_COMP_HEADER_${c_name}_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hpp")
 	#updating global variables of the CMake process	
-	list(APPEND ${PROJECT_NAME}_COMPONENTS ${c_name})
-	list(APPEND ${PROJECT_NAME}_COMPONENTS_HEADERS ${c_name})	
+	set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_COMPONENTS_HEADERS "${${PROJECT_NAME}_COMPONENTS_HEADERS};${c_name}" CACHE INTERNAL "")
 endmacro(buildPureHeaderComponent)
 
 
@@ -150,8 +181,7 @@ macro(buildLibComponent c_name used_libraries_list)
 	install(DIRECTORY ${PROJECT_NAME}_COMP_LIB_${c_name}_INCLUDE_DIR DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hpp")
 	#managing sources
 	set(${PROJECT_NAME}_COMP_LIB_${c_name}_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/${c_name})
-	message(${c_name})
-
+	
 	file(GLOB_RECURSE ${PROJECT_NAME}_COMP_LIB_${c_name}_ALL_SOURCES "${c_name}/*.c" "${c_name}/*.cpp" "${c_name}/*.h" "${c_name}/*.hpp")
 	
 	add_library(${c_name}_st STATIC ${${PROJECT_NAME}_COMP_LIB_${c_name}_ALL_SOURCES})
@@ -167,33 +197,11 @@ macro(buildLibComponent c_name used_libraries_list)
 	)
 
 	#updating global variables of the CMake process	
-	list(APPEND ${PROJECT_NAME}_COMPONENTS ${c_name})
-	list(APPEND ${PROJECT_NAME}_COMPONENTS_LIBS ${c_name})
+	set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_COMPONENTS_LIBS "${${PROJECT_NAME}_COMPONENTS_LIBS};${c_name}" CACHE INTERNAL "")
+
 endmacro(buildLibComponent)
 
-
-##################################################################################
-###################### declaration of an example component #######################
-##################################################################################
-macro(buildExampleComponent c_name used_libraries_list)
-	#managing sources
-	set(${PROJECT_NAME}_COMP_APP_${c_name}_SOURCE_DIR ${CMAKE_SOURCE_DIR}/apps/${c_name})
-	
-	message("libs = "${used_libraries_list})
-	file(GLOB_RECURSE ${PROJECT_NAME}_COMP_APP_${c_name}_ALL_SOURCES "${c_name}/*.c" "${c_name}/*.cpp" "${c_name}/*.h" "${c_name}/*.hpp")
-	
-	add_executable(${c_name} EXCLUDE_FROM_ALL ${${PROJECT_NAME}_COMP_APP_${c_name}_ALL_SOURCES})
-	target_link_libraries(${c_name} ${used_libraries_list})
-
-	# installing library
-	INSTALL(TARGETS ${c_name} 
-	RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}/${INSTALL_PATH_SUFFIX}
-	)
-
-	#updating global variables of the CMake process	
-	list(APPEND ${PROJECT_NAME}_COMPONENTS ${c_name})
-	list(APPEND ${PROJECT_NAME}_COMPONENTS_APPS ${c_name})
-endmacro(buildExampleComponent)
 
 ##################################################################################
 ################## declaration of an application component #######################
@@ -213,8 +221,9 @@ macro(buildAppComponent c_name used_libraries_list)
 	)
 
 	#updating global variables of the CMake process	
-	list(APPEND ${PROJECT_NAME}_COMPONENTS ${c_name})
-	list(APPEND ${PROJECT_NAME}_COMPONENTS_APPS ${c_name})
+	set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name}" CACHE INTERNAL "")
+	
 endmacro(buildAppComponent)
 
 
