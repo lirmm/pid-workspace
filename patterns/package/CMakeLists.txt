@@ -10,9 +10,9 @@ option(${PROJECT_NAME}_WITH_EXAMPLES "Package builds examples" ON)
 option(${PROJECT_NAME}_WITH_TESTS "Package uses tests" OFF)
 
 # setting the current version number
-set (${PROJECT_NAME}_VERSION_MAJOR 0)
-set (${PROJECT_NAME}_VERSION_MINOR 1)
-set (${PROJECT_NAME}_VERSION_PATCH 0)
+set (${PROJECT_NAME}_VERSION_MAJOR <number>)
+set (${PROJECT_NAME}_VERSION_MINOR <number>)
+set (${PROJECT_NAME}_VERSION_PATCH <number>)
 set(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH})
 
 # configuring installation process into frameworks: by default
@@ -106,6 +106,7 @@ endif(USE_<name of resource 2>)
 ##### end finding system dependencies #####
 
 ##### finding package dependencies #####
+#TODO change to be more "standard" : find_package (<package name> version REQUIRED)
 find_package(FrameworkFinder REQUIRED COMPONENTS <package 1> <package 2> ...)
 list(APPEND EXTERNAL_INCLUDE_DIRS ${<package 1>_INCLUDE_DIRS})
 list(APPEND EXTERNAL_LIB_DIRS ${<package 1>_LINK_DIRECTORIES})
