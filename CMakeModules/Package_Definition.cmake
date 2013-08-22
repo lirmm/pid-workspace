@@ -1,7 +1,7 @@
 
 #
-# A convenience macro to create adequate variables in the context of the parent scope.
-# used to handle components
+# A convenience set of macros to create adequate variables in the context of the parent scope.
+# used to define components of a package
 #
 
 ##################################################################################
@@ -14,17 +14,18 @@ set(${PROJECT_NAME}_INSTITUTION ${institution})
 set(${PROJECT_NAME}_DESCRIPTION ${description})
 
 # generic variables
-set(FRAMEWORKS_DIR ${CMAKE_SOURCE_DIR}/../../frameworks)
+set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/../..)
+set(FRAMEWORKS_DIR ${WORKSPACE_DIR}/frameworks)
 set(${PROJECT_NAME}_FRAMEWORK_PATH ${FRAMEWORKS_DIR}/${PROJECT_NAME})
 
 # basic build options
-option(${PROJECT_NAME}_WITH_EXAMPLES "Package builds examples" ON)
-option(${PROJECT_NAME}_WITH_TESTS "Package uses tests" OFF)
-option(${PROJECT_NAME}_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
+option(BUILD_WITH_EXAMPLES "Package builds examples" ON)
+option(BUILD_WITH_TESTS "Package uses tests" OFF)
+option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
 
-if(${PROJECT_NAME}_WITH_PRINT_MESSAGES)
+if(BUILD_WITH_PRINT_MESSAGES)
 add_definitions(-DPRINT_MESSAGES)
-endif(${PROJECT_NAME}_WITH_PRINT_MESSAGES)
+endif(BUILD_WITH_PRINT_MESSAGES)
 
 # setting the current version number
 set (${PROJECT_NAME}_VERSION_MAJOR ${major})
@@ -135,22 +136,41 @@ add_custom_target(package_install
 		)
 endif(UNIX AND NOT APPLE)
 
+endif(GENERATE_INSTALLER)
+
 #creating a global build command
+if(GENERATE_INSTALLER)
+if(CMAKE_BUILD_TYPE MATCHES Release)
+add_custom_target(build 
+			COMMAND ${CMAKE_BUILD_TOOL}
+			COMMAND ${CMAKE_BUILD_TOOL} doc 
+			COMMAND ${CMAKE_BUILD_TOOL} install
+			COMMAND ${CMAKE_BUILD_TOOL} package
+			COMMAND ${CMAKE_BUILD_TOOL} package_install
+		) 
+else(CMAKE_BUILD_TYPE MATCHES Release)
 add_custom_target(build 
 			COMMAND ${CMAKE_BUILD_TOOL} 
 			COMMAND ${CMAKE_BUILD_TOOL} install
 			COMMAND ${CMAKE_BUILD_TOOL} package
 			COMMAND ${CMAKE_BUILD_TOOL} package_install
 		) 
+endif(CMAKE_BUILD_TYPE MATCHES Release)
 
 else(GENERATE_INSTALLER)
+if(CMAKE_BUILD_TYPE MATCHES Release)
+add_custom_target(build 
+			COMMAND ${CMAKE_BUILD_TOOL}
+			COMMAND ${CMAKE_BUILD_TOOL} doc 
+			COMMAND ${CMAKE_BUILD_TOOL} install
+		) 
+else(CMAKE_BUILD_TYPE MATCHES Release)
 add_custom_target(build 
 			COMMAND ${CMAKE_BUILD_TOOL} 
 			COMMAND ${CMAKE_BUILD_TOOL} install
 		) 
-
+endif(CMAKE_BUILD_TYPE MATCHES Release)
 endif(GENERATE_INSTALLER)
-
 
 endmacro(build_package)
 
@@ -236,4 +256,155 @@ macro(printComponentVariables)
 	message("libraries : "${${PROJECT_NAME}_COMPONENTS_LIBS})
 	message("applications : "${${PROJECT_NAME}_COMPONENTS_APPS})
 endmacro(printComponentVariables)
+
+
+##################################################################################
+############ generating/installing configuration files for the package ###########
+##################################################################################
+macro(configure_package)
+
+# configure a cmake file to check if runtime dependencies of this package are satisfied 
+
+configure_file (
+  "${PROJECT_SOURCE_DIR}/share/Check${PROJECT_NAME}.cmake.in"
+  "${PROJECT_BINARY_DIR}/share/Check${PROJECT_NAME}.cmake"
+  )
+
+# install the cmake "check" file in the share folder of the framework version
+
+install(FILES "${PROJECT_BINARY_DIR}/share/Check${PROJECT_NAME}.cmake"        
+         DESTINATION ${PROJECT_NAME}_DEPLOY_PATH/share
+)
+
+# configure a cmake file to help finding the current package
+
+configure_file (
+  "${PROJECT_SOURCE_DIR}/share/Find${PROJECT_NAME}.cmake.in"
+  "${PROJECT_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake"
+  )
+
+# install the cmake "find" file in the share folder
+
+install(FILES "${PROJECT_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake"        
+         DESTINATION ${PROJECT_NAME}_DEPLOY_PATH/share
+)
+
+install(FILES "${PROJECT_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake"        
+         DESTINATION ${WORKSPACE_DIR}/CMakeModules
+)
+endmacro(configure_package)
+
+
+##################################################################################
+################### generating API documentation for the package #################
+##################################################################################
+macro(generate_API)
+option(GENERATE_LATEX_API "Generating the latex api documentation" ON)
+if(CMAKE_BUILD_TYPE MATCHES Release) # if in release mode we generate the doc
+
+#finding doxygen tool and doxygen configuration file 
+find_package(Doxygen)
+find_file(DOXYFILE_IN "Doxyfile.in"
+			PATHS "${CMAKE_SOURCE_DIR}/share"
+			NO_DEFAULT_PATH
+			DOC "Path to the doxygen configuration template file")
+
+if(NOT DOXYGEN_FOUND)
+message("Doxygen not found please install it to generate the API documentation")
+endif(NOT DOXYGEN_FOUND)
+if(DOXYFILE_IN-NOTFOUND)
+message("Doxyfile not found in the share folder of your package !!")
+endif(DOXYFILE_IN-NOTFOUND)
+
+if(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND) #we are able to generate the doc
+# general variables
+set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
+set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
+set(DOXYFILE_PROJECT_VERSION ${PROJECT_NAME}_VERSION)
+set(DOXYFILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/doc)
+set(DOXYFILE_HTML_DIR html)
+set(DOXYFILE_LATEX_DIR latex)
+
+### new targets ###
+# creating the specific target to run doxygen
+add_custom_target(doxygen
+${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/share/Doxyfile
+DEPENDS ${CMAKE_BINARY_DIR}/share/Doxyfile
+WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+COMMENT "Generating API documentation with Doxygen" VERBATIM
+)
+
+# target to clean installed doc
+set_property(DIRECTORY
+APPEND PROPERTY
+ADDITIONAL_MAKE_CLEAN_FILES
+"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
+
+set_property(DIRECTORY
+APPEND PROPERTY
+ADDITIONAL_MAKE_CLEAN_FILES
+"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_HTML_DIR}")
+
+# creating the doc target
+get_target_property(DOC_TARGET doc TYPE)
+if(NOT DOC_TARGET)
+	add_custom_target(doc)
+endif(NOT DOC_TARGET)
+
+add_dependencies(doc doxygen)
+
+### end new targets ###
+
+### doxyfile configuration ###
+
+# configuring doxyfile for html generation 
+set(DOXYFILE_GENERATE_HTML "YES")
+
+# configuring doxyfile to use dot executable if available
+set(DOXYFILE_DOT "NO")
+if(DOXYGEN_DOT_EXECUTABLE)
+	set(DOXYFILE_DOT "YES")
+endif()
+
+# configuring doxyfile for latex generation 
+set(DOXYFILE_PDFLATEX "NO")
+
+if(GENERATE_LATEX_API)
+	set(DOXYFILE_GENERATE_LATEX "YES")
+	find_package(LATEX)
+	find_program(DOXYFILE_MAKE make)
+	mark_as_advanced(DOXYFILE_MAKE)
+	if(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+		if(PDFLATEX_COMPILER)
+			set(DOXYFILE_PDFLATEX "YES")
+		endif(PDFLATEX_COMPILER)
+
+		add_custom_command(TARGET doxygen
+			POST_BUILD
+			COMMAND "${DOXYFILE_MAKE}"
+			COMMENT	"Running LaTeX for Doxygen documentation in ${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}..."
+			WORKING_DIRECTORY "${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
+	else(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+		set(DOXYGEN_LATEX "NO")
+	endif(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+
+else(GENERATE_LATEX_API)
+	set(DOXYFILE_GENERATE_LATEX "NO")
+endif(GENERATE_LATEX_API)
+
+#configuring the Doxyfile.in file to generate a doxygen configuration file
+configure_file(${CMAKE_SOURCE_DIR}/share/Doxyfile.in ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
+
+### end doxyfile configuration ###
+
+
+### installing documentation ###
+
+install(DIRECTORY ${CMAKE_BINARY_DIR}/share/doc DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+
+### end installing documentation ###
+
+endif(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND)
+endif(CMAKE_BUILD_TYPE MATCHES Release)
+endmacro(generate_API)
 
