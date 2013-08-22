@@ -296,6 +296,14 @@ endmacro(configure_package)
 
 
 ##################################################################################
+########## adding source code of the example components to the API doc ###########
+##################################################################################
+macro(addSourceOfExampleComponent source_dir_of_a_component)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/share/examples/)
+file(COPY ${source_dir_of_a_component} DESTINATION ${PROJECT_BINARY_DIR}/share/examples/)
+endmacro(addSourceOfExampleComponent)
+
+##################################################################################
 ################### generating API documentation for the package #################
 ##################################################################################
 macro(generate_API)
@@ -320,7 +328,7 @@ if(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND) #we are able to generate the doc
 # general variables
 set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
 set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
-set(DOXYFILE_PROJECT_VERSION ${PROJECT_NAME}_VERSION)
+set(DOXYFILE_PROJECT_VERSION ${${PROJECT_NAME}_VERSION})
 set(DOXYFILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/doc)
 set(DOXYFILE_HTML_DIR html)
 set(DOXYFILE_LATEX_DIR latex)
