@@ -5,11 +5,30 @@
 
 ###
 macro (document_Version_Strings package_name major minor patch)
-set(${package_name}_VERSION_MAJOR ${major} PARENT_SCOPE)
-set(${package_name}_VERSION_MINOR ${minor} PARENT_SCOPE)
-set(${package_name}_VERSION_PATCH ${patch} PARENT_SCOPE)
-set(${package_name}_VERSION_STRING "${major}.${minor}.${patch}" PARENT_SCOPE)
+
+if(${major} STREQUAL "" AND ${minor} STREQUAL "" AND ${patch} STREQUAL "")
+	set(${package_name}_VERSION_STRING "own" PARENT_SCOPE)
+else()
+	set(${package_name}_VERSION_MAJOR ${major} PARENT_SCOPE)
+	set(${package_name}_VERSION_MINOR ${minor} PARENT_SCOPE)
+	set(${package_name}_VERSION_PATCH ${patch} PARENT_SCOPE)
+	set(${package_name}_VERSION_STRING "${major}.${minor}.${patch}" PARENT_SCOPE)
+endif()
 endmacro(document_Version_Strings package_name major minor patch)
+
+###
+macro(List_Version_Subdirectories result curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+	foreach(child ${children})
+		if(IS_DIRECTORY ${curdir}/${child})
+		list(APPEND dirlist ${child})
+		endif()
+	endforeach()
+	list(REMOVE_ITEM dirlist "own" "installers")
+	list(SORT dirlist)
+	set(${result} ${dirlist})
+endmacro()
 
 ###
 function (check_Directory_Exists path)
@@ -21,22 +40,6 @@ if(	EXISTS "${path}"
 endif()
 set(RETURN_CHECK_DIRECTORY_EXISTS FALSE PARENT_SCOPE)
 endfunction(check_Directory_Exists path)
-
-###
-macro(list_Version_Subdirectories result curdir)
-	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
-	set(dirlist "")
-	foreach(child ${children})
-		check_Directory_Exists("${curdir}/${child}")#security check
-		if(${RETURN_CHECK_DIRECTORY_EXISTS})
-			list(APPEND dirlist ${child})
-		endif(${RETURN_CHECK_DIRECTORY_EXISTS})
-	endforeach()
-	list(SORT dirlist)
-	list(REMOVE_ITEM "installers")#this folder is not a version folder
-	set(${result} ${dirlist})
-endmacro(list_Version_Subdirectories result curdir)
-
 
 
 ###
@@ -87,10 +90,31 @@ endif()
 endfunction(check_Adequate_Version package_name package_framework major_version minor_version)
 
 ###
-function(check_Local_Or_Newest_Version package_name package_framework major_version minor_version)#major version can be increased
+function(check_Local_Or_Newest_Version package_name package_framework)#taking local version or the most recent if not available
+set(VERSION_HAS_BEEN_FOUND FALSE PARENT_SCOPE)
+set(BASIC_PATH_TO_SEARCH "${package_framework}/own")
+check_Directory_Exists(${BASIC_PATH_TO_SEARCH})
+if(${RETURN_CHECK_DIRECTORY_EXISTS})
+	set(VERSION_HAS_BEEN_FOUND TRUE PARENT_SCOPE)
+	document_Version_Strings(${package_name} "" "" "")
+	return()
+endif(${RETURN_CHECK_DIRECTORY_EXISTS})
 
-
-
+#no own folder, the package has been downloaded but is not developped by the user
+#taking the last available version
+List_Version_Subdirectories(available_versions ${package_framework})
+if(NOT available_versions)
+	message(SEND_ERROR "Impossible to get any version of the package ${package_name}"	
+	return()
+else()
+	list(REVERSE available_versions)
+	list(GET available_versions 0 LAST_VERSION_AVAILABLE)	
+	set(VERSION_HAS_BEEN_FOUND TRUE PARENT_SCOPE)
+	#TODO verifier la REGEXP	
+	string(REGEX MATCH "^([0-99])\.([0-99])\.([0-99])$" VERSION_NUMBERS ${LAST_VERSION_AVAILABLE})
+	#TODO comment extraires les sous produits de la regrexp
+	document_Version_Strings(${package_name} "" "" "")
+endif()
 
 
 endfunction(check_Local_Or_Newest_Version package_name package_framework major_version minor_version)
