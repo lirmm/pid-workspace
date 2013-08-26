@@ -14,7 +14,7 @@ set(${PROJECT_NAME}_INSTITUTION ${institution} CACHE INTERNAL "")
 set(${PROJECT_NAME}_DESCRIPTION ${description} CACHE INTERNAL "")
 
 # generic variables
-set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/../.. CACHE INTERNAL "")
+
 set(FRAMEWORKS_DIR ${WORKSPACE_DIR}/frameworks CACHE INTERNAL "")
 set(${PROJECT_NAME}_FRAMEWORK_PATH ${FRAMEWORKS_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 
@@ -64,7 +64,6 @@ SET(${PROJECT_NAME}_EXTERNAL_APP_DIRS "" CACHE INTERNAL "")
 set ( ${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
 set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
 set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
-set ( ${PROJECT_NAME}_INSTALL_TESTS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/tests CACHE INTERNAL "")
 set ( ${PROJECT_NAME}_INSTALL_CONFIG_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/config CACHE INTERNAL "")
 set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
 set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
@@ -84,6 +83,24 @@ endfunction(declare_Package)
 ##################################################################################
 function(build_Package)
 
+#################################################
+############ MANAGING CMAKE scripts #############
+#################################################
+
+# generating/installing the generic cmake find file for the package 
+configure_file(${CMAKE_SOURCE_DIR}/share/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
+file(COPY ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/CMakeModules) #do not install but just copy in the worskpace cmake modules directory
+install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/CMakeModules) #install it in the corresponding package version
+# generating/installing the version specific cmake "use" file 
+configure_file(${CMAKE_SOURCE_DIR}/share/UsePackageVersion.cmake.in ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}.cmake @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/CMakeModules)
+#installing the CMakeModules folder
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/CMakeModules DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+
+#################################################
+############ MANAGING the BUILD #################
+#################################################
+
 # if all dependencies are satisfied
 include_directories(include)
 include_directories(${${PROJECT_NAME}_EXTERNAL_INCLUDE_DIRS})
@@ -96,7 +113,10 @@ add_subdirectory(test)
 add_subdirectory(share)
 add_subdirectory(config)
 
-#generating installers for the package
+#################################################
+##### MANAGING the SYSTEM PACKAGING #############
+#################################################
+
 option(GENERATE_INSTALLER "Package generate an OS installer for linux with tgz and if possible debian" OFF)
 if(GENERATE_INSTALLER)
 include(InstallRequiredSystemLibraries)
@@ -137,6 +157,10 @@ add_custom_target(package_install
 endif(UNIX AND NOT APPLE)
 
 endif(GENERATE_INSTALLER)
+
+#################################################
+######### MANAGING global make commands #########
+#################################################
 
 #creating a global build command
 if(GENERATE_INSTALLER)
@@ -383,42 +407,6 @@ macro(printComponentVariables)
 endmacro(printComponentVariables)
 
 
-##################################################################################
-############ generating/installing configuration files for the package ###########
-##################################################################################
-macro(configure_package)
-
-# configure a cmake file to check if runtime dependencies of this package are satisfied 
-
-configure_file (
-  "${PROJECT_SOURCE_DIR}/share/Check${PROJECT_NAME}.cmake.in"
-  "${PROJECT_BINARY_DIR}/share/Check${PROJECT_NAME}.cmake"
-  )
-
-# install the cmake "check" file in the share folder of the framework version
-
-install(FILES "${PROJECT_BINARY_DIR}/share/Check${PROJECT_NAME}.cmake"        
-         DESTINATION ${PROJECT_NAME}_DEPLOY_PATH/share
-)
-
-# configure a cmake file to help finding the current package
-
-configure_file (
-  "${PROJECT_SOURCE_DIR}/share/Find${PROJECT_NAME}.cmake.in"
-  "${PROJECT_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake"
-  )
-
-# install the cmake "find" file in the share folder
-
-install(FILES "${PROJECT_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake"        
-         DESTINATION ${PROJECT_NAME}_DEPLOY_PATH/share
-)
-
-install(FILES "${PROJECT_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake"        
-         DESTINATION ${WORKSPACE_DIR}/CMakeModules
-)
-endmacro(configure_package)
-
 
 ###################### !!!!!!!!!!!!!!!!!!!!! ####################
 ### FIN code a virer une fois le système de gestion de dépendences fini
@@ -541,7 +529,7 @@ function(declare_Library_Component c_name type defs links exp_defs exp_links)
 
 	### managing headers ###
 	#a library defines a folder containing one or more headers and/or subdirectories 
-	set(${PROJECT_NAME}_${c_name}_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${c_name})
+	set(${PROJECT_NAME}_${c_name}_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${c_name} CACHE INTERNAL "")
 	
 	install(DIRECTORY ${${PROJECT_NAME}_${c_name}_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.h")
 	install(DIRECTORY ${${PROJECT_NAME}_${c_name}_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hpp")
@@ -592,6 +580,7 @@ function(declare_Library_Component c_name type defs links exp_defs exp_links)
 	set(${PROJECT_NAME}_COMPONENTS_LIBS "${${PROJECT_NAME}_COMPONENTS_LIBS};${c_name}" CACHE INTERNAL "")
 	# global variable to know that the component has been declared
 	set(${PROJECT_NAME}_${c_name}_DECLARED TRUE CACHE INTERNAL "")
+	
 endfunction(declare_Library_Component c_name type)
 
 
@@ -600,6 +589,10 @@ endfunction(declare_Library_Component c_name type)
 ################# declaration of an application component ########################
 ##################################################################################
 function(declare_Application_Component c_name type defs links)
+	if(DEFINED ${PROJECT_NAME}_${c_name}_TYPE)
+		message("ERROR declare_Application_Component : a component with the same name ${c_name} is already defined")
+	endif(DEFINED ${PROJECT_NAME}_${c_name}_TYPE)
+
 	if(${type} STREQUAL "TEST" 
 	OR ${type} STREQUAL "APP"
 	OR ${type} STREQUAL "EXAMPLE")
@@ -682,17 +675,59 @@ if (NOT ${type} STREQUAL "APP") #it is a library
 		set(${dep_name}_DEFS ${defs} CACHE INTERNAL "")
 	endif(NOT ${defs} STREQUAL "")
 
-	if(NOT ${links} STREQUAL "")#adding link time flags
+	if(NOT ${links} STREQUAL "") #adding link time flags
 		set(${dep_name}_LINKS ${links} CACHE INTERNAL "")
 	endif(NOT ${links} STREQUAL "")
 
-	if(NOT ${inc_dirs} STREQUAL "")#adding include directories
+	if(NOT ${inc_dirs} STREQUAL "") #adding include directories
 		set(${dep_name}_INC_DIRS ${inc_dirs} CACHE INTERNAL "")
 	endif(NOT ${inc_dirs} STREQUAL "")
-
 endif()
 
-endfunction(declare_Dependency)
+endfunction(create_Dependency dep_name package type component inc_dirs defs links)
+
+##################################################################################
+########################### specifying a local dependency ########################
+#################### to be used for insternal use in a package ###################
+##################################################################################
+function(create_Local_Dependency c_name type)
+	if (NOT DEFINED ${PROJECT_NAME}_${c_name}_TYPE)
+		message("ERROR create_Local_Dependency : the component ${c_name} has not been defined")
+	endif(NOT DEFINED ${PROJECT_NAME}_${c_name}_TYPE)
+	
+	if(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "APP")#this is an application
+		#create the dependency corresponding to the local application
+		create_Dependency(	"${${PROJECT_NAME}_${c_name}_DEP}" 
+					"${PROJECT_NAME}"
+					"APP"
+					"${c_name}"
+					""
+					""
+					""
+				)
+
+	elseif(		${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "HEADER"
+		OR	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "SHARED"
+		OR	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "STATIC"
+		OR	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "COMPLETE")#this is a library
+		#create the dependency corresponding to the local library
+		if (${type} STREQUAL "")
+			set(local_type "SHARED")
+		else(${type} STREQUAL "") 
+			set(local_type ${type})
+		endif(${type} STREQUAL "")
+		create_Dependency(	"${${PROJECT_NAME}_${c_name}_DEP}" 
+					"${PROJECT_NAME}"
+					"${local_type}"
+					"${c_name}"
+					"${${PROJECT_NAME}_${c_name}_INCLUDE_DIR}"
+					"${${PROJECT_NAME}_${c_name}_DEFS}"
+					"${${PROJECT_NAME}_${c_name}_LINKS}"
+				)
+	else()
+		message("ERROR create_Local_Dependency : the type ${${PROJECT_NAME}_${c_name}_TYPE} of the dependency target is not valid")
+	endif()
+endfunction(create_Local_Dependency c_name type)
 
 ##################################################################################
 ###################### adding dependency to a component ##########################
