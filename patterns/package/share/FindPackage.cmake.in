@@ -25,36 +25,42 @@ set(PACKAGE_@PROJECT_NAME@_SEARCH_PATH
     "path to the package framework containing versions of the @PROJECT_NAME@ package"
   )
 mark_as_advanced(PACKAGE_@PROJECT_NAME@_SEARCH_PATH)
-
-if(	EXISTS "${PACKAGE_@PROJECT_NAME@_SEARCH_PATH}" 
-	AND IS_DIRECTORY "${PACKAGE_@PROJECT_NAME@_SEARCH_PATH}"
-  )
+include(Package_Finding_Functions)
+check_Directory_Exists(${PACKAGE_@PROJECT_NAME@_SEARCH_PATH})
+if(${RETURN_CHECK_DIRECTORY_EXISTS})
 	# at this stage the only thing to do is to check for versions
-	include(Package_Finding_Functions)
+
 	#variables that will be filled by generic functions
 	set(VERSION_HAS_BEEN_FOUND FALSE)
 	if(DEFINED @PROJECT_NAME@_FIND_VERSION)
 		if(${@PROJECT_NAME@_FIND_VERSION_EXACT}) #using a specific version (only patch number can be adapted)
 			check_Exact_Version("@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH} ${@PROJECT_NAME@_FIND_VERSION_MAJOR} ${@PROJECT_NAME@_FIND_VERSION_MINOR})
 		else(${@PROJECT_NAME@_FIND_VERSION_EXACT}) #using the best version as regard of version constraints
-			check_Adequate_Version("@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH} ${@PROJECT_NAME@_FIND_VERSION_MAJOR} ${@PROJECT_NAME@_FIND_VERSION_MINOR})
+			check_Minor_Version("@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH} ${@PROJECT_NAME@_FIND_VERSION_MAJOR} ${@PROJECT_NAME@_FIND_VERSION_MINOR})
 		endif(${@PROJECT_NAME@_FIND_VERSION_EXACT})
 	else(DEFINED @PROJECT_NAME@_FIND_VERSION) #no specific version targetted using own or the last available version if it does not exist   
-		check_Local_Or_Newest_Version("@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH} ${@PROJECT_NAME@_FIND_VERSION_MAJOR} ${@PROJECT_NAME@_FIND_VERSION_MINOR})
+		check_Local_Or_Newest_Version("@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH})
 	endif(DEFINED @PROJECT_NAME@_FIND_VERSION)
 
 	if(${VERSION_HAS_BEEN_FOUND})#a good version of the package has been found		
 		set(PATH_TO_PACKAGE_VERSION ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH}/${@PROJECT_NAME@_VERSION_STRING})		
-		list(LENGHT ${@PROJECT_NAME@_FIND_COMPONENTS} list_size)
-		if(list_size GREATER 0) #specific components must be checked, taking only selected components	
-			set(ALL_COMPONENTS_HAVE_BEEN_FOUND FALSE)		
-			select_Components("@PROJECT_NAME@" ${PATH_TO_PACKAGE_VERSION} ${@PROJECT_NAME@_FIND_COMPONENTS})
+		if(${@PROJECT_NAME@_FIND_COMPONENTS}) #specific components must be checked, taking only selected components	
+				
+			select_Components("@PROJECT_NAME@" ${@PROJECT_NAME@_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} ${@PROJECT_NAME@_FIND_COMPONENTS})
+			if(NOT ${COMPONENT_FUNCTION_RETURNS})
+				exitFindScript("The @PROJECT_NAME@ version selected (${@PROJECT_NAME@_VERSION_STRING}) has no configuration file")
+			endif(NOT ${COMPONENT_FUNCTION_RETURNS})	
+
 			if(NOT ${ALL_COMPONENTS_HAVE_BEEN_FOUND})
 				exitFindScript("Some of the requested components of the package @PROJECT_NAME@ are missing (version chosen is ${@PROJECT_NAME@_VERSION_STRING}, requested is ${@PROJECT_NAME@_FIND_VERSION})")
 			endif(NOT ${ALL_COMPONENTS_HAVE_BEEN_FOUND})	
 		
 		else(@PROJECT_NAME@_FIND_COMPONENTS)#no component check, register all of them
-			all_Components("@PROJECT_NAME@" ${PATH_TO_PACKAGE_VERSION})
+			all_Components("@PROJECT_NAME@" ${@PROJECT_NAME@_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION})
+			if(NOT ${COMPONENT_FUNCTION_RETURNS})
+				exitFindScript("The @PROJECT_NAME@ version selected (${@PROJECT_NAME@_VERSION_STRING}) has no configuration file -> package version is corrupted")
+			endif(NOT ${COMPONENT_FUNCTION_RETURNS})	
+				
 		endif(@PROJECT_NAME@_FIND_COMPONENTS)
 		#here everything has been found and configured => setting global standard CMake find process variables to adequate values
 		set(@PROJECT_NAME@_FOUND TRUE)
@@ -64,9 +70,9 @@ if(	EXISTS "${PACKAGE_@PROJECT_NAME@_SEARCH_PATH}"
 		exitFindScript("The package @PROJECT_NAME@ with required version ${@PROJECT_NAME@_FIND_VERSION} cannot be found")
 	endif(${VERSION_HAS_BEEN_FOUND})
 
-else() #if the directory does not exist it means the package cannot be found
+else(${RETURN_CHECK_DIRECTORY_EXISTS}) #if the directory does not exist it means the package cannot be found
 	exitFindScript("The required package @PROJECT_NAME@ cannot be found")
-endif()
+endif(${RETURN_CHECK_DIRECTORY_EXISTS})
 
 ####################################################
 ####### @PROJECT_NAME@ find script ends here #######
