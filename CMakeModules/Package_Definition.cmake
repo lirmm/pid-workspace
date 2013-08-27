@@ -90,10 +90,10 @@ function(build_Package)
 # generating/installing the generic cmake find file for the package 
 configure_file(${CMAKE_SOURCE_DIR}/share/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
 file(COPY ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/CMakeModules) #do not install but just copy in the worskpace cmake modules directory
-install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/CMakeModules) #install it in the corresponding package version
+#install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/CMakeModules) #install it in the corresponding package version
 # generating/installing the version specific cmake "use" file 
-configure_file(${CMAKE_SOURCE_DIR}/share/UsePackageVersion.cmake.in ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}.cmake @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/CMakeModules)
+configure_file(${CMAKE_SOURCE_DIR}/share/UsePackageVersion.cmake.in ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 #installing the CMakeModules folder
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/CMakeModules DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 

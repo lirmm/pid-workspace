@@ -17,16 +17,15 @@ endif()
 endmacro(document_Version_Strings package_name major minor patch)
 
 ###
-macro(List_Version_Subdirectories result curdir)
+macro(list_Version_Subdirectories result curdir)
 	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
 	set(dirlist "")
 	foreach(child ${children})
 		if(IS_DIRECTORY ${curdir}/${child})
-		list(APPEND dirlist ${child})
+			list(APPEND dirlist ${child})
 		endif()
 	endforeach()
 	list(REMOVE_ITEM dirlist "own" "installers")
-	list(SORT dirlist)
 	set(${result} ${dirlist})
 endmacro()
 
@@ -41,52 +40,55 @@ endif()
 set(RETURN_CHECK_DIRECTORY_EXISTS FALSE PARENT_SCOPE)
 endfunction(check_Directory_Exists path)
 
-
-###
-function(check_Compatible_Patch_Version_Directory package_framework major_version minor_version)
-	set(BASIC_PATH_TO_SEARCH "${package_framework}/${major_version}.${minor_version}")
-	set(RETURN_COMPATIBLE_PATCH_VERSION FALSE PARENT_SCOPE) 
-	
-	foreach(iteration RANGE 99)
-		set(PATH_TO_SEARCH "${BASIC_PATH_TO_SEARCH}.${iteration}")
-		check_Directory_Exists(${PATH_TO_SEARCH})
-		if(${RETURN_CHECK_DIRECTORY_EXISTS})
-			set(RETURN_COMPATIBLE_PATCH_VERSION TRUE PARENT_SCOPE)
-			#always register the last patch version found
-			set(LAST_COMPATIBLE_PATCH_VERSION iteration PARENT_SCOPE)
-		endif(${RETURN_CHECK_DIRECTORY_EXISTS})
-	endforeach()
-endif(${minor_version} STREQUAL "")
-endfunction(check_Compatible_Version_Directory package_framework major_version minor_version)
-
 ###
 function (check_Exact_Version package_name package_framework major_version minor_version) #minor version cannot be increased
-check_Compatible_Patch_Version_Directory(${package_framework} ${major_version} ${minor_version})
-if(${RETURN_COMPATIBLE_PATCH_VERSION})
-	set(VERSION_HAS_BEEN_FOUND TRUE PARENT_SCOPE)
-	document_Version_Strings(${package_name} ${major_version} ${minor_version} ${LAST_COMPATIBLE_PATCH_VERSION})
-else(${RETURN_COMPATIBLE_PATCH_VERSION})
-	set(VERSION_HAS_BEEN_FOUND FALSE PARENT_SCOPE)
-endif(${RETURN_COMPATIBLE_PATCH_VERSION})
+set(VERSION_HAS_BEEN_FOUND FALSE PARENT_SCOPE)
+list_Version_Subdirectories(version_dirs ${package_framework})	
+set(curr_patch_version 0)		
+foreach(patch IN ITEMS ${version_dirs})
+	string(REGEX REPLACE "^${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
+	if(	A_VERSION 
+		AND ${A_VERSION} GREATER ${curr_patch_version})
+		set(curr_patch_version ${A_VERSION})
+		set(VERSION_HAS_BEEN_FOUND TRUE PARENT_SCOPE)
+	endif(A_VERSION)
+endforeach()
+	
+if(${VERSION_HAS_BEEN_FOUND})#at least a good version has been found
+	document_Version_Strings(${package_name} ${major_version} ${minor_version} ${curr_patch_version})
+endif(${VERSION_HAS_BEEN_FOUND})
+
 endfunction (check_Exact_Version package_name package_framework major_version minor_version)
 
 ###
 function(check_Minor_Version package_name package_framework major_version minor_version)#major version cannot be increased
-set(BASIC_PATH_TO_SEARCH "${package_framework}/${major_version}")
 set(VERSION_HAS_BEEN_FOUND FALSE PARENT_SCOPE)
+set(curr_max_minor_version ${minor_version})
+set(curr_patch_version 0)
+list_Version_Subdirectories(version_dirs ${package_framework})	
+foreach(version IN ITEMS ${version_dirs})
+	string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
+	if(A_VERSION)
+		list(GET A_VERSION 0 minor)
+		list(GET A_VERSION 1 patch)
+		if(${minor} EQUAL ${curr_max_minor_version} 
+		AND ${patch} GREATER ${curr_patch_version})
+			set(VERSION_HAS_BEEN_FOUND TRUE PARENT_SCOPE)			
+			#a more recent patch version found with same max minor version
+			set(curr_patch_version ${patch})
+		elseif(${minor} GREATER ${curr_max_minor_version})
+			set(VERSION_HAS_BEEN_FOUND TRUE PARENT_SCOPE)
+			#a greater minor version found
+			set(curr_max_minor_version ${minor})
+			set(curr_patch_version ${patch})	
+		endif()
+	endif(A_VERSION)
+endforeach()
 
-foreach(iteration RANGE ${minor_version} 99)
-	check_Compatible_Patch_Version_Directory(${package_framework} ${major_version} ${iteration})
-	if(${RETURN_COMPATIBLE_PATCH_VERSION})
-		set(VERSION_HAS_BEEN_FOUND TRUE PARENT_SCOPE)
-		set(LAST_COMPATIBLE_MINOR_VERSION ${iteration})
-	endif(${RETURN_COMPATIBLE_PATCH_VERSION})
+if(${VERSION_HAS_BEEN_FOUND})#at least a good version has been found
+	document_Version_Strings(${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
+endif(${VERSION_HAS_BEEN_FOUND})
 
-endforeach()	
-
-if(${VERSION_HAS_BEEN_FOUND})
-	document_Version_Strings(${package_name} ${major_version} ${LAST_COMPATIBLE_MINOR_VERSION} ${LAST_COMPATIBLE_PATCH_VERSION})
-endif()
 endfunction(check_Adequate_Version package_name package_framework major_version minor_version)
 
 ###
@@ -102,20 +104,24 @@ endif(${RETURN_CHECK_DIRECTORY_EXISTS})
 
 #no own folder, the package has been downloaded but is not developped by the user
 #taking the last available version
-List_Version_Subdirectories(available_versions ${package_framework})
+list_Version_Subdirectories(available_versions ${package_framework})
 if(NOT available_versions)
 	message(SEND_ERROR "Impossible to get any version of the package ${package_name}"	
 	return()
 else()
-	list(REVERSE available_versions)
-	list(GET available_versions 0 LAST_VERSION_AVAILABLE)	
+	set(version_string_curr "0.0.0")
+	foreach(version_element IN ITEMS ${available_versions})
+		if(${version_string_curr} VERSION_LESS ${version_element})
+			set(version_string_curr ${version_element})
+		endif()
+	endforeach()
 	set(VERSION_HAS_BEEN_FOUND TRUE PARENT_SCOPE)
-	#TODO verifier la REGEXP	
-	string(REGEX MATCH "^([0-99])\.([0-99])\.([0-99])$" VERSION_NUMBERS ${LAST_VERSION_AVAILABLE})
-	#TODO comment extraires les sous produits de la regrexp
-	document_Version_Strings(${package_name} "" "" "")
+	string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" VERSION_NUMBERS ${version_string_curr})
+	list(GET VERSION_NUMBERS 0 major)
+	list(GET VERSION_NUMBERS 1 minor)
+	list(GET VERSION_NUMBERS 2 patch)
+	document_Version_Strings(${package_name} ${major} ${minor} ${patch})
 endif()
-
 
 endfunction(check_Local_Or_Newest_Version package_name package_framework major_version minor_version)
 
@@ -128,20 +134,37 @@ endfunction(check_Local_Or_Newest_Version package_name package_framework major_v
 ##################################################################################
 ##################auxiliary functions to fill exported variables##################
 ##################################################################################
+
+
+function (all_Components package_name package_version path_to_package_version)
+set(COMPONENT_FUNCTION_RETURNS TRUE PARENT_SCOPE)
+include(${path_to_package_version}/share/Use${package_name}-${package_version}.cmake  OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
+if(${res} EQUAL NOTFOUND)
+	set(COMPONENT_FUNCTION_RETURNS FALSE PARENT_SCOPE)
+endif()
+endfunction (all_Components package_name path_to_package_version)
+
+
 function (select_Components package_name path_to_package_version list_of_components)
+set(COMPONENT_FUNCTION_RETURNS TRUE PARENT_SCOPE)
+set(ALL_COMPONENTS_HAVE_BEEN_FOUND FALSE PARENT_SCOPE)
+include(${path_to_package_version}/share/Use${package_name}-${package_version}.cmake OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
+if(${res} EQUAL NOTFOUND)
+	set(COMPONENT_FUNCTION_RETURNS FALSE PARENT_SCOPE)
+	return()
+endif()
 
-
-
+#checking that all requested components trully exist for this version
+foreach(requested_component IN ITEMS ${list_of_components})
+	list(FIND ${package_name}_COMPONENTS ${requested_component} idx)	
+	if(idx EQUAL -1)#component has not been found
+		return()
+	endif()
+endforeach()
+set(ALL_COMPONENTS_HAVE_BEEN_FOUND TRUE PARENT_SCOPE)
 
 endfunction (select_Components package_name path_to_package_version list_of_components)
 
-
-function (all_Components package_name path_to_package_version)
-
-
-
-
-endfunction (all_Components package_name path_to_package_version)
 
 ##################################################################################
 ##############end auxiliary functions to fill exported variables##################
