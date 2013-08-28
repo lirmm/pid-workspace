@@ -10,7 +10,7 @@
 function(declare_Package major minor patch author institution description)
 
 set(${PROJECT_NAME}_MAIN_AUTHOR ${author} CACHE INTERNAL "")
-set(${PROJECT_NAME}_INSTITUTION ${institution} CACHE INTERNAL "")
+set(${PROJECT_NAME}_MAIN_INSTITUTION ${institution} CACHE INTERNAL "")
 set(${PROJECT_NAME}_DESCRIPTION ${description} CACHE INTERNAL "")
 
 # generic variables
@@ -47,10 +47,9 @@ MESSAGE("Deployment : version ${${PROJECT_NAME}_VERSION}")
 set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
 endif(USE_LOCAL_DEPLOYMENT)
 
-set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_FRAMEWORK_PATH} CACHE INTERNAL "")
+set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_FRAMEWORK_PATH})
 
 set(${PROJECT_NAME}_COMPONENTS "" CACHE INTERNAL "")
-set(${PROJECT_NAME}_COMPONENTS_HEADERS "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS "" CACHE INTERNAL "")
 
@@ -493,19 +492,22 @@ function (fill_Component_Target_Linking c_name dep_name)
 if(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "APP"
 	OR ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "SHARED")
 	if(NOT ${${dep_name}_LINKS} STREQUAL "")
-	target_link_libraries(${c_name} ${${dep_name}_LINKS})
+		target_link_libraries(${c_name} ${${dep_name}_LINKS})
 	endif(NOT ${${dep_name}_LINKS} STREQUAL "")
-
+elseif(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "SHARED")
+	if(NOT ${${dep_name}_LINKS} STREQUAL "")
+		target_link_libraries(${c_name} ${${dep_name}_LINKS})
+	endif(NOT ${${dep_name}_LINKS} STREQUAL "")
 elseif(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "STATIC")
 	if(NOT ${${dep_name}_LINKS} STREQUAL "")
-	target_link_libraries(${c_name}_st ${${dep_name}_LINKS})
+		target_link_libraries(${c_name}_st ${${dep_name}_LINKS})
 	endif(NOT ${${dep_name}_LINKS} STREQUAL "")
 elseif(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "COMPLETE")
 	if(NOT ${${dep_name}_LINKS} STREQUAL "")
-	target_link_libraries(${c_name} ${${dep_name}_LINKS})
+		target_link_libraries(${c_name} ${${dep_name}_LINKS})
 	endif(NOT ${${dep_name}_LINKS} STREQUAL "")
 	if(NOT ${${dep_name}_LINKS} STREQUAL "")
-	target_link_libraries(${c_name}_st ${${dep_name}_LINKS})
+		target_link_libraries(${c_name}_st ${${dep_name}_LINKS})
 	endif(NOT ${${dep_name}_LINKS} STREQUAL "")	
 endif()#do nothing in case of a pure header component
 
