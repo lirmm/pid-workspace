@@ -2,4 +2,5 @@
 CMakeCache.txt
 *.old
 packages/*
-frameworks/*
+install/*
+categories/*

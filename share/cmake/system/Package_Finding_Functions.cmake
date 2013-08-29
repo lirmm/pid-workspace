@@ -144,17 +144,17 @@ if(DEFINED ${package_name}_${component_name}_CONFIG_FILES)
 		find_file(PATH_TO_CONFIG NAMES ${config_file} PATHS ${package_path}/config/${component_name} NO_DEFAULT_PATH)
 		if(PATH_TO_CONFIG-NOTFOUND)
 			set(CONFIG_FILES_FOUND FALSE)
-			return()
+			break()
 		endif()
 	endforeach()
-
 endif()
 
 endmacro(check_Config_Files package_path package_name component_name)
 
+
 #checking elements of a component
-macro(check_Component_Elements_Exist package_path package_name component_name)
-set(COMPONENT_ELEMENT_NOTFOUND TRUE)
+function(check_Component_Elements_Exist package_path package_name component_name)
+set(COMPONENT_ELEMENT_NOTFOUND TRUE PARENT_SCOPE)
 if(NOT DEFINED ${package_name}_${component_name}_TYPE)#type of the component must be defined
 	return()
 endif() 	
@@ -185,12 +185,12 @@ if(idx EQUAL -1)#the component is NOT an application
 				return()
 			endif()
 			#static version
-			find_library(PATH_TO_LIB NAMES ${component_name}_st PATHS ${package_path}/lib NO_DEFAULT_PATH)
+			find_library(PATH_TO_LIB NAMES ${component_name}-st PATHS ${package_path}/lib NO_DEFAULT_PATH)
 			if(PATH_TO_EXE-NOTFOUND)
 				return()
 			endif()
 		elseif(${${package_name}_${component_name}_TYPE} STREQUAL "STATIC")
-			find_library(PATH_TO_LIB NAMES ${component_name}_st PATHS ${package_path}/lib NO_DEFAULT_PATH)
+			find_library(PATH_TO_LIB NAMES ${component_name}-st PATHS ${package_path}/lib NO_DEFAULT_PATH)
 			if(PATH_TO_EXE-NOTFOUND)
 				return()
 			endif()
@@ -203,7 +203,7 @@ if(idx EQUAL -1)#the component is NOT an application
 		#optionally checking for config files
 		check_Config_Files(CONFIG_FILES_FOUND ${package_path} ${package_name} ${component_name})
 		if(${CONFIG_FILES_FOUND})
-			set(COMPONENT_ELEMENT_NOTFOUND FALSE)
+			set(COMPONENT_ELEMENT_NOTFOUND FALSE  PARENT_SCOPE)
 		endif(${CONFIG_FILES_FOUND})
 	endif()
 
@@ -217,15 +217,16 @@ else()#the component is an application
 		#optionally checking for config files
 		check_Config_Files(CONFIG_FILES_FOUND ${package_path} ${package_name} ${component_name})
 		if(${CONFIG_FILES_FOUND})
-			set(COMPONENT_ELEMENT_NOTFOUND FALSE)
+			set(COMPONENT_ELEMENT_NOTFOUND FALSE  PARENT_SCOPE)
 		endif(${CONFIG_FILES_FOUND})
 	else()
 		return()
 	endif()	
 endif()
 
-endmacro(check_Component_Elements_Exist package_name component_name)
+endfunction(check_Component_Elements_Exist package_name component_name)
 
+###
 function (all_Components package_name package_version path_to_package_version)
 set(USE_FILE_NOTFOUND FALSE PARENT_SCOPE)
 include(${path_to_package_version}/share/Use${package_name}-${package_version}.cmake  OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
@@ -252,6 +253,7 @@ endforeach()
 endfunction (all_Components package_name path_to_package_version)
 
 
+###
 function (select_Components package_name path_to_package_version list_of_components)
 set(USE_FILE_NOTFOUND FALSE PARENT_SCOPE)
 

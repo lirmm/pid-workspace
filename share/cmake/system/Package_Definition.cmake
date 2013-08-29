@@ -7,7 +7,7 @@
 ##################################################################################
 ###########################  declaration of the package ##########################
 ##################################################################################
-function(declare_Package major minor patch author institution description)
+macro(declare_Package major minor patch author institution description)
 
 set(${PROJECT_NAME}_MAIN_AUTHOR ${author} CACHE INTERNAL "")
 set(${PROJECT_NAME}_MAIN_INSTITUTION ${institution} CACHE INTERNAL "")
@@ -15,16 +15,17 @@ set(${PROJECT_NAME}_DESCRIPTION ${description} CACHE INTERNAL "")
 
 # generic variables
 
-set(FRAMEWORKS_DIR ${WORKSPACE_DIR}/frameworks CACHE INTERNAL "")
-set(${PROJECT_NAME}_FRAMEWORK_PATH ${FRAMEWORKS_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
+set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
+set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 
 # basic build options
 option(BUILD_WITH_EXAMPLES "Package builds examples" ON)
 option(BUILD_WITH_TESTS "Package uses tests" OFF)
 option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
+option(BUILD_WITH_DOC "Package generates documentation" ON)
 
 if(BUILD_WITH_PRINT_MESSAGES)
-add_definitions(-DPRINT_MESSAGES)
+	add_definitions(-DPRINT_MESSAGES)
 endif(BUILD_WITH_PRINT_MESSAGES)
 
 # setting the current version number
@@ -47,7 +48,7 @@ MESSAGE("Deployment : version ${${PROJECT_NAME}_VERSION}")
 set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
 endif(USE_LOCAL_DEPLOYMENT)
 
-set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_FRAMEWORK_PATH})
+set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
 
 set(${PROJECT_NAME}_COMPONENTS "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS "" CACHE INTERNAL "")
@@ -63,38 +64,38 @@ SET(${PROJECT_NAME}_EXTERNAL_APP_DIRS "" CACHE INTERNAL "")
 set ( ${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
 set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
 set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
-set ( ${PROJECT_NAME}_INSTALL_CONFIG_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/config CACHE INTERNAL "")
 set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
 set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
 
 if(${CMAKE_BINARY_DIR} MATCHES release)
 set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
-set ( INSTALL_PATH_SUFFIX release CACHE INTERNAL "")
+set ( INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
 elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
-set ( INSTALL_PATH_SUFFIX debug CACHE INTERNAL "")
+set ( INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
 endif(${CMAKE_BINARY_DIR} MATCHES release)
 
-endfunction(declare_Package)
+endmacro(declare_Package)
 
 ##################################################################################
 ################################### building the package #########################
 ##################################################################################
-function(build_Package)
+macro(build_Package)
 
 #################################################
 ############ MANAGING CMAKE scripts #############
 #################################################
 
 # generating/installing the generic cmake find file for the package 
-configure_file(${CMAKE_SOURCE_DIR}/share/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
-file(COPY ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/CMakeModules) #do not install but just copy in the worskpace cmake modules directory
-#install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/CMakeModules) #install it in the corresponding package version
+configure_file(${WORKSPACE_DIR}/share/cmake/system/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake find modules directory
+
+#install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/cmake) #install it in the corresponding package version
 # generating/installing the version specific cmake "use" file 
 configure_file(${CMAKE_SOURCE_DIR}/share/UsePackageVersion.cmake.in ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
-#installing the CMakeModules folder
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/CMakeModules DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+#installing the CMakeModules folder (contains find scripts)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 
 #################################################
 ############ MANAGING the BUILD #################
@@ -110,50 +111,49 @@ add_subdirectory(src)
 add_subdirectory(apps)
 add_subdirectory(test)
 add_subdirectory(share)
-add_subdirectory(config)
 
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############
 #################################################
-
+#TODO Il faudrait packager les libs debug ET release d'un coup !! (PAS facile avec CMAKE) 
 option(GENERATE_INSTALLER "Package generate an OS installer for linux with tgz and if possible debian" OFF)
 if(GENERATE_INSTALLER)
-include(InstallRequiredSystemLibraries)
-set(CPACK_GENERATOR TGZ)
-set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-set(CPACK_PACKAGE_CONTACT ${${PROJECT_NAME}_MAIN_AUTHOR})
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${${PROJECT_NAME}_DESCRIPTION})
-set(CPACK_PACKAGE_VENDOR ${${PROJECT_NAME}_INSTITUTION})
-set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/license.txt)
-set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
-set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
+	include(InstallRequiredSystemLibraries)
+	set(CPACK_GENERATOR TGZ)
+	set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+	set(CPACK_PACKAGE_CONTACT ${${PROJECT_NAME}_MAIN_AUTHOR})
+	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${${PROJECT_NAME}_DESCRIPTION})
+	set(CPACK_PACKAGE_VENDOR ${${PROJECT_NAME}_MAIN_INSTITUTION})
+	set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/license.txt)#TODO change with binary dir and generate the file !!
+	set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
+	set(CPACK_PACKAGE_VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
+	set(CPACK_PACKAGE_VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
+	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
+	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
 
-if(UNIX AND NOT APPLE)
-list(APPEND CPACK_GENERATOR DEB)
-endif(UNIX AND NOT APPLE)
-include(CPack)
+	if(UNIX AND NOT APPLE)
+		list(APPEND CPACK_GENERATOR DEB)
+	endif(UNIX AND NOT APPLE)
+	include(CPack)
 
 
-if(UNIX AND NOT APPLE) #linux install
-add_custom_target(package_install
-			COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
-				${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
-			DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
-			COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.deb
-				${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.deb
-			DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
-			COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.deb in ${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX}"
-		)
-else(UNIX AND NOT APPLE) #apple install
-add_custom_target(package_install
-		   	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
-				${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tar.gz
-			COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-Linux.tag.gz in ${${PROJECT_NAME}_FRAMEWORK_PATH}/installers/${INSTALL_PATH_SUFFIX}" 						 
-		)
-endif(UNIX AND NOT APPLE)
+	if(UNIX AND NOT APPLE) #linux install
+		add_custom_target(package_install
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+				DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
+					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
+				DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
+			)
+	else(UNIX AND NOT APPLE) #apple install
+		add_custom_target(package_install
+			   	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tag.gz in ${${PROJECT_NAME}_INSTALL_PATH}/installers" 						 
+			)
+	endif(UNIX AND NOT APPLE)
 
 endif(GENERATE_INSTALLER)
 
@@ -163,39 +163,80 @@ endif(GENERATE_INSTALLER)
 
 #creating a global build command
 if(GENERATE_INSTALLER)
-if(CMAKE_BUILD_TYPE MATCHES Release)
-add_custom_target(build 
-			COMMAND ${CMAKE_BUILD_TOOL}
-			COMMAND ${CMAKE_BUILD_TOOL} doc 
-			COMMAND ${CMAKE_BUILD_TOOL} install
-			COMMAND ${CMAKE_BUILD_TOOL} package
-			COMMAND ${CMAKE_BUILD_TOOL} package_install
-		) 
-else(CMAKE_BUILD_TYPE MATCHES Release)
-add_custom_target(build 
-			COMMAND ${CMAKE_BUILD_TOOL} 
-			COMMAND ${CMAKE_BUILD_TOOL} install
-			COMMAND ${CMAKE_BUILD_TOOL} package
-			COMMAND ${CMAKE_BUILD_TOOL} package_install
-		) 
-endif(CMAKE_BUILD_TYPE MATCHES Release)
+	if(CMAKE_BUILD_TYPE MATCHES Release)
+		if(${BUILD_WITH_TESTS})
+			add_custom_target(build 
+				COMMAND ${CMAKE_BUILD_TOOL}
+				COMMAND ${CMAKE_BUILD_TOOL} test
+				COMMAND ${CMAKE_BUILD_TOOL} doc 
+				COMMAND ${CMAKE_BUILD_TOOL} install
+				COMMAND ${CMAKE_BUILD_TOOL} package
+				COMMAND ${CMAKE_BUILD_TOOL} package_install
+			) 
+		else(${BUILD_WITH_TESTS})
+			add_custom_target(build 
+				COMMAND ${CMAKE_BUILD_TOOL}
+				COMMAND ${CMAKE_BUILD_TOOL} doc 
+				COMMAND ${CMAKE_BUILD_TOOL} install
+				COMMAND ${CMAKE_BUILD_TOOL} package
+				COMMAND ${CMAKE_BUILD_TOOL} package_install
+			) 
+		endif(${BUILD_WITH_TESTS})
+	else(CMAKE_BUILD_TYPE MATCHES Release)
+		if(${BUILD_WITH_TESTS})
+			add_custom_target(build 
+				COMMAND ${CMAKE_BUILD_TOOL} 
+				COMMAND ${CMAKE_BUILD_TOOL} test
+				COMMAND ${CMAKE_BUILD_TOOL} install
+				COMMAND ${CMAKE_BUILD_TOOL} package
+				COMMAND ${CMAKE_BUILD_TOOL} package_install
+			) 
+		else(${BUILD_WITH_TESTS})
+			add_custom_target(build 
+				COMMAND ${CMAKE_BUILD_TOOL} 
+				COMMAND ${CMAKE_BUILD_TOOL} install
+				COMMAND ${CMAKE_BUILD_TOOL} package
+				COMMAND ${CMAKE_BUILD_TOOL} package_install
+			)  
+		endif(${BUILD_WITH_TESTS})
+
+	endif(CMAKE_BUILD_TYPE MATCHES Release)
 
 else(GENERATE_INSTALLER)
-if(CMAKE_BUILD_TYPE MATCHES Release)
-add_custom_target(build 
-			COMMAND ${CMAKE_BUILD_TOOL}
-			COMMAND ${CMAKE_BUILD_TOOL} doc 
-			COMMAND ${CMAKE_BUILD_TOOL} install
-		) 
-else(CMAKE_BUILD_TYPE MATCHES Release)
-add_custom_target(build 
-			COMMAND ${CMAKE_BUILD_TOOL} 
-			COMMAND ${CMAKE_BUILD_TOOL} install
-		) 
-endif(CMAKE_BUILD_TYPE MATCHES Release)
+	if(CMAKE_BUILD_TYPE MATCHES Release)
+		if(${BUILD_WITH_TESTS})
+			add_custom_target(build 
+				COMMAND ${CMAKE_BUILD_TOOL}
+				COMMAND ${CMAKE_BUILD_TOOL} test
+				COMMAND ${CMAKE_BUILD_TOOL} doc 
+				COMMAND ${CMAKE_BUILD_TOOL} install
+			) 
+		else(${BUILD_WITH_TESTS})
+	
+			add_custom_target(build 
+				COMMAND ${CMAKE_BUILD_TOOL}
+				COMMAND ${CMAKE_BUILD_TOOL} doc 
+				COMMAND ${CMAKE_BUILD_TOOL} install
+			) 
+		endif()
+	else(CMAKE_BUILD_TYPE MATCHES Release)
+		if(${BUILD_WITH_TESTS})
+			add_custom_target(build 
+				COMMAND ${CMAKE_BUILD_TOOL}
+				COMMAND ${CMAKE_BUILD_TOOL} test
+				COMMAND ${CMAKE_BUILD_TOOL} install
+			) 
+		else(${BUILD_WITH_TESTS})
+			
+			add_custom_target(build 
+				COMMAND ${CMAKE_BUILD_TOOL} 
+				COMMAND ${CMAKE_BUILD_TOOL} install
+			) 
+		endif(${BUILD_WITH_TESTS})
+	endif(CMAKE_BUILD_TYPE MATCHES Release)
 endif(GENERATE_INSTALLER)
 
-endfunction(build_Package)
+endmacro(build_Package)
 
 
 
@@ -203,8 +244,8 @@ endfunction(build_Package)
 ########## adding source code of the example components to the API doc ###########
 ##################################################################################
 function(add_Example_To_Doc c_name)
-file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/share/examples/)
-file(COPY ${PROJECT_BINARY_DIR}/apps/${c_name} DESTINATION ${PROJECT_BINARY_DIR}/share/examples/)
+	file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/share/examples/)
+	file(COPY ${PROJECT_SOURCE_DIR}/apps/${c_name} DESTINATION ${PROJECT_BINARY_DIR}/share/examples/)
 endfunction(add_Example_To_Doc c_name)
 
 ##################################################################################
@@ -216,110 +257,117 @@ if(CMAKE_BUILD_TYPE MATCHES Release) # if in release mode we generate the doc
 
 #finding doxygen tool and doxygen configuration file 
 find_package(Doxygen)
-find_file(DOXYFILE_IN "Doxyfile.in"
-			PATHS "${CMAKE_SOURCE_DIR}/share"
+find_file(DOXYFILE_IN   "Doxyfile.in"
+			PATHS "${CMAKE_SOURCE_DIR}/share/doxygen"
 			NO_DEFAULT_PATH
 			DOC "Path to the doxygen configuration template file")
 
 if(NOT DOXYGEN_FOUND)
-message("Doxygen not found please install it to generate the API documentation")
+	message(WARNING "Doxygen not found please install it to generate the API documentation")
 endif(NOT DOXYGEN_FOUND)
 if(DOXYFILE_IN-NOTFOUND)
-message("Doxyfile not found in the share folder of your package !!")
+	message(WARNING "Doxyfile not found in the share folder of your package !! Getting the standard doxygen template file from workspace ... ")
+	find_file(GENERIC_DOXYFILE_IN   "Doxyfile.in"
+					PATHS "${WORKSPACE_DIR}/share/doxygen"
+					NO_DEFAULT_PATH
+					DOC "Path to the generic doxygen configuration template file")
+	if(GENERIC_DOXYFILE_IN-NOTFOUND)
+		message(WARNING "No Template file found, skipping documentation generation !!")		
+	else(GENERIC_DOXYFILE_IN-NOTFOUND)
+		file(COPY ${WORKSPACE_DIR}/share/doxygen/Doxyfile.in ${CMAKE_SOURCE_DIR}/share/doxygen)
+		message(STATUS "Template file found and copied to your package, you can now modify it")		
+	endif(GENERIC_DOXYFILE_IN-NOTFOUND)
 endif(DOXYFILE_IN-NOTFOUND)
 
-if(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND) #we are able to generate the doc
-# general variables
-set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
-set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
-set(DOXYFILE_PROJECT_VERSION ${${PROJECT_NAME}_VERSION})
-set(DOXYFILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/doc)
-set(DOXYFILE_HTML_DIR html)
-set(DOXYFILE_LATEX_DIR latex)
+if(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND AND NOT GENERIC_DOXYFILE_IN-NOTFOUND) #we are able to generate the doc
+	# general variables
+	set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
+	set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
+	set(DOXYFILE_PROJECT_VERSION ${${PROJECT_NAME}_VERSION})
+	set(DOXYFILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/doc)
+	set(DOXYFILE_HTML_DIR html)
+	set(DOXYFILE_LATEX_DIR latex)
 
-### new targets ###
-# creating the specific target to run doxygen
-add_custom_target(doxygen
-${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/share/Doxyfile
-DEPENDS ${CMAKE_BINARY_DIR}/share/Doxyfile
-WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-COMMENT "Generating API documentation with Doxygen" VERBATIM
-)
+	### new targets ###
+	# creating the specific target to run doxygen
+	add_custom_target(doxygen
+		${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/share/Doxyfile
+		DEPENDS ${CMAKE_BINARY_DIR}/share/Doxyfile
+		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+		COMMENT "Generating API documentation with Doxygen" VERBATIM
+	)
 
-# target to clean installed doc
-set_property(DIRECTORY
-APPEND PROPERTY
-ADDITIONAL_MAKE_CLEAN_FILES
-"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_HTML_DIR}")
-
-# creating the doc target
-get_target_property(DOC_TARGET doc TYPE)
-if(NOT DOC_TARGET)
-	add_custom_target(doc)
-endif(NOT DOC_TARGET)
-
-add_dependencies(doc doxygen)
-
-### end new targets ###
-
-### doxyfile configuration ###
-
-# configuring doxyfile for html generation 
-set(DOXYFILE_GENERATE_HTML "YES")
-
-# configuring doxyfile to use dot executable if available
-set(DOXYFILE_DOT "NO")
-if(DOXYGEN_DOT_EXECUTABLE)
-	set(DOXYFILE_DOT "YES")
-endif()
-
-# configuring doxyfile for latex generation 
-set(DOXYFILE_PDFLATEX "NO")
-
-if(GENERATE_LATEX_API)
 	# target to clean installed doc
 	set_property(DIRECTORY
 		APPEND PROPERTY
 		ADDITIONAL_MAKE_CLEAN_FILES
-		"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
-	set(DOXYFILE_GENERATE_LATEX "YES")
-	find_package(LATEX)
-	find_program(DOXYFILE_MAKE make)
-	mark_as_advanced(DOXYFILE_MAKE)
-	if(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
-		if(PDFLATEX_COMPILER)
-			set(DOXYFILE_PDFLATEX "YES")
-		endif(PDFLATEX_COMPILER)
+		"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_HTML_DIR}")
 
-		add_custom_command(TARGET doxygen
-			POST_BUILD
-			COMMAND "${DOXYFILE_MAKE}"
-			COMMENT	"Running LaTeX for Doxygen documentation in ${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}..."
-			WORKING_DIRECTORY "${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
-	else(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
-		set(DOXYGEN_LATEX "NO")
-	endif(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+	# creating the doc target
+	get_target_property(DOC_TARGET doc TYPE)
+	if(NOT DOC_TARGET)
+		add_custom_target(doc)
+	endif(NOT DOC_TARGET)
 
-else(GENERATE_LATEX_API)
-	set(DOXYFILE_GENERATE_LATEX "NO")
-endif(GENERATE_LATEX_API)
+	add_dependencies(doc doxygen)
 
-#configuring the Doxyfile.in file to generate a doxygen configuration file
-configure_file(${CMAKE_SOURCE_DIR}/share/Doxyfile.in ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
+	### end new targets ###
 
-### end doxyfile configuration ###
+	### doxyfile configuration ###
 
+	# configuring doxyfile for html generation 
+	set(DOXYFILE_GENERATE_HTML "YES")
 
-### installing documentation ###
+	# configuring doxyfile to use dot executable if available
+	set(DOXYFILE_DOT "NO")
+	if(DOXYGEN_DOT_EXECUTABLE)
+		set(DOXYFILE_DOT "YES")
+	endif()
 
-install(DIRECTORY ${CMAKE_BINARY_DIR}/share/doc DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+	# configuring doxyfile for latex generation 
+	set(DOXYFILE_PDFLATEX "NO")
 
-### end installing documentation ###
+	if(GENERATE_LATEX_API)
+		# target to clean installed doc
+		set_property(DIRECTORY
+			APPEND PROPERTY
+			ADDITIONAL_MAKE_CLEAN_FILES
+			"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
+		set(DOXYFILE_GENERATE_LATEX "YES")
+		find_package(LATEX)
+		find_program(DOXYFILE_MAKE make)
+		mark_as_advanced(DOXYFILE_MAKE)
+		if(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+			if(PDFLATEX_COMPILER)
+				set(DOXYFILE_PDFLATEX "YES")
+			endif(PDFLATEX_COMPILER)
 
-endif(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND)
+			add_custom_command(TARGET doxygen
+				POST_BUILD
+				COMMAND "${DOXYFILE_MAKE}"
+				COMMENT	"Running LaTeX for Doxygen documentation in ${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}..."
+				WORKING_DIRECTORY "${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
+		else(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+			set(DOXYGEN_LATEX "NO")
+		endif(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+
+	else(GENERATE_LATEX_API)
+		set(DOXYFILE_GENERATE_LATEX "NO")
+	endif(GENERATE_LATEX_API)
+
+	#configuring the Doxyfile.in file to generate a doxygen configuration file
+	configure_file(${CMAKE_SOURCE_DIR}/share/doxygen/Doxyfile.in ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
+	### end doxyfile configuration ###
+
+	### installing documentation ###
+	install(DIRECTORY ${CMAKE_BINARY_DIR}/share/doc DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+
+	### end installing documentation ###
+
+endif(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND AND NOT GENERIC_DOXYFILE_IN-NOTFOUND)
+	set(BUILD_WITH_DOC OFF)
 endif(CMAKE_BUILD_TYPE MATCHES Release)
 endfunction(generate_API)
-
 
 ###################### !!!!!!!!!!!!!!!!!!!!! ####################
 ### DEBUT code a virer une fois le système de gestion de dépendences fini
@@ -333,9 +381,10 @@ macro(buildPureHeaderComponent c_name)
 	set(${PROJECT_NAME}_COMP_HEADER_${c_name}_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${c_name})
 	install(DIRECTORY ${${PROJECT_NAME}_COMP_HEADER_${c_name}_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.h")
 	install(DIRECTORY ${${PROJECT_NAME}_COMP_HEADER_${c_name}_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hpp")
+	install(DIRECTORY ${${PROJECT_NAME}_COMP_HEADER_${c_name}_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hh")
 	#updating global variables of the CMake process	
 	set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_COMPONENTS_HEADERS "${${PROJECT_NAME}_COMPONENTS_HEADERS};${c_name}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_COMPONENTS_LIBS "${${PROJECT_NAME}_COMPONENTS_LIBS};${c_name}" CACHE INTERNAL "")
 endmacro(buildPureHeaderComponent)
 
 
@@ -352,16 +401,16 @@ macro(buildLibComponent c_name used_libraries_list)
 	
 	file(GLOB_RECURSE ${PROJECT_NAME}_COMP_LIB_${c_name}_ALL_SOURCES "${c_name}/*.c" "${c_name}/*.cpp" "${c_name}/*.h" "${c_name}/*.hpp")
 	
-	add_library(${c_name}_st STATIC ${${PROJECT_NAME}_COMP_LIB_${c_name}_ALL_SOURCES})
-	target_link_libraries(${c_name}_st ${used_libraries_list})
-	add_library(${c_name} SHARED ${${PROJECT_NAME}_COMP_LIB_${c_name}_ALL_SOURCES})
-	target_link_libraries(${c_name} ${used_libraries_list})
+	add_library(${c_name}-st${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_COMP_LIB_${c_name}_ALL_SOURCES})
+	target_link_libraries(${c_name}-st${INSTALL_NAME_SUFFIX} ${used_libraries_list})
+	add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${${PROJECT_NAME}_COMP_LIB_${c_name}_ALL_SOURCES})
+	target_link_libraries(${c_name}${INSTALL_NAME_SUFFIX} ${used_libraries_list})
 
 	# installing library
-	INSTALL(TARGETS ${c_name} ${c_name}_st
-	RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}/${INSTALL_PATH_SUFFIX}
-	LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}/${INSTALL_PATH_SUFFIX}
-	ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}/${INSTALL_PATH_SUFFIX}
+	INSTALL(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} ${c_name}-st${INSTALL_NAME_SUFFIX}
+	RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
+	LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
+	ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
 	)
 
 	#updating global variables of the CMake process	
@@ -380,12 +429,12 @@ macro(buildAppComponent c_name used_libraries_list)
 
 	file(GLOB_RECURSE ${PROJECT_NAME}_COMP_APP_${c_name}_ALL_SOURCES "${c_name}/*.c" "${c_name}/*.cpp" "${c_name}/*.h" "${c_name}/*.hpp")
 	
-	add_executable(${c_name} ${${PROJECT_NAME}_COMP_APP_${c_name}_ALL_SOURCES})
-	target_link_libraries(${c_name} ${used_libraries_list})
+	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_COMP_APP_${c_name}_ALL_SOURCES})
+	target_link_libraries(${c_name}${INSTALL_NAME_SUFFIX} ${used_libraries_list})
 
 	# installing library
-	INSTALL(TARGETS ${c_name} 
-	RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}/${INSTALL_PATH_SUFFIX}
+	INSTALL(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} 
+	RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
 	)
 
 	#updating global variables of the CMake process	
@@ -400,7 +449,6 @@ endmacro(buildAppComponent)
 ##################################################################################
 macro(printComponentVariables)
 	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
-	message("pure headers : "${${PROJECT_NAME}_COMPONENTS_HEADERS})
 	message("libraries : "${${PROJECT_NAME}_COMPONENTS_LIBS})
 	message("applications : "${${PROJECT_NAME}_COMPONENTS_APPS})
 endmacro(printComponentVariables)
@@ -449,37 +497,37 @@ function (fill_Component_Target_Compilation c_name dep_name)
 if(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "APP"
 	OR ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "SHARED")
 	if(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
-	target_include_directories(${c_name} PUBLIC ${${dep_name}_INC_DIRS})
+		target_include_directories(${c_name} PUBLIC ${${dep_name}_INC_DIRS})
 	endif(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
 
 	if(NOT ${${dep_name}_DEFS} STREQUAL "")
-	target_compile_definitions(${c_name} PUBLIC ${${dep_name}_DEFS})
+		target_compile_definitions(${c_name} PUBLIC ${${dep_name}_DEFS})
 	endif(NOT ${${dep_name}_DEFS} STREQUAL "")
 
 elseif(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "STATIC")
 	if(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
-	target_include_directories(${c_name}_st PUBLIC ${${dep_name}_INC_DIRS})
+		target_include_directories(${c_name}-st PUBLIC ${${dep_name}_INC_DIRS})
 	endif(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
 
 	if(NOT ${${dep_name}_DEFS} STREQUAL "")
-	target_compile_definitions(${c_name}_st PUBLIC ${${dep_name}_DEFS})
+		target_compile_definitions(${c_name}-st PUBLIC ${${dep_name}_DEFS})
 	endif(NOT ${${dep_name}_DEFS} STREQUAL "")
 
 elseif(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "COMPLETE")
 	if(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
-	target_include_directories(${c_name} PUBLIC ${${dep_name}_INC_DIRS})
+		target_include_directories(${c_name} PUBLIC ${${dep_name}_INC_DIRS})
 	endif(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
 
 	if(NOT ${${dep_name}_DEFS} STREQUAL "")
-	target_compile_definitions(${c_name} PUBLIC ${${dep_name}_DEFS})
+		target_compile_definitions(${c_name} PUBLIC ${${dep_name}_DEFS})
 	endif(NOT ${${dep_name}_DEFS} STREQUAL "")
 
 	if(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
-	target_include_directories(${c_name}_st PUBLIC ${${dep_name}_INC_DIRS})
+		target_include_directories(${c_name}-st PUBLIC ${${dep_name}_INC_DIRS})
 	endif(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
 
 	if(NOT ${${dep_name}_DEFS} STREQUAL "")
-	target_compile_definitions(${c_name}_st PUBLIC ${${dep_name}_DEFS})
+		target_compile_definitions(${c_name}-st PUBLIC ${${dep_name}_DEFS})
 	endif(NOT ${${dep_name}_DEFS} STREQUAL "")
 	
 endif()#do nothing in case of a pure header component
@@ -500,14 +548,14 @@ elseif(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "SHARED")
 	endif(NOT ${${dep_name}_LINKS} STREQUAL "")
 elseif(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "STATIC")
 	if(NOT ${${dep_name}_LINKS} STREQUAL "")
-		target_link_libraries(${c_name}_st ${${dep_name}_LINKS})
+		target_link_libraries(${c_name}-st ${${dep_name}_LINKS})
 	endif(NOT ${${dep_name}_LINKS} STREQUAL "")
 elseif(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "COMPLETE")
 	if(NOT ${${dep_name}_LINKS} STREQUAL "")
 		target_link_libraries(${c_name} ${${dep_name}_LINKS})
 	endif(NOT ${${dep_name}_LINKS} STREQUAL "")
 	if(NOT ${${dep_name}_LINKS} STREQUAL "")
-		target_link_libraries(${c_name}_st ${${dep_name}_LINKS})
+		target_link_libraries(${c_name}-st ${${dep_name}_LINKS})
 	endif(NOT ${${dep_name}_LINKS} STREQUAL "")	
 endif()#do nothing in case of a pure header component
 
@@ -546,29 +594,31 @@ function(declare_Library_Component c_name type defs links exp_defs exp_links)
 		#defining shared and/or static targets for the library and
 		#adding the targets to the list of installed components when make install is called
 		if(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "STATIC")
-			add_library(${c_name}_st STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-			target_include_directories(${c_name}_st ${${PROJECT_NAME}_COMP_HEADER_${c_name}_INCLUDE_DIR})
-			manage_Additional_Component_Flags(${c_name}_st ${defs} ${links} ${exp_defs} ${exp_links})
-			INSTALL(TARGETS ${c_name}_st
-			ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}/${INSTALL_PATH_SUFFIX}
+			add_library(${c_name}-st${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
+			target_include_directories(${c_name}-st${INSTALL_NAME_SUFFIX} include)
+			manage_Additional_Component_Flags(${c_name}-st${INSTALL_NAME_SUFFIX} ${defs} ${links} ${exp_defs} ${exp_links})
+			INSTALL(TARGETS ${c_name}-st${INSTALL_NAME_SUFFIX}
+				ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
 			)
 		elseif(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "SHARED")
-			add_library(${c_name} SHARED ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-			target_include_directories(${c_name} ${${PROJECT_NAME}_COMP_HEADER_${c_name}_INCLUDE_DIR})			
-			manage_Additional_Component_Flags(${c_name} ${defs} ${links} ${exp_defs} ${exp_links})
-			INSTALL(TARGETS ${c_name}
-			LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}/${INSTALL_PATH_SUFFIX}
+			add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
+			target_include_directories(${c_name}${INSTALL_NAME_SUFFIX} include)			
+			manage_Additional_Component_Flags(${c_name}${INSTALL_NAME_SUFFIX} ${defs} ${links} ${exp_defs} ${exp_links})
+			INSTALL(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
+				LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
+				RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
 			)
 		elseif(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "COMPLETE")
-			add_library(${c_name}_st STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-			target_include_directories(${c_name}_st ${${PROJECT_NAME}_COMP_HEADER_${c_name}_INCLUDE_DIR})			
-			manage_Additional_Component_Flags(${c_name}_st ${defs} ${links} ${exp_defs} ${exp_links})
-			add_library(${c_name} SHARED ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-			target_include_directories(${c_name} ${${PROJECT_NAME}_COMP_HEADER_${c_name}_INCLUDE_DIR})
-			manage_Additional_Component_Flags(${c_name} ${defs} ${links} ${exp_defs} ${exp_links})
-			INSTALL(TARGETS ${c_name} ${c_name}_st
-			LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}/${INSTALL_PATH_SUFFIX}
-			ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}/${INSTALL_PATH_SUFFIX}
+			add_library(${c_name}-st${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
+			target_include_directories(${c_name}-st${INSTALL_NAME_SUFFIX} include)			
+			manage_Additional_Component_Flags(${c_name}-st${INSTALL_NAME_SUFFIX} ${defs} ${links} ${exp_defs} ${exp_links})
+			add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
+			target_include_directories(${c_name}${INSTALL_NAME_SUFFIX} include)
+			manage_Additional_Component_Flags(${c_name}${INSTALL_NAME_SUFFIX} ${defs} ${links} ${exp_defs} ${exp_links})
+			INSTALL(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} ${c_name}-st${INSTALL_NAME_SUFFIX}
+				LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
+				ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
+				RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
 			)
 		endif()
 	endif(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "HEADER")
@@ -605,11 +655,11 @@ function(declare_Application_Component c_name type defs links)
 	
 	# specifically managing examples 	
 	if(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "EXAMPLE") 
-		add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced
 		if(NOT BUILD_WITH_EXAMPLES) #examples are not built so no need to continue
 			unset(${PROJECT_NAME}_${c_name}_TYPE CACHE)
 			return()
 		endif(NOT BUILD_WITH_EXAMPLES)
+		add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced
 	endif(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "EXAMPLE")
 
 	#managing sources for the application
@@ -628,8 +678,8 @@ function(declare_Application_Component c_name type defs links)
 	
 	if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 		# adding the application to the list of installed components when make install is called (not for test applications)
-		INSTALL(TARGETS ${c_name} 
-		RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}/${INSTALL_PATH_SUFFIX}
+		INSTALL(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} 
+			RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
 		)
 	endif(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 
@@ -740,22 +790,22 @@ function(add_Component_Dependency c_name dep_name)
 
 #checking that arguments are correct
 if(NOT DEFINED ${dep_name}_TYPE)
-message("ERROR add_Component_Dependency : the dependency ${dep_name} has not been defined")
+	message("ERROR add_Component_Dependency : the dependency ${dep_name} has not been defined")
 endif(NOT DEFINED ${dep_name}_TYPE)
 
 if (NOT DEFINED ${PROJECT_NAME}_${c_name}_TYPE)
-message("ERROR add_Component_Dependency : the component ${c_name} has not been defined")
+	message("ERROR add_Component_Dependency : the component ${c_name} has not been defined")
 endif(NOT DEFINED ${PROJECT_NAME}_${c_name}_TYPE)
 
 if(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "HEADER")
-# specific case when the type of component is pure header 
-# => there is no target to populate with target_xxx functions
-#adding the dependency to the list of dependencies of the component
-set(${PROJECT_NAME}_${c_name}_DEPENDENCIES ${${PROJECT_NAME}_${c_name}_DEPENDENCIES};${dep_name} CACHE INTERNAL "")
-return() #no need to do more
+	# specific case when the type of component is pure header 
+	# => there is no target to populate with target_xxx functions
+	#adding the dependency to the list of dependencies of the component
+	set(${PROJECT_NAME}_${c_name}_DEPENDENCIES ${${PROJECT_NAME}_${c_name}_DEPENDENCIES};${dep_name} CACHE INTERNAL "")
+	return() #no need to do more
 else(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "HEADER")
-#adding the dependency to the list of dependencies of the component
-set(${PROJECT_NAME}_${c_name}_DEPENDENCIES ${${PROJECT_NAME}_${c_name}_DEPENDENCIES};${dep_name} CACHE INTERNAL "")
+	#adding the dependency to the list of dependencies of the component
+	set(${PROJECT_NAME}_${c_name}_DEPENDENCIES ${${PROJECT_NAME}_${c_name}_DEPENDENCIES};${dep_name} CACHE INTERNAL "")
 endif()
 
 # compile and link time operations have to be done
