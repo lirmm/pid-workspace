@@ -5,23 +5,24 @@
 set(	LICENSE_NAME 			"GPL")
 set(	LICENSE_VERSION			"3")
 set(	LICENSE_FULLNAME 		"GNU General Public License version 3")
-set(	LICENSE_DEFINITION_ORGANIZATION "Free Software Foundation")
+set(	LICENSE_AUTHORS 		"the Free Software Foundation")
 
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION 
 "
-/* 	This file is part of the program @PROJECT_NAME@
-*  	Program description : @${PROJECT_NAME}_DESCRIPTION@
-*  	Copyright (C) @YEAR@ @INVOLVED_INSTITUTIONS_AND_AUTHORS@
-*	
-*	This program is free software: you can redistribute it and/or modify
-*	it under the terms of the GNU General Public License as published by
-*	the Free Software Foundation, either version 3 of the License, or
-*	(at your option) any later version.
-*	This program is distributed in the hope that it will be useful,
+/* 	This file is part of the program ${PROJECT_NAME}
+*  	Program description : ${${PROJECT_NAME}_DESCRIPTION}
+*  	Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}. 
+*	All Right reserved.
+*
+*	This software is free software: you can redistribute it and/or modify
+*	it under the terms of the ${LICENSE_NAME} license as published by
+*	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} 
+*	of the License, or (at your option) any later version.
+*	This software is distributed in the hope that it will be useful,
 *	but WITHOUT ANY WARRANTY; without even the implied warranty of
 *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*	GNU General Public License for more details.
+*	${LICENSE_NAME} License for more details.
 *
 *	You should have received a copy of the GNU General Public License
 *	along with this program. If not, see <http://www.gnu.org/licenses/>.
@@ -29,7 +30,28 @@ set(	LICENSE_HEADER_FILE_DESCRIPTION
 ")
 
 set(	LICENSE_LEGAL_TERMS
-"            	     GNU GENERAL PUBLIC LICENSE
+"            	     
+Software license for the software named : ${PROJECT_NAME}
+
+Software description : ${${PROJECT_NAME}_DESCRIPTION}
+Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}
+
+This software is free software: you can redistribute it and/or modify it under the terms of the ${LICENSE_NAME} license as published by
+${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software 
+is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+
+Information about license applying to this software:
+License : ${LICENSE_NAME}
+Official name of the license : ${LICENSE_FULLNAME} 
+Version of the license : ${LICENSE_VERSION}
+License authors : ${LICENSE_AUTHORS}
+Additionnal information can be found on the official website of the GNU licenses family (http://www.gnu.org/licenses/)
+
+Legal terms of the license are reproduced below:
+
+
+		     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>

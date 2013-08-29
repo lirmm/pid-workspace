@@ -25,7 +25,7 @@ set(PACKAGE_neobotix-mpo700-robot_SEARCH_PATH
     "path to the package install dir containing versions of the neobotix-mpo700-robot package"
   )
 mark_as_advanced(PACKAGE_neobotix-mpo700-robot_SEARCH_PATH)
-include(Package_Finding_Functions)
+include(Package_Finding)
 check_Directory_Exists(${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH})
 if(${RETURN_CHECK_DIRECTORY_EXISTS})
 	# at this stage the only thing to do is to check for versions

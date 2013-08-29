@@ -5,30 +5,49 @@
 set(LICENSE_NAME "ModifiedBSD")
 set(LICENSE_FULLNAME "BSD 3 Clause License")
 set(LICENSE_VERSION "1")
-set(LICENSE_DEFINITION_ORGANIZATION "Free Software Fundation")
+set(LICENSE_AUTHORS "the University of California Berkeley")
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION 
-"/*
-*	This file is part of the program @PROJECT_NAME@
-*  	Program description : @${PROJECT_NAME}_DESCRIPTION@
-*	Copyright (C) @YEAR@ @INVOLVED_INSTITUTIONS_AND_AUTHORS@. All rights reserved.
+"
+/* 	This file is part of the program ${PROJECT_NAME}
+*  	Program description : ${${PROJECT_NAME}_DESCRIPTION}
+*  	Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}. All Right reserved.
 *
 *	This software is free software: you can redistribute it and/or modify
-*	it under the terms of the Modified BSD (also called BSD 3 CLause) 
-*	License as published by the Free Software Fundation institution.
+*	it under the terms of the ${LICENSE_NAME} license as published by
+*	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} 
+*	of the License, or (at your option) any later version.
 *	This software is distributed in the hope that it will be useful,
 *	but WITHOUT ANY WARRANTY; without even the implied warranty of
 *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*	BSD 3 Clause License for more details.
+*	${LICENSE_NAME} License for more details.
 *
 *	You should have received a copy of the BSD 3 Clause License
-*	along with this software. If not, it can be found on the official website 
-*	of the CeCILL licenses family (http://www.cecill.info/index.en.html).
+*	along with this software. If not see <http://opensource.org/licenses>.
 */
 ")
 
 set(	LICENSE_LEGAL_TERMS
 "
+Software license for the software named : ${PROJECT_NAME}
+
+Software description : ${${PROJECT_NAME}_DESCRIPTION}
+Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}
+
+This software is free software: you can redistribute it and/or modify it under the terms of the ${LICENSE_NAME} license as published by
+${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software 
+is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+
+Information about license applying to this software:
+License : ${LICENSE_NAME}
+Official name of the license : ${LICENSE_FULLNAME} 
+Version of the license : ${LICENSE_VERSION}
+License authors : ${LICENSE_AUTHORS}
+Additionnal information can be found on the official website of the GNU licenses family (http://www.gnu.org/licenses/)
+
+Legal terms of the license are reproduced below:
+
 BSD 3 Clause License
 
 Redistribution and use in source and binary forms, with or without

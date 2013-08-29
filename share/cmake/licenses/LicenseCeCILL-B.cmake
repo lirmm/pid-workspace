@@ -5,24 +5,24 @@
 set(	LICENSE_NAME 			"CeCILL-B")
 set(	LICENSE_VERSION			"1")
 set(	LICENSE_FULLNAME 		"Contrat de license de logiciel libre CeCILL-B")
-set(	LICENSE_DEFINITION_ORGANIZATION "CEA-CNRS-INRIA")
+set(	LICENSE_AUTHORS 		"the CEA CNRS INRIA")
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION 
 "
-/* 	This file is part of the program @PROJECT_NAME@
-*  	Program description : @${PROJECT_NAME}_DESCRIPTION@
-*  	Copyright (C) @YEAR@ @INVOLVED_INSTITUTIONS_AND_AUTHORS@
+/* 	This file is part of the program ${PROJECT_NAME}
+*  	Program description : ${${PROJECT_NAME}_DESCRIPTION}
+*  	Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}. All Right reserved.
 *
 *	This software is free software: you can redistribute it and/or modify
-*	it under the terms of the CeCILL-B as published by
-*	the CEA CNRS INRIA institutions, either version 1 of the License, or
-*	(at your option) any later version.
+*	it under the terms of the ${LICENSE_NAME} license as published by
+*	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} 
+*	of the License, or (at your option) any later version.
 *	This software is distributed in the hope that it will be useful,
 *	but WITHOUT ANY WARRANTY; without even the implied warranty of
 *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*	CeCILL-B License for more details.
+*	${LICENSE_NAME} License for more details.
 *
-*	You should have received a copy of the CeCILL-B License
+*	You should have received a copy of the ${LICENSE_NAME} License
 *	along with this software. If not, it can be found on the official website 
 *	of the CeCILL licenses family (http://www.cecill.info/index.en.html).
 */
@@ -31,6 +31,27 @@ set(	LICENSE_HEADER_FILE_DESCRIPTION
 
 set(	LICENSE_LEGAL_TERMS
 "
+Software license for the software named : ${PROJECT_NAME}
+
+Software description : ${${PROJECT_NAME}_DESCRIPTION}
+Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}
+
+This software is free software: you can redistribute it and/or modify it under the terms of the ${LICENSE_NAME} license as published by
+ ${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software 
+is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+
+Information about license applying to this software:
+License : ${LICENSE_NAME}
+Official name of the license : ${LICENSE_FULLNAME} 
+Version of the license : ${LICENSE_VERSION}
+License authors : ${LICENSE_AUTHORS}
+Additionnal information can be found on the official website of the CeCILL licenses family (http://www.cecill.info/index.en.html)
+
+Legal terms of the license are reproduced below (french and english versions are provided):
+
+----------------------- French Version ---------------------------
+
 CONTRAT DE LICENCE DE LOGICIEL LIBRE CeCILL-B
 
 Version 1.0 du 2006-09-05.

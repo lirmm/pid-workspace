@@ -3,88 +3,136 @@
 # A convenience set of macros to create adequate variables in the context of the parent scope.
 # used to define components of a package
 #
+##################################################################################
+#######################  auxiliary package management functions ##################
+##################################################################################
+
+###
+macro(add_Author author institution)
+	list(APPEND ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${author}(${institution})")
+endmacro(add_Author author insitution)
+
+###
+macro(add_Caterory category_spec)
+	list(APPEND ${PROJECT_NAME}_CATEGORIES ${category_spec})
+endmacro(add_Caterory category_spec)
+
+###
+macro(set_Version major minor patch)
+	#################################################
+	################## setting version ##############
+	#################################################
+	set (${PROJECT_NAME}_VERSION_MAJOR ${major} CACHE INTERNAL "")
+	set (${PROJECT_NAME}_VERSION_MINOR ${minor} CACHE INTERNAL "")
+	set (${PROJECT_NAME}_VERSION_PATCH ${patch} CACHE INTERNAL "")
+	set (${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH} CACHE INTERNAL "")
+	message(STATUS "version currently built = "${${PROJECT_NAME}_VERSION})
+
+	#################################################
+	############ MANAGING install paths #############
+	#################################################
+	if(USE_LOCAL_DEPLOYMENT)
+		set(${PROJECT_NAME}_DEPLOY_PATH own CACHE INTERNAL "")
+	else(USE_LOCAL_DEPLOYMENT)
+		set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
+	endif(USE_LOCAL_DEPLOYMENT) 
+
+	set ( ${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
+endmacro(set_Version major minor patch)
+
+###
+macro(generate_License_File)
+
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	if(	DEFINED ${PROJECT_NAME}_LICENSE 
+		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+	
+		find_file(LICENSE   "License${${PROJECT_NAME}_LICENSE}.cmake"
+				PATHS "${WORKSPACE_DIR}/share/cmake/system"
+				NO_DEFAULT_PATH
+				DOC "Path to the license configuration file")
+		if(LICENSE_IN-NOTFOUND)
+			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
+		else(LICENSE_IN-NOTFOUND)
+			include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
+			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
+		endif(LICENSE_IN-NOTFOUND)
+
+	endif()
+endif()
+endmacro(generate_License_File)
 
 ##################################################################################
 ###########################  declaration of the package ##########################
 ##################################################################################
-macro(declare_Package major minor patch author institution description)
+macro(declare_Package author institution year license address description)
 
-set(${PROJECT_NAME}_MAIN_AUTHOR ${author} CACHE INTERNAL "")
-set(${PROJECT_NAME}_MAIN_INSTITUTION ${institution} CACHE INTERNAL "")
-set(${PROJECT_NAME}_DESCRIPTION ${description} CACHE INTERNAL "")
+#################################################
+############ Initializing variables #############
+#################################################
+set(${PROJECT_NAME}_MAIN_AUTHOR "${author}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_MAIN_INSTITUTION "${institution}" CACHE INTERNAL "")
 
-# generic variables
+set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${author}(${institution})" CACHE INTERNAL "")
 
-set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
-set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
-
-# basic build options
-option(BUILD_WITH_EXAMPLES "Package builds examples" ON)
-option(BUILD_WITH_TESTS "Package uses tests" OFF)
-option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
-option(BUILD_WITH_DOC "Package generates documentation" ON)
-
-if(BUILD_WITH_PRINT_MESSAGES)
-	add_definitions(-DPRINT_MESSAGES)
-endif(BUILD_WITH_PRINT_MESSAGES)
-
-# setting the current version number
-set (${PROJECT_NAME}_VERSION_MAJOR ${major} CACHE INTERNAL "")
-set (${PROJECT_NAME}_VERSION_MINOR ${minor} CACHE INTERNAL "")
-set (${PROJECT_NAME}_VERSION_PATCH ${patch} CACHE INTERNAL "")
-set (${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH} CACHE INTERNAL "")
-
-message("version currently built = "${${PROJECT_NAME}_VERSION}) 
-
-# configuring installation process into frameworks: by default
-# version specific deployment is selected except if users define
-# USE_CUSTOM_DEPLOYMENT variable
-option(USE_LOCAL_DEPLOYMENT "Package uses tests" ON)
-if(USE_LOCAL_DEPLOYMENT)
-MESSAGE("Deployment : Local")
-set(${PROJECT_NAME}_DEPLOY_PATH own CACHE INTERNAL "")
-else(USE_LOCAL_DEPLOYMENT)
-MESSAGE("Deployment : version ${${PROJECT_NAME}_VERSION}")
-set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
-endif(USE_LOCAL_DEPLOYMENT)
-
-set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
-
+set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
+set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
+set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
+set(${PROJECT_NAME}_CATEGORIES "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS "" CACHE INTERNAL "")
 
-##### finding system dependencies #####
-SET(${PROJECT_NAME}_EXTERNAL_INCLUDE_DIRS "" CACHE INTERNAL "")
-SET(${PROJECT_NAME}_EXTERNAL_LIB_DIRS "" CACHE INTERNAL "")
-SET(${PROJECT_NAME}_EXTERNAL_LIBS "" CACHE INTERNAL "")
-SET(${PROJECT_NAME}_EXTERNAL_APPS "" CACHE INTERNAL "")
-SET(${PROJECT_NAME}_EXTERNAL_APP_DIRS "" CACHE INTERNAL "")
+#################################################
+############ MANAGING generic paths #############
+#################################################
+set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
+set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
+set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
 
-set ( ${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
-set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
-set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
-set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
-set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
+#################################################
+############ DECLARING options ##################
+#################################################
+option(BUILD_WITH_EXAMPLES "Package builds examples" ON)
+option(BUILD_WITH_TESTS "Package uses tests" OFF)
+option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
+option(BUILD_WITH_DOC "Package generates documentation" ON)
+option(USE_LOCAL_DEPLOYMENT "Package uses tests" ON)
+if(BUILD_WITH_PRINT_MESSAGES)
+	add_definitions(-DPRINT_MESSAGES)
+endif(BUILD_WITH_PRINT_MESSAGES)
 
+#################################################
+############ MANAGING build mode ################
+#################################################
 if(${CMAKE_BINARY_DIR} MATCHES release)
-set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
-set ( INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
+	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
+	set ( INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
 elseif(${CMAKE_BINARY_DIR} MATCHES debug)
-set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
-set ( INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
+	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
+	set ( INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
 endif(${CMAKE_BINARY_DIR} MATCHES release)
 
-endmacro(declare_Package)
+endmacro(declare_Package author institution year license address description)
+
+
 
 ##################################################################################
 ################################### building the package #########################
 ##################################################################################
 macro(build_Package)
 
-#################################################
-############ MANAGING CMAKE scripts #############
-#################################################
+##########################################################
+############ MANAGING non source files ###################
+##########################################################
+
+generate_License_File() #license
+install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
 
 # generating/installing the generic cmake find file for the package 
 configure_file(${WORKSPACE_DIR}/share/cmake/system/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
@@ -101,10 +149,8 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_
 ############ MANAGING the BUILD #################
 #################################################
 
-# if all dependencies are satisfied
+# if all dependencies are satisfied --> TODO : remove this include
 include_directories(include)
-include_directories(${${PROJECT_NAME}_EXTERNAL_INCLUDE_DIRS})
-link_directories(${${PROJECT_NAME}_EXTERNAL_LIB_DIRS})
 
 #recursive call into subdirectories to build/install/test the package
 add_subdirectory(src)
@@ -268,7 +314,7 @@ endif(NOT DOXYGEN_FOUND)
 if(DOXYFILE_IN-NOTFOUND)
 	message(WARNING "Doxyfile not found in the share folder of your package !! Getting the standard doxygen template file from workspace ... ")
 	find_file(GENERIC_DOXYFILE_IN   "Doxyfile.in"
-					PATHS "${WORKSPACE_DIR}/share/doxygen"
+					PATHS "${WORKSPACE_DIR}/share/cmake/system"
 					NO_DEFAULT_PATH
 					DOC "Path to the generic doxygen configuration template file")
 	if(GENERIC_DOXYFILE_IN-NOTFOUND)
