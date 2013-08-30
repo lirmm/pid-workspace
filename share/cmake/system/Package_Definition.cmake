@@ -9,16 +9,16 @@
 
 ###
 macro(add_Author author institution)
-	list(APPEND ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${author}(${institution})")
+	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS} "${author}(${institution})" CACHE INTERNAL "")
 endmacro(add_Author author insitution)
 
 ###
 macro(add_Caterory category_spec)
-	list(APPEND ${PROJECT_NAME}_CATEGORIES ${category_spec})
+	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category_spec} CACHE INTERNAL "")
 endmacro(add_Caterory category_spec)
 
 ###
-macro(set_Version major minor patch)
+macro(set_Current_Version major minor patch)
 	#################################################
 	################## setting version ##############
 	#################################################
@@ -42,7 +42,7 @@ macro(set_Version major minor patch)
 	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
-endmacro(set_Version major minor patch)
+endmacro(set_Current_Version major minor patch)
 
 ###
 macro(generate_License_File)
@@ -70,6 +70,36 @@ endmacro(generate_License_File)
 ###########################  declaration of the package ##########################
 ##################################################################################
 macro(declare_Package author institution year license address description)
+#################################################
+############ MANAGING build mode ################
+#################################################
+if(${CMAKE_BINARY_DIR} MATCHES release)
+	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
+	set ( INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
+	set ( USE_PATH_SUFFIX "" CACHE INTERNAL "")
+elseif(${CMAKE_BINARY_DIR} MATCHES debug)
+	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
+	set ( INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
+	set ( USE_PATH_SUFFIX "_DEBUG" CACHE INTERNAL "")
+elseif(${CMAKE_BINARY_DIR} MATCHES build)
+	if(NOT EXISTS ${CMAKE_BINARY_DIR}/debug OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory debug WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+	endif()
+	if(NOT EXISTS ${CMAKE_BINARY_DIR}/release OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/release)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory release WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+	endif()
+	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
+	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
+
+	#need to create targets
+	add_custom_target(build ALL
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
+	)
+	return()
+else()
+	return()
+endif(${CMAKE_BINARY_DIR} MATCHES release)
 
 #################################################
 ############ Initializing variables #############
@@ -106,17 +136,6 @@ option(USE_LOCAL_DEPLOYMENT "Package uses tests" ON)
 if(BUILD_WITH_PRINT_MESSAGES)
 	add_definitions(-DPRINT_MESSAGES)
 endif(BUILD_WITH_PRINT_MESSAGES)
-
-#################################################
-############ MANAGING build mode ################
-#################################################
-if(${CMAKE_BINARY_DIR} MATCHES release)
-	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
-	set ( INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
-elseif(${CMAKE_BINARY_DIR} MATCHES debug)
-	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
-	set ( INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
-endif(${CMAKE_BINARY_DIR} MATCHES release)
 
 ########################################################################
 ############ inclusion of required macros and functions ################
@@ -199,7 +218,7 @@ add_subdirectory(share)
 #					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
 #				DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
 #				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
-			)
+#			)
 #	else(UNIX AND NOT APPLE) #apple install
 #		add_custom_target(package_install
 #			   	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
@@ -461,9 +480,9 @@ macro(buildLibComponent c_name used_libraries_list)
 
 	# installing library
 	INSTALL(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} ${c_name}-st${INSTALL_NAME_SUFFIX}
-	RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
-	LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
-	ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
+		RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
+		LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
+		ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
 	)
 
 	#updating global variables of the CMake process	
@@ -623,11 +642,14 @@ function(declare_Library_Component c_name type defs links exp_defs exp_links)
 	#indicating that the component has been declared and need to be completed
 	if(${type} STREQUAL "HEADER"
 	OR ${type} STREQUAL "STATIC"
-	OR ${type} STREQUAL "SHARED"
-	OR ${type} STREQUAL "COMPLETE")
+	OR ${type} STREQUAL "SHARED")
 		set(${PROJECT_NAME}_${c_name}_TYPE ${type} CACHE INTERNAL "")
+	elseif(${type} STREQUAL "COMPLETE")
+		
 	else()#by default a library is COMPLETE (header + static + shared)
+		declare_Library_Component()
 		set(${PROJECT_NAME}_${c_name}_TYPE "COMPLETE" CACHE INTERNAL "")
+		return()
 	endif()
 
 	### managing headers ###

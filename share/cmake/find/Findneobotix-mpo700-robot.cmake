@@ -3,12 +3,12 @@
 ####################################################
 macro(exitFindScript message_to_send)
 	if(${neobotix-mpo700-robot_FIND_REQUIRED})
-		message(FATAL_ERROR message_to_send)#fatal error
+		message(SEND_ERROR message_to_send)#fatal error
 		return()
 	elseif(${neobotix-mpo700-robot_FIND_QUIETLY})
 		return()#simply exitting
 	else(${neobotix-mpo700-robot_FIND_QUIETLY})
-		message(message_to_send)#simple notification message
+		message(STATUS message_to_send)#simple notification message
 		return() 
 	endif(${neobotix-mpo700-robot_FIND_REQUIRED})
 endmacro(exitFindScript message_to_send)
@@ -25,7 +25,7 @@ set(PACKAGE_neobotix-mpo700-robot_SEARCH_PATH
     "path to the package install dir containing versions of the neobotix-mpo700-robot package"
   )
 mark_as_advanced(PACKAGE_neobotix-mpo700-robot_SEARCH_PATH)
-include(Package_Finding)
+
 check_Directory_Exists(${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH})
 if(${RETURN_CHECK_DIRECTORY_EXISTS})
 	# at this stage the only thing to do is to check for versions
@@ -67,8 +67,7 @@ if(${RETURN_CHECK_DIRECTORY_EXISTS})
 		set(neobotix-mpo700-robot_VERSION_${neobotix-mpo700-robot_VERSION_STRING} TRUE)
 		set(neobotix-mpo700-robot_ROOT_DIR ${PATH_TO_PACKAGE_VERSION})
 		#now configuring exported variables
-		set(PACKAGE_TO_CONFIG "neobotix-mpo700-robot")
-		include(Package_Configuration)
+		configure_Package_Build_Variables(neobotix-mpo700-robot neobotix-mpo700-robot_ROOT_DIR)
 	else(${VERSION_HAS_BEEN_FOUND})#no adequate version found
 		exitFindScript("The package neobotix-mpo700-robot with version ${neobotix-mpo700-robot_FIND_VERSION} cannot be found")
 	endif(${VERSION_HAS_BEEN_FOUND})
