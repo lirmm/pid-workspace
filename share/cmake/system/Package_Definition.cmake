@@ -118,6 +118,13 @@ elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 	set ( INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
 endif(${CMAKE_BINARY_DIR} MATCHES release)
 
+########################################################################
+############ inclusion of required macros and functions ################
+########################################################################
+#TODO uncomment to test
+#include(Package_Finding)
+#include(Package_Configuration)
+
 endmacro(declare_Package author institution year license address description)
 
 
@@ -162,93 +169,93 @@ add_subdirectory(share)
 ##### MANAGING the SYSTEM PACKAGING #############
 #################################################
 #TODO Il faudrait packager les libs debug ET release d'un coup !! (PAS facile avec CMAKE) 
-option(GENERATE_INSTALLER "Package generate an OS installer for linux with tgz and if possible debian" OFF)
-if(GENERATE_INSTALLER)
-	include(InstallRequiredSystemLibraries)
-	set(CPACK_GENERATOR TGZ)
-	set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-	set(CPACK_PACKAGE_CONTACT ${${PROJECT_NAME}_MAIN_AUTHOR})
-	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${${PROJECT_NAME}_DESCRIPTION})
-	set(CPACK_PACKAGE_VENDOR ${${PROJECT_NAME}_MAIN_INSTITUTION})
-	set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/license.txt)#TODO change with binary dir and generate the file !!
-	set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
-	set(CPACK_PACKAGE_VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
-	set(CPACK_PACKAGE_VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
-	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
-	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
+#option(GENERATE_INSTALLER "Package generate an OS installer for linux with tgz and if possible debian" OFF)
+#if(GENERATE_INSTALLER)
+#	include(InstallRequiredSystemLibraries)
+#	set(CPACK_GENERATOR TGZ)
+#	set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+#	set(CPACK_PACKAGE_CONTACT ${${PROJECT_NAME}_MAIN_AUTHOR})
+#	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${${PROJECT_NAME}_DESCRIPTION})
+#	set(CPACK_PACKAGE_VENDOR ${${PROJECT_NAME}_MAIN_INSTITUTION})
+#	set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/license.txt)#TODO change with binary dir and generate the file !!
+#	set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
+#	set(CPACK_PACKAGE_VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
+#	set(CPACK_PACKAGE_VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
+#	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
+#	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
+#
+#	if(UNIX AND NOT APPLE)
+#		list(APPEND CPACK_GENERATOR DEB)
+#	endif(UNIX AND NOT APPLE)
+#	include(CPack)
 
-	if(UNIX AND NOT APPLE)
-		list(APPEND CPACK_GENERATOR DEB)
-	endif(UNIX AND NOT APPLE)
-	include(CPack)
 
-
-	if(UNIX AND NOT APPLE) #linux install
-		add_custom_target(package_install
-				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-				DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
-					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
-				DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
+#	if(UNIX AND NOT APPLE) #linux install
+#		add_custom_target(package_install
+#				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+#					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+#				DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+#				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
+#					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
+#				DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+#				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
 			)
-	else(UNIX AND NOT APPLE) #apple install
-		add_custom_target(package_install
-			   	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tag.gz in ${${PROJECT_NAME}_INSTALL_PATH}/installers" 						 
-			)
-	endif(UNIX AND NOT APPLE)
-
-endif(GENERATE_INSTALLER)
+#	else(UNIX AND NOT APPLE) #apple install
+#		add_custom_target(package_install
+#			   	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+#					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
+#				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tag.gz in ${${PROJECT_NAME}_INSTALL_PATH}/installers" 						 
+#			)
+#	endif(UNIX AND NOT APPLE)
+#
+#endif(GENERATE_INSTALLER)
 
 #################################################
 ######### MANAGING global make commands #########
 #################################################
 
 #creating a global build command
-if(GENERATE_INSTALLER)
-	if(CMAKE_BUILD_TYPE MATCHES Release)
-		if(${BUILD_WITH_TESTS})
-			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL}
-				COMMAND ${CMAKE_BUILD_TOOL} test
-				COMMAND ${CMAKE_BUILD_TOOL} doc 
-				COMMAND ${CMAKE_BUILD_TOOL} install
-				COMMAND ${CMAKE_BUILD_TOOL} package
-				COMMAND ${CMAKE_BUILD_TOOL} package_install
-			) 
-		else(${BUILD_WITH_TESTS})
-			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL}
-				COMMAND ${CMAKE_BUILD_TOOL} doc 
-				COMMAND ${CMAKE_BUILD_TOOL} install
-				COMMAND ${CMAKE_BUILD_TOOL} package
-				COMMAND ${CMAKE_BUILD_TOOL} package_install
-			) 
-		endif(${BUILD_WITH_TESTS})
-	else(CMAKE_BUILD_TYPE MATCHES Release)
-		if(${BUILD_WITH_TESTS})
-			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL} 
-				COMMAND ${CMAKE_BUILD_TOOL} test
-				COMMAND ${CMAKE_BUILD_TOOL} install
-				COMMAND ${CMAKE_BUILD_TOOL} package
-				COMMAND ${CMAKE_BUILD_TOOL} package_install
-			) 
-		else(${BUILD_WITH_TESTS})
-			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL} 
-				COMMAND ${CMAKE_BUILD_TOOL} install
-				COMMAND ${CMAKE_BUILD_TOOL} package
-				COMMAND ${CMAKE_BUILD_TOOL} package_install
-			)  
-		endif(${BUILD_WITH_TESTS})
-
-	endif(CMAKE_BUILD_TYPE MATCHES Release)
-
-else(GENERATE_INSTALLER)
+#if(GENERATE_INSTALLER)
+#	if(CMAKE_BUILD_TYPE MATCHES Release)
+#		if(${BUILD_WITH_TESTS})
+#			add_custom_target(build 
+#				COMMAND ${CMAKE_BUILD_TOOL}
+#				COMMAND ${CMAKE_BUILD_TOOL} test
+#				COMMAND ${CMAKE_BUILD_TOOL} doc 
+#				COMMAND ${CMAKE_BUILD_TOOL} install
+#				COMMAND ${CMAKE_BUILD_TOOL} package
+#				COMMAND ${CMAKE_BUILD_TOOL} package_install
+#			) 
+#		else(${BUILD_WITH_TESTS})
+#			add_custom_target(build 
+#				COMMAND ${CMAKE_BUILD_TOOL}
+#				COMMAND ${CMAKE_BUILD_TOOL} doc 
+#				COMMAND ${CMAKE_BUILD_TOOL} install
+#				COMMAND ${CMAKE_BUILD_TOOL} package
+#				COMMAND ${CMAKE_BUILD_TOOL} package_install
+#			) 
+#		endif(${BUILD_WITH_TESTS})
+#	else(CMAKE_BUILD_TYPE MATCHES Release)
+#		if(${BUILD_WITH_TESTS})
+#			add_custom_target(build 
+#				COMMAND ${CMAKE_BUILD_TOOL} 
+#				COMMAND ${CMAKE_BUILD_TOOL} test
+#				COMMAND ${CMAKE_BUILD_TOOL} install
+#				COMMAND ${CMAKE_BUILD_TOOL} package
+#				COMMAND ${CMAKE_BUILD_TOOL} package_install
+#			) 
+#		else(${BUILD_WITH_TESTS})
+#			add_custom_target(build 
+#				COMMAND ${CMAKE_BUILD_TOOL} 
+#				COMMAND ${CMAKE_BUILD_TOOL} install
+#				COMMAND ${CMAKE_BUILD_TOOL} package
+#				COMMAND ${CMAKE_BUILD_TOOL} package_install
+#			)  
+#		endif(${BUILD_WITH_TESTS})
+#
+#	endif(CMAKE_BUILD_TYPE MATCHES Release)
+#
+#else(GENERATE_INSTALLER)
 	if(CMAKE_BUILD_TYPE MATCHES Release)
 		if(${BUILD_WITH_TESTS})
 			add_custom_target(build 
@@ -280,7 +287,7 @@ else(GENERATE_INSTALLER)
 			) 
 		endif(${BUILD_WITH_TESTS})
 	endif(CMAKE_BUILD_TYPE MATCHES Release)
-endif(GENERATE_INSTALLER)
+#endif(GENERATE_INSTALLER)
 
 endmacro(build_Package)
 

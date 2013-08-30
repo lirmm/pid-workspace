@@ -135,23 +135,6 @@ endfunction(check_Local_Or_Newest_Version package_name package_framework major_v
 ##################auxiliary functions to check components info  ##################
 ##################################################################################
 
-#checking existence of config files
-macro(check_Config_Files CONFIG_FILES_FOUND package_path package_name component_name)
-set(CONFIG_FILES_FOUND TRUE)
-if(DEFINED ${package_name}_${component_name}_CONFIG_FILES)
-
-	foreach(config_file IN ITEMS ${${package_name}_${component_name}_CONFIG_FILES})
-		find_file(PATH_TO_CONFIG NAMES ${config_file} PATHS ${package_path}/config/${component_name} NO_DEFAULT_PATH)
-		if(PATH_TO_CONFIG-NOTFOUND)
-			set(CONFIG_FILES_FOUND FALSE)
-			break()
-		endif()
-	endforeach()
-endif()
-
-endmacro(check_Config_Files package_path package_name component_name)
-
-
 #checking elements of a component
 function(check_Component_Elements_Exist package_path package_name component_name)
 set(COMPONENT_ELEMENT_NOTFOUND TRUE PARENT_SCOPE)
@@ -169,7 +152,7 @@ if(idx EQUAL -1)#the component is NOT an application
 		if(DEFINED ${package_name}_${component_name}_HEADERS)#a library must have HEADERS defined otherwise ERROR
 			#checking existence of all its exported headers			
 			foreach(header IN ITEMS ${${package_name}_${component_name}_HEADERS})
-				find_file(PATH_TO_HEADER NAMES ${header} PATHS ${package_path}/include/${component_name} NO_DEFAULT_PATH)
+				find_file(PATH_TO_HEADER NAMES ${header} PATHS ${package_path}/include/${${package_name}_${component_name}_HEADER_DIR_NAME} NO_DEFAULT_PATH)
 				if(PATH_TO_HEADER-NOTFOUND)
 					return()
 				endif()
@@ -178,47 +161,29 @@ if(idx EQUAL -1)#the component is NOT an application
 			return()	
 		endif()
 		#now checking for binaries if necessary
-		if(${${package_name}_${component_name}_TYPE} STREQUAL "COMPLETE")
-			#shared version
-			find_library(PATH_TO_LIB NAMES ${component_name} PATHS ${package_path}/lib NO_DEFAULT_PATH)
-			if(PATH_TO_EXE-NOTFOUND)
+		if(	${${package_name}_${component_name}_TYPE} STREQUAL "STATIC"
+			OR ${${package_name}_${component_name}_TYPE} STREQUAL "SHARED")
+			#checking release and debug binaries (at least one is required)
+			find_library(	PATH_TO_LIB 
+					NAMES ${${package_name}_${component_name}_BINARY_NAME} ${${package_name}_${component_name}_BINARY_NAME_DEBUG}
+					PATHS ${package_path}/lib NO_DEFAULT_PATH)
+			if(PATH_TO_LIB-NOTFOUND)
 				return()
-			endif()
-			#static version
-			find_library(PATH_TO_LIB NAMES ${component_name}-st PATHS ${package_path}/lib NO_DEFAULT_PATH)
-			if(PATH_TO_EXE-NOTFOUND)
-				return()
-			endif()
-		elseif(${${package_name}_${component_name}_TYPE} STREQUAL "STATIC")
-			find_library(PATH_TO_LIB NAMES ${component_name}-st PATHS ${package_path}/lib NO_DEFAULT_PATH)
-			if(PATH_TO_EXE-NOTFOUND)
-				return()
-			endif()
-		elseif(${${package_name}_${component_name}_TYPE} STREQUAL "SHARED")
-			find_library(PATH_TO_LIB NAMES ${component_name} PATHS ${package_path}/lib NO_DEFAULT_PATH)
-			if(PATH_TO_EXE-NOTFOUND)
-				return()
-			endif()
+			endif()			
 		endif()
-		#optionally checking for config files
-		check_Config_Files(CONFIG_FILES_FOUND ${package_path} ${package_name} ${component_name})
-		if(${CONFIG_FILES_FOUND})
-			set(COMPONENT_ELEMENT_NOTFOUND FALSE  PARENT_SCOPE)
-		endif(${CONFIG_FILES_FOUND})
+		set(COMPONENT_ELEMENT_NOTFOUND FALSE  PARENT_SCOPE)
 	endif()
 
 else()#the component is an application
 	if(${${package_name}_${component_name}_TYPE} STREQUAL "APP")
 		#now checking for binary
-		find_program(PATH_TO_EXE NAMES ${component_name} PATHS ${package_path}/bin NO_DEFAULT_PATH)
+		find_program(	PATH_TO_EXE 
+				NAMES ${${package_name}_${component_name}_BINARY_NAME} ${${package_name}_${component_name}_BINARY_NAME_DEBUG}
+				PATHS ${package_path}/bin NO_DEFAULT_PATH)
 		if(PATH_TO_EXE-NOTFOUND)
 			return()
 		endif()
-		#optionally checking for config files
-		check_Config_Files(CONFIG_FILES_FOUND ${package_path} ${package_name} ${component_name})
-		if(${CONFIG_FILES_FOUND})
-			set(COMPONENT_ELEMENT_NOTFOUND FALSE  PARENT_SCOPE)
-		endif(${CONFIG_FILES_FOUND})
+		set(COMPONENT_ELEMENT_NOTFOUND FALSE  PARENT_SCOPE)
 	else()
 		return()
 	endif()	
