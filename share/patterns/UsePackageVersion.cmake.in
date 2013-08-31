@@ -47,10 +47,12 @@
 # XXX_COMPONENTS_LIBS
 
 #identifying precisely the software elements of the component
-# XXX_YYY_TYPE		# type du composant YYY
-# XXX_YYY_HEADER_DIR_NAME
+# XXX_YYY_TYPE			# type du composant YYY
+# XXX_YYY_HEADER_DIR_NAME	
 # XXX_YYY_HEADERS	# liste des header files à trouver pour trouver s'assurer que le composant librarie YYY est bien installé
 			# leur path est relative par rapport au path du package/include/${XXX_YYY_HEADER_DIR_NAME}
+
+
 # XXX_YYY_BINARY_NAME
 # XXX_YYY_BINARY_NAME_DEBUG
 

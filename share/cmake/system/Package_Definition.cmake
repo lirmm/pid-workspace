@@ -114,6 +114,15 @@ set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
 set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
 set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_CATEGORIES "" CACHE INTERNAL "")
+
+# component declaration must be reinitialized otherwise would fail
+if(${${PROJECT_NAME}_COMPONENTS})
+	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+		if(${${PROJECT_NAME}_${a_component}_DECLARED})
+			set (${PROJECT_NAME}_${a_component}_DECLARED FALSE CACHE INTERNAL "")
+		endif()
+	endforeach() 
+endif()
 set(${PROJECT_NAME}_COMPONENTS "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS "" CACHE INTERNAL "")
@@ -162,8 +171,9 @@ install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPL
 
 # generating/installing the generic cmake find file for the package 
 configure_file(${WORKSPACE_DIR}/share/cmake/system/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake find modules directory
+install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
 
+#TODO
 #install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/cmake) #install it in the corresponding package version
 # generating/installing the version specific cmake "use" file 
 configure_file(${CMAKE_SOURCE_DIR}/share/UsePackageVersion.cmake.in ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake @ONLY)
@@ -541,7 +551,12 @@ endmacro(printComponentVariables)
 ######### auxiliary functions for component declaration management ###############
 ##################################################################################
 
-function(manage_Additional_Component_Flags target_name defs links)
+function(manage_Additional_Component_Flags target_name inc_dirs defs links)
+
+# managing compile time flags
+if(NOT ${inc_dirs} STREQUAL "")
+	target_include_directories(${target_name} ${inc_dirs})
+endif(NOT ${inc_dirs} STREQUAL "")
 
 # managing compile time flags
 if(NOT ${defs} STREQUAL "")
@@ -556,56 +571,46 @@ endif(NOT ${links} STREQUAL "")
 endfunction(manage_Additional_Component_Flags target_name defs links)
 
 ###
-function (fill_Component_Target_Compilation c_name dep_name)
+function (fill_Component_Target_With_Internal_Dependency c_name dep_c_name dep_c_name_defs)
 
 if(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "APP"
-	OR ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "SHARED")
-	if(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
-		target_include_directories(${c_name} PUBLIC ${${dep_name}_INC_DIRS})
-	endif(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
-
-	if(NOT ${${dep_name}_DEFS} STREQUAL "")
-		target_compile_definitions(${c_name} PUBLIC ${${dep_name}_DEFS})
-	endif(NOT ${${dep_name}_DEFS} STREQUAL "")
-
-elseif(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "STATIC")
-	if(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
-		target_include_directories(${c_name}-st PUBLIC ${${dep_name}_INC_DIRS})
-	endif(NOT ${${dep_name}_INC_DIRS} STREQUAL "")
-
-	if(NOT ${${dep_name}_DEFS} STREQUAL "")
-		target_compile_definitions(${c_name}-st PUBLIC ${${dep_name}_DEFS})
-	endif(NOT ${${dep_name}_DEFS} STREQUAL "")
+	OR ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "EXAMPLE"
+	OR ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST"
+	OR ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "SHARED"
+	OR ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "STATIC") #the component has a corresponding target
+	
+	if(	${PROJECT_NAME}_${dep_c_name}_TYPE} STREQUAL "HEADER"
+		OR ${PROJECT_NAME}_${dep_c_name}_TYPE} STREQUAL "SHARED"
+		OR ${PROJECT_NAME}_${dep_c_name}_TYPE} STREQUAL "STATIC")#the required internal component is a library 
+		#include the include directory of ${dep_c_name} in the component ${c_name} target
+		target_include_directories(${c_name}${INSTALL_NAME_SUFFIX} PUBLIC ${${PROJECT_NAME}_${dep_c_name}_TEMP_INCLUDE_DIR})
+		# add the definitions specific to the required component interface
+		if(NOT ${dep_c_name_defs} STREQUAL "")
+			target_compile_definitions(${c_name}${INSTALL_NAME_SUFFIX} PUBLIC ${dep_c_name_defs})
+		endif()	
+		if(NOT ${PROJECT_NAME}_${dep_c_name}_TYPE} STREQUAL "HEADER")
+			target_link_libraries(${c_name}${INSTALL_NAME_SUFFIX} ${dep_c_name}${INSTALL_NAME_SUFFIX})
+		endif()
+	else()
+		message(FATAL_ERROR "Executable component ${dep_c_name} cannot be a dependency for component ${c_name}")	
+	endif()
 endif()#do nothing in case of a pure header component
 
-endfunction (fill_Component_Target_Compilation c_name dep_name)
+endfunction (fill_Component_Target_With_Internal_Dependency c_name dep_name dep_c_name_defs)
 
-###
-function (fill_Component_Target_Linking c_name dep_name)
 
-if(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "APP"
-	OR ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "SHARED")
-	if(NOT ${${dep_name}_LINKS} STREQUAL "")
-		target_link_libraries(${c_name} ${${dep_name}_LINKS})
-	endif(NOT ${${dep_name}_LINKS} STREQUAL "")
-elseif(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "SHARED")
-	if(NOT ${${dep_name}_LINKS} STREQUAL "")
-		target_link_libraries(${c_name} ${${dep_name}_LINKS})
-	endif(NOT ${${dep_name}_LINKS} STREQUAL "")
-elseif(	${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "STATIC")
-	if(NOT ${${dep_name}_LINKS} STREQUAL "")
-		target_link_libraries(${c_name}-st ${${dep_name}_LINKS})
-	endif(NOT ${${dep_name}_LINKS} STREQUAL "")
-endif()#do nothing in case of a pure header component
-
-endfunction (fill_Component_Target_Linking c_name dep_name)
-
-###
 
 ##################################################################################
 ###################### declaration of a library component ########################
 ##################################################################################
-function(declare_Library_Component c_name dirname type)
+# internal_defs : definitions that affects the implementation of the library component
+# exported_defs : definitions that affects the interface of the library component
+# internal_inc_dirs : additionnal include dirs (internal to package, that contains header files, e.g. like common definition between package components, that don't have to be exported since not in the interface)
+
+function(declare_Library_Component c_name dirname type internal_inc_dirs internal_defs exported_defs)
+	if(${${PROJECT_NAME}_${c_name}_DECLARED})
+		message(FATAL_ERROR "declare_Application_Component : a component with the same name ${c_name} is already defined")
+	endif()	
 	#indicating that the component has been declared and need to be completed
 	if(${type} STREQUAL "HEADER"
 	OR ${type} STREQUAL "STATIC")
@@ -663,17 +668,17 @@ function(declare_Library_Component c_name dirname type)
 			)
 		endif()
 		target_include_directories(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR})
-		manage_Additional_Component_Flags(${c_name}${INSTALL_NAME_SUFFIX} ${internal_defs} "")
+		manage_Additional_Component_Flags(${c_name}${INSTALL_NAME_SUFFIX} "${internal_inc_dirs}" "${internal_defs}" "${exported_defs}")
 	endif(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "HEADER")
 
 	# registering exported flags for all kinds of libs
-	set(${PROJECT_NAME}_${c_name}_DEFS "" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${c_name}_LINKS "" CACHE INTERNAL "")	
+	set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
+	set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported links
 	
 	#updating global variables of the CMake process	
 	set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 	set(${PROJECT_NAME}_COMPONENTS_LIBS "${${PROJECT_NAME}_COMPONENTS_LIBS};${c_name}" CACHE INTERNAL "")
-	# global variable to know that the component has been declared
+	# global variable to know that the component has been declared (must be reinitialized at each run of cmake)
 	set(${PROJECT_NAME}_${c_name}_DECLARED TRUE CACHE INTERNAL "")
 	
 endfunction(declare_Library_Component c_name type)
@@ -683,26 +688,34 @@ endfunction(declare_Library_Component c_name type)
 ##################################################################################
 ################# declaration of an application component ########################
 ##################################################################################
-function(declare_Application_Component c_name type internal_defs internal_link_flags)
+# internal_defs : definitions that affects the implementation of the application component
+# internal_link_flags : additionnal linker flags that affects required to link the application component
+# internal_inc_dirs : additionnal include dirs (internal to project, that contains header files, e.g. common definition between components that don't have to be exported)
+function(declare_Application_Component c_name type internal_inc_dirs internal_defs internal_link_flags)
 	if(${${PROJECT_NAME}_${c_name}_DECLARED})
-		message("ERROR declare_Application_Component : a component with the same name ${c_name} is already defined")
+		message(FATAL_ERROR "declare_Application_Component : a component with the same name ${c_name} is already defined")
+		return()
 	endif()
-
+	
 	if(${type} STREQUAL "TEST" 
 	OR ${type} STREQUAL "APP"
 	OR ${type} STREQUAL "EXAMPLE")
 		set(${PROJECT_NAME}_${c_name}_TYPE ${type} CACHE INTERNAL "")
 	else() #a simple application by default
-		message(FATAL_ERROR "tou have to set a type name (TEST, APP, EXAMPLE) for the application component ${c_name}")
+		message(FATAL_ERROR "you have to set a type name (TEST, APP, EXAMPLE) for the application component ${c_name}")
+		return()
 	endif()	
 	
 	# specifically managing examples 	
 	if(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "EXAMPLE") 
-		if(NOT BUILD_WITH_EXAMPLES) #examples are not built so no need to continue
-			unset(${PROJECT_NAME}_${c_name}_TYPE CACHE)
+		add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced		
+		if(NOT ${BUILD_WITH_EXAMPLES}) #examples are not built so no need to continue
 			return()
-		endif(NOT BUILD_WITH_EXAMPLES)
-		add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced
+		endif()
+	elseif(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
+		if(NOT ${BUILD_WITH_TESTS}) #tests are not built so no need to continue
+			return()
+		endif(NOT ${BUILD_WITH_TESTS})
 	endif(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "EXAMPLE")
 
 	#managing sources for the application
@@ -725,7 +738,7 @@ function(declare_Application_Component c_name type internal_defs internal_link_f
 	
 	#defining the target to build the application
 	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-	manage_Additional_Component_Flags(${c_name}${INSTALL_NAME_SUFFIX} ${internal_defs} ${internal_link_flags} "" "")
+	manage_Additional_Component_Flags(${c_name}${INSTALL_NAME_SUFFIX} ${internal_inc_dirs} ${internal_defs} ${internal_link_flags})
 	
 	if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 		# adding the application to the list of installed components when make install is called (not for test applications)
@@ -735,13 +748,13 @@ function(declare_Application_Component c_name type internal_defs internal_link_f
 	endif(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 
 	# registering exported flags for all kinds of apps => empty variables since applications export no flags
-	set(${PROJECT_NAME}_${c_name}_DEFS "" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${c_name}_LINKS "" CACHE INTERNAL "")
-
+	set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
+	
 	#updating global variables of the CMake process	
 	set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 	set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name}" CACHE INTERNAL "")
-	# global variable to know that the component has been declared
+	# global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
 	set(${PROJECT_NAME}_${c_name}_DECLARED TRUE CACHE INTERNAL "")
 endfunction(declare_Application_Component c_name type)
 
@@ -773,6 +786,32 @@ macro(declare_External_Package_Dependancy dep_package path_to_dependency)
 	set(${PROJECT}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX} ${path_to_dependency} CACHE PATH "Reference path to the root dir of external library"}
 endmacro(declare_External_Package_Dependancy dep_name path_to_dependency)
 
+#################################################################################
+################################ utility functions for dependencies #############
+#################################################################################
+function is_Executable_Component(ret_var package component)
+	if (	${${package}_${component}_TYPE} STREQUAL "APP"
+		OR ${${package}_${component}_TYPE} STREQUAL "EXAMPLE"
+		OR ${${package}_${component}_TYPE} STREQUAL "TEST"
+	)
+		set(ret_var TRUE)
+	else()
+		set(ret_var FALSE)
+	endif()
+enfunction()
+
+function is_Built_Component(ret_var  package component)
+	if (	${${package}_${component}_TYPE} STREQUAL "APP"
+		OR ${${package}_${component}_TYPE} STREQUAL "EXAMPLE"
+		OR ${${package}_${component}_TYPE} STREQUAL "TEST"
+		OR ${${PROJECT_NAME}_${component}_TYPE} STREQUAL "STATIC"
+		OR ${${PROJECT_NAME}_${component}_TYPE} STREQUAL "SHARED"
+	)
+		set(ret_var TRUE)
+	else()
+		set(ret_var FALSE)
+	endif()
+endfunction()
 ##################################################################################
 ################# local dependencies between components ########################## 
 ### these functions are to be used after a find_package command and after ######## 
@@ -780,16 +819,79 @@ endmacro(declare_External_Package_Dependancy dep_name path_to_dependency)
 ##################################################################################
 
 ### declare internal dependancies between components of the same package ${PROJECT}
-macro(declare_Internal_Component_Dependancy component dep_component)
-	set(${PROJECT}_${component}_INTERNAL_DEPENDENCIES ${${PROJECT}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_component} CACHE INTERNAL "")
+### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of ${dep_component}, if any  => definitions are exported
+### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of ${dep_component}, if any => definitions are not exported
+### dep_defs  : definitions in the interface of ${dep_component} that must be defined when ${component} uses ${dep_component}, if any => definitions are exported if dep_component is exported
+### export : if true the component export the dep_component in its interface (export is always false if component is an application)
+
+macro(declare_Internal_Component_Dependancy component dep_component export comp_defs comp_exp_defs dep_defs)
+	if(	NOT ${${PROJECT_NAME}_${component}_DECLARED}
+		OR NOT ${${PROJECT_NAME}_${dep_component}_DECLARED})
+		message(FATAL_ERROR "Problem : either ${component} or ${dep_component} does not exist")
+	endif()
+	#guarding depending type of involved components
+	is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})	
+	is_Executable_Component(IS_EXEC_DEP ${PROJECT_NAME} ${dep_component})
+	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+	if(IS_EXEC_DEP)
+		message(FATAL_ERROR "an executable component (${component}) cannot be a dependancy !!")
+	else()
+	
+	if (IS_EXEC_COMP)
+		# setting compile definitions for the target
+		manage_Additional_Component_Flags(${component} "" "${comp_defs}" "")
+		#configuring target
+		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} "${dep_defs}")
+		#do not export anything
+
+	elseif(IS_BUILT_COMP)
+		# setting compile definitions for the target
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${comp_exp_defs})
+		manage_Additional_Component_Flags(${component} "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "")
+		#configuring target
+		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} "${dep_defs}")
+		if(${export})
+			 # if dependeancy library is exported then we need to register its dep_defs
+			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
+				CACHE INTERNAL "")			
+		else() # otherwise no need to register them since no more useful
+			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
+				CACHE INTERNAL "")			
+		endif()
+	elseif(	${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
+		if(${export}) # if dependeancy library is exported then we need to register its dep_defs
+			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
+				CACHE INTERNAL "")			
+		else() # otherwise no need to register them since no more useful
+			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
+				CACHE INTERNAL "")			
+		endif()
+		
+	else()
+		message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
+	endif()
+
+	# declare the internal dependency	
+	set(${PROJECT}_${component}_INTERNAL_DEPENDENCIES ${${PROJECT}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_component} CACHE INTERNAL "")		
+
 endmacro(declare_Internal_Component_Dependancy component dep_component)
 
+#TODO pareil qu'avant
 ### declare package dependancies between components of two packages ${PROJECT} and ${dep_package}
+### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of ${dep_component}, if any => definitions are exported
+### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of ${dep_component}, if any => definitions are not exported
+### dep_defs  : definitions in the interface of ${dep_component} that must be defined when ${component} uses ${dep_component}, if any => definitions are exported if dep_component is exported
 macro(declare_Package_Component_Dependancy component dep_package dep_component)
 	# ${PROJECT}_${component}_DEPENDENCIES			# packages used by the component ${component} of the current package
 	# ${PROJECT}_${component}_DEPENDANCY_${dep_package}_COMPONENTS	# components of package ${dep_package} used by component ${component} of current package
 	set(${PROJECT}_${component}_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}}  ${dep_package} CACHE INTERNAL "")
 	set(${PROJECT}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}  ${${PROJECT}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${dep_component} CACHE INTERNAL "")
+
+	
 	
 endmacro(declare_Package_Component_Dependancy component dep_component)
 
@@ -825,48 +927,12 @@ macro(declare_System_Component_Dependancy component inc_dirs defs links)
 	${PROJECT}_${component}_SYSTEM_DEPENDENCY_DEFS${USE_MODE_SUFFIX}
   	${${PROJECT}_${component}_SYSTEM_DEPENDENCY_DEFS${USE_MODE_SUFFIX}} 
 	${defs} CACHE INTERNAL ""
-	) 
+	)
 	set(
 	${PROJECT}_${component}_SYSTEM_DEPENDENCY_LINKS${USE_MODE_SUFFIX}
   	${${PROJECT}_${component}_SYSTEM_DEPENDENCY_LINKS${USE_MODE_SUFFIX}} 
 	${links} CACHE INTERNAL ""
 	)
 endmacro(declare_External_Component_Dependancy component dep_component)
-
-##################################################################################
-###################### adding dependency to a component ##########################
-### to be used after a call to a declare_Component and the corresponding declare_Dependency functions
-########################################################################################################
-
-# il faut définir une sorte de "configuration" pour lier le composant à ses dépendances
-# idée déclarer le composant de manière conditionelle en fonction des résultats des find_packages
-
-function(add_Component_Dependency c_name dep_name)
-
-#checking that arguments are correct
-if(NOT DEFINED ${dep_name}_TYPE)
-	message("ERROR add_Component_Dependency : the dependency ${dep_name} has not been defined")
-endif(NOT DEFINED ${dep_name}_TYPE)
-
-if (NOT DEFINED ${PROJECT_NAME}_${c_name}_TYPE)
-	message("ERROR add_Component_Dependency : the component ${c_name} has not been defined")
-endif(NOT DEFINED ${PROJECT_NAME}_${c_name}_TYPE)
-
-if(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "HEADER")
-	# specific case when the type of component is pure header 
-	# => there is no target to populate with target_xxx functions
-	#adding the dependency to the list of dependencies of the component
-	set(${PROJECT_NAME}_${c_name}_DEPENDENCIES ${${PROJECT_NAME}_${c_name}_DEPENDENCIES};${dep_name} CACHE INTERNAL "")
-	return() #no need to do more
-else(${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "HEADER")
-	#adding the dependency to the list of dependencies of the component
-	set(${PROJECT_NAME}_${c_name}_DEPENDENCIES ${${PROJECT_NAME}_${c_name}_DEPENDENCIES};${dep_name} CACHE INTERNAL "")
-endif()
-
-# compile and link time operations have to be done
-fill_Component_Target_Compilation(${c_name} ${dep_name})
-fill_Component_Target_Linking(${c_name} ${dep_name})
-
-endfunction(add_Component_Dependency c_name dep_name)
 
 
