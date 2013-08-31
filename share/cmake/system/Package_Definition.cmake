@@ -551,24 +551,24 @@ endmacro(printComponentVariables)
 ######### auxiliary functions for component declaration management ###############
 ##################################################################################
 
-function(manage_Additional_Component_Flags target_name inc_dirs defs links)
+function(manage_Additional_Component_Flags component_name inc_dirs defs links)
 
 # managing compile time flags
 if(NOT ${inc_dirs} STREQUAL "")
-	target_include_directories(${target_name} ${inc_dirs})
+	target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} ${inc_dirs})
 endif(NOT ${inc_dirs} STREQUAL "")
 
 # managing compile time flags
 if(NOT ${defs} STREQUAL "")
-	target_compile_definitions(${target_name} ${defs})
+	target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} ${defs})
 endif(NOT ${defs} STREQUAL "")
 
 # managing link time flags
 if(NOT ${links} STREQUAL "")
-	target_link_libraries(${target_name} ${links})
+	target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} ${links})
 endif(NOT ${links} STREQUAL "")
 
-endfunction(manage_Additional_Component_Flags target_name defs links)
+endfunction(manage_Additional_Component_Flags component_name defs links)
 
 ###
 function (fill_Component_Target_With_Internal_Dependency c_name dep_c_name dep_c_name_defs)
@@ -668,13 +668,13 @@ function(declare_Library_Component c_name dirname type internal_inc_dirs interna
 			)
 		endif()
 		target_include_directories(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR})
-		manage_Additional_Component_Flags(${c_name}${INSTALL_NAME_SUFFIX} "${internal_inc_dirs}" "${internal_defs}" "${exported_defs}")
+		manage_Additional_Component_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}" "${exported_defs}")
 	endif(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "HEADER")
 
 	# registering exported flags for all kinds of libs
 	set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
 	set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported links
-	
+	set(${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories
 	#updating global variables of the CMake process	
 	set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 	set(${PROJECT_NAME}_COMPONENTS_LIBS "${${PROJECT_NAME}_COMPONENTS_LIBS};${c_name}" CACHE INTERNAL "")
@@ -738,7 +738,7 @@ function(declare_Application_Component c_name type internal_inc_dirs internal_de
 	
 	#defining the target to build the application
 	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-	manage_Additional_Component_Flags(${c_name}${INSTALL_NAME_SUFFIX} ${internal_inc_dirs} ${internal_defs} ${internal_link_flags})
+	manage_Additional_Component_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}" "${internal_link_flags}")
 	
 	if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 		# adding the application to the list of installed components when make install is called (not for test applications)
@@ -750,7 +750,8 @@ function(declare_Application_Component c_name type internal_inc_dirs internal_de
 	# registering exported flags for all kinds of apps => empty variables since applications export no flags
 	set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 	set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
-	
+	set(${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories
+
 	#updating global variables of the CMake process	
 	set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 	set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name}" CACHE INTERNAL "")
@@ -783,6 +784,7 @@ macro(declare_Package_Dependancy)
 ### declare external dependncies
 macro(declare_External_Package_Dependancy dep_package path_to_dependency)
 	#${PROJECT}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH is the helper path to locate external libs
+	
 	set(${PROJECT}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX} ${path_to_dependency} CACHE PATH "Reference path to the root dir of external library"}
 endmacro(declare_External_Package_Dependancy dep_name path_to_dependency)
 
@@ -825,60 +827,60 @@ endfunction()
 ### export : if true the component export the dep_component in its interface (export is always false if component is an application)
 
 macro(declare_Internal_Component_Dependancy component dep_component export comp_defs comp_exp_defs dep_defs)
-	if(	NOT ${${PROJECT_NAME}_${component}_DECLARED}
-		OR NOT ${${PROJECT_NAME}_${dep_component}_DECLARED})
-		message(FATAL_ERROR "Problem : either ${component} or ${dep_component} does not exist")
+if(	NOT ${${PROJECT_NAME}_${component}_DECLARED}
+	OR NOT ${${PROJECT_NAME}_${dep_component}_DECLARED})
+	message(FATAL_ERROR "Problem : either ${component} or ${dep_component} does not exist")
+endif()
+#guarding depending type of involved components
+is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})	
+is_Executable_Component(IS_EXEC_DEP ${PROJECT_NAME} ${dep_component})
+is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+if(IS_EXEC_DEP)
+	message(FATAL_ERROR "an executable component (${component}) cannot be a dependancy !!")
+else()
+
+if (IS_EXEC_COMP)
+	# setting compile definitions for configuring the target
+	manage_Additional_Component_Flags(${component} "" "${comp_defs}" "")
+	fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} "${dep_defs}")
+	#do not export anything
+
+elseif(IS_BUILT_COMP)
+	# setting compile definitions for configuring the target
+	set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${comp_exp_defs})
+	manage_Additional_Component_Flags(${component} "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "")
+	fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} "${dep_defs}")
+
+	if(${export})
+		 # if dependeancy library is exported then we need to register its dep_defs
+		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
+			CACHE INTERNAL "")			
+	else() # otherwise no need to register them since no more useful
+		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
+			CACHE INTERNAL "")			
 	endif()
-	#guarding depending type of involved components
-	is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})	
-	is_Executable_Component(IS_EXEC_DEP ${PROJECT_NAME} ${dep_component})
-	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
-	if(IS_EXEC_DEP)
-		message(FATAL_ERROR "an executable component (${component}) cannot be a dependancy !!")
-	else()
+elseif(	${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
+	if(${export}) # if dependeancy library is exported then we need to register its dep_defs
+		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
+			CACHE INTERNAL "")			
+	else() # otherwise no need to register them since no more useful
+		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
+			CACHE INTERNAL "")			
+	endif()
 	
-	if (IS_EXEC_COMP)
-		# setting compile definitions for the target
-		manage_Additional_Component_Flags(${component} "" "${comp_defs}" "")
-		#configuring target
-		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} "${dep_defs}")
-		#do not export anything
+else()
+	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
+endif()
 
-	elseif(IS_BUILT_COMP)
-		# setting compile definitions for the target
-		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${comp_exp_defs})
-		manage_Additional_Component_Flags(${component} "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "")
-		#configuring target
-		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} "${dep_defs}")
-		if(${export})
-			 # if dependeancy library is exported then we need to register its dep_defs
-			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
-				CACHE INTERNAL "")			
-		else() # otherwise no need to register them since no more useful
-			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
-				CACHE INTERNAL "")			
-		endif()
-	elseif(	${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
-		if(${export}) # if dependeancy library is exported then we need to register its dep_defs
-			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
-				CACHE INTERNAL "")			
-		else() # otherwise no need to register them since no more useful
-			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
-				CACHE INTERNAL "")			
-		endif()
-		
-	else()
-		message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
-	endif()
-
-	# declare the internal dependency	
-	set(${PROJECT}_${component}_INTERNAL_DEPENDENCIES ${${PROJECT}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_component} CACHE INTERNAL "")		
+# declare the internal dependency	
+set(${PROJECT}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_component} CACHE INTERNAL "")
 
 endmacro(declare_Internal_Component_Dependancy component dep_component)
+
 
 #TODO pareil qu'avant
 ### declare package dependancies between components of two packages ${PROJECT} and ${dep_package}
@@ -897,42 +899,134 @@ endmacro(declare_Package_Component_Dependancy component dep_component)
 
 
 ### declare external (add-hoc) dependancy between components of current and an external packages 
-macro(declare_External_Component_Dependancy component dep_package inc_dirs defs links)
-	set(${PROJECT}_${component}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT}_${component}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
-	set(
-	${PROJECT}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_INCLUDE_DIRS${USE_MODE_SUFFIX}
-  	${${PROJECT}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_INCLUDE_DIRS${USE_MODE_SUFFIX}} 
-	${inc_dirs} CACHE INTERNAL ""
-	) 
-	set(
-	${PROJECT}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_DEFS${USE_MODE_SUFFIX}
-  	${${PROJECT}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_DEFS${USE_MODE_SUFFIX}} 
-	${defs} CACHE INTERNAL ""
-	) 
-	set(
-	${PROJECT}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_LINKS${USE_MODE_SUFFIX}
-  	${${PROJECT}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_LINKS${USE_MODE_SUFFIX}} 
-	${links} CACHE INTERNAL ""
-	)
+### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of the exported dependancy, if any  => definitions are exported
+### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of external dependancy, if any => definitions are not exported
+### dep_defs  : definitions in the interface of the external dependancy that must be defined when using this external dependancy, if any => definitions are exported if dependancy is exported
+### export : if true the component export the external depenancy in its interface (export is always false if component is an application)
+### inc_dirs : include directories to add to target component in order to build (these include dirs are expressed relatively) to the reference path to the external dependancy root dir => TODO comment gérer ça car find package ne le trouvera pas tout seul !!)
+### links : links defined by the external dependancy, will be exported in any case
+macro(declare_External_Component_Dependancy component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs links)
+if(	NOT ${${PROJECT_NAME}_${component}_DECLARED})
+	message(FATAL_ERROR "The component ${component} has not been declared")
+endif()
+
+if(DEFINED ${PROJECT}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX})
+	#guarding depending type of involved components
+	is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})
+	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+	if (IS_EXEC_COMP)
+		# setting compile definitions for the target
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})		
+		manage_Additional_Component_Flags(${component} "" "${comp_defs} ${dep_defs}" "${links}")
+		#do not export anything
+
+	elseif(IS_BUILT_COMP)
+		# setting compile definitions for configuring the target
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${comp_exp_defs} ${dep_defs})
+		manage_Additional_Component_Flags(${component} "${inc_dirs}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${links}")
+	
+		if(${export})
+			 # if system dependancy library is exported then we need to register its dep_defs
+			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
+				CACHE INTERNAL "")
+			set(	${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} 
+				${${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX}} ${inc_dirs}
+				CACHE INTERNAL "")
+		else() # otherwise no need to register them since no more useful
+			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
+				CACHE INTERNAL "")			
+		endif()
+		set(	${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}} "${links}"
+			CACHE INTERNAL "")
+
+	elseif(	${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
+		# no compile definition
+		if(${export}) # if dependeancy library is exported then we need to register its dep_defs
+			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
+				CACHE INTERNAL "")			
+			set(	${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} 
+				${${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX}} ${inc_dirs}
+				CACHE INTERNAL "")
+		else() # otherwise no need to register them since no more useful
+			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
+				CACHE INTERNAL "")			
+		endif()	
+		set(	${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}} "${links}"
+			CACHE INTERNAL "")
+
+	else()
+		message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
+	endif()
+			
+else()
+	message(FATAL_ERROR "external package dependancy must be declared prior to be used by component")
+endif()
+		
 endmacro(declare_External_Component_Dependancy component dep_component)
 
 ### declare system (add-hoc) dependancy between components of current and a system packages 
-macro(declare_System_Component_Dependancy component inc_dirs defs links)
-	set(
-	${PROJECT}_${component}_SYSTEM_DEPENDENCY_INCLUDE_DIRS${USE_MODE_SUFFIX}
-  	${${PROJECT}_${component}_SYSTEM_DEPENDENCY_INCLUDE_DIRS${USE_MODE_SUFFIX}} 
-	${inc_dirs} CACHE INTERNAL ""
-	) 
-	set(
-	${PROJECT}_${component}_SYSTEM_DEPENDENCY_DEFS${USE_MODE_SUFFIX}
-  	${${PROJECT}_${component}_SYSTEM_DEPENDENCY_DEFS${USE_MODE_SUFFIX}} 
-	${defs} CACHE INTERNAL ""
-	)
-	set(
-	${PROJECT}_${component}_SYSTEM_DEPENDENCY_LINKS${USE_MODE_SUFFIX}
-  	${${PROJECT}_${component}_SYSTEM_DEPENDENCY_LINKS${USE_MODE_SUFFIX}} 
-	${links} CACHE INTERNAL ""
-	)
-endmacro(declare_External_Component_Dependancy component dep_component)
+### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of the system dependancy, if any  => definitions are exported
+### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of system dependancy, if any => definitions are not exported
+### dep_defs  : definitions in the interface of the system dependancy that must be defined when using this system dependancy, if any => definitions are exported if dependancy is exported
+### export : if true the component export the depenancy in its interface (export is always false if component is an application)
+### links : links defined by the system dependancy, will be exported in any case (except by executables components)
+macro(declare_System_Component_Dependancy component export comp_defs comp_exp_defs dep_defs links)
+if(	NOT ${${PROJECT_NAME}_${component}_DECLARED})
+	message(FATAL_ERROR "${component} has not been declared")
+endif()
+#guarding depending type of involved components
+is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})
+is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+	
+if (IS_EXEC_COMP)
+	# setting compile definitions for the target
+	set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})		
+	manage_Additional_Component_Flags(${component} "" "${comp_defs} ${dep_defs}" "${links}")
+	#do not export anything
+
+elseif(IS_BUILT_COMP)
+	# setting compile definitions for the target
+	set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${comp_exp_defs} ${dep_defs})
+	#configuring target		
+	manage_Additional_Component_Flags(${component} "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${links}")
+	
+	if(${export})
+		 # if system dependancy library is exported then we need to register its dep_defs
+		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
+			CACHE INTERNAL "")			
+	else() # otherwise no need to register them since no more useful
+		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
+			CACHE INTERNAL "")			
+	endif()
+	set(	${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}
+		${${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}} "${links}"
+		CACHE INTERNAL "")
+elseif(	${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
+	# no compile definition
+	if(${export}) # if dependeancy library is exported then we need to register its dep_defs
+		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
+			CACHE INTERNAL "")			
+	else() # otherwise no need to register them since no more useful
+		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
+			CACHE INTERNAL "")			
+	endif()	
+	set(	${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}
+		${${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}} "${links}"
+		CACHE INTERNAL "")
+else()
+	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
+endif()
+	
+endmacro(declare_System_Component_Dependancy)
 
 

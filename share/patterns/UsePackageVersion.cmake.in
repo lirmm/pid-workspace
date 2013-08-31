@@ -57,6 +57,7 @@
 # XXX_YYY_BINARY_NAME_DEBUG
 
 # pour les libs :
+#TODO NE PAS OUBLIER LES INCLUDE DIRS ???
 # XXX_YYY_DEFS		# definitions propres à utiliser pour compiler avec le composant librarie YYY (l'include dir est celui du package) 
 			# + cflags système/externes
 # XXX_YYY_DEFS_DEBUG  
