@@ -208,7 +208,7 @@ foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
 	endforeach()
 endforeach()
 
-# no need to check system/external dependencies as they are already  threaten as special cases (see LINKS and DEFS of components)
+# no need to check system/external dependencies as they are already  treaten as special cases (see variable <package>__<component>_LINKS and <package>__<component>_DEFS of components)
 # quite like in pkg-config tool
 endmacro(configure_Package_Build_Variables package_name)
 

@@ -1,0 +1,67 @@
+########################################################################
+############### variable utilisée pour gérer le build ##################
+########################################################################
+
+#ATTENTION POUR PLUS DE SECURITE TOUTES CES VARIABLES DOIVENT ETRE GENEREES EN CACHE INTERNAL !!!!!!!!!!!!!!!!
+
+#pour gérer les dépendences du package ?
+# ATTENTION ICI CE NE DOIVENT ÊTRE QUE DES DEPENDENCES EN TERME DE NOM
+# dépendences directes uniquement
+
+# gestion des dépendances
+
+######################## dépendences EXTERNE ##########################
+# XXX_EXTERNAL_DEPENDENCY_YYY_REFERENCE_PATH		# path de reference utilisé (défini dans le cache) pour trouver la racine de la dépendance externe (par exemple /opt/toto ou /home/robin/soft/bison), fixé par défaut à celui trouvé 
+
+# il n'y a rien à faire pour les dépendances système car elles sont géré "par défaut" par le système
+
+######################### dépendences INTERNES #################################
+# XXX_YYY_INTERNAL_DEPENDENCIES			# les noms associés aux composants du package XXX dont le composant YYY du package XXX dépend
+# pas besoin de checker ces dépendences sont satisfaites par défaut du moment que toutes les dépendences de tous les composants sont satisfaites
+
+
+######################## dépendences de PACKAGES ##############################
+#info globales
+# XXX_DEPENDENCIES			# les noms des packages qui sont directement utilisés
+# XXX_DEPENDANCY_ZZZ_VERSION		# pour la dépendance au package ZZZ utiliser la version demandée : (si pas de contrainte de version ne rien faire)
+
+# XXX_DEPENDENCY_ZZZ_VERSION_EXACT	# TRUE if exact version is required
+# XXX_DEPENDANCY_ZZZ_COMPONENTS		# liste des composants de ZZZ utilisés par XXX
+
+# dépendences par composant
+# XXX_YYY_DEPENDENCIES			# les dépendances (packages) utilisés par le composant courant
+					# à partir de là c'est pour chaque package dépendent
+
+# XXX_YYY_DEPENDANCY_ZZZ_COMPONENTS	# les composants du package ZZZ utilisés par YYY
+
+########################################################################
+####### variable utilisée pour vérifier que le package est OK ###########
+########################################################################
+
+# ICI TOUT LES CHEMIN SONT EXPRIME PAR RAPPORT à ??
+
+# global : listes des noms des composants
+
+# XXX_COMPONENTS
+# XXX_COMPONENTS_APPS
+# XXX_COMPONENTS_LIBS
+
+#identifying precisely the software elements of the component
+# XXX_YYY_TYPE		# type du composant YYY
+# XXX_YYY_HEADER_DIR_NAME
+# XXX_YYY_HEADERS	# liste des header files à trouver pour trouver s'assurer que le composant librarie YYY est bien installé
+			# leur path est relative par rapport au path du package/include/${XXX_YYY_HEADER_DIR_NAME}
+# XXX_YYY_BINARY_NAME
+# XXX_YYY_BINARY_NAME_DEBUG
+
+# pour les libs :
+# XXX_YYY_DEFS		# definitions propres à utiliser pour compiler avec le composant librarie YYY (l'include dir est celui du package) 
+			# + cflags système/externes
+# XXX_YYY_DEFS_DEBUG  
+			
+# XXX_YYY_LINKS		# flags + libraries système/externes à utiliser pour linker avec le composant librarie YYY
+# XXX_YYY_LINKS_DEBUG 
+
+
+
+
