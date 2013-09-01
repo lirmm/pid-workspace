@@ -91,9 +91,7 @@ function(add_Example_To_Doc c_name)
 	file(COPY ${PROJECT_SOURCE_DIR}/apps/${c_name} DESTINATION ${PROJECT_BINARY_DIR}/share/examples/)
 endfunction(add_Example_To_Doc c_name)
 
-##################################################################################
-################### generating API documentation for the package #################
-##################################################################################
+### generating API documentation for the package
 function(generate_API)
 option(GENERATE_LATEX_API "Generating the latex api documentation" ON)
 if(CMAKE_BUILD_TYPE MATCHES Release) # if in release mode we generate the doc
@@ -327,6 +325,13 @@ endfunction(fill_Component_Target_With_External_Dependency)
 ###
 macro(add_Author author institution)
 	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS} "${author}(${institution})" CACHE INTERNAL "")
+endmacro(add_Author author insitution)
+
+###
+macro(add_Reference version system url)
+	list(APPEND ${PROJECT_NAME}_REFERENCES ${version})
+	list(APPEND ${PROJECT_NAME}_REFERENCE_${version} ${system})
+	set(${${PROJECT_NAME}_REFERENCE_${system}_${version} ${url} CACHE INTERNAL "")
 endmacro(add_Author author insitution)
 
 ###
