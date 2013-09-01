@@ -46,18 +46,28 @@ macro(locate_Package package dependency)
 
 	if(	NOT ${${package}_DEPENDANCY_${dependency}_VERSION} STREQUAL ""
 		AND ${${package}_DEPENDENCY_${dependency}_VERSION_EXACT}) #an exact version has been specified
-		set(${package}_DEPENDANCY_${dependency}_VERSION_EXACT_STRING "EXACT")	
-	endif()
-
-	#WARNING recursive call to find package
-	find_package(
+			#WARNING recursive call to find package
+		find_package(
 			${dependency} 
 			${${package}_DEPENDANCY_${dependency}_VERSION} 
-			${${package}_DEPENDANCY_${dependency}_VERSION_EXACT_STRING}
+			EXACT
 			MODULE
-			"REQUIRED"
+			REQUIRED
 			${${package}_DEPENDENCY_${dependency}_COMPONENTS}
 		)
+
+	else()
+		#WARNING recursive call to find package
+		find_package(
+			${dependency} 
+			${${package}_DEPENDANCY_${dependency}_VERSION} 
+			MODULE
+			REQUIRED
+			${${package}_DEPENDENCY_${dependency}_COMPONENTS}
+		)
+	
+	endif()
+
 	test_Package_Location(${package} ${dependency})
 
 endmacro()
@@ -112,6 +122,19 @@ macro (init_Component_Variables package component path_to_version )
 		#exported include dirs (cflags -I<path>)
 		set(${package}_${component}_INCLUDE_DIRS "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
 		set(${package}_${component}_INCLUDE_DIRS_DEBUG "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
+		#additional exported include dirs (cflags -I<path>)
+		if(${${package}_${component}_INC_DIRS})
+			set(	${package}_${component}_INCLUDE_DIRS 
+				${${package}_${component}_INCLUDE_DIRS} 
+				${${package}_${component}_INC_DIRS} 
+				CACHE INTERNAL "")
+		endif()
+		if(${${package}_${component}_INC_DIRS_DEBUG})
+			set(	${package}_${component}_INCLUDE_DIRS_DEBUG 
+				${${package}_${component}_INCLUDE_DIRS_DEBUG}				
+				${${package}_${component}_INC_DIRS} 
+				CACHE INTERNAL "")		
+		endif()
 		#exported additionnal cflags
 		if(${${package}_${component}_DEFS}) 	
 			set(${package}_${component}_DEFINITIONS ${${package}_${component}_DEFS} CACHE INTERNAL "")
@@ -135,6 +158,20 @@ macro (init_Component_Variables package component path_to_version )
 		#exported include dirs (cflags -I<path>)
 		set(${package}_${component}_INCLUDE_DIRS "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
 		set(${package}_${component}_INCLUDE_DIRS_DEBUG "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
+		#additional exported include dirs (cflags -I<path>)
+		if(${${package}_${component}_INC_DIRS})
+			set(	${package}_${component}_INCLUDE_DIRS 
+				${${package}_${component}_INCLUDE_DIRS} 
+				${${package}_${component}_INC_DIRS} 
+				CACHE INTERNAL "")
+		endif()
+		if(${${package}_${component}_INC_DIRS_DEBUG})
+			set(	${package}_${component}_INCLUDE_DIRS_DEBUG 
+				${${package}_${component}_INCLUDE_DIRS_DEBUG}				
+				${${package}_${component}_INC_DIRS} 
+				CACHE INTERNAL "")		
+		endif()
+
 		#exported additionnal cflags
 		if(${${package}_${component}_DEFS}) #if library defines exported definitions	
 			set(${package}_${component}_DEFINITIONS ${${package}_${component}_DEFS} CACHE INTERNAL "")
@@ -154,21 +191,32 @@ endmacro (init_Component_Variables package component)
 
 ###
 macro (update_Component_Build_Variables_With_Dependency package component dep_package dep_component)
-	update_Config_Include_Dirs(${package} ${component} ${dep_package}_${dep_component}_INCLUDE_DIRS)
-	update_Config_Include_Dirs_Debug(${package} ${component} ${dep_package}_${dep_component}_INCLUDE_DIRS_DEBUG)
-	
-	update_Config_Definitions(${package} ${component} ${dep_package}_${dep_component}_DEFINITIONS)
-	update_Config_Definitions_Debug(${package} ${component} ${dep_package}_${dep_component}_DEFINITIONS_DEBUG)
-	
-	update_Config_Libraries(${package} ${component} ${dep_package}_${dep_component}_LIBRARIES)
-	update_Config_Libraries_Debug(${package} ${component} ${dep_package}_${dep_component}_LIBRARIES_DEBUG)
+
+if(${package} STREQUAL ${dep_package})
+	if(${${package}_${component}_INTERNAL_EXPORT_${dep_component}})
+		update_Config_Include_Dirs(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS})
+		update_Config_Include_Dirs_Debug(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS_DEBUG})
+		update_Config_Definitions(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS})
+		update_Config_Definitions_Debug(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS_DEBUG})
+		
+	endif()
+else()
+	if(${${package}_${component}_EXPORT_${dep_package}_${dep_component}})
+		update_Config_Include_Dirs(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS})
+		update_Config_Include_Dirs_Debug(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS_DEBUG})
+		update_Config_Definitions(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS})
+		update_Config_Definitions_Debug(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS_DEBUG})
+	endif()
+endif()
+
+# libraries are always exported to enable the linking	
+update_Config_Libraries(${package} ${component} ${${dep_package}_${dep_component}_LIBRARIES})
+update_Config_Libraries_Debug(${package} ${component} ${${dep_package}_${dep_component}_LIBRARIES_DEBUG})
 endmacro()
 
 
-#TODO A TRAITER le cas des dépendences locales ET le cas des dépendences systèmes qui doivent être configurables
-# fournir des options pour chaque dépendence système/externe de manière à :
 # configurer le path pour pouvoir les trouver via ccmake !!
-#TODO managing the automatic installation of binay packages or git repo (if not exist)
+#TODO managing the automatic installation of binay packages or git repo (if not exist) !!
 
 ##################################################################################
 ##################################  main macro  ##################################

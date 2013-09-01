@@ -19,6 +19,7 @@
 # XXX_YYY_INTERNAL_DEPENDENCIES			# les noms associés aux composants du package XXX dont le composant YYY du package XXX dépend
 # pas besoin de checker ces dépendences sont satisfaites par défaut du moment que toutes les dépendences de tous les composants sont satisfaites
 
+# XXX_YYY_INTERNAL_EXPORT_ZZZ			# permet de savoir si le composant YYY exporte le composant ZZZ
 
 ######################## dépendences de PACKAGES ##############################
 #info globales
@@ -33,6 +34,8 @@
 					# à partir de là c'est pour chaque package dépendent
 
 # XXX_YYY_DEPENDANCY_ZZZ_COMPONENTS	# les composants du package ZZZ utilisés par YYY
+
+# XXX_YYY_EXPORT_ZZZ_VVV		# permet de savoir si le composant YYY du package XXX exporte le composant VVV du package ZZZ
 
 ########################################################################
 ####### variable utilisée pour vérifier que le package est OK ###########
@@ -57,6 +60,9 @@
 
 # pour les libs :
 #TODO NE PAS OUBLIER LES INCLUDE DIRS ???
+# XXX_YYY_INC_DIRS		# path to include directories systèmes
+# XXX_YYY_INC_DIRS_DEBUG  
+
 # XXX_YYY_DEFS		# definitions propres à utiliser pour compiler avec le composant librarie YYY (l'include dir est celui du package) 
 			# + cflags système/externes
 # XXX_YYY_DEFS_DEBUG  

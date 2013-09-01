@@ -1115,6 +1115,14 @@ endif()
 		
 endmacro(declare_External_Component_Dependancy component dep_component)
 
+##################################################################################
+############################## install the dependancies ########################## 
+########### functions used to create the use<package><version>.cmake  ############ 
+##################################################################################
+
+
+
+
 
 
 
