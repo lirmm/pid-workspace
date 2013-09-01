@@ -52,7 +52,6 @@
 # XXX_YYY_HEADERS	# liste des header files à trouver pour trouver s'assurer que le composant librarie YYY est bien installé
 			# leur path est relative par rapport au path du package/include/${XXX_YYY_HEADER_DIR_NAME}
 
-
 # XXX_YYY_BINARY_NAME
 # XXX_YYY_BINARY_NAME_DEBUG
 
