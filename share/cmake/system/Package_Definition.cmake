@@ -1,12 +1,65 @@
+##################################################################################
+############# auxiliary package management internal functions and macros #########
+##################################################################################
 
-#
-# A convenience set of macros to create adequate variables in the context of the parent scope.
-# used to define components of a package
-#
-##################################################################################
-#######################  auxiliary package management functions ##################
-##################################################################################
-###
+### generating the license of the package
+macro(generate_License_File)
+
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	if(	DEFINED ${PROJECT_NAME}_LICENSE 
+		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+	
+		find_file(LICENSE   "License${${PROJECT_NAME}_LICENSE}.cmake"
+				PATHS "${WORKSPACE_DIR}/share/cmake/system"
+				NO_DEFAULT_PATH
+				DOC "Path to the license configuration file")
+		if(LICENSE_IN-NOTFOUND)
+			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
+		else(LICENSE_IN-NOTFOUND)
+			include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
+			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
+		endif(LICENSE_IN-NOTFOUND)
+
+	endif()
+endif()
+endmacro(generate_License_File)
+
+
+### configure variables exported by component that will be used to generate the package cmake use file
+macro (configure_Install_Variables component export include_dirs dep_defs exported_defs links)
+
+# configuring the export
+if(${export}) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
+	if(${dep_defs} OR ${exported_defs})	
+		set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
+			${exported_defs} ${dep_defs}
+			CACHE INTERNAL "")
+	endif()
+	if(${include_dirs})
+		set(	${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} 
+			${${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX}} 
+			"${include_dirs}"
+			CACHE INTERNAL "")
+	endif()
+elseif(${exported_defs}) # otherwise no need to register them since no more useful
+	#just add the exported defs of the component
+	set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
+		${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
+		${exported_defs}
+		CACHE INTERNAL "")		
+endif()
+
+# links are exported in all cases	
+if(NOT ${links} STREQUAL "")
+	set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
+		${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
+		${links}
+		CACHE INTERNAL "")
+endif()
+endmacro (configure_Install_Variables)
+
+### to know if the component is an application
 function is_Executable_Component(ret_var package component)
 	if (	${${package}_${component}_TYPE} STREQUAL "APP"
 		OR ${${package}_${component}_TYPE} STREQUAL "EXAMPLE"
@@ -18,7 +71,7 @@ function is_Executable_Component(ret_var package component)
 	endif()
 enfunction()
 
-###
+### to know if component will be built
 function is_Built_Component(ret_var  package component)
 	if (	${${package}_${component}_TYPE} STREQUAL "APP"
 		OR ${${package}_${component}_TYPE} STREQUAL "EXAMPLE"
@@ -31,6 +84,245 @@ function is_Built_Component(ret_var  package component)
 		set(ret_var FALSE)
 	endif()
 endfunction()
+
+### adding source code of the example components to the API doc
+function(add_Example_To_Doc c_name)
+	file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/share/examples/)
+	file(COPY ${PROJECT_SOURCE_DIR}/apps/${c_name} DESTINATION ${PROJECT_BINARY_DIR}/share/examples/)
+endfunction(add_Example_To_Doc c_name)
+
+##################################################################################
+################### generating API documentation for the package #################
+##################################################################################
+function(generate_API)
+option(GENERATE_LATEX_API "Generating the latex api documentation" ON)
+if(CMAKE_BUILD_TYPE MATCHES Release) # if in release mode we generate the doc
+
+#finding doxygen tool and doxygen configuration file 
+find_package(Doxygen)
+find_file(DOXYFILE_IN   "Doxyfile.in"
+			PATHS "${CMAKE_SOURCE_DIR}/share/doxygen"
+			NO_DEFAULT_PATH
+			DOC "Path to the doxygen configuration template file")
+
+if(NOT DOXYGEN_FOUND)
+	message(WARNING "Doxygen not found please install it to generate the API documentation")
+endif(NOT DOXYGEN_FOUND)
+if(DOXYFILE_IN-NOTFOUND)
+	message(WARNING "Doxyfile not found in the share folder of your package !! Getting the standard doxygen template file from workspace ... ")
+	find_file(GENERIC_DOXYFILE_IN   "Doxyfile.in"
+					PATHS "${WORKSPACE_DIR}/share/cmake/system"
+					NO_DEFAULT_PATH
+					DOC "Path to the generic doxygen configuration template file")
+	if(GENERIC_DOXYFILE_IN-NOTFOUND)
+		message(WARNING "No Template file found, skipping documentation generation !!")		
+	else(GENERIC_DOXYFILE_IN-NOTFOUND)
+		file(COPY ${WORKSPACE_DIR}/share/doxygen/Doxyfile.in ${CMAKE_SOURCE_DIR}/share/doxygen)
+		message(STATUS "Template file found and copied to your package, you can now modify it")		
+	endif(GENERIC_DOXYFILE_IN-NOTFOUND)
+endif(DOXYFILE_IN-NOTFOUND)
+
+if(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND AND NOT GENERIC_DOXYFILE_IN-NOTFOUND) #we are able to generate the doc
+	# general variables
+	set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
+	set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
+	set(DOXYFILE_PROJECT_VERSION ${${PROJECT_NAME}_VERSION})
+	set(DOXYFILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/doc)
+	set(DOXYFILE_HTML_DIR html)
+	set(DOXYFILE_LATEX_DIR latex)
+
+	### new targets ###
+	# creating the specific target to run doxygen
+	add_custom_target(doxygen
+		${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/share/Doxyfile
+		DEPENDS ${CMAKE_BINARY_DIR}/share/Doxyfile
+		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+		COMMENT "Generating API documentation with Doxygen" VERBATIM
+	)
+
+	# target to clean installed doc
+	set_property(DIRECTORY
+		APPEND PROPERTY
+		ADDITIONAL_MAKE_CLEAN_FILES
+		"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_HTML_DIR}")
+
+	# creating the doc target
+	get_target_property(DOC_TARGET doc TYPE)
+	if(NOT DOC_TARGET)
+		add_custom_target(doc)
+	endif(NOT DOC_TARGET)
+
+	add_dependencies(doc doxygen)
+
+	### end new targets ###
+
+	### doxyfile configuration ###
+
+	# configuring doxyfile for html generation 
+	set(DOXYFILE_GENERATE_HTML "YES")
+
+	# configuring doxyfile to use dot executable if available
+	set(DOXYFILE_DOT "NO")
+	if(DOXYGEN_DOT_EXECUTABLE)
+		set(DOXYFILE_DOT "YES")
+	endif()
+
+	# configuring doxyfile for latex generation 
+	set(DOXYFILE_PDFLATEX "NO")
+
+	if(GENERATE_LATEX_API)
+		# target to clean installed doc
+		set_property(DIRECTORY
+			APPEND PROPERTY
+			ADDITIONAL_MAKE_CLEAN_FILES
+			"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
+		set(DOXYFILE_GENERATE_LATEX "YES")
+		find_package(LATEX)
+		find_program(DOXYFILE_MAKE make)
+		mark_as_advanced(DOXYFILE_MAKE)
+		if(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+			if(PDFLATEX_COMPILER)
+				set(DOXYFILE_PDFLATEX "YES")
+			endif(PDFLATEX_COMPILER)
+
+			add_custom_command(TARGET doxygen
+				POST_BUILD
+				COMMAND "${DOXYFILE_MAKE}"
+				COMMENT	"Running LaTeX for Doxygen documentation in ${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}..."
+				WORKING_DIRECTORY "${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
+		else(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+			set(DOXYGEN_LATEX "NO")
+		endif(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+
+	else(GENERATE_LATEX_API)
+		set(DOXYFILE_GENERATE_LATEX "NO")
+	endif(GENERATE_LATEX_API)
+
+	#configuring the Doxyfile.in file to generate a doxygen configuration file
+	configure_file(${CMAKE_SOURCE_DIR}/share/doxygen/Doxyfile.in ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
+	### end doxyfile configuration ###
+
+	### installing documentation ###
+	install(DIRECTORY ${CMAKE_BINARY_DIR}/share/doc DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+
+	### end installing documentation ###
+
+endif(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND AND NOT GENERIC_DOXYFILE_IN-NOTFOUND)
+	set(BUILD_WITH_DOC OFF)
+endif(CMAKE_BUILD_TYPE MATCHES Release)
+endfunction(generate_API)
+
+### configure the target with exported flags (cflags and ldflags)
+function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs links)
+
+# managing compile time flags
+if(NOT ${inc_dirs} STREQUAL "")
+	target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC ${inc_dirs})
+endif(NOT ${inc_dirs} STREQUAL "")
+
+# managing compile time flags
+if(NOT ${defs} STREQUAL "")
+	target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC ${defs})
+endif(NOT ${defs} STREQUAL "")
+
+# managing link time flags
+if(NOT ${links} STREQUAL "")
+	target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} ${links})
+endif(NOT ${links} STREQUAL "")
+
+endfunction(manage_Additional_Component_Exported_Flags component_name inc_dirs defs links)
+
+### configure the target with internal flags (cflags only)
+function(manage_Additional_Component_Internal_Flags component_name inc_dirs defs)
+
+# managing compile time flags
+if(NOT ${inc_dirs} STREQUAL "")
+	target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE ${inc_dirs})
+endif(NOT ${inc_dirs} STREQUAL "")
+
+# managing compile time flags
+if(NOT ${defs} STREQUAL "")
+	target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE ${defs})
+endif(NOT ${defs} STREQUAL "")
+
+endfunction(manage_Additional_Component_Internal_Flags)
+
+### configure the target to link with another target issued from a component of the same package
+function (fill_Component_Target_With_Internal_Dependency component dep_component export comp_defs comp_exp_defs dep_defs)
+is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${c_name})
+is_Executable_Component(COMP_IS_EXEC ${PROJECT_NAME} ${dep_c_name})
+
+if(COMP_IS_BUILT) #the component has a corresponding target
+
+	if(NOT COMP_IS_EXEC)#the required internal component is a library 
+		if(${export})
+			set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
+			manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
+			manage_Additional_Component_Exported_Flags(${component} "${${PROJECT_NAME}_${dep_component}_TEMP_INCLUDE_DIR}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${dep_component}${INSTALL_NAME_SUFFIX}")
+	
+		else()
+			set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})		
+			manage_Additional_Component_Internal_Flags(${component} "${${PROJECT_NAME}_${dep_component}_TEMP_INCLUDE_DIR}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
+			manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${dep_component}${INSTALL_NAME_SUFFIX}")
+		endif()
+	else()
+		message(FATAL_ERROR "Executable component ${dep_c_name} cannot be a dependency for component ${component}")	
+	endif()
+endif()#do nothing in case of a pure header component
+
+endfunction (fill_Component_Target_With_Internal_Dependency)
+
+### configure the target to link with another component issued from another package
+function (fill_Component_Target_With_Package_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
+
+is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
+is_Executable_Component(DEP_IS_EXEC ${dep_package} ${dep_component})
+if(COMP_IS_BUILT) #the component has a corresponding target
+
+	if(NOT DEP_IS_EXEC)#the required internal component is a library
+		
+		if(${export})
+			set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
+			manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
+			manage_Additional_Component_Exported_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
+	
+		else()
+			set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})		
+			manage_Additional_Component_Internal_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
+			manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
+		endif()
+ 	else()
+		message(FATAL_ERROR "Executable component ${dep_component} from package ${dep_package} cannot be a dependency for component ${component}")	
+	endif()
+endif()#do nothing in case of a pure header component
+
+endfunction(fill_Component_Target_With_Package_Dependency)
+
+### configure the target to link with an external dependancy
+function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_links)
+
+is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
+if(COMP_IS_BUILT) #the component has a corresponding target
+
+	# setting compile/linkage definitions for the component target
+	if(${export})
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${ext_defs})
+		manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
+		manage_Additional_Component_Exported_Flags(${component} "${ext_inc_dirs}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${ext_links}")
+
+	else()
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${ext_defs})		
+		manage_Additional_Component_Internal_Flags(${component} "${ext_inc_dirs}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
+		manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${ext_links}")
+	endif()
+
+endif()#do nothing in case of a pure header component
+
+endfunction(fill_Component_Target_With_External_Dependency)
+
+##################################################################################
+#################### package management public functions and macros ##############
+##################################################################################
 
 ###
 macro(add_Author author institution)
@@ -69,27 +361,6 @@ macro(set_Current_Version major minor patch)
 	set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
 endmacro(set_Current_Version major minor patch)
 
-###
-macro(generate_License_File)
-
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	if(	DEFINED ${PROJECT_NAME}_LICENSE 
-		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
-	
-		find_file(LICENSE   "License${${PROJECT_NAME}_LICENSE}.cmake"
-				PATHS "${WORKSPACE_DIR}/share/cmake/system"
-				NO_DEFAULT_PATH
-				DOC "Path to the license configuration file")
-		if(LICENSE_IN-NOTFOUND)
-			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
-		else(LICENSE_IN-NOTFOUND)
-			include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
-			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
-		endif(LICENSE_IN-NOTFOUND)
-
-	endif()
-endif()
-endmacro(generate_License_File)
 
 ##################################################################################
 ###########################  declaration of the package ##########################
@@ -347,134 +618,6 @@ endmacro(build_Package)
 
 
 
-##################################################################################
-########## adding source code of the example components to the API doc ###########
-##################################################################################
-function(add_Example_To_Doc c_name)
-	file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/share/examples/)
-	file(COPY ${PROJECT_SOURCE_DIR}/apps/${c_name} DESTINATION ${PROJECT_BINARY_DIR}/share/examples/)
-endfunction(add_Example_To_Doc c_name)
-
-##################################################################################
-################### generating API documentation for the package #################
-##################################################################################
-function(generate_API)
-option(GENERATE_LATEX_API "Generating the latex api documentation" ON)
-if(CMAKE_BUILD_TYPE MATCHES Release) # if in release mode we generate the doc
-
-#finding doxygen tool and doxygen configuration file 
-find_package(Doxygen)
-find_file(DOXYFILE_IN   "Doxyfile.in"
-			PATHS "${CMAKE_SOURCE_DIR}/share/doxygen"
-			NO_DEFAULT_PATH
-			DOC "Path to the doxygen configuration template file")
-
-if(NOT DOXYGEN_FOUND)
-	message(WARNING "Doxygen not found please install it to generate the API documentation")
-endif(NOT DOXYGEN_FOUND)
-if(DOXYFILE_IN-NOTFOUND)
-	message(WARNING "Doxyfile not found in the share folder of your package !! Getting the standard doxygen template file from workspace ... ")
-	find_file(GENERIC_DOXYFILE_IN   "Doxyfile.in"
-					PATHS "${WORKSPACE_DIR}/share/cmake/system"
-					NO_DEFAULT_PATH
-					DOC "Path to the generic doxygen configuration template file")
-	if(GENERIC_DOXYFILE_IN-NOTFOUND)
-		message(WARNING "No Template file found, skipping documentation generation !!")		
-	else(GENERIC_DOXYFILE_IN-NOTFOUND)
-		file(COPY ${WORKSPACE_DIR}/share/doxygen/Doxyfile.in ${CMAKE_SOURCE_DIR}/share/doxygen)
-		message(STATUS "Template file found and copied to your package, you can now modify it")		
-	endif(GENERIC_DOXYFILE_IN-NOTFOUND)
-endif(DOXYFILE_IN-NOTFOUND)
-
-if(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND AND NOT GENERIC_DOXYFILE_IN-NOTFOUND) #we are able to generate the doc
-	# general variables
-	set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
-	set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
-	set(DOXYFILE_PROJECT_VERSION ${${PROJECT_NAME}_VERSION})
-	set(DOXYFILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/doc)
-	set(DOXYFILE_HTML_DIR html)
-	set(DOXYFILE_LATEX_DIR latex)
-
-	### new targets ###
-	# creating the specific target to run doxygen
-	add_custom_target(doxygen
-		${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/share/Doxyfile
-		DEPENDS ${CMAKE_BINARY_DIR}/share/Doxyfile
-		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-		COMMENT "Generating API documentation with Doxygen" VERBATIM
-	)
-
-	# target to clean installed doc
-	set_property(DIRECTORY
-		APPEND PROPERTY
-		ADDITIONAL_MAKE_CLEAN_FILES
-		"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_HTML_DIR}")
-
-	# creating the doc target
-	get_target_property(DOC_TARGET doc TYPE)
-	if(NOT DOC_TARGET)
-		add_custom_target(doc)
-	endif(NOT DOC_TARGET)
-
-	add_dependencies(doc doxygen)
-
-	### end new targets ###
-
-	### doxyfile configuration ###
-
-	# configuring doxyfile for html generation 
-	set(DOXYFILE_GENERATE_HTML "YES")
-
-	# configuring doxyfile to use dot executable if available
-	set(DOXYFILE_DOT "NO")
-	if(DOXYGEN_DOT_EXECUTABLE)
-		set(DOXYFILE_DOT "YES")
-	endif()
-
-	# configuring doxyfile for latex generation 
-	set(DOXYFILE_PDFLATEX "NO")
-
-	if(GENERATE_LATEX_API)
-		# target to clean installed doc
-		set_property(DIRECTORY
-			APPEND PROPERTY
-			ADDITIONAL_MAKE_CLEAN_FILES
-			"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
-		set(DOXYFILE_GENERATE_LATEX "YES")
-		find_package(LATEX)
-		find_program(DOXYFILE_MAKE make)
-		mark_as_advanced(DOXYFILE_MAKE)
-		if(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
-			if(PDFLATEX_COMPILER)
-				set(DOXYFILE_PDFLATEX "YES")
-			endif(PDFLATEX_COMPILER)
-
-			add_custom_command(TARGET doxygen
-				POST_BUILD
-				COMMAND "${DOXYFILE_MAKE}"
-				COMMENT	"Running LaTeX for Doxygen documentation in ${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}..."
-				WORKING_DIRECTORY "${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
-		else(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
-			set(DOXYGEN_LATEX "NO")
-		endif(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
-
-	else(GENERATE_LATEX_API)
-		set(DOXYFILE_GENERATE_LATEX "NO")
-	endif(GENERATE_LATEX_API)
-
-	#configuring the Doxyfile.in file to generate a doxygen configuration file
-	configure_file(${CMAKE_SOURCE_DIR}/share/doxygen/Doxyfile.in ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
-	### end doxyfile configuration ###
-
-	### installing documentation ###
-	install(DIRECTORY ${CMAKE_BINARY_DIR}/share/doc DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
-
-	### end installing documentation ###
-
-endif(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND AND NOT GENERIC_DOXYFILE_IN-NOTFOUND)
-	set(BUILD_WITH_DOC OFF)
-endif(CMAKE_BUILD_TYPE MATCHES Release)
-endfunction(generate_API)
 
 ###################### !!!!!!!!!!!!!!!!!!!!! ####################
 ### DEBUT code a virer une fois le système de gestion de dépendences fini
@@ -572,78 +715,8 @@ endmacro(printComponentVariables)
 ### i.e. ils servent uniquement en interne OU ils doivent être exportés en même
 ### temps que le composant !!!
 
-##################################################################################
-######### auxiliary functions for component declaration management ###############
-##################################################################################
-
-function(manage_Additional_Component_Flags component_name inc_dirs defs links)
-
-# managing compile time flags
-if(NOT ${inc_dirs} STREQUAL "")
-	target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} ${inc_dirs})
-endif(NOT ${inc_dirs} STREQUAL "")
-
-# managing compile time flags
-if(NOT ${defs} STREQUAL "")
-	target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} ${defs})
-endif(NOT ${defs} STREQUAL "")
-
-# managing link time flags
-if(NOT ${links} STREQUAL "")
-	target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} ${links})
-endif(NOT ${links} STREQUAL "")
-
-endfunction(manage_Additional_Component_Flags component_name defs links)
-
-###
-function (fill_Component_Target_With_Internal_Dependency c_name dep_c_name dep_c_name_defs)
-is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${c_name})
-is_Executable_Component(COMP_IS_EXEC ${PROJECT_NAME} ${dep_c_name})
-
-if(COMP_IS_BUILT) #the component has a corresponding target
-
-	if(NOT COMP_IS_EXEC)#the required internal component is a library 
-		#include the include directory of ${dep_c_name} in the component ${c_name} target
-		target_include_directories(${c_name}${INSTALL_NAME_SUFFIX} PUBLIC ${${PROJECT_NAME}_${dep_c_name}_TEMP_INCLUDE_DIR})
-		# add the definitions specific to the required component interface
-		if(NOT ${dep_c_name_defs} STREQUAL "")
-			target_compile_definitions(${c_name}${INSTALL_NAME_SUFFIX} PUBLIC ${dep_c_name_defs})
-		endif()	
-		if(NOT ${PROJECT_NAME}_${dep_c_name}_TYPE} STREQUAL "HEADER")
-			target_link_libraries(${c_name}${INSTALL_NAME_SUFFIX} ${dep_c_name}${INSTALL_NAME_SUFFIX})
-		endif()
-	else()
-		message(FATAL_ERROR "Executable component ${dep_c_name} cannot be a dependency for component ${c_name}")	
-	endif()
-endif()#do nothing in case of a pure header component
-
-endfunction (fill_Component_Target_With_Internal_Dependency c_name dep_name dep_c_name_defs)
-
-###
-function (fill_Component_Target_With_Package_Dependency c_name dep_package dep_c_name dep_c_name_defs)
-
-is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${c_name})
-is_Executable_Component(COMP_IS_EXEC ${dep_package} ${dep_c_name})
-
-if(COMP_IS_BUILT) #the component has a corresponding target
-
-	if(NOT COMP_IS_EXEC)#the required internal component is a library 
-		#include the include directory of ${dep_c_name} in the component ${c_name} target
-		target_include_directories(${c_name}${INSTALL_NAME_SUFFIX} PUBLIC ${${dep_package}_${dep_c_name}_INCLUDE_DIRS${USE_MODE_SUFFIX}})
-		# add the definitions specific to the required component interface
-		if(NOT ${dep_c_name_defs} STREQUAL "")
-			target_compile_definitions(${c_name}${INSTALL_NAME_SUFFIX} PUBLIC ${dep_c_name_defs} ${${dep_package}_${dep_c_name}_DEFINITIONS${USE_MODE_SUFFIX}})
-		endif()	
-		if(NOT ${dep_package}_${dep_c_name}_TYPE} STREQUAL "HEADER")
-			target_link_libraries(${c_name}${INSTALL_NAME_SUFFIX} ${${dep_package}_${dep_c_name}_LIBRARIES${USE_MODE_SUFFIX}})
-		endif()
-	else()
-		message(FATAL_ERROR "Executable component ${dep_c_name} from package ${dep_package} cannot be a dependency for component ${c_name}")	
-	endif()
-endif()#do nothing in case of a pure header component
 
 
-endfunction(fill_Component_Target_With_Package_Dependency)
 ##################################################################################
 ###################### declaration of a library component ########################
 ##################################################################################
@@ -712,7 +785,7 @@ function(declare_Library_Component c_name dirname type internal_inc_dirs interna
 			)
 		endif()
 		target_include_directories(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR})
-		manage_Additional_Component_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}" "${exported_defs}")
+		manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}" "")
 	endif(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "HEADER")
 
 	# registering exported flags for all kinds of libs
@@ -782,7 +855,7 @@ function(declare_Application_Component c_name type internal_inc_dirs internal_de
 	
 	#defining the target to build the application
 	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-	manage_Additional_Component_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}" "${internal_link_flags}")
+	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}" "${internal_link_flags}")
 	
 	if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 		# adding the application to the list of installed components when make install is called (not for test applications)
@@ -861,41 +934,25 @@ else()
 set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component} FALSE)
 if (IS_EXEC_COMP)
 	# setting compile definitions for configuring the target
-	manage_Additional_Component_Flags(${component} "" "${comp_defs}" "")
-	fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} "${dep_defs}")
-	#do not export anything
+	fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE ${comp_defs} "" ${dep_defs})
 
 elseif(IS_BUILT_COMP)
-	# setting compile definitions for configuring the target
-	set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${comp_exp_defs})
-	manage_Additional_Component_Flags(${component} "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "")
-	fill_Component_Target_With_Internal_Dependency(${component} ${dep_package} ${dep_component} "${dep_defs}")
-
+	#prepare the dependancy export
 	if(${export})
-		set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component} TRUE)
-		 # if dependeancy library is exported then we need to register its dep_defs
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} 
-			"${comp_exp_defs}" "${dep_defs}"
-			CACHE INTERNAL "")	
-	else() # otherwise no need to register them since no more useful
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
-			CACHE INTERNAL "")		
+		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component} TRUE)
 	endif()
+	configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "")
+
+	# setting compile definitions for configuring the target
+	fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} ${export} ${comp_defs} ${comp_exp_defs} ${dep_defs})
+
+
 elseif(	${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
-	if(${export}) # if dependeancy library is exported then we need to register its dep_defs
-		set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component} TRUE)
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} 
-			"${comp_exp_defs}" "${dep_defs}"
-			CACHE INTERNAL "")		
-	else() # otherwise no need to register them since no more useful
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
-			CACHE INTERNAL "")			
+	#prepare the dependancy export
+	if(${export})
+		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component} TRUE)
 	endif()
-	
+	configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "")	
 else()
 	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
 endif()
@@ -933,43 +990,25 @@ if(IS_EXEC_DEP)
 else()
 if (IS_EXEC_COMP)
 	# setting compile definitions for configuring the target
-	manage_Additional_Component_Flags(${component} "" "${comp_defs}" "")
-	fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} "${dep_defs}")
+	fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
 	#do not export anything
 
 elseif(IS_BUILT_COMP)
-	# setting compile definitions for configuring the target
-	set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${comp_exp_defs})
-	manage_Additional_Component_Flags(${component} "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "")
-	fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} "${dep_defs}")
-
+	#prepare the dependancy export
 	if(${export})
-		set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} TRUE)
-		 # if dependeancy library is exported then we need to register its dep_defs
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} 
-			"${comp_exp_defs}" "${dep_defs}"
-			CACHE INTERNAL "")			
-	else() # otherwise no need to register them since no more useful
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} 
-			"${comp_exp_defs}"
-			CACHE INTERNAL "")		
+		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE)
 	endif()
-elseif(	${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
-	if(${export}) # if dependeancy library is exported then we need to register its dep_defs
-		set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} TRUE)
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} 
-			"${comp_exp_defs}" "${dep_defs}"
-			CACHE INTERNAL "")			
-	else() # otherwise no need to register them since no more useful
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} 
-			"${comp_exp_defs}"
-			CACHE INTERNAL "")			
-	endif()
+	configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "")
 	
+	# setting compile definitions for configuring the target
+	fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
+
+elseif(	${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
+	#prepare the dependancy export
+	if(${export})
+		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE)
+	endif()
+	configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "")
 else()
 	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
 endif()
@@ -996,45 +1035,17 @@ is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 	
 if (IS_EXEC_COMP)
 	# setting compile definitions for the target
-	set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})		
-	manage_Additional_Component_Flags(${component} "" "${comp_defs} ${dep_defs}" "${links}")
-	#do not export anything
+	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "" "${links}")
 
 elseif(IS_BUILT_COMP)
+	#prepare the dependancy export
+	configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "${links}")
 	# setting compile definitions for the target
-	set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${comp_exp_defs} ${dep_defs})
-	#configuring target		
-	manage_Additional_Component_Flags(${component} "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${links}")
-	
-	if(${export})
-		 # if system dependancy library is exported then we need to register its dep_defs
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} 	
-			"${comp_exp_defs}" "${dep_defs}"
-			CACHE INTERNAL "")			
-	else() # otherwise no need to register them since no more useful
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} 
-			"${comp_exp_defs}"
-			CACHE INTERNAL "")			
-	endif()
-	set(	${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}
-		${${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}} "${links}"
-		CACHE INTERNAL "")
+	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "" "${links}")
+
 elseif(	${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
-	# no compile definition
-	if(${export}) # if dependeancy library is exported then we need to register its dep_defs
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
-			CACHE INTERNAL "")		
-	else() # otherwise no need to register them since no more useful
-		set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
-			CACHE INTERNAL "")			
-	endif()	
-	set(	${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}
-		${${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}} "${links}"
-		CACHE INTERNAL "")
+	#prepare the dependancy export
+	configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "${links}")
 else()
 	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
 endif()
@@ -1060,50 +1071,17 @@ if(DEFINED ${PROJECT}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MOD
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 	if (IS_EXEC_COMP)
 		# setting compile definitions for the target
-		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})		
-		manage_Additional_Component_Flags(${component} "" "${comp_defs} ${dep_defs}" "${links}")
-		#do not export anything
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${links}")
 
 	elseif(IS_BUILT_COMP)
-		# setting compile definitions for configuring the target
-		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${comp_exp_defs} ${dep_defs})
-		manage_Additional_Component_Flags(${component} "${inc_dirs}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${links}")
-	
-		if(${export})
-			 # if system dependancy library is exported then we need to register its dep_defs
-			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} 
-				"${comp_exp_defs}" "${dep_defs}"
-				CACHE INTERNAL "")
-			set(	${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} 
-				${${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX}} ${inc_dirs}
-				CACHE INTERNAL "")
-		else() # otherwise no need to register them since no more useful
-			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
-				CACHE INTERNAL "")			
-		endif()
-		set(	${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}} "${links}"
-			CACHE INTERNAL "")
+		#prepare the dependancy export
+		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs"} "${comp_exp_defs}" ${links})
+		# setting compile definitions for the target
+		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${links}")
 
 	elseif(	${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
-		# no compile definition
-		if(${export}) # if dependeancy library is exported then we need to register its dep_defs
-			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}" "${dep_defs}"
-				CACHE INTERNAL "")			
-			set(	${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} 
-				${${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX}} ${inc_dirs}
-				CACHE INTERNAL "")
-		else() # otherwise no need to register them since no more useful
-			set(	${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}
-				${${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX}} "${comp_exp_defs}"
-				CACHE INTERNAL "")			
-		endif()	
-		set(	${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX}} "${links}"
-			CACHE INTERNAL "")
+		#prepare the dependancy export
+		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${links}")
 
 	else()
 		message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
@@ -1119,10 +1097,4 @@ endmacro(declare_External_Component_Dependancy component dep_component)
 ############################## install the dependancies ########################## 
 ########### functions used to create the use<package><version>.cmake  ############ 
 ##################################################################################
-
-
-
-
-
-
 

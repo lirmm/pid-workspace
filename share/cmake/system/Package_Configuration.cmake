@@ -117,8 +117,9 @@ macro (init_Component_Variables package component path_to_version )
 	set(${package}_${component}_LIBRARIES_DEBUG "" CACHE INTERNAL "")
 	set(${package}_${component}_EXECUTABLE "" CACHE INTERNAL "")
 	set(${package}_${component}_EXECUTABLE_DEBUG "" CACHE INTERNAL "")
+	is_Executable_Component(COMP_IS_EXEC ${package} ${component})
 	
-	if(${${package}_${component}_TYPE} STREQUAL "SHARED" OR ${${package}_${component}_TYPE} STREQUAL "STATIC")
+	if(NOT COMP_IS_EXEC)
 		#exported include dirs (cflags -I<path>)
 		set(${package}_${component}_INCLUDE_DIRS "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
 		set(${package}_${component}_INCLUDE_DIRS_DEBUG "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
@@ -144,42 +145,22 @@ macro (init_Component_Variables package component path_to_version )
 		endif()
 
 		#exported library (ldflags -l<path>)
-		set(${package}_${component}_LIBRARIES "${path_to_version}/lib/${${package}_${component}_BINARY_NAME}" CACHE INTERNAL "")		
-		set(${package}_${component}_LIBRARIES_DEBUG "${path_to_version}/lib/${${package}_${component}_BINARY_NAME_DEBUG}" CACHE INTERNAL "")		
-
+		set(${package}_${component}_LIBRARIES "${path_to_version}/lib/${${package}_${component}_BINARY_NAME}" CACHE INTERNAL "")
+		set(${package}_${component}_LIBRARIES_DEBUG "${path_to_version}/lib/${${package}_${component}_BINARY_NAME_DEBUG}" CACHE INTERNAL "")
+		
 		#exported additionnal ld flags
 		if(${${package}_${component}_LINKS})
-			set(${package}_${component}_LIBRARIES ${${package}_${component}_LIBRARIES};${${package}_${component}_LINKS} CACHE INTERNAL "")
-		endif()
-		if(${${package}_${component}_LINKS_DEBUG})	
-			set(${package}_${component}_LIBRARIES_DEBUG ${${package}_${component}_LIBRARIES_DEBUG};${${package}_${component}_LINKS_DEBUG} CACHE INTERNAL "")
-		endif()
-	elseif(${${package}_${component}_TYPE} STREQUAL "HEADER")
-		#exported include dirs (cflags -I<path>)
-		set(${package}_${component}_INCLUDE_DIRS "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
-		set(${package}_${component}_INCLUDE_DIRS_DEBUG "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
-		#additional exported include dirs (cflags -I<path>)
-		if(${${package}_${component}_INC_DIRS})
-			set(	${package}_${component}_INCLUDE_DIRS 
-				${${package}_${component}_INCLUDE_DIRS} 
-				${${package}_${component}_INC_DIRS} 
+			set(	${package}_${component}_LIBRARIES 
+				${${package}_${component}_LIBRARIES}
+				${${package}_${component}_LINKS} 
 				CACHE INTERNAL "")
 		endif()
-		if(${${package}_${component}_INC_DIRS_DEBUG})
-			set(	${package}_${component}_INCLUDE_DIRS_DEBUG 
-				${${package}_${component}_INCLUDE_DIRS_DEBUG}				
-				${${package}_${component}_INC_DIRS} 
-				CACHE INTERNAL "")		
+		if(${${package}_${component}_LINKS_DEBUG})	
+			set(	${package}_${component}_LIBRARIES_DEBUG 
+				${${package}_${component}_LIBRARIES_DEBUG}
+				${${package}_${component}_LINKS_DEBUG} 
+				CACHE INTERNAL "")
 		endif()
-
-		#exported additionnal cflags
-		if(${${package}_${component}_DEFS}) #if library defines exported definitions	
-			set(${package}_${component}_DEFINITIONS ${${package}_${component}_DEFS} CACHE INTERNAL "")
-		endif()
-		if(${${package}_${component}_DEFS_DEBUG})	
-			set(${package}_${component}_DEFINITIONS_DEBUG ${${package}_${component}_DEFS_DEBUG} CACHE INTERNAL "")
-		endif()
-		#no targets so nothing to update
 		
 	elseif(${${package}_${component}_TYPE} STREQUAL "APP")
 		
@@ -213,7 +194,6 @@ endif()
 update_Config_Libraries(${package} ${component} ${${dep_package}_${dep_component}_LIBRARIES})
 update_Config_Libraries_Debug(${package} ${component} ${${dep_package}_${dep_component}_LIBRARIES_DEBUG})
 endmacro()
-
 
 # configurer le path pour pouvoir les trouver via ccmake !!
 #TODO managing the automatic installation of binay packages or git repo (if not exist) !!
