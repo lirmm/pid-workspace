@@ -125,12 +125,6 @@ endif()
 
 endfunction(check_Local_Or_Newest_Version package_name package_framework major_version minor_version)
 
-
-##################################################################################
-##############end auxiliary functions to check package version####################
-##################################################################################
-
-
 ##################################################################################
 ##################auxiliary functions to check components info  ##################
 ##################################################################################
@@ -253,14 +247,6 @@ foreach(requested_component IN ITEMS ${list_of_components})
 endforeach()
 
 endfunction (select_Components package_name path_to_package_version list_of_components)
-
-
-##################################################################################
-##############end auxiliary functions to check components infos ##################
-##################################################################################
-
-
-
 
 
 
