@@ -18,11 +18,30 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		else(LICENSE_IN-NOTFOUND)
 			include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
 			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
+			install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
 		endif(LICENSE_IN-NOTFOUND)
-
 	endif()
 endif()
 endmacro(generate_License_File)
+
+### generating the Find<package>.cmake file of the package
+macro(generate_Find_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	# generating/installing the generic cmake find file for the package 
+	configure_file(${WORKSPACE_DIR}/share/cmake/system/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
+	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
+endif()
+endmacro(generate_Find_File)
+
+### generating the Use<package>-<version>.cmake file for the current package version
+macro(generate_Use_File)
+create_Mode_Dependent_Use_File()
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+
+	agregate_Use_Files()
+	install(FILES ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+endif()
+endmacro(generate_Use_File)
 
 
 ### configure variables exported by component that will be used to generate the package cmake use file
@@ -321,6 +340,85 @@ if(COMP_IS_BUILT) #the component has a corresponding target
 endif()#do nothing in case of a pure header component
 endfunction(fill_Component_Target_With_External_Dependency)
 
+### reset components related cached variables 
+function(reset_component_cached_variables component)
+if(${${PROJECT_NAME}_${component}_DECLARED}) #if component declared unset all its specific variables
+	# unsetting package dependencies
+	foreach(a_dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES})
+		foreach(a_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS})
+			set(${PROJECT_NAME}_${component}_EXPORT_${a_dep_pack}_${a_dep_comp} CACHE INTERNAL "")
+		endforeach()
+		set(${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS  CACHE INTERNAL "")
+	endforeach()
+	set(${PROJECT_NAME}_${component}_DEPENDENCIES  CACHE INTERNAL "")
+
+	# unsetting internal dependencies
+	foreach(a_internal_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES})
+		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${a_internal_dep_comp} CACHE INTERNAL "")
+	endforeach()
+	set(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES  CACHE INTERNAL "")
+
+	#unsetting all other variables
+	set(${PROJECT_NAME}_${component}_TEMP_INCLUDE_DIR CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${component}_HEADERS CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${component}_DECLARED CACHE INTERNAL "")
+endif()
+endfunction(reset_component_cached_variables)
+
+### resetting all internal cached variables that would cause some troubles
+function(reset_cached_variables)
+
+#resetting general info about the package
+set(${PROJECT_NAME}_MAIN_AUTHOR CACHE INTERNAL "")
+set(${PROJECT_NAME}_MAIN_INSTITUTION CACHE INTERNAL "")
+set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS CACHE INTERNAL "")
+set(${PROJECT_NAME}_DESCRIPTION CACHE INTERNAL "")
+set(${PROJECT_NAME}_YEARS CACHE INTERNAL "")
+set(${PROJECT_NAME}_LICENSE CACHE INTERNAL "")
+set(${PROJECT_NAME}_ADDRESS CACHE INTERNAL "")
+set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
+set (${PROJECT_NAME}_VERSION_MAJOR CACHE INTERNAL "")
+set (${PROJECT_NAME}_VERSION_MINOR CACHE INTERNAL "")
+set (${PROJECT_NAME}_VERSION_PATCH CACHE INTERNAL "")
+set (${PROJECT_NAME}_VERSION CACHE INTERNAL "")
+
+# references to package binaries version available must be reset
+foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
+	foreach(ref_system IN ITEMS ${${PROJECT_NAME}_REFERENCES_${ref_version}})
+		set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system} CACHE INTERNAL "")
+	endforeach()
+	set(${PROJECT_NAME}_REFERENCE_${ref_version} CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL "")
+
+# package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
+foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")	
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
+
+# external package dependencies declaration must be reinitialized 
+foreach(dep_package IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX} CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
+
+
+# component declaration must be reinitialized otherwise some problem (redundancy of declarations) would appear
+foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+	reset_component_cached_variables(${a_component})
+endforeach()
+set(${PROJECT_NAME}_COMPONENTS CACHE INTERNAL "")
+set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
+set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
+endfunction(reset_cached_variables)
 
 ##################################################################################
 #################### package management public functions and macros ##############
@@ -333,9 +431,9 @@ endfunction(add_Author)
 
 ###
 function(add_Reference version system url)
-	list(APPEND ${PROJECT_NAME}_REFERENCES ${version})
-	list(APPEND ${PROJECT_NAME}_REFERENCE_${version} ${system})
-	set(${${PROJECT_NAME}_REFERENCE_${system}_${version} ${url} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} ${version} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${system} CACHE INTERNAL "")
+	set(${${PROJECT_NAME}_REFERENCE_${version}_${system} ${url} CACHE INTERNAL "")
 endfunction(add_Reference)
 
 ###
@@ -409,6 +507,8 @@ endif(${CMAKE_BINARY_DIR} MATCHES release)
 #################################################
 ############ Initializing variables #############
 #################################################
+reset_cached_variables()
+
 set(${PROJECT_NAME}_MAIN_AUTHOR "${author}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_MAIN_INSTITUTION "${institution}" CACHE INTERNAL "")
 
@@ -418,19 +518,6 @@ set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
 set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
 set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
-set(${PROJECT_NAME}_CATEGORIES "" CACHE INTERNAL "")
-
-# component declaration must be reinitialized otherwise would fail
-if(${${PROJECT_NAME}_COMPONENTS})
-	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-		if(${${PROJECT_NAME}_${a_component}_DECLARED})
-			set (${PROJECT_NAME}_${a_component}_DECLARED FALSE CACHE INTERNAL "")
-		endif()
-	endforeach() 
-endif()
-set(${PROJECT_NAME}_COMPONENTS "" CACHE INTERNAL "")
-set(${PROJECT_NAME}_COMPONENTS_LIBS "" CACHE INTERNAL "")
-set(${PROJECT_NAME}_COMPONENTS_APPS "" CACHE INTERNAL "")
 
 #################################################
 ############ MANAGING generic paths #############
@@ -468,21 +555,13 @@ macro(build_Package)
 ##########################################################
 ############ MANAGING non source files ###################
 ##########################################################
-
-generate_License_File() #license
-install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
-
-# generating/installing the generic cmake find file for the package 
-configure_file(${WORKSPACE_DIR}/share/cmake/system/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
-
-#TODO
-#install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/cmake) #install it in the corresponding package version
-# generating/installing the version specific cmake "use" file 
-configure_file(${CMAKE_SOURCE_DIR}/share/UsePackageVersion.cmake.in ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
-#installing the CMakeModules folder (contains find scripts)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+generate_License_File() # generating/installing the file containing license info about the package
+generate_Find_File() # generating/installing the generic cmake find file for the package
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	#installing the share/cmake folder (may contain specific find scripts for external libs used by the package)
+	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+endif()
+generate_Use_File() #generating/installing the version specific cmake "use" file
 
 #################################################
 ############ MANAGING the BUILD #################
@@ -749,14 +828,15 @@ endif()
 ### managing headers ###
 #a library defines a folder containing one or more headers and/or subdirectories 
 set(${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${dirname} CACHE INTERNAL "")
-set(${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME ${dirname})
+set(${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME ${dirname} CACHE INTERNAL "")
 file(	GLOB_RECURSE
-	${PROJECT_NAME}_${c_name}_HEADERS
+	${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE
 	RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}
        	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h" 
 	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh" 
 	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
 )
+set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
 
 install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hpp")
@@ -792,8 +872,8 @@ if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "HEADER")
 			RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
 		)
 	endif()
-	target_include_directories(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR})
-	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}" "")
+	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
+	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
 endif()
 
 # registering exported flags for all kinds of libs
@@ -805,9 +885,7 @@ set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE I
 set(${PROJECT_NAME}_COMPONENTS_LIBS "${${PROJECT_NAME}_COMPONENTS_LIBS};${c_name}" CACHE INTERNAL "")
 # global variable to know that the component has been declared (must be reinitialized at each run of cmake)
 set(${PROJECT_NAME}_${c_name}_DECLARED TRUE CACHE INTERNAL "")
-
 endfunction(declare_Library_Component)
-
 
 
 ##################################################################################
@@ -863,7 +941,8 @@ file(	GLOB_RECURSE
 
 #defining the target to build the application
 add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}" "${internal_link_flags}")
+manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
+manage_Additional_Component_Exported_Flags(${c_name} "" "" "${internal_link_flags}")
 
 if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 	# adding the application to the list of installed components when make install is called (not for test applications)
@@ -893,22 +972,23 @@ endfunction(declare_Application_Component)
 ##################################################################################
  
 function(declare_Package_Dependancy dep_package version exact list_of_components)
-# ${PROJECT}_DEPENDENCIES				# packages required by current package
-# ${PROJECT}__DEPENDANCY_${dep_package}_VERSION		# version constraint for package ${dep_package}   required by ${PROJECT}  
-# ${PROJECT}_DEPENDENCY_${dep_package}_VERSION_EXACT	# TRUE if exact version is required
-# ${PROJECT}_DEPENDANCY_${dep_package}_COMPONENTS	# list of composants of ${dep_package} used by current package
+# ${PROJECT_NAME}_DEPENDENCIES				# packages required by current package
+# ${PROJECT_NAME}__DEPENDENCY_${dep_package}_VERSION		# version constraint for package ${dep_package}   required by ${PROJECT_NAME}  
+# ${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT	# TRUE if exact version is required
+# ${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS	# list of composants of ${dep_package} used by current package
 	# the package is necessarily required at that time
-	set(${PROJECT}_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT}_DEPENDENCIES_RELEASE${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
-	set(${PROJECT}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
 
- 	set(${PROJECT}_DEPENDENCY_${dep_package}_${version}_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")
-	set(${PROJECT}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${list_of_components} CACHE INTERNAL "")
+ 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_${version}_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${list_of_components} CACHE INTERNAL "")
 endfunction(declare_Package_Dependancy)
 
 ### declare external dependancies
 function(declare_External_Package_Dependancy dep_package path_to_dependency)
-	#${PROJECT}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH is the helper path to locate external libs
-	set(${PROJECT}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX} ${path_to_dependency} CACHE PATH "Reference path to the root dir of external library")
+	#${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH is the helper path to locate external libs
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX} ${path_to_dependency} CACHE PATH "Reference path to the root dir of external library")
 endfunction(declare_External_Package_Dependancy)
 
 
@@ -918,7 +998,7 @@ endfunction(declare_External_Package_Dependancy)
 ### the declaration of internal components (otherwise will not work) #############
 ##################################################################################
 
-### declare internal dependancies between components of the same package ${PROJECT}
+### declare internal dependancies between components of the same package ${PROJECT_NAME}
 ### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of ${dep_component}, if any  => definitions are exported
 ### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of ${dep_component}, if any => definitions are not exported
 ### dep_defs  : definitions in the interface of ${dep_component} that must be defined when ${component} uses ${dep_component}, if any => definitions are exported if dep_component is exported
@@ -968,21 +1048,21 @@ else()
 	endif()
 	# include directories and links do not require to be added 
 	# declare the internal dependency
-	set(	${PROJECT}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} 
-		${${PROJECT}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_component}
+	set(	${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} 
+		${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_component}
 		CACHE INTERNAL "")
 endif()
 endfunction(declare_Internal_Component_Dependancy)
 
 
-### declare package dependancies between components of two packages ${PROJECT} and ${dep_package}
+### declare package dependancies between components of two packages ${PROJECT_NAME} and ${dep_package}
 ### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of ${dep_component}, if any => definitions are exported
 ### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of ${dep_component}, if any => definitions are not exported
 ### dep_defs  : definitions in the interface of ${dep_component} that must be defined when ${component} uses ${dep_component}, if any => definitions are exported if dep_component is exported
 ### export : if true the component export the dep_component in its interface (export is always false if component is an application)
 function(declare_Package_Component_Dependancy component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
-	# ${PROJECT}_${component}_DEPENDENCIES			# packages used by the component ${component} of the current package
-	# ${PROJECT}_${component}_DEPENDANCY_${dep_package}_COMPONENTS	# components of package ${dep_package} used by component ${component} of current package
+	# ${PROJECT_NAME}_${component}_DEPENDENCIES			# packages used by the component ${component} of the current package
+	# ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS	# components of package ${dep_package} used by component ${component} of current package
 if(	NOT ${${PROJECT_NAME}_${component}_DECLARED})
 	message(FATAL_ERROR "Problem : ${component} in current package does not exist")
 elseif( NOT ${${dep_package}_${dep_component}_DECLARED})
@@ -1027,8 +1107,8 @@ else()
 		endif()
 
 	#links and include directories do not require to be added (will be found automatically)	
-	set(${PROJECT}_${component}_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}}  ${dep_package} CACHE INTERNAL "")
-	set(${PROJECT}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}  ${${PROJECT}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${dep_component} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}}  ${dep_package} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}  ${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${dep_component} CACHE INTERNAL "")
 	endif()
 endif()
 endfunction(declare_Package_Component_Dependancy)
@@ -1083,7 +1163,7 @@ if(NOT ${${PROJECT_NAME}_${component}_DECLARED})
 	return()
 endif()
 
-if(DEFINED ${PROJECT}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX})
+if(DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX})
 	#guarding depending type of involved components
 	is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
@@ -1110,9 +1190,24 @@ else()#the external dependancy is a system dependancy
 endif()
 endfunction(declare_External_Component_Dependancy)
 
-
 ##################################################################################
 ############################## install the dependancies ########################## 
 ########### functions used to create the use<package><version>.cmake  ############ 
 ##################################################################################
+
+function(create_Mode_Dependent_Use_File)
+
+
+
+
+endfunction(create_Mode_Dependent_Use_File)
+
+function(agregate_Use_Files)
+
+
+
+
+endfunction(agregate_Use_Files)
+
+
 

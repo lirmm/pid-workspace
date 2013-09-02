@@ -24,32 +24,32 @@
 macro(test_Package_Location package dependency)
 	if(NOT ${${dependency}_FOUND})
 
-		if(${${package}_DEPENDANCY_${dependency}_VERSION} STREQUAL "")
+		if(${${package}_DEPENDENCY_${dependency}_VERSION} STREQUAL "")
 			message(SEND_ERROR "The required package ${a_dependency} has not been found !")
-		elseif(${${package}_DEPENDANCY_${dependency}_VERSION_EXACT})
-			message(SEND_ERROR "The required package ${a_dependency} with exact version ${${package}_DEPENDANCY_${dependency}_VERSION} has not been found !")
+		elseif(${${package}_DEPENDENCY_${dependency}_VERSION_EXACT})
+			message(SEND_ERROR "The required package ${a_dependency} with exact version ${${package}_DEPENDENCY_${dependency}_VERSION} has not been found !")
 		else()
-			message(SEND_ERROR "The required package ${a_dependency} with version compatible with ${${package}_DEPENDANCY_${dependency}_VERSION} has not been found !")
+			message(SEND_ERROR "The required package ${a_dependency} with version compatible with ${${package}_DEPENDENCY_${dependency}_VERSION} has not been found !")
 		endif()
-		list(APPEND ${package}_DEPENDANCIES_NOTFOUND ${dependency})
+		list(APPEND ${package}_DEPENDENCIES_NOTFOUND ${dependency})
 	endif()
 endmacro()
 
 ###
 # each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
 # other variables set by the package version use file 
-# ${package}_DEPENDANCY_${dependency}_REQUIRED		# TRUE if package is required FALSE otherwise (QUIET MODE)
-# ${package}_DEPENDANCY_${dependency}_VERSION		# version if a version if specified
+# ${package}_DEPENDENCY_${dependency}_REQUIRED		# TRUE if package is required FALSE otherwise (QUIET MODE)
+# ${package}_DEPENDENCY_${dependency}_VERSION		# version if a version if specified
 # ${package}_DEPENDENCY_${dependency}_VERSION_EXACT	# TRUE if exact version is required
 # ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
 macro(locate_Package package dependency)
 
-	if(	NOT ${${package}_DEPENDANCY_${dependency}_VERSION} STREQUAL ""
+	if(	NOT ${${package}_DEPENDENCY_${dependency}_VERSION} STREQUAL ""
 		AND ${${package}_DEPENDENCY_${dependency}_VERSION_EXACT}) #an exact version has been specified
 			#WARNING recursive call to find package
 		find_package(
 			${dependency} 
-			${${package}_DEPENDANCY_${dependency}_VERSION} 
+			${${package}_DEPENDENCY_${dependency}_VERSION} 
 			EXACT
 			MODULE
 			REQUIRED
@@ -60,7 +60,7 @@ macro(locate_Package package dependency)
 		#WARNING recursive call to find package
 		find_package(
 			${dependency} 
-			${${package}_DEPENDANCY_${dependency}_VERSION} 
+			${${package}_DEPENDENCY_${dependency}_VERSION} 
 			MODULE
 			REQUIRED
 			${${package}_DEPENDENCY_${dependency}_COMPONENTS}
@@ -214,7 +214,7 @@ foreach(a_dependency IN ITEMS ${${package_name}_DEPENDENCIES})
 	locate_Package(${${package_name} ${a_dependency})
 endforeach()
 
-if(${${package}_DEPENDANCIES_NOTFOUND ${dependency}})
+if(${${package}_DEPENDENCIES_NOTFOUND ${dependency}})
 	message(FATAL_ERROR "Some dependencies have not been found exitting")
 	#TODO here managing the automatic installation of binay packages or git repo (if not exist)
 endif()
@@ -222,7 +222,7 @@ endif()
 # 3) setting build variables with informations coming from package dependancies
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
 	foreach(a_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES}) 
-		foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDANCY_${a_package}_COMPONENTS}) 
+		foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS}) 
 			update_Component_Build_Variables_With_Dependency (${package_name} ${a_component} ${a_package} ${a_dep_component})
 		endforeach()
 	endforeach()		
