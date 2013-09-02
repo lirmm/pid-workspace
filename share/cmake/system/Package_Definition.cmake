@@ -3,7 +3,7 @@
 ##################################################################################
 
 ### generating the license of the package
-macro(generate_License_File)
+function(generate_License_File)
 
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	if(	DEFINED ${PROJECT_NAME}_LICENSE 
@@ -22,16 +22,16 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		endif(LICENSE_IN-NOTFOUND)
 	endif()
 endif()
-endmacro(generate_License_File)
+endfunction(generate_License_File)
 
 ### generating the Find<package>.cmake file of the package
-macro(generate_Find_File)
+function(generate_Find_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	# generating/installing the generic cmake find file for the package 
 	configure_file(${WORKSPACE_DIR}/share/cmake/system/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
 	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
 endif()
-endmacro(generate_Find_File)
+endfunction(generate_Find_File)
 
 ### generating the Use<package>-<version>.cmake file for the current package version
 macro(generate_Use_File)
@@ -45,23 +45,24 @@ endmacro(generate_Use_File)
 
 
 ### configure variables exported by component that will be used to generate the package cmake use file
-macro (configure_Install_Variables component export include_dirs dep_defs exported_defs links)
+function (configure_Install_Variables component export include_dirs dep_defs exported_defs links)
 
 # configuring the export
-if(${export}) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
-	if(${dep_defs} OR ${exported_defs})	
+if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
+	if(	NOT dep_defs STREQUAL "" 
+		OR NOT exported_defs  STREQUAL "")	
 		set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
 			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
 			${exported_defs} ${dep_defs}
 			CACHE INTERNAL "")
 	endif()
-	if(${include_dirs})
+	if(NOT include_dirs STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} 
 			${${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX}} 
 			"${include_dirs}"
 			CACHE INTERNAL "")
 	endif()
-elseif(${exported_defs}) # otherwise no need to register them since no more useful
+elseif(NOT exported_defs STREQUAL "") # otherwise no need to register them since no more useful
 	#just add the exported defs of the component
 	set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
 		${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
@@ -70,20 +71,20 @@ elseif(${exported_defs}) # otherwise no need to register them since no more usef
 endif()
 
 # links are exported in all cases	
-if(NOT ${links} STREQUAL "")
+if(NOT links STREQUAL "")
 	set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
 		${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
 		${links}
 		CACHE INTERNAL "")
 endif()
-endmacro (configure_Install_Variables)
+endfunction(configure_Install_Variables)
 
 
 ### to know if the component is an application
 function(is_Executable_Component ret_var package component)
-if (	${${package}_${component}_TYPE} STREQUAL "APP"
-	OR ${${package}_${component}_TYPE} STREQUAL "EXAMPLE"
-	OR ${${package}_${component}_TYPE} STREQUAL "TEST"
+if (	${package}_${component}_TYPE STREQUAL "APP"
+	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
+	OR ${package}_${component}_TYPE STREQUAL "TEST"
 	)
 	set(ret_var TRUE)
 else()
@@ -93,11 +94,11 @@ endfunction(is_Executable_Component)
 
 ### to know if component will be built
 function (is_Built_Component ret_var  package component)
-if (	${${package}_${component}_TYPE} STREQUAL "APP"
-	OR ${${package}_${component}_TYPE} STREQUAL "EXAMPLE"
-	OR ${${package}_${component}_TYPE} STREQUAL "TEST"
-	OR ${${package}_${component}_TYPE} STREQUAL "STATIC"
-	OR ${${package}_${component}_TYPE} STREQUAL "SHARED"
+if (	${package}_${component}_TYPE STREQUAL "APP"
+	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
+	OR ${package}_${component}_TYPE STREQUAL "TEST"
+	OR ${package}_${component}_TYPE STREQUAL "STATIC"
+	OR ${package}_${component}_TYPE STREQUAL "SHARED"
 )
 	set(ret_var TRUE)
 else()
@@ -232,41 +233,38 @@ endif(CMAKE_BUILD_TYPE MATCHES Release)
 endfunction(generate_API)
 
 
-
 ### configure the target with exported flags (cflags and ldflags)
 function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs links)
-
 # managing compile time flags
-if(NOT ${inc_dirs} STREQUAL "")
+if(NOT inc_dirs STREQUAL "")
 	target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC ${inc_dirs})
-endif(NOT ${inc_dirs} STREQUAL "")
+endif()
 
 # managing compile time flags
-if(NOT ${defs} STREQUAL "")
+if(NOT defs STREQUAL "")
 	target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC ${defs})
-endif(NOT ${defs} STREQUAL "")
+endif()
 
 # managing link time flags
-if(NOT ${links} STREQUAL "")
+if(NOT links STREQUAL "")
 	target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} ${links})
-endif(NOT ${links} STREQUAL "")
-
+endif()
 endfunction(manage_Additional_Component_Exported_Flags)
+
 
 ### configure the target with internal flags (cflags only)
 function(manage_Additional_Component_Internal_Flags component_name inc_dirs defs)
-
 # managing compile time flags
-if(NOT ${inc_dirs} STREQUAL "")
+if(NOT inc_dirs STREQUAL "")
 	target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE ${inc_dirs})
-endif(NOT ${inc_dirs} STREQUAL "")
+endif()
 
 # managing compile time flags
-if(NOT ${defs} STREQUAL "")
+if(NOT defs STREQUAL "")
 	target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE ${defs})
-endif(NOT ${defs} STREQUAL "")
-
+endif()
 endfunction(manage_Additional_Component_Internal_Flags)
+
 
 ### configure the target to link with another target issued from a component of the same package
 function (fill_Component_Target_With_Internal_Dependency component dep_component export comp_defs comp_exp_defs dep_defs)
@@ -276,7 +274,7 @@ is_Executable_Component(COMP_IS_EXEC ${PROJECT_NAME} ${dep_c_name})
 if(COMP_IS_BUILT) #the component has a corresponding target
 
 	if(NOT COMP_IS_EXEC)#the required internal component is a library 
-		if(${export})
+		if(export)
 			set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
 			manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
 			manage_Additional_Component_Exported_Flags(${component} "${${PROJECT_NAME}_${dep_component}_TEMP_INCLUDE_DIR}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${dep_component}${INSTALL_NAME_SUFFIX}")
@@ -290,8 +288,8 @@ if(COMP_IS_BUILT) #the component has a corresponding target
 		message(FATAL_ERROR "Executable component ${dep_c_name} cannot be a dependency for component ${component}")	
 	endif()
 endif()#do nothing in case of a pure header component
-
 endfunction(fill_Component_Target_With_Internal_Dependency)
+
 
 ### configure the target to link with another component issued from another package
 function (fill_Component_Target_With_Package_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
@@ -302,7 +300,7 @@ if(COMP_IS_BUILT) #the component has a corresponding target
 
 	if(NOT DEP_IS_EXEC)#the required internal component is a library
 		
-		if(${export})
+		if(export)
 			set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
 			manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
 			manage_Additional_Component_Exported_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
@@ -326,7 +324,7 @@ is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
 if(COMP_IS_BUILT) #the component has a corresponding target
 
 	# setting compile/linkage definitions for the component target
-	if(${export})
+	if(export)
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${ext_defs})
 		manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
 		manage_Additional_Component_Exported_Flags(${component} "${ext_inc_dirs}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${ext_links}")
@@ -732,6 +730,7 @@ macro(buildLibComponent c_name used_libraries_list)
 	#managing headers	
 	set(${PROJECT_NAME}_COMP_LIB_${c_name}_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${c_name})
 	install(DIRECTORY ${PROJECT_NAME}_COMP_LIB_${c_name}_INCLUDE_DIR DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.h")
+	install(DIRECTORY ${PROJECT_NAME}_COMP_LIB_${c_name}_INCLUDE_DIR DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hh")
 	install(DIRECTORY ${PROJECT_NAME}_COMP_LIB_${c_name}_INCLUDE_DIR DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hpp")
 	#managing sources
 	set(${PROJECT_NAME}_COMP_LIB_${c_name}_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/${c_name})
