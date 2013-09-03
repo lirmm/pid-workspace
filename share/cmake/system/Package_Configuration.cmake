@@ -170,7 +170,7 @@ macro (init_Component_Variables package component path_to_version )
 
 endmacro (init_Component_Variables package component)
 
-###
+### TODO gérer la récursion
 macro (update_Component_Build_Variables_With_Dependency package component dep_package dep_component)
 
 if(${package} STREQUAL ${dep_package})
@@ -201,7 +201,7 @@ endmacro()
 ##################################################################################
 ##################################  main macro  ##################################
 ##################################################################################
-
+#TODO gérer le mode debug ou release de manière différente !!!!!!!!! prendre en compte les champs _DEBUG sur les dependencies
 macro(configure_Package_Build_Variables package_name path_to_version)
 # 1) initializing all build variable that are internal to each component
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
