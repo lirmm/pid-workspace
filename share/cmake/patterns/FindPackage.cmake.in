@@ -26,40 +26,39 @@ set(PACKAGE_@PROJECT_NAME@_SEARCH_PATH
   )
 mark_as_advanced(PACKAGE_@PROJECT_NAME@_SEARCH_PATH)
 
-check_Directory_Exists(${PACKAGE_@PROJECT_NAME@_SEARCH_PATH})
-if(${RETURN_CHECK_DIRECTORY_EXISTS})
+check_Directory_Exists(EXIST ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH})
+if(EXIST)
 	# at this stage the only thing to do is to check for versions
 
 	#variables that will be filled by generic functions
-	set(VERSION_HAS_BEEN_FOUND FALSE)
-	if(DEFINED @PROJECT_NAME@_FIND_VERSION)
-		if(${@PROJECT_NAME@_FIND_VERSION_EXACT}) #using a specific version (only patch number can be adapted)
-			check_Exact_Version("@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH} ${@PROJECT_NAME@_FIND_VERSION_MAJOR} ${@PROJECT_NAME@_FIND_VERSION_MINOR})
-		else(${@PROJECT_NAME@_FIND_VERSION_EXACT}) #using the best version as regard of version constraints
-			check_Minor_Version("@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH} ${@PROJECT_NAME@_FIND_VERSION_MAJOR} ${@PROJECT_NAME@_FIND_VERSION_MINOR})
+	if(@PROJECT_NAME@_FIND_VERSION)
+		if(${@PROJECT_NAME@_FIND_VERSION_EXACT}) #using a specific version (only patch number can be adapted, first searching if there is any local version matching constraints, otherwise search for a non local version)
+			check_Exact_Version(VERSION_HAS_BEEN_FOUND "@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH} ${@PROJECT_NAME@_FIND_VERSION_MAJOR} ${@PROJECT_NAME@_FIND_VERSION_MINOR})
+		else(${@PROJECT_NAME@_FIND_VERSION_EXACT}) #using the best version as regard of version constraints (only non local version are used)
+			check_Best_Version(VERSION_HAS_BEEN_FOUND "@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH} ${@PROJECT_NAME@_FIND_VERSION_MAJOR} ${@PROJECT_NAME@_FIND_VERSION_MINOR})
 		endif(${@PROJECT_NAME@_FIND_VERSION_EXACT})
-	else(DEFINED @PROJECT_NAME@_FIND_VERSION) #no specific version targetted using own or the last available version if it does not exist   
-		check_Local_Or_Newest_Version("@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH})
-	endif(DEFINED @PROJECT_NAME@_FIND_VERSION)
+	else(@PROJECT_NAME@_FIND_VERSION) #no specific version targetted using last available version (takes the last version available either local or non local - local first)
+		check_Last_Version(VERSION_HAS_BEEN_FOUND "@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH})
+	endif(@PROJECT_NAME@_FIND_VERSION)
 
-	if(${VERSION_HAS_BEEN_FOUND})#a good version of the package has been found		
-		set(PATH_TO_PACKAGE_VERSION ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH}/${@PROJECT_NAME@_VERSION_STRING})		
-		if(${@PROJECT_NAME@_FIND_COMPONENTS}) #specific components must be checked, taking only selected components	
+	if(VERSION_HAS_BEEN_FOUND)#a good version of the package has been found
+		set(PATH_TO_PACKAGE_VERSION ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH}/${@PROJECT_NAME@_VERSION_RELATIVE_PATH})		
+		if(@PROJECT_NAME@_FIND_COMPONENTS) #specific components must be checked, taking only selected components	
 				
-			select_Components("@PROJECT_NAME@" ${@PROJECT_NAME@_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} ${@PROJECT_NAME@_FIND_COMPONENTS})
-			if(${USE_FILE_NOTFOUND})
+			select_Components(@PROJECT_NAME@ ${@PROJECT_NAME@_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} ${@PROJECT_NAME@_FIND_COMPONENTS})
+			if(USE_FILE_NOTFOUND)
 				exitFindScript("The @PROJECT_NAME@ version selected (${@PROJECT_NAME@_VERSION_STRING}) has no configuration file or file is corrupted")
-			endif(${USE_FILE_NOTFOUND})
+			endif(USE_FILE_NOTFOUND)
 
-			if(NOT ${ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND})
-				exitFindScript("Some of the requested components of the package @PROJECT_NAME@ are missing (version chosen is ${@PROJECT_NAME@_VERSION_STRING}, requested is ${@PROJECT_NAME@_FIND_VERSION})")
-			endif(NOT ${ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND})	
+			if(NOT ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND)
+				exitFindScript("Some of the requested components of the package @PROJECT_NAME@ are missing (version chosen is ${@PROJECT_NAME@_VERSION_STRING}, requested is ${@PROJECT_NAME@_FIND_VERSION}),either bad names specified or broken package versionning")
+			endif(NOT ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND)	
 		
 		else(@PROJECT_NAME@_FIND_COMPONENTS)#no component check, register all of them
 			all_Components("@PROJECT_NAME@" ${@PROJECT_NAME@_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION})
-			if(${USE_FILE_NOTFOUND})
+			if(USE_FILE_NOTFOUND)
 				exitFindScript("The @PROJECT_NAME@ version selected (${@PROJECT_NAME@_VERSION_STRING}) has no configuration file or file is corrupted")
-			endif(${USE_FILE_NOTFOUND})
+			endif(USE_FILE_NOTFOUND)
 				
 		endif(@PROJECT_NAME@_FIND_COMPONENTS)
 		#here everything has been found => setting global standard CMake find process variables to adequate values
@@ -67,14 +66,16 @@ if(${RETURN_CHECK_DIRECTORY_EXISTS})
 		set(@PROJECT_NAME@_VERSION_${@PROJECT_NAME@_VERSION_STRING} TRUE)
 		set(@PROJECT_NAME@_ROOT_DIR ${PATH_TO_PACKAGE_VERSION})
 		#now configuring exported variables
-		configure_Package_Build_Variables(@PROJECT_NAME@ @PROJECT_NAME@_ROOT_DIR)
-	else(${VERSION_HAS_BEEN_FOUND})#no adequate version found
+		configure_Package_Build_Variables(@PROJECT_NAME@ ${@PROJECT_NAME@_ROOT_DIR})
+	else(VERSION_HAS_BEEN_FOUND)#no adequate version found
+		#TODO here automating the download of the adequate package version
 		exitFindScript("The package @PROJECT_NAME@ with version ${@PROJECT_NAME@_FIND_VERSION} cannot be found")
-	endif(${VERSION_HAS_BEEN_FOUND})
+	endif(VERSION_HAS_BEEN_FOUND)
 		
-else(${RETURN_CHECK_DIRECTORY_EXISTS}) #if the directory does not exist it means the package cannot be found
+else(EXIST) #if the directory does not exist it means the package cannot be found
+	#TODO here automating the download of the adequate package as regard of version
 	exitFindScript("The required package @PROJECT_NAME@ cannot be found")
-endif(${RETURN_CHECK_DIRECTORY_EXISTS})
+endif(EXIST)
 
 ####################################################
 ####### @PROJECT_NAME@ find script ends here #######

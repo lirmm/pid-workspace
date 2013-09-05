@@ -493,7 +493,7 @@ function(set_Current_Version major minor patch)
 	############ MANAGING install paths #############
 	#################################################
 	if(USE_LOCAL_DEPLOYMENT)
-		set(${PROJECT_NAME}_DEPLOY_PATH own CACHE INTERNAL "")
+		set(${PROJECT_NAME}_DEPLOY_PATH own-${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
 	else(USE_LOCAL_DEPLOYMENT)
 		set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
 	endif(USE_LOCAL_DEPLOYMENT) 
