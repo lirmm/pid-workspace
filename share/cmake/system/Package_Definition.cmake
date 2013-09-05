@@ -2,17 +2,20 @@
 ############# auxiliary package management internal functions and macros #########
 ##################################################################################
 
+
 ### generating the license of the package
 function(generate_License_File)
-
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	if(	DEFINED ${PROJECT_NAME}_LICENSE 
 		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
 	
-		find_file(LICENSE   "License${${PROJECT_NAME}_LICENSE}.cmake"
-				PATHS "${WORKSPACE_DIR}/share/cmake/system"
+		find_file(	LICENSE   
+				"License${${PROJECT_NAME}_LICENSE}.cmake"
+				PATH "${WORKSPACE_DIR}/share/cmake/system"
 				NO_DEFAULT_PATH
-				DOC "Path to the license configuration file")
+			)
+		set(LICENSE ${LICENSE} CACHE INTERNAL "")
+		
 		if(LICENSE_IN-NOTFOUND)
 			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
 		else(LICENSE_IN-NOTFOUND)
@@ -28,7 +31,7 @@ endfunction(generate_License_File)
 function(generate_Find_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	# generating/installing the generic cmake find file for the package 
-	configure_file(${WORKSPACE_DIR}/share/cmake/system/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
+	configure_file(${WORKSPACE_DIR}/share/cmake/patterns/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
 	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
 endif()
 endfunction(generate_Find_File)
@@ -111,8 +114,8 @@ function(will_be_Built result component)
 if(NOT ${PROJECT_NAME}_${component}_DECLARED)
 	set(${result} FALSE PARENT_SCOPE)
 	message(FATAL_ERROR "component ${component} does not exist")
-elseif( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_WITH_TESTS)
-	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND NOT BUILD_WITH_EXAMPLES))
+elseif( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND NOT BUILD_EXAMPLES))
 	set(${result} FALSE PARENT_SCOPE)
 else()
 	set(${result} TRUE PARENT_SCOPE)
@@ -128,34 +131,40 @@ endfunction(add_Example_To_Doc c_name)
 
 ### generating API documentation for the package
 function(generate_API)
-option(GENERATE_LATEX_API "Generating the latex api documentation" ON)
-if(CMAKE_BUILD_TYPE MATCHES Release) # if in release mode we generate the doc
+
+if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
+
+if(NOT BUILD_API_DOC)
+	return()
+endif()
 
 #finding doxygen tool and doxygen configuration file 
 find_package(Doxygen)
+if(NOT DOXYGEN_FOUND)
+	message(WARNING "Doxygen not found please install it to generate the API documentation")
+	return()
+endif(NOT DOXYGEN_FOUND)
 find_file(DOXYFILE_IN   "Doxyfile.in"
 			PATHS "${CMAKE_SOURCE_DIR}/share/doxygen"
 			NO_DEFAULT_PATH
-			DOC "Path to the doxygen configuration template file")
-
-if(NOT DOXYGEN_FOUND)
-	message(WARNING "Doxygen not found please install it to generate the API documentation")
-endif(NOT DOXYGEN_FOUND)
+	)
+set(DOXYFILE_IN ${DOXYFILE_IN} CACHE INTERNAL "")
 if(DOXYFILE_IN-NOTFOUND)
 	message(WARNING "Doxyfile not found in the share folder of your package !! Getting the standard doxygen template file from workspace ... ")
 	find_file(GENERIC_DOXYFILE_IN   "Doxyfile.in"
-					PATHS "${WORKSPACE_DIR}/share/cmake/system"
+					PATHS "${WORKSPACE_DIR}/share/cmake/patterns"
 					NO_DEFAULT_PATH
-					DOC "Path to the generic doxygen configuration template file")
+		)
+	set(GENERIC_DOXYFILE_IN ${GENERIC_DOXYFILE_IN} CACHE INTERNAL "")
 	if(GENERIC_DOXYFILE_IN-NOTFOUND)
-		message(WARNING "No Template file found, skipping documentation generation !!")		
+		message(WARNING "No Template file found in ${WORKSPACE_DIR}/share/cmake/patterns/, skipping documentation generation !!")		
 	else(GENERIC_DOXYFILE_IN-NOTFOUND)
-		file(COPY ${WORKSPACE_DIR}/share/doxygen/Doxyfile.in ${CMAKE_SOURCE_DIR}/share/doxygen)
-		message(STATUS "Template file found and copied to your package, you can now modify it")		
+		file(COPY ${WORKSPACE_DIR}/share/cmake/patterns/Doxyfile.in ${CMAKE_SOURCE_DIR}/share/doxygen)
+		message(STATUS "Template file found in ${WORKSPACE_DIR}/share/cmake/patterns/ and copied to your package, you can now modify it")		
 	endif(GENERIC_DOXYFILE_IN-NOTFOUND)
 endif(DOXYFILE_IN-NOTFOUND)
 
-if(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND AND NOT GENERIC_DOXYFILE_IN-NOTFOUND) #we are able to generate the doc
+if(DOXYGEN_FOUND AND (NOT DOXYFILE_IN-NOTFOUND OR NOT GENERIC_DOXYFILE_IN-NOTFOUND)) #we are able to generate the doc
 	# general variables
 	set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
 	set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
@@ -203,7 +212,7 @@ if(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND AND NOT GENERIC_DOXYFILE_IN-NOTFOU
 	# configuring doxyfile for latex generation 
 	set(DOXYFILE_PDFLATEX "NO")
 
-	if(GENERATE_LATEX_API)
+	if(BUILD_LATEX_API_DOC)
 		# target to clean installed doc
 		set_property(DIRECTORY
 			APPEND PROPERTY
@@ -227,9 +236,9 @@ if(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND AND NOT GENERIC_DOXYFILE_IN-NOTFOU
 			set(DOXYGEN_LATEX "NO")
 		endif(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
 
-	else(GENERATE_LATEX_API)
+	else(BUILD_LATEX_API_DOC)
 		set(DOXYFILE_GENERATE_LATEX "NO")
-	endif(GENERATE_LATEX_API)
+	endif(BUILD_LATEX_API_DOC)
 
 	#configuring the Doxyfile.in file to generate a doxygen configuration file
 	configure_file(${CMAKE_SOURCE_DIR}/share/doxygen/Doxyfile.in ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
@@ -240,15 +249,15 @@ if(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND AND NOT GENERIC_DOXYFILE_IN-NOTFOU
 
 	### end installing documentation ###
 
-endif(DOXYGEN_FOUND AND NOT DOXYFILE_IN-NOTFOUND AND NOT GENERIC_DOXYFILE_IN-NOTFOUND)
-	set(BUILD_WITH_DOC OFF)
-endif(CMAKE_BUILD_TYPE MATCHES Release)
+endif()
+	set(BUILD_API_DOC OFF FORCE)
+endif()
 endfunction(generate_API)
 
 
 ### configure the target with exported flags (cflags and ldflags)
 function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs links)
-message("manage_Additional_Component_Exported_Flags ${component_name} includes = ${inc_dirs}, defs = ${defs}, links=${links} \n")
+#message("manage_Additional_Component_Exported_Flags ${component_name} includes = ${inc_dirs}, defs = ${defs}, links=${links} \n")
 
 # managing compile time flags (-I<path>)
 if(NOT inc_dirs STREQUAL "")
@@ -269,7 +278,7 @@ endfunction(manage_Additional_Component_Exported_Flags)
 ### configure the target with internal flags (cflags only)
 function(manage_Additional_Component_Internal_Flags component_name inc_dirs defs)
 # managing compile time flags
-message("manage_Additional_Component_Internal_Flags ${component_name} includes = ${inc_dirs}, defs = ${defs} ")
+#message("manage_Additional_Component_Internal_Flags ${component_name} includes = ${inc_dirs}, defs = ${defs} ")
 if(NOT inc_dirs STREQUAL "")
 	target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE "${inc_dirs}")
 endif()
@@ -385,7 +394,7 @@ endfunction(reset_component_cached_variables)
 ### resetting all internal cached variables that would cause some troubles
 function(reset_cached_variables)
 
-#resetting general info about the package
+#resetting general info about the package : only list are reset
 set(${PROJECT_NAME}_MAIN_AUTHOR CACHE INTERNAL "")
 set(${PROJECT_NAME}_MAIN_INSTITUTION CACHE INTERNAL "")
 set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS CACHE INTERNAL "")
@@ -398,6 +407,7 @@ set (${PROJECT_NAME}_VERSION_MAJOR CACHE INTERNAL "")
 set (${PROJECT_NAME}_VERSION_MINOR CACHE INTERNAL "")
 set (${PROJECT_NAME}_VERSION_PATCH CACHE INTERNAL "")
 set (${PROJECT_NAME}_VERSION CACHE INTERNAL "")
+
 
 # references to package binaries version available must be reset
 foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
@@ -431,6 +441,20 @@ set(${PROJECT_NAME}_COMPONENTS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
 endfunction(reset_cached_variables)
+
+function(reset_Mode_Cache_Options)
+#unset all global options
+set(BUILD_EXAMPLES CACHE BOOL "" FORCE)
+set(BUILD_API_DOC CACHE BOOL "" FORCE)
+set(BUILD_API_DOC CACHE BOOL "" FORCE)
+set(BUILD_AND_RUN_TESTS CACHE BOOL "" FORCE)
+set(BUILD_WITH_PRINT_MESSAGES CACHE BOOL "" FORCE)
+set(USE_LOCAL_DEPLOYMENT CACHE BOOL "" FORCE)
+set(GENERATE_INSTALLER CACHE BOOL "" FORCE)
+set(WORKSPACE_DIR CACHE PATH "" FORCE)
+#include the cmake script that sets the options coming from the global build configuration
+include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
+endfunction(reset_Mode_Cache_Options)
 
 
 ##################################################################################
@@ -473,7 +497,6 @@ function(set_Current_Version major minor patch)
 	else(USE_LOCAL_DEPLOYMENT)
 		set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
 	endif(USE_LOCAL_DEPLOYMENT) 
-	message("deploy path is ${${PROJECT_NAME}_DEPLOY_PATH}")
 	set ( ${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
@@ -486,32 +509,75 @@ endfunction(set_Current_Version)
 ###########################  declaration of the package ##########################
 ##################################################################################
 macro(declare_Package author institution year license address description)
+
+#################################################
+############ DECLARING options ##################
+#################################################
+
+include(CMakeDependentOption)
+option(BUILD_EXAMPLES "Package builds examples" ON)
+
+option(BUILD_API_DOC "Package generates the HTML API documentation" ON)
+CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF
+		         "BUILD_API_DOC" OFF)
+
+option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
+option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
+
+option(USE_LOCAL_DEPLOYMENT "Package uses tests" ON)
+CMAKE_DEPENDENT_OPTION(GENERATE_INSTALLER "Package generates an OS installer for linux with debian" ON
+		         "NOT USE_LOCAL_DEPLOYMENT" OFF)
+
 #################################################
 ############ MANAGING build mode ################
 #################################################
 if(${CMAKE_BINARY_DIR} MATCHES release)
+	reset_Mode_Cache_Options()
+
 	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
 	set ( INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
 	set ( USE_MODE_SUFFIX "" CACHE INTERNAL "")
+	
 elseif(${CMAKE_BINARY_DIR} MATCHES debug)
+	reset_Mode_Cache_Options()
+	
 	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
 	set ( INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
 	set ( USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "")
+	
 elseif(${CMAKE_BINARY_DIR} MATCHES build)
+
+	add_custom_target(build ALL
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
+	)
+	add_custom_target(clean
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} clean
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
+	)
+
 	if(NOT EXISTS ${CMAKE_BINARY_DIR}/debug OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory debug WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 	endif()
 	if(NOT EXISTS ${CMAKE_BINARY_DIR}/release OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/release)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory release WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 	endif()
+	
+	#getting options
+	execute_process(COMMAND ${CMAKE_COMMAND} -L -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR} OUTPUT_FILE ${CMAKE_BINARY_DIR}/options.txt)
+	#parsing option file and generating a load cache cmake script	
+	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES)
+	set(OPTIONS_FILE ${CMAKE_BINARY_DIR}/share/cacheConfig.cmake) 
+	file(WRITE ${OPTIONS_FILE} "")
+	foreach(line IN ITEMS ${LINES})
+		if(NOT ${line} STREQUAL "-- Cache values")
+			string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "set( \\1 \\3\ CACHE \\2 \"\" FORCE)\n" AN_OPTION "${line}")
+			file(APPEND ${OPTIONS_FILE} ${AN_OPTION})
+		endif()
+	endforeach()
+	
 	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
 	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
-
-	#need to create targets
-	add_custom_target(build ALL
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
-	)
 	return()
 else()	# the build must be done in the build directory
 	message(WARNING "Please run cmake in the build folder of the package ${PROJECT_NAME}")
@@ -540,14 +606,6 @@ set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
 
-#################################################
-############ DECLARING options ##################
-#################################################
-option(BUILD_WITH_EXAMPLES "Package builds examples" ON)
-option(BUILD_WITH_TESTS "Package uses tests" OFF)
-option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
-option(BUILD_WITH_DOC "Package generates documentation" ON)
-option(USE_LOCAL_DEPLOYMENT "Package uses tests" ON)
 if(BUILD_WITH_PRINT_MESSAGES)
 	add_definitions(-DPRINT_MESSAGES)
 endif(BUILD_WITH_PRINT_MESSAGES)
@@ -586,130 +644,157 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 endif()
 generate_Use_File() #generating/installing the version specific cmake "use" file
+generate_API() #generating/installing the API documentation
 
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############
 #################################################
 #TODO Il faudrait packager les libs debug ET release d'un coup !! (PAS facile avec CMAKE) 
-#option(GENERATE_INSTALLER "Package generate an OS installer for linux with tgz and if possible debian" OFF)
-#if(GENERATE_INSTALLER)
-#	include(InstallRequiredSystemLibraries)
-#	set(CPACK_GENERATOR TGZ)
-#	set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-#	set(CPACK_PACKAGE_CONTACT ${${PROJECT_NAME}_MAIN_AUTHOR})
-#	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${${PROJECT_NAME}_DESCRIPTION})
-#	set(CPACK_PACKAGE_VENDOR ${${PROJECT_NAME}_MAIN_INSTITUTION})
-#	set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/license.txt)#TODO change with binary dir and generate the file !!
-#	set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
-#	set(CPACK_PACKAGE_VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
-#	set(CPACK_PACKAGE_VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
-#	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
-#	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
 #
-#	if(UNIX AND NOT APPLE)
-#		list(APPEND CPACK_GENERATOR DEB)
-#	endif(UNIX AND NOT APPLE)
-#	include(CPack)
+if(GENERATE_INSTALLER)
+	include(InstallRequiredSystemLibraries)
+	#common infos	
+	set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+	set(CPACK_PACKAGE_CONTACT ${${PROJECT_NAME}_MAIN_AUTHOR})
+	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${${PROJECT_NAME}_DESCRIPTION})
+	set(CPACK_PACKAGE_VENDOR ${${PROJECT_NAME}_MAIN_INSTITUTION})
+	set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/license.txt)
+	set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
+	set(CPACK_PACKAGE_VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
+	set(CPACK_PACKAGE_VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
+	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
+	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
 
+	if(UNIX AND NOT APPLE AND NOT CYGWIN)#on any unix platform
 
-#	if(UNIX AND NOT APPLE) #linux install
-#		add_custom_target(package_install
-#				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-#					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-#				DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-#				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
-#					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
-#				DEPENDS ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-#				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
-#			)
-#	else(UNIX AND NOT APPLE) #apple install
-#		add_custom_target(package_install
-#			   	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-#					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tar.gz
-#				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.tag.gz in ${${PROJECT_NAME}_INSTALL_PATH}/installers" 						 
-#			)
-#	endif(UNIX AND NOT APPLE)
-#
-#endif(GENERATE_INSTALLER)
+		list(APPEND CPACK_GENERATOR DEB)	
+		execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE OUT_DPKG)
+		set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${OUT_DPKG})
+		 		
 
-#################################################
-######### MANAGING global make commands #########
-#################################################
+		add_custom_target(package_install
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
+				${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
+				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
+				)
+	endif() 
+	
+	if(CPACK_GENERATOR DEB) #there are defined generators
+		include(CPack)
+	endif()
+endif(GENERATE_INSTALLER)
+
+###############################################################################
+######### creating build target for easy sequencing all make commands #########
+###############################################################################
 
 #creating a global build command
-#if(GENERATE_INSTALLER)
-#	if(CMAKE_BUILD_TYPE MATCHES Release)
-#		if(${BUILD_WITH_TESTS})
-#			add_custom_target(build 
-#				COMMAND ${CMAKE_BUILD_TOOL}
-#				COMMAND ${CMAKE_BUILD_TOOL} test
-#				COMMAND ${CMAKE_BUILD_TOOL} doc 
-#				COMMAND ${CMAKE_BUILD_TOOL} install
-#				COMMAND ${CMAKE_BUILD_TOOL} package
-#				COMMAND ${CMAKE_BUILD_TOOL} package_install
-#			) 
-#		else(${BUILD_WITH_TESTS})
-#			add_custom_target(build 
-#				COMMAND ${CMAKE_BUILD_TOOL}
-#				COMMAND ${CMAKE_BUILD_TOOL} doc 
-#				COMMAND ${CMAKE_BUILD_TOOL} install
-#				COMMAND ${CMAKE_BUILD_TOOL} package
-#				COMMAND ${CMAKE_BUILD_TOOL} package_install
-#			) 
-#		endif(${BUILD_WITH_TESTS})
-#	else(CMAKE_BUILD_TYPE MATCHES Release)
-#		if(${BUILD_WITH_TESTS})
-#			add_custom_target(build 
-#				COMMAND ${CMAKE_BUILD_TOOL} 
-#				COMMAND ${CMAKE_BUILD_TOOL} test
-#				COMMAND ${CMAKE_BUILD_TOOL} install
-#				COMMAND ${CMAKE_BUILD_TOOL} package
-#				COMMAND ${CMAKE_BUILD_TOOL} package_install
-#			) 
-#		else(${BUILD_WITH_TESTS})
-#			add_custom_target(build 
-#				COMMAND ${CMAKE_BUILD_TOOL} 
-#				COMMAND ${CMAKE_BUILD_TOOL} install
-#				COMMAND ${CMAKE_BUILD_TOOL} package
-#				COMMAND ${CMAKE_BUILD_TOOL} package_install
-#			)  
-#		endif(${BUILD_WITH_TESTS})
-#
-#	endif(CMAKE_BUILD_TYPE MATCHES Release)
-#
-#else(GENERATE_INSTALLER)
+if(GENERATE_INSTALLER)
 	if(CMAKE_BUILD_TYPE MATCHES Release)
-		if(${BUILD_WITH_TESTS})
+		if(BUILD_AND_RUN_TESTS)
+			if(BUILD_API_DOC)
+				add_custom_target(build 
+					COMMAND ${CMAKE_BUILD_TOOL}
+					COMMAND ${CMAKE_BUILD_TOOL} test
+					COMMAND ${CMAKE_BUILD_TOOL} doc 
+					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_BUILD_TOOL} package
+					COMMAND ${CMAKE_BUILD_TOOL} package_install
+				)
+			else(BUILD_API_DOC)
+				add_custom_target(build 
+					COMMAND ${CMAKE_BUILD_TOOL}
+					COMMAND ${CMAKE_BUILD_TOOL} test
+					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_BUILD_TOOL} package
+					COMMAND ${CMAKE_BUILD_TOOL} package_install
+				)
+			endif(BUILD_API_DOC) 
+		else(BUILD_AND_RUN_TESTS)
+			if(BUILD_API_DOC)
+				add_custom_target(build 
+					COMMAND ${CMAKE_BUILD_TOOL}
+					COMMAND ${CMAKE_BUILD_TOOL} doc 
+					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_BUILD_TOOL} package
+					COMMAND ${CMAKE_BUILD_TOOL} package_install
+				)
+			else(BUILD_API_DOC)
+				add_custom_target(build 
+					COMMAND ${CMAKE_BUILD_TOOL}
+					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_BUILD_TOOL} package
+					COMMAND ${CMAKE_BUILD_TOOL} package_install
+				)
+			endif(BUILD_API_DOC)
+		endif(BUILD_AND_RUN_TESTS)
+	else(CMAKE_BUILD_TYPE MATCHES Release)
+		if(BUILD_AND_RUN_TESTS)
 			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL}
+				COMMAND ${CMAKE_BUILD_TOOL} 
 				COMMAND ${CMAKE_BUILD_TOOL} test
-				COMMAND ${CMAKE_BUILD_TOOL} doc 
 				COMMAND ${CMAKE_BUILD_TOOL} install
+				COMMAND ${CMAKE_BUILD_TOOL} package
+				COMMAND ${CMAKE_BUILD_TOOL} package_install
 			) 
-		else(${BUILD_WITH_TESTS})
-	
+		else(BUILD_AND_RUN_TESTS)
 			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL}
-				COMMAND ${CMAKE_BUILD_TOOL} doc 
+				COMMAND ${CMAKE_BUILD_TOOL} 
 				COMMAND ${CMAKE_BUILD_TOOL} install
-			) 
+				COMMAND ${CMAKE_BUILD_TOOL} package
+				COMMAND ${CMAKE_BUILD_TOOL} package_install
+			)  
+		endif(BUILD_AND_RUN_TESTS)
+
+	endif(CMAKE_BUILD_TYPE MATCHES Release)
+
+else(GENERATE_INSTALLER)
+	if(CMAKE_BUILD_TYPE MATCHES Release)
+		if(BUILD_AND_RUN_TESTS)
+			if(BUILD_API_DOC)
+				add_custom_target(build 
+					COMMAND ${CMAKE_BUILD_TOOL}
+					COMMAND ${CMAKE_BUILD_TOOL} test
+					COMMAND ${CMAKE_BUILD_TOOL} doc 
+					COMMAND ${CMAKE_BUILD_TOOL} install
+				)
+			else(BUILD_API_DOC)
+				add_custom_target(build 
+					COMMAND ${CMAKE_BUILD_TOOL}
+					COMMAND ${CMAKE_BUILD_TOOL} test
+					COMMAND ${CMAKE_BUILD_TOOL} install
+				)
+			endif(BUILD_API_DOC) 
+		else(BUILD_AND_RUN_TESTS)
+			if(BUILD_API_DOC)
+				add_custom_target(build 
+					COMMAND ${CMAKE_BUILD_TOOL}
+					COMMAND ${CMAKE_BUILD_TOOL} doc 
+					COMMAND ${CMAKE_BUILD_TOOL} install
+				)
+			else(BUILD_API_DOC) 
+				add_custom_target(build 
+					COMMAND ${CMAKE_BUILD_TOOL}
+					COMMAND ${CMAKE_BUILD_TOOL} install
+				)
+			endif(BUILD_API_DOC)
 		endif()
 	else(CMAKE_BUILD_TYPE MATCHES Release)
-		if(${BUILD_WITH_TESTS})
+		if(BUILD_AND_RUN_TESTS)
 			add_custom_target(build 
 				COMMAND ${CMAKE_BUILD_TOOL}
 				COMMAND ${CMAKE_BUILD_TOOL} test
 				COMMAND ${CMAKE_BUILD_TOOL} install
 			) 
-		else(${BUILD_WITH_TESTS})
+		else(BUILD_AND_RUN_TESTS)
 			
 			add_custom_target(build 
 				COMMAND ${CMAKE_BUILD_TOOL} 
 				COMMAND ${CMAKE_BUILD_TOOL} install
 			) 
-		endif(${BUILD_WITH_TESTS})
+		endif(BUILD_AND_RUN_TESTS)
 	endif(CMAKE_BUILD_TYPE MATCHES Release)
-#endif(GENERATE_INSTALLER)
+endif(GENERATE_INSTALLER)
 
 endmacro(build_Package)
 
@@ -759,7 +844,7 @@ file(	GLOB_RECURSE
 )
 
 
-message("relative headers are : ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE}")
+#message("relative headers are : ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE}")
 
 set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
 
@@ -819,6 +904,10 @@ endif()
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
 set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported links
 set(${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories (not useful to set it there since they will be exported "manually")
+get_target_property(LIB_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
+get_filename_component(LIB_NAME ${LIB_NAME} NAME)
+set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "") #exported include directories
+
 #updating global variables of the CMake process	
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS "${${PROJECT_NAME}_COMPONENTS_LIBS};${c_name}" CACHE INTERNAL "")
@@ -850,12 +939,12 @@ endif()
 # specifically managing examples 	
 if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE") 
 	add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced		
-	if(NOT ${BUILD_WITH_EXAMPLES}) #examples are not built so no need to continue
+	if(NOT ${BUILD_EXAMPLES}) #examples are not built so no need to continue
 		set(${PROJECT_NAME}_${c_name}_DECLARED TRUE CACHE INTERNAL "")		
 		return()
 	endif()
 elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
-	if(NOT ${BUILD_WITH_TESTS}) #tests are not built so no need to continue
+	if(NOT ${BUILD_AND_RUN_TESTS}) #tests are not built so no need to continue
 		set(${PROJECT_NAME}_${c_name}_DECLARED TRUE CACHE INTERNAL "")
 		return()
 	endif()
@@ -896,6 +985,9 @@ endif()
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories
+get_target_property(LIB_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
+get_filename_component(LIB_NAME ${LIB_NAME} NAME)
+set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "") #exported include directories
 
 #updating global variables of the CMake process	
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
@@ -946,7 +1038,7 @@ endfunction(declare_External_Package_Dependancy)
 ### export : if true the component export the dep_component in its interface (export is always false if component is an application)
 
 function(declare_Internal_Component_Dependancy component dep_component export comp_defs comp_exp_defs dep_defs)
-message("declare_Internal_Component_Dependancy : component = ${component}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
+#message("declare_Internal_Component_Dependancy : component = ${component}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
 
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
@@ -1007,7 +1099,7 @@ endfunction(declare_Internal_Component_Dependancy)
 function(declare_Package_Component_Dependancy component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
 	# ${PROJECT_NAME}_${component}_DEPENDENCIES			# packages used by the component ${component} of the current package
 	# ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS	# components of package ${dep_package} used by component ${component} of current package
-message("declare_Package_Component_Dependancy : component = ${component}, dep_package = ${dep_package}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
+#message("declare_Package_Component_Dependancy : component = ${component}, dep_package = ${dep_package}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
@@ -1170,7 +1262,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once
 	file(APPEND ${file} "####### internal specs of package components #######\n")
 	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_LIBS})
 		file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_TYPE ${${PROJECT_NAME}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME ${${PROJECT_NAME}_COMPONENTS_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME ${${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADERS ${${PROJECT_NAME}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
 	endforeach()
 	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})

@@ -1,4 +1,5 @@
-
+#############################################
+#inutile car le INTERFACE_COMPILE_FLAGS n'existe pas
 if(	${CMAKE_MAJOR_VERSION} EQUAL 2
 	AND ${CMAKE_MINOR_VERSION} EQUAL 8
 	AND NOT ${CMAKE_PATCH_VERSION} GREATER 10)#until this version target_include_directories and target_compie_definitions are not defined yet, the mode argument is just for compatibility with newer versions of cmake
@@ -35,6 +36,9 @@ function(target_compile_definitions target mode defs)
 				PROPERTIES COMPILE_DEFINITIONS "${MY_COMPILE_DEFS}")
 endfunction()
 
+endif()
+
+############################################
 
 function(resolve_Component_Exported_Configuration package component res_definitions res_include_dirs res_links)
 	set(${res_definitions} "" PARENT_SCOPE)
