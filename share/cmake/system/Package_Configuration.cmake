@@ -21,7 +21,7 @@
 ##################    auxiliary functions for utility purposes ###################
 ##################################################################################
 
-macro(test_Package_Location package dependency)
+function(test_Package_Location DEPENDENCIES_NOTFOUND package dependency)
 	if(NOT ${${dependency}_FOUND})
 
 		if(${${package}_DEPENDENCY_${dependency}_VERSION} STREQUAL "")
@@ -31,9 +31,10 @@ macro(test_Package_Location package dependency)
 		else()
 			message(SEND_ERROR "The required package ${a_dependency} with version compatible with ${${package}_DEPENDENCY_${dependency}_VERSION} has not been found !")
 		endif()
-		list(APPEND ${package}_DEPENDENCIES_NOTFOUND ${dependency})
+		set(${DEPENDENCIES_NOTFOUND} ${DEPENDENCIES_NOTFOUND} ${dependency} PARENT_SCOPE)
 	endif()
-endmacro()
+endfunction()
+
 
 ###
 # each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
@@ -42,10 +43,65 @@ endmacro()
 # ${package}_DEPENDENCY_${dependency}_VERSION		# version if a version if specified
 # ${package}_DEPENDENCY_${dependency}_VERSION_EXACT	# TRUE if exact version is required
 # ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
-macro(locate_Package package dependency)
+function(resolve_Package_Dependency package dependency)
+#HERE TODO Probleme de gestion de la récursion : cas de base dans lequel on "tombe" plusieurs fois sur le même package => 
+# idée de base : récursion de tous les use file ? IMPOSSIBLE CAR REQUIERT DE FAIRE LE CHOIX D'UNE VERSION !!
 
-	if(	NOT ${${package}_DEPENDENCY_${dependency}_VERSION} STREQUAL ""
-		AND ${${package}_DEPENDENCY_${dependency}_VERSION_EXACT}) #an exact version has been specified
+if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
+	if(${package}_DEPENDENCY_${dependency}_VERSION) # a specific version 
+	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT) #an exact version is required, versions must be the same
+			if(${dependency}_VERSION_${${package}_DEPENDENCY_${dependency}_VERSION})#same version already installed			
+				return()#no need to locate package
+			else()
+				is_Exact_Version_Compatible_With_Previous_Constraints(RES ${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION})
+				if(RES)# OK installing the exact version instead
+					#WARNING recursive call to find package
+					find_package(
+						${dependency} 
+						${${package}_DEPENDENCY_${dependency}_VERSION} 
+						EXACT
+						MODULE
+						REQUIRED
+						${${package}_DEPENDENCY_${dependency}_COMPONENTS}
+					)				
+				else()
+					message(FATAL_ERROR "impossible to find compatible versions regarding versions constraints for package ${package}")
+					return()
+				endif()
+			endif()
+		else()#not an exact version requiert
+			find_Version_Compatible_With_Previous_Constraints(RES_VERSION IS_EXACT${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION})
+			if(RES_VERSION)
+				if(IS_EXACT)
+					find_package(
+						${dependency} 
+						RES_VERSION
+						EXACT 
+						MODULE
+						REQUIRED
+						${${package}_DEPENDENCY_${dependency}_COMPONENTS}
+					)
+				else()
+					find_package(
+						${dependency} 
+						RES_VERSION 
+						MODULE
+						REQUIRED
+						${${package}_DEPENDENCY_${dependency}_COMPONENTS}
+					)
+
+				endif()
+			else()
+				message(FATAL_ERROR "impossible to find compatible versions regarding versions constraints for package ${package}")
+				return()
+			endif()
+		endif()
+	else()
+		return()#by default the version is compatible (no constraints) so return 
+	endif()
+else()#the dependency has not been already found
+	if(	${package}_DEPENDENCY_${dependency}_VERSION
+		AND ${package}_DEPENDENCY_${dependency}_VERSION_EXACT) #an exact version has been specified
 			#WARNING recursive call to find package
 		find_package(
 			${dependency} 
@@ -55,6 +111,7 @@ macro(locate_Package package dependency)
 			REQUIRED
 			${${package}_DEPENDENCY_${dependency}_COMPONENTS}
 		)
+		
 
 	else()
 		#WARNING recursive call to find package
@@ -65,50 +122,49 @@ macro(locate_Package package dependency)
 			REQUIRED
 			${${package}_DEPENDENCY_${dependency}_COMPONENTS}
 		)
-	
 	endif()
-
-	test_Package_Location(${package} ${dependency})
-
-endmacro()
+endif()
+test_Package_Location(DEPENDENCIES_NOTFOUND ${package} ${dependency})
+set(${package}_DEPENDENCIES_NOTFOUND ${DEPENDENCIES_NOTFOUND} PARENT_SCOPE)
+endfunction(resolve_Package_Dependency)
 
 ##################################################################################
 ##################    auxiliary functions fill exported variables ################
 ##################################################################################
 
 ###
-macro (update_Config_Include_Dirs package component path)
+function (update_Config_Include_Dirs package component path)
 	set(${package}_${component}_INCLUDE_DIRS ${${package}_${component}_INCLUDE_DIRS} ${path} CACHE INTERNAL "")
-endmacro(update_Config_Include_Dirs package component path)
+endfunction(update_Config_Include_Dirs)
 
 ###
-macro (update_Config_Include_Dirs_Debug package component path)
+function (update_Config_Include_Dirs_Debug package component path)
 	set(${package}_${component}_INCLUDE_DIRS_DEBUG ${${package}_${component}_INCLUDE_DIRS_DEBUG} ${path} CACHE INTERNAL "")
-endmacro(update_Config_Include_Dirs_Debug package component path)
+endfunction(update_Config_Include_Dirs_Debug)
 
 ###
-macro (update_Config_Definitions package component defs)
+function (update_Config_Definitions package component defs)
 	set(${package}_${component}_DEFINITIONS ${${package}_${component}_DEFINITIONS} ${defs} CACHE INTERNAL "")
-endmacro(update_Config_Definitions package component defs)
+endfunction(update_Config_Definitions)
 
 
 ###
-macro (update_Config_Definitions_Debug package component defs)
+function(update_Config_Definitions_Debug package component defs)
 	set(${package}_${component}_DEFINITIONS_DEBUG ${${package}_${component}_DEFINITIONS_DEBUG} ${defs} CACHE INTERNAL "")
-endmacro(update_Config_Definitions_Debug package component defs)
+endfunction(update_Config_Definitions_Debug)
 
 ###
-macro (update_Config_Libraries package component links)
+function(update_Config_Libraries package component links)
 	set(${package}_${component}_LIBRARIES ${${package}_${component}_LIBRARIES} ${links} CACHE INTERNAL "")
-endmacro(update_Config_Libraries package component links)
+endfunction(update_Config_Libraries)
 
 ###
-macro (update_Config_Libraries_Debug package component links)
+function(update_Config_Libraries_Debug package component links)
 	set(${package}_${component}_LIBRARIES_DEBUG ${${package}_${component}_LIBRARIES_DEBUG} ${links} CACHE INTERNAL "")
-endmacro(update_Config_Libraries_Debug package component links)
+endfunction(update_Config_Libraries_Debug)
 
 ###
-macro (init_Component_Variables package component path_to_version )
+function(init_Component_Variables package component path_to_version )
 	set(${package}_${component}_INCLUDE_DIRS "" CACHE INTERNAL "")
 	set(${package}_${component}_INCLUDE_DIRS_DEBUG "" CACHE INTERNAL "")
 	set(${package}_${component}_DEFINITIONS "" CACHE INTERNAL "")
@@ -123,39 +179,42 @@ macro (init_Component_Variables package component path_to_version )
 		#exported include dirs (cflags -I<path>)
 		set(${package}_${component}_INCLUDE_DIRS "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
 		set(${package}_${component}_INCLUDE_DIRS_DEBUG "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
-		#additional exported include dirs (cflags -I<path>)
-		if(${${package}_${component}_INC_DIRS})
+		
+		#additional exported include dirs (cflags -I<path>) (external/system include dirs)
+		if(${package}_${component}_INC_DIRS)
 			set(	${package}_${component}_INCLUDE_DIRS 
 				${${package}_${component}_INCLUDE_DIRS} 
 				${${package}_${component}_INC_DIRS} 
 				CACHE INTERNAL "")
 		endif()
-		if(${${package}_${component}_INC_DIRS_DEBUG})
+		if(${package}_${component}_INC_DIRS_DEBUG)
 			set(	${package}_${component}_INCLUDE_DIRS_DEBUG 
 				${${package}_${component}_INCLUDE_DIRS_DEBUG}				
-				${${package}_${component}_INC_DIRS} 
+				${${package}_${component}_INC_DIRS_DEBUG} 
 				CACHE INTERNAL "")		
 		endif()
 		#exported additionnal cflags
-		if(${${package}_${component}_DEFS}) 	
+		if(${package}_${component}_DEFS) 	
 			set(${package}_${component}_DEFINITIONS ${${package}_${component}_DEFS} CACHE INTERNAL "")
 		endif()
-		if(${${package}_${component}_DEFS_DEBUG})	
+		if(${package}_${component}_DEFS_DEBUG)	
 			set(${package}_${component}_DEFINITIONS_DEBUG ${${package}_${component}_DEFS_DEBUG} CACHE INTERNAL "")
 		endif()
 
 		#exported library (ldflags -l<path>)
-		set(${package}_${component}_LIBRARIES "${path_to_version}/lib/${${package}_${component}_BINARY_NAME}" CACHE INTERNAL "")
-		set(${package}_${component}_LIBRARIES_DEBUG "${path_to_version}/lib/${${package}_${component}_BINARY_NAME_DEBUG}" CACHE INTERNAL "")
-		
+		if(NOT ${${package}_${component}_TYPE} STREQUAL "HEADER")
+			set(${package}_${component}_LIBRARIES "${path_to_version}/lib/${${package}_${component}_BINARY_NAME}" CACHE INTERNAL "")
+			set(${package}_${component}_LIBRARIES_DEBUG "${path_to_version}/lib/${${package}_${component}_BINARY_NAME_DEBUG}" CACHE INTERNAL "")
+		endif()
+
 		#exported additionnal ld flags
-		if(${${package}_${component}_LINKS})
+		if(${package}_${component}_LINKS)
 			set(	${package}_${component}_LIBRARIES 
 				${${package}_${component}_LIBRARIES}
 				${${package}_${component}_LINKS} 
 				CACHE INTERNAL "")
 		endif()
-		if(${${package}_${component}_LINKS_DEBUG})	
+		if(${package}_${component}_LINKS_DEBUG)	
 			set(	${package}_${component}_LIBRARIES_DEBUG 
 				${${package}_${component}_LIBRARIES_DEBUG}
 				${${package}_${component}_LINKS_DEBUG} 
@@ -167,57 +226,47 @@ macro (init_Component_Variables package component path_to_version )
 		set(${package}_${component}_EXECUTABLE "${path_to_version}/bin/${${package}_${component}_BINARY_NAME}" CACHE INTERNAL "")
 		set(${package}_${component}_EXECUTABLE_DEBUG "${path_to_version}/bin/${${package}_${component}_BINARY_NAME_DEBUG}" CACHE INTERNAL "")
 	endif()
+endfunction(init_Component_Variables)
 
-endmacro (init_Component_Variables package component)
+### 
+functions(update_Component_Build_Variables_With_Dependency package component dep_package dep_component)
 
-### TODO gérer la récursion
-macro (update_Component_Build_Variables_With_Dependency package component dep_package dep_component)
-
-if(${package} STREQUAL ${dep_package})
-	if(${${package}_${component}_INTERNAL_EXPORT_${dep_component}})
-		update_Config_Include_Dirs(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS})
-		update_Config_Include_Dirs_Debug(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS_DEBUG})
-		update_Config_Definitions(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS})
-		update_Config_Definitions_Debug(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS_DEBUG})
-		
-	endif()
-else()
-	if(${${package}_${component}_EXPORT_${dep_package}_${dep_component}})
-		update_Config_Include_Dirs(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS})
-		update_Config_Include_Dirs_Debug(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS_DEBUG})
-		update_Config_Definitions(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS})
-		update_Config_Definitions_Debug(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS_DEBUG})
-	endif()
+if(${${package}_${component}_EXPORT_${dep_package}_${dep_component}})
+	update_Config_Include_Dirs(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS})
+	update_Config_Include_Dirs_Debug(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS_DEBUG})
+	update_Config_Definitions(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS})
+	update_Config_Definitions_Debug(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS_DEBUG})
 endif()
 
 # libraries are always exported to enable the linking	
 update_Config_Libraries(${package} ${component} ${${dep_package}_${dep_component}_LIBRARIES})
 update_Config_Libraries_Debug(${package} ${component} ${${dep_package}_${dep_component}_LIBRARIES_DEBUG})
-endmacro()
+endfunction()
 
-# configurer le path pour pouvoir les trouver via ccmake !!
 #TODO managing the automatic installation of binay packages or git repo (if not exist) !!
 
 ##################################################################################
 ##################################  main macro  ##################################
 ##################################################################################
 #TODO gérer le mode debug ou release de manière différente !!!!!!!!! prendre en compte les champs _DEBUG sur les dependencies
-macro(configure_Package_Build_Variables package_name path_to_version)
-# 1) initializing all build variable that are internal to each component
+function(configure_Package_Build_Variables package_name path_to_version)
+# 1) managing package dependencies (the list of dependent packages is defined as ${package_name}_DEPENDENCIES)
+# - locating dependent packages in the workspace and configuring their build variables recursively 
+foreach(a_dependency IN ITEMS ${${package_name}_DEPENDENCIES}) 
+	resolve_Package_Dependency(${package_name} ${a_dependency})
+endforeach()
+
+if(${package}_DEPENDENCIES_NOTFOUND)
+	message(FATAL_ERROR "Some dependencies have not been found exitting")
+	#TODO here managing the automatic installation of binay packages or git repo (if not exist)
+endif()
+
+
+# 2) initializing all build variable that are internal to each component of the current package
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
 	init_Component_Variables ${package_name} ${a_component} ${path_to_version})
 endforeach()
 
-# 2) managing package dependencies (the list of dependent packages is defined as ${package_name}_DEPENDENCIES)
-# - locating dependent packages in the workspace and configuring their build variables recursively 
-foreach(a_dependency IN ITEMS ${${package_name}_DEPENDENCIES}) 
-	locate_Package(${${package_name} ${a_dependency})
-endforeach()
-
-if(${${package}_DEPENDENCIES_NOTFOUND ${dependency}})
-	message(FATAL_ERROR "Some dependencies have not been found exitting")
-	#TODO here managing the automatic installation of binay packages or git repo (if not exist)
-endif()
 
 # 3) setting build variables with informations coming from package dependancies
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
@@ -238,5 +287,5 @@ endforeach()
 
 # no need to check system/external dependencies as they are already  treaten as special cases (see variable <package>__<component>_LINKS and <package>__<component>_DEFS of components)
 # quite like in pkg-config tool
-endmacro(configure_Package_Build_Variables package_name)
+endfunction(configure_Package_Build_Variables)
 

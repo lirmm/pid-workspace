@@ -4,23 +4,23 @@
 ##################################################################################
 
 ###
-macro (document_Version_Strings is_local package_name major minor patch)
+function (document_Version_Strings is_local package_name major minor patch)
 
 if(is_local)
-	set(${package_name}_VERSION_MAJOR ${major} PARENT_SCOPE)
-	set(${package_name}_VERSION_MINOR ${minor} PARENT_SCOPE)
-	set(${package_name}_VERSION_PATCH ${patch} PARENT_SCOPE)
-	set(${package_name}_VERSION_STRING "${major}.${minor}.${patch}" PARENT_SCOPE)
-	set(${package_name}_VERSION_RELATIVE_PATH "own-${${package_name}_VERSION_STRING}" PARENT_SCOPE)
+	set(${package_name}_VERSION_MAJOR ${major} CACHE INTERNAL "")
+	set(${package_name}_VERSION_MINOR ${minor} CACHE INTERNAL "")
+	set(${package_name}_VERSION_PATCH ${patch} CACHE INTERNAL "")
+	set(${package_name}_VERSION_STRING "${major}.${minor}.${patch}" CACHE INTERNAL "")
+	set(${package_name}_VERSION_RELATIVE_PATH "own-${${package_name}_VERSION_STRING}" CACHE INTERNAL "")
 	
 else(is_local)
-	set(${package_name}_VERSION_MAJOR ${major} PARENT_SCOPE)
-	set(${package_name}_VERSION_MINOR ${minor} PARENT_SCOPE)
-	set(${package_name}_VERSION_PATCH ${patch} PARENT_SCOPE)
-	set(${package_name}_VERSION_STRING "${major}.${minor}.${patch}" PARENT_SCOPE)
-	set(${package_name}_VERSION_RELATIVE_PATH "${major}.${minor}.${patch}" PARENT_SCOPE)
+	set(${package_name}_VERSION_MAJOR ${major} CACHE INTERNAL "")
+	set(${package_name}_VERSION_MINOR ${minor} CACHE INTERNAL "")
+	set(${package_name}_VERSION_PATCH ${patch} CACHE INTERNAL "")
+	set(${package_name}_VERSION_STRING "${major}.${minor}.${patch}" CACHE INTERNAL "")
+	set(${package_name}_VERSION_RELATIVE_PATH "${major}.${minor}.${patch}" CACHE INTERNAL "")
 endif(is_local)
-endmacro(document_Version_Strings)
+endfunction(document_Version_Strings)
 
 ###
 function(list_Version_Subdirectories result curdir)
@@ -240,9 +240,9 @@ endif()
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
 	check_Component_Elements_Exist(COMPONENT_ELEMENT_NOTFOUND ${path_to_package_version} ${package_name} ${a_component})
 	if(COMPONENT_ELEMENT_NOTFOUND)
-		set(${package_name}_${requested_component}_FOUND FALSE PARENT_SCOPE)
+		set(${package_name}_${requested_component}_FOUND FALSE CACHE INTERNAL "")
 	else()
-		set(${package_name}_${requested_component}_FOUND TRUE PARENT_SCOPE)
+		set(${package_name}_${requested_component}_FOUND TRUE CACHE INTERNAL "")
 	endif(${COMPONENT_ELEMENT_NOTFOUND})
 endforeach()
 endfunction (all_Components)
@@ -268,20 +268,36 @@ set(ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND TRUE PARENT_SCOPE)
 foreach(requested_component IN ITEMS ${list_of_components})
 	list(FIND ${package_name}_COMPONENTS ${requested_component} idx)	
 	if(idx EQUAL -1)#component has not been found	
-		set(${package_name}_${requested_component}_FOUND FALSE PARENT_SCOPE)
+		set(${package_name}_${requested_component}_FOUND FALSE  CACHE INTERNAL "")
 		if(${${package_name}_FIND_REQUIRED_${requested_component}})
 			set(ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND FALSE PARENT_SCOPE)
 		endif()
 	else()#component found
 		check_Component_Elements_Exist(COMPONENT_ELEMENT_NOTFOUND ${path_to_package_version} ${package_name} ${requested_component})
 		if(COMPONENT_ELEMENT_NOTFOUND)
-			set(${package_name}_${requested_component}_FOUND FALSE PARENT_SCOPE)
+			set(${package_name}_${requested_component}_FOUND FALSE  CACHE INTERNAL "")
 		else()		
-			set(${package_name}_${requested_component}_FOUND TRUE PARENT_SCOPE)
+			set(${package_name}_${requested_component}_FOUND TRUE  CACHE INTERNAL "")
 		endif()
 	endif()
 endforeach()
 endfunction (select_Components)
 
+###
+function(is_Exact_Version_Compatible_With_Previous_Constraints 
+		is_compatible 
+		package
+		version_string)
 
 
+endfunction(is_Exact_Version_Compatible_With_Previous_Constraints)
+
+###
+function(find_Version_Compatible_With_Previous_Constraints 
+		version_major_minor
+		is_exact
+		package
+		version_string)
+
+
+endfunction(is_Exact_Version_Compatible_With_Previous_Constraints)

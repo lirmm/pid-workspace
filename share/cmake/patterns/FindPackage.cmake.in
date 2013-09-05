@@ -16,15 +16,15 @@ endmacro(exitFindScript message_to_send)
 ####################################################
 ####### @PROJECT_NAME@ find script begins here #####
 ####################################################
-set(@PROJECT_NAME@_FOUND FALSE)
+set(@PROJECT_NAME@_FOUND FALSE CACHE INTERNAL "")
 
 #workspace dir must be defined for each package build
 set(PACKAGE_@PROJECT_NAME@_SEARCH_PATH
     ${PACKAGE_BINARY_INSTALL_DIR}/@PROJECT_NAME@
     CACHE
+    INTERNAL
     "path to the package install dir containing versions of the @PROJECT_NAME@ package"
   )
-mark_as_advanced(PACKAGE_@PROJECT_NAME@_SEARCH_PATH)
 
 check_Directory_Exists(EXIST ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH})
 if(EXIST)
@@ -62,9 +62,9 @@ if(EXIST)
 				
 		endif(@PROJECT_NAME@_FIND_COMPONENTS)
 		#here everything has been found => setting global standard CMake find process variables to adequate values
-		set(@PROJECT_NAME@_FOUND TRUE)
-		set(@PROJECT_NAME@_VERSION_${@PROJECT_NAME@_VERSION_STRING} TRUE)
-		set(@PROJECT_NAME@_ROOT_DIR ${PATH_TO_PACKAGE_VERSION})
+		set(@PROJECT_NAME@_FOUND TRUE CACHE INTERNAL "")
+		set(@PROJECT_NAME@_VERSION_${@PROJECT_NAME@_VERSION_STRING} TRUE CACHE INTERNAL "")
+		set(@PROJECT_NAME@_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
 		#now configuring exported variables
 		configure_Package_Build_Variables(@PROJECT_NAME@ ${@PROJECT_NAME@_ROOT_DIR})
 	else(VERSION_HAS_BEEN_FOUND)#no adequate version found
