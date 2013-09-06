@@ -48,13 +48,14 @@ function(resolve_Package_Dependency package dependency)
 # idée de base : récursion de tous les use file ? IMPOSSIBLE CAR REQUIERT DE FAIRE LE CHOIX D'UNE VERSION !!
 
 if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
-	if(${package}_DEPENDENCY_${dependency}_VERSION) # a specific version 
-	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT) #an exact version is required, versions must be the same
-			if(${dependency}_VERSION_${${package}_DEPENDENCY_${dependency}_VERSION})#same version already installed			
-				return()#no need to locate package
-			else()
-				is_Exact_Version_Compatible_With_Previous_Constraints(RES ${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION})
-				if(RES)# OK installing the exact version instead
+	if(${package}_DEPENDENCY_${dependency}_VERSION) # a specific version is required
+	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT) #an exact version is required
+			
+			is_Exact_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
+ 
+			if(IS_COMPATIBLE)
+				if(NEED_REFIND)
+					# OK installing the exact version instead
 					#WARNING recursive call to find package
 					find_package(
 						${dependency} 
@@ -63,33 +64,28 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 						MODULE
 						REQUIRED
 						${${package}_DEPENDENCY_${dependency}_COMPONENTS}
-					)				
-				else()
-					message(FATAL_ERROR "impossible to find compatible versions regarding versions constraints for package ${package}")
-					return()
+					)
 				endif()
+				return()				
+			else() #not compatible
+				message(FATAL_ERROR "impossible to find compatible versions regarding versions constraints for package ${package}")
+				return()
 			endif()
-		else()#not an exact version requiert
-			find_Version_Compatible_With_Previous_Constraints(RES_VERSION IS_EXACT${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION})
-			if(RES_VERSION)
-				if(IS_EXACT)
+		else()#not an exact version required
+			is_Version_Compatible_With_Previous_Constraints (
+					COMPATIBLE_VERSION VERSION_TO_FIND 
+					${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION})
+			if(COMPATIBLE_VERSION)
+				if(VERSION_TO_FIND)
 					find_package(
 						${dependency} 
-						RES_VERSION
-						EXACT 
+						${VERSION_TO_FIND}
 						MODULE
 						REQUIRED
 						${${package}_DEPENDENCY_${dependency}_COMPONENTS}
 					)
 				else()
-					find_package(
-						${dependency} 
-						RES_VERSION 
-						MODULE
-						REQUIRED
-						${${package}_DEPENDENCY_${dependency}_COMPONENTS}
-					)
-
+					return() # nothing to do more, the current used version is compatible with everything 	
 				endif()
 			else()
 				message(FATAL_ERROR "impossible to find compatible versions regarding versions constraints for package ${package}")
@@ -100,24 +96,32 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 		return()#by default the version is compatible (no constraints) so return 
 	endif()
 else()#the dependency has not been already found
-	if(	${package}_DEPENDENCY_${dependency}_VERSION
-		AND ${package}_DEPENDENCY_${dependency}_VERSION_EXACT) #an exact version has been specified
-			#WARNING recursive call to find package
-		find_package(
-			${dependency} 
-			${${package}_DEPENDENCY_${dependency}_VERSION} 
-			EXACT
-			MODULE
-			REQUIRED
-			${${package}_DEPENDENCY_${dependency}_COMPONENTS}
-		)
+	if(	${package}_DEPENDENCY_${dependency}_VERSION)
 		
+		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT) #an exact version has been specified
+			#WARNING recursive call to find package
+			find_package(
+				${dependency} 
+				${${package}_DEPENDENCY_${dependency}_VERSION} 
+				EXACT
+				MODULE
+				REQUIRED
+				${${package}_DEPENDENCY_${dependency}_COMPONENTS}
+			)
 
+		else()
+			#WARNING recursive call to find package
+			find_package(
+				${dependency} 
+				${${package}_DEPENDENCY_${dependency}_VERSION} 
+				MODULE
+				REQUIRED
+				${${package}_DEPENDENCY_${dependency}_COMPONENTS}
+			)
+		endif()
 	else()
-		#WARNING recursive call to find package
 		find_package(
 			${dependency} 
-			${${package}_DEPENDENCY_${dependency}_VERSION} 
 			MODULE
 			REQUIRED
 			${${package}_DEPENDENCY_${dependency}_COMPONENTS}

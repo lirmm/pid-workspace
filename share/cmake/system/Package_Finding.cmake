@@ -4,6 +4,17 @@
 ##################################################################################
 
 ###
+function(get_Version_String_Numbers version_string major minor patch)
+string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" A_VERSION "${version_string}")
+list(GET A_VERSION 0 major_vers)
+list(GET A_VERSION 1 minor_vers)
+list(GET A_VERSION 2 patch_vers)
+set(${major} ${major_vers} PARENT_SCOPE)
+set(${minor} ${minor_vers} PARENT_SCOPE)
+set(${patch} ${patch_vers} PARENT_SCOPE)	
+endfunction(get_Version_String_Numbers)
+
+###
 function (document_Version_Strings is_local package_name major minor patch)
 
 if(is_local)
@@ -158,11 +169,7 @@ if(local_versions OR non_local_versions)
 			set(version_string_curr ${non_local_version_dir})
 		endif()
 	endforeach()
-
-	string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" VERSION_NUMBERS ${version_string_curr})
-	list(GET VERSION_NUMBERS 0 major)
-	list(GET VERSION_NUMBERS 1 minor)
-	list(GET VERSION_NUMBERS 2 patch)
+	get_Version_String_Numbers(${version_string_curr} major minor patch)
 	document_Version_Strings(${is_local} ${package_name} ${major} ${minor} ${patch})
 endif()
 endfunction(check_Last_Version)
@@ -284,20 +291,87 @@ endforeach()
 endfunction (select_Components)
 
 ###
-function(is_Exact_Version_Compatible_With_Previous_Constraints 
-		is_compatible 
-		package
-		version_string)
-
-
-endfunction(is_Exact_Version_Compatible_With_Previous_Constraints)
+function(is_Compatible_Version is_compatible package reference_major reference_minor version_to_compare)
+set(${is_compatible} FALSE PARENT_SCOPE)
+get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)
+if(	NOT ${compare_major} EQUAL ${reference_major}
+	OR ${compare_minor} GREATER ${reference_minor})
+	return()#not compatible
+endif()
+set(${is_compatible} TRUE PARENT_SCOPE)
+endfunction(is_Compatible_Version)
 
 ###
-function(find_Version_Compatible_With_Previous_Constraints 
-		version_major_minor
-		is_exact
+function(is_Exact_Version_Compatible_With_Previous_Constraints 
+		is_compatible
+		need_finding
 		package
 		version_string)
 
+set(${is_compatible} FALSE PARENT_SCOPE)
+set(${need_finding} FALSE PARENT_SCOPE)
+if(${package}_REQUIRED_VERSION_EXACT)
+	if(NOT ${${package}_REQUIRED_VERSION_EXACT} VERSION_EQUAL ${version_string})#not compatible if versions are not the same				
+		return() 
+	endif()
+	set(${is_compatible} TRUE PARENT_SCOPE)
+	return()
+endif()
+#no exact version required	
+get_Version_String_Numbers("${version_string}.0" exact_major exact_minor exact_patch)
+foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
+	is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_required})
+	if(NOT COMPATIBLE_VERSION)
+		return()#not compatible
+	endif()
+endforeach()
 
+set(${is_compatible} TRUE PARENT_SCOPE)	
+if(NOT ${${package_name}_VERSION_STRING} VERSION_EQUAL ${version_string})
+	set(${need_finding} TRUE PARENT_SCOPE) #need to find the new exact version
+endif()
 endfunction(is_Exact_Version_Compatible_With_Previous_Constraints)
+
+
+###
+function(is_Version_Compatible_With_Previous_Constraints 
+		is_compatible		
+		version_to_find
+		package
+		version_string)
+
+set(${is_compatible} FALSE PARENT_SCOPE)
+# 1) testing compatibility and recording the higher constraint for minor version number
+if(${package}_REQUIRED_VERSION_EXACT)
+	get_Version_String_Numbers("${${package}_REQUIRED_VERSION_EXACT}.0" exact_major exact_minor exact_patch)
+	is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_string})
+	if(COMPATIBLE_VERSION)	
+		set(${is_compatible} TRUE PARENT_SCOPE)
+	endif()
+	return()#no need to set the version to find
+endif()
+get_Version_String_Numbers("${version_string}.0" new_major new_minor new_patch)
+set(curr_major ${new_major})
+set(curr_max_minor 0)
+foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
+	get_Version_String_Numbers("${version_required}.0" required_major required_minor required_patch)
+	if(NOT ${required_major} EQUAL ${new_major})
+		return()#not compatible
+	elseif(${required_minor} GREATER ${new_major})
+		set(curr_max_minor ${required_minor})
+	else()
+		set(curr_max_minor ${new_minor})
+	endif()
+endforeach()
+set(${is_compatible} TRUE PARENT_SCOPE)	
+
+# 2) now we have the greater constraint 
+set(max_version_constraint "${curr_major}.${curr_max_minor}")
+if(NOT ${${package_name}_VERSION_STRING} VERSION_GREATER ${max_version_constraint})
+	set(${version_to_find} ${max_version_constraint} PARENT_SCOPE) #need to find the new exact version
+endif()
+
+endfunction(is_Version_Compatible_With_Previous_Constraints)
+
+
+

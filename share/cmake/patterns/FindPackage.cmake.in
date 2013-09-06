@@ -32,11 +32,11 @@ if(EXIST)
 
 	#variables that will be filled by generic functions
 	if(@PROJECT_NAME@_FIND_VERSION)
-		if(${@PROJECT_NAME@_FIND_VERSION_EXACT}) #using a specific version (only patch number can be adapted, first searching if there is any local version matching constraints, otherwise search for a non local version)
+		if(@PROJECT_NAME@_FIND_VERSION_EXACT) #using a specific version (only patch number can be adapted, first searching if there is any local version matching constraints, otherwise search for a non local version)
 			check_Exact_Version(VERSION_HAS_BEEN_FOUND "@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH} ${@PROJECT_NAME@_FIND_VERSION_MAJOR} ${@PROJECT_NAME@_FIND_VERSION_MINOR})
-		else(${@PROJECT_NAME@_FIND_VERSION_EXACT}) #using the best version as regard of version constraints (only non local version are used)
+		else() #using the best version as regard of version constraints (only non local version are used)
 			check_Best_Version(VERSION_HAS_BEEN_FOUND "@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH} ${@PROJECT_NAME@_FIND_VERSION_MAJOR} ${@PROJECT_NAME@_FIND_VERSION_MINOR})
-		endif(${@PROJECT_NAME@_FIND_VERSION_EXACT})
+		endif()
 	else(@PROJECT_NAME@_FIND_VERSION) #no specific version targetted using last available version (takes the last version available either local or non local - local first)
 		check_Last_Version(VERSION_HAS_BEEN_FOUND "@PROJECT_NAME@" ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH})
 	endif(@PROJECT_NAME@_FIND_VERSION)
@@ -61,10 +61,23 @@ if(EXIST)
 			endif(USE_FILE_NOTFOUND)
 				
 		endif(@PROJECT_NAME@_FIND_COMPONENTS)
+
 		#here everything has been found => setting global standard CMake find process variables to adequate values
 		set(@PROJECT_NAME@_FOUND TRUE CACHE INTERNAL "")
-		set(@PROJECT_NAME@_VERSION_${@PROJECT_NAME@_VERSION_STRING} TRUE CACHE INTERNAL "")
 		set(@PROJECT_NAME@_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
+		set(${PROJECT_NAME}_USED_PACKAGES ${${PROJECT_NAME}_USED_PACKAGES} @PROJECT_NAME@ CACHE INTERNAL "")
+		if(@PROJECT_NAME@_FIND_VERSION)
+			if(@PROJECT_NAME@_FIND_VERSION_EXACT)
+				set(@PROJECT_NAME@_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
+				set(@PROJECT_NAME@_REQUIRED_VERSION_EXACT "${@PROJECT_NAME@_FIND_VERSION_MAJOR}.${@PROJECT_NAME@_FIND_VERSION_MINOR}" CACHE INTERNAL "")
+			else()
+				set(@PROJECT_NAME@_ALL_REQUIRED_VERSIONS ${@PROJECT_NAME@_ALL_REQUIRED_VERSIONS} "${@PROJECT_NAME@_FIND_VERSION_MAJOR}.${@PROJECT_NAME@_FIND_VERSION_MINOR}" CACHE INTERNAL "")	
+			endif()
+		else()
+			set(@PROJECT_NAME@_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
+			set(@PROJECT_NAME@_REQUIRED_VERSION_EXACT CACHE INTERNAL "") #unset the exact required version	
+		endif()
+
 		#now configuring exported variables
 		configure_Package_Build_Variables(@PROJECT_NAME@ ${@PROJECT_NAME@_ROOT_DIR})
 	else(VERSION_HAS_BEEN_FOUND)#no adequate version found
