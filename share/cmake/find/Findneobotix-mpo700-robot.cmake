@@ -16,65 +16,79 @@ endmacro(exitFindScript message_to_send)
 ####################################################
 ####### neobotix-mpo700-robot find script begins here #####
 ####################################################
-set(neobotix-mpo700-robot_FOUND FALSE)
+set(neobotix-mpo700-robot_FOUND FALSE CACHE INTERNAL "")
 
 #workspace dir must be defined for each package build
 set(PACKAGE_neobotix-mpo700-robot_SEARCH_PATH
     ${PACKAGE_BINARY_INSTALL_DIR}/neobotix-mpo700-robot
     CACHE
+    INTERNAL
     "path to the package install dir containing versions of the neobotix-mpo700-robot package"
   )
-mark_as_advanced(PACKAGE_neobotix-mpo700-robot_SEARCH_PATH)
 
-check_Directory_Exists(${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH})
-if(${RETURN_CHECK_DIRECTORY_EXISTS})
+check_Directory_Exists(EXIST ${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH})
+if(EXIST)
 	# at this stage the only thing to do is to check for versions
 
 	#variables that will be filled by generic functions
-	set(VERSION_HAS_BEEN_FOUND FALSE)
-	if(DEFINED neobotix-mpo700-robot_FIND_VERSION)
-		if(${neobotix-mpo700-robot_FIND_VERSION_EXACT}) #using a specific version (only patch number can be adapted)
-			check_Exact_Version("neobotix-mpo700-robot" ${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH} ${neobotix-mpo700-robot_FIND_VERSION_MAJOR} ${neobotix-mpo700-robot_FIND_VERSION_MINOR})
-		else(${neobotix-mpo700-robot_FIND_VERSION_EXACT}) #using the best version as regard of version constraints
-			check_Minor_Version("neobotix-mpo700-robot" ${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH} ${neobotix-mpo700-robot_FIND_VERSION_MAJOR} ${neobotix-mpo700-robot_FIND_VERSION_MINOR})
-		endif(${neobotix-mpo700-robot_FIND_VERSION_EXACT})
-	else(DEFINED neobotix-mpo700-robot_FIND_VERSION) #no specific version targetted using own or the last available version if it does not exist   
-		check_Local_Or_Newest_Version("neobotix-mpo700-robot" ${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH})
-	endif(DEFINED neobotix-mpo700-robot_FIND_VERSION)
+	if(neobotix-mpo700-robot_FIND_VERSION)
+		if(neobotix-mpo700-robot_FIND_VERSION_EXACT) #using a specific version (only patch number can be adapted, first searching if there is any local version matching constraints, otherwise search for a non local version)
+			check_Exact_Version(VERSION_HAS_BEEN_FOUND "neobotix-mpo700-robot" ${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH} ${neobotix-mpo700-robot_FIND_VERSION_MAJOR} ${neobotix-mpo700-robot_FIND_VERSION_MINOR})
+		else() #using the best version as regard of version constraints (only non local version are used)
+			check_Best_Version(VERSION_HAS_BEEN_FOUND "neobotix-mpo700-robot" ${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH} ${neobotix-mpo700-robot_FIND_VERSION_MAJOR} ${neobotix-mpo700-robot_FIND_VERSION_MINOR})
+		endif()
+	else(neobotix-mpo700-robot_FIND_VERSION) #no specific version targetted using last available version (takes the last version available either local or non local - local first)
+		check_Last_Version(VERSION_HAS_BEEN_FOUND "neobotix-mpo700-robot" ${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH})
+	endif(neobotix-mpo700-robot_FIND_VERSION)
 
-	if(${VERSION_HAS_BEEN_FOUND})#a good version of the package has been found		
-		set(PATH_TO_PACKAGE_VERSION ${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH}/${neobotix-mpo700-robot_VERSION_STRING})		
-		if(${neobotix-mpo700-robot_FIND_COMPONENTS}) #specific components must be checked, taking only selected components	
+	if(VERSION_HAS_BEEN_FOUND)#a good version of the package has been found
+		set(PATH_TO_PACKAGE_VERSION ${PACKAGE_neobotix-mpo700-robot_SEARCH_PATH}/${neobotix-mpo700-robot_VERSION_RELATIVE_PATH})		
+		if(neobotix-mpo700-robot_FIND_COMPONENTS) #specific components must be checked, taking only selected components	
 				
-			select_Components("neobotix-mpo700-robot" ${neobotix-mpo700-robot_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} ${neobotix-mpo700-robot_FIND_COMPONENTS})
-			if(${USE_FILE_NOTFOUND})
+			select_Components(neobotix-mpo700-robot ${neobotix-mpo700-robot_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} ${neobotix-mpo700-robot_FIND_COMPONENTS})
+			if(USE_FILE_NOTFOUND)
 				exitFindScript("The neobotix-mpo700-robot version selected (${neobotix-mpo700-robot_VERSION_STRING}) has no configuration file or file is corrupted")
-			endif(${USE_FILE_NOTFOUND})
+			endif(USE_FILE_NOTFOUND)
 
-			if(NOT ${ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND})
-				exitFindScript("Some of the requested components of the package neobotix-mpo700-robot are missing (version chosen is ${neobotix-mpo700-robot_VERSION_STRING}, requested is ${neobotix-mpo700-robot_FIND_VERSION})")
-			endif(NOT ${ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND})	
+			if(NOT ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND)
+				exitFindScript("Some of the requested components of the package neobotix-mpo700-robot are missing (version chosen is ${neobotix-mpo700-robot_VERSION_STRING}, requested is ${neobotix-mpo700-robot_FIND_VERSION}),either bad names specified or broken package versionning")
+			endif(NOT ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND)	
 		
 		else(neobotix-mpo700-robot_FIND_COMPONENTS)#no component check, register all of them
 			all_Components("neobotix-mpo700-robot" ${neobotix-mpo700-robot_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION})
-			if(${USE_FILE_NOTFOUND})
+			if(USE_FILE_NOTFOUND)
 				exitFindScript("The neobotix-mpo700-robot version selected (${neobotix-mpo700-robot_VERSION_STRING}) has no configuration file or file is corrupted")
-			endif(${USE_FILE_NOTFOUND})
+			endif(USE_FILE_NOTFOUND)
 				
 		endif(neobotix-mpo700-robot_FIND_COMPONENTS)
+
 		#here everything has been found => setting global standard CMake find process variables to adequate values
-		set(neobotix-mpo700-robot_FOUND TRUE)
-		set(neobotix-mpo700-robot_VERSION_${neobotix-mpo700-robot_VERSION_STRING} TRUE)
-		set(neobotix-mpo700-robot_ROOT_DIR ${PATH_TO_PACKAGE_VERSION})
-		#now configuring exported variables
-		configure_Package_Build_Variables(neobotix-mpo700-robot neobotix-mpo700-robot_ROOT_DIR)
-	else(${VERSION_HAS_BEEN_FOUND})#no adequate version found
+		set(neobotix-mpo700-robot_FOUND TRUE CACHE INTERNAL "")
+		set(neobotix-mpo700-robot_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
+		set(${PROJECT_NAME}_USED_PACKAGES ${${PROJECT_NAME}_USED_PACKAGES} neobotix-mpo700-robot CACHE INTERNAL "")
+		if(neobotix-mpo700-robot_FIND_VERSION)
+			if(neobotix-mpo700-robot_FIND_VERSION_EXACT)
+				set(neobotix-mpo700-robot_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
+				set(neobotix-mpo700-robot_REQUIRED_VERSION_EXACT "${neobotix-mpo700-robot_FIND_VERSION_MAJOR}.${neobotix-mpo700-robot_FIND_VERSION_MINOR}" CACHE INTERNAL "")
+			else()
+				set(neobotix-mpo700-robot_ALL_REQUIRED_VERSIONS ${neobotix-mpo700-robot_ALL_REQUIRED_VERSIONS} "${neobotix-mpo700-robot_FIND_VERSION_MAJOR}.${neobotix-mpo700-robot_FIND_VERSION_MINOR}" CACHE INTERNAL "")	
+			endif()
+		else()
+			set(neobotix-mpo700-robot_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
+			set(neobotix-mpo700-robot_REQUIRED_VERSION_EXACT CACHE INTERNAL "") #unset the exact required version	
+		endif()
+
+		#now configuring exported variables (recursion using find_package of required packages)
+		configure_Package_Build_Variables(neobotix-mpo700-robot ${neobotix-mpo700-robot_ROOT_DIR})
+	else(VERSION_HAS_BEEN_FOUND)#no adequate version found
+		#TODO here automating the download of the adequate package version
 		exitFindScript("The package neobotix-mpo700-robot with version ${neobotix-mpo700-robot_FIND_VERSION} cannot be found")
-	endif(${VERSION_HAS_BEEN_FOUND})
+	endif(VERSION_HAS_BEEN_FOUND)
 		
-else(${RETURN_CHECK_DIRECTORY_EXISTS}) #if the directory does not exist it means the package cannot be found
+else(EXIST) #if the directory does not exist it means the package cannot be found
+	#TODO here automating the download of the adequate package as regard of version
 	exitFindScript("The required package neobotix-mpo700-robot cannot be found")
-endif(${RETURN_CHECK_DIRECTORY_EXISTS})
+endif(EXIST)
 
 ####################################################
 ####### neobotix-mpo700-robot find script ends here #######

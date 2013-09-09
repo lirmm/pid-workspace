@@ -78,7 +78,7 @@ if(EXIST)
 			set(@PROJECT_NAME@_REQUIRED_VERSION_EXACT CACHE INTERNAL "") #unset the exact required version	
 		endif()
 
-		#now configuring exported variables
+		#now configuring exported variables (recursion using find_package of required packages)
 		configure_Package_Build_Variables(@PROJECT_NAME@ ${@PROJECT_NAME@_ROOT_DIR})
 	else(VERSION_HAS_BEEN_FOUND)#no adequate version found
 		#TODO here automating the download of the adequate package version

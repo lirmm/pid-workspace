@@ -48,7 +48,7 @@ endmacro(generate_Use_File)
 
 
 ### configure variables exported by component that will be used to generate the package cmake use file
-function (configure_Install_Variables component export include_dirs dep_defs exported_defs links)
+function (configure_Install_Variables component export include_dirs dep_defs exported_defs static_links shared_links)
 
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
@@ -65,23 +65,38 @@ if(export) # if dependancy library is exported then we need to register its dep_
 			${include_dirs}
 			CACHE INTERNAL "")
 	endif()
-elseif(NOT exported_defs STREQUAL "") # otherwise no need to register them since no more useful
-	#just add the exported defs of the component
-	set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
-		${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
-		${exported_defs}
-		CACHE INTERNAL "")		
-endif()
-
-# links are exported in all cases	
-if(NOT links STREQUAL "")
+	# links are exported since we will need to resolve symbols in the third party components that will the use the component 	
+	if(NOT shared_links STREQUAL "")
+		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
+			${shared_links}
+			CACHE INTERNAL "")
+	endif()
+	if(NOT static_links STREQUAL "")
 	set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
 		${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
-		${links}
+		${static_links}
 		CACHE INTERNAL "")
+	endif()
+
+else() # otherwise no need to register them since no more useful
+	if(NOT exported_defs STREQUAL "") 
+		#just add the exported defs of the component not those of the dependency
+		set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
+			${exported_defs}
+			CACHE INTERNAL "")
+	endif()	
+endif()
+
+# we need to register shared libraries as runtime dependencies
+if(NOT shared_links STREQUAL "")
+set(	${PROJECT_NAME}_${component}_RUNTIME_DEPS${USE_MODE_SUFFIX}
+	${${PROJECT_NAME}_${component}_RUNTIME_DEPS${USE_MODE_SUFFIX}}
+	${shared_links}
+	CACHE INTERNAL "") #if shared links are external libraries their path is relative to their corresponding external package path
 endif()
 endfunction(configure_Install_Variables)
-
 
 ### to know if the component is an application
 function(is_Executable_Component ret_var package component)
@@ -334,6 +349,7 @@ if(COMP_IS_BUILT) #the component has a corresponding target
 			manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
 			
 		endif()
+#HERE TODO revoir l'export des libraries !!
  	else()
 		message(FATAL_ERROR "Executable component ${dep_component} from package ${dep_package} cannot be a dependency for component ${component}")	
 	endif()
@@ -361,6 +377,7 @@ if(COMP_IS_BUILT) #the component has a corresponding target
 
 endif()#do nothing in case of a pure header component
 endfunction(fill_Component_Target_With_External_Dependency)
+
 
 ### reset components related cached variables 
 function(reset_component_cached_variables component)
@@ -457,6 +474,119 @@ include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
 endfunction(reset_Mode_Cache_Options)
 
 
+#resolving dependencies
+function(is_Internal_Component_Exporting_Other_Components RESULT component)
+	set(${RESULT} FALSE PARENT_SCOPE)
+	#scanning external dependencies
+	if(${PROJECT_NAME}_${component}_LINKS) #only exported links here
+		set(${RESULT} TRUE PARENT_SCOPE)
+		return()
+	endif()
+
+	# scanning internal dependencies
+	if(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES)
+		foreach(int_dep IN ITEMS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES)
+			if(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${int_dep})
+				set(${RESULT} TRUE PARENT_SCOPE)
+				return()
+			endif()
+		endforeach()		
+	endif()
+
+	# scanning package dependencies
+	foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES)
+		foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS)
+			if(${PROJECT_NAME}_${component}_EXPORT_${dep_pack}_${ext_dep})
+				set(${RESULT} TRUE PARENT_SCOPE)
+				return()
+			endif()
+		endforeach()
+	endforeach()
+endfunction()
+
+###
+function(get_Direct_Runtime_Dependencies DEPEDENT_SHARED_LIBS dep_package dep_component)
+set(${DEPEDENT_SHARED_LIBS} "" PARENT_SCOPE)
+if(${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}) #the dependent component provides libraries
+	foreach(lib IN ITEMS ${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}})
+		get_filename_component(LIB_TYPE ${lib} EXT)
+		if(LIB_TYPE)		
+			if(UNIX AND NOT APPLE) 		
+				if(LIB_TYPE MATCHES "^.*\.so(\..+)*$")#found shared lib
+					set(${DEPEDENT_SHARED_LIBS} ${DEPEDENT_SHARED_LIBS} ${lib} PARENT_SCOPE)
+				endif()
+			elseif(APPLE)
+				if(LIB_TYPE MATCHES "^.*\.dylib(\..+)*$")#found shared lib
+					set(${DEPEDENT_SHARED_LIBS} ${DEPEDENT_SHARED_LIBS} ${lib} PARENT_SCOPE)
+				endif()
+			endif()
+		endif()
+	endforeach()
+endif()
+endfunction(get_Direct_Runtime_Dependencies)
+
+### recursive function to find dependencies
+function(resolve_Component_Runtime_Dependencies ALL_SHARED_LIBS package component)
+	set(result "")
+	# 1) adding direct external dependencies	
+	list(APPEND result ${${package}_${component}_RUNTIME_DEPS${USE_MODE_SUFFIX}})#adding external dependencies
+
+	# 2) adding internal components dependencies (only case when recursionis needed)
+	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES)
+		if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")		
+			resolve_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep}) #need to resolve external symbols whether the component is exported or not
+			if(INT_DEP_SHARED_LIBS)
+				list(APPEND result ${INT_DEP_SHARED_LIBS})
+			endif()
+		elseif(${package}_${int_dep}_TYPE STREQUAL "SHARED")
+			is_Internal_Component_Exporting_Other_Components(EXPORTING ${int_dep})
+			if(EXPORTING) # doing transitive search only if shared libs export something
+				resolve_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep}) #need to resolve external symbols whether the component is exported or not
+				if(INT_DEP_SHARED_LIBS)# guarding against shared libs presence
+					list(APPEND result ${INT_DEP_SHARED_LIBS})
+				endif()
+			endif() #no need to resolve external symbols if the shared library component is not exported
+		endif()
+	endforeach()
+
+	# 3) adding package components dependencies
+	foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES)
+		foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS)
+			get_Direct_Runtime_Dependencies(PACK_DEP_SHARED_LIBS ${package} ${component} ${dep_pack} ${ext_dep})
+			if(PACK_DEP_SHARED_LIBS)
+				list(APPEND result ${PACK_DEP_SHARED_LIBS})
+			endif()
+		endforeach()
+	endforeach()
+	# 4) now returning	
+	list(REMOVE_DUPLICATES result)
+	set(ALL_SHARED_LIBS ${result} PARENT_SCOPE)
+endfunction(resolve_Component_Runtime_Dependencies)
+
+#TODO A VOIR -> il faut que ce soit portable avec de "pur" packages binaires => il vaut mieu générer un script cmake
+# qu'on appelle ensuite (-> permettre le relinking "à la demande")
+### configuring components runtime paths (links to libraries)
+function(create_Component_Symlinks bin_component shared_libs)
+foreach(lib IN ITEMS ${shared_libs})
+	get_filename_component(A_LIB_FILE ${lib} NAME)
+	install(CODE "
+		EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E create_symlink ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${lib} ${A_LIB_FILE}
+		)"
+	)
+endforeach()
+endfunction(create_Component_Symlinks)
+
+
+### resolve runtime dependencies
+function(resolve_Runtime_Dependencies component)
+if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
+	resolve_Component_Runtime_Dependencies(ALL_SHARED_LIBS ${PROJECT_NAME} ${component})
+	create_Component_Symlinks(${component}${INSTALL_NAME_SUFFIX} "${ALL_SHARED_LIBS}")
+endif()
+endfunction(resolve_Runtime_Dependencies)
+
 ##################################################################################
 #################### package management public functions and macros ##############
 ##################################################################################
@@ -502,6 +632,7 @@ function(set_Current_Version major minor patch)
 	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_RPATH_DIR ${${PROJECT_NAME}_DEPLOY_PATH}/.rpath CACHE INTERNAL "")
 endfunction(set_Current_Version)
 
 
@@ -613,9 +744,8 @@ endif(BUILD_WITH_PRINT_MESSAGES)
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-#TODO uncomment to test
-#include(Package_Finding)
-#include(Package_Configuration)
+include(Package_Finding)
+include(Package_Configuration)
 
 endmacro(declare_Package)
 
@@ -623,6 +753,15 @@ endmacro(declare_Package)
 ################################### building the package #########################
 ##################################################################################
 macro(build_Package)
+
+set(CMAKE_SKIP_BUILD_RPATH  FALSE) # don't skip the full RPATH for the build tree
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install RPATH already
+#set(CMAKE_INSTALL_RPATH "${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_INSTALL_LIB_PATH}") 
+if(UNIX AND NOT APPLE)
+	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
+else() #TODO with APPLE
+	message("install system is compatible with UNIX systems")
+endif()
 
 #################################################
 ############ MANAGING the BUILD #################
@@ -645,6 +784,11 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 generate_Use_File() #generating/installing the version specific cmake "use" file
 generate_API() #generating/installing the API documentation
+
+#resolving dependencies
+foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+	resolve_Runtime_Dependencies(${component})
+endforeach()
 
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############
@@ -880,14 +1024,26 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
 		add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
+		
 		install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
 			LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
 			RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
 		)
+		#setting the default rpath for the target	
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
+		
 	endif()
 	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
-else()#simply creating a "fake" target
+	# registering the binary name
+	get_target_property(LIB_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
+	get_filename_component(LIB_NAME ${LIB_NAME} NAME)
+	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "") #exported include directories
+
+message("lib name is ${LIB_NAME}")
+
+else()#simply creating a "fake" target for header only library
 	file(	GLOB_RECURSE 
 		${PROJECT_NAME}_${c_name}_ALL_SOURCES 
 	       	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h" 
@@ -896,7 +1052,7 @@ else()#simply creating a "fake" target
 	)
 	#add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC IMPORTED GLOBAL)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX)
+	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX) #to allow CMake to knwo the linker to use (will not be trully called) for the "fake library" target 
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
 endif()
 
@@ -904,9 +1060,9 @@ endif()
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
 set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported links
 set(${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories (not useful to set it there since they will be exported "manually")
-get_target_property(LIB_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
-get_filename_component(LIB_NAME ${LIB_NAME} NAME)
-set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "") #exported include directories
+
+#registering dynamic dependencies
+set(${PROJECT_NAME}_${c_name}_RUNTIME_DEPS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #runtime dependencies (may be exported in links)
 
 #updating global variables of the CMake process	
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
@@ -979,15 +1135,23 @@ if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} 
 		RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
 	)
+	#setting the default rpath for the target	
+	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}") #the application targets a specific folder that contains symbolic links to used shared libraries
+	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
+	# NB : tests do not need to be relocatable since they are purely local
 endif()
 
 # registering exported flags for all kinds of apps => empty variables since applications export no flags
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories
-get_target_property(LIB_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
-get_filename_component(LIB_NAME ${LIB_NAME} NAME)
-set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "") #exported include directories
+
+#registering dynamic dependencies
+set(${PROJECT_NAME}_${c_name}_RUNTIME_DEPS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #private runtime dependencies only
+
+get_target_property(EXE_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
+get_filename_component(EXE_NAME ${EXE_NAME} NAME)
+set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${EXE_NAME} CACHE INTERNAL "") #name of the executable
 
 #updating global variables of the CMake process	
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
@@ -1003,7 +1167,7 @@ endfunction(declare_Application_Component)
 ###### as external but requires no additionnal info (default system folders) ##### 
 ### these functions are to be used after a find_package command. #################
 ##################################################################################
- 
+
 function(declare_Package_Dependancy dep_package version exact list_of_components)
 # ${PROJECT_NAME}_DEPENDENCIES				# packages required by current package
 # ${PROJECT_NAME}__DEPENDENCY_${dep_package}_VERSION		# version constraint for package ${dep_package}   required by ${PROJECT_NAME}  
@@ -1059,21 +1223,21 @@ else()
 	if (IS_EXEC_COMP)
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
+		
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
 		if(export)
 			set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component} TRUE)
 		endif()
-		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "")
+		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "")
 
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
-
-
+		
 	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component} TRUE) #export is necessarily true for a pure header library
-		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "")	
+		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "")
 		#NEW		
 		# setting compile definitions for configuring the "fake" target
 		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} TRUE "" "${comp_exp_defs}"  "${dep_defs}")
@@ -1131,7 +1295,7 @@ else()
 			if(export)
 				set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE)
 			endif()
-			configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "")
+			configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "")
 	
 			# setting compile definitions for configuring the target
 			fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
@@ -1139,7 +1303,7 @@ else()
 		elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 			#prepare the dependancy export
 			set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE) #export is necessarily true for a pure header library
-			configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "")
+			configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "")
 			# NEW
 			# setting compile definitions for configuring the "fake" target
 			fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} TRUE "" "${comp_exp_defs}" "${dep_defs}")
@@ -1164,7 +1328,7 @@ endfunction(declare_Package_Component_Dependancy)
 ### dep_defs  : definitions in the interface of the system dependancy that must be defined when using this system dependancy, if any => definitions are exported if dependancy is exported
 ### export : if true the component export the depenancy in its interface (export is always false if component is an application)
 ### links : links defined by the system dependancy, will be exported in any case (except by executables components)
-function(declare_System_Component_Dependancy component export comp_defs comp_exp_defs dep_defs links)
+function(declare_System_Component_Dependancy component export comp_defs comp_exp_defs dep_defs static_links shared_links)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
@@ -1179,20 +1343,21 @@ if (IS_EXEC_COMP)
 
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
-	configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "${links}")
+	configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}")
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "" "${links}")
+	set(TARGET_LINKS ${static_links} ${shared_links})
+	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "" "${TARGET_LINKS}")
 
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	#prepare the dependancy export
-	configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "${links}") #export is necessarily true for a pure header library
+	configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}") #export is necessarily true for a pure header library
 	# NEW
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "" "${links}")
+	set(TARGET_LINKS ${static_links} ${shared_links})
+	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "" "${TARGET_LINKS}")
 else()
 	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
 endif()
-	
 endfunction(declare_System_Component_Dependancy)
 
 
@@ -1203,7 +1368,7 @@ endfunction(declare_System_Component_Dependancy)
 ### export : if true the component export the external depenancy in its interface (export is always false if component is an application)
 ### inc_dirs : include directories to add to target component in order to build (these include dirs are expressed relatively) to the reference path to the external dependancy root dir
 ### links : libraries and linker flags. libraries path are given relative to the dep_package REFERENCE_PATH
-function(declare_External_Component_Dependancy component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs links)
+function(declare_External_Component_Dependancy component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs static_links shared_links)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
@@ -1215,28 +1380,29 @@ if(DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${US
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 	if (IS_EXEC_COMP)
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${links}")
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${static_links} ${shared_links}")
 
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
-		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs"} "${comp_exp_defs}" "${links}")
+		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs"} "${comp_exp_defs}" "${static_links}" "${shared_links}")
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${links}")
+		set(TARGET_LINKS ${static_links} ${shared_links})
+		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 
 	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#prepare the dependancy export
-		configure_Install_Variables(${component} TRUE "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${links}") #export is necessarily true for a pure header library
+		configure_Install_Variables(${component} TRUE "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}") #export is necessarily true for a pure header library
 
-		# NEW
 		# setting compile definitions for the "fake" target
-		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${links}")
+		set(TARGET_LINKS ${static_links} ${shared_links}) 
+		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 
 	else()
 		message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
 	endif()
 			
 else()#the external dependancy is a system dependancy
-	declare_System_Component_Dependancy(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${links}")
+	declare_System_Component_Dependancy(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${static_links}" "${shared_links}")
 endif()
 endfunction(declare_External_Component_Dependancy)
 
@@ -1303,6 +1469,7 @@ foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_DEFS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_${a_component}_DEFS${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_LINKS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_${a_component}_LINKS${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
+	file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_RUNTIME_DEPS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_${a_component}_RUNTIME_DEPS${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 endforeach()
 
 # 4) package internal component dependencies
@@ -1315,7 +1482,6 @@ foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		endforeach()
 	endif()
 endforeach()
-
 
 # 5) component dependencies 
 file(APPEND ${file} "#### declaration of component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
@@ -1337,5 +1503,4 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once
 	file(APPEND ${file} ${DEBUG_CONTENT})
 endif()
 endfunction(create_Use_File)
-
 

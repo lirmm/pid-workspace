@@ -233,7 +233,7 @@ function(init_Component_Variables package component path_to_version )
 endfunction(init_Component_Variables)
 
 ### 
-functions(update_Component_Build_Variables_With_Dependency package component dep_package dep_component)
+function(update_Component_Build_Variables_With_Dependency package component dep_package dep_component)
 
 if(${${package}_${component}_EXPORT_${dep_package}_${dep_component}})
 	update_Config_Include_Dirs(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS})
@@ -245,7 +245,7 @@ endif()
 # libraries are always exported to enable the linking	
 update_Config_Libraries(${package} ${component} ${${dep_package}_${dep_component}_LIBRARIES})
 update_Config_Libraries_Debug(${package} ${component} ${${dep_package}_${dep_component}_LIBRARIES_DEBUG})
-endfunction()
+endfunction(update_Component_Build_Variables_With_Dependency package)
 
 #TODO managing the automatic installation of binay packages or git repo (if not exist) !!
 
@@ -268,7 +268,7 @@ endif()
 
 # 2) initializing all build variable that are internal to each component of the current package
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
-	init_Component_Variables ${package_name} ${a_component} ${path_to_version})
+	init_Component_Variables(${package_name} ${a_component} ${path_to_version})
 endforeach()
 
 
