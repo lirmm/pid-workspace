@@ -89,13 +89,6 @@ else() # otherwise no need to register them since no more useful
 	endif()	
 endif()
 
-# we need to register shared libraries as runtime dependencies
-if(NOT shared_links STREQUAL "")
-set(	${PROJECT_NAME}_${component}_RUNTIME_DEPS${USE_MODE_SUFFIX}
-	${${PROJECT_NAME}_${component}_RUNTIME_DEPS${USE_MODE_SUFFIX}}
-	${shared_links}
-	CACHE INTERNAL "") #if shared links are external libraries their path is relative to their corresponding external package path
-endif()
 endfunction(configure_Install_Variables)
 
 ### to know if the component is an application
@@ -461,14 +454,15 @@ endfunction(reset_cached_variables)
 
 function(reset_Mode_Cache_Options)
 #unset all global options
-set(BUILD_EXAMPLES CACHE BOOL "" FORCE)
-set(BUILD_API_DOC CACHE BOOL "" FORCE)
-set(BUILD_API_DOC CACHE BOOL "" FORCE)
-set(BUILD_AND_RUN_TESTS CACHE BOOL "" FORCE)
-set(BUILD_WITH_PRINT_MESSAGES CACHE BOOL "" FORCE)
-set(USE_LOCAL_DEPLOYMENT CACHE BOOL "" FORCE)
-set(GENERATE_INSTALLER CACHE BOOL "" FORCE)
+set(BUILD_EXAMPLES CACHE BOOL FALSE FORCE)
+set(BUILD_API_DOC CACHE BOOL FALSE FORCE)
+set(BUILD_API_DOC CACHE BOOL FALSE FORCE)
+set(BUILD_AND_RUN_TESTS CACHE BOOL FALSE FORCE)
+set(BUILD_WITH_PRINT_MESSAGES CACHE BOOL FALSE FORCE)
+set(USE_LOCAL_DEPLOYMENT CACHE BOOL FALSE FORCE)
+set(GENERATE_INSTALLER CACHE BOOL FALSE FORCE)
 set(WORKSPACE_DIR CACHE PATH "" FORCE)
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD CACHE BOOL FALSE FORCE)
 #include the cmake script that sets the options coming from the global build configuration
 include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
 endfunction(reset_Mode_Cache_Options)
@@ -478,15 +472,15 @@ endfunction(reset_Mode_Cache_Options)
 function(is_Internal_Component_Exporting_Other_Components RESULT component)
 	set(${RESULT} FALSE PARENT_SCOPE)
 	#scanning external dependencies
-	if(${PROJECT_NAME}_${component}_LINKS) #only exported links here
+	if(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}) #only exported links here
 		set(${RESULT} TRUE PARENT_SCOPE)
 		return()
 	endif()
 
 	# scanning internal dependencies
-	if(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES)
-		foreach(int_dep IN ITEMS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES)
-			if(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${int_dep})
+	if(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+		foreach(int_dep IN ITEMS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+			if(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${int_dep}${USE_MODE_SUFFIX})
 				set(${RESULT} TRUE PARENT_SCOPE)
 				return()
 			endif()
@@ -494,9 +488,9 @@ function(is_Internal_Component_Exporting_Other_Components RESULT component)
 	endif()
 
 	# scanning package dependencies
-	foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES)
-		foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS)
-			if(${PROJECT_NAME}_${component}_EXPORT_${dep_pack}_${ext_dep})
+	foreach(dep_pack IN ITEMS ${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX})
+		foreach(ext_dep IN ITEMS ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${USE_MODE_SUFFIX})
+			if(${PROJECT_NAME}_${component}_EXPORT_${dep_pack}_${ext_dep}${USE_MODE_SUFFIX})
 				set(${RESULT} TRUE PARENT_SCOPE)
 				return()
 			endif()
@@ -526,22 +520,38 @@ endif()
 endfunction(get_Direct_Runtime_Dependencies)
 
 ### recursive function to find dependencies
-function(resolve_Component_Runtime_Dependencies ALL_SHARED_LIBS package component)
+function(get_Component_Runtime_Dependencies ALL_SHARED_LIBS package component)
 	set(result "")
-	# 1) adding direct external dependencies	
-	list(APPEND result ${${package}_${component}_RUNTIME_DEPS${USE_MODE_SUFFIX}})#adding external dependencies
+	# 1) adding direct external dependencies
+	if(${package}_${component}_LINKS${USE_MODE_SUFFIX})
+		foreach(lib IN ITEMS ${${package}_${component}_LINKS${USE_MODE_SUFFIX}})
+			get_filename_component(LIB_TYPE ${lib} EXT)
+			if(LIB_TYPE)		
+				if(UNIX AND NOT APPLE) 		
+					if(LIB_TYPE MATCHES "^.*\.so(\..+)*$")#found shared lib
+						list(APPEND result ${lib})#adding external dependencies
+					endif()
+				elseif(APPLE)
+					if(LIB_TYPE MATCHES "^.*\.dylib(\..+)*$")#found shared lib
+						list(APPEND result ${lib})#adding external dependencies
+					endif()
+				endif()
+			endif()
+		endforeach()
+	endif()	
+	
 
-	# 2) adding internal components dependencies (only case when recursionis needed)
-	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES)
+	# 2) adding internal components dependencies (only case when recursion is needed)
+	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
 		if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")		
-			resolve_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep}) #need to resolve external symbols whether the component is exported or not
+			get_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep}) #need to resolve external symbols whether the component is exported or not
 			if(INT_DEP_SHARED_LIBS)
 				list(APPEND result ${INT_DEP_SHARED_LIBS})
 			endif()
 		elseif(${package}_${int_dep}_TYPE STREQUAL "SHARED")
 			is_Internal_Component_Exporting_Other_Components(EXPORTING ${int_dep})
 			if(EXPORTING) # doing transitive search only if shared libs export something
-				resolve_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep}) #need to resolve external symbols whether the component is exported or not
+				get_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep}) #need to resolve external symbols whether the component is exported or not
 				if(INT_DEP_SHARED_LIBS)# guarding against shared libs presence
 					list(APPEND result ${INT_DEP_SHARED_LIBS})
 				endif()
@@ -550,8 +560,8 @@ function(resolve_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 	endforeach()
 
 	# 3) adding package components dependencies
-	foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES)
-		foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS)
+	foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${USE_MODE_SUFFIX})
+		foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${USE_MODE_SUFFIX})
 			get_Direct_Runtime_Dependencies(PACK_DEP_SHARED_LIBS ${package} ${component} ${dep_pack} ${ext_dep})
 			if(PACK_DEP_SHARED_LIBS)
 				list(APPEND result ${PACK_DEP_SHARED_LIBS})
@@ -561,7 +571,7 @@ function(resolve_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 	# 4) now returning	
 	list(REMOVE_DUPLICATES result)
 	set(ALL_SHARED_LIBS ${result} PARENT_SCOPE)
-endfunction(resolve_Component_Runtime_Dependencies)
+endfunction(get_Component_Runtime_Dependencies)
 
 #TODO A VOIR -> il faut que ce soit portable avec de "pur" packages binaires => il vaut mieu générer un script cmake
 # qu'on appelle ensuite (-> permettre le relinking "à la demande")
@@ -576,16 +586,16 @@ foreach(lib IN ITEMS ${shared_libs})
 endforeach()
 endfunction(create_Component_Symlinks)
 
-
-### resolve runtime dependencies
-function(resolve_Runtime_Dependencies component)
+### 
+function(resolve_Component_Runtime_Dependencies component)
 if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP" 
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
-	resolve_Component_Runtime_Dependencies(ALL_SHARED_LIBS ${PROJECT_NAME} ${component})
+	get_Component_Runtime_Dependencies(ALL_SHARED_LIBS ${PROJECT_NAME} ${component})
 	create_Component_Symlinks(${component}${INSTALL_NAME_SUFFIX} "${ALL_SHARED_LIBS}")
 endif()
-endfunction(resolve_Runtime_Dependencies)
+endfunction(resolve_Component_Runtime_Dependencies)
+
 
 ##################################################################################
 #################### package management public functions and macros ##############
@@ -658,6 +668,8 @@ option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
 option(USE_LOCAL_DEPLOYMENT "Package uses tests" ON)
 CMAKE_DEPENDENT_OPTION(GENERATE_INSTALLER "Package generates an OS installer for linux with debian" ON
 		         "NOT USE_LOCAL_DEPLOYMENT" OFF)
+
+option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" OFF)
 
 #################################################
 ############ MANAGING build mode ################
@@ -745,7 +757,6 @@ endif(BUILD_WITH_PRINT_MESSAGES)
 ############ inclusion of required macros and functions ################
 ########################################################################
 include(Package_Finding)
-include(Package_Configuration)
 
 endmacro(declare_Package)
 
@@ -760,8 +771,44 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install
 if(UNIX AND NOT APPLE)
 	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
 else() #TODO with APPLE
-	message("install system is compatible with UNIX systems")
+	message("install system is compatible with UNIX systems but not APPLE")
 endif()
+
+#################################################################################
+############ MANAGING the configuration of package dependencies #################
+#################################################################################
+include(Package_Configuration)
+# from here only direct dependencies have been satisfied
+# 0) if there are packages to install it means that there are some unresolved required dependencies
+if(${PROJECT_NAME}_TOINSTALL_PACKAGES)
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. Automatic download of package not supported yet")#TODO
+		return()
+	else()	
+		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
+		return()
+	endif()
+
+endif()
+
+# 1) resolving required packages versions (there can be multiple versions required at the same time)
+# we get the set of all packages undirectly required
+foreach(dep_pack IN ITEMS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
+	resolve_Package_Dependencies(${dep_pack})
+endforeach()
+#here every package dependency should have been resolved OR ERROR
+
+# 2) if all version are OK resolving all necessary variables (CFLAGS, LDFLAGS and include directories)
+foreach(dep_pack IN ITEMS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
+	configure_Package_Build_Variables(${dep_pack})
+endforeach()
+
+# 3) when done resolving runtime dependencies for all used package (direct or undirect)
+
+#now configuring exported variables (recursion using find_package of required packages)
+#configure_Package_Build_Variables(@PROJECT_NAME@ ${@PROJECT_NAME@_ROOT_DIR})
+
+
 
 #################################################
 ############ MANAGING the BUILD #################
@@ -787,7 +834,7 @@ generate_API() #generating/installing the API documentation
 
 #resolving dependencies
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-	resolve_Runtime_Dependencies(${component})
+	resolve_Local_Runtime_Dependencies(${component})
 endforeach()
 
 #################################################

@@ -2,15 +2,15 @@
 ################ auxiliary macro ###################
 ####################################################
 macro(exitFindScript message_to_send)
-	if(${@PROJECT_NAME@_FIND_REQUIRED})
+	if(@PROJECT_NAME@_FIND_REQUIRED)
 		message(SEND_ERROR message_to_send)#fatal error
 		return()
-	elseif(${@PROJECT_NAME@_FIND_QUIETLY})
+	elseif(@PROJECT_NAME@_FIND_QUIETLY)
 		return()#simply exitting
-	else(${@PROJECT_NAME@_FIND_QUIETLY})
+	else(@PROJECT_NAME@_FIND_QUIETLY)
 		message(STATUS message_to_send)#simple notification message
 		return() 
-	endif(${@PROJECT_NAME@_FIND_REQUIRED})
+	endif()
 endmacro(exitFindScript message_to_send)
 
 ####################################################
@@ -65,7 +65,7 @@ if(EXIST)
 		#here everything has been found => setting global standard CMake find process variables to adequate values
 		set(@PROJECT_NAME@_FOUND TRUE CACHE INTERNAL "")
 		set(@PROJECT_NAME@_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_USED_PACKAGES ${${PROJECT_NAME}_USED_PACKAGES} @PROJECT_NAME@ CACHE INTERNAL "")
+		# set(${PROJECT_NAME}_USED_PACKAGES ${${PROJECT_NAME}_USED_PACKAGES} @PROJECT_NAME@ CACHE INTERNAL "")
 		if(@PROJECT_NAME@_FIND_VERSION)
 			if(@PROJECT_NAME@_FIND_VERSION_EXACT)
 				set(@PROJECT_NAME@_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
@@ -77,20 +77,28 @@ if(EXIST)
 			set(@PROJECT_NAME@_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
 			set(@PROJECT_NAME@_REQUIRED_VERSION_EXACT CACHE INTERNAL "") #unset the exact required version	
 		endif()
-
-		#now configuring exported variables (recursion using find_package of required packages)
-		configure_Package_Build_Variables(@PROJECT_NAME@ ${@PROJECT_NAME@_ROOT_DIR})
+		
 	else(VERSION_HAS_BEEN_FOUND)#no adequate version found
-		#TODO here automating the download of the adequate package version
-		exitFindScript("The package @PROJECT_NAME@ with version ${@PROJECT_NAME@_FIND_VERSION} cannot be found")
+		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+			if(@PROJECT_NAME@_FIND_REQUIRED)		
+				set(${PROJECT_NAME}_TOINSTALL_PACKAGES ${${PROJECT_NAME}_TOINSTALL_PACKAGES} @PROJECT_NAME@ CACHE INTERNAL "")
+				set(${PROJECT_NAME}_TOINSTALL_PACKAGE_@PROJECT_NAME@_VERSION "${@PROJECT_NAME@_FIND_VERSION_MAJOR}.${@PROJECT_NAME@_FIND_VERSION_MINOR}" CACHE INTERNAL "")
+				set(${PROJECT_NAME}_TOINSTALL_PACKAGE_@PROJECT_NAME@_VERSION_EXACT ${@PROJECT_NAME@_FIND_VERSION_EXACT} CACHE INTERNAL "")
+			endif()
+		else()
+			exitFindScript("The package @PROJECT_NAME@ with version ${@PROJECT_NAME@_FIND_VERSION} cannot be found in the workspace")
+		endif()
 	endif(VERSION_HAS_BEEN_FOUND)
 		
 else(EXIST) #if the directory does not exist it means the package cannot be found
-	#TODO here automating the download of the adequate package as regard of version
-	exitFindScript("The required package @PROJECT_NAME@ cannot be found")
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+		if(@PROJECT_NAME@_FIND_REQUIRED)	
+			set(${PROJECT_NAME}_TOINSTALL_PACKAGES ${${PROJECT_NAME}_TOINSTALL_PACKAGES} @PROJECT_NAME@ CACHE INTERNAL "")
+		endif()
+	else()
+		exitFindScript("The required package @PROJECT_NAME@ cannot be found in the workspace")
+	endif()
+
 endif(EXIST)
 
-####################################################
-####### @PROJECT_NAME@ find script ends here #######
-####################################################
 

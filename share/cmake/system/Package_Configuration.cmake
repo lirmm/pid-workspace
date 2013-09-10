@@ -44,8 +44,6 @@ endfunction()
 # ${package}_DEPENDENCY_${dependency}_VERSION_EXACT	# TRUE if exact version is required
 # ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
 function(resolve_Package_Dependency package dependency)
-#HERE TODO Probleme de gestion de la récursion : cas de base dans lequel on "tombe" plusieurs fois sur le même package => 
-# idée de base : récursion de tous les use file ? IMPOSSIBLE CAR REQUIERT DE FAIRE LE CHOIX D'UNE VERSION !!
 
 if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
 	if(${package}_DEPENDENCY_${dependency}_VERSION) # a specific version is required
@@ -56,7 +54,7 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 			if(IS_COMPATIBLE)
 				if(NEED_REFIND)
 					# OK installing the exact version instead
-					#WARNING recursive call to find package
+					#WARNING call to find package
 					find_package(
 						${dependency} 
 						${${package}_DEPENDENCY_${dependency}_VERSION} 
@@ -247,24 +245,203 @@ update_Config_Libraries(${package} ${component} ${${dep_package}_${dep_component
 update_Config_Libraries_Debug(${package} ${component} ${${dep_package}_${dep_component}_LIBRARIES_DEBUG})
 endfunction(update_Component_Build_Variables_With_Dependency package)
 
+
+##################################################################################
+################## binary packages configuration #################################
+##################################################################################
+
+#resolving dependencies
+function(is_Internal_Bin_Component_Exporting_Other_Components RESULT package component mode)
+set(${RESULT} FALSE PARENT_SCOPE)
+if(mode MATCHES Release)
+	set(mode_var_suffix "")
+elseif(mode MATCHES Debug)
+	set(mode_var_suffix "_DEBUG")
+else()
+	message(FATAL_ERROR "Bug : unknown mode ${mode}")
+	return()
+endif()
+#scanning external dependencies
+if(${package}_${component}_LINKS${mode_var_suffix}) #only exported links here
+	set(${RESULT} TRUE PARENT_SCOPE)
+	return()
+endif()
+
+# scanning internal dependencies
+if(${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
+	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
+		if(${package}_${component}_INTERNAL_EXPORT_${int_dep}${mode_var_suffix})
+			set(${RESULT} TRUE PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()		
+endif()
+
+# scanning package dependencies
+foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
+	foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${mode_var_suffix})
+		if(${package}_${component}_EXPORT_${dep_pack}_${ext_dep}${mode_var_suffix})
+			set(${RESULT} TRUE PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
+endforeach()
+endfunction(is_Internal_Bin_Component_Exporting_Other_Components)
+
+###
+function(get_Direct_Runtime_Dependencies DEPENDENT_SHARED_LIBS dep_package dep_component)
+set(${DEPENDENT_SHARED_LIBS} "" PARENT_SCOPE)
+if(${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}) #the dependent component provides libraries
+	foreach(lib IN ITEMS ${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}})
+		get_filename_component(LIB_TYPE ${lib} EXT)
+		if(LIB_TYPE)		
+			if(UNIX AND NOT APPLE) 		
+				if(LIB_TYPE MATCHES "^.*\.so(\..+)*$")#found shared lib
+					set(${DEPENDENT_SHARED_LIBS} ${DEPEDENT_SHARED_LIBS} ${lib} PARENT_SCOPE)
+				endif()
+			elseif(APPLE)
+				if(LIB_TYPE MATCHES "^.*\.dylib(\..+)*$")#found shared lib
+					set(${DEPENDENT_SHARED_LIBS} ${DEPEDENT_SHARED_LIBS} ${lib} PARENT_SCOPE)
+				endif()
+			endif()
+		endif()
+	endforeach()
+endif()
+endfunction(get_Direct_Runtime_Dependencies)
+
+### recursive function to find dependencies
+function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package component mode)
+	if(mode MATCHES Release)
+		set(mode_binary_suffix "")
+		set(mode_var_suffix "")
+	elseif(mode MATCHES Debug)
+		set(mode_binary_suffix "-dbg")
+		set(mode_var_suffix "_DEBUG")
+	else()
+		return()
+	endif()
+	set(result "")
+	# 1) adding direct external dependencies
+	if(${package}_${component}_LINKS${mode_var_suffix})
+		foreach(lib IN ITEMS ${${package}_${component}_LINKS${mode_var_suffix}})
+			get_filename_component(LIB_TYPE ${lib} EXT)
+			if(LIB_TYPE)
+				if(UNIX AND NOT APPLE) 		
+					if(LIB_TYPE MATCHES "^.*\.so(\..+)*$")#found shared lib
+						list(APPEND result ${lib})#adding external dependencies
+					endif()
+				elseif(APPLE)
+					if(LIB_TYPE MATCHES "^.*\.dylib(\..+)*$")#found shared lib
+						list(APPEND result ${lib})#adding external dependencies
+					endif()
+				endif()
+			endif()
+		endforeach()
+	endif()
+	
+
+	# 2) adding internal components dependencies (only case when recursion is needed)
+	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
+		if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")		
+			get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not
+			if(INT_DEP_SHARED_LIBS)
+				list(APPEND result ${INT_DEP_SHARED_LIBS})
+			endif()
+		elseif(${package}_${int_dep}_TYPE STREQUAL "SHARED")
+			is_Internal_Bin_Component_Exporting_Other_Components(EXPORTING ${int_dep})
+			if(EXPORTING) # doing transitive search only if shared libs export something
+				get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not
+				if(INT_DEP_SHARED_LIBS)# guarding against shared libs presence
+					list(APPEND result ${INT_DEP_SHARED_LIBS})
+				endif()
+			endif() #no need to resolve external symbols if the shared library component is not exported
+		endif()
+	endforeach()
+
+	# 3) adding package components dependencies
+	foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
+		foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${mode_var_suffix})
+			get_Direct_Runtime_Dependencies(PACK_DEP_SHARED_LIBS ${package} ${component} ${dep_pack} ${ext_dep})
+			if(PACK_DEP_SHARED_LIBS)
+				list(APPEND result ${PACK_DEP_SHARED_LIBS})
+			endif()
+		endforeach()
+	endforeach()
+	# 4) now returning	
+	list(REMOVE_DUPLICATES result)
+	set(ALL_SHARED_LIBS ${result} PARENT_SCOPE)
+endfunction(get_Bin_Component_Runtime_Dependencies)
+
+
+### configuring components runtime paths (links to libraries)
+function(create_Bin_Component_Symlinks bin_package bin_component mode shared_libs)
+if(mode MATCHES Release)
+	set(mode_string "")
+elseif(mode MATCHES Debug)
+	set(mode_string "-dbg")
+else()
+	return()
+endif()
+
+foreach(lib IN ITEMS ${shared_libs})
+	get_filename_component(A_LIB_FILE ${lib} NAME)
+	EXECUTE_PROCESS(
+		COMMAND ${CMAKE_COMMAND} -E remove -f ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${lib}
+		COMMAND ${CMAKE_COMMAND} -E create_symlink ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${lib} ${A_LIB_FILE}
+	)
+endforeach()
+endfunction(create_Bin_Component_Symlinks)
+
+
+### resolve runtime dependencies
+function(resolve_Bin_Component_Runtime_Dependencies package component mode)
+if(	${package}_${component}_TYPE STREQUAL "SHARED" 
+	OR ${packageE}_${component}_TYPE STREQUAL "APP" 
+	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
+	get_Bin_Component_Runtime_Dependencies(ALL_SHARED_LIBS ${package} ${component} ${mode})#suppose that findPackage has resolved everything
+	create_Bin_Component_Symlinks(${package} ${component} ${mode} "${ALL_SHARED_LIBS}")
+endif()
+endfunction(resolve_Bin_Component_Runtime_Dependencies)
+
+
 #TODO managing the automatic installation of binay packages or git repo (if not exist) !!
 
 ##################################################################################
 ##################################  main macro  ##################################
 ##################################################################################
-#TODO gérer le mode debug ou release de manière différente !!!!!!!!! prendre en compte les champs _DEBUG sur les dependencies
-function(configure_Package_Build_Variables package_name path_to_version)
+function(resolve_Package_Dependencies package)
 # 1) managing package dependencies (the list of dependent packages is defined as ${package_name}_DEPENDENCIES)
 # - locating dependent packages in the workspace and configuring their build variables recursively 
-foreach(a_dependency IN ITEMS ${${package_name}_DEPENDENCIES}) 
-	resolve_Package_Dependency(${package_name} ${a_dependency})
+foreach(dep_pack IN ITEMS ${package}_DEPENDENCIES${USE_MODE_SUFFIX})
+	# 1) resolving direct dependencies
+	resolve_Package_Dependency(${package} ${dep_pack})
+	if(${dep_pack}_FOUND)
+		if(${package}_DEPENDENCIES${USE_MODE_SUFFIX})
+			resolve_Package_Dependencies(${dep_pack})#recursion : resolving dependencies for each package dependency
+		endif()
+	else() #package dependency not resolved 
+		list(APPEND ${package}_NOT_FOUND_DEPS ${dep_pack})		
+	endif()
 endforeach()
-
-if(${package}_DEPENDENCIES_NOTFOUND)
-	message(FATAL_ERROR "Some dependencies have not been found exitting")
-	#TODO here managing the automatic installation of binay packages or git repo (if not exist)
+# 2) for not found package
+if(${package}_NOT_FOUND_DEPS)
+	foreach(not_found_dep_pack IN ITEMS ${${package}_NOT_FOUND_DEPS})
+		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+			message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. Automatic download of package not supported yet")#TODO
+			return()
+		else()	
+			message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
+			return()
+		endif()
+	endforeach()
 endif()
+endfunction(resolve_Package_Dependencies)
 
+
+
+
+#HERE TODO gérer le mode debug ou release de manière différente !!!!!!!!! prendre en compte les champs _DEBUG sur les dependencies
+function(configure_Package_Build_Variables package_name)
 
 # 2) initializing all build variable that are internal to each component of the current package
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
