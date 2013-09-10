@@ -135,114 +135,76 @@ endfunction(resolve_Package_Dependency)
 ##################################################################################
 
 ###
-function (update_Config_Include_Dirs package component path)
-	set(${package}_${component}_INCLUDE_DIRS ${${package}_${component}_INCLUDE_DIRS} ${path} CACHE INTERNAL "")
+function (update_Config_Include_Dirs package component dep_package dep_component)
+	set(${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX} ${${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX}} ${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}} CACHE INTERNAL "")
 endfunction(update_Config_Include_Dirs)
 
 ###
-function (update_Config_Include_Dirs_Debug package component path)
-	set(${package}_${component}_INCLUDE_DIRS_DEBUG ${${package}_${component}_INCLUDE_DIRS_DEBUG} ${path} CACHE INTERNAL "")
-endfunction(update_Config_Include_Dirs_Debug)
-
-###
-function (update_Config_Definitions package component defs)
-	set(${package}_${component}_DEFINITIONS ${${package}_${component}_DEFINITIONS} ${defs} CACHE INTERNAL "")
+function (update_Config_Definitions package component dep_package dep_component)
+	set(${package}_${component}_DEFINITIONS${USE_MODE_SUFFIX} ${${package}_${component}_DEFINITIONS${USE_MODE_SUFFIX}} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}} CACHE INTERNAL "")
 endfunction(update_Config_Definitions)
 
-
 ###
-function(update_Config_Definitions_Debug package component defs)
-	set(${package}_${component}_DEFINITIONS_DEBUG ${${package}_${component}_DEFINITIONS_DEBUG} ${defs} CACHE INTERNAL "")
-endfunction(update_Config_Definitions_Debug)
-
-###
-function(update_Config_Libraries package component links)
-	set(${package}_${component}_LIBRARIES ${${package}_${component}_LIBRARIES} ${links} CACHE INTERNAL "")
+function(update_Config_Libraries package component dep_package dep_component)
+	set(${package}_${component}_LIBRARIES${USE_MODE_SUFFIX} ${${package}_${component}_LIBRARIES${USE_MODE_SUFFIX}} ${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}} CACHE INTERNAL "")
 endfunction(update_Config_Libraries)
 
 ###
-function(update_Config_Libraries_Debug package component links)
-	set(${package}_${component}_LIBRARIES_DEBUG ${${package}_${component}_LIBRARIES_DEBUG} ${links} CACHE INTERNAL "")
-endfunction(update_Config_Libraries_Debug)
-
-###
 function(init_Component_Variables package component path_to_version )
-	set(${package}_${component}_INCLUDE_DIRS "" CACHE INTERNAL "")
-	set(${package}_${component}_INCLUDE_DIRS_DEBUG "" CACHE INTERNAL "")
-	set(${package}_${component}_DEFINITIONS "" CACHE INTERNAL "")
-	set(${package}_${component}_DEFINITIONS_DEBUG "" CACHE INTERNAL "")
-	set(${package}_${component}_LIBRARIES "" CACHE INTERNAL "")
-	set(${package}_${component}_LIBRARIES_DEBUG "" CACHE INTERNAL "")
-	set(${package}_${component}_EXECUTABLE "" CACHE INTERNAL "")
-	set(${package}_${component}_EXECUTABLE_DEBUG "" CACHE INTERNAL "")
+	set(${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
+	set(${package}_${component}_DEFINITIONS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
+	set(${package}_${component}_LIBRARIES${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
+	set(${package}_${component}_EXECUTABLE${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 	is_Executable_Component(COMP_IS_EXEC ${package} ${component})
 	
 	if(NOT COMP_IS_EXEC)
-		#exported include dirs (cflags -I<path>)
-		set(${package}_${component}_INCLUDE_DIRS "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
-		set(${package}_${component}_INCLUDE_DIRS_DEBUG "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
+		#provided include dirs (cflags -I<path>)
+		set(${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX} "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
 		
-		#additional exported include dirs (cflags -I<path>) (external/system include dirs)
-		if(${package}_${component}_INC_DIRS)
-			set(	${package}_${component}_INCLUDE_DIRS 
-				${${package}_${component}_INCLUDE_DIRS} 
-				${${package}_${component}_INC_DIRS} 
+		#additional provided include dirs (cflags -I<path>) (external/system exported include dirs)
+		if(${package}_${component}_INC_DIRS${USE_MODE_SUFFIX})
+			set(	${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX} 
+				${${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX}} 
+				${${package}_${component}_INC_DIRS${USE_MODE_SUFFIX}} 
 				CACHE INTERNAL "")
 		endif()
-		if(${package}_${component}_INC_DIRS_DEBUG)
-			set(	${package}_${component}_INCLUDE_DIRS_DEBUG 
-				${${package}_${component}_INCLUDE_DIRS_DEBUG}				
-				${${package}_${component}_INC_DIRS_DEBUG} 
-				CACHE INTERNAL "")		
-		endif()
-		#exported additionnal cflags
-		if(${package}_${component}_DEFS) 	
-			set(${package}_${component}_DEFINITIONS ${${package}_${component}_DEFS} CACHE INTERNAL "")
-		endif()
-		if(${package}_${component}_DEFS_DEBUG)	
-			set(${package}_${component}_DEFINITIONS_DEBUG ${${package}_${component}_DEFS_DEBUG} CACHE INTERNAL "")
+		#provided cflags (own CFLAGS and external/system exported CFLAGS)
+		if(${package}_${component}_DEFS${USE_MODE_SUFFIX}) 	
+			set(${package}_${component}_DEFINITIONS${USE_MODE_SUFFIX} ${${package}_${component}_DEFS${USE_MODE_SUFFIX}} CACHE INTERNAL "")
 		endif()
 
-		#exported library (ldflags -l<path>)
+		#provided library (ldflags -l<path>)
 		if(NOT ${${package}_${component}_TYPE} STREQUAL "HEADER")
-			set(${package}_${component}_LIBRARIES "${path_to_version}/lib/${${package}_${component}_BINARY_NAME}" CACHE INTERNAL "")
-			set(${package}_${component}_LIBRARIES_DEBUG "${path_to_version}/lib/${${package}_${component}_BINARY_NAME_DEBUG}" CACHE INTERNAL "")
+			set(${package}_${component}_LIBRARIES${USE_MODE_SUFFIX} "${path_to_version}/lib/${${package}_${component}_BINARY_NAME${USE_MODE_SUFFIX}}" CACHE INTERNAL "")
 		endif()
 
-		#exported additionnal ld flags
-		if(${package}_${component}_LINKS)
-			set(	${package}_${component}_LIBRARIES 
-				${${package}_${component}_LIBRARIES}
-				${${package}_${component}_LINKS} 
-				CACHE INTERNAL "")
-		endif()
-		if(${package}_${component}_LINKS_DEBUG)	
-			set(	${package}_${component}_LIBRARIES_DEBUG 
-				${${package}_${component}_LIBRARIES_DEBUG}
-				${${package}_${component}_LINKS_DEBUG} 
+		#provided additionnal ld flags (exported external/system libraries and ldflags)
+		if(${package}_${component}_LINKS${USE_MODE_SUFFIX})
+			set(	${package}_${component}_LIBRARIES${USE_MODE_SUFFIX} 
+				${${package}_${component}_LIBRARIES${USE_MODE_SUFFIX}}
+				${${package}_${component}_LINKS${USE_MODE_SUFFIX}} 
 				CACHE INTERNAL "")
 		endif()
 		
-	elseif(${${package}_${component}_TYPE} STREQUAL "APP")
+	elseif(${package}_${component}_TYPE STREQUAL "APP")
 		
-		set(${package}_${component}_EXECUTABLE "${path_to_version}/bin/${${package}_${component}_BINARY_NAME}" CACHE INTERNAL "")
-		set(${package}_${component}_EXECUTABLE_DEBUG "${path_to_version}/bin/${${package}_${component}_BINARY_NAME_DEBUG}" CACHE INTERNAL "")
+		set(${package}_${component}_EXECUTABLE${USE_MODE_SUFFIX} "${path_to_version}/bin/${${package}_${component}_BINARY_NAME${USE_MODE_SUFFIX}}" CACHE INTERNAL "")
 	endif()
 endfunction(init_Component_Variables)
 
 ### 
 function(update_Component_Build_Variables_With_Dependency package component dep_package dep_component)
-
+configure_Package_Build_Variables(${dep_package})#!! recursion to get all updated infos
 if(${${package}_${component}_EXPORT_${dep_package}_${dep_component}})
-	update_Config_Include_Dirs(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS})
-	update_Config_Include_Dirs_Debug(${package} ${component} ${${dep_package}_${dep_component}_INCLUDE_DIRS_DEBUG})
-	update_Config_Definitions(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS})
-	update_Config_Definitions_Debug(${package} ${component} ${${dep_package}_${dep_component}_DEFINITIONS_DEBUG})
+	update_Config_Include_Dirs(${package} ${component} ${dep_package} ${dep_component})
+	update_Config_Definitions(${package} ${component} ${dep_package} ${dep_component})
+	update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component})	
+else()
+	if(NOT ${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")#static OR header lib
+		update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component})
+	endif()
+	
 endif()
-
-# libraries are always exported to enable the linking	
-update_Config_Libraries(${package} ${component} ${${dep_package}_${dep_component}_LIBRARIES})
-update_Config_Libraries_Debug(${package} ${component} ${${dep_package}_${dep_component}_LIBRARIES_DEBUG})
 endfunction(update_Component_Build_Variables_With_Dependency package)
 
 
@@ -437,28 +399,34 @@ if(${package}_NOT_FOUND_DEPS)
 endif()
 endfunction(resolve_Package_Dependencies)
 
-
-
-
-#HERE TODO gérer le mode debug ou release de manière différente !!!!!!!!! prendre en compte les champs _DEBUG sur les dependencies
+###
 function(configure_Package_Build_Variables package_name)
+if(${package_name}_PREPARE_BUILD)#this is a guard to limit recursion
+	return()
+endif()
 
-# 2) initializing all build variable that are internal to each component of the current package
+if(${package_name}_DURING_PREPARE_BUILD)
+	message(FATAL_ERROR "Alert : you have define cyclic dependencies between packages : Package ${package_name} is directly or undirectly requiring itself !")
+endif()
+
+set(${package_name}_DURING_PREPARE_BUILD TRUE)
+
+# 1) initializing all build variable that are directly provided by each component of the target package
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
-	init_Component_Variables(${package_name} ${a_component} ${path_to_version})
+	init_Component_Variables(${package_name} ${a_component} ${${package_name}_ROOT_DIR})
 endforeach()
 
-
-# 3) setting build variables with informations coming from package dependancies
+# 2) setting build variables with informations coming from package dependancies
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
 	foreach(a_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES}) 
 		foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS}) 
-			update_Component_Build_Variables_With_Dependency (${package_name} ${a_component} ${a_package} ${a_dep_component})
+			update_Component_Build_Variables_With_Dependency(${package_name} ${a_component} ${a_package} ${a_dep_component})
 		endforeach()
 	endforeach()		
 endforeach()
 
-#4) setting build variables with informations coming from INTERNAL package dependancies
+#HERE TODO
+#3) setting build variables with informations coming from INTERNAL package dependancies
 # these have not been checked like the others since the package components discovering mecanism has already done the job 
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
 	foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_INTERNAL_DEPENDENCIES}) 
@@ -466,6 +434,8 @@ foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
 	endforeach()
 endforeach()
 
+set(${package_name}_PREPARE_BUILD TRUE CACHE INTERNAL "")
+set(${package_name}_DURING_PREPARE_BUILD FALSE)
 # no need to check system/external dependencies as they are already  treaten as special cases (see variable <package>__<component>_LINKS and <package>__<component>_DEFS of components)
 # quite like in pkg-config tool
 endfunction(configure_Package_Build_Variables)

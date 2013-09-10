@@ -73,10 +73,10 @@ if(export) # if dependancy library is exported then we need to register its dep_
 			CACHE INTERNAL "")
 	endif()
 	if(NOT static_links STREQUAL "")
-	set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-		${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
-		${static_links}
-		CACHE INTERNAL "")
+		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
+			${static_links}
+			CACHE INTERNAL "")
 	endif()
 
 else() # otherwise no need to register them since no more useful
@@ -86,7 +86,18 @@ else() # otherwise no need to register them since no more useful
 			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
 			${exported_defs}
 			CACHE INTERNAL "")
-	endif()	
+	endif()
+	if(	NOT static_links STREQUAL "" #static links are exported if component is not a shared lib
+		AND (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER" 
+			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
+		)
+	)
+		
+		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
+			${static_links}
+			CACHE INTERNAL "")
+	endif()
 endif()
 
 endfunction(configure_Install_Variables)
@@ -450,7 +461,19 @@ endforeach()
 set(${PROJECT_NAME}_COMPONENTS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
+
+#unsetting all root variables usefull to the find/configuration mechanism
+foreach(a_used_package IN INTEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
+	set(${a_used_package}_PREPARE_BUILD CACHE INTERNAL "")
+	set(${a_used_package}_FOUND CACHE INTERNAL "")
+	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
+	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
+	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_ALL_USED_PACKAGES CACHE INTERNAL "")
+set(${PROJECT_NAME}_TOINSTALL_PACKAGES CACHE INTERNAL "")
 endfunction(reset_cached_variables)
+
 
 function(reset_Mode_Cache_Options)
 #unset all global options
@@ -791,6 +814,7 @@ if(${PROJECT_NAME}_TOINSTALL_PACKAGES)
 
 endif()
 
+
 # 1) resolving required packages versions (there can be multiple versions required at the same time)
 # we get the set of all packages undirectly required
 foreach(dep_pack IN ITEMS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
@@ -802,6 +826,7 @@ endforeach()
 foreach(dep_pack IN ITEMS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	configure_Package_Build_Variables(${dep_pack})
 endforeach()
+
 
 # 3) when done resolving runtime dependencies for all used package (direct or undirect)
 
