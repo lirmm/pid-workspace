@@ -2,15 +2,15 @@
 ################ auxiliary macro ###################
 ####################################################
 macro(exitFindScript message_to_send)
-	if(${neobotix-mpo700-robot_FIND_REQUIRED})
+	if(neobotix-mpo700-robot_FIND_REQUIRED)
 		message(SEND_ERROR message_to_send)#fatal error
 		return()
-	elseif(${neobotix-mpo700-robot_FIND_QUIETLY})
+	elseif(neobotix-mpo700-robot_FIND_QUIETLY)
 		return()#simply exitting
-	else(${neobotix-mpo700-robot_FIND_QUIETLY})
+	else(neobotix-mpo700-robot_FIND_QUIETLY)
 		message(STATUS message_to_send)#simple notification message
 		return() 
-	endif(${neobotix-mpo700-robot_FIND_REQUIRED})
+	endif()
 endmacro(exitFindScript message_to_send)
 
 ####################################################
@@ -65,7 +65,7 @@ if(EXIST)
 		#here everything has been found => setting global standard CMake find process variables to adequate values
 		set(neobotix-mpo700-robot_FOUND TRUE CACHE INTERNAL "")
 		set(neobotix-mpo700-robot_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_USED_PACKAGES ${${PROJECT_NAME}_USED_PACKAGES} neobotix-mpo700-robot CACHE INTERNAL "")
+		set(${PROJECT_NAME}_ALL_USED_PACKAGES ${${PROJECT_NAME}_ALL_USED_PACKAGES} neobotix-mpo700-robot CACHE INTERNAL "")
 		if(neobotix-mpo700-robot_FIND_VERSION)
 			if(neobotix-mpo700-robot_FIND_VERSION_EXACT)
 				set(neobotix-mpo700-robot_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
@@ -77,20 +77,28 @@ if(EXIST)
 			set(neobotix-mpo700-robot_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
 			set(neobotix-mpo700-robot_REQUIRED_VERSION_EXACT CACHE INTERNAL "") #unset the exact required version	
 		endif()
-
-		#now configuring exported variables (recursion using find_package of required packages)
-		configure_Package_Build_Variables(neobotix-mpo700-robot ${neobotix-mpo700-robot_ROOT_DIR})
+		
 	else(VERSION_HAS_BEEN_FOUND)#no adequate version found
-		#TODO here automating the download of the adequate package version
-		exitFindScript("The package neobotix-mpo700-robot with version ${neobotix-mpo700-robot_FIND_VERSION} cannot be found")
+		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+			if(neobotix-mpo700-robot_FIND_REQUIRED)		
+				set(${PROJECT_NAME}_TOINSTALL_PACKAGES ${${PROJECT_NAME}_TOINSTALL_PACKAGES} neobotix-mpo700-robot CACHE INTERNAL "")
+				set(${PROJECT_NAME}_TOINSTALL_PACKAGE_neobotix-mpo700-robot_VERSION "${neobotix-mpo700-robot_FIND_VERSION_MAJOR}.${neobotix-mpo700-robot_FIND_VERSION_MINOR}" CACHE INTERNAL "")
+				set(${PROJECT_NAME}_TOINSTALL_PACKAGE_neobotix-mpo700-robot_VERSION_EXACT ${neobotix-mpo700-robot_FIND_VERSION_EXACT} CACHE INTERNAL "")
+			endif()
+		else()
+			exitFindScript("The package neobotix-mpo700-robot with version ${neobotix-mpo700-robot_FIND_VERSION} cannot be found in the workspace")
+		endif()
 	endif(VERSION_HAS_BEEN_FOUND)
 		
 else(EXIST) #if the directory does not exist it means the package cannot be found
-	#TODO here automating the download of the adequate package as regard of version
-	exitFindScript("The required package neobotix-mpo700-robot cannot be found")
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+		if(neobotix-mpo700-robot_FIND_REQUIRED)	
+			set(${PROJECT_NAME}_TOINSTALL_PACKAGES ${${PROJECT_NAME}_TOINSTALL_PACKAGES} neobotix-mpo700-robot CACHE INTERNAL "")
+		endif()
+	else()
+		exitFindScript("The required package neobotix-mpo700-robot cannot be found in the workspace")
+	endif()
+
 endif(EXIST)
 
-####################################################
-####### neobotix-mpo700-robot find script ends here #######
-####################################################
 
