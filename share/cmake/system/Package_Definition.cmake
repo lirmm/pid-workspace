@@ -1,403 +1,111 @@
-##################################################################################
-#################### package management public functions and macros ##############
-##################################################################################
-
-##################################################################################
-###########################  declaration of the package ##########################
-##################################################################################
-macro(declare_Package author institution year license address description)
+include(CMakeParseArguments)
 include(Package_Internal_Definition)
-#################################################
-############ DECLARING options ##################
-#################################################
 
-include(CMakeDependentOption)
-option(BUILD_EXAMPLES "Package builds examples" ON)
-
-option(BUILD_API_DOC "Package generates the HTML API documentation" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF
-		         "BUILD_API_DOC" OFF)
-
-option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
-option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
-
-option(USE_LOCAL_DEPLOYMENT "Package uses tests" ON)
-CMAKE_DEPENDENT_OPTION(GENERATE_INSTALLER "Package generates an OS installer for linux with debian" ON
-		         "NOT USE_LOCAL_DEPLOYMENT" OFF)
-
-option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" OFF)
-
-#################################################
-############ MANAGING build mode ################
-#################################################
-if(${CMAKE_BINARY_DIR} MATCHES release)
-	reset_Mode_Cache_Options()
-
-	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
-	set ( INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
-	set ( USE_MODE_SUFFIX "" CACHE INTERNAL "")
-	
-elseif(${CMAKE_BINARY_DIR} MATCHES debug)
-	reset_Mode_Cache_Options()
-	
-	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
-	set ( INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
-	set ( USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "")
-	
-elseif(${CMAKE_BINARY_DIR} MATCHES build)
-
-	add_custom_target(build ALL
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
-	)
-	add_custom_target(clean
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} clean
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
-	)
-
-	if(NOT EXISTS ${CMAKE_BINARY_DIR}/debug OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory debug WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-	endif()
-	if(NOT EXISTS ${CMAKE_BINARY_DIR}/release OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/release)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory release WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-	endif()
-	
-	#getting options
-	execute_process(COMMAND ${CMAKE_COMMAND} -L -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR} OUTPUT_FILE ${CMAKE_BINARY_DIR}/options.txt)
-	#parsing option file and generating a load cache cmake script	
-	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES)
-	set(OPTIONS_FILE ${CMAKE_BINARY_DIR}/share/cacheConfig.cmake) 
-	file(WRITE ${OPTIONS_FILE} "")
-	foreach(line IN ITEMS ${LINES})
-		if(NOT ${line} STREQUAL "-- Cache values")
-			string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "set( \\1 \\3\ CACHE \\2 \"\" FORCE)\n" AN_OPTION "${line}")
-			file(APPEND ${OPTIONS_FILE} ${AN_OPTION})
-		endif()
-	endforeach()
-	
-	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
-	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
-	return()
-else()	# the build must be done in the build directory
-	message(WARNING "Please run cmake in the build folder of the package ${PROJECT_NAME}")
-	return()
-endif(${CMAKE_BINARY_DIR} MATCHES release)
-
-#################################################
-############ Initializing variables #############
-#################################################
-reset_cached_variables()
-
-set(${PROJECT_NAME}_MAIN_AUTHOR "${author}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_MAIN_INSTITUTION "${institution}" CACHE INTERNAL "")
-
-set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${author}(${institution})" CACHE INTERNAL "")
-
-set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
-set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
-set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
-
-#################################################
-############ MANAGING generic paths #############
-#################################################
-set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
-set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
-set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
-
-if(BUILD_WITH_PRINT_MESSAGES)
-	add_definitions(-DPRINT_MESSAGES)
-endif(BUILD_WITH_PRINT_MESSAGES)
-
-########################################################################
-############ inclusion of required macros and functions ################
-########################################################################
-include(Package_Internal_Finding)
-endmacro(declare_Package)
-
-
-###
-function(add_Author author institution)
-	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS} "${author}(${institution})" CACHE INTERNAL "")
-endfunction(add_Author)
-
-###
-function(add_Reference version system url)
-	set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} ${version} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${system} CACHE INTERNAL "")
-	set(${${PROJECT_NAME}_REFERENCE_${version}_${system} ${url} CACHE INTERNAL "")
-endfunction(add_Reference)
-
-###
-function(add_Caterory category_spec)
-	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category_spec} CACHE INTERNAL "")
-endfunction(add_Caterory)
-
-############################################################################
-################## setting currently developed version number ##############
-############################################################################
-function(set_Current_Version major minor patch)
-
-	set (${PROJECT_NAME}_VERSION_MAJOR ${major} CACHE INTERNAL "")
-	set (${PROJECT_NAME}_VERSION_MINOR ${minor} CACHE INTERNAL "")
-	set (${PROJECT_NAME}_VERSION_PATCH ${patch} CACHE INTERNAL "")
-	set (${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH} CACHE INTERNAL "")
-	message(STATUS "version currently built = "${${PROJECT_NAME}_VERSION})
-
-	#################################################
-	############ MANAGING install paths #############
-	#################################################
-	if(USE_LOCAL_DEPLOYMENT)
-		set(${PROJECT_NAME}_DEPLOY_PATH own-${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
-	else(USE_LOCAL_DEPLOYMENT)
-		set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
-	endif(USE_LOCAL_DEPLOYMENT) 
-	set ( ${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_RPATH_DIR ${${PROJECT_NAME}_DEPLOY_PATH}/.rpath CACHE INTERNAL "")
-endfunction(set_Current_Version)
-
-
-##################################################################################
-################################### building the package #########################
-##################################################################################
-macro(build_Package)
-
-set(CMAKE_SKIP_BUILD_RPATH  FALSE) # don't skip the full RPATH for the build tree
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install RPATH already
-#set(CMAKE_INSTALL_RPATH "${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_INSTALL_LIB_PATH}") 
-if(UNIX AND NOT APPLE)
-	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
-else() #TODO with APPLE
-	message("install system is compatible with UNIX systems but not APPLE")
+### API : declare_PID_Package(AUTHOR main_author_name ... [INSTITUION ...] YEAR ... LICENSE license [ADDRESS address] DESCRIPTION ...)
+macro(declare_PID_Package)
+set(oneValueArgs LICENSE ADDRESS)
+set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
+cmake_parse_arguments(DECLARE_PID_PACKAGE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+if(NOT DECLARE_PID_PACKAGE_AUTHOR OR DECLARE_PID_PACKAGE_AUTHOR STREQUAL "")
+	message(FATAL_ERROR "bad arguments : an author name must be given")
+endif()
+if(NOT DECLARE_PID_PACKAGE_YEAR OR DECLARE_PID_PACKAGE_YEAR STREQUAL "")
+	message(FATAL_ERROR "bad arguments : a year or year interval must be given")
+endif()
+if(NOT DECLARE_PID_PACKAGE_LICENSE OR DECLARE_PID_PACKAGE_LICENSE STREQUAL "")
+	message(FATAL_ERROR "bad arguments : a license type must be given")
+endif()
+if(NOT DECLARE_PID_PACKAGE_DESCRIPTION OR DECLARE_PID_PACKAGE_DESCRIPTION STREQUAL "")
+	message(FATAL_ERROR "bad arguments : a (short) description of the package must be given")
 endif()
 
-#################################################################################
-############ MANAGING the configuration of package dependencies #################
-#################################################################################
-include(Package_Internal_Configuration)
-# from here only direct dependencies have been satisfied
-# 0) if there are packages to install it means that there are some unresolved required dependencies
-if(${PROJECT_NAME}_TOINSTALL_PACKAGES)
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. Automatic download of package not supported yet")#TODO
-		return()
-	else()	
-		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
-		return()
-	endif()
-
+if(DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS)
+	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS}")
 endif()
 
-# 1) resolving required packages versions (there can be multiple versions required at the same time)
-# we get the set of all packages undirectly required
-foreach(dep_pack IN ITEMS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-	resolve_Package_Build_Dependencies(${dep_pack})
-endforeach()
-#here every package dependency should have been resolved OR ERROR
+declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${DECLARE_PID_PACKAGE_YEAR}"
+			"${DECLARE_PID_PACKAGE_LICENSE}" "${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_DESCRIPTION}")
+endmacro(declare_PID_Package)
 
-# 2) if all version are OK resolving all necessary variables (CFLAGS, LDFLAGS and include directories)
-foreach(dep_pack IN ITEMS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-	configure_Package_Build_Variables(${dep_pack})
-endforeach()
+### API : set_PID_Package_Version(major minor [patch])
+macro(set_PID_Package_Version)
 
-# 3) when done resolving runtime dependencies for all used package (direct or undirect)
-foreach(dep_pack IN ITEMS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-	resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
-endforeach()
-
-#################################################
-############ MANAGING the BUILD #################
-#################################################
-
-# recursive call into subdirectories to build/install/test the package
-add_subdirectory(src)
-add_subdirectory(apps)
-add_subdirectory(test)
-add_subdirectory(share)
-
-##########################################################
-############ MANAGING non source files ###################
-##########################################################
-generate_License_File() # generating/installing the file containing license info about the package
-generate_Find_File() # generating/installing the generic cmake find file for the package
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	#installing the share/cmake folder (may contain specific find scripts for external libs used by the package)
-	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+if(${ARGC} EQUAL 3)
+	set_Current_Version(${ARGV0} ${ARGV1} ${ARGV2})
+elseif(${ARGC} EQUAL 2)
+	set_Current_Version(${ARGV0} ${ARGV1} 0)
+else()
+	message(FATAL_ERROR "bad arguments : you need to input a major and a minor number, optionnaly you can set a patch version (considered as 0 if not set)")
 endif()
-generate_Use_File() #generating/installing the version specific cmake "use" file
-generate_API() #generating/installing the API documentation
+endmacro(set_PID_Package_Version)
 
-#resolving dependencies
-foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-	resolve_Source_Component_Runtime_Dependencies(${component})
-endforeach()
+### API : add_PID_Package_Author(AUTHOR ... [INSTITUTION ...])
+macro(add_PID_Package_Author)
+set(multiValueArgs AUTHOR INSTITUTION)
+cmake_parse_arguments(ADD_PID_PACKAGE_AUTHOR "" "" "${multiValueArgs}" ${ARGN} )
+if(NOT ADD_PID_PACKAGE_AUTHOR_AUTHOR OR ADD_PID_PACKAGE_AUTHOR_AUTHOR STREQUAL "")
+	message(FATAL_ERROR "bad arguments : an author name must be given")
+endif()
+add_Author("${ADD_PID_PACKAGE_AUTHOR_AUTHOR}(${ADD_PID_PACKAGE_AUTHOR_INSTITUTION})")
+endmacro(add_PID_Package_Author)
 
-#################################################
-##### MANAGING the SYSTEM PACKAGING #############
-#################################################
-#TODO Il faudrait packager les libs debug ET release d'un coup !! (PAS facile avec CMAKE) -> pas nécessaire il suffit de fournir les 2 packages deb d'un coup + dans le package release un script d'installation => pas besoin on peut faire un script générique avec les infos contenues dans les use files
-#
-if(GENERATE_INSTALLER)
-	include(InstallRequiredSystemLibraries)
-	#common infos	
-	set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-	set(CPACK_PACKAGE_CONTACT ${${PROJECT_NAME}_MAIN_AUTHOR})
-	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${${PROJECT_NAME}_DESCRIPTION})
-	set(CPACK_PACKAGE_VENDOR ${${PROJECT_NAME}_MAIN_INSTITUTION})
-	set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/license.txt)
-	set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
-	set(CPACK_PACKAGE_VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
-	set(CPACK_PACKAGE_VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
-	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
-	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
-
-	if(UNIX AND NOT APPLE AND NOT CYGWIN)#on any unix platform
-
-		list(APPEND CPACK_GENERATOR DEB)	
-		execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE OUT_DPKG)
-		set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${OUT_DPKG})
-		 		
-
-		add_custom_target(package_install
-				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
-				${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
-				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
-				)
-	endif() 
-	
-	if(CPACK_GENERATOR DEB) #there are defined generators
-		include(CPack)
+### API : add_PID_Package_Reference(VERSION major minor [patch] SYSTEM system_type URL url-rel url_dbg)
+macro(add_PID_Package_Reference)
+set(oneValueArgs SYSTEM)
+set(multiValueArgs VERSION URL)
+cmake_parse_arguments(DECLARE_PID_PACKAGE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+if(NOT ADD_PID_PACKAGE_REFERENCE_URL OR ADD_PID_PACKAGE_REFERENCE_URL STREQUAL "")
+	message(FATAL_ERROR "bad arguments : you need to set the urls where to find binary packages for release and debug modes")
+else()
+	list(LENGTH ADD_PID_PACKAGE_REFERENCE_URL SIZE)
+	if(NOT SIZE EQUAL 2)
+		message(FATAL_ERROR "bad arguments : you need to set the urls where to find binary packages for release and debug modes")
 	endif()
-endif(GENERATE_INSTALLER)
+endif()
+list(GET ADD_PID_PACKAGE_REFERENCE_URL 0 URL_REL)
+list(GET ADD_PID_PACKAGE_REFERENCE_URL 1 URL_DBG)
 
-###############################################################################
-######### creating build target for easy sequencing all make commands #########
-###############################################################################
+if(NOT ADD_PID_PACKAGE_REFERENCE_SYSTEM OR ADD_PID_PACKAGE_REFERENCE_SYSTEM STREQUAL "")
+	message(FATAL_ERROR "bad arguments : you need to set the target system name (Linux, MacOS, Windows")
+endif()
 
-#creating a global build command
-if(GENERATE_INSTALLER)
-	if(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS)
-			if(BUILD_API_DOC)
-				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} test
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
-				)
-			else(BUILD_API_DOC)
-				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} test
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
-				)
-			endif(BUILD_API_DOC) 
-		else(BUILD_AND_RUN_TESTS)
-			if(BUILD_API_DOC)
-				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
-				)
-			else(BUILD_API_DOC)
-				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
-				)
-			endif(BUILD_API_DOC)
-		endif(BUILD_AND_RUN_TESTS)
-	else(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS)
-			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL} 
-				COMMAND ${CMAKE_BUILD_TOOL} test
-				COMMAND ${CMAKE_BUILD_TOOL} install
-				COMMAND ${CMAKE_BUILD_TOOL} package
-				COMMAND ${CMAKE_BUILD_TOOL} package_install
-			) 
-		else(BUILD_AND_RUN_TESTS)
-			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL} 
-				COMMAND ${CMAKE_BUILD_TOOL} install
-				COMMAND ${CMAKE_BUILD_TOOL} package
-				COMMAND ${CMAKE_BUILD_TOOL} package_install
-			)  
-		endif(BUILD_AND_RUN_TESTS)
-
-	endif(CMAKE_BUILD_TYPE MATCHES Release)
-
-else(GENERATE_INSTALLER)
-	if(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS)
-			if(BUILD_API_DOC)
-				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} test
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
-				)
-			else(BUILD_API_DOC)
-				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} test
-					COMMAND ${CMAKE_BUILD_TOOL} install
-				)
-			endif(BUILD_API_DOC) 
-		else(BUILD_AND_RUN_TESTS)
-			if(BUILD_API_DOC)
-				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
-				)
-			else(BUILD_API_DOC) 
-				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} install
-				)
-			endif(BUILD_API_DOC)
-		endif()
-	else(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS)
-			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL}
-				COMMAND ${CMAKE_BUILD_TOOL} test
-				COMMAND ${CMAKE_BUILD_TOOL} install
-			) 
-		else(BUILD_AND_RUN_TESTS)
-			
-			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL} 
-				COMMAND ${CMAKE_BUILD_TOOL} install
-			) 
-		endif(BUILD_AND_RUN_TESTS)
-	endif(CMAKE_BUILD_TYPE MATCHES Release)
-endif(GENERATE_INSTALLER)
-
-endmacro(build_Package)
+if(NOT ADD_PID_PACKAGE_REFERENCE_VERSION OR ADD_PID_PACKAGE_REFERENCE_VERSION STREQUAL "")
+	message(FATAL_ERROR "bad arguments : you need to input a major and a minor number, optionnaly you can set a patch version (considered as 0 if not set)")
+else()
+	list(LENGTH ADD_PID_PACKAGE_REFERENCE_VERSION SIZE)
+	if(SIZE EQUAL 3)
+		list(GET ADD_PID_PACKAGE_REFERENCE_VERSION 0 MAJOR)
+		list(GET ADD_PID_PACKAGE_REFERENCE_VERSION 1 MINOR)
+		list(GET ADD_PID_PACKAGE_REFERENCE_VERSION 2 PATCH)
+		add_Reference("${MAJOR}.${MINOR}.${PATCH}" "${ADD_PID_PACKAGE_REFERENCE_SYSTEM}" "${URL_REL}" "${URL_DBG}")
+	elseif(SIZE EQUAL 2)
+		list(GET ADD_PID_PACKAGE_REFERENCE_VERSION 0 MAJOR)
+		list(GET ADD_PID_PACKAGE_REFERENCE_VERSION 1 MINOR)
+		add_Reference("${MAJOR}.${MINOR}.0" "${ADD_PID_PACKAGE_REFERENCE_SYSTEM}" "${URL_REL}" "${URL_DBG}")
+	else()
+		message(FATAL_ERROR "bad arguments : you need to input a major and a minor number, optionnaly you can set a patch version (considered as 0 if not set)")
+	endif()
+endif()
+endmacro(add_PID_Package_Reference)
 
 
-##################################################################################
-################ printing variables for components in the package ################
-##################################################################################
-macro(printComponentVariables)
-	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
-	message("libraries : "${${PROJECT_NAME}_COMPONENTS_LIBS})
-	message("applications : "${${PROJECT_NAME}_COMPONENTS_APPS})
-endmacro(printComponentVariables)
+### API : add_PID_Package_Category(category_path)
+macro(add_PID_Package_Category)
+if(${ARGC} GREATER 1)
+	message(FATAL_ERROR "bad arguments : the add_PID_Package_Category command requires only one string argument of the form <category>[/subcategory]*")
+endif()
+add_Category(${AGRV0})
+endmacro(add_PID_Package_Category)
 
+### API : build_PID_Package()
+macro(build_PID_Package)
+if(${ARGC} GREATER 0)
+	message(FATAL_ERROR "bad arguments : the build_PID_Package command requires no arguments")
+endif()
+build_Package()
+endmacro(build_PID_Package)
+
+#HERE TODO
 ##################################################################################
 ###################### declaration of a library component ########################
 ##################################################################################
