@@ -4,19 +4,18 @@
 ############# files of each dependent package - contain full path information #########################
 #######################################################################################################
 # for libraries components
-# XXX_YYY_INCLUDE_DIRS[_DEBUG]			# all include path to use to build an executable with the library component YYY of package XXX
-# XXX_YYY_DEFINITIONS[_DEBUG]			# all definitions to use to build an executable with the library component YYY of package XXX
-# XXX_YYY_LIBRARIES[_DEBUG]			# all libraries path to use to build an executable with the library component YYY of package XXX
+# XXX_YYY_INCLUDE_DIRS[_DEBUG]	# all include path to use to build an executable with the library component YYY of package XXX
+# XXX_YYY_DEFINITIONS[_DEBUG]	# all definitions to use to build an executable with the library component YYY of package XXX
+# XXX_YYY_LIBRARIES[_DEBUG]	# all libraries path to use to build an executable with the library component YYY of package XXX
 
 ########### this part is for runtime purpose --- see later ##############
 # for application components
-# XXX_YYY_EXECUTABLE[_DEBUG]			# path to the executable component YYY of package XXX
-# XXX_YYY_RUNTIME_LIBRARY_DIRS[_DEBUG]		# all path to folders containing all shared libraries used by the executable component YYY of package XXX 
+# XXX_YYY_EXECUTABLE[_DEBUG]	# path to the executable component YYY of package XXX
 
 # for "launch" components (not currently existing)
-# XXX_YYY_APPS[_DEBUG]				# all executables to find for global distributed application to work defined by launch component YYY of package XXX
-# XXX_YYY_APP_ZZZ_PARAMS[_DEBUG]		# all parameters used  
-# XXX_YYY_APP_ZZZ_PARAM_VVV			# string parameter VVV for application ZZZ used by the launch file YYY of package XXX 
+# XXX_YYY_APPS[_DEBUG]		# all executables of a distributed application defined by launch component YYY of package XXX
+# XXX_YYY_APP_ZZZ_PARAMS[_DEBUG]# all parameters used  
+# XXX_YYY_APP_ZZZ_PARAM_VVV	# string parameter VVV for application ZZZ used by the launch file YYY of package XXX 
 
 #TODO managing the automatic installation of binay packages or git repo (if not exist) !!
 
@@ -496,7 +495,4 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	create_Source_Component_Symlinks(${component}${INSTALL_NAME_SUFFIX} "${ALL_SHARED_LIBS}")
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
-
-
-
 

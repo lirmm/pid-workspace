@@ -405,7 +405,7 @@ endmacro(build_Package)
 # internal_inc_dirs : additionnal include dirs (internal to package, that contains header files, e.g. like common definition between package components, that don't have to be exported since not in the interface)
 # internal_links : only for executables or shared libs some internal linker flags used to build the component 
 # exported_links : only for static and shared libs : some linker flags (not a library inclusion, e.g. -l<li> or full path to a lib) that must be used when linking with the component
-function(declare_Library_Component c_name dirname type internal_inc_dirs internal_defs exported_defs internal_links exported_links)#TODO managing links !!!
+function(declare_Library_Component c_name dirname type internal_inc_dirs internal_defs exported_defs internal_links)
 if(${PROJECT_NAME}_${c_name}_DECLARED)
 	message(FATAL_ERROR "declare_Library_Component : a component with the same name ${c_name} is already defined")
 	return()
@@ -478,7 +478,9 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 		#setting the default rpath for the target	
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}") #the library targets a specific folder that contains symbolic links to used shared libraries
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
-		
+		if(NOT internal_links STREQUAL "") #usefull only when trully linking so only beneficial to shared libs
+			target_link_library(${c_name}${INSTALL_NAME_SUFFIX} ${internal_links})
+		endif()
 	endif()
 	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
@@ -1134,7 +1136,6 @@ endfunction(generate_API)
 
 ### configure the target with exported flags (cflags and ldflags)
 function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs links)
-#message("manage_Additional_Component_Exported_Flags ${component_name} includes = ${inc_dirs}, defs = ${defs}, links=${links} \n")
 
 # managing compile time flags (-I<path>)
 if(NOT inc_dirs STREQUAL "")
@@ -1155,7 +1156,6 @@ endfunction(manage_Additional_Component_Exported_Flags)
 ### configure the target with internal flags (cflags only)
 function(manage_Additional_Component_Internal_Flags component_name inc_dirs defs)
 # managing compile time flags
-#message("manage_Additional_Component_Internal_Flags ${component_name} includes = ${inc_dirs}, defs = ${defs} ")
 if(NOT inc_dirs STREQUAL "")
 	target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE "${inc_dirs}")
 endif()

@@ -110,11 +110,11 @@ endmacro(build_PID_Package)
 #				DIRECTORY dirname 
 #				<STATIC_LIB|SHARED_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
 #				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [LINKS link ...] ] 
-#				[EXPORTED [DEFINITIONS def ...] [LINKS link ...])
+#				[EXPORTED_DEFINITIONS def ...] )
 macro(declare_PID_Component)
 set(options STATIC_LIB SHARED_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
 set(oneValueArgs NAME DIRECTORY)
-set(multiValueArgs INTERNAL EXPORTED)
+set(multiValueArgs INTERNAL EXPORTED_DEFINITIONS)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}")
@@ -171,27 +171,19 @@ if(DECLARE_PID_COMPONENT_INTERNAL)
 		set(internal_inc_dirs ${DECLARE_PID_COMPONENT_INTERNAL_INCLUDE_DIRS})
 	endif()
 	if(DECLARE_PID_COMPONENT_INTERNAL_LINKS)
+		if(type MATCHES HEADER OR type MATCHES STATIC)
+			message(FATAL_ERROR "bad arguments : ${type} libraries cannot define internal linker flags")
+		endif()
 		set(internal_link_flags ${DECLARE_PID_COMPONENT_INTERNAL_LINKS})
 	endif()
 endif()
 
 set(exported_defs "")
-set(exported_link_flags "")
-if(DECLARE_PID_COMPONENT_EXPORTED)
-	if(DECLARE_PID_COMPONENT_EXPORTED STREQUAL "")
-		message(FATAL_ERROR "bad arguments : EXPORTED keyword must be followed by at least one DEFINITION OR LINK")
-	endif()
+if(DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS)
 	if(type MATCHES APP OR type MATCHES EXAMPLE OR type MATCHES TEST)
 		message(FATAL_ERROR "bad arguments : Applications cannot export anything (invalid use of the export keyword)")
 	endif()
-	set(exported_multiValueArgs DEFINITIONS LINKS)
-	cmake_parse_arguments(DECLARE_PID_COMPONENT_EXPORTED "" "" "${exported_multiValueArgs}" ${DECLARE_PID_COMPONENT_EXPORTED} )
-	if(DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS)
-		set(exported_defs ${DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS})
-	endif()
-	if(DECLARE_PID_COMPONENT_EXPORTED_LINKS)
-		set(exported_link_flags ${DECLARE_PID_COMPONENT_EXPORTED_LINKS})
-	endif()
+	set(exported_defs ${DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS})
 endif()
 
 if(type MATCHES APP OR type MATCHES EXAMPLE OR type MATCHES TEST)
@@ -208,8 +200,7 @@ else() #it is a library
 					"${internal_inc_dirs}"
 					"${internal_defs}"
 					"${exported_defs}" 
-					"${internal_link_flags}" 
-					"${exported_link_flags}")
+					"${internal_link_flags}")
 endif()
 
 endmacro(declare_PID_Component)
