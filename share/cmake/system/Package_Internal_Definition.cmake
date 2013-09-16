@@ -81,7 +81,8 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			file(APPEND ${OPTIONS_FILE} ${AN_OPTION})
 		endif()
 	endforeach()
-	
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
+	#calling cmake for each mode 
 	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
 	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
 	return()
@@ -501,6 +502,7 @@ else()#simply creating a "fake" target for header only library
 	#add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC IMPORTED GLOBAL)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
 	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX) #to allow CMake to knwo the linker to use (will not be trully called) for the "fake library" target 
+	message("DEBUG : header lib ${c_name} : manage_Additional_Component_Exported_Flags with inc dir = ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}, exported defs = ${exported_defs}")	
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
 endif()
 
@@ -508,9 +510,6 @@ endif()
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
 set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported links
 set(${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories (not useful to set it there since they will be exported "manually")
-
-#registering dynamic dependencies
-set(${PROJECT_NAME}_${c_name}_RUNTIME_DEPS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #runtime dependencies (may be exported in links)
 
 #updating global variables of the CMake process	
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
@@ -575,6 +574,7 @@ file(	GLOB_RECURSE
 
 #defining the target to build the application
 add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
+message("writting internal defs for application = ${internal_defs}")
 manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
 manage_Additional_Component_Exported_Flags(${c_name} "" "" "${internal_link_flags}")
 
@@ -593,9 +593,6 @@ endif()
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories
-
-#registering dynamic dependencies
-set(${PROJECT_NAME}_${c_name}_RUNTIME_DEPS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #private runtime dependencies only
 
 get_target_property(EXE_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
 get_filename_component(EXE_NAME ${EXE_NAME} NAME)
@@ -689,6 +686,7 @@ else()
 		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "")
 		#NEW		
 		# setting compile definitions for configuring the "fake" target
+		message("DEBUG fill_Component_Target_With_Internal_Dependency ${component} with ${dep_component}\nexp defs= ${comp_exp_defs}\ndep_defs = ${dep_defs}")
 		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} TRUE "" "${comp_exp_defs}"  "${dep_defs}")
 
 	else()
@@ -785,7 +783,8 @@ is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 	
 if (IS_EXEC_COMP)
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "" "${links}")
+	set(TARGET_LINKS ${static_links} ${shared_links})
+	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "" "${TARGET_LINKS}")
 
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
@@ -819,14 +818,14 @@ will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
-
 if(DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX})
 	#guarding depending type of involved components
 	is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 	if (IS_EXEC_COMP)
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${static_links} ${shared_links}")
+		set(TARGET_LINKS ${static_links} ${shared_links})
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
@@ -860,6 +859,20 @@ macro(printComponentVariables)
 	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
 	message("libraries : "${${PROJECT_NAME}_COMPONENTS_LIBS})
 	message("applications : "${${PROJECT_NAME}_COMPONENTS_APPS})
+
+	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+		message("COMPONENT : ${component}")
+		message("INTERFACE : ")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
+			message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
+			message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		message("IMPLEMENTATION :")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
+			message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
+			message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+	endforeach()
 endmacro(printComponentVariables)
 
 
@@ -1138,84 +1151,102 @@ endfunction(generate_API)
 function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs links)
 
 # managing compile time flags (-I<path>)
-if(NOT inc_dirs STREQUAL "")
-	target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC "${inc_dirs}") #not before 2.8.11	
-endif()
-# managing compile time flags (-D<preprocessor_defs>)
-if(NOT defs STREQUAL "")
-	target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC "${defs}") #not before 2.8.11
-endif()
-# managing link time flags
-if(NOT links STREQUAL "")
-	target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} ${links})
+if(inc_dirs AND NOT inc_dirs STREQUAL "")
+	foreach(dir IN ITEMS ${inc_dirs})
+		message("including ${dir} for coponent ${component_name}")
+		target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC "${dir}")
+	endforeach()
 endif()
 
+# managing compile time flags (-D<preprocessor_defs>)
+if(defs AND NOT defs STREQUAL "")
+	foreach(def IN ITEMS ${defs})
+		target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC "${def}")
+	endforeach()
+endif()
+
+# managing link time flags
+if(links AND NOT links STREQUAL "")
+	foreach(link IN ITEMS ${links})	
+		target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} ${link})
+	endforeach()
+endif()
 endfunction(manage_Additional_Component_Exported_Flags)
 
 
 ### configure the target with internal flags (cflags only)
 function(manage_Additional_Component_Internal_Flags component_name inc_dirs defs)
 # managing compile time flags
-if(NOT inc_dirs STREQUAL "")
-	target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE "${inc_dirs}")
+if(inc_dirs AND NOT inc_dirs STREQUAL "")
+	foreach(dir IN ITEMS ${inc_dirs})
+		target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE "${dir}")
+	endforeach()
 endif()
 
 # managing compile time flags
-if(NOT defs STREQUAL "")
-	target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE "${defs}")
+if(defs AND NOT defs STREQUAL "")
+	foreach(def IN ITEMS ${defs})
+		target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE "${def}")
+	endforeach()
 endif()
 endfunction(manage_Additional_Component_Internal_Flags)
 
+function(manage_Additionnal_Component_Inherited_Flags component dep_component export)
+	if(export)
+		set(export_string "PUBLIC")
+	else()
+		set(export_string "PRIVATE")
+	endif()
+	target_include_directories(	${component}${INSTALL_NAME_SUFFIX} 
+					${export_string} 
+					$<TARGET_PROPERTY:${dep_component}${INSTALL_NAME_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
+				)
+	target_compile_definitions(	${component}${INSTALL_NAME_SUFFIX} 
+					${export_string} 
+					$<TARGET_PROPERTY:${dep_component}${INSTALL_NAME_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
+				)
+endfunction(manage_Additionnal_Component_Inherited_Flags)
 
 ### configure the target to link with another target issued from a component of the same package
 function (fill_Component_Target_With_Internal_Dependency component dep_component export comp_defs comp_exp_defs dep_defs)
-is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
 is_Executable_Component(DEP_IS_EXEC ${PROJECT_NAME} ${dep_component})
-if(COMP_IS_BUILT) #the component has a corresponding target
-
-	if(NOT COMP_IS_EXEC)#the required internal component is a library 
-		if(export)
-			#set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})#OLD
-			set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
-			manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")				
-			manage_Additional_Component_Exported_Flags(${component} "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${dep_component}${INSTALL_NAME_SUFFIX}")
-			
-		else()
-			set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})
-			manage_Additional_Component_Internal_Flags(${component} "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
-			manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${dep_component}${INSTALL_NAME_SUFFIX}")
-		endif()
+if(NOT DEP_IS_EXEC)#the required internal component is a library 
+	if(export)	
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
+		manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")				
+		manage_Additional_Component_Exported_Flags(${component} "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${dep_component}${INSTALL_NAME_SUFFIX}")
+		manage_Additionnal_Component_Inherited_Flags(${component} ${dep_component} TRUE)		
 	else()
-		message(FATAL_ERROR "Executable component ${dep_c_name} cannot be a dependency for component ${component}")	
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})
+		manage_Additional_Component_Internal_Flags(${component} "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
+		manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${dep_component}${INSTALL_NAME_SUFFIX}")
+		manage_Additionnal_Component_Inherited_Flags(${component} ${dep_component} FALSE)
 	endif()
-endif()#do nothing in case of a pure header component
+else()
+	message(FATAL_ERROR "Executable component ${dep_c_name} cannot be a dependency for component ${component}")	
+endif()
+
 endfunction(fill_Component_Target_With_Internal_Dependency)
 
 
 ### configure the target to link with another component issued from another package
 function (fill_Component_Target_With_Package_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
-
-is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
 is_Executable_Component(DEP_IS_EXEC ${dep_package} ${dep_component})
-if(COMP_IS_BUILT) #the component has a corresponding target
-
-	if(NOT DEP_IS_EXEC)#the required package component is a library
-		
-		if(export)
-			set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
-			manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
-			manage_Additional_Component_Exported_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
-		else()
-			set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})	
-			manage_Additional_Component_Internal_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
-			manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
-			
-		endif()
-#HERE TODO revoir l'export des libraries !!
- 	else()
-		message(FATAL_ERROR "Executable component ${dep_component} from package ${dep_package} cannot be a dependency for component ${component}")	
+if(NOT DEP_IS_EXEC)#the required package component is a library
+	
+	if(export)
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
+		manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
+		manage_Additional_Component_Exported_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
+	else()
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})	
+		manage_Additional_Component_Internal_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
+		manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
 	endif()
-endif()#do nothing in case of a pure header component
+#HERE TODO revoir l'export des libraries !!
+else()
+	message(FATAL_ERROR "Executable component ${dep_component} from package ${dep_package} cannot be a dependency for component ${component}")	
+endif()
 endfunction(fill_Component_Target_With_Package_Dependency)
 
 
@@ -1340,10 +1371,10 @@ set(BUILD_AND_RUN_TESTS CACHE BOOL FALSE FORCE)
 set(BUILD_WITH_PRINT_MESSAGES CACHE BOOL FALSE FORCE)
 set(USE_LOCAL_DEPLOYMENT CACHE BOOL FALSE FORCE)
 set(GENERATE_INSTALLER CACHE BOOL FALSE FORCE)
-set(WORKSPACE_DIR CACHE PATH "" FORCE)
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD CACHE BOOL FALSE FORCE)
 #include the cmake script that sets the options coming from the global build configuration
 include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
+message("workspace path is : ${WORKSPACE_DIR}")
 endfunction(reset_Mode_Cache_Options)
 
 
@@ -1410,7 +1441,6 @@ foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_DEFS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_${a_component}_DEFS${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_LINKS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_${a_component}_LINKS${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
-	file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_RUNTIME_DEPS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_${a_component}_RUNTIME_DEPS${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 endforeach()
 
 # 4) package internal component dependencies
