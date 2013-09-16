@@ -3,12 +3,12 @@
 ####################################################
 macro(exitFindScript message_to_send)
 	if(@PROJECT_NAME@_FIND_REQUIRED)
-		message(SEND_ERROR message_to_send)#fatal error
+		message(SEND_ERROR ${message_to_send})#fatal error
 		return()
 	elseif(@PROJECT_NAME@_FIND_QUIETLY)
 		return()#simply exitting
 	else(@PROJECT_NAME@_FIND_QUIETLY)
-		message(STATUS message_to_send)#simple notification message
+		message(STATUS ${message_to_send})#simple notification message
 		return() 
 	endif()
 endmacro(exitFindScript message_to_send)
@@ -42,10 +42,10 @@ if(EXIST)
 	endif(@PROJECT_NAME@_FIND_VERSION)
 
 	if(VERSION_HAS_BEEN_FOUND)#a good version of the package has been found
-		set(PATH_TO_PACKAGE_VERSION ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH}/${@PROJECT_NAME@_VERSION_RELATIVE_PATH})		
+		set(PATH_TO_PACKAGE_VERSION ${PACKAGE_@PROJECT_NAME@_SEARCH_PATH}/${@PROJECT_NAME@_VERSION_RELATIVE_PATH})	
 		if(@PROJECT_NAME@_FIND_COMPONENTS) #specific components must be checked, taking only selected components	
 				
-			select_Components(@PROJECT_NAME@ ${@PROJECT_NAME@_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} ${@PROJECT_NAME@_FIND_COMPONENTS})
+			select_Components(@PROJECT_NAME@ ${@PROJECT_NAME@_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} "${@PROJECT_NAME@_FIND_COMPONENTS}")
 			if(USE_FILE_NOTFOUND)
 				exitFindScript("The @PROJECT_NAME@ version selected (${@PROJECT_NAME@_VERSION_STRING}) has no configuration file or file is corrupted")
 			endif(USE_FILE_NOTFOUND)

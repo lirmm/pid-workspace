@@ -119,14 +119,14 @@ function(check_Best_Version 	VERSION_HAS_BEEN_FOUND
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 set(curr_max_minor_version ${minor_version})
 set(curr_patch_version 0)
-list_Version_Subdirectories(version_dirs ${package_install_dir})	
+list_Version_Subdirectories(version_dirs ${package_install_dir})
 foreach(version IN ITEMS ${version_dirs})
 	string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
 	if(A_VERSION)
 		list(GET A_VERSION 0 minor)
 		list(GET A_VERSION 1 patch)
 		if(${minor} EQUAL ${curr_max_minor_version} 
-		AND ${patch} GREATER ${curr_patch_version})
+		AND (${patch} EQUAL ${curr_patch_version} OR ${patch} GREATER ${curr_patch_version}))
 			set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)			
 			#a more recent patch version found with same max minor version
 			set(curr_patch_version ${patch})
@@ -256,16 +256,15 @@ endfunction (all_Components)
 
 
 ###
-function (select_Components package_name path_to_package_version list_of_components)
+function (select_Components package_name package_version path_to_package_version list_of_components)
 set(USE_FILE_NOTFOUND FALSE PARENT_SCOPE)
-
 include(${path_to_package_version}/share/Use${package_name}-${package_version}.cmake OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
 if(${res} STREQUAL NOTFOUND)
 	set(USE_FILE_NOTFOUND TRUE PARENT_SCOPE)
 	return()
 endif()
 
-if(NOT DEFINED ${${package_name}_COMPONENTS})#if there is no component defined for the package there is an error
+if(NOT DEFINED ${package_name}_COMPONENTS)#if there is no component defined for the package there is an error
 	set(USE_FILE_NOTFOUND TRUE PARENT_SCOPE)
 	return()
 endif()
@@ -274,7 +273,7 @@ endif()
 set(ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND TRUE PARENT_SCOPE)
 foreach(requested_component IN ITEMS ${list_of_components})
 	list(FIND ${package_name}_COMPONENTS ${requested_component} idx)	
-	if(idx EQUAL -1)#component has not been found	
+	if(idx EQUAL -1)#component has not been found
 		set(${package_name}_${requested_component}_FOUND FALSE  CACHE INTERNAL "")
 		if(${${package_name}_FIND_REQUIRED_${requested_component}})
 			set(ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND FALSE PARENT_SCOPE)

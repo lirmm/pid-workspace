@@ -212,13 +212,14 @@ endif()
 endfunction(update_Component_Build_Variables_With_Dependency package)
 
 
-function(update_Component_Build_Variables_With_Internal_Dependency package_name component dep_component)
+function(update_Component_Build_Variables_With_Internal_Dependency package component dep_component)
 if(${package}_${component}_INTERNAL_EXPORT_${dep_component})
 	update_Config_Include_Dirs(${package} ${component} ${package} ${dep_component})
 	update_Config_Definitions(${package} ${component} ${package} ${dep_component})
 	update_Config_Libraries(${package} ${component} ${package} ${dep_component})	
 else()#dep_component is not exported by component
 	if(NOT ${package}_${dep_component}_TYPE STREQUAL "SHARED")#static OR header lib
+		message("")
 		update_Config_Libraries(${package} ${component} ${package} ${dep_component})
 	endif()
 	

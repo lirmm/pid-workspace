@@ -198,26 +198,28 @@ if(${PROJECT_NAME}_TOINSTALL_PACKAGES)
 		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
-
 endif()
 
-# 1) resolving required packages versions (there can be multiple versions required at the same time)
-# we get the set of all packages undirectly required
-foreach(dep_pack IN ITEMS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-	resolve_Package_Build_Dependencies(${dep_pack})
-endforeach()
-#here every package dependency should have been resolved OR ERROR
+message("resolving = ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}}")
+if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
+	# 1) resolving required packages versions (there can be multiple versions required at the same time)
+	# we get the set of all packages undirectly required
+	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
+		message("resolving dependencies for package ${dep_pack}")
+		resolve_Package_Build_Dependencies(${dep_pack})
+	endforeach()
+	#here every package dependency should have been resolved OR ERROR
 
-# 2) if all version are OK resolving all necessary variables (CFLAGS, LDFLAGS and include directories)
-foreach(dep_pack IN ITEMS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-	configure_Package_Build_Variables(${dep_pack})
-endforeach()
+	# 2) if all version are OK resolving all necessary variables (CFLAGS, LDFLAGS and include directories)
+	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
+		configure_Package_Build_Variables(${dep_pack})
+	endforeach()
 
-# 3) when done resolving runtime dependencies for all used package (direct or undirect)
-foreach(dep_pack IN ITEMS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-	resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
-endforeach()
-
+	# 3) when done resolving runtime dependencies for all used package (direct or undirect)
+	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
+		resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
+	endforeach()
+endif()
 #################################################
 ############ MANAGING the BUILD #################
 #################################################
@@ -263,7 +265,7 @@ if(GENERATE_INSTALLER)
 	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
 
-	if(UNIX AND NOT APPLE AND NOT CYGWIN)#on any unix platform
+	if(UNIX AND NOT APPLE AND NOT CYGWIN)#on any unix platform that accepts debian packages 
 
 		list(APPEND CPACK_GENERATOR DEB)	
 		execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE OUT_DPKG)
@@ -277,7 +279,7 @@ if(GENERATE_INSTALLER)
 				)
 	endif() 
 	
-	if(CPACK_GENERATOR DEB) #there are defined generators
+	if(CPACK_GENERATOR) #there are defined generators
 		include(CPack)
 	endif()
 endif(GENERATE_INSTALLER)
@@ -501,8 +503,7 @@ else()#simply creating a "fake" target for header only library
 	)
 	#add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC IMPORTED GLOBAL)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX) #to allow CMake to knwo the linker to use (will not be trully called) for the "fake library" target 
-	message("DEBUG : header lib ${c_name} : manage_Additional_Component_Exported_Flags with inc dir = ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}, exported defs = ${exported_defs}")	
+	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX) #to allow CMake to knwo the linker to use (will not be trully called) for the "fake library" target 	
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
 endif()
 
@@ -716,7 +717,7 @@ if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
 
-if( NOT ${dep_package}_${dep_component}_DECLARED)
+if( NOT ${dep_package}_${dep_component}_TYPE)
 	message(FATAL_ERROR "Problem : ${dep_component} in package ${dep_package} is not defined")
 endif()
 
@@ -1153,7 +1154,6 @@ function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs
 # managing compile time flags (-I<path>)
 if(inc_dirs AND NOT inc_dirs STREQUAL "")
 	foreach(dir IN ITEMS ${inc_dirs})
-		message("including ${dir} for coponent ${component_name}")
 		target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC "${dir}")
 	endforeach()
 endif()
@@ -1235,11 +1235,18 @@ is_Executable_Component(DEP_IS_EXEC ${dep_package} ${dep_component})
 if(NOT DEP_IS_EXEC)#the required package component is a library
 	
 	if(export)
-		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
+		if(${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX})
+			list(APPEND ${PROJECT_NAME}_${component}_TEMP_DEFS ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
+		endif()		
+		message("fill_Target for ${component} ${${PROJECT_NAME}_${component}_TEMP_DEFS}")
 		manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
 		manage_Additional_Component_Exported_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
 	else()
-		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})	
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})
+		if(${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX})
+			list(APPEND ${PROJECT_NAME}_${component}_TEMP_DEFS ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
+		endif()		
 		manage_Additional_Component_Internal_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
 		manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
 	endif()
@@ -1338,7 +1345,7 @@ set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
 # external package dependencies declaration must be reinitialized 
 foreach(dep_package IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
-	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX} CACHE PATH "path to the root dir of ${dep_package} external package")
 endforeach()
 set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
@@ -1416,7 +1423,7 @@ file(APPEND ${file} "#### declaration of external package dependencies in ${CMAK
 file(APPEND ${file} "set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
 foreach(a_ext_dep IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
-		file(APPEND ${file} "set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_ext_dep}_REFERENCE_PATH${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_ext_dep}_REFERENCE_PATH${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_ext_dep}_REFERENCE_PATH${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_ext_dep}_REFERENCE_PATH${USE_MODE_SUFFIX}} CACHE PATH \"path to the root dir of ${a_ext_dep} external package\")\n")
 endforeach()
 
 # 2) package dependencies

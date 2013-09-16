@@ -3,12 +3,12 @@
 ####################################################
 macro(exitFindScript message_to_send)
 	if(the-testpack-a_FIND_REQUIRED)
-		message(SEND_ERROR message_to_send)#fatal error
+		message(SEND_ERROR ${message_to_send})#fatal error
 		return()
 	elseif(the-testpack-a_FIND_QUIETLY)
 		return()#simply exitting
 	else(the-testpack-a_FIND_QUIETLY)
-		message(STATUS message_to_send)#simple notification message
+		message(STATUS ${message_to_send})#simple notification message
 		return() 
 	endif()
 endmacro(exitFindScript message_to_send)
@@ -42,10 +42,10 @@ if(EXIST)
 	endif(the-testpack-a_FIND_VERSION)
 
 	if(VERSION_HAS_BEEN_FOUND)#a good version of the package has been found
-		set(PATH_TO_PACKAGE_VERSION ${PACKAGE_the-testpack-a_SEARCH_PATH}/${the-testpack-a_VERSION_RELATIVE_PATH})		
+		set(PATH_TO_PACKAGE_VERSION ${PACKAGE_the-testpack-a_SEARCH_PATH}/${the-testpack-a_VERSION_RELATIVE_PATH})	
 		if(the-testpack-a_FIND_COMPONENTS) #specific components must be checked, taking only selected components	
 				
-			select_Components(the-testpack-a ${the-testpack-a_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} ${the-testpack-a_FIND_COMPONENTS})
+			select_Components(the-testpack-a ${the-testpack-a_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} "${the-testpack-a_FIND_COMPONENTS}")
 			if(USE_FILE_NOTFOUND)
 				exitFindScript("The the-testpack-a version selected (${the-testpack-a_VERSION_STRING}) has no configuration file or file is corrupted")
 			endif(USE_FILE_NOTFOUND)
