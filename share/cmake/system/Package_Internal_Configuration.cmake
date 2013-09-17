@@ -349,9 +349,9 @@ endif()
 
 foreach(lib IN ITEMS ${shared_libs})
 	get_filename_component(A_LIB_FILE ${lib} NAME)
-	EXECUTE_PROCESS(
-		COMMAND ${CMAKE_COMMAND} -E remove -f ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${lib}
-		COMMAND ${CMAKE_COMMAND} -E create_symlink ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${lib} ${A_LIB_FILE}
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E remove -f ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${A_LIB_FILE}
+		COMMAND ${CMAKE_COMMAND} -E create_symlink ${lib} ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${A_LIB_FILE}
 	)
 endforeach()
 endfunction(create_Bin_Component_Symlinks)
@@ -369,6 +369,7 @@ function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 		return()
 	endif()
 	set(result "")
+
 	# 1) adding direct external dependencies
 	if(${package}_${component}_LINKS${mode_var_suffix})
 		foreach(lib IN ITEMS ${${package}_${component}_LINKS${mode_var_suffix}})
@@ -382,14 +383,20 @@ function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 					if(LIB_TYPE MATCHES "^.*\.dylib(\..+)*$")#found shared lib
 						list(APPEND result ${lib})#adding external dependencies
 					endif()
+				elseif(WIN32)
+					if(LIB_TYPE MATCHES "^.*\.dll(\..+)*$")#found shared lib
+						list(APPEND result ${lib})#adding external dependencies
+					endif()
 				endif()
 			endif()
 		endforeach()
 	endif()
-	
+	#message("DEBUG runtime deps for component ${component}, AFTER DIRECT EXTERNAL DEPENDENCIES => ${result} ")
 	# 2) adding package components dependencies
-	foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
-		foreach(dep_comp IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${mode_var_suffix})
+	foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_suffix}})
+		#message("DEBUG : ${component}  depends on package ${dep_pack}")
+		foreach(dep_comp IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${mode_var_suffix}})
+			#message("DEBUG : ${component} depends on package ${dep_comp} in ${dep_pack}")
 			if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC")		
 				get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${dep_pack} ${dep_comp} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
 				if(INT_DEP_SHARED_LIBS)
@@ -407,10 +414,10 @@ function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 			endif()
 		endforeach()
 	endforeach()
-
+	#message("DEBUG : runtime deps for component ${component}, AFTER PACKAGE DEPENDENCIES => ${result} ")
 
 	# 3) adding internal components dependencies (only case when recursion is needed)
-	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
+	foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix}})
 		if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")		
 			get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
 			if(INT_DEP_SHARED_LIBS)
@@ -427,10 +434,11 @@ function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 			endif() #no need to resolve external symbols if the shared library component is not exported
 		endif()
 	endforeach()
-
+	#message("DEBUG : runtime deps for component ${component}, AFTER INTERNAL DEPENDENCIES => ${result} ")
 	# 4) now returning	
 	list(REMOVE_DUPLICATES result)
-	set(ALL_SHARED_LIBS ${result} PARENT_SCOPE)
+	#message("DEBUG : runtime deps for component ${component}, AFTER RETURNING => ${result} ")
+	set(${ALL_SHARED_LIBS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Runtime_Dependencies)
 
 
@@ -477,14 +485,15 @@ endfunction(is_Bin_Component_Exporting_Other_Components)
 ####################### source package run time dependencies #####################
 ##################################################################################
 
+
 ### configuring source components (currntly built) runtime paths (links to libraries)
 function(create_Source_Component_Symlinks bin_component shared_libs)
 foreach(lib IN ITEMS ${shared_libs})
-	get_filename_component(A_LIB_FILE ${lib} NAME)
+	get_filename_component(A_LIB_FILE "${lib}" NAME)	
 	install(CODE "
-		EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E create_symlink ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${lib} ${A_LIB_FILE}
-		)" # creating links "on the fly" when installing
-	)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE} WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${lib} ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE} WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+		")# creating links "on the fly" when installing
 endforeach()
 endfunction(create_Source_Component_Symlinks)
 
@@ -494,7 +503,7 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP" 
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
 	get_Bin_Component_Runtime_Dependencies(ALL_SHARED_LIBS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
-	message("all shared libs = ${ALL_SHARED_LIBS}")
+	#message("DEBUG : all shared libs for ${component} = ${ALL_SHARED_LIBS}")
 	create_Source_Component_Symlinks(${component}${INSTALL_NAME_SUFFIX} "${ALL_SHARED_LIBS}")
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)

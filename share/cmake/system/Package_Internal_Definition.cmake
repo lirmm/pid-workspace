@@ -249,7 +249,7 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	resolve_Source_Component_Runtime_Dependencies(${component})
 endforeach()
 
-print_Component_Variables()
+#print_Component_Variables()
 
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############
@@ -269,8 +269,8 @@ if(GENERATE_INSTALLER)
 	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
 
-	if(UNIX AND NOT APPLE AND NOT CYGWIN)#on any unix platform that accepts debian packages 
-
+	if(UNIX AND NOT APPLE)#linux platforms
+		#using debian packager
 		list(APPEND CPACK_GENERATOR DEB)	
 		execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE OUT_DPKG)
 		set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${OUT_DPKG})
@@ -281,7 +281,13 @@ if(GENERATE_INSTALLER)
 				${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
 				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
 				)
-	endif() 
+	elseif(APPLE) #OSX platforms
+		#using OSX bundle packager
+		#TODO fill variables and create the custom target package_install
+	elseif(WIN32) #windows platform
+		#using NSIS packager
+		#TODO fill variables and create the custom target package_install
+	endif()
 	
 	if(CPACK_GENERATOR) #there are defined generators
 		include(CPack)
@@ -480,7 +486,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 		
 		install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
 			LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
-			RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
+			RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}#installing everything in lib install folder (for windows dll)
 		)
 		#setting the default rpath for the target	
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}") #the library targets a specific folder that contains symbolic links to used shared libraries
