@@ -154,7 +154,8 @@ function(update_Config_Libraries package component dep_package dep_component)
 endfunction(update_Config_Libraries)
 
 ###
-function(init_Component_Build_Variables package component path_to_version )
+function(init_Component_Build_Variables package component path_to_version)
+	message("init : ${package} ${component} ${path_to_version}")
 	set(${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 	set(${package}_${component}_DEFINITIONS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 	set(${package}_${component}_LIBRARIES${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
@@ -178,7 +179,7 @@ function(init_Component_Build_Variables package component path_to_version )
 		endif()
 
 		#provided library (ldflags -l<path>)
-		if(NOT ${${package}_${component}_TYPE} STREQUAL "HEADER")
+		if(NOT ${package}_${component}_TYPE STREQUAL "HEADER")
 			set(${package}_${component}_LIBRARIES${USE_MODE_SUFFIX} "${path_to_version}/lib/${${package}_${component}_BINARY_NAME${USE_MODE_SUFFIX}}" CACHE INTERNAL "")
 		endif()
 
@@ -190,7 +191,7 @@ function(init_Component_Build_Variables package component path_to_version )
 				CACHE INTERNAL "")
 		endif()
 		
-	elseif(${package}_${component}_TYPE STREQUAL "APP")
+	elseif(${package}_${component}_TYPE STREQUAL "APP" OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
 		
 		set(${package}_${component}_EXECUTABLE${USE_MODE_SUFFIX} "${path_to_version}/bin/${${package}_${component}_BINARY_NAME${USE_MODE_SUFFIX}}" CACHE INTERNAL "")
 	endif()
@@ -214,12 +215,13 @@ endfunction(update_Component_Build_Variables_With_Dependency package)
 
 function(update_Component_Build_Variables_With_Internal_Dependency package component dep_component)
 if(${package}_${component}_INTERNAL_EXPORT_${dep_component})
+	message("${package} : ${component} EXPORTS ${dep_component}")
 	update_Config_Include_Dirs(${package} ${component} ${package} ${dep_component})
 	update_Config_Definitions(${package} ${component} ${package} ${dep_component})
 	update_Config_Libraries(${package} ${component} ${package} ${dep_component})	
 else()#dep_component is not exported by component
 	if(NOT ${package}_${dep_component}_TYPE STREQUAL "SHARED")#static OR header lib
-		message("")
+		message("${package} : ${component} does not export ${dep_component}")
 		update_Config_Libraries(${package} ${component} ${package} ${dep_component})
 	endif()
 	
@@ -243,6 +245,7 @@ foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${USE_MODE_SUFFIX}})
 endforeach()
 # 2) for not found package
 if(${package}_NOT_FOUND_DEPS)
+	message("there are not found dependencies !!")
 	foreach(not_found_dep_pack IN ITEMS ${${package}_NOT_FOUND_DEPS})
 		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
 			message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. Automatic download of package not supported yet")#TODO
@@ -266,15 +269,18 @@ if(${package_name}_DURING_PREPARE_BUILD)
 endif()
 
 set(${package_name}_DURING_PREPARE_BUILD TRUE)
+message("preparing build for ${package_name}")
 
 # 1) initializing all build variable that are directly provided by each component of the target package
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
+	message("init variable for ${a_component}")
 	init_Component_Build_Variables(${package_name} ${a_component} ${${package_name}_ROOT_DIR})
 endforeach()
 
 # 2) setting build variables with informations coming from package dependancies
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
-	foreach(a_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES}) 
+	foreach(a_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES})
+		message("undirect dependencies for ${package_name} ${a_component}") 
 		foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS}) 
 			update_Component_Build_Variables_With_Dependency(${package_name} ${a_component} ${a_package} ${a_dep_component})
 		endforeach()

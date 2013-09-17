@@ -200,7 +200,6 @@ if(${PROJECT_NAME}_TOINSTALL_PACKAGES)
 	endif()
 endif()
 
-message("resolving = ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}}")
 if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 1) resolving required packages versions (there can be multiple versions required at the same time)
 	# we get the set of all packages undirectly required
@@ -209,7 +208,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 		resolve_Package_Build_Dependencies(${dep_pack})
 	endforeach()
 	#here every package dependency should have been resolved OR ERROR
-
+	
 	# 2) if all version are OK resolving all necessary variables (CFLAGS, LDFLAGS and include directories)
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
 		configure_Package_Build_Variables(${dep_pack})
@@ -492,8 +491,6 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 	get_filename_component(LIB_NAME ${LIB_NAME} NAME)
 	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "") #exported include directories
 
-message("lib name is ${LIB_NAME}")
-
 else()#simply creating a "fake" target for header only library
 	file(	GLOB_RECURSE 
 		${PROJECT_NAME}_${c_name}_ALL_SOURCES 
@@ -575,7 +572,6 @@ file(	GLOB_RECURSE
 
 #defining the target to build the application
 add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-message("writting internal defs for application = ${internal_defs}")
 manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
 manage_Additional_Component_Exported_Flags(${c_name} "" "" "${internal_link_flags}")
 
@@ -666,7 +662,7 @@ if(IS_EXEC_DEP)
 	message(FATAL_ERROR "an executable component (${dep_component}) cannot be a dependancy !!")
 	return()
 else()
-	set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component} FALSE)
+	set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
 	if (IS_EXEC_COMP)
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
@@ -674,7 +670,7 @@ else()
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
 		if(export)
-			set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component} TRUE)
+			set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		endif()
 		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "")
 
@@ -683,11 +679,10 @@ else()
 		
 	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#prepare the dependancy export
-		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component} TRUE) #export is necessarily true for a pure header library
+		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "")
 		#NEW		
 		# setting compile definitions for configuring the "fake" target
-		message("DEBUG fill_Component_Target_With_Internal_Dependency ${component} with ${dep_component}\nexp defs= ${comp_exp_defs}\ndep_defs = ${dep_defs}")
 		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} TRUE "" "${comp_exp_defs}"  "${dep_defs}")
 
 	else()
@@ -721,7 +716,7 @@ if( NOT ${dep_package}_${dep_component}_TYPE)
 	message(FATAL_ERROR "Problem : ${dep_component} in package ${dep_package} is not defined")
 endif()
 
-set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} FALSE)
+set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} FALSE CACHE INTERNAL "")
 #guarding depending type of involved components
 is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})	
 is_Executable_Component(IS_EXEC_DEP ${dep_package} ${dep_component})
@@ -738,7 +733,7 @@ else()
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
 		if(export)
-			set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE)
+			set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "")
 		endif()
 		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "")
 
@@ -747,7 +742,7 @@ else()
 
 	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#prepare the dependancy export
-		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE) #export is necessarily true for a pure header library
+		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "")
 		# NEW
 		# setting compile definitions for configuring the "fake" target
@@ -932,6 +927,7 @@ if(export) # if dependancy library is exported then we need to register its dep_
 			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
 			${exported_defs} ${dep_defs}
 			CACHE INTERNAL "")
+		message("${component} DEFS${USE_MODE_SUFFIX} = ${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}}")
 	endif()
 	if(NOT include_dirs STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} 
@@ -964,7 +960,7 @@ else() # otherwise no need to register them since no more useful
 	if(	NOT static_links STREQUAL "" #static links are exported if component is not a shared lib
 		AND (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER" 
 			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
-		)
+			)
 	)
 		
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
@@ -1281,7 +1277,7 @@ endfunction(fill_Component_Target_With_External_Dependency)
 
 ### reset components related cached variables 
 function(reset_component_cached_variables component)
-if(${${PROJECT_NAME}_${component}_DECLARED}) #if component declared unset all its specific variables
+if(${PROJECT_NAME}_${component}_DECLARED) #if component declared unset all its specific variables
 	# unsetting package dependencies
 	foreach(a_dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}})
 		foreach(a_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${USE_MODE_SUFFIX}})
@@ -1456,7 +1452,11 @@ foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	if(${PROJECT_NAME}_${a_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) # the component has internal dependencies
 		file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_${a_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		foreach(a_int_dep IN ITEMS ${${PROJECT_NAME}_${a_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
-			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${USE_MODE_SUFFIX} ${${PROJECT_NAME}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+			if(${PROJECT_NAME}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${USE_MODE_SUFFIX})
+				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")				
+			else()
+				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")			
+			endif()
 		endforeach()
 	endif()
 endforeach()
@@ -1469,7 +1469,11 @@ foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		foreach(dep_package IN ITEMS ${${PROJECT_NAME}_${a_component}_DEPENDENCIES${USE_MODE_SUFFIX}})
 			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 			foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}})
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_EXPORT_${dep_package}_${dep_component}${USE_MODE_SUFFIX} ${${PROJECT_NAME}_${a_component}_EXPORT_${dep_package}_${dep_component}${USE_MODE_SUFFIX}} CACHE INTERNAL \"\")\n")			
+				if(${PROJECT_NAME}_${a_component}_EXPORT_${dep_package}_${dep_component})
+					file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_EXPORT_${dep_package}_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+				else()
+					file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_EXPORT_${dep_package}_${dep_component}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+				endif()
 			endforeach()
 		endforeach()
 	endif()
@@ -1478,7 +1482,8 @@ endforeach()
 #finalizing release mode by agregating info from the debug mode
 if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
 	file(READ "${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp" DEBUG_CONTENT)
-	file(APPEND ${file} ${DEBUG_CONTENT})
+	message("DEBUG content is : ${DEBUG_CONTENT}")
+	file(APPEND ${file} "${DEBUG_CONTENT}")
 endif()
 endfunction(create_Use_File)
 
