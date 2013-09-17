@@ -945,14 +945,14 @@ if(export) # if dependancy library is exported then we need to register its dep_
 	# links are exported since we will need to resolve symbols in the third party components that will the use the component 	
 	if(NOT shared_links STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
-			${shared_links}
+			${shared_links}			
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
 			CACHE INTERNAL "")
 	endif()
 	if(NOT static_links STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
-			${static_links}
+			${static_links}			
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
 			CACHE INTERNAL "")
 	endif()
 
@@ -971,8 +971,8 @@ else() # otherwise no need to register them since no more useful
 	)
 		
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
-			${static_links}
+			${static_links}			
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
 			CACHE INTERNAL "")
 	endif()
 endif()
