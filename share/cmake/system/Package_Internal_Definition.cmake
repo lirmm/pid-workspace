@@ -54,12 +54,16 @@ elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	add_custom_target(build ALL
+		COMMAND ${CMAKE_COMMAND} -E  echo Building ${PROJECT_NAME} in Debug mode
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
+		COMMAND ${CMAKE_COMMAND} -E  echo Building ${PROJECT_NAME} in Release mode
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
+		VERBATIM
 	)
 	add_custom_target(clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
+		VERBATIM
 	)
 
 	if(NOT EXISTS ${CMAKE_BINARY_DIR}/debug OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
@@ -204,7 +208,6 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 1) resolving required packages versions (there can be multiple versions required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		message("resolving dependencies for package ${dep_pack}")
 		resolve_Package_Build_Dependencies(${dep_pack})
 	endforeach()
 	#here every package dependency should have been resolved OR ERROR
@@ -245,6 +248,8 @@ generate_API() #generating/installing the API documentation
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	resolve_Source_Component_Runtime_Dependencies(${component})
 endforeach()
+
+print_Component_Variables()
 
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############
@@ -851,7 +856,7 @@ endfunction(declare_External_Component_Dependency)
 ##################################################################################
 
 ### printing variables for components in the package ################
-macro(printComponentVariables)
+macro(print_Component_Variables)
 	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
 	message("libraries : "${${PROJECT_NAME}_COMPONENTS_LIBS})
 	message("applications : "${${PROJECT_NAME}_COMPONENTS_APPS})
@@ -868,8 +873,11 @@ macro(printComponentVariables)
 			message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
 			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
 			message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		message("BINARY : ")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
+			message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")		
 	endforeach()
-endmacro(printComponentVariables)
+endmacro(print_Component_Variables)
 
 
 ### generating the license of the package
@@ -927,7 +935,6 @@ if(export) # if dependancy library is exported then we need to register its dep_
 			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
 			${exported_defs} ${dep_defs}
 			CACHE INTERNAL "")
-		message("${component} DEFS${USE_MODE_SUFFIX} = ${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}}")
 	endif()
 	if(NOT include_dirs STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} 
@@ -1235,7 +1242,6 @@ if(NOT DEP_IS_EXEC)#the required package component is a library
 		if(${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX})
 			list(APPEND ${PROJECT_NAME}_${component}_TEMP_DEFS ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
 		endif()		
-		message("fill_Target for ${component} ${${PROJECT_NAME}_${component}_TEMP_DEFS}")
 		manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
 		manage_Additional_Component_Exported_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
 	else()
@@ -1482,7 +1488,6 @@ endforeach()
 #finalizing release mode by agregating info from the debug mode
 if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
 	file(READ "${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp" DEBUG_CONTENT)
-	message("DEBUG content is : ${DEBUG_CONTENT}")
 	file(APPEND ${file} "${DEBUG_CONTENT}")
 endif()
 endfunction(create_Use_File)
