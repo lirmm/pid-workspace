@@ -226,20 +226,21 @@ endif()
 endfunction(update_Component_Build_Variables_With_Internal_Dependency)
 
 
-function(resolve_Package_Build_Dependencies package)
+function(resolve_Package_Dependencies package build_mode_suffix)
 # 1) managing package dependencies (the list of dependent packages is defined as ${package_name}_DEPENDENCIES)
 # - locating dependent packages in the workspace and configuring their build variables recursively 
-foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${USE_MODE_SUFFIX}})
+foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
 	# 1) resolving direct dependencies
 	resolve_Package_Dependency(${package} ${dep_pack})
 	if(${dep_pack}_FOUND)
-		if(${package}_DEPENDENCIES${USE_MODE_SUFFIX})
-			resolve_Package_Build_Dependencies(${dep_pack})#recursion : resolving dependencies for each package dependency
+		if(${package}_DEPENDENCIES${build_mode_suffix})
+			resolve_Package_Dependencies(${dep_pack} ${build_mode_suffix})#recursion : resolving dependencies for each package dependency
 		endif()
 	else() #package dependency not resolved 
 		list(APPEND ${package}_NOT_FOUND_DEPS ${dep_pack})		
 	endif()
 endforeach()
+
 # 2) for not found package
 if(${package}_NOT_FOUND_DEPS)
 	message("there are not found dependencies !!")
@@ -253,7 +254,7 @@ if(${package}_NOT_FOUND_DEPS)
 		endif()
 	endforeach()
 endif()
-endfunction(resolve_Package_Build_Dependencies)
+endfunction(resolve_Package_Dependencies)
 
 ###
 function(configure_Package_Build_Variables package_name)
@@ -313,12 +314,20 @@ if(${package}_DURING_PREPARE_RUNTIME)
 endif()
 set(${package}_DURING_PREPARE_RUNTIME TRUE)
 
-if(${package}_DEPENDENCIES) #first resolving dependencies by recursion
-	foreach(dep IN ITEMS ${${package}_DEPENDENCIES})
+if(build_mode MATCHES Debug)
+set(MODE_SUFFIX _DEBUG)
+elseif(build_mode MATCHES Release) 
+set(MODE_SUFFIX "")
+else()
+message(FATAL_ERROR "bad argument, unknown mode \"${build_mode}\"")
+endif()
+
+if(${package}_DEPENDENCIES${MODE_SUFFIX}) #first resolving dependencies by recursion
+	foreach(dep IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
 		resolve_Package_Runtime_Dependencies(${dep} ${build_mode})
 	endforeach()
 endif()
-foreach(component IN ITEMS ${${package}_COMPONENTS})
+foreach(component IN ITEMS ${${package}_COMPONENTS${MODE_SUFFIX}})
 	resolve_Bin_Component_Runtime_Dependencies(${package} ${component} ${build_mode})
 endforeach()
 set(${package}_DURING_PREPARE_RUNTIME FALSE)
@@ -491,7 +500,7 @@ function(create_Source_Component_Symlinks bin_component shared_libs)
 foreach(lib IN ITEMS ${shared_libs})
 	get_filename_component(A_LIB_FILE "${lib}" NAME)	
 	install(CODE "
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE} WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE} WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
 		execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${lib} ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE} WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
 		")# creating links "on the fly" when installing
 endforeach()
@@ -508,3 +517,115 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
 
+
+##################################################################################
+############################## install the dependancies ########################## 
+########### functions used to create the use<package><version>.cmake  ############ 
+##################################################################################
+function(write_Use_File file package_name build_mode)
+set(MODE_SUFFIX "")
+if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode 
+	file(APPEND ${file} "######### declaration of package components ########\n")
+	file(APPEND ${file} "set(${package_name}_COMPONENTS ${${package_name}_COMPONENTS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package_name}_COMPONENTS_APPS ${${package_name}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package_name}_COMPONENTS_LIBS ${${package_name}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
+	
+	file(APPEND ${file} "####### internal specs of package components #######\n")
+	foreach(a_component IN ITEMS ${${package_name}_COMPONENTS_LIBS})
+		file(APPEND ${file} "set(${package_name}_${a_component}_TYPE ${${package_name}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package_name}_${a_component}_HEADER_DIR_NAME ${${package_name}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package_name}_${a_component}_HEADERS ${${package_name}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
+	endforeach()
+	foreach(a_component IN ITEMS ${${package_name}_COMPONENTS_APPS})
+		file(APPEND ${file} "set(${package_name}_${a_component}_TYPE ${${package_name}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
+	endforeach()
+else()
+	set(MODE_SUFFIX _DEBUG)
+endif()
+
+#mode dependent info written adequately depending the mode 
+
+# 1) external package dependencies
+file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+file(APPEND ${file} "set(${package_name}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package_name}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+
+foreach(a_ext_dep IN ITEMS ${${package_name}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
+	file(APPEND ${file} "set(${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_REFERENCE_PATH${MODE_SUFFIX} ${${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_REFERENCE_PATH${MODE_SUFFIX}} CACHE PATH \"path to the root dir of ${a_ext_dep} external package\")\n")
+	file(APPEND ${file} "set(${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_USE_RUNTIME${MODE_SUFFIX} ${${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_USE_RUNTIME${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")	
+endforeach()
+
+# 2) package dependencies
+file(APPEND ${file} "#### declaration of package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+file(APPEND ${file} "set(${package_name}_DEPENDENCIES${MODE_SUFFIX} ${${package_name}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+foreach(a_dep IN ITEMS ${${package_name}_DEPENDENCIES${MODE_SUFFIX}})
+		file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${package_name}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} ${${package_name}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX} ${${package_name}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+endforeach()
+
+# 3) internal components specifications
+file(APPEND ${file} "#### declaration of components exported flags and binary in ${CMAKE_BUILD_TYPE} mode ####\n")
+foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
+	is_Built_Component(IS_BUILT_COMP ${package_name} ${a_component})
+	is_Executable_Component(IS_EXEC_COMP ${package_name} ${a_component})
+	if(IS_BUILT_COMP)#if not a pure header library
+		file(APPEND ${file} "set(${package_name}_${a_component}_BINARY_NAME${MODE_SUFFIX} ${${package_name}_${a_component}_BINARY_NAME${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	endif()
+	if(NOT IS_EXEC_COMP)#it is a library
+		file(APPEND ${file} "set(${package_name}_${a_component}_INC_DIRS${MODE_SUFFIX} ${${package_name}_${a_component}_INC_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package_name}_${a_component}_DEFS${MODE_SUFFIX} ${${package_name}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package_name}_${a_component}_LINKS${MODE_SUFFIX} ${${package_name}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	endif()
+endforeach()
+
+# 4) package internal component dependencies
+file(APPEND ${file} "#### declaration package internal component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
+	if(${package_name}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}) # the component has internal dependencies
+		file(APPEND ${file} "set(${package_name}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package_name}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		foreach(a_int_dep IN ITEMS ${${package_name}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}})
+			if(${package_name}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX})
+				file(APPEND ${file} "set(${package_name}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")				
+			else()
+				file(APPEND ${file} "set(${package_name}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")			
+			endif()
+		endforeach()
+	endif()
+endforeach()
+
+# 5) component dependencies 
+file(APPEND ${file} "#### declaration of component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
+	if(${package_name}_${a_component}_DEPENDENCIES${MODE_SUFFIX}) # the component has package dependencies
+		file(APPEND ${file} "set(${package_name}_${a_component}_DEPENDENCIES${MODE_SUFFIX} ${${package_name}_${a_component}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		foreach(dep_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES${MODE_SUFFIX}})
+			file(APPEND ${file} "set(${package_name}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX} ${${package_name}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+			foreach(dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}})
+				if(${package_name}_${a_component}_EXPORT_${dep_package}_${dep_component})
+					file(APPEND ${file} "set(${package_name}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+				else()
+					file(APPEND ${file} "set(${package_name}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+				endif()
+			endforeach()
+		endforeach()
+	endif()
+endforeach()
+endfunction(write_Use_File)
+
+function(create_Use_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
+	set(file ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake)
+else()
+	set(file ${CMAKE_BINARY_DIR}/share/UseDebugTemp)
+endif()
+
+#resetting the file content
+file(WRITE ${file} "")
+write_Use_File(${file} ${PROJECT_NAME} ${CMAKE_BUILD_TYPE})
+
+#finalizing release mode by agregating info from the debug mode
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
+	file(READ "${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp" DEBUG_CONTENT)
+	file(APPEND ${file} "${DEBUG_CONTENT}")
+endif()
+endfunction(create_Use_File)
