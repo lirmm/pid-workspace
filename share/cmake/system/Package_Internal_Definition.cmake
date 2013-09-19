@@ -249,7 +249,7 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	resolve_Source_Component_Runtime_Dependencies(${component})
 endforeach()
 
-#print_Component_Variables()
+print_Component_Variables()
 
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############

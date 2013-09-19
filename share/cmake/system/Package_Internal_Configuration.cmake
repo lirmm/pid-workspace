@@ -149,7 +149,10 @@ endfunction(update_Config_Definitions)
 ###
 function(update_Config_Libraries package component dep_package dep_component)
 	if(${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX})
-		set(${package}_${component}_LIBRARIES${USE_MODE_SUFFIX} ${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}} ${${package}_${component}_LIBRARIES${USE_MODE_SUFFIX}} CACHE INTERNAL "") #putting dependencies before using component dependencies (to avoid linker problems)
+		set(	${package}_${component}_LIBRARIES${USE_MODE_SUFFIX} 
+			${${package}_${component}_LIBRARIES${USE_MODE_SUFFIX}} 
+			${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}} 
+			CACHE INTERNAL "") #putting dependencies before using component dependencies (to avoid linker problems)
 	endif()
 endfunction(update_Config_Libraries)
 
@@ -185,8 +188,8 @@ function(init_Component_Build_Variables package component path_to_version)
 		#provided additionnal ld flags (exported external/system libraries and ldflags)
 		if(${package}_${component}_LINKS${USE_MODE_SUFFIX})
 			set(	${package}_${component}_LIBRARIES${USE_MODE_SUFFIX}
-				${${package}_${component}_LINKS${USE_MODE_SUFFIX}}  
 				${${package}_${component}_LIBRARIES${USE_MODE_SUFFIX}}				
+				${${package}_${component}_LINKS${USE_MODE_SUFFIX}}
 				CACHE INTERNAL "")
 		endif()
 		

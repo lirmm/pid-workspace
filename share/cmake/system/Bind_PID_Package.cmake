@@ -3,7 +3,7 @@
 ### this is the script file to call with cmake -P to rebind a package's content ###
 ###################################################################################
 ## arguments (passed with -D<name>=<value>): WORKSPACE_DIR, PACKAGE_NAME, PACKAGE_VERSION, REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD (TRUE or FALSE)
-
+set(PROJECT_NAME PACKAGE_NAME)#setting a project name to allow find scripts to work
 include(${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_VERSION}/share/Use${PACKAGE_NAME}-${PACKAGE_VERSION}.cmake OPTIONAL RESULT_VARIABLE res)
 #using the generated Use<package>-<version>.cmake file to get adequate version information about components
 if(	${res} STREQUAL NOTFOUND
