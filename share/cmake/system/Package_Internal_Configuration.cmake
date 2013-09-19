@@ -237,7 +237,7 @@ foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
 	resolve_Package_Dependency(${package} ${dep_pack})
 	if(${dep_pack}_FOUND)
 		if(${package}_DEPENDENCIES${build_mode_suffix})
-			resolve_Package_Dependencies(${dep_pack} ${build_mode_suffix})#recursion : resolving dependencies for each package dependency
+			resolve_Package_Dependencies(${dep_pack} "${build_mode_suffix}")#recursion : resolving dependencies for each package dependency
 		endif()
 	else() #package dependency not resolved 
 		list(APPEND ${package}_NOT_FOUND_DEPS ${dep_pack})		
@@ -447,8 +447,10 @@ function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 		endif()
 	endforeach()
 	#message("DEBUG : runtime deps for component ${component}, AFTER INTERNAL DEPENDENCIES => ${result} ")
-	# 4) now returning	
+	# 4) adequately removing first duplicates in the list
+	list(REVERSE result)
 	list(REMOVE_DUPLICATES result)
+	list(REVERSE result)
 	#message("DEBUG : runtime deps for component ${component}, AFTER RETURNING => ${result} ")
 	set(${ALL_SHARED_LIBS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Runtime_Dependencies)
