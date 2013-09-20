@@ -172,15 +172,15 @@ function(add_Category category_spec)
 	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category_spec} CACHE INTERNAL "")
 endfunction(add_Category)
 
-
-
 ##################################################################################
 ################################### building the package #########################
 ##################################################################################
 macro(build_Package)
 
-set(CMAKE_SKIP_BUILD_RPATH  FALSE) # don't skip the full RPATH for the build tree
+set(CMAKE_SKIP_BUILD_RPATH FALSE) # don't skip the full RPATH for the build tree
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install RPATH already
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE) #do not use any ink info when installing
+
 #set(CMAKE_INSTALL_RPATH "${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_INSTALL_LIB_PATH}") 
 if(UNIX AND NOT APPLE)
 	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
@@ -244,9 +244,17 @@ endif()
 generate_Use_File() #generating/installing the version specific cmake "use" file
 generate_API() #generating/installing the API documentation
 
-#resolving dependencies
+#resolving link time dependencies for executables
+foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
+	will_be_Built(RES ${component})
+	if(RES)
+		resolve_Source_Component_Linktime_Dependencies(${component} ${component}_THIRD_PARTY_LINKS)	
+	endif()
+endforeach()
+
+#resolving runtime dependencies
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-	resolve_Source_Component_Runtime_Dependencies(${component})
+	resolve_Source_Component_Runtime_Dependencies(${component} "${${component}_THIRD_PARTY_LINKS}")
 endforeach()
 
 print_Component_Variables()
@@ -489,7 +497,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 			RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}#installing everything in lib install folder (for windows dll)
 		)
 		#setting the default rpath for the target	
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
 		if(NOT internal_links STREQUAL "") #usefull only when trully linking so only beneficial to shared libs
 			target_link_library(${c_name}${INSTALL_NAME_SUFFIX} ${internal_links})
@@ -592,7 +600,7 @@ if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 		RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
 	)
 	#setting the default rpath for the target	
-	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}") #the application targets a specific folder that contains symbolic links to used shared libraries
+	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
 	# NB : tests do not need to be relocatable since they are purely local
 endif()
@@ -611,6 +619,7 @@ set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE I
 set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name}" CACHE INTERNAL "")
 # global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
 set(${PROJECT_NAME}_${c_name}_DECLARED TRUE CACHE INTERNAL "")
+
 endfunction(declare_Application_Component)
 
 
@@ -878,12 +887,14 @@ macro(print_Component_Variables)
 			message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
 			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
 			message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_INTERFACE_LIBRARIES)
+			message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")		
+			
 		message("IMPLEMENTATION :")
 			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
 			message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
 			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
 			message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		message("BINARY : ")
 			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
 			message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")		
 	endforeach()
@@ -1261,7 +1272,7 @@ if(NOT DEP_IS_EXEC)#the required package component is a library
 		manage_Additional_Component_Internal_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
 		manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
 	endif()
-#HERE TODO revoir l'export des libraries !!
+	
 else()
 	message(FATAL_ERROR "Executable component ${dep_component} from package ${dep_package} cannot be a dependency for component ${component}")	
 endif()

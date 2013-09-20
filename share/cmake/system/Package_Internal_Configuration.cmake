@@ -202,7 +202,7 @@ endfunction(init_Component_Build_Variables)
 ### 
 function(update_Component_Build_Variables_With_Dependency package component dep_package dep_component)
 configure_Package_Build_Variables(${dep_package})#!! recursion to get all updated infos
-if(${package}_${component}_EXPORT_${dep_package}_${dep_component})
+if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${USE_MODE_SUFFIX})
 	update_Config_Include_Dirs(${package} ${component} ${dep_package} ${dep_component})
 	update_Config_Definitions(${package} ${component} ${dep_package} ${dep_component})
 	update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component})	
@@ -216,7 +216,7 @@ endfunction(update_Component_Build_Variables_With_Dependency package)
 
 
 function(update_Component_Build_Variables_With_Internal_Dependency package component dep_component)
-if(${package}_${component}_INTERNAL_EXPORT_${dep_component})
+if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX})
 	update_Config_Include_Dirs(${package} ${component} ${package} ${dep_component})
 	update_Config_Definitions(${package} ${component} ${package} ${dep_component})
 	update_Config_Libraries(${package} ${component} ${package} ${dep_component})	
@@ -273,23 +273,23 @@ set(${package_name}_DURING_PREPARE_BUILD TRUE)
 
 # 1) initializing all build variable that are directly provided by each component of the target package
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
-	init_Component_Build_Variables(${package_name} ${a_component} ${${package_name}_ROOT_DIR})
+	init_Component_Build_Variables(${package_name} ${a_component}$ ${${package_name}_ROOT_DIR})
 endforeach()
 
 # 2) setting build variables with informations coming from package dependancies
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
-	foreach(a_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES})
+	foreach(a_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES${USE_MODE_SUFFIX}})
 		#message("undirect dependencies for ${package_name} ${a_component}") 
-		foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS}) 
+		foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS${USE_MODE_SUFFIX}}) 
 			update_Component_Build_Variables_With_Dependency(${package_name} ${a_component} ${a_package} ${a_dep_component})
 		endforeach()
-	endforeach()		
+	endforeach()
 endforeach()
 
 #3) setting build variables with informations coming from INTERNAL package dependancies
 # these have not been checked like the others since the package components discovering mecanism has already done the job 
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
-	foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_INTERNAL_DEPENDENCIES}) 
+	foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}}) 
 		update_Component_Build_Variables_With_Internal_Dependency(${package_name} ${a_component} ${a_dep_component})
 	endforeach()
 endforeach()
@@ -299,6 +299,128 @@ set(${package_name}_DURING_PREPARE_BUILD FALSE)
 # no need to check system/external dependencies as they are already  treaten as special cases (see variable <package>__<component>_LINKS and <package>__<component>_DEFS of components)
 # quite like in pkg-config tool
 endfunction(configure_Package_Build_Variables)
+
+
+##################################################################################
+################## finding shared libs dependencies for the linker ###############
+##################################################################################
+
+function(resolve_Source_Component_Linktime_Dependencies component THIRD_PARTY_LINKS)
+is_Executable_Component(COMP_IS_EXEC ${PROJECT_NAME} ${component})
+will_be_Built(COMP_WILL_BE_BUILT ${component})
+
+if(	NOT COMP_IS_EXEC 
+	OR NOT COMP_WILL_BE_BUILT)#special case for executables that need rpath link to be specified (due to system shared libraries linking system)-> the linker must resolve all target links (even shared libs) transitively
+	return()
+endif()
+
+set(undirect_deps)
+# 0) no need to search for system libraries as they are installed and found automatically by the OS binding mechanism, idem  for external dependencies since they are always direct dependencies for the currenlty build component
+
+# 1) searching each direct dependency in other packages
+foreach(dep_package IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}})
+	foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}})
+		set(LIST_OF_DEP_SHARED)
+		find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${dep_package} ${dep_component} TRUE)
+		if(LIST_OF_DEP_SHARED)
+			list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
+		endif()
+	endforeach()
+endforeach()
+
+# 2) searching each direct dependency in current package (no problem with undirect internal dependencies since undirect path only target install path which is not a problem for build)
+foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
+	set(LIST_OF_DEP_SHARED)
+	find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${PROJECT_NAME} ${dep_component} TRUE)
+	if(LIST_OF_DEP_SHARED)
+		list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
+	endif()
+endforeach()
+
+
+if(undirect_deps) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
+	list(REMOVE_DUPLICATES undirect_deps)	
+	get_target_property(thelibs ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
+	set_target_properties(${component}${INSTALL_NAME_SUFFIX} PROPERTIES LINK_LIBRARIES "${thelibs};${undirect_deps}")
+	set(${THIRD_PARTY_LINKS} ${undirect_deps} PARENT_SCOPE)
+endif()
+endfunction(resolve_Source_Component_Linktime_Dependencies)
+
+
+function(find_Dependent_Private_Shared_Libraries LIST_OF_UNDIRECT_DEPS package component is_direct)
+set(undirect_list)
+# 0) no need to search for systems dependencies as they can be found automatically using OS shared libraries binding mechanism
+
+# 1) searching external dependencies TODO
+#foreach(dep_package IN ITEMS ${${package}_${component}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
+#	if(${package}_EXTERNAL_DEPENDENCY_${dep_package}_USE_RUNTIME${USE_MODE_SUFFIX}) #the package has shared libs
+#		#HERE TODO revoir les dépendences externes (j'ai besoin de savoir pour chaque lib externe à quel package externe elle fait référence)
+#	endif()
+#endforeach()
+
+# 2) searching in dependent packages
+foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}})
+	foreach(dep_component IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}}) 
+		set(UNDIRECT)
+		if(is_direct) # current component is a direct dependency of the application
+			if(	${dep_package}_${dep_component}_TYPE STREQUAL "STATIC"
+				OR ${dep_package}_${dep_component}_TYPE STREQUAL "HEADER"
+				OR ${package}_${component}_EXPORTS_${dep_package}_${dep_component}${USE_MODE_SUFFIX})
+				 #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application 
+				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} TRUE) 
+			else()#it is a shared lib that is not exported
+				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE) #the shared lib dependency is NOT a direct dependency of the application 
+				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${USE_MODE_SUFFIX}}")				
+			endif()
+		else() #current component is NOT a direct dependency of the application
+			if(	${dep_package}_${dep_component}_TYPE STREQUAL "STATIC"
+				OR ${dep_package}_${dep_component}_TYPE STREQUAL "HEADER")
+				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE)
+			else()#it is a shared lib that is exported or NOT
+				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE) #the shared lib dependency is a direct dependency of the application 
+				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${USE_MODE_SUFFIX}}")				
+			endif()
+		endif()		
+		
+		if(UNDIRECT)
+			list(APPEND undirect_list ${UNDIRECT})
+		endif()
+	endforeach()
+endforeach()
+
+# 3) searching in current package
+foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
+	set(UNDIRECT)
+	if(is_direct) # current component is a direct dependency of the application
+		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
+			OR ${package}_${dep_component}_TYPE STREQUAL "HEADER"
+			OR ${package}_${component}_INTERNAL_EXPORTS_${dep_component}${USE_MODE_SUFFIX})
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} TRUE) #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application 
+		else()#it is a shared lib that is not exported
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE) #the shared lib dependency is NOT a direct dependency of the application 
+			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${USE_MODE_SUFFIX}}")				
+		endif()
+	else() #current component is NOT a direct dependency of the application
+		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
+			OR ${package}_${dep_component}_TYPE STREQUAL "HEADER")
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE)
+		else()#it is a shared lib that is exported or NOT
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE) #the shared lib dependency is NOT a direct dependency of the application in all cases 
+			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${USE_MODE_SUFFIX}}")				
+		endif()
+	endif()
+	
+	if(UNDIRECT)
+		list(APPEND undirect_list ${UNDIRECT})
+	endif()
+endforeach()
+
+
+if(undirect_list) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
+	list(REMOVE_DUPLICATES undirect_list)
+	set(${LIST_OF_UNDIRECT_DEPS} "${undirect_list}" PARENT_SCOPE)
+endif()
+endfunction(find_Dependent_Private_Shared_Libraries)
 
 
 ##################################################################################
@@ -512,12 +634,14 @@ endforeach()
 endfunction(create_Source_Component_Symlinks)
 
 ### 
-function(resolve_Source_Component_Runtime_Dependencies component)
+function(resolve_Source_Component_Runtime_Dependencies component THIRD_PARTY_LIBS)
 if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP" 
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
 	get_Bin_Component_Runtime_Dependencies(ALL_SHARED_LIBS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
-	#message("DEBUG : all shared libs for ${component} = ${ALL_SHARED_LIBS}")
+	if(THIRD_PARTY_LIBS)
+		list(APPEND ALL_SHARED_LIBS ${THIRD_PARTY_LIBS})
+	endif()
 	create_Source_Component_Symlinks(${component}${INSTALL_NAME_SUFFIX} "${ALL_SHARED_LIBS}")
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
