@@ -71,29 +71,33 @@ endif()
 set(${is_existing} FALSE PARENT_SCOPE)
 endfunction(check_Directory_Exists)
 
-### this functions check local install dirs first
+### check if an exact major.minor version exists (patch version is always let undefined)
 function (check_Exact_Version 	VERSION_HAS_BEEN_FOUND 
 				package_name package_install_dir major_version minor_version) #minor version cannot be increased
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 
-list_Local_Version_Subdirectories(version_dirs ${package_install_dir})
-if(version_dirs)#scanning local versions  
-	set(curr_patch_version 0)
-	foreach(patch IN ITEMS ${version_dirs})
-		string(REGEX REPLACE "^own-${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
-		if(	A_VERSION
-			AND ${A_VERSION} GREATER ${curr_patch_version})
-			set(curr_patch_version ${A_VERSION})
-			set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-		endif()
-	endforeach()
+if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in USE_LOCAL_DEPLOYMENT mode (e.g. DEVELOPMENT VERSIONS HAVE GREATER PRIORITIES)
+	list_Local_Version_Subdirectories(version_dirs ${package_install_dir})
+	if(version_dirs)#scanning local versions  
+		set(curr_patch_version 0)
+		foreach(patch IN ITEMS ${version_dirs})
+			string(REGEX REPLACE "^own-${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
+			if(	A_VERSION
+				AND ${A_VERSION} GREATER ${curr_patch_version})
+				set(curr_patch_version ${A_VERSION})
+				set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+			endif()
+		endforeach()
 	
-	if(${VERSION_HAS_BEEN_FOUND})#a good local version has been found
-		document_Version_Strings(TRUE ${package_name} ${major_version} ${minor_version} ${curr_patch_version})
-		return() #local versions have priorities over non local ones in EXACT mode	
-	endif()	
+		if(VERSION_HAS_BEEN_FOUND)#a good local version has been found
+			document_Version_Strings(TRUE ${package_name} ${major_version} ${minor_version} ${curr_patch_version})
+			return() 	
+		endif()	
+	endif()
+	unset(version_dirs)
 endif()
-unset(version_dirs)
+
+#no adequate local version found OR local version not used
 list_Version_Subdirectories(version_dirs ${package_install_dir})
 if(version_dirs)#scanning non local versions  
 	set(curr_patch_version 0)		
@@ -113,64 +117,110 @@ if(version_dirs)#scanning non local versions
 endif()
 endfunction (check_Exact_Version)
 
-### this function never scans local install dirs
+
+###  check if a version with constraints =major >=minor (with greater minor number available) exists (patch version is always let undefined)
 function(check_Best_Version 	VERSION_HAS_BEEN_FOUND
 				package_name package_install_dir major_version minor_version)#major version cannot be increased
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
+
+
+if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in USE_LOCAL_DEPLOYMENT mode (e.g. DEVELOPMENT VERSIONS HAVE GREATER PRIORITIES)
+	set(curr_max_minor_version ${minor_version})
+	set(curr_patch_version 0)
+	list_Local_Version_Subdirectories(version_dirs ${package_install_dir})
+	if(version_dirs)#scanning local versions  
+		foreach(version IN ITEMS ${version_dirs})
+			string(REGEX REPLACE "^own-${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1" A_VERSION "${version}")
+			if(A_VERSION)
+				list(GET A_VERSION 0 minor)
+				list(GET A_VERSION 1 patch)
+				if(${minor} EQUAL ${curr_max_minor_version} 
+				AND (${patch} EQUAL ${curr_patch_version} OR ${patch} GREATER ${curr_patch_version}))
+					set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)			
+					#a more recent patch version found with same max minor version
+					set(curr_patch_version ${patch})
+				elseif(${minor} GREATER ${curr_max_minor_version})
+					set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+					#a greater minor version found
+					set(curr_max_minor_version ${minor})
+					set(curr_patch_version ${patch})	
+				endif()
+			endif()
+		endforeach()
+	
+		if(VERSION_HAS_BEEN_FOUND)#a good local version has been found
+			document_Version_Strings(TRUE ${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
+			return() 	
+		endif()	
+	endif()
+	unset(version_dirs)
+endif()
+#no adequate local version found OR local version not used
 set(curr_max_minor_version ${minor_version})
 set(curr_patch_version 0)
 list_Version_Subdirectories(version_dirs ${package_install_dir})
-foreach(version IN ITEMS ${version_dirs})
-	string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
-	if(A_VERSION)
-		list(GET A_VERSION 0 minor)
-		list(GET A_VERSION 1 patch)
-		if(${minor} EQUAL ${curr_max_minor_version} 
-		AND (${patch} EQUAL ${curr_patch_version} OR ${patch} GREATER ${curr_patch_version}))
-			set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)			
-			#a more recent patch version found with same max minor version
-			set(curr_patch_version ${patch})
-		elseif(${minor} GREATER ${curr_max_minor_version})
-			set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-			#a greater minor version found
-			set(curr_max_minor_version ${minor})
-			set(curr_patch_version ${patch})	
-		endif()
-	endif(A_VERSION)
-endforeach()
-
-if(${VERSION_HAS_BEEN_FOUND})#at least a good version has been found
+if(version_dirs)#scanning local versions  
+	foreach(version IN ITEMS ${version_dirs})
+		string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
+		if(A_VERSION)
+			list(GET A_VERSION 0 minor)
+			list(GET A_VERSION 1 patch)
+			if(${minor} EQUAL ${curr_max_minor_version} 
+			AND (${patch} EQUAL ${curr_patch_version} OR ${patch} GREATER ${curr_patch_version}))
+				set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)			
+				#a more recent patch version found with same max minor version
+				set(curr_patch_version ${patch})
+			elseif(${minor} GREATER ${curr_max_minor_version})
+				set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+				#a greater minor version found
+				set(curr_max_minor_version ${minor})
+				set(curr_patch_version ${patch})	
+			endif()
+		endif(A_VERSION)
+	endforeach()
+endif()
+if(VERSION_HAS_BEEN_FOUND)#at least a good version has been found
 	document_Version_Strings(FALSE ${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
 endif()
 endfunction(check_Best_Version)
 
-### this function checks into local folders first then in 
-function(check_Last_Version 	VERSION_HAS_BEEN_FOUND
-					package_name package_install_dir)#taking local version or the most recent if not available
-set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
-list_Local_Version_Subdirectories(local_versions ${package_install_dir})
-list_Version_Subdirectories(non_local_versions ${package_install_dir})
 
-if(local_versions OR non_local_versions)  
+### check if a version with constraints >=major >=minor (with greater major and minor number available) exists (patch version is always let undefined) 
+function(check_Last_Version 	VERSION_HAS_BEEN_FOUND
+				package_name package_install_dir)#taking local version or the most recent if not available
+set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
+
+if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in USE_LOCAL_DEPLOYMENT mode (i.e. DEVELOPMENT VERSIONS HAVE GREATER PRIORITIES)
+	list_Local_Version_Subdirectories(local_versions ${package_install_dir})
+	if(local_versions)
+		set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+		set(version_string_curr "0.0.0")
+		foreach(local_version_dir IN ITEMS ${local_versions})
+			set(VERSION_NUMBER)		
+			string(REGEX REPLACE "^own-([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1\.\\2\.\\3" VERSION_NUMBER ${local_version_dir})
+			if(VERSION_NUMBER AND ${version_string_curr} VERSION_LESS ${VERSION_NUMBER})
+				set(version_string_curr ${VERSION_NUMBER})
+			endif()
+		endforeach()
+		get_Version_String_Numbers(${version_string_curr} major minor patch)
+		document_Version_Strings(TRUE ${package_name} ${major} ${minor} ${patch})
+		return()
+	endif()
+
+endif()
+
+#no local version found OR local version not used
+list_Version_Subdirectories(non_local_versions ${package_install_dir})
+if(non_local_versions)  
 	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
 	set(version_string_curr "0.0.0")
-	set(is_local FALSE)	
-	foreach(local_version_dir IN ITEMS ${local_versions})
-		set(VERSION_NUMBER)		
-		string(REGEX REPLACE "^own-([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1\.\\2\.\\3" VERSION_NUMBER ${local_version_dir})		
-		if(VERSION_NUMBER AND ${version_string_curr} VERSION_LESS ${VERSION_NUMBER})
-			set(is_local TRUE)
-			set(version_string_curr ${VERSION_NUMBER})
-		endif()
-	endforeach()
 	foreach(non_local_version_dir IN ITEMS ${non_local_versions})
 		if(${version_string_curr} VERSION_LESS ${non_local_version_dir})
-			set(is_local FALSE)
 			set(version_string_curr ${non_local_version_dir})
 		endif()
 	endforeach()
 	get_Version_String_Numbers(${version_string_curr} major minor patch)
-	document_Version_Strings(${is_local} ${package_name} ${major} ${minor} ${patch})
+	document_Version_Strings(FALSE ${package_name} ${major} ${minor} ${patch})
 endif()
 endfunction(check_Last_Version)
 
@@ -367,7 +417,7 @@ set(${is_compatible} TRUE PARENT_SCOPE)
 # 2) now we have the greater constraint 
 set(max_version_constraint "${curr_major}.${curr_max_minor}")
 if(NOT ${${package_name}_VERSION_STRING} VERSION_GREATER ${max_version_constraint})
-	set(${version_to_find} ${max_version_constraint} PARENT_SCOPE) #need to find the new exact version
+	set(${version_to_find} ${max_version_constraint} PARENT_SCOPE) #need to find the new version
 endif()
 
 endfunction(is_Version_Compatible_With_Previous_Constraints)
