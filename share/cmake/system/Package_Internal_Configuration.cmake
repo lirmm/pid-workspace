@@ -647,6 +647,93 @@ endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
 
 
+
+
+##################################################################################
+####################### external dependencies management #########################
+##################################################################################
+
+###
+function(resolve_External_Libs_Path COMPLETE_LINKS_PATH ext_links)
+set(res_links)
+foreach(link IN ITEMS ${ext_links})
+	string(REGEX REPLACE "^<([^>]+)>([^\\.]+\\.[a|la|so|dylib])" "\\1;\\2" RES ${link})
+	if(NOT RES MATCHES ${link})# a replacement has taken place => this is a full path to a library
+		set(fullpath)
+		list(GET RES 0 ext_package_name)
+		list(GET RES 1 relative_path)
+		if(DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${ext_package_name}_REFERENCE_PATH${USE_MODE_SUFFIX})
+			set(fullpath ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${ext_package_name}_REFERENCE_PATH${USE_MODE_SUFFIX}}${relative_path})
+			list(APPEND res_links ${fullpath})
+		else()
+			message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")		
+		endif()
+	else() # this may be a link with a prefix (like -L<path>) that need replacement
+		string(REGEX REPLACE "^([^<]+)<([^>]+)>(.*)" "\\1;\\2;\\3" RES_WITH_PREFIX ${link})
+		if(NOT RES_WITH_PREFIX MATCHES ${link})
+			list(GET RES_WITH_PREFIX 0 link_prefix)
+			list(GET RES_WITH_PREFIX 1 ext_package_name)
+			if(NOT DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${ext_package_name}_REFERENCE_PATH${USE_MODE_SUFFIX})
+				message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
+			endif()
+			liST(LENGTH RES_WITH_PREFIX SIZE)
+			if(SIZE EQUAL 3)
+				list(GET RES_WITH_PREFIX 2 relative_path)
+				set(fullpath ${link_prefix}${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${ext_package_name}_REFERENCE_PATH${USE_MODE_SUFFIX}}${relative_path})
+			else()	
+				set(fullpath ${link_prefix}${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${ext_package_name}_REFERENCE_PATH${USE_MODE_SUFFIX}})
+			endif()
+			list(APPEND res_links ${fullpath})
+		else()#this is a link that does not require any replacement
+			list(APPEND res_links ${link})
+		endif()
+	endif()
+endforeach()
+set(${COMPLETE_LINKS_PATH} ${res_links} PARENT_SCOPE)
+endfunction(resolve_External_Libs_Path)
+
+###
+function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH ext_inc_dirs)
+set(res_includes)
+foreach(include_dir IN ITEMS ${ext_inc_dirs})
+	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${include_dir})
+	if(NOT RES MATCHES ${include_dir})# a replacement has taken place => this is a full path to an incude dir
+		list(GET RES 0 ext_package_name)
+		if(NOT DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${ext_package_name}_REFERENCE_PATH${USE_MODE_SUFFIX})
+			message(FATAL_ERROR "undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
+		endif()
+		liST(LENGTH RES SIZE)
+		if(SIZE EQUAL 2)#the package name has a suffix (relative path)
+			list(GET RES 1 relative_path)
+			set(fullpath ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${ext_package_name}_REFERENCE_PATH${USE_MODE_SUFFIX}}${relative_path})
+		else()	#no suffix append to the external package name
+			set(fullpath ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${ext_package_name}_REFERENCE_PATH${USE_MODE_SUFFIX}})
+		endif()
+		list(APPEND res_includes ${fullpath})
+	else() # this may be an include dir with a prefix (-I<path>) that need replacement
+		string(REGEX REPLACE "^-I<([^>]+)>(.*)" "\\1;\\2" RES_WITH_PREFIX ${include_dir})
+		if(NOT RES_WITH_PREFIX MATCHES ${include_dir})
+			list(GET RES_WITH_PREFIX 1 relative_path)
+			list(GET RES_WITH_PREFIX 0 ext_package_name)
+			if(NOT DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${ext_package_name}_REFERENCE_PATH${USE_MODE_SUFFIX})
+				message(FATAL_ERROR "undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
+			endif()
+			set(fullpath ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${ext_package_name}_REFERENCE_PATH${USE_MODE_SUFFIX}}${relative_path})
+			list(APPEND res_includes ${fullpath})
+		else()#this is an include dir that does not require any replacement ! (should be avoided)
+			string(REGEX REPLACE "^-I(.+)" "\\1" RES_WITHOUT_PREFIX ${include_dir})			
+			if(NOT RES_WITHOUT_PREFIX MATCHES ${include_dir})
+				list(APPEND res_includes ${RES_WITHOUT_PREFIX})
+			else()
+				list(APPEND res_includes ${include_dir})
+			endif()				
+		endif()
+	endif()
+endforeach()
+set(${COMPLETE_INCLUDES_PATH} ${res_includes} PARENT_SCOPE)
+endfunction(resolve_External_Includes_Path)
+
+
 ##################################################################################
 ############################## install the dependancies ########################## 
 ########### functions used to create the use<package><version>.cmake  ############ 

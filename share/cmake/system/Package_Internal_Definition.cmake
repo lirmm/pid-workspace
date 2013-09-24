@@ -643,11 +643,11 @@ function(declare_Package_Dependency dep_package version exact list_of_components
 endfunction(declare_Package_Dependency)
 
 ### declare external dependancies
-function(declare_External_Package_Dependency dep_package path_to_dependency)
+function(declare_External_Package_Dependency dep_package version path_to_dependency)
 	#${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH is the helper path to locate external libs
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX} ${path_to_dependency} CACHE PATH "Reference path to the root dir of external library")
-	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_USE_RUNTIME${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX} ${path_to_dependency} CACHE PATH "Reference path to the root dir of external package (target version is ${version})")
 endfunction(declare_External_Package_Dependency)
 
 
@@ -779,7 +779,7 @@ endif()
 
 endfunction(declare_Package_Component_Dependency)
 
-### declare system (add-hoc) dependancy between a component of the current package and system components (should be used as rarely as possible, except for "true" system dependencies like math, threads, etc.) 
+### declare system (add-hoc) dependancy between a component of the current package and system components (should be used as rarely as possible, except for "true" system dependencies like math, threads, etc.). Usable only whith libraries described with -l option. 
 ### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of the system dependancy, if any  => definitions are exported
 ### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of system dependancy, if any => definitions are not exported
 ### dep_defs  : definitions in the interface of the system dependancy that must be defined when using this system dependancy, if any => definitions are exported if dependancy is exported
@@ -793,25 +793,22 @@ endif()
 #guarding depending type of involved components
 is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+set(TARGET_LINKS ${static_links} ${shared_links})
 
 if (IS_EXEC_COMP)
 	# setting compile definitions for the target
-	set(TARGET_LINKS ${static_links} ${shared_links})
 	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "" "${TARGET_LINKS}")
 	
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
 	configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}")
 	# setting compile definitions for the target
-	set(TARGET_LINKS ${static_links} ${shared_links})
 	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "" "${TARGET_LINKS}")
 
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	#prepare the dependancy export
 	configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}") #export is necessarily true for a pure header library
-	# NEW
 	# setting compile definitions for the target
-	set(TARGET_LINKS ${static_links} ${shared_links})
 	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "" "${TARGET_LINKS}")
 else()
 	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
@@ -819,7 +816,7 @@ endif()
 endfunction(declare_System_Component_Dependency)
 
 
-### declare external (add-hoc) dependancy between components of current and an external package 
+### declare external (add-hoc) dependancy between components of current and an external package (should be used prior to system dependencies for all dependencies that are not true system dependencies, event if installed in default systems folders)
 ### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of the exported dependancy, if any  => definitions are exported
 ### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of external dependancy, if any => definitions are not exported
 ### dep_defs  : definitions in the interface of the external dependancy that must be defined when using this external dependancy, if any => definitions are exported if dependancy is exported
@@ -833,23 +830,22 @@ if(NOT COMP_WILL_BE_BUILT)
 endif()
 if(DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX})
 	
-	if(NOT shared_links STREQUAL "") #the component has runtime dependencis with an external package
-		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_USE_RUNTIME${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-	endif()
+#	if(NOT shared_links STREQUAL "") #the component has runtime dependencis with an external package
+#		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_USE_RUNTIME${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
+#	endif()
 
 	#guarding depending type of involved components
 	is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+	set(TARGET_LINKS ${static_links} ${shared_links})
 	if (IS_EXEC_COMP)
-		# setting compile definitions for the target
-		set(TARGET_LINKS ${static_links} ${shared_links})
+		# setting compile definitions for the target		
 		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
 		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs"} "${comp_exp_defs}" "${static_links}" "${shared_links}")
 		# setting compile definitions for the target
-		set(TARGET_LINKS ${static_links} ${shared_links})
 		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 
 	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
@@ -857,7 +853,6 @@ if(DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${US
 		configure_Install_Variables(${component} TRUE "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}") #export is necessarily true for a pure header library
 
 		# setting compile definitions for the "fake" target
-		set(TARGET_LINKS ${static_links} ${shared_links}) 
 		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 
 	else()
@@ -964,14 +959,14 @@ if(export) # if dependancy library is exported then we need to register its dep_
 	# links are exported since we will need to resolve symbols in the third party components that will the use the component 	
 	if(NOT shared_links STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${shared_links}			
 			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
+			${shared_links}			
 			CACHE INTERNAL "")
 	endif()
 	if(NOT static_links STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${static_links}			
 			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
+			${static_links}			
 			CACHE INTERNAL "")
 	endif()
 
@@ -983,15 +978,20 @@ else() # otherwise no need to register them since no more useful
 			${exported_defs}
 			CACHE INTERNAL "")
 	endif()
-	if(	NOT static_links STREQUAL "" #static links are exported if component is not a shared lib
-		AND (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER" 
+	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared lib
+		if (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER" 
 			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
-			)
-	)
-		
+		)
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${static_links}			
 			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
+			${static_links}			
+			CACHE INTERNAL "")
+		endif()
+	endif()
+	if(NOT shared_links STREQUAL "")#shared links are privates (not exported) -> these links are used to process executables linking
+		set(	${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}			
+			${shared_links}
 			CACHE INTERNAL "")
 	endif()
 endif()
@@ -1277,9 +1277,15 @@ endif()
 endfunction(fill_Component_Target_With_Package_Dependency)
 
 
+
 ### configure the target to link with an external dependancy
 function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_links)
-
+if(ext_links)
+	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${ext_links}")
+endif()
+if(ext_inc_dirs)
+	resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${ext_inc_dirs}")
+endif()
 is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
 if(COMP_IS_BUILT) #the component has a corresponding target
 
@@ -1287,12 +1293,12 @@ if(COMP_IS_BUILT) #the component has a corresponding target
 	if(export)
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${ext_defs})
 		manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
-		manage_Additional_Component_Exported_Flags(${component} "${ext_inc_dirs}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${ext_links}")
+		manage_Additional_Component_Exported_Flags(${component} "${COMPLETE_INCLUDES_PATH}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${COMPLETE_LINKS_PATH}")
 
 	else()
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${ext_defs})		
-		manage_Additional_Component_Internal_Flags(${component} "${ext_inc_dirs}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
-		manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${ext_links}")
+		manage_Additional_Component_Internal_Flags(${component} "${COMPLETE_INCLUDES_PATH}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
+		manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${COMPLETE_LINKS_PATH}")
 	endif()
 
 endif()#do nothing in case of a pure header component
