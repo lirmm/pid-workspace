@@ -254,7 +254,10 @@ endforeach()
 
 #resolving runtime dependencies
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-	resolve_Source_Component_Runtime_Dependencies(${component} "${${component}_THIRD_PARTY_LINKS}")
+	will_be_Built(RES ${component})
+	if(RES)
+		resolve_Source_Component_Runtime_Dependencies(${component} "${${component}_THIRD_PARTY_LINKS}")
+	endif()
 endforeach()
 
 print_Component_Variables()
@@ -763,7 +766,6 @@ else()
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "")
-		# NEW
 		# setting compile definitions for configuring the "fake" target
 		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 
@@ -844,7 +846,7 @@ if(DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${US
 
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
-		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs"} "${comp_exp_defs}" "${static_links}" "${shared_links}")
+		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}")
 		# setting compile definitions for the target
 		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 
@@ -1277,7 +1279,6 @@ endif()
 endfunction(fill_Component_Target_With_Package_Dependency)
 
 
-
 ### configure the target to link with an external dependancy
 function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_links)
 if(ext_links)
@@ -1329,6 +1330,7 @@ if(${PROJECT_NAME}_${component}_DECLARED) #if component declared unset all its s
 	set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_${component}_DECLARED CACHE INTERNAL "")
 endif()

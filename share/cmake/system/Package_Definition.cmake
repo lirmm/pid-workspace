@@ -207,7 +207,7 @@ endmacro(declare_PID_Component)
 
 
 ### API : declare_PID_Package_Dependency (	PACKAGE name 
-#						<EXTERNAL path_to_dependency 
+#						<EXTERNAL path_to_dependency [VERSION version_string]
 #						| PID [VERSION major minor [EXACT]] COMPONENTS component ... >)
 macro(declare_PID_Package_Dependency)
 set(options EXTERNAL PID)
@@ -223,13 +223,15 @@ elseif(DECLARE_PID_DEPENDENCY_EXTERNAL)
 	if(NOT DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS)
 		message(FATAL_ERROR "bad arguments : you must define the path to the root directory of the external package")
 	else()
-		list(LENGTH DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS SIZE)
+		set(oneValueArgs VERSION)
+		cmake_parse_arguments(DECLARE_PID_DEPENDENCY_EXTERNAL "" "${oneValueArgs}" "" ${DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS} )
+		list(LENGTH DECLARE_PID_DEPENDENCY_EXTERNAL_UNPARSED_ARGUMENTS SIZE)
 		if(SIZE GREATER 1)
 			message(FATAL_ERROR "bad arguments : you must define only one path to the root directory of the external package - the path cannot contain white spaces")
 		endif()
 	endif()
 	
-	declare_External_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} ${DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS})
+	declare_External_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${DECLARE_PID_DEPENDENCY_EXTERNAL_VERSION}" "${DECLARE_PID_DEPENDENCY_EXTERNAL_UNPARSED_ARGUMENTS}")
 elseif(DECLARE_PID_DEPENDENCY_PID)
 	if(NOT DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS)
 		message(FATAL_ERROR "bad arguments : at least one component dependency must be defined")
@@ -327,6 +329,7 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS)
 	endif()
 endif()
 
+
 if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
 		message(FATAL_ERROR "bad arguments : EXTERNAL (requiring an external package) and DEPEND (requiring a PID component) keywords cannot be used simultaneously")
@@ -355,9 +358,8 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
 
 elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 	if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS)
-		message(FATAL_ERROR "bad arguments : the INCLUDE_DIRS keyword must be used when the package is declared as external. It is used to find the external package root dir.")
+		message(FATAL_ERROR "bad arguments : the INCLUDE_DIRS keyword must be used when the package is declared as external. It is used to find the external package's components interfaces.")
 	endif()
-
 	declare_External_Component_Dependency(
 				${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 				${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} 
@@ -369,6 +371,9 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 				"${static_links}"
 				"${shared_links}")
 else()#system dependency
+	if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_LINKS)
+		message(FATAL_ERROR "bad arguments : the LINKS keyword must be used if you want to specify a system dependency.")
+	endif()
 	declare_System_Component_Dependency(
 			${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 			${export}
