@@ -6,7 +6,7 @@
 ###
 function(get_Version_String_Numbers version_string major minor patch)
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" A_VERSION "${version_string}")
-if(A_VERSION AND NOT (A_VERSION MATCHES "${version_string}"))
+if(NOT A_VERSION STREQUAL "${version_string}")
 	list(GET A_VERSION 0 major_vers)
 	list(GET A_VERSION 1 minor_vers)
 	list(GET A_VERSION 2 patch_vers)
@@ -20,7 +20,6 @@ endfunction(get_Version_String_Numbers)
 
 ###
 function (document_Version_Strings is_local package_name major minor patch)
-
 if(is_local)
 	set(${package_name}_VERSION_MAJOR ${major} CACHE INTERNAL "")
 	set(${package_name}_VERSION_MINOR ${minor} CACHE INTERNAL "")
@@ -79,14 +78,13 @@ endfunction(check_Directory_Exists)
 function (check_Exact_Version 	VERSION_HAS_BEEN_FOUND 
 				package_name package_install_dir major_version minor_version) #minor version cannot be increased
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
-
 if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in USE_LOCAL_DEPLOYMENT mode (e.g. DEVELOPMENT VERSIONS HAVE GREATER PRIORITIES)
 	list_Local_Version_Subdirectories(version_dirs ${package_install_dir})
 	if(version_dirs)#scanning local versions  
 		set(curr_patch_version 0)
 		foreach(patch IN ITEMS ${version_dirs})
 			string(REGEX REPLACE "^own-${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
-			if(	A_VERSION
+			if(	A_VERSION  AND NOT (A_VERSION MATCHES "${patch}")#there is a match
 				AND ${A_VERSION} GREATER ${curr_patch_version})
 				set(curr_patch_version ${A_VERSION})
 				set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
@@ -107,7 +105,7 @@ if(version_dirs)#scanning non local versions
 	set(curr_patch_version 0)		
 	foreach(patch IN ITEMS ${version_dirs})
 		string(REGEX REPLACE "^${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
-		if(	A_VERSION 
+		if(	A_VERSION AND NOT (A_VERSION STREQUAL "${patch}")#there is a match
 			AND ${A_VERSION} GREATER ${curr_patch_version})
 			set(curr_patch_version ${A_VERSION})
 			set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
@@ -135,7 +133,7 @@ if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in 
 	if(version_dirs)#scanning local versions  
 		foreach(version IN ITEMS ${version_dirs})
 			string(REGEX REPLACE "^own-${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1" A_VERSION "${version}")
-			if(A_VERSION AND (NOT A_VERSION MATCHES "${version}"))
+			if(A_VERSION AND (NOT A_VERSION STREQUAL "${version}"))#there is a match
 				list(GET A_VERSION 0 minor)
 				list(GET A_VERSION 1 patch)
 				if("${minor}" EQUAL "${curr_max_minor_version}" 
@@ -166,7 +164,7 @@ list_Version_Subdirectories(version_dirs ${package_install_dir})
 if(version_dirs)#scanning local versions  
 	foreach(version IN ITEMS ${version_dirs})
 		string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
-		if(A_VERSION AND NOT (A_VERSION MATCHES "${version}"))
+		if(A_VERSION AND NOT (A_VERSION STREQUAL "${version}"))#there is a match
 			list(GET A_VERSION 0 minor)
 			list(GET A_VERSION 1 patch)
 			if("${minor}" EQUAL "${curr_max_minor_version}"
@@ -202,7 +200,9 @@ if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in 
 		foreach(local_version_dir IN ITEMS ${local_versions})
 			set(VERSION_NUMBER)		
 			string(REGEX REPLACE "^own-([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1\.\\2\.\\3" VERSION_NUMBER ${local_version_dir})
-			if(VERSION_NUMBER AND ${version_string_curr} VERSION_LESS ${VERSION_NUMBER})
+			if(	VERSION_NUMBER
+				AND NOT (VERSION_NUMBER STREQUAL "${local_version_dir}") #there is a match
+				AND ${version_string_curr} VERSION_LESS "${VERSION_NUMBER}")
 				set(version_string_curr ${VERSION_NUMBER})
 			endif()
 		endforeach()
@@ -219,7 +219,7 @@ if(non_local_versions)
 	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
 	set(version_string_curr "0.0.0")
 	foreach(non_local_version_dir IN ITEMS ${non_local_versions})
-		if(${version_string_curr} VERSION_LESS ${non_local_version_dir})
+		if("${version_string_curr}" VERSION_LESS "${non_local_version_dir}")
 			set(version_string_curr ${non_local_version_dir})
 		endif()
 	endforeach()
@@ -373,7 +373,9 @@ endif()
 #no exact version required	
 get_Version_String_Numbers("${version_string}.0" exact_major exact_minor exact_patch)
 foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
-	is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_required})
+	message("version required=${version_required}, exact_major=${exact_major}, exact_minor=${exact_minor}")
+	unset(COMPATIBLE_VERSION)
+	is_Compatible_Version(COMPATIBLE_VERSION ${package} ${exact_major} ${exact_minor} ${version_required})
 	if(NOT COMPATIBLE_VERSION)
 		return()#not compatible
 	endif()

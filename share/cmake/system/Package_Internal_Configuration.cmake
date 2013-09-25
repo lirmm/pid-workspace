@@ -68,7 +68,7 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 				endif()
 				return()				
 			else() #not compatible
-				message(FATAL_ERROR "impossible to find compatible versions regarding versions constraints for package ${package}")
+				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_DEPENDENCY_${dependency}_VERSION}.")
 				return()
 			endif()
 		else()#not an exact version required
@@ -88,7 +88,7 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 					return() # nothing to do more, the current used version is compatible with everything 	
 				endif()
 			else()
-				message(FATAL_ERROR "impossible to find compatible versions regarding versions constraints for package ${package}")
+				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_DEPENDENCY_${dependency}_VERSION}.")
 				return()
 			endif()
 		endif()
