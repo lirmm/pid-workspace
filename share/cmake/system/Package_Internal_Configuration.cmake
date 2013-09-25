@@ -835,7 +835,11 @@ file(APPEND ${file} "#### declaration of package dependencies in ${CMAKE_BUILD_T
 file(APPEND ${file} "set(${package_name}_DEPENDENCIES${MODE_SUFFIX} ${${package_name}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 foreach(a_dep IN ITEMS ${${package_name}_DEPENDENCIES${MODE_SUFFIX}})
 		file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${package_name}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} ${${package_name}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		if(${package_name}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX})
+			file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+		else()
+			file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+		endif()
 		file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX} ${${package_name}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 endforeach()
 

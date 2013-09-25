@@ -6,12 +6,16 @@
 ###
 function(get_Version_String_Numbers version_string major minor patch)
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" A_VERSION "${version_string}")
-list(GET A_VERSION 0 major_vers)
-list(GET A_VERSION 1 minor_vers)
-list(GET A_VERSION 2 patch_vers)
-set(${major} ${major_vers} PARENT_SCOPE)
-set(${minor} ${minor_vers} PARENT_SCOPE)
-set(${patch} ${patch_vers} PARENT_SCOPE)	
+if(A_VERSION AND NOT (A_VERSION MATCHES "${version_string}"))
+	list(GET A_VERSION 0 major_vers)
+	list(GET A_VERSION 1 minor_vers)
+	list(GET A_VERSION 2 patch_vers)
+	set(${major} ${major_vers} PARENT_SCOPE)
+	set(${minor} ${minor_vers} PARENT_SCOPE)
+	set(${patch} ${patch_vers} PARENT_SCOPE)
+else()
+	message(FATAL_ERROR "BUG : corrupted version string : ${version_string}")
+endif()	
 endfunction(get_Version_String_Numbers)
 
 ###
@@ -131,15 +135,15 @@ if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in 
 	if(version_dirs)#scanning local versions  
 		foreach(version IN ITEMS ${version_dirs})
 			string(REGEX REPLACE "^own-${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1" A_VERSION "${version}")
-			if(A_VERSION)
+			if(A_VERSION AND (NOT A_VERSION MATCHES "${version}"))
 				list(GET A_VERSION 0 minor)
 				list(GET A_VERSION 1 patch)
-				if(${minor} EQUAL ${curr_max_minor_version} 
-				AND (${patch} EQUAL ${curr_patch_version} OR ${patch} GREATER ${curr_patch_version}))
+				if("${minor}" EQUAL "${curr_max_minor_version}" 
+				AND ("${patch}" EQUAL "${curr_patch_version}" OR "${patch}" GREATER "${curr_patch_version}"))
 					set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)			
 					#a more recent patch version found with same max minor version
 					set(curr_patch_version ${patch})
-				elseif(${minor} GREATER ${curr_max_minor_version})
+				elseif("${minor}" GREATER "${curr_max_minor_version}")
 					set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
 					#a greater minor version found
 					set(curr_max_minor_version ${minor})
@@ -162,21 +166,21 @@ list_Version_Subdirectories(version_dirs ${package_install_dir})
 if(version_dirs)#scanning local versions  
 	foreach(version IN ITEMS ${version_dirs})
 		string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
-		if(A_VERSION)
+		if(A_VERSION AND NOT (A_VERSION MATCHES "${version}"))
 			list(GET A_VERSION 0 minor)
 			list(GET A_VERSION 1 patch)
-			if(${minor} EQUAL ${curr_max_minor_version} 
-			AND (${patch} EQUAL ${curr_patch_version} OR ${patch} GREATER ${curr_patch_version}))
+			if("${minor}" EQUAL "${curr_max_minor_version}"
+			AND ("${patch}" EQUAL "${curr_patch_version}" OR "${patch}" GREATER "${curr_patch_version}"))
 				set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)			
 				#a more recent patch version found with same max minor version
 				set(curr_patch_version ${patch})
-			elseif(${minor} GREATER ${curr_max_minor_version})
+			elseif("${minor}" GREATER "${curr_max_minor_version}")
 				set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
 				#a greater minor version found
 				set(curr_max_minor_version ${minor})
 				set(curr_patch_version ${patch})	
 			endif()
-		endif(A_VERSION)
+		endif()
 	endforeach()
 endif()
 if(VERSION_HAS_BEEN_FOUND)#at least a good version has been found
