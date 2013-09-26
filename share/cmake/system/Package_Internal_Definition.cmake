@@ -3,7 +3,7 @@
 ########################################################################
 include(Package_Internal_Finding)
 include(Package_Internal_Configuration)
-
+include(Package_Internal_Referencing)
 ##################################################################################
 #################### package management public functions and macros ##############
 ##################################################################################
@@ -33,6 +33,7 @@ CMAKE_DEPENDENT_OPTION(GENERATE_INSTALLER "Package generates an OS installer for
 		         "NOT USE_LOCAL_DEPLOYMENT" OFF)
 
 option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" OFF)
+option(BUILD_PACKAGE_REFERENCE "Write a cmake script file that can be used later to find the package on the network" OFF)
 
 #################################################
 ############ MANAGING build mode ################
@@ -52,34 +53,6 @@ elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 	set ( USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "")
 	
 elseif(${CMAKE_BINARY_DIR} MATCHES build)
-	#################################################################
-	############ resetting rpoject related variables ################
-	#################################################################
-	set(${PROJECT_NAME}_MAIN_AUTHOR CACHE INTERNAL "")
-	set(${PROJECT_NAME}_MAIN_INSTITUTION CACHE INTERNAL "")
-	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS CACHE INTERNAL "")
-	set(${PROJECT_NAME}_DESCRIPTION CACHE INTERNAL "")
-	set(${PROJECT_NAME}_YEARS CACHE INTERNAL "")
-	set(${PROJECT_NAME}_LICENSE CACHE INTERNAL "")
-	set(${PROJECT_NAME}_ADDRESS CACHE INTERNAL "")
-	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
-	# references to package binaries version available must be reset
-	foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
-		foreach(ref_system IN ITEMS ${${PROJECT_NAME}_REFERENCES_${ref_version}})
-			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system} CACHE INTERNAL "")
-		endforeach()
-		set(${PROJECT_NAME}_REFERENCE_${ref_version} CACHE INTERNAL "")
-	endforeach()
-	set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL "")
-	
-	
-	set(${PROJECT_NAME}_MAIN_AUTHOR "${author}" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_MAIN_INSTITUTION "${institution}" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${author}(${institution})" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
 	################################################################################################
 	############ creating custom targets to delegate calls to mode specific targets ################
 	################################################################################################
@@ -160,10 +133,10 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			endif()
 		endif()
 	endforeach()
-
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+
 	return()
 else()	# the build must be done in the build directory
 	message(WARNING "Please run cmake in the build folder of the package ${PROJECT_NAME}")
@@ -174,6 +147,37 @@ endif(${CMAKE_BINARY_DIR} MATCHES release)
 ############ Initializing variables #############
 #################################################
 reset_cached_variables()
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	#################################################################
+	############ resetting project related variables ################
+	#################################################################
+	set(res_string)	
+	foreach(string_el IN ITEMS ${author})
+		set(res_string "${res_string}_${string_el}")
+	endforeach()
+	set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
+	set(res_string)
+	foreach(string_el IN ITEMS ${institution})
+		set(res_string "${res_string}_${string_el}")
+	endforeach()
+	set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
+
+	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
+	# references to package binaries version available must be reset
+	foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
+		foreach(ref_system IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}})
+			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_DEBUG CACHE INTERNAL "")
+		endforeach()
+		set(${PROJECT_NAME}_REFERENCE_${ref_version} CACHE INTERNAL "")
+	endforeach()
+	set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL "")
+endif()
 
 #################################################
 ############ MANAGING generic paths #############
@@ -220,7 +224,17 @@ endfunction(set_Current_Version)
 ############################################################################
 ###
 function(add_Author author institution)
-	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS} "${author}(${institution})" CACHE INTERNAL "")
+	message("avant add authors = ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
+	set(res_string_author)	
+	foreach(string_el IN ITEMS ${author})
+		set(res_string_author "${res_string_author}_${string_el}")
+	endforeach()
+	set(res_string_instit)
+	foreach(string_el IN ITEMS ${institution})
+		set(res_string_instit "${res_string_instit}_${string_el}")
+	endforeach()
+	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS} "${res_string_author}(${res_string_instit})" CACHE INTERNAL "")
+	message("après add authors = ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
 endfunction(add_Author)
 
 
@@ -360,9 +374,6 @@ if(GENERATE_INSTALLER)
 	elseif(APPLE) #OSX platforms
 		#using OSX bundle packager
 		#TODO fill variables and create the custom target package_install
-	elseif(WIN32) #windows platform
-		#using NSIS packager
-		#TODO fill variables and create the custom target package_install
 	endif()
 	
 	if(CPACK_GENERATOR) #there are defined generators
@@ -482,9 +493,22 @@ else(GENERATE_INSTALLER)
 	endif(CMAKE_BUILD_TYPE MATCHES Release)
 endif(GENERATE_INSTALLER)
 
+#########################################################################################################################
+######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
+#########################################################################################################################
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	if(BUILD_PACKAGE_REFERENCE)
+		if(${PROJECT_NAME}_ADDRESS)
+			generate_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake) 
+			#copy the file in the "references" folder of the workspace
+			file(COPY ${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/references)
+			message("The reference file Refer${PROJECT_NAME}.cmake of the package has been generated and copied into the workspace references folder (${WORKSPACE_DIR}/share/cmake/references)")
+		else()
+			message(WARNING "No GIT URL defined, impossible to generate a reference file for the package.")
+		endif()
+	endif(BUILD_PACKAGE_REFERENCE)
+endif()
 endmacro(build_Package)
-
-
 
 ##################################################################################
 ###################### declaration of a library component ########################
