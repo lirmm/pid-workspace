@@ -84,19 +84,23 @@ if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in 
 		set(curr_patch_version 0)
 		foreach(patch IN ITEMS ${version_dirs})
 			string(REGEX REPLACE "^own-${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
-			if(	A_VERSION  AND NOT (A_VERSION MATCHES "${patch}")#there is a match
-				AND ${A_VERSION} GREATER ${curr_patch_version})
+			if(	NOT (A_VERSION STREQUAL "${patch}")#there is a match
+				AND ${A_VERSION} GREATER ${curr_patch_version})#newer patch version
 				set(curr_patch_version ${A_VERSION})
-				set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+				#set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+				set(result true)
 			endif()
 		endforeach()
 	
-		if(VERSION_HAS_BEEN_FOUND)#a good local version has been found
+		if(result)#a good local version has been found
+			message("a local version has been found with hasbeenfound=${VERSION_HAS_BEEN_FOUND}!!")			
+			set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)			
 			document_Version_Strings(TRUE ${package_name} ${major_version} ${minor_version} ${curr_patch_version})
 			return() 	
 		endif()	
+	unset(version_dirs)	
 	endif()
-	unset(version_dirs)
+	
 endif()
 
 #no adequate local version found OR local version not used
@@ -105,14 +109,15 @@ if(version_dirs)#scanning non local versions
 	set(curr_patch_version 0)		
 	foreach(patch IN ITEMS ${version_dirs})
 		string(REGEX REPLACE "^${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
-		if(	A_VERSION AND NOT (A_VERSION STREQUAL "${patch}")#there is a match
-			AND ${A_VERSION} GREATER ${curr_patch_version})
+		if(	NOT (A_VERSION STREQUAL "${patch}")#there is a match
+			AND ${A_VERSION} GREATER ${curr_patch_version})#newer patch version
 			set(curr_patch_version ${A_VERSION})
-			set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+			set(result true)	
 		endif()
 	endforeach()
 	
-	if(${VERSION_HAS_BEEN_FOUND})#at least a good version has been found
+	if(result)#at least a good version has been found
+		set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
 		document_Version_Strings(FALSE ${package_name} ${major_version} ${minor_version} ${curr_patch_version})
 		return()
 	endif()
@@ -125,7 +130,6 @@ function(check_Best_Version 	VERSION_HAS_BEEN_FOUND
 				package_name package_install_dir major_version minor_version)#major version cannot be increased
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 
-
 if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in USE_LOCAL_DEPLOYMENT mode (e.g. DEVELOPMENT VERSIONS HAVE GREATER PRIORITIES)
 	set(curr_max_minor_version ${minor_version})
 	set(curr_patch_version 0)
@@ -133,16 +137,16 @@ if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in 
 	if(version_dirs)#scanning local versions  
 		foreach(version IN ITEMS ${version_dirs})
 			string(REGEX REPLACE "^own-${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1" A_VERSION "${version}")
-			if(A_VERSION AND (NOT A_VERSION STREQUAL "${version}"))#there is a match
+			if(NOT (A_VERSION STREQUAL "${version}"))#there is a match
 				list(GET A_VERSION 0 minor)
 				list(GET A_VERSION 1 patch)
 				if("${minor}" EQUAL "${curr_max_minor_version}" 
 				AND ("${patch}" EQUAL "${curr_patch_version}" OR "${patch}" GREATER "${curr_patch_version}"))
-					set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)			
+					set(result true)		
 					#a more recent patch version found with same max minor version
 					set(curr_patch_version ${patch})
 				elseif("${minor}" GREATER "${curr_max_minor_version}")
-					set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+					set(result true)	
 					#a greater minor version found
 					set(curr_max_minor_version ${minor})
 					set(curr_patch_version ${patch})	
@@ -150,7 +154,8 @@ if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in 
 			endif()
 		endforeach()
 	
-		if(VERSION_HAS_BEEN_FOUND)#a good local version has been found
+		if(result)#a good local version has been found
+			set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
 			document_Version_Strings(TRUE ${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
 			return() 	
 		endif()	
@@ -164,16 +169,16 @@ list_Version_Subdirectories(version_dirs ${package_install_dir})
 if(version_dirs)#scanning local versions  
 	foreach(version IN ITEMS ${version_dirs})
 		string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
-		if(A_VERSION AND NOT (A_VERSION STREQUAL "${version}"))#there is a match
+		if(NOT (A_VERSION STREQUAL "${version}"))#there is a match
 			list(GET A_VERSION 0 minor)
 			list(GET A_VERSION 1 patch)
 			if("${minor}" EQUAL "${curr_max_minor_version}"
 			AND ("${patch}" EQUAL "${curr_patch_version}" OR "${patch}" GREATER "${curr_patch_version}"))
-				set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)			
+				set(result true)			
 				#a more recent patch version found with same max minor version
 				set(curr_patch_version ${patch})
 			elseif("${minor}" GREATER "${curr_max_minor_version}")
-				set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+				set(result true)
 				#a greater minor version found
 				set(curr_max_minor_version ${minor})
 				set(curr_patch_version ${patch})	
@@ -181,7 +186,8 @@ if(version_dirs)#scanning local versions
 		endif()
 	endforeach()
 endif()
-if(VERSION_HAS_BEEN_FOUND)#at least a good version has been found
+if(result)#at least a good version has been found
+	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
 	document_Version_Strings(FALSE ${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
 endif()
 endfunction(check_Best_Version)
@@ -252,6 +258,8 @@ if(idx EQUAL -1)#the component is NOT an application
 				find_file(PATH_TO_HEADER NAMES ${header} PATHS ${package_path}/include/${${package_name}_${component_name}_HEADER_DIR_NAME} NO_DEFAULT_PATH)
 				if(PATH_TO_HEADER-NOTFOUND)
 					return()
+				else()
+					set(PATH_TO_HEADER CACHE INTERNAL "")
 				endif()
 			endforeach()
 		else()
@@ -266,6 +274,8 @@ if(idx EQUAL -1)#the component is NOT an application
 					PATHS ${package_path}/lib NO_DEFAULT_PATH)
 			if(PATH_TO_LIB-NOTFOUND)
 				return()
+			else()
+				set(PATH_TO_LIB CACHE INTERNAL "")
 			endif()			
 		endif()
 		set(${COMPONENT_ELEMENT_NOTFOUND} FALSE PARENT_SCOPE)
@@ -279,6 +289,8 @@ else()#the component is an application
 				PATHS ${package_path}/bin NO_DEFAULT_PATH)
 		if(PATH_TO_EXE-NOTFOUND)
 			return()
+		else()
+			set(PATH_TO_EXE CACHE INTERNAL "")
 		endif()
 		set(${COMPONENT_ELEMENT_NOTFOUND} FALSE  PARENT_SCOPE)
 	else()

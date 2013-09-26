@@ -52,7 +52,37 @@ elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 	set ( USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "")
 	
 elseif(${CMAKE_BINARY_DIR} MATCHES build)
-
+	#################################################################
+	############ resetting rpoject related variables ################
+	#################################################################
+	set(${PROJECT_NAME}_MAIN_AUTHOR CACHE INTERNAL "")
+	set(${PROJECT_NAME}_MAIN_INSTITUTION CACHE INTERNAL "")
+	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DESCRIPTION CACHE INTERNAL "")
+	set(${PROJECT_NAME}_YEARS CACHE INTERNAL "")
+	set(${PROJECT_NAME}_LICENSE CACHE INTERNAL "")
+	set(${PROJECT_NAME}_ADDRESS CACHE INTERNAL "")
+	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
+	# references to package binaries version available must be reset
+	foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
+		foreach(ref_system IN ITEMS ${${PROJECT_NAME}_REFERENCES_${ref_version}})
+			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system} CACHE INTERNAL "")
+		endforeach()
+		set(${PROJECT_NAME}_REFERENCE_${ref_version} CACHE INTERNAL "")
+	endforeach()
+	set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL "")
+	
+	
+	set(${PROJECT_NAME}_MAIN_AUTHOR "${author}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_MAIN_INSTITUTION "${institution}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${author}(${institution})" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
+	################################################################################################
+	############ creating custom targets to delegate calls to mode specific targets ################
+	################################################################################################
 	add_custom_target(build ALL
 		COMMAND ${CMAKE_COMMAND} -E  echo Building ${PROJECT_NAME} in Debug mode
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
@@ -85,10 +115,55 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			file(APPEND ${OPTIONS_FILE} ${AN_OPTION})
 		endif()
 	endforeach()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
+	
 	#calling cmake for each mode 
 	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
 	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
+
+	#now getting options specific to debug and release modes
+	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
+	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
+	foreach(line IN ITEMS ${LINES_DEBUG})
+		if(NOT ${line} STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
+			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
+			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
+				string(FIND LINES ${line} POS)			
+				if(POS EQUAL -1)#not found
+					string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
+					list(GET AN_OPTION 0 var_name)
+					list(GET AN_OPTION 1 var_value)
+					list(GET AN_OPTION 2 var_type)				
+					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
+				endif()
+			else()#match is OK
+				set(last_comment "${COMMENT}")
+			endif()
+		endif()
+	endforeach()
+	foreach(line IN ITEMS ${LINES_RELEASE})
+		if(NOT ${line} STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
+			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
+			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
+				string(FIND LINES ${line} POS)		
+				string(FIND LINES_DEBUG ${line} POS_DEB)	
+				if(POS EQUAL -1 AND POS_DEB EQUAL -1)#not found
+					string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
+					list(GET AN_OPTION 0 var_name)
+					list(GET AN_OPTION 1 var_value)
+					list(GET AN_OPTION 2 var_type)				
+					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
+				endif()
+			else()#match is OK
+				set(last_comment "${COMMENT}")
+			endif()
+		endif()
+	endforeach()
+
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
 	return()
 else()	# the build must be done in the build directory
 	message(WARNING "Please run cmake in the build folder of the package ${PROJECT_NAME}")
@@ -99,16 +174,6 @@ endif(${CMAKE_BINARY_DIR} MATCHES release)
 ############ Initializing variables #############
 #################################################
 reset_cached_variables()
-
-set(${PROJECT_NAME}_MAIN_AUTHOR "${author}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_MAIN_INSTITUTION "${institution}" CACHE INTERNAL "")
-
-set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${author}(${institution})" CACHE INTERNAL "")
-
-set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
-set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
-set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
 
 #################################################
 ############ MANAGING generic paths #############
@@ -1340,28 +1405,10 @@ endfunction(reset_component_cached_variables)
 function(reset_cached_variables)
 
 #resetting general info about the package : only list are reset
-set(${PROJECT_NAME}_MAIN_AUTHOR CACHE INTERNAL "")
-set(${PROJECT_NAME}_MAIN_INSTITUTION CACHE INTERNAL "")
-set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS CACHE INTERNAL "")
-set(${PROJECT_NAME}_DESCRIPTION CACHE INTERNAL "")
-set(${PROJECT_NAME}_YEARS CACHE INTERNAL "")
-set(${PROJECT_NAME}_LICENSE CACHE INTERNAL "")
-set(${PROJECT_NAME}_ADDRESS CACHE INTERNAL "")
-set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
 set (${PROJECT_NAME}_VERSION_MAJOR CACHE INTERNAL "")
 set (${PROJECT_NAME}_VERSION_MINOR CACHE INTERNAL "")
 set (${PROJECT_NAME}_VERSION_PATCH CACHE INTERNAL "")
 set (${PROJECT_NAME}_VERSION CACHE INTERNAL "")
-
-
-# references to package binaries version available must be reset
-foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
-	foreach(ref_system IN ITEMS ${${PROJECT_NAME}_REFERENCES_${ref_version}})
-		set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system} CACHE INTERNAL "")
-	endforeach()
-	set(${PROJECT_NAME}_REFERENCE_${ref_version} CACHE INTERNAL "")
-endforeach()
-set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL "")
 
 # package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
@@ -1409,6 +1456,6 @@ set(GENERATE_INSTALLER CACHE BOOL FALSE FORCE)
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD CACHE BOOL FALSE FORCE)
 #include the cmake script that sets the options coming from the global build configuration
 include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
-message("workspace path is : ${WORKSPACE_DIR}")
+
 endfunction(reset_Mode_Cache_Options)
 
