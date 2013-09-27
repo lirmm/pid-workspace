@@ -242,24 +242,26 @@ foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
 		if(${package}_DEPENDENCIES${build_mode_suffix})
 			resolve_Package_Dependencies(${dep_pack} "${build_mode_suffix}")#recursion : resolving dependencies for each package dependency
 		endif()
-	else() #package dependency not resolved 
-		list(APPEND ${package}_NOT_FOUND_DEPS ${dep_pack})		
 	endif()
 endforeach()
 
 # 2) for not found package
-if(${package}_NOT_FOUND_DEPS)
-	message("there are not found dependencies !!")
-	foreach(not_found_dep_pack IN ITEMS ${${package}_NOT_FOUND_DEPS})
-		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-			message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. Automatic download of package not supported yet")#TODO
-			return()
-		else()	
-			message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
-			return()
-		endif()
-	endforeach()
+need_Install_Packages(INSTALL_REQUIRED)
+if(INSTALL_REQUIRED)
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+		message(INFO "Getting required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}")	
+		install_Required_Packages(INSTALLED_PACKAGES)
+		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
+			resolve_Package_Dependencies(${installed} "${build_mode_suffix}")
+		endforeach()
+	else()	
+		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
+		return()
+	endif()
+	
+
 endif()
+
 endfunction(resolve_Package_Dependencies)
 
 ###

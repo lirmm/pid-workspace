@@ -207,6 +207,8 @@ endif()
 
 endmacro(declare_PID_Component)
 
+### API : install_PID_Required_Package	(	PACKAGE name [VERSION version_string])
+###TODO 
 
 ### API : declare_PID_Package_Dependency (	PACKAGE name 
 #						<EXTERNAL path_to_dependency [VERSION version_string]

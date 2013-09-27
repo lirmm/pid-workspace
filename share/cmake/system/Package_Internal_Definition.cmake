@@ -273,11 +273,14 @@ endif()
 
 # from here only direct dependencies have been satisfied
 # 0) if there are packages to install it means that there are some unresolved required dependencies
-if(${PROJECT_NAME}_TOINSTALL_PACKAGES)
+need_Install_Packages(INSTALL_REQUIRED)
+if(INSTALL_REQUIRED)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. Automatic download of package not supported yet")#TODO
-		return()
-	else()	
+		message(INFO "Getting required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}")
+		set(INSTALLED_PACKAGES)		
+		install_Required_Packages(INSTALLED_PACKAGES)
+		message(INFO "Automatically installed packages : ${INSTALLED_PACKAGES}")
+	else()
 		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
@@ -1465,7 +1468,7 @@ foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
 	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
 endforeach()
 set(${PROJECT_NAME}_ALL_USED_PACKAGES CACHE INTERNAL "")
-set(${PROJECT_NAME}_TOINSTALL_PACKAGES CACHE INTERNAL "")
+reset_To_Install_Packages()
 endfunction(reset_cached_variables)
 
 function(reset_Mode_Cache_Options)
