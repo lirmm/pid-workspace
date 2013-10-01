@@ -17,6 +17,7 @@ macro(declare_Package author institution year license address description)
 #################################################
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the package
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using common find modules of the workspace
 
 include(CMakeDependentOption)
 option(BUILD_EXAMPLES "Package builds examples" ON)
