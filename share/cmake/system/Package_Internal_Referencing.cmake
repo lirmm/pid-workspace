@@ -199,34 +199,32 @@ if(USE_SOURCES) #package sources reside in the workspace
 		deploy_Source_Package(${package}) # case when the sources exist but haven't been installed yet (should never happen)
 	endif()
 else()#using references
-include(Refer${package}.cmake)
-# listing available binaries of the package and searching if there is any "good version" regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number 
-set(PACKAGE_BINARY_DEPLOYED)
-if(NOT NO_VERSION)
-	deploy_Binary_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
-else()
-	deploy_Binary_Package(PACKAGE_BINARY_DEPLOYED ${package})
-endif()
-if(PACKAGE_BINARY_DEPLOYED) # if there is ONE adequate reference, downloading and installing it
-	set(${INSTALL_OK} TRUE PARENT_SCOPE)
-else()# otherwise, trying to "git clone" the package source (if it can be accessed)
-set(DEPLOYED)
-deploy_Package_Repository(DEPLOYED ${package})
-if(DEPLOYED) # doing the same as for the USE_SOURCES step
-	if(NOT NO_VERSION)
-		deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
+	include(Refer${package}.cmake)
+	set(PACKAGE_BINARY_DEPLOYED)
+	if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number 
+		deploy_Binary_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
+	else()# deploying the most up to date version
+		deploy_Binary_Package(PACKAGE_BINARY_DEPLOYED ${package})
+	endif()
+	if(PACKAGE_BINARY_DEPLOYED) # if there is ONE adequate reference, downloading and installing it
+		set(${INSTALL_OK} TRUE PARENT_SCOPE)
+	else()# otherwise, trying to "git clone" the package source (if it can be accessed)
+	set(DEPLOYED)
+	deploy_Package_Repository(DEPLOYED ${package})
+	if(DEPLOYED) # doing the same as for the USE_SOURCES step
+		if(NOT NO_VERSION)
+			deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
+		else()
+			deploy_Source_Package(SOURCE_DEPLOYED ${package})
+		endif()
+		if(NOT SOURCE_DEPLOYED)
+			message(SEND_ERROR "Install : impossible to build the package sources ${package}. Try \"by hand\".")
+		endif()
 	else()
-		deploy_Source_Package(SOURCE_DEPLOYED ${package})
+		message(SEND_ERROR "Install : impossible to locate source repository of package ${package}")
 	endif()
-	if(NOT SOURCE_DEPLOYED)
-		message(SEND_ERROR "Install : impossible to build the package sources ${package}. Try \"by hand\".")
-	endif()
-else()
-	message(SEND_ERROR "Install : impossible to locate source repository of package ${package}")
-endif()
 
 endif()
-
 endfunction(install_Package)
 
 
@@ -247,18 +245,156 @@ endif()
 endfunction(deploy_Package_Repository)
 
 
-### TODO
-function(deploy_Binary_Package package)
+###
+function(get_Available_Binary_Package_Versions package list_of_versions)
+
+#configuring target system
+if(UNIX AND NOT APPLE)
+	set(curr_system linux)
+elseif(APPLE)
+	set(curr_system macosx)
+else()
+	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
+	return()
+endif()
+# listing available binaries of the package and searching if there is any "good version"
+set(available_binary_package_version) 
+foreach(ref_version IN ITEMS ${${package}_REFERENCES})
+	foreach(ref_system IN ITEMS ${${package}_REFERENCE_${ref_version}})
+		if(${ref_system} STREQUAL ${curr_system})		
+			list(APPEND available_binary_package_version ${ref_version})
+		endif()
+	endforeach()
+endforeach()
+if(NOT available_binary_package_version)
+	return()#nothing to do
+endif()
+list(REMOVE_DUPLICATES available_binary_package_version)
+set(${list_of_versions} ${available_binary_package_version} PARENT_SCOPE)
+endfunction(get_Available_Binary_Package_Versions)
 
 
+###
+function(deploy_Binary_Package DEPLOYED package)
+set(available_versions "")
+get_Available_Binary_Package_Versions(${package} available_versions)
+if(NOT available_versions)
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+endif()
+
+# taking the most up to date version
+set(curr_version 0.0.0)
+foreach(version IN ITEMS ${available_versions})
+	if(curr_version VERSION_LESS ${version})
+		set(curr_version ${version})
+	endif()
+endforeach()
+
+set(INSTALLED FALSE)
+download_And_Install_Binary_Package(INSTALLED ${package} ${curr_version})
+if(INSTALLED)
+	set(${DEPLOYED} TRUE PARENT_SCOPE)
+else()
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+endif()
 endfunction(deploy_Binary_Package)
 
 
-### TODO
-function(deploy_Binary_Package_Version package VERSION_MIN EXACT)
+###
+function(deploy_Binary_Package_Version DEPLOYED package VERSION_MIN EXACT)
+set(available_versions "")
+get_Available_Binary_Package_Versions(${package} available_versions)
+if(NOT available_versions)
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+endif()
 
+# taking the adequate version
+string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN})
+list(GET REFVNUMBERS 0 ref_major)
+list(GET REFVNUMBERS 1 ref_minor)
 
+set(INSTALLED FALSE)
+if(EXACT)
+	set(curr_patch_version -1)
+	foreach(version IN ITEMS ${available_versions})
+		string(REGEX REPLACE "^${ref_major}\\.${ref_minor}\\.([0-9]+)$" "\\1" PATCH ${version})
+		if(NOT ${PATCH} STREQUAL ${version})#it matched
+			if(${PATCH} GREATER ${curr_patch_version})
+				set(curr_patch_version ${PATCH})
+			endif()	
+		endif()
+	endforeach()
+	if(${curr_patch_version} GREATER -1)
+		download_And_Install_Binary_Package(INSTALLED ${package} "${VERSION_MIN}.${curr_patch_version}")
+	endif()
+else()
+	set(curr_patch_version -1)
+	set(curr_min_minor_version ${ref_minor})
+	foreach(version IN ITEMS ${available_versions})
+		string(REGEX REPLACE "^${ref_major}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" VNUMBERS ${version})
+		if(NOT ${PATCH} STREQUAL ${version})#it matched
+			list(GET VNUMBERS 0 compare_minor)
+			list(GET VNUMBERS 1 compare_patch)
+			if(${compare_minor} GREATER ${curr_min_minor_version})
+				set(curr_min_minor_version ${compare_minor})
+				set(curr_patch_version ${compare_patch})
+			elseif(${compare_minor} EQUAL ${curr_min_minor_version}
+				AND ${compare_patch} GREATER ${curr_patch_version})
+				set(curr_patch_version ${compare_patch})
+			endif()
+
+		endif()
+	endforeach()
+	if(${curr_patch_version} GREATER -1)#at least one match
+		download_And_Install_Binary_Package(INSTALLED ${package} "${ref_major}.${curr_min_minor_version}.${curr_patch_version}")
+	endif()
+endif()
+if(INSTALLED)
+	set(${DEPLOYED} TRUE PARENT_SCOPE)
+else()
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+endif()
 endfunction(deploy_Binary_Package_Version)
+
+###
+function(download_And_Install_Binary_Package INSTALLED package version_string)
+if(UNIX AND NOT APPLE)
+	set(curr_system linux)
+elseif(APPLE)
+	set(curr_system macosx)
+endif()
+# downloading the binary package
+set(download_url ${${package}_REFERENCE_${version_string}_${curr_system}})
+set(download_url_dbg ${${package}_REFERENCE_${version_string}_${curr_system}_DEBUG})
+get_filename_component(thefile ${download_url} NAME)
+get_filename_component(thefile-dbg ${download_url_dbg} NAME)
+
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${thefile} STATUS res)
+list(GET res 0 numeric_error)
+file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${thefile-dbg} STATUS res-dbg)
+list(GET res-dbg 0 numeric_error_dbg)
+
+if((NOT numeric_error EQUAL 0) OR (NOT  numeric_error_dbg EQUAL 0))#there is an error
+	set(${INSTALLED} FALSE PARENT_SCOPE)
+	message(SEND_ERROR "install : problem when downloading binary version ${version_string} of package ${package} "
+	return()
+endif()
+# installing
+if(UNIX AND NOT APPLE)
+	execute_process(COMMAND dpkg -i ${CMAKE_BINARY_DIR}/share/${thefile}  --instdir=${WORKSPACE_DIR}/packages/${package}
+                  	COMMAND dpkg -i ${CMAKE_BINARY_DIR}/share/${thefile-dbg} --instdir=${WORKSPACE_DIR}/packages/${package}
+                  	WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/)	
+elseif(APPLE)
+	#TODO
+endif()
+
+# post install configuration of the workspace 
+
+execute_process(COMMAND ${CMAKE_COMMAND} -P ${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake
+          	WORKING_DIRECTORY ${WORKSPACE_DIR})	
+
+endfunction(download_And_Install_Binary_Package)
+
 
 
 ### 
@@ -292,7 +428,7 @@ if(NOT res) #no version available => BUG
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
-string(REGEX REPLACE "^([0-9]+)\.([0-9]+)$)" "\\1;\\2" REFVNUMBERS ${VERSION_MIN})
+string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN})
 list(GET REFVNUMBERS 0 ref_major)
 list(GET REFVNUMBERS 1 ref_minor)
 
