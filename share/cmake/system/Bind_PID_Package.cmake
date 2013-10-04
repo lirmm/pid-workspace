@@ -35,6 +35,10 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS_DEBUG})
 	if(CONFIG_${ext_dep})#the path has been set by the user with -DCONFIG_<package>=<path> argument
 		set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG ${CONFIG_${ext_dep}})#changing the reference path
 	else()
+		is_A_System_Reference_Path(${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG} RES)		
+		if(NOT RES)#by default we consider that the workspace contains installed external projects in a dedicated folder for it if the external package has not been declared as installed by default in system directories
+			set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG ${WORKSPACE_DIR}/external/${ext_dep})
+		endif()
 		list(APPEND NOT_DEFINED_EXT_DEPS_DEBUG ${ext_dep})
 	endif()
 endforeach()
@@ -42,20 +46,23 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS})
 	if(CONFIG_${ext_dep})#the path has been set by the user with -DCONFIG_<package>=<path> argument
 		set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH ${CONFIG_${ext_dep}})#changing the reference path
 	else()
+		is_A_System_Reference_Path(${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH} RES)		
+		if(NOT RES)
+			set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH ${WORKSPACE_DIR}/external/${ext_dep})
+		endif()
 		list(APPEND NOT_DEFINED_EXT_DEPS ${ext_dep})
 	endif()
 endforeach()
-
 if(NOT_DEFINED_EXT_DEPS)
-	message("External packages whose path must be resolved by hand (using -DCONFIG_<package>=<path>)")
+	message(WARNING "Following external packages path has been automatically set. To resolve their path by hand use -DCONFIG_<package>=<path> option when calling this script")
 	foreach(ext_dep IN ITEMS ${NOT_DEFINED_EXT_DEPS_DEBUG})
 		message("DEBUG mode : ${ext_dep} with path = ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG}")
 	endforeach()
 	foreach(ext_dep IN ITEMS ${NOT_DEFINED_EXT_DEPS})
 		message("RELEASE mode : ${ext_dep} with path = ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH}")
 	endforeach()
-	return()
 endif()
+
 # 3) replacing "once and for all" (until next rebind call) these dependencies in the use file
 set(theusefile ${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_VERSION}/share/Use${PACKAGE_NAME}-${PACKAGE_VERSION}.cmake)
 file(WRITE ${theusefile} "")#resetting the file content

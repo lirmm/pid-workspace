@@ -389,8 +389,12 @@ elseif(APPLE)
 endif()
 
 # post install configuration of the workspace 
-
-execute_process(COMMAND ${CMAKE_COMMAND} -P ${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake
+execute_process(COMMAND ${CMAKE_COMMAND} 
+			-DWORKSPACE_DIR=${WORKSPACE_DIR} 
+			-DPACKAGE_NAME=${package} 
+			-DPACKAGE_VERSION=${version_string}
+			-DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=${REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD}
+			-P ${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake
           	WORKING_DIRECTORY ${WORKSPACE_DIR})	
 
 endfunction(download_And_Install_Binary_Package)

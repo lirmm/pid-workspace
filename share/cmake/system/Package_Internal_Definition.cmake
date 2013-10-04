@@ -278,7 +278,7 @@ need_Install_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
 		message(INFO "Getting required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}")
-		set(INSTALLED_PACKAGES)		
+		set(INSTALLED_PACKAGES "")		
 		install_Required_Packages(INSTALLED_PACKAGES)
 		message(INFO "Automatically installed packages : ${INSTALLED_PACKAGES}")
 	else()
@@ -1486,4 +1486,21 @@ set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD CACHE BOOL FALSE FORCE)
 include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
 
 endfunction(reset_Mode_Cache_Options)
+
+###
+function(is_A_System_Reference_Path path IS_SYSTEM)
+
+if(UNIX AND NOT APPLE)
+	if(path STREQUAL / OR PATH STREQUAL /usr OR PATH STREQUAL /usr/local)
+		set(${IS_SYSTEM} TRUE PARENT_SCOPE)
+	else()
+		set(${IS_SYSTEM} FALSE PARENT_SCOPE)
+	endif()
+
+elseif(APPLE)
+	#TODO
+endif()
+
+endfunction(is_A_System_Reference_Path)
+
 
