@@ -24,7 +24,6 @@ foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
 endforeach()
 endfunction(generate_Reference_File)
 
-
 ###
 function(add_To_Install_Package_Specification package version version_exact)
 list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES ${package} INDEX)
@@ -53,7 +52,6 @@ else()#package already required as "to install"
 endif()
 endfunction(add_To_Install_Package_Specification)
 
-
 ###
 function(reset_To_Install_Packages)
 foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_PACKAGES})
@@ -72,6 +70,7 @@ else()
 	set(${NEED} FALSE PARENT_SCOPE)
 endif()
 endfunction(need_Install_Packages)
+
 
 ###
 function(resolve_Required_Package_Version version_possible min_version is_exact package)
@@ -107,6 +106,7 @@ set(${is_exact} ${CURR_EXACT} PARENT_SCOPE)
 endfunction(resolve_Required_Package_Version)
 
 
+
 ### root function for launching automatic installation process
 function(install_Required_Packages INSTALLED_PACKAGES)
 set(successfully_installed)
@@ -128,7 +128,6 @@ if(not_installed)
 endif()
 endfunction()
 
-
 ###
 function(package_Source_Exists_In_Workspace EXIST RETURNED_PATH package)
 set(res FALSE)
@@ -146,7 +145,7 @@ if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
 set(res TRUE)
 endif()
 set(${EXIST} ${res} PARENT_SCOPE)
-endfunction(package_Source_Exists_In_Workspace) 
+endfunction(package_Reference_Exists_In_Workspace) 
 
 ###
 function(get_Package_References LIST_OF_REFS package)
@@ -156,7 +155,8 @@ if(	${res} STREQUAL NOTFOUND) #if there is no component defined for the package 
 	return()
 endif()
 set(${EXIST} ${FALSE} PARENT_SCOPE)
-endfunction()
+endfunction(get_Package_References)
+
 
 ###
 function(install_Package INSTALL_OK package)
@@ -376,7 +376,7 @@ list(GET res-dbg 0 numeric_error_dbg)
 
 if((NOT numeric_error EQUAL 0) OR (NOT  numeric_error_dbg EQUAL 0))#there is an error
 	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message(SEND_ERROR "install : problem when downloading binary version ${version_string} of package ${package} "
+	message(SEND_ERROR "install : problem when downloading binary version ${version_string} of package ${package}")
 	return()
 endif()
 # installing
@@ -398,8 +398,6 @@ execute_process(COMMAND ${CMAKE_COMMAND}
           	WORKING_DIRECTORY ${WORKSPACE_DIR})	
 
 endfunction(download_And_Install_Binary_Package)
-
-
 
 ### 
 function(deploy_Source_Package DEPLOYED package)
@@ -496,11 +494,9 @@ else()
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 endif()
 
-# now go to the git tag vmajor.minor.patch (git checkout)
-
-# build and install the version (cd build > cmake .. -D... > make build) usig cmake -E chdir command
 endfunction(deploy_Source_Package_Version)
 
+###
 function(build_And_Install_Package DEPLOYED package version)
 
 # 0) memorizing the current branc the user is working with
@@ -536,5 +532,6 @@ else()
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 endif()
 endfunction(build_And_Install_Package)
+
 
 
