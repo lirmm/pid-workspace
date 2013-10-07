@@ -80,10 +80,8 @@ if(EXIST)
 		
 	else(VERSION_HAS_BEEN_FOUND)#no adequate version found
 		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-			if(the-testpack-a_FIND_REQUIRED)		
-				set(${PROJECT_NAME}_TOINSTALL_PACKAGES ${${PROJECT_NAME}_TOINSTALL_PACKAGES} the-testpack-a CACHE INTERNAL "")
-				set(${PROJECT_NAME}_TOINSTALL_PACKAGE_the-testpack-a_VERSION "${the-testpack-a_FIND_VERSION_MAJOR}.${the-testpack-a_FIND_VERSION_MINOR}" CACHE INTERNAL "")
-				set(${PROJECT_NAME}_TOINSTALL_PACKAGE_the-testpack-a_VERSION_EXACT ${the-testpack-a_FIND_VERSION_EXACT} CACHE INTERNAL "")
+			if(the-testpack-a_FIND_REQUIRED)
+				add_To_Install_Package_Specification(the-testpack-a "${the-testpack-a_FIND_VERSION_MAJOR}.${the-testpack-a_FIND_VERSION_MINOR}" ${the-testpack-a_FIND_VERSION_EXACT})
 			endif()
 		else()
 			exitFindScript("The package the-testpack-a with version ${the-testpack-a_FIND_VERSION} cannot be found in the workspace")
@@ -92,8 +90,8 @@ if(EXIST)
 		
 else(EXIST) #if the directory does not exist it means the package cannot be found
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-		if(the-testpack-a_FIND_REQUIRED)	
-			set(${PROJECT_NAME}_TOINSTALL_PACKAGES ${${PROJECT_NAME}_TOINSTALL_PACKAGES} the-testpack-a CACHE INTERNAL "")
+		if(the-testpack-a_FIND_REQUIRED)
+			add_To_Install_Package_Specification(the-testpack-a "" FALSE)
 		endif()
 	else()
 		exitFindScript("The required package the-testpack-a cannot be found in the workspace")

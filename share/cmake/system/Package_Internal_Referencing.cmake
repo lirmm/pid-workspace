@@ -112,6 +112,7 @@ function(install_Required_Packages INSTALLED_PACKAGES)
 set(successfully_installed)
 set(not_installed)
 foreach(package IN ITEMS ${${PROJECT_NAME}_TOINSTALL_PACKAGES})
+	message("DEBUG : install required packages : ${package}")
 	set(INSTALL_OK FALSE)
 	install_Package(INSTALL_OK ${package})
 	if(INSTALL_OK)
@@ -193,14 +194,18 @@ else()
 endif()
 
 if(USE_SOURCES) #package sources reside in the workspace
+	set(SOURCE_DEPLOYED FALSE)
 	if(NOT NO_VERSION)
-		deploy_Source_Package_Version(${package} ${VERSION_MIN} ${EXACT})
+		deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
 	else()
-		deploy_Source_Package(${package}) # case when the sources exist but haven't been installed yet (should never happen)
+		deploy_Source_Package(SOURCE_DEPLOYED ${package}) # case when the sources exist but haven't been installed yet (should never happen)
+	endif()
+	if(NOT SOURCE_DEPLOYED)
+		message(SEND_ERROR "Install : impossible to build the package sources ${package}. Try \"by hand\".")
 	endif()
 else()#using references
 	include(Refer${package}.cmake)
-	set(PACKAGE_BINARY_DEPLOYED)
+	set(PACKAGE_BINARY_DEPLOYED FALSE)
 	if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number 
 		deploy_Binary_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
 	else()# deploying the most up to date version
@@ -209,21 +214,22 @@ else()#using references
 	if(PACKAGE_BINARY_DEPLOYED) # if there is ONE adequate reference, downloading and installing it
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 	else()# otherwise, trying to "git clone" the package source (if it can be accessed)
-	set(DEPLOYED)
-	deploy_Package_Repository(DEPLOYED ${package})
-	if(DEPLOYED) # doing the same as for the USE_SOURCES step
-		if(NOT NO_VERSION)
-			deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
+		set(DEPLOYED FALSE)
+		deploy_Package_Repository(DEPLOYED ${package})
+		if(DEPLOYED) # doing the same as for the USE_SOURCES step
+			set(SOURCE_DEPLOYED FALSE)		
+			if(NOT NO_VERSION)
+				deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
+			else()
+				deploy_Source_Package(SOURCE_DEPLOYED ${package})
+			endif()
+			if(NOT SOURCE_DEPLOYED)
+				message(SEND_ERROR "Install : impossible to build the package sources ${package}. Try \"by hand\".")
+			endif()
 		else()
-			deploy_Source_Package(SOURCE_DEPLOYED ${package})
+			message(SEND_ERROR "Install : impossible to locate source repository of package ${package}")
 		endif()
-		if(NOT SOURCE_DEPLOYED)
-			message(SEND_ERROR "Install : impossible to build the package sources ${package}. Try \"by hand\".")
-		endif()
-	else()
-		message(SEND_ERROR "Install : impossible to locate source repository of package ${package}")
 	endif()
-
 endif()
 endfunction(install_Package)
 
@@ -400,32 +406,96 @@ execute_process(COMMAND ${CMAKE_COMMAND}
 endfunction(download_And_Install_Binary_Package)
 
 ### 
-function(deploy_Source_Package DEPLOYED package)
-	set(ERROR_OCCURRED)
+
+function(build_And_Install_Source DEPLOYED package version)
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} .. -DBUILD_EXAMPLES:BOOL=OFF -DBUILD_WITH_PRINT_MESSAGES:BOOL=OFF -DUSE_LOCAL_DEPLOYMENT:BOOL=OFF -DGENERATE_INSTALLER:BOOL=OFF -DBUILD_LATEX_API_DOC:BOOL=OFF -DBUILD_AND_RUN_TESTS:BOOL=OFF -DBUILD_PACKAGE_REFERENCE:BOOL=OFF -DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON
+		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_WITH_PRINT_MESSAGES:BOOL=OFF -D USE_LOCAL_DEPLOYMENT:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D BUILD_PACKAGE_REFERENCE:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..
+		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+		ERROR_VARIABLE res OUTPUT_QUIET
+		)
+	message("CMAKE error is : ${res}")
+	execute_process(
 		COMMAND ${CMAKE_BUILD_TOOL} build
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-		ERROR_VARIABLE ERROR_OCCURRED
-		OUTPUT_QUIET)
-
-	if(ERROR_OCCURRED)
+		ERROR_VARIABLE res OUTPUT_QUIET		
+		)
+	message("MAKE error is : ${res}")
+	if(EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
+		set(${DEPLOYED} TRUE PARENT_SCOPE)
+	else()
+		message ("DOES NOT EXIST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
-		return()
 	endif()
-	set(${DEPLOYED} TRUE PARENT_SCOPE)
-endfunction(deploy_Source_Package)
 
+endfunction(build_And_Install_Source)
+
+###
+function(deploy_Source_Package DEPLOYED package)
+# go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number 
+execute_process(
+		COMMAND git tag -l v*
+		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
+		OUTPUT_VARIABLE res
+		)
+
+if(NOT res) #no version available => BUG
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	return()
+endif()
+string(REPLACE "\n" ";" GIT_VERSIONS ${res})
+set(curr_max_patch_number -1)
+set(curr_max_minor_number -1)
+set(curr_max_major_number -1)
+foreach(version IN ITEMS ${GIT_VERSIONS})
+	set(VNUMBERS "")
+	string(REGEX REPLACE "^v([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" VNUMBERS ${version})
+	if(NOT "${version}" STREQUAL "${VNUMBERS}")#i.e. match found (this was a well formed version number)
+		list(GET VNUMBERS 0 compare_major)
+		list(GET VNUMBERS 1 compare_minor)
+		list(GET VNUMBERS 2 compare_patch)
+		if(${compare_major} GREATER ${curr_max_major_number})
+			set(curr_max_major_number ${compare_major})
+			set(curr_max_minor_number ${compare_minor})	
+			set(curr_max_patch_number ${compare_patch})		
+		elseif(	${compare_major} EQUAL ${curr_max_major_number}
+			AND ${compare_minor} GREATER ${curr_max_minor_number})
+			set(curr_max_minor_number ${compare_minor})
+			set(curr_max_patch_number ${compare_patch})
+		elseif( ${compare_major} EQUAL ${curr_max_major_number}
+			AND ${compare_minor} EQUAL ${curr_max_minor_number} 
+			AND ${compare_patch} GREATER ${curr_max_patch_number})
+			set(curr_max_patch_number ${compare_patch})# taking the patch version of this major.minor
+			
+		endif()
+	endif()
+endforeach()
+if(curr_max_patch_number EQUAL -1 OR curr_max_minor_number EQUAL -1 OR curr_max_major_number EQUAL -1)#i.e. nothing found
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	return()
+endif()
+
+set(ALL_IS_OK FALSE)
+build_And_Install_Package(ALL_IS_OK ${package} "${curr_max_major_number}.${curr_max_minor_number}.${curr_max_patch_number}")
+
+if(ALL_IS_OK)
+	set(${DEPLOYED} TRUE PARENT_SCOPE)
+else()
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+endif()
+
+
+endfunction(deploy_Source_Package)
 
 ###
 function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT)
 
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number 
 execute_process(
-		COMMAND git tag -l 'v*'
+		COMMAND git tag -l v*
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
 		OUTPUT_VARIABLE res
 		)
+
 if(NOT res) #no version available => BUG
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
@@ -433,11 +503,12 @@ endif()
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN})
 list(GET REFVNUMBERS 0 ref_major)
 list(GET REFVNUMBERS 1 ref_minor)
+string(REPLACE "\n" ";" GIT_VERSIONS ${res})
 
-set(ALL_IS_OK)
+set(ALL_IS_OK FALSE)
 if(EXACT)
 	set(curr_max_patch_number -1)
-	foreach(version IN ITEMS ${res})
+	foreach(version IN ITEMS ${GIT_VERSIONS})
 		set(VNUMBERS)
 		string(REGEX REPLACE "^v([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" VNUMBERS ${version})
 		if(NOT "${version}" STREQUAL "${VNUMBERS}")#i.e. match found (this was a well formed version number)
@@ -451,7 +522,7 @@ if(EXACT)
 			endif()
 		endif()
 	endforeach()
-	if(NOT curr_max_patch_number EQUAL -1)#i.e. nothing found
+	if(curr_max_patch_number EQUAL -1)#i.e. nothing found
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 		return()
 	endif()
@@ -461,8 +532,8 @@ if(EXACT)
 else()
 	set(curr_max_patch_number -1)
 	set(curr_max_minor_number ${ref_minor})
-	foreach(version IN ITEMS ${res})
-		set(VNUMBERS)
+	foreach(version IN ITEMS ${GIT_VERSIONS})
+		set(VNUMBERS "")
 		string(REGEX REPLACE "^v([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" VNUMBERS ${version})
 		if(NOT "${version}" STREQUAL "${VNUMBERS}")#i.e. match found (this was a well formed version number)
 			list(GET VNUMBERS 0 compare_major)
@@ -480,11 +551,10 @@ else()
 			endif()
 		endif()
 	endforeach()
-	if(NOT curr_max_patch_number EQUAL -1)#i.e. nothing found
+	if(curr_max_patch_number EQUAL -1)#i.e. nothing found
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 		return()
 	endif()
-	
 	build_And_Install_Package(ALL_IS_OK ${package} "${ref_major}.${curr_max_minor_number}.${curr_max_patch_number}")
 endif()
 
@@ -503,8 +573,9 @@ function(build_And_Install_Package DEPLOYED package version)
 execute_process(COMMAND git branch
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
 		OUTPUT_VARIABLE current_branches ERROR_QUIET)
+string(REPLACE "\n" ";" GIT_BRANCHES ${current_branches})
 
-foreach(branch IN ITEMS ${current_branches})
+foreach(branch IN ITEMS ${GIT_BRANCHES})
 	string(REGEX REPLACE "^\\* (.*)$" "\\1" A_BRANCH ${branch})
 	if(NOT "${branch}" STREQUAL "${A_BRANCH}")#i.e. match found (this is the current branch)
 		set(curr_branch ${A_BRANCH})
@@ -513,13 +584,14 @@ foreach(branch IN ITEMS ${current_branches})
 endforeach()
 
 # 1) going to the adequate git tag matching the selected version
+message("going to master branch and checking version number = ${version}")
 execute_process(COMMAND git checkout master
 		COMMAND git checkout tags/v${version}
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
 		OUTPUT_QUIET ERROR_QUIET)
 # 2) building sources
-set(IS_BUILT)
-deploy_Source_Package(IS_BUILT ${package})
+set(IS_BUILT FALSE)
+build_And_Install_Source(IS_BUILT ${package} ${version})
 
 # 3) going back to the initial branch in use
 execute_process(COMMAND git checkout ${curr_branch}

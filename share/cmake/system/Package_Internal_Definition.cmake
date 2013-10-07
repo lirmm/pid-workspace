@@ -225,7 +225,6 @@ endfunction(set_Current_Version)
 ############################################################################
 ###
 function(add_Author author institution)
-	message("avant add authors = ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
 	set(res_string_author)	
 	foreach(string_el IN ITEMS ${author})
 		set(res_string_author "${res_string_author}_${string_el}")
@@ -235,7 +234,6 @@ function(add_Author author institution)
 		set(res_string_instit "${res_string_instit}_${string_el}")
 	endforeach()
 	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS} "${res_string_author}(${res_string_instit})" CACHE INTERNAL "")
-	message("après add authors = ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
 endfunction(add_Author)
 
 
@@ -274,13 +272,14 @@ endif()
 
 # from here only direct dependencies have been satisfied
 # 0) if there are packages to install it means that there are some unresolved required dependencies
+set(INSTALL_REQUIRED FALSE)
 need_Install_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-		message(INFO "Getting required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}")
+		message("Getting required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}")
 		set(INSTALLED_PACKAGES "")		
 		install_Required_Packages(INSTALLED_PACKAGES)
-		message(INFO "Automatically installed packages : ${INSTALLED_PACKAGES}")
+		message("Automatically installed packages : ${INSTALLED_PACKAGES}")
 	else()
 		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
@@ -297,6 +296,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	
 	# 2) if all version are OK resolving all necessary variables (CFLAGS, LDFLAGS and include directories)
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
+		message("dependent package = ${dep_pack}")		
 		configure_Package_Build_Variables(${dep_pack})
 	endforeach()
 
@@ -523,7 +523,9 @@ endmacro(build_Package)
 # internal_links : only for executables or shared libs some internal linker flags used to build the component 
 # exported_links : only for static and shared libs : some linker flags (not a library inclusion, e.g. -l<li> or full path to a lib) that must be used when linking with the component
 function(declare_Library_Component c_name dirname type internal_inc_dirs internal_defs exported_defs internal_links)
-if(${PROJECT_NAME}_${c_name}_DECLARED)
+set(DECLARED FALSE)
+is_Declared(${c_name} DECLARED)
+if(DECLARED)
 	message(FATAL_ERROR "declare_Library_Component : a component with the same name ${c_name} is already defined")
 	return()
 endif()	
@@ -628,7 +630,7 @@ set(${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS "${${PROJECT_NAME}_COMPONENTS_LIBS};${c_name}" CACHE INTERNAL "")
 # global variable to know that the component has been declared (must be reinitialized at each run of cmake)
-set(${PROJECT_NAME}_${c_name}_DECLARED TRUE CACHE INTERNAL "")
+mark_As_Declared(${c_name})
 endfunction(declare_Library_Component)
 
 
@@ -639,8 +641,10 @@ endfunction(declare_Library_Component)
 # internal_link_flags : additionnal linker flags that affects required to link the application component
 # internal_inc_dirs : additionnal include dirs (internal to project, that contains header files, e.g. common definition between components that don't have to be exported)
 function(declare_Application_Component c_name dirname type internal_inc_dirs internal_defs internal_link_flags)
-if(${PROJECT_NAME}_${c_name}_DECLARED)
-	message(FATAL_ERROR "declare_Application_Component : a component with the same name ${c_name} is already defined")
+set(DECLARED FALSE)
+is_Declared(${c_name} DECLARED)
+if(DECLARED)
+	message(FATAL_ERROR "A component with the same name ${c_name} is already defined")
 	return()
 endif()
 
@@ -656,12 +660,12 @@ endif()
 if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE") 
 	add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced		
 	if(NOT ${BUILD_EXAMPLES}) #examples are not built so no need to continue
-		set(${PROJECT_NAME}_${c_name}_DECLARED TRUE CACHE INTERNAL "")		
+		mark_As_Declared(${c_name})		
 		return()
 	endif()
 elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
 	if(NOT ${BUILD_AND_RUN_TESTS}) #tests are not built so no need to continue
-		set(${PROJECT_NAME}_${c_name}_DECLARED TRUE CACHE INTERNAL "")
+		mark_As_Declared(${c_name})
 		return()
 	endif()
 endif()
@@ -714,10 +718,29 @@ set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${EXE_NAME} CACHE IN
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name}" CACHE INTERNAL "")
 # global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
-set(${PROJECT_NAME}_${c_name}_DECLARED TRUE CACHE INTERNAL "")
-
+mark_As_Declared(${c_name})
 endfunction(declare_Application_Component)
 
+###
+function(mark_As_Declared component)
+set(${PROJECT_NAME}_DECLARED_COMPS ${${PROJECT_NAME}_DECLARED_COMPS} ${component} CACHE INTERNAL "")
+endfunction(mark_As_Declared)
+
+###
+function(is_Declared component RES)
+list(FIND ${PROJECT_NAME}_DECLARED_COMPS ${component} INDEX)
+if(INDEX EQUAL -1)
+	set(${RES} FALSE PARENT_SCOPE)
+else()
+	set(${RES} TRUE PARENT_SCOPE)
+endif()
+
+endfunction(is_Declared)
+
+###
+function(reset_Declared)
+set(${PROJECT_NAME}_DECLARED_COMPS CACHE INTERNAL "")
+endfunction(reset_Declared)
 
 ##################################################################################
 ####### specifying a dependency between the current package and another one ######
@@ -1401,42 +1424,39 @@ endfunction(fill_Component_Target_With_External_Dependency)
 
 ### reset components related cached variables 
 function(reset_component_cached_variables component)
-if(${PROJECT_NAME}_${component}_DECLARED) #if component declared unset all its specific variables
-	# unsetting package dependencies
-	foreach(a_dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		foreach(a_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${USE_MODE_SUFFIX}})
-			set(${PROJECT_NAME}_${component}_EXPORT_${a_dep_pack}_${a_dep_comp}${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		endforeach()
-		set(${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${USE_MODE_SUFFIX}  CACHE INTERNAL "")
+# unsetting package dependencies
+foreach(a_dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}})
+	foreach(a_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${USE_MODE_SUFFIX}})
+		set(${PROJECT_NAME}_${component}_EXPORT_${a_dep_pack}_${a_dep_comp}${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	endforeach()
-	set(${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}  CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${USE_MODE_SUFFIX}  CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}  CACHE INTERNAL "")
 
-	# unsetting internal dependencies
-	foreach(a_internal_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
-		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${a_internal_dep_comp}${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	endforeach()
-	set(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}  CACHE INTERNAL "")
+# unsetting internal dependencies
+foreach(a_internal_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
+	set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${a_internal_dep_comp}${USE_MODE_SUFFIX} CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
-	#unsetting all other variables
-	set(${PROJECT_NAME}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${component}_HEADERS CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${component}_DECLARED CACHE INTERNAL "")
-endif()
+#unsetting all other variables
+set(${PROJECT_NAME}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_HEADERS CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_component_cached_variables)
 
 ### resetting all internal cached variables that would cause some troubles
 function(reset_cached_variables)
 
 #resetting general info about the package : only list are reset
-set (${PROJECT_NAME}_VERSION_MAJOR CACHE INTERNAL "")
-set (${PROJECT_NAME}_VERSION_MINOR CACHE INTERNAL "")
-set (${PROJECT_NAME}_VERSION_PATCH CACHE INTERNAL "")
-set (${PROJECT_NAME}_VERSION CACHE INTERNAL "")
+set (${PROJECT_NAME}_VERSION_MAJOR CACHE INTERNAL "" )
+set (${PROJECT_NAME}_VERSION_MINOR CACHE INTERNAL "" )
+set (${PROJECT_NAME}_VERSION_PATCH CACHE INTERNAL "" )
+set (${PROJECT_NAME}_VERSION CACHE INTERNAL "" )
 
 # package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
@@ -1457,6 +1477,7 @@ set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	reset_component_cached_variables(${a_component})
 endforeach()
+reset_Declared()
 set(${PROJECT_NAME}_COMPONENTS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
@@ -1474,14 +1495,14 @@ endfunction(reset_cached_variables)
 
 function(reset_Mode_Cache_Options)
 #unset all global options
-set(BUILD_EXAMPLES CACHE BOOL FALSE FORCE)
-set(BUILD_API_DOC CACHE BOOL FALSE FORCE)
-set(BUILD_API_DOC CACHE BOOL FALSE FORCE)
-set(BUILD_AND_RUN_TESTS CACHE BOOL FALSE FORCE)
-set(BUILD_WITH_PRINT_MESSAGES CACHE BOOL FALSE FORCE)
-set(USE_LOCAL_DEPLOYMENT CACHE BOOL FALSE FORCE)
-set(GENERATE_INSTALLER CACHE BOOL FALSE FORCE)
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD CACHE BOOL FALSE FORCE)
+set(BUILD_EXAMPLES FALSE CACHE BOOL "" FORCE)
+set(BUILD_API_DOC FALSE CACHE BOOL "" FORCE)
+set(BUILD_API_DOC FALSE CACHE BOOL "" FORCE)
+set(BUILD_AND_RUN_TESTS FALSE CACHE BOOL "" FORCE)
+set(BUILD_WITH_PRINT_MESSAGES FALSE CACHE BOOL "" FORCE)
+set(USE_LOCAL_DEPLOYMENT FALSE CACHE BOOL "" FORCE)
+set(GENERATE_INSTALLER FALSE CACHE BOOL "" FORCE)
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE BOOL "" FORCE)
 #include the cmake script that sets the options coming from the global build configuration
 include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
 
