@@ -109,8 +109,8 @@ endfunction(resolve_Required_Package_Version)
 
 ### root function for launching automatic installation process
 function(install_Required_Packages INSTALLED_PACKAGES)
-set(successfully_installed)
-set(not_installed)
+set(successfully_installed "")
+set(not_installed "")
 foreach(package IN ITEMS ${${PROJECT_NAME}_TOINSTALL_PACKAGES})
 	message("DEBUG : install required packages : ${package}")
 	set(INSTALL_OK FALSE)
@@ -124,6 +124,7 @@ endforeach()
 if(successfully_installed)
 	set(${INSTALLED_PACKAGES} ${successfully_installed} PARENT_SCOPE)
 endif()
+message("installed = ${successfully_installed}")
 if(not_installed)
 	message(FATAL_ERROR "Some of the required packages cannot be installed : ${not_installed}")
 endif()
@@ -161,10 +162,10 @@ endfunction(get_Package_References)
 
 ###
 function(install_Package INSTALL_OK package)
-set(${INSTALL_OK} FALSE PARENT_SCOPE)
+
 # 0) test if either reference or source of the package exist in the workspace
-set(IS_EXISTING)  
-set(PATH_TO_SOURCE)
+set(IS_EXISTING FALSE)  
+set(PATH_TO_SOURCE "")
 package_Source_Exists_In_Workspace(IS_EXISTING PATH_TO_SOURCE ${package})
 if(IS_EXISTING)
 	set(USE_SOURCES TRUE)
@@ -174,10 +175,12 @@ else()
 	if(IS_EXISTING)
 		set(USE_SOURCES FALSE)
 	else()
+		set(${INSTALL_OK} FALSE PARENT_SCOPE)
 		message(SEND_ERROR "Install : Unknown package ${package} : cannot find any source or reference of this package in the workspace")
 		return()
 	endif()
 endif()
+message("required versions = ${${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS}")
 if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS)
 # 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
 	set(POSSIBLE)
@@ -186,6 +189,7 @@ if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS)
 	resolve_Required_Package_Version(POSSIBLE VERSION_MIN EXACT ${package})
 	if(NOT POSSIBLE)
 		message(SEND_ERROR "Install : impossible to find an adequate version for package ${package}")
+		set(${INSTALL_OK} FALSE PARENT_SCOPE)
 		return()
 	endif()
 	set(NO_VERSION FALSE)	
@@ -202,15 +206,20 @@ if(USE_SOURCES) #package sources reside in the workspace
 	endif()
 	if(NOT SOURCE_DEPLOYED)
 		message(SEND_ERROR "Install : impossible to build the package sources ${package}. Try \"by hand\".")
+	else()
+		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 	endif()
 else()#using references
-	include(Refer${package}.cmake)
+	include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
-	if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number 
-		deploy_Binary_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
-	else()# deploying the most up to date version
-		deploy_Binary_Package(PACKAGE_BINARY_DEPLOYED ${package})
+	if(NOT ${refer_path} STREQUAL NOTFOUND)
+		if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number 
+			deploy_Binary_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
+		else()# deploying the most up to date version
+			deploy_Binary_Package(PACKAGE_BINARY_DEPLOYED ${package})
+		endif()
 	endif()
+	
 	if(PACKAGE_BINARY_DEPLOYED) # if there is ONE adequate reference, downloading and installing it
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 	else()# otherwise, trying to "git clone" the package source (if it can be accessed)
@@ -225,9 +234,14 @@ else()#using references
 			endif()
 			if(NOT SOURCE_DEPLOYED)
 				message(SEND_ERROR "Install : impossible to build the package sources ${package}. Try \"by hand\".")
+				set(${INSTALL_OK} FALSE PARENT_SCOPE)
+				return()
 			endif()
+			set(${INSTALL_OK} TRUE PARENT_SCOPE)
 		else()
-			message(SEND_ERROR "Install : impossible to locate source repository of package ${package}")
+			message(SEND_ERROR "Install : impossible to locate source repository of package ${package}")		
+			set(${INSTALL_OK} FALSE PARENT_SCOPE)
+			return()
 		endif()
 	endif()
 endif()
@@ -237,7 +251,7 @@ endfunction(install_Package)
 ###
 function(deploy_Package_Repository IS_DEPLOYED package)
 if(${package}_ADDRESS)
-	execute_process(${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages git clone ${${package}_ADDRESS} OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages git clone ${${package}_ADDRESS} OUTPUT_QUIET ERROR_QUIET)
 	if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
 		set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
 	else()
@@ -312,7 +326,9 @@ set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions)
 if(NOT available_versions)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	return()
 endif()
+
 
 # taking the adequate version
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN})
@@ -475,6 +491,7 @@ if(curr_max_patch_number EQUAL -1 OR curr_max_minor_number EQUAL -1 OR curr_max_
 endif()
 
 set(ALL_IS_OK FALSE)
+message("deploy_Source_Package : computed version number is : ${curr_max_major_number}.${curr_max_minor_number}.${curr_max_patch_number}")
 build_And_Install_Package(ALL_IS_OK ${package} "${curr_max_major_number}.${curr_max_minor_number}.${curr_max_patch_number}")
 
 if(ALL_IS_OK)
@@ -525,7 +542,7 @@ if(EXACT)
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 		return()
 	endif()
-	
+	message("deploy_Source_Package_Version EXACT : computed version number is : ${ref_major}.${ref_minor}.${curr_max_patch_number}")
 	build_And_Install_Package(ALL_IS_OK ${package} "${ref_major}.${ref_minor}.${curr_max_patch_number}")
 	
 else()
@@ -554,12 +571,16 @@ else()
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 		return()
 	endif()
+	message("deploy_Source_Package_Version : computed version number is : ${ref_major}.${curr_max_minor_number}.${curr_max_patch_number}")
 	build_And_Install_Package(ALL_IS_OK ${package} "${ref_major}.${curr_max_minor_number}.${curr_max_patch_number}")
+	
 endif()
 
 if(ALL_IS_OK)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
+	message("deploy_Source_Package_Version : DEPLOYED !!")
 else()
+	message("deploy_Source_Package_Version : NOT DEPLOYED")
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 endif()
 
@@ -583,9 +604,8 @@ foreach(branch IN ITEMS ${GIT_BRANCHES})
 endforeach()
 
 # 1) going to the adequate git tag matching the selected version
-message("going to master branch and checking version number = ${version}")
-execute_process(COMMAND git checkout master
-		COMMAND git checkout tags/v${version}
+message("going to tag version number = ${version}")
+execute_process(COMMAND git checkout tags/v${version}
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
 		OUTPUT_QUIET ERROR_QUIET)
 # 2) building sources

@@ -784,12 +784,14 @@ endfunction(declare_External_Package_Dependency)
 
 function(declare_Internal_Component_Dependency component dep_component export comp_defs comp_exp_defs dep_defs)
 #message("declare_Internal_Component_Dependency : component = ${component}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
-
+set(COMP_WILL_BE_BUILT FALSE)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
-if( NOT ${PROJECT_NAME}_${dep_component}_DECLARED)
+set(DECLARED FALSE)
+is_Declared(${dep_component} DECLARED)
+if(NOT DECLARED)
 	message(FATAL_ERROR "Problem : component ${dep_component} is not defined in current package")
 endif()
 #guarding depending type of involved components
@@ -1143,7 +1145,9 @@ endfunction(is_Built_Component)
 
 ### 
 function(will_be_Built result component)
-if(NOT ${PROJECT_NAME}_${component}_DECLARED)
+set(DECLARED FALSE)
+is_Declared(${component} DECLARED)
+if(NOT DECLARED)
 	set(${result} FALSE PARENT_SCOPE)
 	message(FATAL_ERROR "component ${component} does not exist")
 elseif( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)

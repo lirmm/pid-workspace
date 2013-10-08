@@ -316,7 +316,7 @@ foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
 		set(${package_name}_${requested_component}_FOUND FALSE CACHE INTERNAL "")
 	else()
 		set(${package_name}_${requested_component}_FOUND TRUE CACHE INTERNAL "")
-	endif(${COMPONENT_ELEMENT_NOTFOUND})
+	endif()
 endforeach()
 endfunction (all_Components)
 
