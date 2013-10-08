@@ -148,25 +148,23 @@ endif(${CMAKE_BINARY_DIR} MATCHES release)
 ############ Initializing variables #############
 #################################################
 reset_cached_variables()
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	#################################################################
-	############ resetting project related variables ################
-	#################################################################
-	set(res_string)	
-	foreach(string_el IN ITEMS ${author})
-		set(res_string "${res_string}_${string_el}")
-	endforeach()
-	set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
-	set(res_string)
-	foreach(string_el IN ITEMS ${institution})
-		set(res_string "${res_string}_${string_el}")
-	endforeach()
-	set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
+set(res_string)	
+foreach(string_el IN ITEMS ${author})
+	set(res_string "${res_string}_${string_el}")
+endforeach()
+set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
+set(res_string)
+foreach(string_el IN ITEMS ${institution})
+	set(res_string "${res_string}_${string_el}")
+endforeach()
+set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
 
-	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
+set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
+set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
+set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
+
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
 	# references to package binaries version available must be reset
@@ -178,6 +176,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(${PROJECT_NAME}_REFERENCE_${ref_version} CACHE INTERNAL "")
 	endforeach()
 	set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL "")
+	
 endif()
 
 #################################################
@@ -241,8 +240,8 @@ endfunction(add_Author)
 function(add_Reference version system url url-dbg)
 	set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} ${version} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${system} CACHE INTERNAL "")
-	set(${${PROJECT_NAME}_REFERENCE_${version}_${system} ${url} CACHE INTERNAL "")
-	set(${${PROJECT_NAME}_REFERENCE_${version}_${system}_DEBUG ${url-dbg} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version}_${system} ${url} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version}_${system}_DEBUG ${url-dbg} CACHE INTERNAL "")
 endfunction(add_Reference)
 
 ###
@@ -371,9 +370,9 @@ if(GENERATE_INSTALLER)
 		 		
 
 		add_custom_target(package_install
-				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-linux.deb
-				${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-linux.deb
-				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-linux.deb in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
+				${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
+				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
 				)
 	elseif(APPLE) #OSX platforms
 		#using OSX bundle packager

@@ -213,6 +213,7 @@ else()#using references
 	include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
 	if(NOT ${refer_path} STREQUAL NOTFOUND)
+		message("DEBUG : trying to deploy a binary package !!")
 		if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number 
 			deploy_Binary_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
 		else()# deploying the most up to date version
@@ -272,13 +273,13 @@ function(get_Available_Binary_Package_Versions package list_of_versions)
 if(UNIX AND NOT APPLE)
 	set(curr_system linux)
 elseif(APPLE)
-	set(curr_system macosx)
+	set(curr_system macosx)#TODO change with the name given by bundle generator
 else()
 	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
 	return()
 endif()
 # listing available binaries of the package and searching if there is any "good version"
-set(available_binary_package_version) 
+set(available_binary_package_version "") 
 foreach(ref_version IN ITEMS ${${package}_REFERENCES})
 	foreach(ref_system IN ITEMS ${${package}_REFERENCE_${ref_version}})
 		if(${ref_system} STREQUAL ${curr_system})		
@@ -328,7 +329,7 @@ if(NOT available_versions)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
-
+message("available versions : ${available_versions}")
 
 # taking the adequate version
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN})
@@ -340,7 +341,7 @@ if(EXACT)
 	set(curr_patch_version -1)
 	foreach(version IN ITEMS ${available_versions})
 		string(REGEX REPLACE "^${ref_major}\\.${ref_minor}\\.([0-9]+)$" "\\1" PATCH ${version})
-		if(NOT ${PATCH} STREQUAL ${version})#it matched
+		if(NOT "${PATCH}" STREQUAL "${version}")#it matched
 			if(${PATCH} GREATER ${curr_patch_version})
 				set(curr_patch_version ${PATCH})
 			endif()	
@@ -354,7 +355,7 @@ else()
 	set(curr_min_minor_version ${ref_minor})
 	foreach(version IN ITEMS ${available_versions})
 		string(REGEX REPLACE "^${ref_major}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" VNUMBERS ${version})
-		if(NOT ${PATCH} STREQUAL ${version})#it matched
+		if(NOT "${VNUMBERS}" STREQUAL "${version}")#it matched
 			list(GET VNUMBERS 0 compare_minor)
 			list(GET VNUMBERS 1 compare_patch)
 			if(${compare_minor} GREATER ${curr_min_minor_version})
@@ -379,28 +380,56 @@ endif()
 endfunction(deploy_Binary_Package_Version)
 
 ###
+function(generate_Binary_Package_Name package version mode RES)
+if(UNIX AND NOT APPLE)
+	set(system_string Linux)
+	set(extension .deb)
+elseif(APPLE)#TODO
+
+endif()
+if(mode MATCHES Debug)
+	set(mode_string "-dbg")
+else()
+	set(mode_string "")
+endif()
+
+set(res_name "${package}-${version}${mode_string}-${system_string}${extension}")
+set(${RES} ${res_name} PARENT_SCOPE)
+endfunction(generate_Binary_Package_Name)
+###
 function(download_And_Install_Binary_Package INSTALLED package version_string)
+message("download_And_Install_Binary_Package : ${package} version = ${version_string}")
 if(UNIX AND NOT APPLE)
 	set(curr_system linux)
 elseif(APPLE)
-	set(curr_system macosx)
+	#TODO
 endif()
-# downloading the binary package
+###### downloading the binary package ######
+#release code
+set(RES_NAME "")
+generate_Binary_Package_Name(${package} ${version_string} "Release" RES_NAME)
 set(download_url ${${package}_REFERENCE_${version_string}_${curr_system}})
-set(download_url_dbg ${${package}_REFERENCE_${version_string}_${curr_system}_DEBUG})
-get_filename_component(thefile ${download_url} NAME)
-get_filename_component(thefile-dbg ${download_url_dbg} NAME)
-
-file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${thefile} STATUS res)
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${RES_NAME} STATUS res)
 list(GET res 0 numeric_error)
-file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${thefile-dbg} STATUS res-dbg)
-list(GET res-dbg 0 numeric_error_dbg)
-
-if((NOT numeric_error EQUAL 0) OR (NOT  numeric_error_dbg EQUAL 0))#there is an error
+list(GET res 1 status)
+if(NOT numeric_error EQUAL 0)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message(SEND_ERROR "install : problem when downloading binary version ${version_string} of package ${package}")
+	message(WARNING "install : problem when downloading binary version ${version_string} of package ${package} from address ${download_url}: ${status}")
 	return()
 endif()
+#debug code
+set(RES_NAME "")
+generate_Binary_Package_Name(${package} ${version_string} "Debug" RES_NAME)
+set(download_url_dbg ${${package}_REFERENCE_${version_string}_${curr_system}_DEBUG})
+file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${RES_NAME} STATUS res-dbg)
+list(GET res-dbg 0 numeric_error_dbg)
+list(GET res-dbg 1 status_dbg)
+if(NOT numeric_error_dbg EQUAL 0)#there is an error
+	set(${INSTALLED} FALSE PARENT_SCOPE)
+	message(WARNING "install : problem when downloading binary version ${version_string} of package ${package} from address ${download_url_dbg} : ${status_dbg}")
+	return()
+endif()
+
 # installing
 if(UNIX AND NOT APPLE)
 	execute_process(COMMAND dpkg -i ${CMAKE_BINARY_DIR}/share/${thefile}  --instdir=${WORKSPACE_DIR}/packages/${package}
@@ -411,6 +440,7 @@ elseif(APPLE)
 	#TODO
 endif()
 
+message("before post install rules apply !!!")
 # post install configuration of the workspace 
 execute_process(COMMAND ${CMAKE_COMMAND} 
 			-DWORKSPACE_DIR=${WORKSPACE_DIR} 
