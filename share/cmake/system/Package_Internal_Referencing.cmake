@@ -483,13 +483,12 @@ else()
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 endif()
 
-
 endfunction(deploy_Source_Package)
 
 ###
 function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT)
 
-# go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number 
+# go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 execute_process(
 		COMMAND git tag -l v*
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
