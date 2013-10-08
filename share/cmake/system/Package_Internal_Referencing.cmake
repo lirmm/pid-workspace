@@ -405,7 +405,8 @@ endif()
 if(UNIX AND NOT APPLE)
 	execute_process(COMMAND dpkg -i ${CMAKE_BINARY_DIR}/share/${thefile}  --instdir=${WORKSPACE_DIR}/packages/${package}
                   	COMMAND dpkg -i ${CMAKE_BINARY_DIR}/share/${thefile-dbg} --instdir=${WORKSPACE_DIR}/packages/${package}
-                  	WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/)	
+                  	WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/
+			ERROR_QUIET OUTPUT_QUIET)	
 elseif(APPLE)
 	#TODO
 endif()
@@ -417,7 +418,8 @@ execute_process(COMMAND ${CMAKE_COMMAND}
 			-DPACKAGE_VERSION=${version_string}
 			-DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=${REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD}
 			-P ${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake
-          	WORKING_DIRECTORY ${WORKSPACE_DIR})	
+          	WORKING_DIRECTORY ${WORKSPACE_DIR}
+		ERROR_QUIET OUTPUT_QUIET)	
 
 endfunction(download_And_Install_Binary_Package)
 
@@ -427,19 +429,16 @@ function(build_And_Install_Source DEPLOYED package version)
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_WITH_PRINT_MESSAGES:BOOL=OFF -D USE_LOCAL_DEPLOYMENT:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D BUILD_PACKAGE_REFERENCE:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-		ERROR_VARIABLE res OUTPUT_QUIET
+		ERROR_QUIET OUTPUT_QUIET
 		)
-	message("CMAKE error is : ${res}")
 	execute_process(
 		COMMAND ${CMAKE_BUILD_TOOL} build
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-		ERROR_VARIABLE res OUTPUT_QUIET		
+		ERROR_QUIET OUTPUT_QUIET		
 		)
-	message("MAKE error is : ${res}")
 	if(EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
 		set(${DEPLOYED} TRUE PARENT_SCOPE)
 	else()
-		message ("DOES NOT EXIST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 	endif()
 
@@ -491,7 +490,6 @@ if(curr_max_patch_number EQUAL -1 OR curr_max_minor_number EQUAL -1 OR curr_max_
 endif()
 
 set(ALL_IS_OK FALSE)
-message("deploy_Source_Package : computed version number is : ${curr_max_major_number}.${curr_max_minor_number}.${curr_max_patch_number}")
 build_And_Install_Package(ALL_IS_OK ${package} "${curr_max_major_number}.${curr_max_minor_number}.${curr_max_patch_number}")
 
 if(ALL_IS_OK)
@@ -542,7 +540,6 @@ if(EXACT)
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 		return()
 	endif()
-	message("deploy_Source_Package_Version EXACT : computed version number is : ${ref_major}.${ref_minor}.${curr_max_patch_number}")
 	build_And_Install_Package(ALL_IS_OK ${package} "${ref_major}.${ref_minor}.${curr_max_patch_number}")
 	
 else()
@@ -571,7 +568,6 @@ else()
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 		return()
 	endif()
-	message("deploy_Source_Package_Version : computed version number is : ${ref_major}.${curr_max_minor_number}.${curr_max_patch_number}")
 	build_And_Install_Package(ALL_IS_OK ${package} "${ref_major}.${curr_max_minor_number}.${curr_max_patch_number}")
 	
 endif()
@@ -604,7 +600,7 @@ foreach(branch IN ITEMS ${GIT_BRANCHES})
 endforeach()
 
 # 1) going to the adequate git tag matching the selected version
-message("going to tag version number = ${version}")
+
 execute_process(COMMAND git checkout tags/v${version}
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
 		OUTPUT_QUIET ERROR_QUIET)
