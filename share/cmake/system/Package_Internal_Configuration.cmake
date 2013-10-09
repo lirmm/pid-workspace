@@ -249,7 +249,6 @@ endforeach()
 need_Install_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-		message(INFO "Getting required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}")	
 		set(INSTALLED_PACKAGES "")
 		install_Required_Packages(INSTALLED_PACKAGES)
 		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
@@ -266,8 +265,6 @@ if(INSTALL_REQUIRED)
 		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
-	
-
 endif()
 
 endfunction(resolve_Package_Dependencies)
@@ -477,12 +474,14 @@ else()
 message(FATAL_ERROR "bad argument, unknown mode \"${build_mode}\"")
 endif()
 
-if(${package}_DEPENDENCIES${MODE_SUFFIX}) #first resolving dependencies by recursion
+# 1) resolving runtime dependencies by recursion (resolving dependancy packages' components first)
+if(${package}_DEPENDENCIES${MODE_SUFFIX}) 
 	foreach(dep IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
 		resolve_Package_Runtime_Dependencies(${dep} ${build_mode})
 	endforeach()
 endif()
-foreach(component IN ITEMS ${${package}_COMPONENTS${MODE_SUFFIX}})
+# 2) resolving runtime dependencies of the package's own components
+foreach(component IN ITEMS ${${package}_COMPONENTS})
 	resolve_Bin_Component_Runtime_Dependencies(${package} ${component} ${build_mode})
 endforeach()
 set(${package}_DURING_PREPARE_RUNTIME FALSE)
@@ -511,10 +510,27 @@ else()
 	return()
 endif()
 
+#creatings rpath folders if necessary
+if(	NOT EXISTS ${${bin_package}_ROOT_DIR}/.rpath 
+	OR NOT IS_DIRECTORY ${${bin_package}_ROOT_DIR}/.rpath)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${bin_package}_ROOT_DIR}/.rpath)
+endif()
+
+if(	NOT EXISTS ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}
+	OR NOT IS_DIRECTORY ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string})
+endif()
+
+#creatings symbolic links
 foreach(lib IN ITEMS ${shared_libs})
 	get_filename_component(A_LIB_FILE ${lib} NAME)
+	if(	EXISTS ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${A_LIB_FILE} 
+		AND IS_SYMLINK ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${A_LIB_FILE})
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E remove -f ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${A_LIB_FILE}
+		)
+	endif()
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E remove -f ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${A_LIB_FILE}
 		COMMAND ${CMAKE_COMMAND} -E create_symlink ${lib} ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${A_LIB_FILE}
 	)
 endforeach()

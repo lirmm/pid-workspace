@@ -461,21 +461,24 @@ if (error_res)
 	return()
 endif()
 
-# post install configuration of the workspace 
+# post install configuration of the workspace
+set(error_res "")
 execute_process(COMMAND ${CMAKE_COMMAND} 
-			-DWORKSPACE_DIR=${WORKSPACE_DIR} 
-			-DPACKAGE_NAME=${package} 
-			-DPACKAGE_VERSION=${version_string}
-			-DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=${REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD}
+			-D WORKSPACE_DIR=${WORKSPACE_DIR} 
+			-D PACKAGE_NAME=${package} 
+			-D PACKAGE_VERSION=${version_string}
+			-D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=${REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD}
 			-P ${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake
-          	WORKING_DIRECTORY ${WORKSPACE_DIR}
-		ERROR_VARIABLE error_res OUTPUT_QUIET)
+          	WORKING_DIRECTORY ${WORKSPACE_DIR})
+		#ERROR_VARIABLE error_res OUTPUT_VARIABLE out_res)
 
-if(error_res)
-	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message(WARNING "install : cannot configure runtime dependencies for installed version ${version_string} of package ${package}")
-	return()
-endif()
+#message("OUTPUT = ${out_res}")
+#message("ERROR = ${error_res}")
+#if(error_res)
+#	set(${INSTALLED} FALSE PARENT_SCOPE)
+#	message(WARNING "install : cannot configure runtime dependencies for installed version ${version_string} of package ${package}")
+#	return()
+#endif()
 set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_Package)
 

@@ -3,7 +3,8 @@
 ### this is the script file to call with cmake -P to rebind a package's content ###
 ###################################################################################
 ## arguments (passed with -D<name>=<value>): WORKSPACE_DIR, PACKAGE_NAME, PACKAGE_VERSION, REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD (TRUE or FALSE)
-set(PROJECT_NAME PACKAGE_NAME)#setting a project name to allow find scripts to work
+set(PROJECT_NAME ${PACKAGE_NAME})#setting a project name to allow find scripts to work
+
 include(${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_VERSION}/share/Use${PACKAGE_NAME}-${PACKAGE_VERSION}.cmake OPTIONAL RESULT_VARIABLE res)
 #using the generated Use<package>-<version>.cmake file to get adequate version information about components
 if(	${res} STREQUAL NOTFOUND
@@ -38,8 +39,8 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS_DEBUG})
 		is_A_System_Reference_Path(${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG} RES)		
 		if(NOT RES)#by default we consider that the workspace contains installed external projects in a dedicated folder for it if the external package has not been declared as installed by default in system directories
 			set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG ${WORKSPACE_DIR}/external/${ext_dep})
+			list(APPEND NOT_DEFINED_EXT_DEPS_DEBUG ${ext_dep})
 		endif()
-		list(APPEND NOT_DEFINED_EXT_DEPS_DEBUG ${ext_dep})
 	endif()
 endforeach()
 foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS})
@@ -49,11 +50,12 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS})
 		is_A_System_Reference_Path(${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH} RES)		
 		if(NOT RES)
 			set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH ${WORKSPACE_DIR}/external/${ext_dep})
+			list(APPEND NOT_DEFINED_EXT_DEPS ${ext_dep})
 		endif()
-		list(APPEND NOT_DEFINED_EXT_DEPS ${ext_dep})
+		
 	endif()
 endforeach()
-if(NOT_DEFINED_EXT_DEPS)
+if(NOT_DEFINED_EXT_DEPS OR NOT_DEFINED_EXT_DEPS_DEBUG)
 	message(WARNING "Following external packages path has been automatically set. To resolve their path by hand use -DCONFIG_<package>=<path> option when calling this script")
 	foreach(ext_dep IN ITEMS ${NOT_DEFINED_EXT_DEPS_DEBUG})
 		message("DEBUG mode : ${ext_dep} with path = ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG}")
@@ -69,13 +71,16 @@ file(WRITE ${theusefile} "")#resetting the file content
 write_Use_File(${theusefile} ${PACKAGE_NAME} Release)
 write_Use_File(${theusefile} ${PACKAGE_NAME} Debug)
 
-# finding all dependencies
+# 4) resolving all runtime dependencies
+set(${PACKAGE_NAME}_ROOT_DIR ${BIN_PACKAGE_PATH})
+set(${PACKAGE_NAME}_FOUND TRUE)
+
+# finding all package dependencies
 resolve_Package_Dependencies(${PACKAGE_NAME} "_DEBUG")
 resolve_Package_Dependencies(${PACKAGE_NAME} "")
 
 # resolving runtime dependencies
-resolve_Package_Runtime_Dependencies(${PACKAGE_NAME} "Debug")
-resolve_Package_Runtime_Dependencies(${PACKAGE_NAME} "Release")
-
+resolve_Package_Runtime_Dependencies(${PACKAGE_NAME} Debug)
+resolve_Package_Runtime_Dependencies(${PACKAGE_NAME} Release)
 
 
