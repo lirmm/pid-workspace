@@ -38,7 +38,7 @@ if(INDEX EQUAL -1)#not found
 		endif()
 	endif()
 else()#package already required as "to install"
-	list(FIND ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS INDEX)
+	list(FIND ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS ${version} INDEX)
 	if(INDEX EQUAL -1)#version not already required
 		set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS "${version}" CACHE INTERNAL "")
 		if(version_exact)
@@ -348,7 +348,7 @@ if(EXACT)
 		endif()
 	endforeach()
 	if(${curr_patch_version} GREATER -1)
-		download_And_Install_Binary_Package(INSTALLED ${package} "${VERSION_MIN}.${curr_patch_version}")
+		download_And_Install_Binary_Package(INSTALLED ${package} "${ref_major}.${VERSION_MIN}.${curr_patch_version}")
 	endif()
 else()
 	set(curr_patch_version -1)
@@ -380,10 +380,9 @@ endif()
 endfunction(deploy_Binary_Package_Version)
 
 ###
-function(generate_Binary_Package_Name package version mode RES)
+function(generate_Binary_Package_Name package version mode RES_FILE RES_FOLDER)
 if(UNIX AND NOT APPLE)
 	set(system_string Linux)
-	set(extension .deb)
 elseif(APPLE)#TODO
 
 endif()
@@ -393,12 +392,12 @@ else()
 	set(mode_string "")
 endif()
 
-set(res_name "${package}-${version}${mode_string}-${system_string}${extension}")
-set(${RES} ${res_name} PARENT_SCOPE)
+set(${RES_FILE} "${package}-${version}${mode_string}-${system_string}.zip" PARENT_SCOPE)
+set(${RES_FOLDER} "${package}-${version}${mode_string}-${system_string}" PARENT_SCOPE)
 endfunction(generate_Binary_Package_Name)
+
 ###
 function(download_And_Install_Binary_Package INSTALLED package version_string)
-message("download_And_Install_Binary_Package : ${package} version = ${version_string}")
 if(UNIX AND NOT APPLE)
 	set(curr_system linux)
 elseif(APPLE)
@@ -406,10 +405,11 @@ elseif(APPLE)
 endif()
 ###### downloading the binary package ######
 #release code
-set(RES_NAME "")
-generate_Binary_Package_Name(${package} ${version_string} "Release" RES_NAME)
+set(FILE_BINARY "")
+set(FOLDER_BINARY "")
+generate_Binary_Package_Name(${package} ${version_string} "Release" FILE_BINARY FOLDER_BINARY)
 set(download_url ${${package}_REFERENCE_${version_string}_${curr_system}})
-file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${RES_NAME} STATUS res)
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
@@ -418,10 +418,11 @@ if(NOT numeric_error EQUAL 0)
 	return()
 endif()
 #debug code
-set(RES_NAME "")
-generate_Binary_Package_Name(${package} ${version_string} "Debug" RES_NAME)
+set(FILE_BINARY_DEBUG "")
+set(FOLDER_BINARY_DEBUG "")
+generate_Binary_Package_Name(${package} ${version_string} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
 set(download_url_dbg ${${package}_REFERENCE_${version_string}_${curr_system}_DEBUG})
-file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${RES_NAME} STATUS res-dbg)
+file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg)
 list(GET res-dbg 0 numeric_error_dbg)
 list(GET res-dbg 1 status_dbg)
 if(NOT numeric_error_dbg EQUAL 0)#there is an error
@@ -431,16 +432,35 @@ if(NOT numeric_error_dbg EQUAL 0)#there is an error
 endif()
 
 # installing
-if(UNIX AND NOT APPLE)
-	execute_process(COMMAND dpkg -i ${CMAKE_BINARY_DIR}/share/${thefile}  --instdir=${WORKSPACE_DIR}/packages/${package}
-                  	COMMAND dpkg -i ${CMAKE_BINARY_DIR}/share/${thefile-dbg} --instdir=${WORKSPACE_DIR}/packages/${package}
-                  	WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/
-			ERROR_QUIET OUTPUT_QUIET)	
-elseif(APPLE)
-	#TODO
+if(NOT EXISTS ${WORKSPACE_DIR}/install/${package} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${package})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
+			WORKING_DIRECTORY ${WORKSPACE_DIR}/install/
+			ERROR_QUIET OUTPUT_QUIET)
+endif()
+# extracting binary archive in cross platform way
+set(error_res "")
+execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+
+if (error_res)
+	set(${INSTALLED} FALSE PARENT_SCOPE)
+	message(WARNING "install : cannot extract binary archives ${FILE_BINARY} ${FILE_BINARY_DEBUG}")
+	return()
 endif()
 
-message("before post install rules apply !!!")
+# copying resulting folders into the install path in a cross platform way
+set(error_res "")
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${package}
+          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${package}
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+if (error_res)
+	set(${INSTALLED} FALSE PARENT_SCOPE)
+	message(WARNING "install : cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}")
+	return()
+endif()
+
 # post install configuration of the workspace 
 execute_process(COMMAND ${CMAKE_COMMAND} 
 			-DWORKSPACE_DIR=${WORKSPACE_DIR} 
@@ -449,8 +469,14 @@ execute_process(COMMAND ${CMAKE_COMMAND}
 			-DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=${REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD}
 			-P ${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake
           	WORKING_DIRECTORY ${WORKSPACE_DIR}
-		ERROR_QUIET OUTPUT_QUIET)	
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
 
+if(error_res)
+	set(${INSTALLED} FALSE PARENT_SCOPE)
+	message(WARNING "install : cannot configure runtime dependencies for installed version ${version_string} of package ${package}")
+	return()
+endif()
+set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_Package)
 
 ### 

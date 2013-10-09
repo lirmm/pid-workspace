@@ -24,18 +24,18 @@
 ##################################################################################
 ###
 function(test_Package_Location DEPENDENCIES_NOTFOUND package dependency)
-	if(NOT ${${dependency}_FOUND})
+	if(NOT ${dependency}_FOUND)
 
-		if(${${package}_DEPENDENCY_${dependency}_VERSION} STREQUAL "")
+		if("${${package}_DEPENDENCY_${dependency}_VERSION}" STREQUAL "")
 			message(SEND_ERROR "The required package ${a_dependency} has not been found !")
-		elseif(${${package}_DEPENDENCY_${dependency}_VERSION_EXACT})
+		elseif(${package}_DEPENDENCY_${dependency}_VERSION_EXACT)
 			message(SEND_ERROR "The required package ${a_dependency} with exact version ${${package}_DEPENDENCY_${dependency}_VERSION} has not been found !")
 		else()
 			message(SEND_ERROR "The required package ${a_dependency} with version compatible with ${${package}_DEPENDENCY_${dependency}_VERSION} has not been found !")
 		endif()
 		set(${DEPENDENCIES_NOTFOUND} ${DEPENDENCIES_NOTFOUND} ${dependency} PARENT_SCOPE)
 	endif()
-endfunction()
+endfunction(test_Package_Location)
 
 
 ###

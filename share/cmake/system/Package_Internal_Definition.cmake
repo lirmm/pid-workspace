@@ -361,27 +361,14 @@ if(GENERATE_INSTALLER)
 	set(CPACK_PACKAGE_VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
 	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
+	list(APPEND CPACK_GENERATOR ZIP)
 
-	if(UNIX AND NOT APPLE)#linux platforms
-		#using debian packager
-		list(APPEND CPACK_GENERATOR DEB)	
-		execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE OUT_DPKG)
-		set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${OUT_DPKG})
-		 		
-
-		add_custom_target(package_install
-				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
-				${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb
-				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.deb in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
-				)
-	elseif(APPLE) #OSX platforms
-		#using OSX bundle packager
-		#TODO fill variables and create the custom target package_install
-	endif()
-	
-	if(CPACK_GENERATOR) #there are defined generators
-		include(CPack)
-	endif()
+	add_custom_target(package_install
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.zip
+				${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.zip
+				COMMENT "installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-Linux.zip in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
+			)
+	include(CPack)
 endif(GENERATE_INSTALLER)
 
 ###############################################################################
