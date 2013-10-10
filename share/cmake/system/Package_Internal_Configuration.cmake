@@ -679,34 +679,17 @@ endfunction(is_Bin_Component_Exporting_Other_Components)
 
 ### configuring source components (currntly built) runtime paths (links to libraries)
 function(create_Source_Component_Symlinks bin_component shared_libs)
-message("creating symlinks for ${bin_component} = ${shared_libs} withing folder = ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}")
-install(CODE "
-	
-	#creatings rpath folders if necessary
-	if(	NOT EXISTS ${${PROJECT_NAME}_INSTALL_RPATH_DIR} 
-		OR NOT IS_DIRECTORY ${${PROJECT_NAME}_INSTALL_RPATH_DIR})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${PROJECT_NAME}_INSTALL_RPATH_DIR})
-		message(\"Installing .rpath folder for component ${bin_component}\")
-	endif()
-
-	if(	NOT EXISTS ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}
-		OR NOT IS_DIRECTORY ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component})
-	endif()
-	message(\"FIN DU TEST\")
-	"
-)
-
 foreach(lib IN ITEMS ${shared_libs})
 	get_filename_component(A_LIB_FILE "${lib}" NAME)	
 	install(CODE "
-		message(\"C UN TEST 2\")
-		if(	EXISTS ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE} 
-			AND IS_SYMLINK ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE})
+		if(	EXISTS ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE} 
+			AND IS_SYMLINK ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE}
+					WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
 		endif()
-		execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${lib} ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE})
-		message(\"FIN DU TEST 2\")
+		execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${lib} ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE}
+					WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+		message(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE}\")
 
 		")# creating links "on the fly" when installing
 endforeach()
