@@ -96,37 +96,39 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	#now getting options specific to debug and release modes
 	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
-	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+	# copying new cache entries in the global build cache
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
 	foreach(line IN ITEMS ${LINES_DEBUG})
 		if(NOT ${line} STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
 			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
 			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
-				string(FIND LINES ${line} POS)			
+				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
+				list(GET AN_OPTION 0 var_name)
+				string(FIND "${LINES}" "${var_name}" POS)
 				if(POS EQUAL -1)#not found
-					string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
-					list(GET AN_OPTION 0 var_name)
 					list(GET AN_OPTION 1 var_value)
 					list(GET AN_OPTION 2 var_type)				
 					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
 				endif()
-			else()#match is OK
+			else()#match is OK this is a comment line
 				set(last_comment "${COMMENT}")
 			endif()
 		endif()
 	endforeach()
+	
 	foreach(line IN ITEMS ${LINES_RELEASE})
 		if(NOT ${line} STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
 			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
 			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
-				string(FIND LINES ${line} POS)		
-				string(FIND LINES_DEBUG ${line} POS_DEB)	
-				if(POS EQUAL -1 AND POS_DEB EQUAL -1)#not found
-					string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
-					list(GET AN_OPTION 0 var_name)
+				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
+				list(GET AN_OPTION 0 var_name)
+				string(FIND "${LINES}" "${var_name}" POS)	
+				string(FIND "${LINES_DEBUG}" "${var_name}" POS_DEB)
+				if(POS EQUAL -1 AND POS_DEB EQUAL -1)#not found, this a new cache entry
 					list(GET AN_OPTION 1 var_value)
-					list(GET AN_OPTION 2 var_type)				
+					list(GET AN_OPTION 2 var_type)
 					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
 				endif()
 			else()#match is OK
@@ -134,6 +136,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			endif()
 		endif()
 	endforeach()
+	#removing temporary files containing cache entries
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
