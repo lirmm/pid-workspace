@@ -581,11 +581,10 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 		
 		install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
 			LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
-			RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}#installing everything in lib install folder (for windows dll)
 		)
-		#setting the default rpath for the target	
+		#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
-		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
+		
 		if(NOT internal_links STREQUAL "") #usefull only when trully linking so only beneficial to shared libs
 			target_link_library(${c_name}${INSTALL_NAME_SUFFIX} ${internal_links})
 		endif()

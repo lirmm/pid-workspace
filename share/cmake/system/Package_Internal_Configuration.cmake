@@ -676,7 +676,6 @@ endfunction(is_Bin_Component_Exporting_Other_Components)
 ####################### source package run time dependencies #####################
 ##################################################################################
 
-
 ### configuring source components (currntly built) runtime paths (links to libraries)
 function(create_Source_Component_Symlinks bin_component shared_libs)
 install(CODE "
@@ -686,6 +685,7 @@ install(CODE "
 		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${PROJECT_NAME}_INSTALL_RPATH_DIR} 
 				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
 	endif()
+	#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
 	if(	NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}
 		OR NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component})
 		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}
