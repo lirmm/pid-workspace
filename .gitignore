@@ -1,7 +1,4 @@
 *~
 CMakeCache.txt
 *.old
-packages/*
-install/*
-external/*
-categories/*
+
