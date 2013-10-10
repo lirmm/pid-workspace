@@ -679,6 +679,20 @@ endfunction(is_Bin_Component_Exporting_Other_Components)
 
 ### configuring source components (currntly built) runtime paths (links to libraries)
 function(create_Source_Component_Symlinks bin_component shared_libs)
+install(CODE "
+	#creatings rpath folders if necessary
+	if(	NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR} 
+		OR NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${PROJECT_NAME}_INSTALL_RPATH_DIR} 
+				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+	endif()
+	if(	NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}
+		OR NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}
+				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+	endif()
+	")
+
 foreach(lib IN ITEMS ${shared_libs})
 	get_filename_component(A_LIB_FILE "${lib}" NAME)	
 	install(CODE "
