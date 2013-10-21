@@ -100,6 +100,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	# copying new cache entries in the global build cache
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
+	# searching new cache entries in release mode cache	
 	foreach(line IN ITEMS ${LINES_RELEASE})
 		if(NOT ${line} STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
 			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
@@ -118,6 +119,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		endif()
 	endforeach()
 
+	# searching new cache entries in debug mode cache	
 	foreach(line IN ITEMS ${LINES_DEBUG})
 		if(NOT ${line} STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
 			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
