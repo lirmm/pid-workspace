@@ -105,26 +105,27 @@ set(${min_version} "${MAJOR_RESOLVED}.${CUR_MINOR_RESOLVED}" PARENT_SCOPE)
 set(${is_exact} ${CURR_EXACT} PARENT_SCOPE)
 endfunction(resolve_Required_Package_Version)
 
+### 
 
 
 ### root function for launching automatic installation process
-function(install_Required_Packages INSTALLED_PACKAGES)
+function(install_Required_Packages list_of_packages_to_install INSTALLED_PACKAGES)
 set(successfully_installed "")
 set(not_installed "")
-foreach(package IN ITEMS ${${PROJECT_NAME}_TOINSTALL_PACKAGES})
-	message("DEBUG : install required packages : ${package}")
+foreach(dep_package IN ITEMS ${list_of_packages_to_install}) #while there are still packages to install
+	message("DEBUG : install required packages : ${dep_package}")
 	set(INSTALL_OK FALSE)
-	install_Package(INSTALL_OK ${package})
+	install_Package(INSTALL_OK ${dep_package})
 	if(INSTALL_OK)
-		list(APPEND successfully_installed ${package})
+		list(APPEND successfully_installed ${dep_package})
 	else()
-		list(APPEND not_installed ${package})
+		list(APPEND not_installed ${dep_package})
 	endif()
 endforeach()
 if(successfully_installed)
 	set(${INSTALLED_PACKAGES} ${successfully_installed} PARENT_SCOPE)
 endif()
-message("installed = ${successfully_installed}")
+message("DEBUG installed packages = ${successfully_installed}")
 if(not_installed)
 	message(FATAL_ERROR "Some of the required packages cannot be installed : ${not_installed}")
 endif()
@@ -173,6 +174,7 @@ else()
 	set(IS_EXISTING)
 	package_Reference_Exists_In_Workspace(IS_EXISTING ${package})
 	if(IS_EXISTING)
+		message("DEBUG package ${package} reference exists in workspace !")
 		set(USE_SOURCES FALSE)
 	else()
 		set(${INSTALL_OK} FALSE PARENT_SCOPE)
@@ -180,18 +182,19 @@ else()
 		return()
 	endif()
 endif()
-message("required versions = ${${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS}")
+message("DEBUG required versions = ${${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS}")
 if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS)
 # 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
-	set(POSSIBLE)
+	set(POSSIBLE FALSE)
 	set(VERSION_MIN)
-	set(EXACT)
+	set(EXACT FALSE)
 	resolve_Required_Package_Version(POSSIBLE VERSION_MIN EXACT ${package})
 	if(NOT POSSIBLE)
 		message(SEND_ERROR "Install : impossible to find an adequate version for package ${package}")
 		set(${INSTALL_OK} FALSE PARENT_SCOPE)
 		return()
 	endif()
+	message("DEBUG a min version has been chosen : ${VERSION_MIN} and is exact ? = ${EXACT}")
 	set(NO_VERSION FALSE)	
 else()
 	set(NO_VERSION TRUE)
@@ -219,6 +222,8 @@ else()#using references
 		else()# deploying the most up to date version
 			deploy_Binary_Package(PACKAGE_BINARY_DEPLOYED ${package})
 		endif()
+	else()
+		message("DEBUG reference file not found for package ${package}!! BIG BUG since it is supposed to exist if we are here !!!")
 	endif()
 	
 	if(PACKAGE_BINARY_DEPLOYED) # if there is ONE adequate reference, downloading and installing it
@@ -234,14 +239,14 @@ else()#using references
 				deploy_Source_Package(SOURCE_DEPLOYED ${package})
 			endif()
 			if(NOT SOURCE_DEPLOYED)
+				set(${INSTALL_OK} FALSE PARENT_SCOPE)				
 				message(SEND_ERROR "Install : impossible to build the package sources ${package}. Try \"by hand\".")
-				set(${INSTALL_OK} FALSE PARENT_SCOPE)
 				return()
 			endif()
 			set(${INSTALL_OK} TRUE PARENT_SCOPE)
 		else()
-			message(SEND_ERROR "Install : impossible to locate source repository of package ${package}")		
 			set(${INSTALL_OK} FALSE PARENT_SCOPE)
+			message(SEND_ERROR "Install : impossible to locate source repository of package ${package}")			
 			return()
 		endif()
 	endif()
@@ -329,7 +334,7 @@ if(NOT available_versions)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
-message("available versions : ${available_versions}")
+message("DEBUG available versions : ${available_versions}")
 
 # taking the adequate version
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN})
@@ -369,6 +374,7 @@ else()
 		endif()
 	endforeach()
 	if(${curr_patch_version} GREATER -1)#at least one match
+		message("DEBUG : installing package ${package} with version ${ref_major}.${curr_min_minor_version}.${curr_patch_version}")
 		download_And_Install_Binary_Package(INSTALLED ${package} "${ref_major}.${curr_min_minor_version}.${curr_patch_version}")
 	endif()
 endif()
@@ -462,16 +468,10 @@ if (error_res)
 endif()
 
 # post install configuration of the workspace
-set(error_res "")
-execute_process(COMMAND ${CMAKE_COMMAND} 
-			-D WORKSPACE_DIR=${WORKSPACE_DIR} 
-			-D PACKAGE_NAME=${package} 
-			-D PACKAGE_VERSION=${version_string}
-			-D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=${REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD}
-			-P ${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake
-          	WORKING_DIRECTORY ${WORKSPACE_DIR}
-		ERROR_VARIABLE error_res OUTPUT_QUIET)
-if(error_res)
+set(PACKAGE_NAME ${package})
+set(PACKAGE_VERSION ${version_string})
+include(${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake)
+if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
 	message(WARNING "install : cannot configure runtime dependencies for installed version ${version_string} of package ${package}")
 	return()
@@ -480,7 +480,6 @@ set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_Package)
 
 ### 
-
 function(build_And_Install_Source DEPLOYED package version)
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_WITH_PRINT_MESSAGES:BOOL=OFF -D USE_LOCAL_DEPLOYMENT:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D BUILD_PACKAGE_REFERENCE:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..

@@ -17,24 +17,12 @@
 # XXX_YYY_APP_ZZZ_PARAMS[_DEBUG]# all parameters used  
 # XXX_YYY_APP_ZZZ_PARAM_VVV	# string parameter VVV for application ZZZ used by the launch file YYY of package XXX 
 
-#TODO managing the automatic installation of binay packages or git repo (if not exist) !!
-
 ##################################################################################
 ####################### configuring build time dependencies ######################
 ##################################################################################
-###
-function(test_Package_Location DEPENDENCIES_NOTFOUND package dependency)
-	if(NOT ${dependency}_FOUND)
-
-		if("${${package}_DEPENDENCY_${dependency}_VERSION}" STREQUAL "")
-			message(SEND_ERROR "The required package ${a_dependency} has not been found !")
-		elseif(${package}_DEPENDENCY_${dependency}_VERSION_EXACT)
-			message(SEND_ERROR "The required package ${a_dependency} with exact version ${${package}_DEPENDENCY_${dependency}_VERSION} has not been found !")
-		else()
-			message(SEND_ERROR "The required package ${a_dependency} with version compatible with ${${package}_DEPENDENCY_${dependency}_VERSION} has not been found !")
-		endif()
-		set(${DEPENDENCIES_NOTFOUND} ${DEPENDENCIES_NOTFOUND} ${dependency} PARENT_SCOPE)
-	endif()
+### ICI TODO gérer les envis d'erreur sur les message via un argument
+function(test_Package_Location FOUND package dependency)
+	
 endfunction(test_Package_Location)
 
 
@@ -48,6 +36,7 @@ endfunction(test_Package_Location)
 function(resolve_Package_Dependency package dependency)
 
 if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
+	message("DEBUG resolve_Package_Dependency ${dependency} already FOUND !!")	
 	if(${package}_DEPENDENCY_${dependency}_VERSION) # a specific version is required
 	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT) #an exact version is required
 			
@@ -96,6 +85,7 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 		return()#by default the version is compatible (no constraints) so return 
 	endif()
 else()#the dependency has not been already found
+	message("DEBUG resolve_Package_Dependency ${dependency} NOT FOUND !!")	
 	if(	${package}_DEPENDENCY_${dependency}_VERSION)
 		
 		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT) #an exact version has been specified
@@ -128,8 +118,7 @@ else()#the dependency has not been already found
 		)
 	endif()
 endif()
-test_Package_Location(DEPENDENCIES_NOTFOUND ${package} ${dependency})
-set(${package}_DEPENDENCIES_NOTFOUND ${DEPENDENCIES_NOTFOUND} PARENT_SCOPE)
+
 endfunction(resolve_Package_Dependency)
 
 ###
@@ -234,37 +223,48 @@ endfunction(update_Component_Build_Variables_With_Internal_Dependency)
 
 function(resolve_Package_Dependencies package build_mode_suffix)
 # 1) managing package dependencies (the list of dependent packages is defined as ${package_name}_DEPENDENCIES)
-# - locating dependent packages in the workspace and configuring their build variables recursively 
+# - locating dependent packages in the workspace and configuring their build variables recursively
+message("DEBUG resolve_Package_Dependencies for ${package} ... step 1), dependencies are : ${${package}_DEPENDENCIES${build_mode_suffix}}")
+set(TO_INSTALL_DEPS)
 foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
 	# 1) resolving direct dependencies
+	message("DEBUG resolving dependency ${dep_pack} for package ${package}")
 	resolve_Package_Dependency(${package} ${dep_pack})
 	if(${dep_pack}_FOUND)
+		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-1), dependency ${dep_pack} FOUND !!")
 		if(${dep_pack}_DEPENDENCIES${build_mode_suffix})
 			resolve_Package_Dependencies(${dep_pack} "${build_mode_suffix}")#recursion : resolving dependencies for each package dependency
 		endif()
+	else()
+		list(APPEND TO_INSTALL_DEPS ${dep_pack})
+		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-2), dependency ${dep_pack} NOT FOUND !!")
 	endif()
 endforeach()
 
 # 2) for not found package
-need_Install_Packages(INSTALL_REQUIRED)
-if(INSTALL_REQUIRED)
+message("DEBUG resolve_Package_Dependencies for ${package} ... step 2)")
+if(TO_INSTALL_DEPS) #there are dependencies to install
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_DEPS}")
 		set(INSTALLED_PACKAGES "")
-		install_Required_Packages(INSTALLED_PACKAGES)
+		install_Required_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES)
+		message("resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_PACKAGES}")
 		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
-			resolve_Package_Dependency(${package} ${installed})	
-			if(${installed}_FOUND)		
+			resolve_Package_Dependency(${package} ${installed})
+			if(${installed}_FOUND)
 				if(${installed}_DEPENDENCIES${build_mode_suffix})
 					resolve_Package_Dependencies(${installed} "${build_mode_suffix}")#recursion : resolving dependencies for each package dependency
 				endif()
 			else()
-				message(FATAL_ERROR "BUG : impossible to find an installed package")
-			endif()			
+				message(FATAL_ERROR "BUG : impossible to find installed package ${installed}")
+			endif()	
 		endforeach()
 	else()	
 		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
+else()
+	message("DEBUG nothing to INSTALL !!")
 endif()
 
 endfunction(resolve_Package_Dependencies)
@@ -283,13 +283,14 @@ set(${package_name}_DURING_PREPARE_BUILD TRUE)
 
 # 1) initializing all build variable that are directly provided by each component of the target package
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
+	message("DEBUG pakane name = ${package_name}, component = ${a_component}, root dir = ${${package_name}_ROOT_DIR}")
 	init_Component_Build_Variables(${package_name} ${a_component} ${${package_name}_ROOT_DIR})
 endforeach()
 
 # 2) setting build variables with informations coming from package dependancies
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
 	foreach(a_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		#message("undirect dependencies for ${package_name} ${a_component}") 
+		#message("DEBUG undirect dependencies for ${package_name} ${a_component}") 
 		foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS${USE_MODE_SUFFIX}}) 
 			update_Component_Build_Variables_With_Dependency(${package_name} ${a_component} ${a_package} ${a_dep_component})
 		endforeach()

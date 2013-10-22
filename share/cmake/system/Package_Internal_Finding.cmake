@@ -257,6 +257,7 @@ if(idx EQUAL -1)#the component is NOT an application
 			foreach(header IN ITEMS ${${package_name}_${component_name}_HEADERS})
 				find_file(PATH_TO_HEADER NAMES ${header} PATHS ${package_path}/include/${${package_name}_${component_name}_HEADER_DIR_NAME} NO_DEFAULT_PATH)
 				if(PATH_TO_HEADER-NOTFOUND)
+					set(PATH_TO_HEADER CACHE INTERNAL "")
 					return()
 				else()
 					set(PATH_TO_HEADER CACHE INTERNAL "")
@@ -273,6 +274,7 @@ if(idx EQUAL -1)#the component is NOT an application
 					NAMES ${${package_name}_${component_name}_BINARY_NAME} ${${package_name}_${component_name}_BINARY_NAME_DEBUG}
 					PATHS ${package_path}/lib NO_DEFAULT_PATH)
 			if(PATH_TO_LIB-NOTFOUND)
+				set(PATH_TO_LIB CACHE INTERNAL "")				
 				return()
 			else()
 				set(PATH_TO_LIB CACHE INTERNAL "")
@@ -288,6 +290,7 @@ else()#the component is an application
 				NAMES ${${package_name}_${component_name}_BINARY_NAME} ${${package_name}_${component_name}_BINARY_NAME_DEBUG}
 				PATHS ${package_path}/bin NO_DEFAULT_PATH)
 		if(PATH_TO_EXE-NOTFOUND)
+			set(PATH_TO_EXE CACHE INTERNAL "")
 			return()
 		else()
 			set(PATH_TO_EXE CACHE INTERNAL "")

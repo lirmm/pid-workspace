@@ -1,10 +1,9 @@
 
 ###################################################################################
-### this is the script file to call with cmake -P to rebind a package's content ###
+########### this is the script file to call to rebind a package's content #########
 ###################################################################################
-## arguments (passed with -D<name>=<value>): WORKSPACE_DIR, PACKAGE_NAME, PACKAGE_VERSION, REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD (TRUE or FALSE)
-set(PROJECT_NAME ${PACKAGE_NAME})#setting a project name to allow find scripts to work
-
+## arguments (passed with -D<name>=<value>): WORKSPACE_DIR, PACKAGE_NAME, PACKAGE_VERSION, REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD (TRUE or FALSE), CMAKE_BINARY_DIR, PROJECT_NAME
+set(${PACKAGE_NAME}_BINDED_AND_INSTALLED FALSE)
 include(${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_VERSION}/share/Use${PACKAGE_NAME}-${PACKAGE_VERSION}.cmake OPTIONAL RESULT_VARIABLE res)
 #using the generated Use<package>-<version>.cmake file to get adequate version information about components
 if(	${res} STREQUAL NOTFOUND
@@ -38,7 +37,7 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS_DEBUG})
 	else()
 		is_A_System_Reference_Path(${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG} RES)		
 		if(NOT RES)#by default we consider that the workspace contains installed external projects in a dedicated folder for it if the external package has not been declared as installed by default in system directories
-			set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG ${WORKSPACE_DIR}/external/${ext_dep})
+			set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG ${WORKSPACE_DIR}/external/${ext_dep} CACHE PATH "")
 			list(APPEND NOT_DEFINED_EXT_DEPS_DEBUG ${ext_dep})
 		endif()
 	endif()
@@ -49,7 +48,7 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS})
 	else()
 		is_A_System_Reference_Path(${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH} RES)		
 		if(NOT RES)
-			set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH ${WORKSPACE_DIR}/external/${ext_dep})
+			set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH ${WORKSPACE_DIR}/external/${ext_dep} CACHE PATH "")
 			list(APPEND NOT_DEFINED_EXT_DEPS ${ext_dep})
 		endif()
 		
@@ -72,15 +71,17 @@ write_Use_File(${theusefile} ${PACKAGE_NAME} Release)
 write_Use_File(${theusefile} ${PACKAGE_NAME} Debug)
 
 # 4) resolving all runtime dependencies
-set(${PACKAGE_NAME}_ROOT_DIR ${BIN_PACKAGE_PATH})
-set(${PACKAGE_NAME}_FOUND TRUE)
+set(${PACKAGE_NAME}_ROOT_DIR ${BIN_PACKAGE_PATH} CACHE INTERNAL "")
+set(${PACKAGE_NAME}_FOUND TRUE CACHE INTERNAL "")
 
 # finding all package dependencies
+message("DEBUG RESOLVE PACKAGE DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
 resolve_Package_Dependencies(${PACKAGE_NAME} "_DEBUG")
 resolve_Package_Dependencies(${PACKAGE_NAME} "")
 
+message("DEBUG RESOLVE PACKAGE RUNTIME DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
 # resolving runtime dependencies
 resolve_Package_Runtime_Dependencies(${PACKAGE_NAME} Debug)
 resolve_Package_Runtime_Dependencies(${PACKAGE_NAME} Release)
 
-
+set(${PACKAGE_NAME}_BINDED_AND_INSTALLED TRUE)
