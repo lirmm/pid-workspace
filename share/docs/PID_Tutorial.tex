@@ -21,7 +21,7 @@
 	Robin Passama\\
 	CNRS Research Engineer\\
 	Robotic Department\\	
-	LIRMM - UMR5506 -University Of Montpellier\\	
+	LIRMM - UMR5506 - University Of Montpellier\\	
 	\texttt{passama@lirmm.fr}}
 \date{October 2013}
 
@@ -49,36 +49,42 @@ The main goal of this document is to provide a method that helps improving the o
 \item pooling software developments between robotic teams.
 \end{itemize}
 
-To achieve this goal the Finding, Writing, Compiling, Testing, Version controlling and Documenting of the code are mandatory concerns. This proposal document relies on generic concepts around which the whole development process, including all these concerns, is organized.
+To achieve this goal the Finding, Writing, Compiling, Testing, Version controlling and Documenting of the code are mandatory concerns. This document define how the whole development process is organized.
+
+\section{Basic Concepts}
+
+The following subsections explain basic concepts that need to be understood to start working with the PID methodology. First of all, root concepts are:
 
 \begin{itemize}
-\item \textbf{package} : a package is the basic unit for code development, unit testing, source version controlling, deployment specification, documentation writing. A package provides some functional code that can be reused (libraries, executables, header files, scripts, etc.) and depends on other packages either for its compilation (static libraries, header files archives/folders) or for its runtime use (dynamic libraries, executables, script-like files). A package is something alive that is continuously evolving. It can contains as well an entire huge software (e.g. operating system) as a very elementary piece of code (e.g. header files, a library, etc.).
-\item \textbf{framework} :  a framework is a site where are deployed packages versions, consisting in a set of header files, libraries, executables, script-like files, tutorials, etc., without development artifacts (source code, build files, etc.). A framework embeds one or more stable versions of a given package that have been previously released by the package developers, allowing the user to choose which version he wants to use (for instance to compile a package in development).
-\item \textbf{workspace }:  the workspace is the folder hierarchy in which the user develops packages and deploys the frameworks he uses (third party or resulting from its own package deployment). The idea to use a workspace is to avoid to use system dependencies : everything is then local and relative to a framework (except of course basic system dependencies). The workspace also provides categories : each category defines a specific subject that helps classifying packages/frameworks. For instance the category sensor will reference all packages or frameworks that implement the driver of a sensor. Categories can be hierarchically refined into sub categories for instance the category camera refines the category sensors. Categories can be viewed as lists of links that target frameworks/packages. The process of classification of packages is itself coming from package description (i.e. a package specifies the categories it belongs to). Finally the workspace also contains some kind of package servers addresses. These addresses are used to retrieve the available packages, that can then in turn be used inside the workspace.
-\item \textbf{package server} : a package server is a computer (accessible across the network) that hosts many packages. It centralizes the access to packages, and handles the rights of the users for each package. It is responsible of the global version control of packages. It can also provides tools (like redmine web interface) to manage the development project (teams members, Gantt diagram, bugs/activities reports, wiki, version history visualization, etc.) bound to packages it hosts.
+
+\item \textbf{package} : a package is the basic unit for code development, unit testing, source version controlling, deployment specification, documentation writing. A package provides some functional code that can be reused (libraries, executables, header files, scripts, etc.) and depends on other packages either for its compilation (static libraries, header files archives/folders) or for its runtime use (dynamic libraries, executables, script-like files). It can contains as well an entire huge software (e.g. operating system) as a very elementary piece of code (e.g. header files, a library, etc.).A package has two main different forms :
+\begin{itemize}
+\item a source form. In this form, the package is a git repository that contains the  package's source code. It is something "alive" that is continuously evolving along development process.
+\item a binary form. In this form, the package is a collection of software artefacts (headers, configuration files, executables, libraries, documentation, etc.) deployed in a given place of a file system. It is something static (does not evolved) that is associated to a specific version of the package's source form. A binary package can be embedded into an archive in order to be easily retrieved and deployed on a file system.
 \end{itemize}
 
+\item \textbf{workspace}:  the workspace is the folder hierarchy in which the user develops source packages and deploys the binary packages he uses (third party or resulting from its own package deployment). The basic idea is to avoid to use system dependencies : every software artefact in the development process is then local and relative to the workspace, except of course artefacts bound to system dependencies. 
 
-\section{Package}
+\item \textbf{package server} : a package server is a computer (accessible across the network) that hosts many packages (either source or binary). It centralizes the access to packages, and handles the rights of the users for each package. It is responsible of the global version control of packages. It can also provides tools to manage the development of packages it hosts (teams members, bugs and activities tracking/reports, wiki, version history and development branches, visualization, etc.).
+\end{itemize}
+ 
+\subsection{Package}
 
 The package is the basic working unit for developers. A package :
 \begin{itemize}
 \item contains the functional source code.
 \item contains the tests source code.
-\item contains the compilation files to build the source code.
-\item contains script like files used to launch the executable code.
-\item contains script like files used to deploy the code into frameworks.
 \item contains version control information files.
-\item contains documentation of code.
+\item contains the compilation files used to : build the source code and documentation, run tests, generate configuration files, install its resulting binary form in the workspace and generate an installable archive of its binary form.
 \end{itemize}
 
-The main idea is that a package is completely self-contained. It does not means it contains all code and artifacts it requires but it contains all information needed to satisfy its dependencies. In other words considering a given package, its installation process is done using these information and information contained in its dependent packages.
+The main idea is that a package is completely self-contained. It does not means it contains all code and artefacts it requires but it contains all information needed to satisfy its dependencies. In other words considering a given package, its installation process is done using these information and information contained in its dependent packages.
 
 The present document helps normalizing the development process of packages. To do this, we first need to define which tools and norms are used in this process.
 
-\subsection{Package Tooling}
+\subsubsection{Package Tooling}
 
-For each development task in a package a tool is used to achieve this task. To ease the portability of code, only cross platforms/cross language tools are used by default:
+For each development task in a package, a tool is used to achieve this task. To ease the portability of code, only cross platforms tools are used by default:
 \begin{itemize}
 \item \textbf{git} is used for the concurrent version control and patching of the code. It is also the tool used to deliver and retrieve the source code.
 \item \textbf{cmake} is used to manage the build process, but also deployment and test. 
@@ -86,189 +92,131 @@ For each development task in a package a tool is used to achieve this task. To e
 \item \textbf{latex} is the preferred language to write big documents, since it allows to version the full content of file (raw text and structure of the document), as opposed to binary formats like Microsoft Word or Libre-Office that are not well handled by git.
 \end{itemize}
 
-\subsection{Package Structure}
+\subsubsection{Package Structure}
 
 A Package is generically structured according to the folder hierarchy defined below:
 \begin{itemize}
-\item the root folder of the package has the name of the package. This folder is basically a git repository which allows to manage concurrent work and version control on a package's content.
-\item the \textbf{.git} folder contains version control related information, managed by the git tool.
-\item the \textbf{.gitignore} file is used to exclude from version control some of the folders/files like \textbf{build}.
-\item the \textbf{CMakeModules} folder contains all cmake scripts files (.cmake) used to find and configure required system dependencies that are very specific to the package. 
-\item the \textbf{CMakeList.txt} file is used to describe how to build, install and test the whole package. 
+\item the root folder of the package has the \textbf{name of the package}. This folder is basically a git repository which allows to manage concurrent work and version control on a package's content.
+\item the \textbf{.git} folder contains version control related information, automatically managed by the git tool.
+\item the root \textbf{.gitignore} file is used to exclude from version control some artefacts like temporary files.
+\item the \textbf{CMakeList.txt} file is used to describe how to build, install and test the whole package. It also contains meta-information on the package (authors and institutions, repository address, license, etc.).
 \item the \textbf{build} folder contains results from build process and contains two subdirectories: \textbf{release} and \textbf{debug}. Each of them contains the hierarchy of files and artefacts generated by the compilation process.
-\item the \textbf{config} folder contains all configuration files required by executables (including tests) or libraries.
-\item the \textbf{src} folder contains sources files (e.g. .c/.cpp in C/C++, .py in python, etc.). Each subdirectory of \textbf{src} contains sources for a given library and is hierarchically organized according to developers needs.
-\item the \textbf{include} folder contains interface description files, typically exported headers files (.h, .hpp) in C/C++. Hierarchical organization in this directory is the same as in \textbf{src}. Non exported headers are let in the \textbf{src} folder, as they are not considered as a part of the interface of the package.
-\item the \textbf{test} folder contains source files for test units. Each subdirectory of \textbf{test} contains sources for a test unit.
-\item the \textbf{apps} folder contains source files for applications, an application being an example of the usage of a library, a runtime component or a complete software. Each subdirectory of \textbf{apps} contains sources for a given application and is hierarchically organized according to developers needs. 
-\item the \textbf{launch} folder contains scripts used to launch executables, if any. It does not contain functional scripts (that are put in src) but only kernel modules loading/unloading and applications starting/stopping operations, as well as any system configuration procedure.
-\item the \textbf{share} folder contains user written documents (e.g. tutorial, examples, design reports, install procedure).
-\item the \textbf{license.txt} file contains the license that applies to the source code produced in the package.
-\item the \textbf{package.manifest} file contains meta-data about the package.
-\end{itemize}
-
-\subsection{Assigning responsibilities}
-
-One important concern when developing package is to assign responsibilities to members of the department regarding :
+\item the \textbf{src} folder contains sources files (.c/.cpp/.cc in C/C++) of libraries. Each subdirectory of \textbf{src} contains sources use to build one or more library and is itself hierarchically organized according to developers needs. Libraries provided by the package are defined by the CMakeList.txt file contained in the \textbf{src} folder.
+\item the \textbf{include} folder contains interface description files, typically exported (i.e. installed) headers files (.h, .hpp, .hh) in C/C++. Hierarchical organization in this directory is the same as in \textbf{src}. Non exported headers are let in the \textbf{src} folder, as they are not considered as a part of the interface of the package.
+\item the \textbf{apps} folder contains source files for applications, an application being an example of the usage of a library, a runtime component or a end-user software. Each subdirectory of \textbf{apps} contains sources for one or more built application and is hierarchically organized according to developers needs. Applications provided by the package are defined by the CMakeList.txt file contained in the \textbf{apps} folder.
+\item the \textbf{test} folder contains source files for test units. Each subdirectory of \textbf{test} contains sources for one or more test unit. Custom test programs and running tests applied to the package are defined by the CMakeList.txt file contained in the \textbf{test} folder.
+\item the \textbf{share} folder contains user written documents and some specific files used by the build process. Its contains different basic subdirectories :
 \begin{itemize}
-\item software publication policy.
-\item developers roles.
+\item the \textbf{doxygen} folder contains a "default" Doxyfile.in file that is used by doxygen to generate API documentation. This file can be modified by the user to add additional information to the generated documentation. The folder can also contain additional resources (like images), hierarchically organized according to developers needs, used by doxygen to integrate additionnal information in the API documentation.
+\item the \textbf{cmake} folder contains cmake scripts (notably find scripts) that the package uses to find external resources like libraries. This is the place used only for very specific resources for which no default cmake script is available.
+\item the \textbf{config} folder contains configurations files used by libraries and applications/tests of the package.
+\item the \textbf{doc} folder contains "hand-written" documents (e.g. README files, tutorials, design documents, etc.).
+\end{itemize}
+The \textbf{share} folder define a CMakeList.txt file that can be used to install resources of the \textbf{doc} and \textbf{config} folders.
+\item the \textbf{license.txt} file contains the license that applies to the source code produced in the package. This file is generated by the build process.
 \end{itemize}
 
+\subsubsection{Package repository}
 
-\subsubsection{Publication Policy}
+Package repositories are GIT repositories, whose content is structured according to the previously defined pattern. GIT is used to version all text files used (C/C++ sources, cmake scripts, latex sources, etc.). Only source form of a package is a git repository not its binary forms.
 
-The publication policy is the set of decisions that must be taken to clarify responsibilities during package development. This decisions must be taken by LIRMM permanent members involved in the development process, either as project manager or developer. This policy regroups two different decisions :
+\paragraph{Version Numbers as GIT Tags}
+
+A package is continuously evolving along time and git provide an internal version representation of this evolution. Nevertheless, this representation is so fine grained (each time a modification is committed) that it is not really understandable by persons not involved in the package development. That is why we need a version representation that can be either understandable by users and developers. These versions, called \textbf{release version} are defined according to a specific policy.
+
+A \textbf{release version} can be viewed as a screen-shot of the git repository at a given time of package's life. It is associated to a number (called \textbf{release version number}) that is uniquely identifying the version. Technically, a version if represented as a \textbf{GIT tag} : a git tag memorizes a given state of the repository and is marked with a unique label that is used to retrieve this state. In our context the label of the git tag represents the release version number and the repository state pointed by the tag corresponds to the release version. The labelling of git tags representing release versions follows the pattern bellow:
 \begin{itemize}
-\item \textbf{package access} : determines the access rights to the package, in other words who can use the package but also where to find it. We define three possible access rights. A package has only one type of access right at a time but it can change over time:
-\begin{itemize}
-\item \textbf{team access} : only members of the team are authorized to use the package. The package is located on a git server dedicated to the team.
-\item \textbf{laboratory access} : all members of the LIRMM robotics department are authorized to use the package. The package is located on a git server of the department.
-\item \textbf{open access} : the project can be used by external members. The package is located on a public git server (e.g. git hub) or a project dedicated server.
+\item the release tags have the shape \texttt{vX.Y[.Z]}
+\item \texttt{X} is the major version number (starts with value 0). Change of major version number indicates that the code is no more completely backward compatible with previous versions. In other words, the interface of the package (some of the headers files it contains) has been modify in such a way that some function have change or disappeared, or the behaviour/meaning of existing functions completely changed. While X is 0 the version is considered as pre-released and so is not ready for use by third party developers.
+\item \texttt{Y} is the minor version number (starts with value 0). It indicates an improvement that is completely backward compatible with previous version with same major version number. In other words, the only a little change of existing behaviours occurred OR the interface of the package has been improved with new functionalities without breaking the way one use the older functionalities.
+\item \texttt{Z} is the patch version (starts with value 0). It represents a simple bug fix or a security fix. A patch changes nothing to the interface (no new behaviour/functionality) and modify only in a minimal way the internal behaviour.
 \end{itemize}
 
-\item \textbf{software license} : determines which license applies to the source code and resulting applications/libraries contained in the package. Licenses have to be choose with care as there are legal licensing constraints for LIRMM members but also with third party code used.
-
-\end{itemize}
-
-\subsubsection{Developers Roles}
-
-Another important concern is to organize the development process by assigning roles to the developers. We need a simple organization, but with the minimum hierarchical organization to avoid big troubles, notably due to a bad usage of tools or a bad respect of norms.
-\begin{itemize}
-\item a \textbf{manager} is not necessary directly involved in the development, but he is involved in strategical decisions around package development, including publication policy. A manager is a \textbf{permanent member}.
-\item an \textbf{administrator} is directly involved in the development process, he is in charge of software integration and verification, software releasing, and developers registration. An administrator is a \textbf{permanent member}.
-\item a \textbf{developer} is directly involved in the development process. It can be non permanent member or an external collaborator.
-\end{itemize}
-
-\subsection{Package version control}
-
-The overall package version control is made with GIT environment. GIT is used to version all text files used (C/C++ source, script-like files, cmake files, latex, etc.) but not for binaries (libraries, executables, build artifacts like .o, etc.). Indeed, using git to version huge files like executables or libraries will drastically increase the size of the local git repository on the user side.
-
-The package .gitignore file is used to restrict version control for binaries. A package is thus compiled each time it is cloned from a remote.
-
-\subsubsection{Version Numbers as Tags}
-
-A package is continuously evolving along time and git provide an internal version representation of this evolution. Nevertheless, this representation is so fine grained (each time a modification is committed) that it is not really understandable by persons not involved in the package development. That is why we need a version numbers that can be either understandable by users and developers. To achieve this requirement we use tags on packages to represent a given version number. The version corresponding to this number can be viewed as a screen-shot of the git repository at a given time of its life. As it is meaningful either for developers and users of a given package, a tag is always bound to a given released version of the package.
-
-\paragraph{version number pattern:} the release tags have the shape \texttt{vX.Y[.Z]}
-\begin{itemize}
-\item \texttt{X} is the major version number. Change of major version number indicates that the code may not be backward compatible. While X is 0 the version is considered as pre-released and so is not ready for use by third partu developers.
-\item \texttt{Y} is the minor version number. It indicates an improvement that should be backward compatible with previous version with same major version number.
-\item \texttt{Z} is the patch version (bug fix or security fix).
-\end{itemize}
-
-\paragraph{Examples:}
+Each time a new version of a package is released, its version number must be incremented according to the previously defined rules and a corresponding git tag is created. Here are some examples:
 \begin{itemize}
 \item 0.1.0 is the first pre-released version of the package.
 \item 0.Y.Z. are early development pre-released version of the package.
 \item 1.0.0 is the first release of source code.
 \item 1.2.0  is a release of source code backward compatible with version 1.0.0.
 \item 1.2.5 is a release of source code of version 1.2.0 with 5 bug/security fixes.
+\item 2.0.0 is a release that is no more backward compatible with 1.X.Y versions.
+\end{itemize}
+
+\paragraph{Organizing development process with GIT branches}
+
+GIT branches are used to organize the development workflow by registering "increments" made in the repository. Increments are modifications of the repository content, either source code, documentation, etc. A git repository can have many branches representing parallel development work. Most of time developers create branches to isolate the work they do on a specific concern as regard of the software development. This work is keep isolated from the work made on other concerns until developers think this is the good time to integrate (or discard) them. From time to time GIT branches are created, deleted, and merged. Merging consists in registering modifications made in two or more branches into a single branch.
+
+As GIT branches can be used to represent any type of concern their understanding can quickly become a real problem. That is why their usage is constrained according to a predefined pattern inspired from successful branching models. This pattern defines what is the meaning of branches, what they are use for and the way they are created and merged :
+
+\textbf{Main branches} (see in figure~\ref{fig-perm-branches}) have infinite lifetime and must always be usable : their last commit must point to a state in which the package is compilable and executable with unit tests successful.
+\begin{itemize}
+\item The \textbf{master} branch contains the source code that always reflects a production-ready state. This branch is used to \textbf{tag} the released stable source code with version numbers but also to tag important intermediate states of the repository that reflect the development made for demonstrations and publications. 
+\item The \textbf{integration} branch contains the detailed history of all the modification that have been realized on the repository. The source code of HEAD (pointer on the current state of the repository) always reflects a state with the latest delivered development changes for the next release. This is where any automatic nightly builds are built from, if any.
+\item When the source code in the \textbf{integration} branch reaches a stable point and is ready to be released, all of the changes should be merged back into \textbf{master} somehow and then tagged with an adequate release number.
 \end{itemize}
 
 
-\paragraph{Handling tags for version numbers:}
+\begin{figure}
+\center
+\includegraphics[scale=1]{images/permanent_branches.png}
+\caption{Permanent branches of a package}
+\label{fig-perm-branches}
+\end{figure}
+
+\begin{figure}
+\center
+\includegraphics[scale=1]{images/feature_branching.png}
+\caption{Relation between feature and integration branches}
+\label{fig-feature-branches}
+\end{figure}
+
+\textbf{Supporting branches} are temporary branches, used to aid parallel development between team members, ease tracking of features and to assist in quickly fixing live production problems.
 \begin{itemize}
-\item creating the version number (annotated tags):
-\linebreak \texttt{git tag -a v1.2.3 -m"<small description of the version>"}
-\item listing all available versions: 
-\linebreak \texttt{git tag -l 'v*'}
-\item showing the information of a given version: 
-\linebreak \texttt{git show v<version number>}
-\item getting the released version in package history: 
-\linebreak \texttt{git checkout tags/v<version number>}
-\end{itemize}
-
-
-\paragraph{Refining versions with specific tags.} It is also possible to apply tags to certain moment of the package's life in order to register important dates of package state and retrieve this state at any moment in the future. We define two other tag patterns to do so : publication tags, representing software developed to do experiments in the frame of a scientific publication and demo tags used to target versions that match working technical demonstrations. Demo and publication tags relies on last released version number and had specific information:
-\begin{itemize}
-\item \textbf{publication tags pattern} have the shape: \linebreak \texttt{pX.Y[.Z]-<journal-or-conference>-<year>}.
-\item \textbf{demo tags pattern} have the shape:
-\linebreak \texttt{dX.Y[.Z]-<name of demo>-<year>}.
-\end{itemize}
-Same commands as for released versions can be used to handle tags, by replacing the 'v' symbol, by 'p' or 'd'.
-
-
-\subsubsection{Structure of a package repository}
-
-The package's GIT repository is structured according to a predefined pattern. This pattern, inspired from successful branching models, defines the way branches are created and merged. 
-
-\paragraph{Main branches:} main branches have infinite lifetime.
-\begin{itemize}
-\item The \textbf{master} branch contains the source code that always reflects a production-ready state. This branch is used to \textbf{tag} the released stable source code with version numbers but also to tag important intermediate states of the repository that reflect the development made for demonstrations and publications. The master branch must always be usable (compilable and executable with unit tests successful).
-\item The \textbf{develop} branch is the integration branch that gives the detailed history of all the modification that have been realized on the repository. The source code of HEAD always reflects a state with the latest delivered development changes for the next release. This is where any automatic nightly builds are built from, if any. When the source code in the develop branch reaches a stable point and is ready to be released, all of the changes should be merged back into master somehow and then tagged with a release number. The develop branch must always be usable (compilable and executable with unit tests successful).
+\item \textbf{Features} branches (see figure ~\ref{fig-feature-branches}) are used to develop new features /address new topics for the upcoming or a distant future release. Each feature branch must branch from the \textbf{integration} branch. A feature branch exists as long as the feature is in development, but will be merged back into develop (to definitely add the new feature to the upcoming release) or discarded (in case of a disappointing experiment). During its lifetime a feature should be updated from time to time with the modifications contained in the \textbf{integration} branch (issued for instance from the integration of other features). Doing so, the final merge of the feature will be more easy as the state of the feature will be not to far, in terms of importance of modifications, from the state of the \textbf{integration} branch.
+\item \textbf{Hotfixes} branches (see figure ~\ref{fig-hotfix-branches}) arise from the necessity to act immediately upon an undesired state of a released version. When a critical bug in a realease version must be resolved immediately, a hotfix branch may be branched off from the corresponding tag on the \textbf{master} branch that marks the production version. Hotfix branches are used to allow team members to continue their work (on the \textbf{integration} and \textbf{feature} branches), while another person is preparing a quick bug/security fix. When bugs are solved, the bug fix must be merged back into both \textbf{master} and \textbf{integration} branches. When merged the \textbf{master} branch is tagged with a new \textit{patch version number}.
 \end{itemize}
 
 \begin{figure}
 \center
-\includegraphics[scale=0.7]{images/permanentbranches.png}
-\end{figure}
- 
-\paragraph{Supporting branches:} these are temporary branches, used to aid parallel development between team members, ease tracking of features and to assist in quickly fixing live production problems.
-\begin{itemize}
-\item \textbf{Features} (or topic) branches are  used to develop new features for the upcoming or a distant future release. Each feature branch must branch from the develop branch. The essence of a feature branch is that it exists as long as the feature is in development, but will eventually be merged back into develop (to definitely add the new feature to the upcoming release) or discarded (in case of a disappointing experiment).
-\item \textbf{Hotfixes} branches arise from the necessity to act immediately upon an undesired state of a live production version. When a critical bug in a production version must be resolved immediately, a hotfix branch may be branched off from the corresponding tag on the master branch that marks the production version. The essence is that work of team members (on the develop branch) can continue, while another person is preparing a quick production fix. When the bug is solved, the bug fix must be merged back into both master and develop branches. When merged the master branch is tagged with a new \textit{patch version number}.
-\end{itemize}
-
-\begin{figure}
-\center
-\includegraphics[scale=0.6]{images/featurebranching.png}
-\caption{Relation between feature and develop branches}
+\includegraphics[scale=1]{images/hotfix_branching.png}
+\caption{Relation between hotfix and integration/master branches}
+\label{fig-hotfix-branches}
 \end{figure}
 
-\paragraph{Naming Conventions:}
+\textbf{Naming Conventions:}
 \begin{itemize}
 \item a \textbf{feature} branch name starts with "feature-" and ends with the name of the feature (given by developer).
-\linebreak example : \texttt{feature-rtmemorymanagement}
+\linebreak example : \texttt{feature-newfunctionnality}
 \item a \textbf{hotfix} branch name starts with "hotfix-" and ends with the new \textit{patch version} of the released version.
 \linebreak example : \texttt{hotfix-1.2.1}
 \end{itemize}
 
 
-\begin{figure}
-\center
-\includegraphics[scale=0.6]{images/hotfixbranching.png}
-\caption{Relation between hotfixes and develop/master branches}
-\end{figure}
 
-\paragraph{Handling feature branches in GIT:}
+
+\paragraph{Collaborative working with GIT repositories}
+
+Now that the way the package is structured and is evolving the last part of this section consist in defining how people involved in the package's life cycle work together. The first concern is to define the \textbf{privileges} owned by these persons as regard of the repository usage. To do so we first define the three roles associated to each package:
 \begin{itemize}
-\item Creating a feature branch:
-\linebreak \texttt{git checkout -b <feature name> develop}
-\item Listing available branches:
-\linebreak \texttt{git branch -a}
-\item Incorporating a finished feature on develop:
-\linebreak \texttt{git checkout develop}
-\linebreak \texttt{git merge --no-ff feature-<feature name>}
-\linebreak \texttt{git branch -d  feature-<feature name>}
-\linebreak \texttt{git push origin develop}
+\item \textbf{users} are people using the package but not involved in its development.
+\item \textbf{developers} are users involved in the development of a package.
+\item \textbf{administrators} are developers with additional privileges, as they are considered as responsible of the package by users of the package.
+\end{itemize}
+
+Privileges associated to each role are managed inside the \textbf{package server} that hosts the package: 
+\begin{itemize}
+\item each package repository is associated to three \textit{groups}, each one representing a role previously defined. For example, for a package "a-pack" , there are groups "a-pack-users", "a-pack-developers" and "a-pack-administrators". Each group provides specific privileges on the package repository.
+\item users registered inside the \textbf{package server} may be affected to one of these \textit{groups}. Doing so, these users obtain corresponding privileges on the package repository.
+\item the repository can be set "public" so that anyone is considered as a user. In this case the users group is not useful and can be let undefined.
 \end{itemize}
 
 
-\pagebreak
-\paragraph{Handling hotfixes branches in GIT:}
+ICI
+
+The basic scheme for collaborative working between package developers is presented in figure~\ref{fig-collab}. 
+Given a package, this package has an \textbf{official GIT repository} that is deployed on a given package server. This repository is \textit{official} in the sense that it centralizes information of the package and is public, which means that all concerned people (team, laboratory or more generally anyone registered in the server) can access to it. The access in itself is restricted with respects to roles:
 \begin{itemize}
-\item Creating a hotfix branch:
-\linebreak \texttt{git checkout -b hotfix-<patch version> master}
-\item Incorporating a finished hotfix on master and develop:
-\linebreak \texttt{git checkout master}
-\linebreak \texttt{git merge --no-ff hotfix-<patch version>}
-\linebreak \texttt{git tag -a <patch version>}
-\linebreak \texttt{git push origin master}
-\linebreak \texttt{git checkout develop}
-\linebreak \texttt{git merge --no-ff hotfix-<patch version>}
-\linebreak \texttt{git branch -d  hotfix-<patch version>}
-\linebreak \texttt{git push origin develop}
-\end{itemize}
-
-
-\subsection{Collaborative Working}
-
-The basic scheme for collaborative working is presented in figure~\ref{fig-collab}. The basic idea is to structure the update process of the GIT repository according to some access rights that are themselves dependent from developers roles.
-
-Given a package, this package has an \textbf{official GIT repository} that is deployed on a server, either a team, a laboratory or a public server. This repository is \textit{official} in the sense that it centralizes information of the package and is public, which means that all concerned people (team, laboratory or more generally anyone registered in the server) can access to it. The access in itself is restricted with respects to roles:
-\begin{itemize}
-\item registered administrators have read/write access.
+\item registered administrators have read/write access on the official package.
 \item registered developers have read access.
 \item unregistered people may have read access (i.e. open source repository).
 \end{itemize}
@@ -300,22 +248,8 @@ They are so the only persons that can truly:
 \item centralize the whole process.
 \end{itemize} 
 
-When an administrator decides to affect a pool of developers to the development of a package:
-\begin{enumerate}
-\item he first \texttt{clones} the official repository of the package into a private access area on the server, that is accessible (via ssh access) only to this pool of developers. 
-\linebreak \texttt{ssh <private area>}
-\linebreak \texttt{git clone <address of the package official repository>}
-\item Second, he creates one or more feature branches as described in previous section.
-\linebreak \texttt{git checkout -b <feature name> develop}
-\item Third, all developers in turn \texttt{clone} this private repository into their own work station so that they can work locally and update (\texttt{push/pull})the server version of the private repository.
-\linebreak \texttt{git clone <address of the package private repository>}
-\item When features development is done or aborted, the administrator deletes 
-the private repository on server by simply deleting the repository's folder and removing access to the users if necessary.
-\linebreak \texttt{ssh <private area>}
-\linebreak \texttt{rm <package private repository folder>}
-\end{enumerate}
 
-\paragraph{Nearly all the development process takes place in developers/administrators workstations, around the private repository:}
+Nearly all the development process takes place in developers/administrators workstations, around the private repository:
 \begin{itemize}
 \item Implementing package features.
 \item Updating the current \textbf{feature branch} on private repository with modifications made on the \textbf{develop} branch. Features never update between each other but only around \textbf{develop} branch. 
@@ -323,105 +257,11 @@ the private repository on server by simply deleting the repository's folder and 
 \item Creating Hotfix branches and implementing hotfixes in them (see previous section).
 \end{itemize}
 
-Administrators of a package are the only ones that can directly access and update the official repository and notably its master branch. That is why they are responsible of \textit{production version releasing} (see previous section): they check the work done by developers and decides if the code is stable enough to release it. Furthermore, if there are many private repositories of the same package they act as brokers of changes made in separate pools of developers:
-\begin{itemize}
-\item Creating a local version of a package repository:
-\linebreak \texttt{cd <path to workspace>/packages/}
-\linebreak \texttt{git clone <address of the package official repository>}
-\item Registering a private repository for a given package on administrator workstation:
-\linebreak \texttt{cd <path to workspace>/packages/<package>}
-\linebreak \texttt{git remote add <private repository name> <private repository address>}
-\item To get the state of a private repository, without merging the result with administrator's local branches:
-\linebreak \texttt{git fetch <private repository name>}
-\item To remove a reference to a private repository (just after/before deletion of the repository by hand):
-\linebreak \texttt{git remote rm <private repository name>}
-\end{itemize}
-
-\subsection{Package description}
-
-The package is described in the \textbf{package.manifest} file. This file centralizes all meta-information about the package, notably considering authoring and licensing aspects. This file looks like this for a given package named "mypack":
-\begin{verbatim}
-<package name="mypack" address="git@idh.lirmm.fr:mypack.git"
-license="LGPL" version="1.2.5">
-<description>
-	//short package description
-</description>
-<category name = "sensor/camera" />
-<category name = "image/processing" />
-<author name="Robin" role="administrator" institution="LIRMM" />
-<author name="Sebastien" role="developer" institution="LIRMM" />    
-<author name="Francois" role="developer"institution="LIRMM" />
-<dependency name="myotherpack" min_version="0.4"
-address="git@explore.lirmm.fr:otherpack.git"/>
-<installer platform="ubuntu" version="1.0.2"
-address="ftp://ftp.gforge.fr/mypack-1.0.2-ubuntu.tgz" />
-<installer platform="ubuntu" version="1.2.0" 
-address="ftp://ftp.gforge.fr/mypack-1.2.0-ubuntu.tgz" />
-<installer platform="macosx" version="1.2.0" 
-address="ftp://ftp.gforge.fr/mypack-1.2.0-macosx.tgz" />
-</package>
-\end{verbatim}
-
-\paragraph{Data Type Definition:}
-\begin{verbatim}
-<!DOCTYPE package [
-
-<!ELEMENT package (description, category*, author+, dependency*, 
-installer*)>
-<!ELEMENT description (CDATA)>
-<!ELEMENT category (EMPTY)>
-<!ELEMENT version (EMPTY)>
-<!ELEMENT license (EMPTY)>
-<!ELEMENT author (EMPTY)>
-<!ELEMENT dependency (EMPTY)>
-<!ELEMENT installer (EMPTY)>
-
-<!ATTLIST package name CDATA #REQUIRED>
-<!ATTLIST package address CDATA #REQUIRED>
-<!ATTLIST category name CDATA #REQUIRED>
-<!ATTLIST version release CDATA #REQUIRED>
-<!ATTLIST license type CDATA #REQUIRED>
-<!ATTLIST author name CDATA #REQUIRED>
-<!ATTLIST author role CDATA #REQUIRED>
-<!ATTLIST author institution CDATA #IMPLIED>
-<!ATTLIST dependency name CDATA #REQUIRED>
-<!ATTLIST dependency min_version CDATA #IMPLIED>
-<!ATTLIST dependency max_version CDATA #IMPLIED>
-<!ATTLIST dependency address CDATA #REQUIRED>
-<!ATTLIST installer platform CDATA #REQUIRED>
-<!ATTLIST installer version CDATA #REQUIRED>
-<!ATTLIST installer address CDATA #REQUIRED>
-]>
-\end{verbatim}
-
-
-\paragraph{Explanations:}
-\begin{itemize}
-\item The \texttt{<package>} markup is the root of the XML description. The \texttt{name} parameter is the same as the package folder name and \texttt{address} specifies where to find the official git repository containing package sources. \texttt{version} defines the last released version of the package (the last version available on master branch with tag containing the given version number). Only release version are referenced, not demo or publication versions. The \texttt{licence} attribute specifies which license applies to the package's content.
-\item the \texttt{description} markup contains a brief description of the package content.
-\item The \texttt{<category>} markups defines in which categories the package is classified (i.e. topics addressed by the package).
-\item The \texttt{<author>} markups list all developers that participate to the development of the package since its creation. Developers have one of the following roles :
-\begin{itemize}
-\item \textbf{developers} are basic users of the package, they can modify any development artefacts (source code, interface, launch, tests, cmake files, etc.) on feature branches.
-\item \textbf{administrators} have the right to do quite anything on the package, they have same rights as developers but also have other particular rights : merging features branches into develop branch ; declaring new production version release (merge on master branch, either from develop or hotfix branches) ; declaring new available installers ; declaring new categories for the package ; changing license or server where the official repository can be found.
-\end{itemize}
-\item the \texttt{dependency} markups declare names and address of packages that are used by the current package. Dependencies are useful information for the developer to find and install packages that provide code (e.g. a library, an executable) used by the current package. Min and max version of the required package can be specified, which is an useful information when deploying a binary version of the package.
-\item the \texttt{installer} markups declare OS installers for binaries of the package. Each installer matches a given version of the package, a given platform and an address where to find the installer. Instead of using a git version of the package, another package that depends on it can simply be bound to an adequate binary version.
-\end{itemize}
-
-\paragraph{Remarks about usage of this file:}
-
-This file centralizes information for developers of the package. It must to be update each time it is necessary:
-\begin{itemize}
-\item When a new production version is released and the master branch is tagged, the \textit{released} number (in \texttt{version} markup) must be incremented accordingly by an administrator.
-\item Each time a new developer contribute to the package it can be automatically added to the list of authors.
-\item The license specified must conforms to the available licenses (see workspace).
-\item Whenever an administrator wants to make available an OS installer for the package's binaries, he simply adds it to the package.manifest file.
-\end{itemize} 
+Administrators of a package are the only ones that can directly access and update the official repository and notably its master branch. That is why they are responsible of \textit{production version releasing} (see previous section): they check the work done by developers and decides if the code is stable enough to release it. Furthermore, if there are many private repositories of the same package they act as brokers of changes made in separate pools of developers.
 
 \pagebreak
 
-\section{Workspace and frameworks}
+\subsection{Workspace and frameworks}
 
 When considering development processes for multi-tasks applications and big pools of libraries that continuously evolve, the need of a global organization immediately arises to manage their underlying complexity. \textbf{Workspaces} and \textbf{frameworks} have been defined to this end.
 \begin{itemize}
@@ -1706,4 +1546,177 @@ From a functional point of view a dependency can generally represent one of thes
 
 Concerning package development, developers have to refer to dedicated document explaining coding rules and general code development guidelines.
 
+\section*{POUBELLE}
+
+\textbf{framework} :  a framework is a site where are deployed packages versions, consisting in a set of header files, libraries, executables, script-like files, tutorials, etc., without development artifacts (source code, build files, etc.). A framework embeds one or more stable versions of a given package that have been previously released by the package developers, allowing the user to choose which version he wants to use (for instance to compile a package in development).
+ The workspace also provides categories : each category defines a specific subject that helps classifying packages/frameworks. For instance the category sensor will reference all packages or frameworks that implement the driver of a sensor. Categories can be hierarchically refined into sub categories for instance the category camera refines the category sensors. Categories can be viewed as lists of links that target frameworks/packages. The process of classification of packages is itself coming from package description (i.e. a package specifies the categories it belongs to).
+ 
+ 
+GIT TAGS
+ 
+\paragraph{Handling tags for version numbers:}
+\begin{itemize}
+\item creating the version number (annotated tags):
+\linebreak \texttt{git tag -a v1.2.3 -m"<small description of the version>"}
+\item listing all available versions: 
+\linebreak \texttt{git tag -l 'v*'}
+\item showing the information of a given version: 
+\linebreak \texttt{git show v<version number>}
+\item getting the released version in package history: 
+\linebreak \texttt{git checkout tags/v<version number>}
+\end{itemize}
+
+
+It is also possible to apply tags to certain moment of the package's life in order to register important dates of package state and retrieve this state at any moment in the future. We define two other tag patterns to do so : publication tags, representing software developed to do experiments in the frame of a scientific publication and demo tags used to target versions that match working technical demonstrations. Demo and publication tags relies on last released version number and had specific information:
+\begin{itemize}
+\item \textbf{publication tags pattern} have the shape: \linebreak \texttt{pX.Y[.Z]-<journal-or-conference>-<year>}.
+\item \textbf{demo tags pattern} have the shape:
+\linebreak \texttt{dX.Y[.Z]-<name of demo>-<year>}.
+\end{itemize}
+ 
+GIT BRANCHING
+ 
+\paragraph{Handling feature branches in GIT:}
+\begin{itemize}
+\item Creating a feature branch:
+\linebreak \texttt{git checkout -b <feature name> develop}
+\item Listing available branches:
+\linebreak \texttt{git branch -a}
+\item Incorporating a finished feature on develop:
+\linebreak \texttt{git checkout develop}
+\linebreak \texttt{git merge --no-ff feature-<feature name>}
+\linebreak \texttt{git branch -d  feature-<feature name>}
+\linebreak \texttt{git push origin develop}
+\end{itemize}
+
+
+\pagebreak
+\paragraph{Handling hotfixes branches in GIT:}
+\begin{itemize}
+\item Creating a hotfix branch:
+\linebreak \texttt{git checkout -b hotfix-<patch version> master}
+\item Incorporating a finished hotfix on master and develop:
+\linebreak \texttt{git checkout master}
+\linebreak \texttt{git merge --no-ff hotfix-<patch version>}
+\linebreak \texttt{git tag -a <patch version>}
+\linebreak \texttt{git push origin master}
+\linebreak \texttt{git checkout develop}
+\linebreak \texttt{git merge --no-ff hotfix-<patch version>}
+\linebreak \texttt{git branch -d  hotfix-<patch version>}
+\linebreak \texttt{git push origin develop}
+\end{itemize}
+
+
+COLLABORATIVE WORKING
+
+When an administrator decides to affect a pool of developers to the development of a package:
+\begin{enumerate}
+\item he first \texttt{clones} the official repository of the package into a private access area on the server, that is accessible (via ssh access) only to this pool of developers. 
+\linebreak \texttt{ssh <private area>}
+\linebreak \texttt{git clone <address of the package official repository>}
+\item Second, he creates one or more feature branches as described in previous section.
+\linebreak \texttt{git checkout -b <feature name> develop}
+\item Third, all developers in turn \texttt{clone} this private repository into their own work station so that they can work locally and update (\texttt{push/pull})the server version of the private repository.
+\linebreak \texttt{git clone <address of the package private repository>}
+\item When features development is done or aborted, the administrator deletes 
+the private repository on server by simply deleting the repository's folder and removing access to the users if necessary.
+\linebreak \texttt{ssh <private area>}
+\linebreak \texttt{rm <package private repository folder>}
+\end{enumerate}
+ 
+\begin{itemize}
+\item Creating a local version of a package repository:
+\linebreak \texttt{cd <path to workspace>/packages/}
+\linebreak \texttt{git clone <address of the package official repository>}
+\item Registering a private repository for a given package on administrator workstation:
+\linebreak \texttt{cd <path to workspace>/packages/<package>}
+\linebreak \texttt{git remote add <private repository name> <private repository address>}
+\item To get the state of a private repository, without merging the result with administrator's local branches:
+\linebreak \texttt{git fetch <private repository name>}
+\item To remove a reference to a private repository (just after/before deletion of the repository by hand):
+\linebreak \texttt{git remote rm <private repository name>}
+\end{itemize} 
+
+PACKAGE DESCRIPTION
+
+The package is described in the \textbf{package.manifest} file. This file centralizes all meta-information about the package, notably considering authoring and licensing aspects. This file looks like this for a given package named "mypack":
+\begin{verbatim}
+<package name="mypack" address="git@idh.lirmm.fr:mypack.git"
+license="LGPL" version="1.2.5">
+<description>
+	//short package description
+</description>
+<category name = "sensor/camera" />
+<category name = "image/processing" />
+<author name="Robin" role="administrator" institution="LIRMM" />
+<author name="Sebastien" role="developer" institution="LIRMM" />    
+<author name="Francois" role="developer"institution="LIRMM" />
+<dependency name="myotherpack" min_version="0.4"
+address="git@explore.lirmm.fr:otherpack.git"/>
+<installer platform="ubuntu" version="1.0.2"
+address="ftp://ftp.gforge.fr/mypack-1.0.2-ubuntu.tgz" />
+<installer platform="ubuntu" version="1.2.0" 
+address="ftp://ftp.gforge.fr/mypack-1.2.0-ubuntu.tgz" />
+<installer platform="macosx" version="1.2.0" 
+address="ftp://ftp.gforge.fr/mypack-1.2.0-macosx.tgz" />
+</package>
+\end{verbatim}
+
+\paragraph{Data Type Definition:}
+\begin{verbatim}
+<!DOCTYPE package [
+
+<!ELEMENT package (description, category*, author+, dependency*, 
+installer*)>
+<!ELEMENT description (CDATA)>
+<!ELEMENT category (EMPTY)>
+<!ELEMENT version (EMPTY)>
+<!ELEMENT license (EMPTY)>
+<!ELEMENT author (EMPTY)>
+<!ELEMENT dependency (EMPTY)>
+<!ELEMENT installer (EMPTY)>
+
+<!ATTLIST package name CDATA #REQUIRED>
+<!ATTLIST package address CDATA #REQUIRED>
+<!ATTLIST category name CDATA #REQUIRED>
+<!ATTLIST version release CDATA #REQUIRED>
+<!ATTLIST license type CDATA #REQUIRED>
+<!ATTLIST author name CDATA #REQUIRED>
+<!ATTLIST author role CDATA #REQUIRED>
+<!ATTLIST author institution CDATA #IMPLIED>
+<!ATTLIST dependency name CDATA #REQUIRED>
+<!ATTLIST dependency min_version CDATA #IMPLIED>
+<!ATTLIST dependency max_version CDATA #IMPLIED>
+<!ATTLIST dependency address CDATA #REQUIRED>
+<!ATTLIST installer platform CDATA #REQUIRED>
+<!ATTLIST installer version CDATA #REQUIRED>
+<!ATTLIST installer address CDATA #REQUIRED>
+]>
+\end{verbatim}
+
+
+\paragraph{Explanations:}
+\begin{itemize}
+\item The \texttt{<package>} markup is the root of the XML description. The \texttt{name} parameter is the same as the package folder name and \texttt{address} specifies where to find the official git repository containing package sources. \texttt{version} defines the last released version of the package (the last version available on master branch with tag containing the given version number). Only release version are referenced, not demo or publication versions. The \texttt{licence} attribute specifies which license applies to the package's content.
+\item the \texttt{description} markup contains a brief description of the package content.
+\item The \texttt{<category>} markups defines in which categories the package is classified (i.e. topics addressed by the package).
+\item The \texttt{<author>} markups list all developers that participate to the development of the package since its creation. Developers have one of the following roles :
+\begin{itemize}
+\item \textbf{developers} are basic users of the package, they can modify any development artefacts (source code, interface, launch, tests, cmake files, etc.) on feature branches.
+\item \textbf{administrators} have the right to do quite anything on the package, they have same rights as developers but also have other particular rights : merging features branches into develop branch ; declaring new production version release (merge on master branch, either from develop or hotfix branches) ; declaring new available installers ; declaring new categories for the package ; changing license or server where the official repository can be found.
+\end{itemize}
+\item the \texttt{dependency} markups declare names and address of packages that are used by the current package. Dependencies are useful information for the developer to find and install packages that provide code (e.g. a library, an executable) used by the current package. Min and max version of the required package can be specified, which is an useful information when deploying a binary version of the package.
+\item the \texttt{installer} markups declare OS installers for binaries of the package. Each installer matches a given version of the package, a given platform and an address where to find the installer. Instead of using a git version of the package, another package that depends on it can simply be bound to an adequate binary version.
+\end{itemize}
+
+\paragraph{Remarks about usage of this file:}
+
+This file centralizes information for developers of the package. It must to be update each time it is necessary:
+\begin{itemize}
+\item When a new production version is released and the master branch is tagged, the \textit{released} number (in \texttt{version} markup) must be incremented accordingly by an administrator.
+\item Each time a new developer contribute to the package it can be automatically added to the list of authors.
+\item The license specified must conforms to the available licenses (see workspace).
+\item Whenever an administrator wants to make available an OS installer for the package's binaries, he simply adds it to the package.manifest file.
+\end{itemize}  
+ 
 \end{document}
