@@ -68,6 +68,20 @@ The following subsections explain basic concepts that need to be understood to s
 \item \textbf{package server} : a package server is a computer (accessible across the network) that hosts many packages (either source or binary). It centralizes the access to packages, and handles the rights of the users for each package. It is responsible of the global version control of packages. It can also provides tools to manage the development of packages it hosts (teams members, bugs and activities tracking/reports, wiki, version history and development branches, visualization, etc.).
 \end{itemize}
  
+The present document helps normalizing the development of packages inside workspace, and the way packages and workspaces are managed on development servers. As definition of concept and process is intrinsically bound to the concepts and process involved in the software tools used, the section first quickly present these tools. Then we define core concepts of the PID methodology based on those of the tools.
+ 
+\subsection{Tooling}
+
+For each development task in a package, a tool is used to achieve this task. To ease the portability of code, only \textbf{cross platforms} tools are used:
+\begin{itemize}
+\item \textbf{git} is used for the concurrent version control and patching of the code. It is also the tool used to deliver and retrieve the source code.
+\item \textbf{cmake} is used to manage the build process, but also deployment and test.
+\item \textbf{doxygen} is used to generate api documentation of source code.
+\item \textbf{latex} is the preferred language to write documents, since it allows to version the full content of file (raw text and structure of the document), as opposed to binary formats like Microsoft Word or Libre-Office that are not well handled by git.
+\end{itemize}
+
+Other tools used, like the compiler/linker (e.g. gcc) used with cmake, or the ssh agent used with git, are supposed to be native (i.e. specific to the OS used) and so adapted by the user depending on the platform used.
+
 \subsection{Package}
 
 The package is the basic working unit for developers. A package :
@@ -78,19 +92,7 @@ The package is the basic working unit for developers. A package :
 \item contains the compilation files used to : build the source code and documentation, run tests, generate configuration files, install its resulting binary form in the workspace and generate an installable archive of its binary form.
 \end{itemize}
 
-The main idea is that a package is completely self-contained. It does not means it contains all code and artefacts it requires but it contains all information needed to satisfy its dependencies. In other words considering a given package, its installation process is done using these information and information contained in its dependent packages.
-
-The present document helps normalizing the development process of packages. To do this, we first need to define which tools and norms are used in this process.
-
-\subsubsection{Package Tooling}
-
-For each development task in a package, a tool is used to achieve this task. To ease the portability of code, only cross platforms tools are used by default:
-\begin{itemize}
-\item \textbf{git} is used for the concurrent version control and patching of the code. It is also the tool used to deliver and retrieve the source code.
-\item \textbf{cmake} is used to manage the build process, but also deployment and test. 
-\item \textbf{doxygen} is used to generate api documentation.
-\item \textbf{latex} is the preferred language to write big documents, since it allows to version the full content of file (raw text and structure of the document), as opposed to binary formats like Microsoft Word or Libre-Office that are not well handled by git.
-\end{itemize}
+The main idea is that a package is self-explanatory. It does not means it contains all code and artefacts it requires but it contains all information needed to satisfy its dependencies. In other words considering a given package, its installation process is done using this information and the information contained in its dependent packages.
 
 \subsubsection{Package Structure}
 
@@ -191,9 +193,6 @@ As GIT branches can be used to represent any type of concern their understanding
 \linebreak example : \texttt{hotfix-1.2.1}
 \end{itemize}
 
-
-
-
 \paragraph{Collaborative working with GIT repositories}
 
 Now that the way the package is structured and is evolving the last part of this section consist in defining how people involved in the package's life cycle work together. The first concern is to define the \textbf{privileges} owned by these persons as regard of the repository usage. To do so we first define the three roles associated to each package:
@@ -207,26 +206,8 @@ Privileges associated to each role are managed inside the \textbf{package server
 \begin{itemize}
 \item each package repository is associated to three \textit{groups}, each one representing a role previously defined. For example, for a package "a-pack" , there are groups "a-pack-users", "a-pack-developers" and "a-pack-administrators". Each group provides specific privileges on the package repository.
 \item users registered inside the \textbf{package server} may be affected to one of these \textit{groups}. Doing so, these users obtain corresponding privileges on the package repository.
-\item the repository can be set "public" so that anyone is considered as a user. In this case the users group is not useful and can be let undefined.
+\item the repository can be set "public" so that anyone is considered as a user. In this case the users group may be not useful and can be let undefined.
 \end{itemize}
-
-
-ICI
-
-The basic scheme for collaborative working between package developers is presented in figure~\ref{fig-collab}. 
-Given a package, this package has an \textbf{official GIT repository} that is deployed on a given package server. This repository is \textit{official} in the sense that it centralizes information of the package and is public, which means that all concerned people (team, laboratory or more generally anyone registered in the server) can access to it. The access in itself is restricted with respects to roles:
-\begin{itemize}
-\item registered administrators have read/write access on the official package.
-\item registered developers have read access.
-\item unregistered people may have read access (i.e. open source repository).
-\end{itemize}
-
-Given development tasks to realize at a given moment, one or more \textbf{private repositories} of the package can be created. These repositories help structuring the development process by affecting some developers to the development of some features in a package. The access to these \textbf{private repositories} is restricted the following way:
-\begin{itemize}
-\item registered administrators and developers have read/write access.
-\item unregistered people have no access.
-\end{itemize}
-A private repository is \textit{temporary} as it is used only for the time of development of new features for the given package. Doing so, the changes that developers do will not immediately impact the official repository, which let the time of the administrator to check if everything is OK.
 
 \begin{figure}
 \center
@@ -235,85 +216,50 @@ A private repository is \textit{temporary} as it is used only for the time of de
 \label{fig-collab}
 \end{figure}
 
-The development process of a package is always initiated by administrators:
+The basic scheme for collaborative working between package developers is presented in figure~\ref{fig-collab}. 
+Given a package, this package has an \textbf{official GIT repository} that is deployed on a given \textbf{package server}. This repository is \textit{official} because it centralizes information of the package and is public, which means that all concerned people (team, laboratory or more generally anyone registered in the server) can access to it. The access in itself is restricted with respects to roles:
 \begin{itemize}
-\item because they know which packages are already available and so which one can be used or extended in the frame of a master/PHD student or postdoc job.
-\item because they know who is already working on similar or complementary software.
-\item because they know which kind of constraints apply to code produced in the laboratory (licenses, access restriction, etc.)
-\end{itemize} 
-They are so the only persons that can truly:
-\begin{itemize}
-\item orient and help developers to increase their productivity by reusing existing code.
-\item optimize collaboration between developers.
-\item centralize the whole process.
-\end{itemize} 
-
-
-Nearly all the development process takes place in developers/administrators workstations, around the private repository:
-\begin{itemize}
-\item Implementing package features.
-\item Updating the current \textbf{feature branch} on private repository with modifications made on the \textbf{develop} branch. Features never update between each other but only around \textbf{develop} branch. 
-\item Managing features branches integration when feature development is finished (see previous section).
-\item Creating Hotfix branches and implementing hotfixes in them (see previous section).
+\item registered \textbf{administrators} have read/write access on the official package.
+\item all other registered \textbf{users} have read access.
+\item unregistered people may have read access (i.e. open source repository).
 \end{itemize}
 
-Administrators of a package are the only ones that can directly access and update the official repository and notably its master branch. That is why they are responsible of \textit{production version releasing} (see previous section): they check the work done by developers and decides if the code is stable enough to release it. Furthermore, if there are many private repositories of the same package they act as brokers of changes made in separate pools of developers.
-
-\pagebreak
-
-\subsection{Workspace and frameworks}
-
-When considering development processes for multi-tasks applications and big pools of libraries that continuously evolve, the need of a global organization immediately arises to manage their underlying complexity. \textbf{Workspaces} and \textbf{frameworks} have been defined to this end.
+During development, one or more \textbf{private repositories} of the package can be created by \textit{forking} the official repository. Depending on the official repository either only registered administrators (private package), developers (protected package), users (public package), or anyone (open package) can \textit{fork} the official repository. Then the creator in addition of the administrators of the official, become \textbf{administrators} of the private repository. Then they can register new \textbf{users} and \textbf{developers} for this repository, with following privileges:
 \begin{itemize}
-\item A \textbf{workspace} is a folder hierarchy in which all development, test and deployment process take place. Basically each user has its own workspace.
-\item Inside the workspace's folder hierarchy, \textbf{frameworks} are specific folders where one or more binary version of package are installed.
+\item registered \textbf{administrators} and \textbf{developers} have read/write access.
+\item registered \textbf{users} have read access.
+\item unregistered people have no access.
 \end{itemize}
 
-\paragraph*{Workspace}
-A workspace is basically a folder hierarchy with a root folder as reference, that contains all data required to create, build, test, install, categorize and license all packages. As compared to classical "do as you wish" installation, the workspace notion as several advantages :
+These repositories help structuring the development process by grouping developers work around a common repository while not immediately impacting the official one. This lets the time to the \textbf{administrators} to check if everything is OK and that modifications can be merged back into the official repository. The main purpose when using \textbf{private repositories}, is to separate the work on the same package made by different groups. For instance, a PhD student working on its demos on one side and a team with external people working in a common research project on the other side.
+
+Administrators of the official package are the only ones that can update the \textbf{official repository} with modifications made on private repositories. That is why they are responsible of \textit{version releasing} (see previous section): they check the work done by developers and decides if the code is stable enough to release it. Furthermore, if there are many private repositories of the same package they act as brokers of changes made in separate pools of developers.
+
+\subsection{Workspace}
+
+The workspace is the place where developers work with packages (either those they develop or those they simply use). Technically, workspaces are local folder hierarchies in any station (server/demo/developers computers) that works with PID packages. A workspace is the place where packages repositories are created, developed and installed, and referenced given a predetermined pattern. As compared to classical "do as you wish" installation, the workspace notion as several advantages :
 \begin{itemize}
 \item there is a reference path in the deploy process in such a way that classifying and finding software artefacts is made easy.
 \item there is no need to use system dependencies intensively for developed packages. As far as possible, every dependency should be satisfied by workspace content, except for system dependencies that cannot be packaged into workspace.
 \item developers can handle many version of a package in the same build/execution environment, without risking to break OS dependencies. Furthermore they can used multiple versions of the same package in the same time.
 \end{itemize}
 
-\paragraph*{Frameworks} 
-Frameworks are simple folders that contain binary version of package, in other word the installation of packages' binaries has to be done in frameworks. A framework is a "screen-shot" of a given package at a given time of its lifetime : it contains the functionalities (executables, scripts, libraries, etc.) provided by the package's version, but no development artefact (no source or build file for instance).
-
-The notion of framework (partly coming from mac osx frameworks) as many advantages as regards to classical system installation process :
-\begin{itemize}
-\item Frameworks help grouping related resources together. This grouping makes it easier to install, uninstall, and locate those resources. For instance libraries and their related headers are logically group in the same place as opposed to system install.
-\item Frameworks can include a wider variety of resource types than just libraries or headers. For example, a framework can include any relevant documentation, html-based API or configuration files.
-\item Multiple versions of a package can be included in the same framework, allowing a smart management of backward compatibility.
-\end{itemize}
-
-
-\subsection{Workspace organization}
+\subsubsection{Workspace organization}
 
 A workspace is a folder (preferably named "workspace") with the following structure:
 \begin{itemize}
 \item the \textbf{.git} folder contains version control related information, managed by the git tool.
-\item the \textbf{.gitignore} file is used to exclude  \textbf{frameworks} and \textbf{packages} folders from version control.
-\item the \textbf{CMakeModules} folder contains cmake scripts used to find and configure commonly used application or libraries (e.g. boost).
-\item the \textbf{licenses} folder contains definitions of available licenses.
-\item the \textbf{references} folder contains package manifest files of all packages available on servers.
-\item the \textbf{frameworks} folder contains packages' binaries installed by the user. This folder is organized into sub directories, each one representing a given package framework.
-\item the \textbf{packages} folder contains all the packages developed by an author. Each sub-folder of \textbf{packages} is a package's repository (as described in section 1).
-\item the \textbf{categories} folder is structured according a set of topics, each topic being itself a folder that in turn contains either other subcategories or \textbf{links to frameworks}. \textbf{categories} only goal is to help finding available packages (under binary form) according to a given theme. Considering a category, packages that are relevant for the theme it defines are referenced as links (symbolic relative links in Linux) to frameworks folders.
-\item the \textbf{patterns} folder contains patterns for packages. These patterns are "generic" folders that describe the structure of a package as in section 1.
-\end{itemize}
 
-The workspace is a git repository, but that does not define package. The workspace repository is a commonly "shared" repository into which all registered administrators can read and write ! The basic idea when starting to work is to get the official workspace from a unique official git repository. This workspace contains all available packages referenced at a given date. Each time a new package is created it is referenced into the local workspace (by an administrator) and then changes are committed so that anyone can know the existence of this new package, can retrieve its hosting server or may know to which categories it belongs. This does not mean that this person can use binary version or repository of this package, since this is bound to his access rights to the servers (at least one can know which person to call to get the rights).
-
-\paragraph{Rules for the modification of the repository:}
-\begin{itemize}
-\item .gitignore cannot be modified.
-\item No new direct subfolder or file of the workspace root can be created or removed.
-\item files (package references, licenses definitions) can be added or removed only by administrators.
+\item the \textbf{install} folder contains packages' binaries installed by the user. Each of its direct sub directories is a folder where are installed package binary versions.
+\item the \textbf{packages} folder contains all the packages developed by an author. Each sub-folder of \textbf{packages} is a local repository of a given package as presented previously.
+\item the \textbf{external} folder contains all the external packages used by the installed package (source or binary). Each subdirectory corresponds to an external package, whose content is in turn completely undefined.
+\item the \textbf{.gitignore} file is used to exclude  \textbf{install}, \textbf{packages} and \textbf{external} folders content from version control. This is mandatory since these folders content is supposed to be \textbf{ purely local a a user workstation}.
+\item the \textbf{share} folder contains important files used to manage packages. The \textbf{docs} sub-folder contains documentation including the present document ; the \textbf{cmake} folder contains all scripts and data required to describe, build, install, deploy and configure packages: the \textbf{find} sub-folder contains cmake find script for commonly used external packages ; the \textbf{system} sub-folder contains generic scripts ; \textbf{patterns} contains cmake pattern files used ; \textbf{references} contains cmake script files with meta-information about available packages ; \textbf{licenses} contains cmake script files containing available license description; 
 \end{itemize}
 
 
-\subsection{Frameworks organization}
+The install folder contains installed binary version(s) of any package used by a user.
+ 
 A framework is a folder (whose name is a given unique package name) contained in the \textbf{frameworks} folder of the workspace. It contains as many folders as there are concurrent binary versions of the package installed. The name of the version folder reflects the installed package version it contains (e.g. : 1.3.5 ; 1.2.0, etc.). Each version folder is organized according to the following structure. 
 \begin{itemize}
 \item the \textbf{CMakeModules} folder contains all cmake scripts files (.cmake) used to find and configure required runtime dependencies.
@@ -330,208 +276,19 @@ A framework is a folder (whose name is a given unique package name) contained in
 There is also a specific version folder in the framework, named \textbf{own}, in which are installed artefacts resulting from the current package in development. A package has to be installed in this specific version folder whenever the developer works on another than \textbf{master branch} (that theoretically contains only released versions).
 Finally, the framework also contains a folder named \textbf{installers} in which are placed all OS installers for all version and target platforms that have been generated by a developer or that have been used to deploy a given package version.
 
-\subsubsection{Deployment in frameworks}
 
-Frameworks are simple repositories in which the binary code or more generally the code usable by third parties is installed. The install process of a package  version in its framework is made either :
+
+\subsubsection{Workspace repository}
+
+The \textbf{official workspace} is a git repository that can be modified only by \textbf{administrators} of the server. It contains cmake scripts used notably to:
 \begin{itemize}
-\item by package developers using \texttt{make install}, after the compilation phase. The package version is then the current version
-\item by package users, after downloading the archive of the package, using OS specific primitives (e.g. \texttt{dpkg -i}).
-\end{itemize}
-In both cases, the \textbf{CMakeList.txt} file of a given package defines the way this package is deployed (according to rules defined in this document), either:
-\begin{itemize}
-\item directly, by generating the \texttt{make install} procedure.
-\item indirectly, using \textit{cpack} toolset, by generating the \textbf{OS installer} that does the same job, but without having to get access to the package repository.
+\item reference available packages (repositories and binary archives). Each time a new package is created it is referenced into the local workspace (by an administrator) and then changes in the official workspace are committed so that anyone can know the existence of this new package and can retrieve its hosting server. This does not mean that this person can use binary version or repository of this package, since this is bound to his access rights to the servers (at least one can know which person to call to get the rights).
+\item provide available licenses description. These descriptions will be used in packages description.
 \end{itemize}
 
+The \textbf{official workspace} can be forked into \textbf{private workspaces}, exactly the same way as an \textbf{official package} (see figure~\ref{fig-collab}), to provide a common workspace for a team developing one or more packages at the same time. Once created new \textbf{users} and \textbf{developers} can be added to the private workspace repository. Private workspaces will be updated (by \textbf{developers} and \textbf{administrators}) with new references to packages, new licenses and new find scripts, while new packages are implemented. Then \textbf{official workspace} administrators can update its content, at any time, with the modifications made inside the private repository.
 
-\subsubsection{General policy to manage many package versions}
-
-The following rules should be applied whenever developers want to install a given package version:
-\begin{itemize}
-\item Given a package version with given major and minor version numbers, its more recent patch version should always be used. If a new patch version becomes available (e.g. 1.4.2 after a hotfix on 1.4.1) it should replace older patch versions (e.g. 1.4.0 or 1.4.1) if any installed in the package framework. This ensures the developer to use a version with less bug or security problems.
-\item When a new backward compatible version (e.g. 1.5.0) of a package is to be installed, it may replace the previous version (e.g. 1.4.2) or be simply added to the framework. Most of time it is preferable to test effective compatibility between this new version and the code that was using the old version.
-\item When a new non backward compatible version of a package is to be installed (e.g. 2.0.0 while 1.4.2 is already installed), it should not immediately replace older versions. The package version is simply added to the package framework, which ensures that other packages can still work with an older version already installed.
-\end{itemize}
-
-\paragraph*{When to install ?}
-Generally, there are two main case when developer want to install a package version:
-\begin{itemize}
-\item they want to install software artefacts (libraries, scripts, etc.) coming from a package they are currently developing, in order to use them. In this case, package version is installed in the \textbf{own} folder of the framework. This folder is updated each time they compile their package.
-\item  they develop or use a package that requires other packages with version constraints. For a given required package, a released version with number contained between its min and max version constraints has to be installed. In the allowed "interval of versions", the last backward compatible version with last patch version should be installed.
-\end{itemize}
-
-\paragraph*{How to install ?}
-There are basically two way to install a given package version:
-\begin{itemize}
-\item from package repository: the developer has to go back to the given version in history (on master branch) and install it.
-\linebreak \texttt{git checkout master}
-\linebreak \texttt{git checkout tags/v<version number>}
-\linebreak \texttt{cd build}
-\linebreak \verb|{cmake .. - DCMAKE_INSTALL_PREFIX=../../frameworks/|
-\linebreak \verb|<package name>/<version number>/|
-\linebreak \texttt{make}
-\linebreak \texttt{make install}
-\item from an OS installer: it depends on the installer used but the install prefix has to be specified quite the same way as previously.
-\end{itemize}
-
-\subsection{Referencing Packages in Workspace}
-
-To reference available packages potentially accessible in the workspace, we use the \textbf{references} folder in which administrators put \textbf{package.manifest} files. In the workspace these files are used to tell to users which packages are available and where they can be found. When a package administrator wants to make the package available to others, he must add the corresponding \textbf{package.manifest} in the \textbf{references} folder of its workspace and commit the changes to the workspace. All users will then know the package existence whenever they update their workspace. When a package definitively become obsolete, the corresponding manifest file is removed from the \textbf{references} folder and the changes into the workspace are committed.
-
-\paragraph{Basic commands}
-\begin{itemize}
-\item Referencing a package :
-\linebreak copying the package.manifest file into the references folder of the workspace, and \textbf{rename it} in <name of package>.manifest (name of packages are supposed to be unique).
-\linebreak \texttt{git add <package name>.manifest}
-\linebreak \texttt{git commit -m "<package manifest file> is now referenced"}
-\linebreak \texttt{git push origin master}
-\item Updating available references (when updating the workspace):
-\linebreak \texttt{git pull origin master}
-\item Dereferencing a package
-\linebreak \texttt{git rm <package name>.manifest}
-\linebreak \texttt{git commit -m "<package manifest file> is no more referenced"}
-\linebreak git push origin master
-\end{itemize}
-
-\subsection{Licensing packages}
-
-The licensing of packages has to be done according to a general politics of the laboratory, team or sub-group. License is let free to their decision and constraints, nevertheless, as software licenses are the same for everybody, licenses definitions are shared between all people.
-
-The \textbf{licenses} folder contains definitions for all licenses that are available for use in package description. Each license is defined in a specific file that looks like this for the GPLv3 license (file name is "GNUGPLv3.license") :
-\begin{verbatim}
-<license id="GPLv3" fullname="GNU General Public 
-License version 3" organization="Free Software Foundation"/>
-<description>
-/*
-* <package_name> : <package_short_description>
-* Copyright (C) <year>  <authors_name>
-
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-</description>
-<legalterms>
-//input the full legal terms of the license here
-</legalterms>
-</license>
-\end{verbatim}
-
-
-\paragraph{Data Type Definition:}
-\begin{verbatim}
-<!DOCTYPE license [
-
-<!ELEMENT license (description, legalterms)>
-<!ELEMENT description (CDATA)>
-<!ELEMENT legalterms (CDATA)>
-
-<!ATTLIST license id CDATA #REQUIRED>
-<!ATTLIST license fullname CDATA #REQUIRED>
-<!ATTLIST license organization CDATA #REQUIRED>
-]>
-\end{verbatim}
-
-
-\paragraph{Explanations:}
-\begin{itemize}
-\item the \texttt{<license>} markup is the root of the XML description : it gives the short name of the license used as an identifier (\texttt{id}) in the package description as well as its complete legal name (\texttt{fullname})and the name of the \texttt{organization} that wrote it.
-\item the \texttt{<description>} markup contains a short text that has to be put by developers into any file used in the package (source, interface, test, etc.). Some part have tags with "<" and ">" characters : this is where package specific informations (name, authors, short description etc.) is written by developers.
-\item the \texttt{<legalterms>} markup contains the full legal text of the license. Thanks to this text a license text file can be generated and added with redistribution of packages (e.g. both in repositories and installers).
-\end{itemize}
-
-\paragraph{Important remarks:} 
-\begin{itemize}
-\item As a package has one license only, using different licenses requires to define different package.
-\item If a package has one license at a time this license can evolve along time.
-\item Only administrators can add/remove/modify license files in the workspace.
-\end{itemize}
-
-\subsection{Categorizing packages}
-
-When developing it is often useful to know which package provide some useful things relative to one or more topics. The aim of the \textbf{categories} folder is to standardize the classification and the finding of packages relevant for given concerns.
-
-The \textbf{categories} folder is structured into subfolders that describe known categories. Each category folder is itself structured the following way:
-\begin{itemize}
-\item sub folder describes sub categories. A sub category refines the topic of its containing category. For instance folders \textbf{arms} and \textbf{wheeled vehicles} are contained in the category folder \textbf{robot}. These sub categories can in turn be refined the same way.
-\item symbolic links represent target packages of the category. The name of the link is simply the name of the package, the target of the link is a given package framework. The target itself is always expressed as a \textbf{relative path} from the containing category folder to the target framework. By default these links target nothing in the file system as long as the package's framework has not been installed in the \textbf{frameworks} folder.
-\end{itemize}
-
-\paragraph*{Remark:} 
-a same package can be targeted by more than one link: it means that the package belongs to different (sub)categories according to the different point of view of the developers. Doing so, anyone can have his own point of view of the package depending on its center of interest.
-\linebreak
-
-To organize the development, defining some "standard categories" should help developers to classify their packages. This requires to list categories of code that is useful for robotic applications development. For instance :
-\begin{itemize}
-\item sensors
-\begin{itemize}
-\item vision
-\begin{itemize}
-\item cameras
-\item kinects
-\item lasers
-\end{itemize}
-\item force sensors
-\item encoders
-\end{itemize}
-\item robots
-\begin{itemize}
-\item arms
-\item wheeled vehicles
-\item humanoids
-\end{itemize}
-\item simulators
-\item navigation
-\begin{itemize}
-\item cartography
-\item positioning
-\end{itemize}
-\item planning
-\begin{itemize}
-\item mission
-\item path
-\item trajectory
-\end{itemize}
-\item middleware
-\begin{itemize}
-\item ros
-\item contract
-\item orocos
-\end{itemize}
-\end{itemize}
-
-Of course categories can evolve/change along time, when developers want new categories.
-
-\subsubsection{Working with categories}
-
-The only people that can modify \textbf{categories} folder are package administrators. Each time a new package is created, developers define which are its relevant categories and wrote them in the package.manifest file of the package. When an administrator of a package wants to reference it :
-\begin{itemize}
-\item he first copy/rename the package.manifest file into the \textbf{references} folder.
-\item according to the relevant categories of tha package defined in the manifest, he:
-\begin{itemize}
-\item creates new (sub)category folders in the the \textbf{categories} folder of its workspace, if the corresponding categories do not exist.
-\item creates as many symbolic links that target the package framework as there are relevant categories for the package and put these links into the adequate category folders.
-\end{itemize}
-\item once done he commits its workspace.
-\end{itemize}
-
-From developers point of view, categories just help finding packages that are relevant for given topics. Each time they update their workspace, all available categories and classification of packages according to categories are updated. 
-
-To search packages, they can simply navigate in the file system of the \textbf{categories} folder. 
-\begin{itemize}
-\item if the package is already installed in the \textbf{frameworks} folder he can simply follow the link.
-\item otherwise the link is broken, and the developer has to install the corresponding package.
-\end{itemize}
-
+\pagebreak
 
 \section{Work-flow}
 
@@ -1719,4 +1476,253 @@ This file centralizes information for developers of the package. It must to be u
 \item Whenever an administrator wants to make available an OS installer for the package's binaries, he simply adds it to the package.manifest file.
 \end{itemize}  
  
+ 
+The development process of a package is always initiated by administrators:
+\begin{itemize}
+\item because they know which packages are already available and so which one can be used or extended in the frame of a master/PHD student or postdoc job.
+\item because they know who is already working on similar or complementary software.
+\item because they know which kind of constraints apply to code produced in the laboratory (licenses, access restriction, etc.)
+\end{itemize} 
+They are so the only persons that can truly:
+\begin{itemize}
+\item orient and help developers to increase their productivity by reusing existing code.
+\item optimize collaboration between developers.
+\item centralize the whole process.
+\end{itemize} 
+
+
+Nearly all the development process takes place in developers/administrators workstations, around the private repository:
+\begin{itemize}
+\item Implementing package features.
+\item Updating the current \textbf{feature branch} on private repository with modifications made on the \textbf{develop} branch. Features never update between each other but only around \textbf{develop} branch. 
+\item Managing features branches integration when feature development is finished (see previous section).
+\item Creating Hotfix branches and implementing hotfixes in them (see previous section).
+\end{itemize}
+
+
+\paragraph*{Frameworks} 
+Frameworks are simple folders that contain binary version of package, in other word the installation of packages' binaries has to be done in frameworks. A framework is a "screen-shot" of a given package at a given time of its lifetime : it contains the functionalities (executables, scripts, libraries, etc.) provided by the package's version, but no development artefact (no source or build file for instance).
+
+The notion of framework (partly coming from mac osx frameworks) as many advantages as regards to classical system installation process :
+\begin{itemize}
+\item Frameworks help grouping related resources together. This grouping makes it easier to install, uninstall, and locate those resources. For instance libraries and their related headers are logically group in the same place as opposed to system install.
+\item Frameworks can include a wider variety of resource types than just libraries or headers. For example, a framework can include any relevant documentation, html-based API or configuration files.
+\item Multiple versions of a package can be included in the same framework, allowing a smart management of backward compatibility.
+\end{itemize}
+
+the \textbf{categories} folder is structured according a set of topics, each topic being itself a folder that in turn contains either other subcategories or \textbf{links to frameworks}. \textbf{categories} only goal is to help finding available packages (under binary form) according to a given theme. Considering a category, packages that are relevant for the theme it defines are referenced as links (symbolic relative links in Linux) to frameworks folders.
+
+
+\paragraph{Rules for the modification of the repository:}
+\begin{itemize}
+\item .gitignore cannot be modified.
+\item No new direct subfolder or file of the workspace root can be created or removed.
+\item files (package references, licenses definitions) can be added or removed only by administrators.
+\end{itemize}
+
+
+
+\subsubsection{Deployment in frameworks}
+
+Frameworks are simple repositories in which the binary code or more generally the code usable by third parties is installed. The install process of a package  version in its framework is made either :
+\begin{itemize}
+\item by package developers using \texttt{make install}, after the compilation phase. The package version is then the current version
+\item by package users, after downloading the archive of the package, using OS specific primitives (e.g. \texttt{dpkg -i}).
+\end{itemize}
+In both cases, the \textbf{CMakeList.txt} file of a given package defines the way this package is deployed (according to rules defined in this document), either:
+\begin{itemize}
+\item directly, by generating the \texttt{make install} procedure.
+\item indirectly, using \textit{cpack} toolset, by generating the \textbf{OS installer} that does the same job, but without having to get access to the package repository.
+\end{itemize}
+
+
+\subsubsection{General policy to manage many package versions}
+
+The following rules should be applied whenever developers want to install a given package version:
+\begin{itemize}
+\item Given a package version with given major and minor version numbers, its more recent patch version should always be used. If a new patch version becomes available (e.g. 1.4.2 after a hotfix on 1.4.1) it should replace older patch versions (e.g. 1.4.0 or 1.4.1) if any installed in the package framework. This ensures the developer to use a version with less bug or security problems.
+\item When a new backward compatible version (e.g. 1.5.0) of a package is to be installed, it may replace the previous version (e.g. 1.4.2) or be simply added to the framework. Most of time it is preferable to test effective compatibility between this new version and the code that was using the old version.
+\item When a new non backward compatible version of a package is to be installed (e.g. 2.0.0 while 1.4.2 is already installed), it should not immediately replace older versions. The package version is simply added to the package framework, which ensures that other packages can still work with an older version already installed.
+\end{itemize}
+
+\paragraph*{When to install ?}
+Generally, there are two main case when developer want to install a package version:
+\begin{itemize}
+\item they want to install software artefacts (libraries, scripts, etc.) coming from a package they are currently developing, in order to use them. In this case, package version is installed in the \textbf{own} folder of the framework. This folder is updated each time they compile their package.
+\item  they develop or use a package that requires other packages with version constraints. For a given required package, a released version with number contained between its min and max version constraints has to be installed. In the allowed "interval of versions", the last backward compatible version with last patch version should be installed.
+\end{itemize}
+
+\paragraph*{How to install ?}
+There are basically two way to install a given package version:
+\begin{itemize}
+\item from package repository: the developer has to go back to the given version in history (on master branch) and install it.
+\linebreak \texttt{git checkout master}
+\linebreak \texttt{git checkout tags/v<version number>}
+\linebreak \texttt{cd build}
+\linebreak \verb|{cmake .. - DCMAKE_INSTALL_PREFIX=../../frameworks/|
+\linebreak \verb|<package name>/<version number>/|
+\linebreak \texttt{make}
+\linebreak \texttt{make install}
+\item from an OS installer: it depends on the installer used but the install prefix has to be specified quite the same way as previously.
+\end{itemize}
+
+\subsection{Referencing Packages in Workspace}
+
+To reference available packages potentially accessible in the workspace, we use the \textbf{references} folder in which administrators put \textbf{package.manifest} files. In the workspace these files are used to tell to users which packages are available and where they can be found. When a package administrator wants to make the package available to others, he must add the corresponding \textbf{package.manifest} in the \textbf{references} folder of its workspace and commit the changes to the workspace. All users will then know the package existence whenever they update their workspace. When a package definitively become obsolete, the corresponding manifest file is removed from the \textbf{references} folder and the changes into the workspace are committed.
+
+\paragraph{Basic commands}
+\begin{itemize}
+\item Referencing a package :
+\linebreak copying the package.manifest file into the references folder of the workspace, and \textbf{rename it} in <name of package>.manifest (name of packages are supposed to be unique).
+\linebreak \texttt{git add <package name>.manifest}
+\linebreak \texttt{git commit -m "<package manifest file> is now referenced"}
+\linebreak \texttt{git push origin master}
+\item Updating available references (when updating the workspace):
+\linebreak \texttt{git pull origin master}
+\item Dereferencing a package
+\linebreak \texttt{git rm <package name>.manifest}
+\linebreak \texttt{git commit -m "<package manifest file> is no more referenced"}
+\linebreak git push origin master
+\end{itemize}
+
+\subsection{Licensing packages}
+
+The licensing of packages has to be done according to a general politics of the laboratory, team or sub-group. License is let free to their decision and constraints, nevertheless, as software licenses are the same for everybody, licenses definitions are shared between all people.
+
+The \textbf{licenses} folder contains definitions for all licenses that are available for use in package description. Each license is defined in a specific file that looks like this for the GPLv3 license (file name is "GNUGPLv3.license") :
+\begin{verbatim}
+<license id="GPLv3" fullname="GNU General Public 
+License version 3" organization="Free Software Foundation"/>
+<description>
+/*
+* <package_name> : <package_short_description>
+* Copyright (C) <year>  <authors_name>
+
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+</description>
+<legalterms>
+//input the full legal terms of the license here
+</legalterms>
+</license>
+\end{verbatim}
+
+
+\paragraph{Data Type Definition:}
+\begin{verbatim}
+<!DOCTYPE license [
+
+<!ELEMENT license (description, legalterms)>
+<!ELEMENT description (CDATA)>
+<!ELEMENT legalterms (CDATA)>
+
+<!ATTLIST license id CDATA #REQUIRED>
+<!ATTLIST license fullname CDATA #REQUIRED>
+<!ATTLIST license organization CDATA #REQUIRED>
+]>
+\end{verbatim}
+
+
+\paragraph{Explanations:}
+\begin{itemize}
+\item the \texttt{<license>} markup is the root of the XML description : it gives the short name of the license used as an identifier (\texttt{id}) in the package description as well as its complete legal name (\texttt{fullname})and the name of the \texttt{organization} that wrote it.
+\item the \texttt{<description>} markup contains a short text that has to be put by developers into any file used in the package (source, interface, test, etc.). Some part have tags with "<" and ">" characters : this is where package specific informations (name, authors, short description etc.) is written by developers.
+\item the \texttt{<legalterms>} markup contains the full legal text of the license. Thanks to this text a license text file can be generated and added with redistribution of packages (e.g. both in repositories and installers).
+\end{itemize}
+
+\paragraph{Important remarks:} 
+\begin{itemize}
+\item As a package has one license only, using different licenses requires to define different package.
+\item If a package has one license at a time this license can evolve along time.
+\item Only administrators can add/remove/modify license files in the workspace.
+\end{itemize}
+
+
+\subsection{Categorizing packages}
+
+When developing it is often useful to know which package provide some useful things relative to one or more topics. The aim of the \textbf{categories} folder is to standardize the classification and the finding of packages relevant for given concerns.
+
+The \textbf{categories} folder is structured into subfolders that describe known categories. Each category folder is itself structured the following way:
+\begin{itemize}
+\item sub folder describes sub categories. A sub category refines the topic of its containing category. For instance folders \textbf{arms} and \textbf{wheeled vehicles} are contained in the category folder \textbf{robot}. These sub categories can in turn be refined the same way.
+\item symbolic links represent target packages of the category. The name of the link is simply the name of the package, the target of the link is a given package framework. The target itself is always expressed as a \textbf{relative path} from the containing category folder to the target framework. By default these links target nothing in the file system as long as the package's framework has not been installed in the \textbf{frameworks} folder.
+\end{itemize}
+
+\paragraph*{Remark:} 
+a same package can be targeted by more than one link: it means that the package belongs to different (sub)categories according to the different point of view of the developers. Doing so, anyone can have his own point of view of the package depending on its center of interest.
+\linebreak
+
+To organize the development, defining some "standard categories" should help developers to classify their packages. This requires to list categories of code that is useful for robotic applications development. For instance :
+\begin{itemize}
+\item sensors
+\begin{itemize}
+\item vision
+\begin{itemize}
+\item cameras
+\item kinects
+\item lasers
+\end{itemize}
+\item force sensors
+\item encoders
+\end{itemize}
+\item robots
+\begin{itemize}
+\item arms
+\item wheeled vehicles
+\item humanoids
+\end{itemize}
+\item simulators
+\item navigation
+\begin{itemize}
+\item cartography
+\item positioning
+\end{itemize}
+\item planning
+\begin{itemize}
+\item mission
+\item path
+\item trajectory
+\end{itemize}
+\item middleware
+\begin{itemize}
+\item ros
+\item contract
+\item orocos
+\end{itemize}
+\end{itemize}
+
+Of course categories can evolve/change along time, when developers want new categories.
+
+\subsubsection{Working with categories}
+
+The only people that can modify \textbf{categories} folder are package administrators. Each time a new package is created, developers define which are its relevant categories and wrote them in the package.manifest file of the package. When an administrator of a package wants to reference it :
+\begin{itemize}
+\item he first copy/rename the package.manifest file into the \textbf{references} folder.
+\item according to the relevant categories of tha package defined in the manifest, he:
+\begin{itemize}
+\item creates new (sub)category folders in the the \textbf{categories} folder of its workspace, if the corresponding categories do not exist.
+\item creates as many symbolic links that target the package framework as there are relevant categories for the package and put these links into the adequate category folders.
+\end{itemize}
+\item once done he commits its workspace.
+\end{itemize}
+
+From developers point of view, categories just help finding packages that are relevant for given topics. Each time they update their workspace, all available categories and classification of packages according to categories are updated. 
+
+To search packages, they can simply navigate in the file system of the \textbf{categories} folder. 
+\begin{itemize}
+\item if the package is already installed in the \textbf{frameworks} folder he can simply follow the link.
+\item otherwise the link is broken, and the developer has to install the corresponding package.
+\end{itemize}
+
 \end{document}
