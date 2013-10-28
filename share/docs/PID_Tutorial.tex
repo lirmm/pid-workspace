@@ -99,7 +99,7 @@ The main idea is that a package is self-explanatory. It does not means it contai
 
 One important concept when dealing with PID packages is the concept of \textbf{component} : it is a software artefact produced  by a package. It may be either:
 \begin{itemize}
-\item a \textbf{library} : this is a component that can be reused by developers to build other components. We define three types of libraries : \textbf{shared} (runtime or loadtime loadable library), \textbf{static} (link time only library) and \textbf{header} (library defining no binary but only an interface).
+\item a \textbf{library} : this is a component that can be reused by developers to build other components. We define three types of libraries : \textbf{shared} (runtime or load-time linked library), \textbf{static} (link time only linked library) and \textbf{header} (compile time only "linked" library).
 \item an \textbf{application} : this is a component for end-users or developers that define a runtime behaviour. We define three types of applications : application (made for end-user or developers when it is a runtime component), example (demonstrating how to use libraries) and test (used only internally to a package to test its other components).
 \end{itemize}
 
@@ -766,7 +766,7 @@ Then PID development process imposes to declare dependencies of the current pack
 
 Finally, the CMakeList.txt file call the \texttt{build\_PID\_Package} function. This line is mandatory in order to allow the build of the package: compilation, installation, deployment, API doc generation, etc. Without this call, the CMake process would simply do nothing.
 
-\subsubsection{Dealing with complex dependencies}
+\subsubsection{Dealing with conditional dependencies}
 \label{sec:rootCMakeComplexDeps}
 
 The previous example is quite simple since it directly deals with \textbf{required} dependencies. Nevertheless, when using cmake one sometimes have to deal with \textbf{conditional dependencies}. Indeed, \textbf{conditional dependencies} allow to configure the build according to the OS requirements or to the configuration of user's station. This conditional dependencies are managed according to the following pattern (or a derivative from this solution):
@@ -799,16 +799,79 @@ Conditional dependencies is used to describe dependencies that are optional or t
 \end{itemize}
 
 \subsection{Defining Library components}
-
-
-
 \label{sec:libCMake}
+
+Once package dependencies have been defined, the package developers can then define components of the package and their relationship with these dependencies. Most common components are library components : they are used by developers to define reusable functionalities. All libraries are defined in the CMakeList.txt file contained in the \textbf{src} folder of the package repository.
+
+PID defines three types of libraries, matching the three classical  types available in C/C++. It provides a systematic way to define these libraries and automate their use, avoiding the user to know precisely how to deal with each type and their relative properties. Following subsections explain how to declare each of these types. These definitions rely on cmake functions provided by PID: \texttt{declare\_PID\_Component} and \texttt{declare\_PID\_Component\_Dependency} (see appendix~\ref{sec:PIDCMakefunctionsAPI}).
+
+\subsubsection{Header libraries}
+\label{sec:libCMakeHeader}
+
+Header libraries are libraries are not compiled to produce a binary library. They are just made of a set of header files. This kind of library used is often used for template libraries definitions, for instance the Boost library. Such a library is never used at link time (never linked to another library or executable using a linker) but only at compile time. The definition of a header lib should look like:
+\begin{verbatim}
+
+declare_PID_Component(HEADER_LIB NAME lib-y DIRECTORY lib_y)
+declare_PID_Component_Dependency(COMPONENT lib-y 
+               EXPORT DEPEND lib-x PACKAGE the-testpack-a
+               EXPORTED_DEFINITIONS USE_EXTERNAL_LIB_X)
+
+\end{verbatim}
+
+The first thing to do is to declare the header library by using the function \texttt{declare\_PID\_Component}:
+\begin{itemize}
+\item the HEADER\_LIB keyword is used to declare a header library.
+\item the NAME keyword is used to define the identifier of the component in PID, whose unicity must be preserved. In the example the name is "lib-y".
+\item the DIRECTORY keyword is used to say in which sub-directory of the \textbf{include} folder the header files are found, in the example the "lib\_y" sub-folder. The direct consequence is that all headers of a given library \textbf{must be placed in a unique folder}.
+\end{itemize}
+ 
+Then, depending on the library content, some dependencies can be attached to the library, using \texttt{declare\_PID\_Component\_Dependency}. Indeed a header library can depend on other libraries, either header, static or shared:
+\begin{itemize}
+\item the COMPONENT keyword is used to specify for which component a dependency is defined, in the example the previously defined "lib-y" header library.
+\item the EXPORT keyword specifies that the lib-y component export the required dependency. Exporting means that the reference to the required component is defined in the interface of the library. Since a header lib is only made of an interface, \textbf{it must export each of its dependencies}.
+\item the DEPEND and PACKAGE keywords are used to specify the dependency: here the lib-y header library depends on the component "lib-x" of the PID package "the-testpack-a". Declaring an external or system dependency or even an internal dependency is slightly, but follows the same logic, see appendix~\ref{sec:PIDCMakefunctionsAPI}.
+\item the EXPORTED\_DEFINITIONS is used to specify values of C preprocessor definitions that are exported by the library. In the example the exported definition is \texttt{USE\_EXTERNAL\_LIB\_X}. exported definition are used by components that will use lib-y to configure its code adequately. Since a header lib is only made of an interface, all its definitions must be exported and it can have no internal definitions.
+\end{itemize}
+
+On interesting property of PID is to be able to declare different components from the same code. For instance:
+\begin{verbatim}
+
+declare_PID_Component(HEADER_LIB NAME lib-y-bis DIRECTORY lib_y
+                      EXPORTED_DEFINITIONS NUSE_EXTERNAL_LIB_X)
+
+\end{verbatim}
+
+In this later example, a new component named "lib-y-bis" is created from the same source code contained in the lib\_y folder. The differences with the previous component are that the "lib-y-bis" has no dependencies and it undefines (using N in front of the preprocessor definition) the definition \texttt{USE\_EXTERNAL\_LIB\_X}. This is useful to declare many alternatives from the same code.
+
+\subsubsection{Static libraries}
+\label{sec:libCMakeStatic}
+
+
+
+\subsubsection{Shared libraries}
+\label{sec:libCMakeShared}
+
+
+
 
 \subsection{Defining Application components}
 \label{sec:appCMake}
 
-\subsection{Defining Test components}
+\subsubsection{standard applications}
+\label{sec:appCMakeStandard}
+
+
+\subsubsection{Example applications}
+\label{sec:appCMakeExample}
+
+
+\subsubsection{Test applications}
+\label{sec:appCMakeTest}
+
+
+\subsection{Defining Tests}
 \label{sec:testCMake}
+
 
 \subsection{Generating API documentation}
 \label{sec:apiCMake}
@@ -816,6 +879,9 @@ Conditional dependencies is used to describe dependencies that are optional or t
 \subsection{Configuring the package}
 \label{sec:rootCMakeConfig}
 
+
+\subsection{Installation of the package}
+\label{sec:rootCMakeInstall}
 
 ICI A REVOIR
 
@@ -897,62 +963,6 @@ This will automatically generate a sequence of tests whose result is \textbf{PAS
 
 When an API becomes available, it is always useful to have a clear way to consult the functionalities it provides. This API can be either provided by a runtime component, a library or a pure headers set. In all cases the api documentation has to be as close as possible to the source code, that is why the best way is to use an api doc generation tool like \textbf{doxygen} and to automate its use directly during the build process. We choose \textbf{doxygen} because it is a cross-platform/cross language tool very well suited for C/C++ code.
 
-The api documentation building process is managed into the CMakeList.txt file of the \textbf{share} folder. It looks like this:
-
-\begin{verbatim}
-if(CMAKE_BUILD_TYPE MATCHES Release)
-# generating doc
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-# configuring doxygen
-set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
-set(DOXYFILE_PROJECT_NAME ${CMAKE_PROJECT_NAME})
-set(DOXYFILE_PROJECT_VERSION ${CMAKE_PROJECT_NAME}_VERSION)
-# set(DOXYFILE_IMAGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/img)
-set(DOXYFILE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/doc)
-
-option(GENERATE_HTML_API  "Generating the api in html" ON)
-set(DOXYFILE_HTML_DIR html)
-if(GENERATE_HTML_API)
-set(DOXYFILE_GENERATE_HTML "YES")
-else(GENERATE_HTML_API)
-set(DOXYFILE_GENERATE_HTML "NO")
-endif(GENERATE_HTML_API)
-
-option(GENERATE_LATEX_API "Generating the latex api documentation" OFF)
-set(DOXYFILE_LATEX_DIR latex)
-if(GENERATE_LATEX_API)
-set(DOXYFILE_GENERATE_LATEX "YES")
-else(GENERATE_LATEX_API)
-set(DOXYFILE_GENERATE_LATEX "NO")
-endif(GENERATE_LATEX_API)
- 		
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in 
-${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-
-# creating the target to run doxygen
-add_custom_target(doc
-${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-COMMENT "Generating API documentation with Doxygen" VERBATIM
-)
-
-# target to clean installed doc
-set_property(DIRECTORY 
-		APPEND PROPERTY
-		ADDITIONAL_MAKE_CLEAN_FILES
-		"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
-
-set_property(DIRECTORY 
-		APPEND PROPERTY
-		ADDITIONAL_MAKE_CLEAN_FILES
-		"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_HTML_DIR}")
-				
-...
-endif(DOXYGEN_FOUND)
-endif(CMAKE_BUILD_TYPE MATCHES Release)
-\end{verbatim}
 The generation takes place only if the \textbf{doxygen} tool is installed on the building host (\verb|find_package(Doxygen)|) and only when release build mode is chose (\verb|CMAKE_BUILD_TYPE MATCHES Release|). Furthermore we suppose that code documentation that can be exploited by doxygen is available in files contained in the \textbf{include} folder. The api generation is made in three steps :
 \begin{enumerate}
 \item generates a doxygen configuration file (\texttt{Doxyfile}) from a cmake doxyfile pattern (\texttt{Doxyfile.in}) that is configured according to some cmake variables. This file is used by doxygen to configure the api documentation generation process.
@@ -1003,23 +1013,7 @@ LATEX_OUTPUT           = "@DOXYFILE_LATEX_DIR@"
 
 When the doxyfile in generated by cmake, all fields surrounded by the \verb|@| tag in docyfile.in file are automatically set according to corresponding cmake variables.
 
-\subsubsection{Installing the package}
-
-Once everything the build process has ended, the last mandatory step is to install the resulting software in an appropriate place in the file system. Considering our development model, they must be installed in the adequate package framework. The target folder inside the framework is either relative to a version number or (by default) a specific folder (\verb|own|). Installing is a simple task with cmake, thanks to the \verb|install| command. Global references to install paths are set in the global CMakeList.txt file and install procedures are written into CMakeFile.txt in \texttt{src}, \texttt{apps}, \texttt{test}, \texttt{config} and \texttt{share}.
-
-In CMakeFile.txt of the \texttt{src} folder:
-\begin{verbatim}
-# first library to install
-INSTALL(TARGETS <lib name>_sh <lib name>_st 
-  RUNTIME DESTINATION ${INSTALL_BIN_PATH}/${INSTALL_PATH_SUFFIX}
-  LIBRARY DESTINATION ${INSTALL_LIB_PATH}/${INSTALL_PATH_SUFFIX}
-  ARCHIVE DESTINATION ${INSTALL_AR_PATH}/${INSTALL_PATH_SUFFIX}
-)
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/<lib name>
-DESTINATION ${INSTALL_INCLUDE_PATH})
-#second library to install
-...
-\end{verbatim}
+INSTALL 
 
 The shared and static version of each library will be installed in the adequate folder according to the system requirements. And the folder containing headers of the library will be installed in the include folder of the package framework version.
 
@@ -1061,23 +1055,6 @@ DESTINATION ${INSTALL_SHARE_PATH})
 endif(CMAKE_BUILD_TYPE MATCHES Release)
 \end{verbatim}
 
-In CMakeFile.txt of the \texttt{config} folder:
-\begin{verbatim}
-if(CMAKE_BUILD_TYPE MATCHES Release)
-# mandatory files to install
-install(FILE <path to file> <path to file>  ...
-DESTINATION ${INSTALL_CONFIG_PATH}/<path to file>)
-# optional configuration files to install
-if(<package>_WITH_TESTS)
-install(FILE <path to test config file> ...
-DESTINATION ${INSTALL_CONFIG_PATH}/<path to file>)
-endif(<package>_WITH_TESTS)
-if(<package>_WITH_EXAMPLES)
-install(FILE <path to example config file> ...
-DESTINATION ${INSTALL_CONFIG_PATH}/<path to file>)
-endif(<package>_WITH_EXAMPLES)
-endif(CMAKE_BUILD_TYPE MATCHES Release)
-\end{verbatim}
 \textbf{share} and \textbf{config} folders of the package framework version will receive files. Since these files are the same for debug and release version they will be installed only once, when installing release version.
 
 In CMakeFile.txt of the root folder of the package:
@@ -1088,72 +1065,6 @@ install(FILE license.txt package.manifest
 DESTINATION ${INSTALL_CONFIG_PATH})
 \end{verbatim}
 Simply copying global files to the package framework version.
-
-
-\subsubsection{Building OS installers}
-
-The process for building OS installer is based on the use on the cpack tool that comes with cmake. It is described in the root CMakeList.txt file of the package.
-
-\begin{verbatim}
-include(InstallRequiredSystemLibraries)
-set(CPACK_GENERATOR TGZ)
-set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-set(CPACK_PACKAGE_CONTACT "<admin name>")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "<short description>")
-set(CPACK_PACKAGE_VENDOR "LIRMM")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/license.txt")
-set(CPACK_PACKAGE_VERSION_MAJOR "${<package name>_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${<package name>_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "${<package name>_VERSION_PATCH}")
-set(CPACK_PACKAGE_VERSION "${<package name>_VERSION}")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "${FRAMEWORK_PATH}/installers")
-
-if(UNIX AND NOT APPLE)
-  list(APPEND CPACK_GENERATOR DEB)  
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "<package> (>= version 
-  number), package (>= version number) ...")
-endif(UNIX)
-
-include(CPack)
-\end{verbatim}
-
-The preceding script will create one basic archive installer (.tgz file) and in addition one Debian installer if the build process takes place on a Linux platform. Resulting installers will be placed into the \textbf{installers} directory of the package framework. Depending on target platforms, developers can add new installer build processes (e.g. for macOSX or windows systems).
-
-One important aspect when dealing with debian installers or other sophisticated installers is to managed dependencies of the installed package. In our context dependencies to other home made packages are quite trivial to put in place since the version number and names are normalized for all target platforms. For external dependencies, it is a little bit more difficult:
-\begin{itemize}
-\item dependencies to cross-platform software are managed quite simply since the installer should have same name and version number, whatever the target platform is.
-\item dependencies to platform specific software have to be managed specifically, the developer have to take care of version number and name of alternative software used dependening on the platform.
-\end{itemize}
-
-One important remark when using sophisticated OS installer system like debian package system is that dependencies between installers do not necessarily exactly reflects the dependency between packages. Indeed, build time dependency are not necessarily the same as runtime or load time dependencies. Indeed some  dependencies (system or package), typically static libraries or headers only libraries, are used only to build the code and not at runtime. There is no need to put these dependencies in OS installers. Consequently,  dependencies between OS installers \textbf{must only reflect load time and runtime dependencies}. 
-
-\subsubsection{CMake basic usage}
-
-Using the cmake tool should follow the sequence (case when using UNIX Makefiles as native build system):
-\begin{enumerate}
-\item \verb|cd <path to package>/build/release|
-\item \verb|cmake -DCMAKE_BUILD_TYPE=Release ../..|
-\item \verb|make|
-\item if tests units used: \verb|make testunits|
-\item if tests units used: \verb|make test|
-\item if examples are built \verb|make examples|
-\item if tests are OK: \verb|make doc|
-\item if tests are OK: \verb|make install|
-\item \verb|cd <path to package>/build/debug|
-\item \verb|cmake -DCMAKE_BUILD_TYPE=Debug ../..|
-\item \verb|make|
-\item if tests units used: \verb|make testunits|
-\item if tests units used: \verb|make test|
-\item if examples are built: \verb|make examples|
-\item if tests are OK: \verb|make install|
-\end{enumerate}
-
-When a package becomes stable enough to be delivered to third parties, it is time to use the CPack tool. This OS installer generation process should take place on a version \textbf{tagged in the master branch} of the package (or that will be tagged after package generation). It is of the responsibility of a package administrator to create an OS installer, to deploy it on a ftp server, and to reference it in the package.manifest file and corresponding workspace file to ensure consistency of the whole workspace. To create the OS installer simply do:
-\begin{enumerate}
-\item \verb|cd <path to package>/build/release|
-\item \verb|cmake -DCMAKE_BUILD_TYPE=Release ../..|
-\item creating the OS installer: \verb|make package|
-\end{enumerate}
 
 \pagebreak
 
@@ -1254,10 +1165,17 @@ Concerning package development, developers have to refer to dedicated document e
 
 \part*{Appendix}
 
+\section{PID cmake functions API}
+\label{sec:PIDCMakefunctionsAPI}
+
+
 
 \pagebreak
 
 \part*{POUBELLE}
+
+
+
 
  The workspace also provides categories : each category defines a specific subject that helps classifying packages/frameworks. For instance the category sensor will reference all packages or frameworks that implement the driver of a sensor. Categories can be hierarchically refined into sub categories for instance the category camera refines the category sensors. Categories can be viewed as lists of links that target frameworks/packages. The process of classification of packages is itself coming from package description (i.e. a package specifies the categories it belongs to).
  
