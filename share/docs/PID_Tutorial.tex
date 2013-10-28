@@ -764,15 +764,44 @@ Then PID development process imposes to declare dependencies of the current pack
 \item it is used to specify a dependency to a PID package (using PID keyword). Then version and component requirement informations can be used exactly as in the example. Relationship between PID packages are stronger since their discovering/install configuration will be done automatically.
 \end{itemize}
 
+Finally, the CMakeList.txt file call the \texttt{build\_PID\_Package} function. This line is mandatory in order to allow the build of the package: compilation, installation, deployment, API doc generation, etc. Without this call, the CMake process would simply do nothing.
+
 \subsubsection{Dealing with complex dependencies}
 \label{sec:rootCMakeComplexDeps}
 
+The previous example is quite simple since it directly deals with \textbf{required} dependencies. Nevertheless, when using cmake one sometimes have to deal with \textbf{conditional dependencies}. Indeed, \textbf{conditional dependencies} allow to configure the build according to the OS requirements or to the configuration of user's station. This conditional dependencies are managed according to the following pattern (or a derivative from this solution):
+\begin{verbatim}
+find_package(the-testpack-a)
+if(the-testpack-a_FOUND)
+    set(USE_the-testpack-a TRUE CACHE INTERNAL "" FORCE)
+     declare_PID_Package_Dependency (PACKAGE the-testpack-a
+                PID VERSION 1 0 COMPONENTS lib-b-sh lib-x)
+else()
+    set(USE_the-testpack-a FALSE CACHE INTERNAL "" FORCE)
+    find_package(the-testpack-x)
+    if(the-testpack-x_FOUND)
+       set(USE-the_testpack-x TRUE CACHE INTERNAL "" FORCE)
+       declare_PID_Package_Dependency (PACKAGE the-testpack-x
+                PID VERSION 1 3 COMPONENTS lib-any)
+    else()
+       set(USE-the_testpack-x FALSE CACHE INTERNAL "" FORCE)
+       MESSAGE("alternative system dependency not satisfied. 
+       Install/select either the-testpack-a or the-testpack-x")
+       return()       
+    endif()
+endif()
+\end{verbatim}
 
-\subsubsection{Configuring the package}
-\label{sec:rootCMakeConfig}
-
+Conditional dependencies is used to describe dependencies that are optional or to describe an alternative requirement when multiple different packages can be used for the same purpose. This later case is shown in the previous code. Defining such conditional dependencies is made using classical CMake mechanism (using \texttt{find\_package} and \texttt{option}/\texttt{set} commands) is combination with the \texttt{declare\_PID\_Package\_Dependency} function previously explained. In the previous example, there is an implicit priority in the usage of required packages: "the-testpack-a" will be used prior to "the-testpack-x" if it is found. The CMakeList.txt file can also use the \texttt{option} command to let the user select its preferred package. The only mandatory descriptive elements are:
+\begin{itemize}
+\item if a package is to be used, \textbf{whether it has been previously found or not}, then the \texttt{declare\_PID\_Package\_Dependency} function \textbf{must be called} to tell to PID system which package (PID or external) is required.
+\item Each possibly used package must be bound to a CMake \textbf{variable that indicates if the package is really used or not}. For instance see the variable \texttt{USE\_the-testpack-a}. These variables will be used later, when declaring components, to know how to configure component dependencies according to required packages.
+\end{itemize}
 
 \subsection{Defining Library components}
+
+
+
 \label{sec:libCMake}
 
 \subsection{Defining Application components}
@@ -783,6 +812,10 @@ Then PID development process imposes to declare dependencies of the current pack
 
 \subsection{Generating API documentation}
 \label{sec:apiCMake}
+
+\subsection{Configuring the package}
+\label{sec:rootCMakeConfig}
+
 
 ICI A REVOIR
 
@@ -795,176 +828,6 @@ First part defines the general settings of the project that should be quite the 
 \item directories containing cmake script files used (e.g. to find os dependencies) are referenced in the \verb|CMAKE_MODULE_PATH| variable. 
 \end{itemize}
 
-\subsubsection{Managing system dependencies}
-
-The next step consists in finding/configuring system dependencies for the package. Fortunately, CMake provides a standard way to do that using the \verb|find_package| command. This command helps finding resources installed in the system and get useful information about the dependency: it calls a specific cmake script (whose pattern name is \texttt{Find<name of package or library>.cmake}) that is able to do the job.
-
-Here is the way we use the \verb|find_package| command:
-
-\begin{verbatim}
-##### finding system dependencies #####
-SET(EXTERNAL_INCLUDE_DIRS "")
-SET(EXTERNAL_LIB_DIRS "")
-SET(EXTERNAL_LIBS "")
-SET(EXTERNAL_APPS "")
-SET(EXTERNAL_APP_DIRS "")
-
-## absolutely required dependencies ##
-find_package(<name of resource> REQUIRED)
-list(APPEND EXTERNAL_INCLUDE_DIRS ${<name of resource>_INCLUDE_DIRS})
-list(APPEND EXTERNAL_LIB_DIRS ${<name of resource>_LINK_DIRECTORIES})
-
-## optional system dependencies ##
-find_package(<name of resource 4>)
-if(<name of resource 4>_FOUND)
-option(USE_<name of resource 4> "Using <name of resource 4>" ON)
-else(<name of resource 4>_FOUND)
-set (USE_<name of resource 4> FALSE)
-endif(<name of resource>_FOUND)
-if(USE_<name of resource 4>)
-list(APPEND EXTERNAL_INCLUDE_DIRS ${<resource 4_INCLUDE_DIRS>})
-list(APPEND EXTERNAL_LIB_DIRS ${<resource 4_LINK_DIRECTORIES>})
-add_definitions(-DUSE_<name of resource 4>)
-endif(USE_<name of resource 4>)
-...
-
-## alternatively required system dependencies ##
-# defining alternative 1
-find_package(<name of resource 2>)
-if(<name of resource 2>_FOUND)
-option(USE_<name of resource2> "Using <name of resource2>" ON)
-else(<name of resource 2>_FOUND)
-set(USE_<name of resource2> FALSE)
-endif(<name of resource 2>_FOUND)
-# defining alternative 2
-find_package(<name of resource 3>)
-if(<name of resource 3>_FOUND)
-option(USE_<name of resource3> "Using <name of resource3>" ON)
-else(<name of resource 3>_FOUND)
-set(USE_<name of resource 3> FALSE)
-endif(<name of resource 3>_FOUND)
-
-# selecting the alternative
-if(USE_<name of resource 2>)
-list(APPEND EXTERNAL_INCLUDE_DIRS ${<resource 2_INCLUDE_DIRS>})
-list(APPEND EXTERNAL_LIB_DIRS ${<resource 2_LINK_DIRECTORIES>})
-add_definitions(-DUSE_<name of resource 2>)
-elseif(USE_<name of resource 3>)
-list(APPEND EXTERNAL_INCLUDE_DIRS ${<resource 3_INCLUDE_DIRS>})
-list(APPEND EXTERNAL_LIB_DIRS ${<resource 3_LINK_DIRECTORIES>})
-add_definitions(-DUSE_<name of resource 3>)
-else(USE_<name of resource 2>)
-MESSAGE("alternative system dependency not satisfied. Install/select either 
-<name of resource 2>, <name of resource 3> or <name of resource 4>")
-return()
-endif(USE_<name of resource 2>)
-...
-##### end finding system dependencies #####
-
-\end{verbatim}
-
-There are mainly three way to manage system dependencies, all of them relying on the \verb|find_package| command or one of its derivative (e.g. like \verb|find_library|) or one of its options (e.g. \verb|VERSION| constraints):
-\begin{itemize}
-\item On way is to require a system dependency using \verb|find_package| with the \verb|REQUIRED| argument. That means that the dependency is absolutely required and the build process will stop if it is not satisfied. This is \textbf{the preferred way to manage dependencies} as it defines clear dependencies between the package and some resources: whatever the OS on which it is deployed, the package will have the same dependency. Of course this is not always possible because it supposes that the required system dependency (e.g. library) exists on all target platforms of the package. This for instance the case for \textbf{boost}.
-\item Another way is to define \textbf{optional system dependencies}. This way, the argument \verb|REQUIRED| is not used: if the resource is found, then the option to use it or not is provided to the user, otherwise it cannot be used in any way.  There is a restriction on the use of optional dependencies for the functional code: \textbf{the code that uses them must work even if they are not satisfied}. In other words, the developers have implemented a way to provide same functionalities (certainly in a less optimized or more verbose way) with or without using these optional dependencies. 
-\item By extension of the optional dependencies, developers can also use \textbf{alternative system dependencies}, that work quite the same way, except that \textbf{many packages can be selected by users but only one will be used by the build process}. This is not the preferred way but may be mandatory when dealing with libraries that are intrinsically bound to OS or when optimization becomes a major concern (e.g. 2D/3D graphics). In that case all options whose package are selectable and they have strict selection priorities (manages via a simple \verb|if|).
-\end{itemize} 
-
-When a system dependency is satisfied, whatever its nature (required, optional, alternative), all its relative system resources have to be included  in the project. To do so we use variables provided by cmake scripts in order to configure:
-\begin{itemize}
-\item path to libraries.
-\item name of libraries.
-\item path to header files of libraries.
-\end{itemize}
-\paragraph{Remarks:}
-\begin{itemize}
-\item cmake script file behaviours are quite different from each other and consequently names of their output variables and which kind of resources they target differ.
-\item of course any other kind of resource than libraries, as soon as they are provided by cmake script files, can be imported in the cmake project, but libraries are the far most common ones.
-\item In a package we have to dissociate the optional code from the rest of the functional code. System dependencies for optional code follow exactly the same pattern has described above but they are guarded with respective options variables \texttt{<package>\_WITH\_EXAMPLES} and \texttt{<package>\_WITH\_TESTS}, for instance:
-\end{itemize}
-
-\begin{verbatim}
-if(<package>_WITH_EXAMPLES)
-# defining required, optional or alternative system dependency
-# for examples executables
-...
-endif(<package>_WITH_EXAMPLES)
-\end{verbatim}
-
-\subsubsection{Managing package dependencies}
-
-Package dependencies are different from system dependencies in some ways:
-\begin{itemize}
-\item \textbf{required packages are absolutely mandatory}, there is no possible option or alternative. 
-\item they follow a unified and cross platform installation process, which allows to generically find and use them in an unified way.
-\end{itemize} 
-
-Here is the example of a package that requires two other packages:
-\begin{verbatim}
-# searching for package dependencies
-find_package(FrameworkFinder REQUIRED COMPONENTS <package 1> <package 2> ...)
-list(APPEND EXTERNAL_INCLUDE_DIRS ${<package 1>_INCLUDE_DIRS})
-list(APPEND EXTERNAL_LIB_DIRS ${<package 1>_LINK_DIRECTORIES})
-list(APPEND EXTERNAL_LIBS ${<package 1>_LIBRARIES})
-list(APPEND EXTERNAL_APP_DIRS ${<package 1>_APP_DIRS})
-list(APPEND EXTERNAL_APPS ${<package 1>_APPLICATIONS})
-
-list(APPEND EXTERNAL_INCLUDE_DIRS ${<package 2>_INCLUDE_DIRS})
-list(APPEND EXTERNAL_LIB_DIRS ${<package 2>_LINK_DIRECTORIES})
-list(APPEND EXTERNAL_LIBS ${<package 2>_LIBRARIES})
-\end{verbatim}
-
-The idea is nearly the same as for system dependencies, and the same \verb|find_package| command is used. The main difference comes from the cmake script used, called \texttt{FindFrameworkFinder.cmake}, that is a generic script that does the required job: finding packages and configuring adequately variables. 
-
-\subsubsection{Building sources}
-
-Once external dependencies have been satisfied, the work of the CMakeFile.txt script is to build the sources, do unit tests and install the resulting software in frameworks. This is simply done with:
-\begin{verbatim}
-# if all dependencies are satisfied
-include_directories(include)
-include_directories(${EXTERNAL_INCLUDE_DIRS})
-link_directories(${EXTERNAL_LIB_DIRS})
-
-set ( INSTALL_LIB_PATH ${DEPLOY_PATH}/lib)
-set ( INSTALL_AR_PATH  ${DEPLOY_PATH}/lib)
-set ( INSTALL_HEADERS_PATH ${DEPLOY_PATH}/include)
-set ( INSTALL_TESTS_PATH ${DEPLOY_PATH}/tests)
-set ( INSTALL_CONFIG_PATH ${DEPLOY_PATH}/config)
-set ( INSTALL_SHARE_PATH ${DEPLOY_PATH}/share)
-set ( INSTALL_BIN_PATH ${DEPLOY_PATH}/bin)
-if(CMAKE_BUILD_TYPE MATCHES Release)
-set ( INSTALL_PATH_SUFFIX release)
-elsif(CMAKE_BUILD_TYPE MATCHES Debug)
-set ( INSTALL_PATH_SUFFIX debug)
-endif(CMAKE_BUILD_TYPE MATCHES Release)
-
-add_subdirectory(src)
-add_subdirectory(apps)
-add_subdirectory(test)
-add_subdirectory(share)
-add_subdirectory(config)
-...
-\end{verbatim}
-
-Includes files are referenced with the \texttt{include directories} as they will surely be useful for the entire of functional code. Same way, folders containing libraries used are referenced. The remaining of the build process is done in generic subdirectories of the package, using the \texttt{add\_subdirectory()} command.
-
-The \textbf{src} subdirectory contains a CMakeList.txt file that builds libraries. The simpler way is to define the whole build process directly in this file but developers can also refine the build process in subdirectories if it is very complex. Whatever the solution the code should look like this:
-\begin{verbatim}
-# building sources
-## first subdirectory of src: a library ##
-set(LIB_SRC_<lib name> "")
-list(APPEND LIB_SRC_<lib name> <lib name>/<path to file>)
-list(APPEND LIB_SRC_<lib name> <lib name>/<path to file>)
-...
-add_library(<lib name>_st STATIC LIB_SRC_<lib name>)
-target_link_libraries(<lib name>_st EXTERNAL_LIBS)
-
-add_library(<lib name>_sh SHARED LIB_SRC_<lib name>)
-target_link_libraries(<lib name>_sh EXTERNAL_LIBS)
-## second subdirectory of src: a library ##
-...
-\end{verbatim}
-By default the best solution is to generate a library both in static and shared mode, to let to library users the biggest choice considering their development.
 
 The \textbf{apps} subdirectory contains a CMakeList.txt file that builds applications. The organization into subdirectories follows the same logic as for libraries:
 \begin{verbatim}
@@ -1012,19 +875,6 @@ test units" DEPENDS <test unit 1> <test unit 2>...)
 \end{verbatim}
 The build process for tests is quite the same as for applications but all tests are conditionally built depending on developers choice, using a specific guard (\verb|if(<package>_WITH_TESTS)|). 
 
-All these cmake files share common properties and are written nearly the same way. They contains one target definition for building a library, an executable, or a test unit for each subdirectory of \textbf{src}, \textbf{apps} and \textbf{test} respectively. For each target:
-\begin{enumerate}
-\item all its contained files used for building the target are listed, using \texttt{set} and \texttt{list} commands. These files are contained in the subdirectory corresponding to the target.
-\item the target is created using the \texttt{add\_executable} or \texttt{add\_library} commands. 
-\item the target is linked to other libraries (internally built libraries or external libraries) using the \texttt{target\_link\_libraries} command, if necessary.
-\end{enumerate}
-
-When creating targets developer must take care if the target is functional or optional:
-\begin{itemize}
-\item when a target is \textbf{functional}: it implements part of the core functionalities provided by the package, consequently it \textbf{must be built} for the package to be complete.
-\item when a target is \textbf{optional}: it does not implement some of the functionalities of the package, but rather some code useful for the management of the package like test units (useful for package developers) or examples (useful for package users).
-\end{itemize}
-When a target is considered as optional then we use the \texttt{EXCLUDE\_FROM\_ALL} property: they will not be built when the \texttt{make} command is launched by the developer. To simply organize the build process of these optional targets we define two custom targets: \texttt{examples}, that depends on all example executables and \texttt{testunits} that depends on all test units executables we have built. When the developer or user wants to build these targets he will simply launch \texttt{make examples} or \texttt{make testunits} commands. Furthermore, as for dependencies, the build process of examples and test units is guarded with corresponding option variables \texttt{<package>\_WITH\_TESTS} and \texttt{<package>\_WITH\_EXAMPLES}.
 
 \subsubsection{Defining tests}
 
@@ -1402,9 +1252,13 @@ Concerning package development, developers have to refer to dedicated document e
 
 \pagebreak
 
+\part*{Appendix}
+
+
+\pagebreak
+
 \part*{POUBELLE}
 
-\textbf{framework} :  a framework is a site where are deployed packages versions, consisting in a set of header files, libraries, executables, script-like files, tutorials, etc., without development artifacts (source code, build files, etc.). A framework embeds one or more stable versions of a given package that have been previously released by the package developers, allowing the user to choose which version he wants to use (for instance to compile a package in development).
  The workspace also provides categories : each category defines a specific subject that helps classifying packages/frameworks. For instance the category sensor will reference all packages or frameworks that implement the driver of a sensor. Categories can be hierarchically refined into sub categories for instance the category camera refines the category sensors. Categories can be viewed as lists of links that target frameworks/packages. The process of classification of packages is itself coming from package description (i.e. a package specifies the categories it belongs to).
  
  
@@ -1493,88 +1347,6 @@ the private repository on server by simply deleting the repository's folder and 
 \linebreak \texttt{git remote rm <private repository name>}
 \end{itemize} 
 
-PACKAGE DESCRIPTION
-
-The package is described in the \textbf{package.manifest} file. This file centralizes all meta-information about the package, notably considering authoring and licensing aspects. This file looks like this for a given package named "mypack":
-\begin{verbatim}
-<package name="mypack" address="git@idh.lirmm.fr:mypack.git"
-license="LGPL" version="1.2.5">
-<description>
-	//short package description
-</description>
-<category name = "sensor/camera" />
-<category name = "image/processing" />
-<author name="Robin" role="administrator" institution="LIRMM" />
-<author name="Sebastien" role="developer" institution="LIRMM" />    
-<author name="Francois" role="developer"institution="LIRMM" />
-<dependency name="myotherpack" min_version="0.4"
-address="git@explore.lirmm.fr:otherpack.git"/>
-<installer platform="ubuntu" version="1.0.2"
-address="ftp://ftp.gforge.fr/mypack-1.0.2-ubuntu.tgz" />
-<installer platform="ubuntu" version="1.2.0" 
-address="ftp://ftp.gforge.fr/mypack-1.2.0-ubuntu.tgz" />
-<installer platform="macosx" version="1.2.0" 
-address="ftp://ftp.gforge.fr/mypack-1.2.0-macosx.tgz" />
-</package>
-\end{verbatim}
-
-\paragraph{Data Type Definition:}
-\begin{verbatim}
-<!DOCTYPE package [
-
-<!ELEMENT package (description, category*, author+, dependency*, 
-installer*)>
-<!ELEMENT description (CDATA)>
-<!ELEMENT category (EMPTY)>
-<!ELEMENT version (EMPTY)>
-<!ELEMENT license (EMPTY)>
-<!ELEMENT author (EMPTY)>
-<!ELEMENT dependency (EMPTY)>
-<!ELEMENT installer (EMPTY)>
-
-<!ATTLIST package name CDATA #REQUIRED>
-<!ATTLIST package address CDATA #REQUIRED>
-<!ATTLIST category name CDATA #REQUIRED>
-<!ATTLIST version release CDATA #REQUIRED>
-<!ATTLIST license type CDATA #REQUIRED>
-<!ATTLIST author name CDATA #REQUIRED>
-<!ATTLIST author role CDATA #REQUIRED>
-<!ATTLIST author institution CDATA #IMPLIED>
-<!ATTLIST dependency name CDATA #REQUIRED>
-<!ATTLIST dependency min_version CDATA #IMPLIED>
-<!ATTLIST dependency max_version CDATA #IMPLIED>
-<!ATTLIST dependency address CDATA #REQUIRED>
-<!ATTLIST installer platform CDATA #REQUIRED>
-<!ATTLIST installer version CDATA #REQUIRED>
-<!ATTLIST installer address CDATA #REQUIRED>
-]>
-\end{verbatim}
-
-
-\paragraph{Explanations:}
-\begin{itemize}
-\item The \texttt{<package>} markup is the root of the XML description. The \texttt{name} parameter is the same as the package folder name and \texttt{address} specifies where to find the official git repository containing package sources. \texttt{version} defines the last released version of the package (the last version available on master branch with tag containing the given version number). Only release version are referenced, not demo or publication versions. The \texttt{licence} attribute specifies which license applies to the package's content.
-\item the \texttt{description} markup contains a brief description of the package content.
-\item The \texttt{<category>} markups defines in which categories the package is classified (i.e. topics addressed by the package).
-\item The \texttt{<author>} markups list all developers that participate to the development of the package since its creation. Developers have one of the following roles :
-\begin{itemize}
-\item \textbf{developers} are basic users of the package, they can modify any development artefacts (source code, interface, launch, tests, cmake files, etc.) on feature branches.
-\item \textbf{administrators} have the right to do quite anything on the package, they have same rights as developers but also have other particular rights : merging features branches into develop branch ; declaring new production version release (merge on master branch, either from develop or hotfix branches) ; declaring new available installers ; declaring new categories for the package ; changing license or server where the official repository can be found.
-\end{itemize}
-\item the \texttt{dependency} markups declare names and address of packages that are used by the current package. Dependencies are useful information for the developer to find and install packages that provide code (e.g. a library, an executable) used by the current package. Min and max version of the required package can be specified, which is an useful information when deploying a binary version of the package.
-\item the \texttt{installer} markups declare OS installers for binaries of the package. Each installer matches a given version of the package, a given platform and an address where to find the installer. Instead of using a git version of the package, another package that depends on it can simply be bound to an adequate binary version.
-\end{itemize}
-
-\paragraph{Remarks about usage of this file:}
-
-This file centralizes information for developers of the package. It must to be update each time it is necessary:
-\begin{itemize}
-\item When a new production version is released and the master branch is tagged, the \textit{released} number (in \texttt{version} markup) must be incremented accordingly by an administrator.
-\item Each time a new developer contribute to the package it can be automatically added to the list of authors.
-\item The license specified must conforms to the available licenses (see workspace).
-\item Whenever an administrator wants to make available an OS installer for the package's binaries, he simply adds it to the package.manifest file.
-\end{itemize}  
- 
  
 The development process of a package is always initiated by administrators:
 \begin{itemize}
@@ -1589,26 +1361,6 @@ They are so the only persons that can truly:
 \item centralize the whole process.
 \end{itemize} 
 
-
-Nearly all the development process takes place in developers/administrators workstations, around the private repository:
-\begin{itemize}
-\item Implementing package features.
-\item Updating the current \textbf{feature branch} on private repository with modifications made on the \textbf{develop} branch. Features never update between each other but only around \textbf{develop} branch. 
-\item Managing features branches integration when feature development is finished (see previous section).
-\item Creating Hotfix branches and implementing hotfixes in them (see previous section).
-\end{itemize}
-
-
-\paragraph*{Frameworks} 
-Frameworks are simple folders that contain binary version of package, in other word the installation of packages' binaries has to be done in frameworks. A framework is a "screen-shot" of a given package at a given time of its lifetime : it contains the functionalities (executables, scripts, libraries, etc.) provided by the package's version, but no development artefact (no source or build file for instance).
-
-The notion of framework (partly coming from mac osx frameworks) as many advantages as regards to classical system installation process :
-\begin{itemize}
-\item Frameworks help grouping related resources together. This grouping makes it easier to install, uninstall, and locate those resources. For instance libraries and their related headers are logically group in the same place as opposed to system install.
-\item Frameworks can include a wider variety of resource types than just libraries or headers. For example, a framework can include any relevant documentation, html-based API or configuration files.
-\item Multiple versions of a package can be included in the same framework, allowing a smart management of backward compatibility.
-\end{itemize}
-
 the \textbf{categories} folder is structured according a set of topics, each topic being itself a folder that in turn contains either other subcategories or \textbf{links to frameworks}. \textbf{categories} only goal is to help finding available packages (under binary form) according to a given theme. Considering a category, packages that are relevant for the theme it defines are referenced as links (symbolic relative links in Linux) to frameworks folders.
 
 
@@ -1618,8 +1370,6 @@ the \textbf{categories} folder is structured according a set of topics, each top
 \item No new direct subfolder or file of the workspace root can be created or removed.
 \item files (package references, licenses definitions) can be added or removed only by administrators.
 \end{itemize}
-
-
 
 \subsubsection{Deployment in frameworks}
 
