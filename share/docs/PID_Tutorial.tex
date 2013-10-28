@@ -808,7 +808,7 @@ PID defines three types of libraries, matching the three classical  types availa
 \subsubsection{Header libraries}
 \label{sec:libCMakeHeader}
 
-Header libraries are not compiled to produce a binary object. They are just made of a set of header files. This kind of library used is often used for template libraries definitions, for instance the Boost library. Such a library is never used at link time (never linked to another library or executable using a linker) but only at compile time (included header files). The definition of a header lib should look like:
+Header libraries are not compiled to produce a binary object. They are just made of a set of header files. This kind of library used is often used for template libraries definitions, for instance the Boost library. Such a library is never used at link time (never linked to another library or executable using a linker) but only at compile time (when including header files). The definition of a header lib should look like:
 \begin{verbatim}
 
 declare_PID_Component(HEADER_LIB NAME lib-y DIRECTORY lib_y)
@@ -920,27 +920,68 @@ This example shows how shared and static libraries can be built from the same so
 
 In order to produce programs usable by end-user package can also contain application components. Application components that are designed to be used by end-users are defined in the CMakeList.txt file contained in the \textbf{apps} folder of the package repository. Test applications are specifically used to test package libraries or applications and are placed in the \textbf{test} folder of the package repository.
 
-PID defines three types of applications explained in following subsections. These definitions rely on same cmake functions already presented in libraries component section: \texttt{declare\_PID\_Component} and \texttt{declare\_PID\_Component\_Dependency} (see appendix~\ref{sec:PIDCMakefunctionsAPI}).
+PID defines three types of applications explained in following subsections. These definitions rely on same cmake functions already presented in libraries component section (see also appendix~\ref{sec:PIDCMakefunctionsAPI}).
 
-\subsubsection{standard applications}
+\subsubsection{Standard applications}
 \label{sec:appCMakeStandard}
 
+By standard application we mean application that are to be used by end-users of the package, or a run-time software component that can be deployed using a middleware. The definition of a standard application  should look like:
+\begin{verbatim}
+
+declare_PID_Component(APPLICATION NAME app-b1 DIRECTORY app_B1
+                 INTERNAL INCLUDE_DIRS common_defs common_types)
+declare_PID_Component_Dependency(COMPONENT app-b1 
+                 DEPEND lib-b-sh PACKAGE the-testpack-a)
+
+\end{verbatim}
+
+As for library components (see ~\ref{sec:libCMake}), the first thing to do is to declare the application by using the function \texttt{declare\_PID\_Component}:
+\begin{itemize}
+\item the APPLICATION keyword is used to declare a standard application.
+\item the NAME keyword is used to define the unique identifier of application, "app-b1" in the example.
+\item the DIRECTORY keyword is used to say in which sub-directory of the \textbf{app} folder the source files of the application are found, in the example the "app\_B1" sub-folder.
+\item the INTERNAL INCLUDE\_DIRS allows to specify additional directories (sub folders of the \textbf{apps} folder) where to find non-public header files, in the examples folders "common\_defs" and "common\_types".
+\end{itemize}
+
+Then developers can add dependencies for the application, exactly the same way as for libraries using the  \texttt{declare\_PID\_Component\_Dependency} function:
+\begin{itemize}
+\item the COMPONENT keyword is used to specify the application that declares a dependency, "app-b1" in the example.
+\item DEPEND and PACKAGE keyword are used to target a specific component from another package, here the shared library "lib-b-sh" of the package "the-testpack-a". Dependencies management work the same way as for libraries.
+\end{itemize}
 
 
 \subsubsection{Example applications}
 \label{sec:appCMakeExample}
 
+Example applications are little pieces of executable code whose only purpose is to provide to developers simple way of using libraries defined in the package. The definition of an example application  should look like:
+\begin{verbatim}
+
+declare_PID_Component(EXAMPLE_APPLICATION NAME ex-b DIRECTORY ex_b)
+declare_PID_Component_Dependency(COMPONENT ex-b DEPEND lib-b-sh )
+
+\end{verbatim}
+
+From a strict C/C++ point of view example application are just like standard application, in other word an executable binary object. From PID point of view this is also nearly the same:
+\begin{itemize}
+\item Example application are developed with same rules as standard application except that we have to use the EXAMPLE\_APPLICATION keyword within \texttt{declare\_PID\_Component} function (see previous code).
+\item Developers can decide (using CMake cache) to avoid compiling example applications since most of time they are not really useful.
+\item Example application code is integrated into the API documentation.
+\end{itemize}
 
 \subsubsection{Test applications}
 \label{sec:appCMakeTest}
 
+TODO
 
 \subsection{Defining Tests}
 \label{sec:testCMake}
 
+TODO
 
 \subsection{Generating API documentation}
 \label{sec:apiCMake}
+
+
 
 \subsection{Configuring the package}
 \label{sec:rootCMakeConfig}
