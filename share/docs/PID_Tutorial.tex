@@ -964,92 +964,16 @@ declare_PID_Component_Dependency(COMPONENT ex-b DEPEND lib-b-sh )
 From a strict C/C++ point of view example application are just like standard application, in other word an executable binary object. From PID point of view this is also nearly the same:
 \begin{itemize}
 \item Example application are developed with same rules as standard application except that we have to use the EXAMPLE\_APPLICATION keyword within \texttt{declare\_PID\_Component} function (see previous code).
-\item Developers can decide (using CMake cache) to avoid compiling example applications since most of time they are not really useful.
+\item Developers can decide (using dedicated CMake option in cache) to avoid compiling example applications since most of time they are not really useful.
 \item Example application code is integrated into the API documentation.
 \end{itemize}
 
-\subsubsection{Test applications}
-\label{sec:appCMakeTest}
-
-TODO
-
-\subsection{Defining Tests}
+\subsubsection{Test units}
 \label{sec:testCMake}
 
+The \textbf{test} subdirectory contains a CMakeList.txt file that builds test units. The organization into subdirectories follows the same logic as for libraries and applications.
+
 TODO
-
-\subsection{Generating API documentation}
-\label{sec:apiCMake}
-
-
-
-\subsection{Configuring the package}
-\label{sec:rootCMakeConfig}
-
-
-\subsection{Installation of the package}
-\label{sec:rootCMakeInstall}
-
-ICI A REVOIR
-
-First part defines the general settings of the project that should be quite the same for all packages:
-\begin{itemize}
-\item name of the cmake project is the name of the package.
-\item basic options for package users/developers are set in order to let the possibility to build examples and test units (i.e. non functional code).
-\item version number matches the current version number of the package. it \textbf{must be updated each time a new release version is tagged on master branch}.
-\item if a user defines the \verb|USE_CUSTOM_DEPLOYMENT| variable, the deployment of the package in framework will be done in the \textbf{own} folder and not in the \textbf{version} folder.
-\item directories containing cmake script files used (e.g. to find os dependencies) are referenced in the \verb|CMAKE_MODULE_PATH| variable. 
-\end{itemize}
-
-
-The \textbf{apps} subdirectory contains a CMakeList.txt file that builds applications. The organization into subdirectories follows the same logic as for libraries:
-\begin{verbatim}
-## first subdirectory of apps: an executable ##
-set(EXE_SRC_<exe name> "")
-list(APPEND EXE_SRC_<exe name> <exe name>/<path to file>)
-list(APPEND EXE_SRC_<exe name> <exe name>/<path to file>)
-...
-add_executable(<exe name> EXE_SRC_<exe name>)
-target_link_libraries(<exe name> <lib name>_st)
-
-if(<package>_WITH_EXAMPLES)
-## second subdirectory of apps: an example executable ##
-set(EXE_SRC_<exe name> "")
-list(APPEND EXE_SRC_<exe name> <exe name>/<path to file>)
-list(APPEND EXE_SRC_<exe name> <exe name>/<path to file>)
-...
-add_executable(<exe name> EXCLUDE_FROM_ALL EXE_SRC_<exe name>)
-target_link_libraries(<exe name> <lib name>_sh)
-...
-## building example targets, if any ##
-add_custom_target(examples COMMAND ${CMAKE_COMMAND} -E echo "Building 
-examples targets" DEPENDS <example 1> <example 2>...)
-endif(<package>_WITH_EXAMPLES)
-
-\end{verbatim}
-The main difference with libraries is the usage of the \verb|add_executable| command to create executable and the use of a guard (\verb|if(<package>_WITH_EXAMPLES)|) to avoid building examples applications if not required by the developer.
-
-Finally, the \textbf{test} subdirectory contains a CMakeList.txt file that builds test units. The organization into subdirectories follows the same logic as for libraries and executable:
-\begin{verbatim}
-if(<package>_WITH_TESTS)
-set(TEST_SRC_<test name> "")
-## first subdirectory of test: a test unit ##
-list(APPEND TEST_SRC_<test name> <test name>/<path to file>)
-list(APPEND TEST_SRC_<test name> <test name>/<path to file>)
-...
-add_executable(<test name> EXCLUDE_FROM_ALL TEST_SRC_<test name>)
-target_link_libraries(<test name> <lib name>_st)
-...
-## second subdirectory of test: a second unit ##
-...
-add_custom_target(testunits COMMAND ${CMAKE_COMMAND} -E echo "Building 
-test units" DEPENDS <test unit 1> <test unit 2>...)
-...
-\end{verbatim}
-The build process for tests is quite the same as for applications but all tests are conditionally built depending on developers choice, using a specific guard (\verb|if(<package>_WITH_TESTS)|). 
-
-
-\subsubsection{Defining tests}
 
 When the code has compiled and linked correctly a good practice is to test it to be sure it behaves properly or respects some backward compatibility constraints. To do so we use test units built during the build process or any other interesting test tool and directly integrate the testing in the CMakeFile.txt of the \textbf{test} folder using CTest tooling integrated in cmake:
 
@@ -1066,21 +990,82 @@ endif(<package>_WITH_TESTS)
 
 This will automatically generate a sequence of tests whose result is \textbf{PASSED} or \textbf{FAILED} once the user input the \texttt{make test} command. We can also log results of tests into a dashboard using the same CTest tool, but this discussion is beyond the topics of this document.
 
-\subsubsection{Building API documentation}
+TODO
 
-When an API becomes available, it is always useful to have a clear way to consult the functionalities it provides. This API can be either provided by a runtime component, a library or a pure headers set. In all cases the api documentation has to be as close as possible to the source code, that is why the best way is to use an api doc generation tool like \textbf{doxygen} and to automate its use directly during the build process. We choose \textbf{doxygen} because it is a cross-platform/cross language tool very well suited for C/C++ code.
+\subsection{Generating API documentation}
+\label{sec:apiCMake}
 
-The generation takes place only if the \textbf{doxygen} tool is installed on the building host (\verb|find_package(Doxygen)|) and only when release build mode is chose (\verb|CMAKE_BUILD_TYPE MATCHES Release|). Furthermore we suppose that code documentation that can be exploited by doxygen is available in files contained in the \textbf{include} folder. The api generation is made in three steps :
-\begin{enumerate}
-\item generates a doxygen configuration file (\texttt{Doxyfile}) from a cmake doxyfile pattern (\texttt{Doxyfile.in}) that is configured according to some cmake variables. This file is used by doxygen to configure the api documentation generation process.
-\item creates a specific target named \texttt{doc} that call doxygen with the previously generated configuration as argument.
-\item once native build files have been generated by cmake, the documentation is produced with the command \texttt{make doc}.
-\end{enumerate}
-All this process requires that the share folder contains a doxygen configuration file pattern named \texttt{Doxyfile.in}. This file is provided with default values with a package and should not be modified except by expert users. It looks like this:
+When a library is defined, it is intended to be used by third party developers. To this end, it is always useful to have a clear way to consult the API provided by this library. The api documentation has to be as close as possible to the source code, that is why the best way is to use an api documentation generation tool like \textbf{doxygen} and to automate its use directly during the build process. We choose \textbf{doxygen} because it is a cross-platform tool very well suited for C/C++ code. 
+
+PID automatically manage the generation of API documentation with doxygen. The generated doc is installed in the binary package version folder in the share/doc/html sub-folder. It is also possible to generate an equivalent latex document (pdf) that it will placed in the  
+share/doc/latex sub-folder, if latex is installed on the building host. The developers of a package can configure this generation in two ways, presented in following subsections.
+
+\subsubsection{Documenting headers}
+\label{sec:apiCMakeHeaders}
+
+
+The API documentation requires that the users document the header files contained in each sub-folder of the \textbf{include}. The way to document headers is defined by doxygen tooling. Generally speaking, it consists in defining comments with specific format in header file code. As an example, the comment at the beginning of a header file should look like this:
+
+\begin{verbatim}
+/** 
+ * @file MPO700interface.h 
+ * @author Robin Passama
+ * @brief interface of the neobotix communication library. 
+ * @example pc_side_simple_interface.c
+ * Created on June 2013 18.
+ * License : CeCILL-C.
+ */
+
+#ifndef MPO700_INTERFACE_H
+#define MPO700_INTERFACE_H
+...
+\end{verbatim}
+In this example are specified general information about the header:
+\begin{itemize}
+\item the \texttt{@file} property specifies the name of the file.
+\item the \texttt{@author} property gives names of authors of the file.
+\item the \texttt{@brief} property gives a quick description of the header purpose.
+\item  the \texttt{@example} property allows to specify a source code giving an example on how to use the API defined below. This property should refer to the source code of example applications.
+\end{itemize}
+
+Then developers have to document each of their functions/methods and classes/structures/enumerations by putting a comment before their declaration, the same way as:
+\begin{verbatim}
+/**
+* Function used to initialize the communication interface with  
+* the robot (must be called before any other call). 
+* By default the robot is in monitor mode just after this call.
+* @brief initialize communication with robot.
+* @param [in] if_name is the name of the eternet interface used
+* for communication (e.g. eth0).
+* @param [in] mpo700_ip is the IPV4 address of the robot.
+* @return 0 if initialization failed, 1 otherwise
+*/
+int init_MPO700_Robot(char* if_name, char * mpo700_ip);
+...
+\end{verbatim}
+
+This example is the way a function named \texttt{init\_MPO700\_Robot} is documented with doxygen:
+\begin{itemize}
+\item the \texttt{@brief} property gives a quick description of the function utility.
+\item the \texttt{@param} property documents each argument of the function.
+\item the \texttt{@retuen} property documents the return valeu of the function.
+\end{itemize}
+
+For a more detailed explanation, readers should refer to the doxygen tool tutorials that can be found online. 
+
+\subsubsection{Adding some content by modifying Doxygen configuration file}
+\label{sec:apiCMakeDoxyfile}
+
+When developers have documented their header files, they have to do nothing more to get a standard html or pdf document. If they want to customize these documents, they have to:
+\begin{itemize}
+\item add some content in the \textbf{doc} sub-folder of the package's \textbf{share} folder. For instance a set of images can be put in a \textbf{img} sub-folder of the \textbf{doc} folder. 
+\item modify the doxygen configuration file ("Doxyfile.in") that can be found in the \textbf{doxygen} sub-folder of the package's \textbf{share} folder. This file is used by doxygen to know how to generate the documentation. For instance, one can modify the IMAGE\_PATH contained in this file so that it points to the new \textbf{img} folder.
+\item Then images can be referenced directly into doxygen headers comments using a specific keyword (@image).
+\end{itemize}
+
+Configuring doxygen behaviour is far beyond the scope of this document, interested readers may refer to online documentation and tutorials on the doxygen tooling. The only thing that is absolutely require is to let some variables of the "Doxyfile.in" unchanged: all variables whose value is \textbf{surrounded by the @ symbol must be let unchanged}. These variables are automatically fill by PID cmake scripts, for instance:
 \begin{verbatim}
 ...
-DOXYFILE_ENCODING      = UTF-8
-
 # The PROJECT_NAME tag is a single word 
 PROJECT_NAME           = "@DOXYFILE_PROJECT_NAME@"
 
@@ -1092,12 +1077,6 @@ PROJECT_NUMBER         = "@DOXYFILE_PROJECT_VERSION@"
 # be put. 
 OUTPUT_DIRECTORY       = "@DOXYFILE_OUTPUT_DIR@"
 ...
-
-# The IMAGE_PATH tag can be used to specify files or 
-# directories that contain image included in the documentation
-IMAGE_PATH             = "@DOXYFILE_IMAGE_PATH@"
-...
-
 # If the GENERATE_HTML tag is set to YES (the default) Doxygen 
 # will generate HTML output.
 GENERATE_HTML          = @DOXYFILE_GENERATE_HTML@
@@ -1105,20 +1084,20 @@ GENERATE_HTML          = @DOXYFILE_GENERATE_HTML@
 # The HTML_OUTPUT tag is used to specify where the HTML docs 
 # will be put. 
 HTML_OUTPUT            = "@DOXYFILE_HTML_DIR@"
-...
-
-# If the GENERATE_LATEX tag is set to YES Doxygen will 
-# generate Latex output.
-GENERATE_LATEX         = @DOXYFILE_GENERATE_LATEX@
-
-# The LATEX_OUTPUT tag is used to specify where the LaTeX docs 
-# will be put. If a relative path is entered the value of 
-# OUTPUT_DIRECTORY will be put in front of it. 
-LATEX_OUTPUT           = "@DOXYFILE_LATEX_DIR@"
-
 \end{verbatim}
 
-When the doxyfile in generated by cmake, all fields surrounded by the \verb|@| tag in docyfile.in file are automatically set according to corresponding cmake variables.
+When the doxygen configuration in generated by cmake, this later use the Doxyfile.in pattern file and automatically fills all fields surrounded by the @ symbol in "Doxyfile.in" according to corresponding cmake variables. Modifying these field would provoke bad behaviours.
+
+\subsection{Configuring the package}
+\label{sec:rootCMakeConfig}
+
+TODO
+
+\subsection{Installation of the package}
+\label{sec:rootCMakeInstall}
+
+TODO 
+Dire qu'en gros il n'y a pas grand chose à faire.
 
 INSTALL 
 
