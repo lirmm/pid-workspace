@@ -808,7 +808,7 @@ PID defines three types of libraries, matching the three classical  types availa
 \subsubsection{Header libraries}
 \label{sec:libCMakeHeader}
 
-Header libraries are libraries are not compiled to produce a binary library. They are just made of a set of header files. This kind of library used is often used for template libraries definitions, for instance the Boost library. Such a library is never used at link time (never linked to another library or executable using a linker) but only at compile time. The definition of a header lib should look like:
+Header libraries are not compiled to produce a binary object. They are just made of a set of header files. This kind of library used is often used for template libraries definitions, for instance the Boost library. Such a library is never used at link time (never linked to another library or executable using a linker) but only at compile time (included header files). The definition of a header lib should look like:
 \begin{verbatim}
 
 declare_PID_Component(HEADER_LIB NAME lib-y DIRECTORY lib_y)
@@ -846,19 +846,85 @@ In this later example, a new component named "lib-y-bis" is created from the sam
 \subsubsection{Static libraries}
 \label{sec:libCMakeStatic}
 
+Static libraries are binary archives that define some functionalities. A static library is made of:
+\begin{itemize}
+\item a set of header files that define its interface (i.e. what is available for library users).
+\item a set of (compiled) binary objects that implement its behaviour.
+\end{itemize}
+Its interface is used at compile time (when its header are included) and its contained objects are linked to executables and shared libraries at link time, so they no more exist at run time. The definition of a static lib should look like:
+
+\begin{verbatim}
+
+declare_PID_Component(STATIC_LIB NAME lib-c-st DIRECTORY lib_c
+                  INTERNAL DEFINITIONS NA_VERY_SPECIFIC_IMPLEM)
+declare_PID_Component_Dependency(COMPONENT lib-c-st
+                  EXTERNAL Boost INCLUDE_DIRS <Boost>/include)
+declare_PID_Component_Dependency(COMPONENT lib-c-st 
+                  EXPORT DEPEND lib-y-bis)
+
+\end{verbatim}
+
+As for any component, the first thing to do is to declare by using the function \texttt{declare\_PID\_Component}:
+\begin{itemize}
+\item the STATIC\_LIB keyword is used to declare a static library.
+\item the NAME keyword is used to define the identifier of the of the static library, "lib-c-st" in the example.
+\item the DIRECTORY keyword is used to say in which sub-directory of the \textbf{include} folder the header files of the static library are found, in the example the "lib\_c" sub-folder. The \textbf{same folder name} is used to specify in which subdirectory of the \textbf{src} folder the source and non-public header files of the library are found. For a same library, this constraints the user to use same folder names between \textbf{include} and \textbf{src} directories.
+\item the INTERNAL DEFINITIONS is used to specify definitions that affect only the implementation (i.e. that is not used in any header file of the library). In the example the "lib-c-st" undefines the preprocessor definition A\_VERY\_SPECIFIC\_IMPLEM .
+\end{itemize}
+
+As readers can notice, the declaration is quite the same as for header libraries. Note also that static libraries can define exported definitions (as header libraries) for those which are used in their header files. The declaration of dependencies also follows the exact same pattern. In the example:
+\begin{itemize}
+\item "lib-c-st" static library is using an external package named "Boost". As boost is a pure header library it only needs to specify where to find its header files, using the INCLUDE\_DIRS keyword. The include path specified is relative to the Boost package root folder (using the <Boost> specifier).
+\item "lib-c-st" is also using (specified with keyword DEPEND) another library "lib-y-bis" that is defined in the same package (since no PACKAGE keyword is used). It exports "lib-y-bis" meaning that its header files contain include directive over header files of the "lib-y-bis".
+\end{itemize}
 
 
 \subsubsection{Shared libraries}
 \label{sec:libCMakeShared}
 
+Shared libraries are binary objects that define some functionalities. A shared library is made of:
+\begin{itemize}
+\item a set of header files that define its interface (i.e. what is available for library users).
+\item a binary object (.so on linux) that implements its behaviour. This 
+\end{itemize}
+Its interface is used at compile time (when including its headers) and its binary object checked at link time and truly used at run time, either when the executable using it is loaded or when it explicitly load it at run time. The definition of a shared lib is more or less the same as for static libraries and should look like:
 
+\begin{verbatim}
+
+declare_PID_Component(SHARED_LIB NAME lib-c-sh DIRECTORY lib_c
+                   INTERNAL DEFINITIONS A_VERY_SPECIFIC_IMPLEM)
+declare_PID_Component_Dependency(COMPONENT lib-c-sh
+                   EXTERNAL Boost INCLUDE_DIRS <Boost>/include)
+declare_PID_Component_Dependency(COMPONENT lib-c-sh
+                   EXPORT DEPEND lib-y)
+
+\end{verbatim}
+
+In the previous example, the function \texttt{declare\_PID\_Component} is used in a common way:
+\begin{itemize}
+\item the SHARED\_LIB keyword is used to declare a shared library.
+\item the NAME keyword is used to declare "lib-c-sh".
+\item the DIRECTORY keyword is used to define \textbf{include} and \textbf{src} sub folders where to find code. In the example reader can notice that the shared library "lib-c-sh" is built from the same code as static library "lib-c-st".
+\item the INTERNAL DEFINITIONS is used to specify to define the preprocessor definition A\_VERY\_SPECIFIC\_IMPLEM contrarily to "lib-c-st".
+\end{itemize}
+
+This example shows how shared and static libraries can be built from the same source code and how developers can define alternative implementation for part of their code using preprocessor definitions. Their dependencies can also vary:
+\begin{itemize}
+\item "lib-c-sh" shared library is using the Boost external package the same way as "lib-c-st".
+\item "lib-c-sh" is using (specified with keyword DEPEND) the library "lib-y" (that is defined in the same package)  instead of "lib-y-bis" used by "lib-c-st".
+\end{itemize}
 
 
 \subsection{Defining Application components}
 \label{sec:appCMake}
 
+In order to produce programs usable by end-user package can also contain application components. Application components that are designed to be used by end-users are defined in the CMakeList.txt file contained in the \textbf{apps} folder of the package repository. Test applications are specifically used to test package libraries or applications and are placed in the \textbf{test} folder of the package repository.
+
+PID defines three types of applications explained in following subsections. These definitions rely on same cmake functions already presented in libraries component section: \texttt{declare\_PID\_Component} and \texttt{declare\_PID\_Component\_Dependency} (see appendix~\ref{sec:PIDCMakefunctionsAPI}).
+
 \subsubsection{standard applications}
 \label{sec:appCMakeStandard}
+
 
 
 \subsubsection{Example applications}
@@ -1167,6 +1233,12 @@ Concerning package development, developers have to refer to dedicated document e
 
 \section{PID cmake functions API}
 \label{sec:PIDCMakefunctionsAPI}
+
+
+\section{Examples}
+\label{sec:Examples}
+
+
 
 
 
