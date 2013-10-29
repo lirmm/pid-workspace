@@ -971,34 +971,47 @@ From a strict C/C++ point of view example application are just like standard app
 \subsubsection{Test units}
 \label{sec:testCMake}
 
-The \textbf{test} subdirectory contains a CMakeList.txt file that builds test units. The organization into subdirectories follows the same logic as for libraries and applications.
+The \textbf{test} subdirectory contains a CMakeList.txt file that builds test units. The organization into subdirectories follows the same logic as for libraries and applications. Test units are specific components because they will not be installed with package binary. They are just used to test the validity of the libraries code, for instance  to be sure it behaves properly or respects some backward compatibility constraints. 
 
-TODO
+The first step when playing test is to define test applications, doing something like this in the CMakeList.txt file of the \textbf{test} folder:
+\begin{verbatim}
 
-When the code has compiled and linked correctly a good practice is to test it to be sure it behaves properly or respects some backward compatibility constraints. To do so we use test units built during the build process or any other interesting test tool and directly integrate the testing in the CMakeFile.txt of the \textbf{test} folder using CTest tooling integrated in cmake:
+declare_PID_Component(TEST_APPLICATION NAME test-b 
+                                       DIRECTORY test_b)
+declare_PID_Component_Dependency(COMPONENT test-b 
+                                 DEPEND lib-b-sh )
+
+\end{verbatim}
+This "test-b" application is in charge of testing the library "lib-b-sh". Then, always in the CMakeList.txt file of the \textbf{test} folder, this test application can be used to launch series of tests, using standard CTest tooling integrated in CMake:
 
 \begin{verbatim}
-...
-enable_testing()
+add_test(test_correctness_of_lib-b-sh_step1 test-b "first" 
+                                                   "124" "12")
+add_test(test_correctness_of_lib-b-sh_step2 test-b "second" 
+                                                   "12" "46")
+add_test(test_correctness_of_lib-b-sh_step3 test-b "second" 
+                                                   "0" "87")
 
-add_test(<test1 name> <test unit 1> arg1 arg2 ... )
-add_test(<test2 name> <test unit 1> arg1 arg2 ... )
-add_test(<test3 name> <test unit 2> arg1 arg2 ... )
-...
-endif(<package>_WITH_TESTS)
 \end{verbatim}
 
-This will automatically generate a sequence of tests whose result is \textbf{PASSED} or \textbf{FAILED} once the user input the \texttt{make test} command. We can also log results of tests into a dashboard using the same CTest tool, but this discussion is beyond the topics of this document.
+In the previous example, one can see that the same test application "test-b" may be used to run series of test, simply by changing its input parameters. Of course different test applications may be used to test same libraries in needed (like "test-b-back" used to test backward compatibility of "lib-b-sh". Another option is to use generic software tools (e.g. valgrind) to check for validity of general properties (e.g. memory leaks).
 
-TODO
+A simple and standard way to proceed is to define test application that take different arguments: 
+\begin{itemize}
+\item an argument represent the tested functionality (e.g. "first" in the previous example). A functionality can be seen as a particular use of the test library's API in order to obtain a given behaviour. It is implemented as a given block of code inside the test application.
+\item one or more arguments represent input parameters (e.g. "124" in first test).
+\item one or more arguments represent the expected output parameters (e.g. "12" in first test).
+\item the test program (e.g. "test-b") call the adequate target functionality (e.g. "first") of the tested library (e.g. lib-b-sh) with adequate input parameters (e.g. "124") and check if the result is the expected one (e.g. "12"). If successful it return 1, otherwise it returns 0.
+\end{itemize}
+The previous code will automatically generate a sequence of tests whose result is \textbf{PASSED} or \textbf{FAILED} according to the result returned by the test program. Tests failure are not blocking the whole build and install process BUT developers should take care to validate all tests before releasing a version of the package.
+
 
 \subsection{Generating API documentation}
 \label{sec:apiCMake}
 
 When a library is defined, it is intended to be used by third party developers. To this end, it is always useful to have a clear way to consult the API provided by this library. The api documentation has to be as close as possible to the source code, that is why the best way is to use an api documentation generation tool like \textbf{doxygen} and to automate its use directly during the build process. We choose \textbf{doxygen} because it is a cross-platform tool very well suited for C/C++ code. 
 
-PID automatically manage the generation of API documentation with doxygen. The generated doc is installed in the binary package version folder in the share/doc/html sub-folder. It is also possible to generate an equivalent latex document (pdf) that it will placed in the  
-share/doc/latex sub-folder, if latex is installed on the building host. The developers of a package can configure this generation in two ways, presented in following subsections.
+PID automatically manage the generation of API documentation with doxygen. The generated doc is installed in the binary package version folder in the share/doc/html sub-folder. If latex is installed on the building host, it is also possible to generate an equivalent pdf document that will placed in the share/doc/latex sub-folder. The developers of a package can configure this generation in two ways, presented in following subsections. 
 
 \subsubsection{Documenting headers}
 \label{sec:apiCMakeHeaders}
@@ -1088,13 +1101,29 @@ HTML_OUTPUT            = "@DOXYFILE_HTML_DIR@"
 
 When the doxygen configuration in generated by cmake, this later use the Doxyfile.in pattern file and automatically fills all fields surrounded by the @ symbol in "Doxyfile.in" according to corresponding cmake variables. Modifying these field would provoke bad behaviours.
 
+\subsubsection{CMakeList.txt of the share folder}
+\label{sec:apiCMakeShare}
+
+The CMakeList.txt file of the share folder does not explicitly manage installation of the API documentation. Nevertheless, if developers add resources to the \textbf{share} folder like for instance images, these resources may be needed when the package binary is installed. In such a case the CMakeList.txt has to manage the installation of these resources, using the classical CMake \texttt{install} command. These resources have to be placed in the binary package's \textbf{share} folder with a command like:
+\begin{verbatim}
+install(DIRECTORY img 
+        DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+\end{verbatim}
+This later command will install the img folder (that is in the share folder) and all its content into the adequate share folder of the installed binary package. The same process can be used for instance for documents like README/INSTALL files, using the \texttt{install(FILE )} command.
+
 \subsection{Configuring the package}
 \label{sec:rootCMakeConfig}
 
 TODO
 
-\subsection{Installation of the package}
-\label{sec:rootCMakeInstall}
+\subsection{Controlling package build process}
+\label{sec:rootCMakeConfig}
+
+TODO
+
+
+\subsection{Resulting binary package}
+\label{sec:rootCMakeInstallBinary}
 
 TODO 
 Dire qu'en gros il n'y a pas grand chose à faire.
@@ -1103,54 +1132,7 @@ INSTALL
 
 The shared and static version of each library will be installed in the adequate folder according to the system requirements. And the folder containing headers of the library will be installed in the include folder of the package framework version.
 
-In CMakeFile.txt of the \texttt{apps} folder:
-\begin{verbatim}
-# first application to install
-INSTALL(TARGETS <exe name>
-  RUNTIME DESTINATION ${INSTALL_BIN_PATH}/${INSTALL_PATH_SUFFIX}
-)
-# second application to install : an example
-if(<package>_WITH_EXAMPLES)
-INSTALL(TARGETS <example name>
-  RUNTIME DESTINATION ${INSTALL_BIN_PATH}/${INSTALL_PATH_SUFFIX}
-)
-endif(<package>_WITH_EXAMPLES)
-...
-\end{verbatim}
 Same as for libraries applications will be installed in the bin folder of the package's framework version. If example executables have been built they will also be installed.
-
-
-In CMakeFile.txt of the \texttt{test} folder:
-\begin{verbatim}
-if(<package>_WITH_TESTS)
-INSTALL(TARGETS <test1 name> <test2 name>
-  RUNTIME DESTINATION ${INSTALL_TESTS_PATH}/${INSTALL_PATH_SUFFIX}
-)
-endif(<package>_WITH_TESTS)
-\end{verbatim}
-Tests will be installed only if they have been built.
-
-In CMakeFile.txt of the \texttt{share} folder:
-\begin{verbatim}
-if(CMAKE_BUILD_TYPE MATCHES Release)
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc 
-DESTINATION ${INSTALL_SHARE_PATH}/doc)
-# other documents to install
-install(FILE <path to document to install> <path to document to install>
-DESTINATION ${INSTALL_SHARE_PATH})
-endif(CMAKE_BUILD_TYPE MATCHES Release)
-\end{verbatim}
-
-\textbf{share} and \textbf{config} folders of the package framework version will receive files. Since these files are the same for debug and release version they will be installed only once, when installing release version.
-
-In CMakeFile.txt of the root folder of the package:
-\begin{verbatim}
-if(CMAKE_BUILD_TYPE MATCHES Release)
-# mandatory files to install
-install(FILE license.txt package.manifest
-DESTINATION ${INSTALL_CONFIG_PATH})
-\end{verbatim}
-Simply copying global files to the package framework version.
 
 \pagebreak
 
@@ -1254,6 +1236,122 @@ Concerning package development, developers have to refer to dedicated document e
 \section{PID cmake functions API}
 \label{sec:PIDCMakefunctionsAPI}
 
+With PID there are few functions to use to precisely declare the content of a package. Each of these functions is detailed below. Note that optional arguments are signalled using the optional keyword into brackets.
+
+\subsection{declare\_PID\_Package}
+
+\textbf{Inputs argument}: 
+\begin{itemize}
+\item AUTHOR <name>. This is a string defining the name(s) of the reference author.
+\item \{optional\} INSTITUTION <institutions>. This is a string defining the institutions to which the main author belongs.
+\item YEAR <dates>. This is a string character that reflects the life time of the package, for instance "year of creation - year of last modification".
+\item LICENSE <license name>. This is the name of the license applying to the package. This license name must be defined by a corresponding cmake file in the \textbf{licenses} directory of the workspace.
+\item \{optional\} ADDRESS <url>. This argument represents the url of the package's git repository. It can be let undefined for pure local repository but must be set once the package is delivered.
+\item DESCRIPTION <description>. This argument is a string that provides a short description of the package usage and utility.
+\end{itemize}
+\textbf{Constraints}: this function must be called in the root CMakeList.txt file of the package, before any other call to PID or \texttt{find\_package} (or equivalent) functions.\\
+\textbf{Effect}: initialization of package's internal state.
+
+\subsection{set\_PID\_Package\_Version}
+
+\textbf{Inputs argument}:
+\begin{itemize}
+\item <major>. This is a positive digit indicating major version number.
+\item <minor>. This is a positive digit indicating minor version number.
+\item \{optional\} <patch>. This is a positive digit indicating patch version number. If not defined the patch version number of the package will be set to 0.
+\end{itemize}
+\textbf{Constraints}: this function must be called in the root CMakeList.txt file of the package, after \texttt{declare\_PID\_Package} and before \texttt{build\_PID\_package}.\\
+\textbf{Effect}: set the current version number of the package. This will impact on the installed binary folder and configuration files.
+
+\subsection{add\_PID\_Package\_Author}
+
+\textbf{Inputs argument}: 
+\begin{itemize}
+\item AUTHOR <name>. This is a string defining the name(s) of an author of the package.
+\item \{optional\} INSTITUTION <name>. This is a string defining the names of the institutions to which the author belongs.
+\end{itemize}
+\textbf{Constraints}: this function must be called in the root CMakeList.txt file of the package, after \texttt{declare\_PID\_Package} and before \texttt{build\_PID\_package}.\\
+\textbf{Effect}: add another author to the list of authors of the package.
+
+\subsection{add\_PID\_Package\_Reference}
+\textbf{Inputs argument}:
+\begin{itemize}
+\item BINARY VERSION <major> <minor> \{optional\}<patch>. This argument describes the full version number of the referenced binary package. <major> <minor> and <patch> are positive digits. If patch number is omitted then patch number is considered as 0.
+\item SYSTEM <name>. This is the name of the target operating system. For now only linux supported.
+\item URL <url-rel> <url-dbg>. The two values of the URL arguments are: the url of the package binary in release version and the url of the package binary in debug version.
+\end{itemize}
+\textbf{Constraints}: this function must be called in the root CMakeList.txt file of the package, after \texttt{declare\_PID\_Package} and before \texttt{build\_PID\_package}.\\
+\textbf{Effect}: reference addresses where to find a given binary package version for a given operating system. This information will be used to generate a CMake configuration file that will be used for retrieving adequate package versions.
+
+\subsection{declare\_PID\_Package\_Dependency}
+\textbf{Inputs argument}: 2 signatures whether the dependency is an external or a PID package.
+\begin{itemize}
+\item For external packages:
+\begin{itemize}
+\item PACKAGE <name>. The string without white space defining the unique identifier of the required external package.
+\item EXTERNAL <path>. This is the path to the root directory of the external package. This path will be used as the basic reference for any folder/component of the external package that is referenced by local components.
+\item \{optional\} VERSION <version string>. This version is a string without white space and following dotted notation of versions, that indicates which version of the external package is required.
+\end{itemize}
+\item For PID packages:
+\begin{itemize}
+\item PACKAGE <name>. The string without white space defining the unique identifier of the required PID package.
+\item PID. This option is just used to indicates that the required package is a PID package.
+\item \{optional\} VERSION <major> <minor>. Major and minor version number are positive digits that are used to constraint the required package to a given version.
+\item \{optional\} EXACT. This option is used only if the VERSION argument is used. It indicates that the required package version is exactly the major.minor version required. Patch version is let undetermined.
+\item \{optional\} COMPONENTS <list of components>. This argument is used to specify which components of the required package will be used by local components. If not specified there will be no check for the presence of specific components in the required package.
+\end{itemize}
+\end{itemize}
+\textbf{Constraints}: this function must be called in the root CMakeList.txt file of the package, after \texttt{declare\_PID\_Package}, after the \texttt{find\_package} call to the same required package and before \texttt{build\_PID\_package}.\\
+\textbf{Effect}: this function will register the target package as a dependency of the current package. These informations will be useful to generate adequate configuration files for the current package. Each required package \textbf{MUST BE referenced} using this function.
+
+\subsection{build\_PID\_Package}
+\textbf{Inputs argument}: none.\\
+\textbf{Constraints}: this function must be the last one called in the root CMakeList.txt file of the package.\\
+\textbf{Effect}: this function generates configuration files, manage the generation of the global build/install process and will call CMakeList.txt files of the following folders: \textbf{src}, \textbf{apps}, \textbf{test}, \textbf{share}.
+
+\subsection{declare\_PID\_Component}
+\textbf{Inputs argument}:
+\begin{itemize}
+\item <type>. This argument specifies the the type of the component. Its value is either STATIC\_LIB (static library), SHARED\_LIB(shared library), HEADER\_LIB (header library), APPLICATION (stadard applciation),EXAMPLE\_APPLICATION (example code), TEST\_APPLICATION (test unit)
+\item NAME <name>. This is the string without white space defining the unique identifier of the component.
+\item DIRECTORY <dir>. This is the directory where to find component source. Depending on its <type> this directory is a sub-folder of the \textbf{src} (library), \textbf{apps} (example or standard application) or \textbf{test} (test unit) package's folders.
+\item \{optional\} INTERNAL. This argument is followed by other arguments that are only local to the component, i.e. that it does not export.
+\begin{itemize}
+\item \{optional\} DEFINITIONS <defs>. These are the preprocessor definitions internally used by the component's source code. For libraries these definitions must not be part of one of their header files. This is used to provide a given implementation to the component among different alternative, for instance to match operating system requirements.
+\item \{optional\} INCLUDE\_DIRS <dirs>. These are additional directory where to find header files (that are not part of their interface for libraries).
+\item \{optional\} LINKS <links>. These are link flags, like path to lirabries. This argument is used mainly by applications.
+\end{itemize}
+\item \{optional\} EXPORTED\_DEFINITIONS <defs>. These are the preprocessor definitions that are contained in one or more of libraries header files. Applications do not export any definition.
+\end{itemize}
+\textbf{Constraints}: Depending of the <type> of the component this function must be called in the adequate CMakeList.txt file (either in the \textbf{src}, \textbf{apps} or \textbf{test} folders. It must be called before any call to declare\_PID\_Component\_Dependency applied to the same declared component\\
+\textbf{Effect}: this function is used to define a component in the current package. This will create adequate targets to build the component binary (if any) and install it.
+
+\subsection{declare\_PID\_Component\_Dependency}
+\textbf{Inputs argument}:2 signatures whether the dependency is an external or a PID package. 
+\begin{itemize}
+\item common arguments for both signature:
+\begin{itemize}
+\item COMPONENT <name>. This is the string without white space that defines the local component for which a dependency is defined.
+\item \{optional\} EXPORT. This is an option indicating if the component <name> exports the required dependency. Exporting means that the reference to the dependency is contained in its interface (header files). This can be only the case for libraries, not for applications.
+\item \{optional\} INTERNAL\_DEFINITIONS <defs>. These are preprocessor definitions used internally to the component source code, when using the dependency. The definitions must not be part of the component header files (they are never exported).
+\item \{optional\} IMPORTED\_DEFINITIONS <defs>. These are preprocessor definitions \textbf{contained in the interface (header files) of the dependency} that are set (or unset) when the component use this dependency.
+\item \{optional\} EXPORTED\_DEFINITIONS <defs>. These are preprocessor definitions \textbf{contained in the interface (header files) of the component} that are set or unset anytime when this component will be used.
+\end{itemize}
+\item for a required PID component:
+\begin{itemize}
+\item DEPEND <dep\_component>. This is the specification of the dependency. In this case the dependency is a required PID component and <dep\_component> is simply the name of this component.
+\item \{optional\} PACKAGE <dep\_package>. If the PACKAGE argument is used, it means that the required component belongs to another package. In this case, <dep\_package> is the name of the required package, which must have been declared as a package dependency before (in the root CMakeList.txt file of the package). If PACKAGE argument is not used, it means that the required component is part of the current package.
+\end{itemize}
+\item for a required external component, the dependency can target either a system dependency or a custom external dependency:
+\begin{itemize}
+\item \{optional\} EXTERNAL <ext\_package> INCLUDE\_DIRS <dirs>. When EXTERNAL argument is used, it means that the dependency is over a custom external package. In such a case <ext\_package> is the name of the external package which must have been declared as a package dependency (in the root CMakeList.txt file of the package). The argument INCLUDE\_DIRS is then used to specify where to find headers of the libraries used, <dirs> being the list of path to these includes, relative to the package root dir.
+\item \{optional\} LINKS. This is an option to specify target libraries used. If used, then there must be STATIC and/or SHARED arguments used.
+\item STATIC <links>. These are the static libraries used. For system libraries, system referencing must be used (e.g. -lm for libm.a). For custom external packages complete path to libraries, relative to required external package root dir must be used.
+\item SHARED <links>. These are the shared libraries used. For system libraries, system referencing must be used (e.g. -lm for libm.so). For custom external packages, complete path to libraries, relative to required external package root dir must be used.
+\end{itemize}
+\end{itemize}
+\textbf{Constraints}: Depending of the <type> of the component this function must be called in the adequate CMakeList.txt file (either in the \textbf{src}, \textbf{apps} or \textbf{test} folders. It must be called after the call to declare\_PID\_Component applied to the same declared component\\
+\textbf{Effect}: this function is used to define a dependency between a component in the current package and another component (headers, static or shared library), either an external component or a PID component. This will configure the build process for the component binary (if any).
 
 \section{Examples}
 \label{sec:Examples}

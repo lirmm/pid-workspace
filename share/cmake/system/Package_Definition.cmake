@@ -50,7 +50,6 @@ add_Author("${ADD_PID_PACKAGE_AUTHOR_AUTHOR}" "${ADD_PID_PACKAGE_AUTHOR_INSTITUT
 endmacro(add_PID_Package_Author)
 
 ### API : 	add_PID_Package_Reference(BINARY VERSION major minor [patch] SYSTEM system_type URL url-rel url_dbg)
-# 2nd signature	add_PID_Package_Reference(REPOSITORY git-url SINCE_VERSION major)
 macro(add_PID_Package_Reference)
 set(oneValueArgs SYSTEM)
 set(multiValueArgs VERSION URL)
