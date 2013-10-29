@@ -985,26 +985,25 @@ declare_PID_Component_Dependency(COMPONENT test-b
 This "test-b" application is in charge of testing the library "lib-b-sh". Then, always in the CMakeList.txt file of the \textbf{test} folder, this test application can be used to launch series of tests, using standard CTest tooling integrated in CMake:
 
 \begin{verbatim}
-add_test(test_correctness_of_lib-b-sh_step1 test-b "first" 
-                                                   "124" "12")
-add_test(test_correctness_of_lib-b-sh_step2 test-b "second" 
-                                                   "12" "46")
-add_test(test_correctness_of_lib-b-sh_step3 test-b "second" 
-                                                   "0" "87")
+add_test(correctness_of_lib-b-sh_step1 test-b "first" 
+                                              "124" "12")
+add_test(correctness_of_lib-b-sh_step2 test-b "second" 
+                                              "12" "46")
+add_test(correctness_of_lib-b-sh_step3 test-b "second" 
+                                              "0" "87")
 
 \end{verbatim}
 
-In the previous example, one can see that the same test application "test-b" may be used to run series of test, simply by changing its input parameters. Of course different test applications may be used to test same libraries in needed (like "test-b-back" used to test backward compatibility of "lib-b-sh". Another option is to use generic software tools (e.g. valgrind) to check for validity of general properties (e.g. memory leaks).
+In the previous example, one can see that the same test application "test-b" may be used to run series of test, simply by changing its input parameters. Of course different test applications may be used to test same libraries in needed (like "test-b-back" used to test backward compatibility of "lib-b-sh". Another option is to use generic software test tools or framework (e.g. Valgrind, C-Cover, Purify, etc.) to check for validity of general properties (e.g. runtime memory errors, code coverage, analysis of code metrics), but this is beyond the topic of this document.
 
 A simple and standard way to proceed is to define test application that take different arguments: 
 \begin{itemize}
 \item an argument represent the tested functionality (e.g. "first" in the previous example). A functionality can be seen as a particular use of the test library's API in order to obtain a given behaviour. It is implemented as a given block of code inside the test application.
 \item one or more arguments represent input parameters (e.g. "124" in first test).
 \item one or more arguments represent the expected output parameters (e.g. "12" in first test).
-\item the test program (e.g. "test-b") call the adequate target functionality (e.g. "first") of the tested library (e.g. lib-b-sh) with adequate input parameters (e.g. "124") and check if the result is the expected one (e.g. "12"). If successful it return 1, otherwise it returns 0.
+\item the test program (e.g. "test-b") call the adequate target functionality (e.g. "first") of the tested library (e.g. lib-b-sh) with adequate input parameters (e.g. "124") and check if the result is the expected one (e.g. "12"). If \textbf{successful it returns 0}, otherwise it returns an error code (something else than 0).
 \end{itemize}
 The previous code will automatically generate a sequence of tests whose result is \textbf{PASSED} or \textbf{FAILED} according to the result returned by the test program. Tests failure are not blocking the whole build and install process BUT developers should take care to validate all tests before releasing a version of the package.
-
 
 \subsection{Generating API documentation}
 \label{sec:apiCMake}
@@ -1114,7 +1113,28 @@ This later command will install the img folder (that is in the share folder) and
 \subsection{Configuring the package}
 \label{sec:rootCMakeConfig}
 
-TODO
+PID packages provide a set of generic variables to allow the configuration of the build/install process. The configuration of these CMake cache variable is made using \texttt{ccmake ..} command in the \textbf{build} directory of the package and then by using Cmake configuration interface.
+\begin{itemize}
+\item BUILD\_AND\_RUN\_TESTS (default to OFF): If this option is ON the CMake process will build test applications and run unit tests that have been defined in the CMakeList.txt file of the \textbf{test} folder.
+\item BUILD\_API\_DOC (default to ON): If this option is ON, the CMake process will build the html API documentation of the package.
+\item BUILD\_LATEX\_API\_DOC (default to OFF): If this option is ON and if BUILD\_API\_DOC is ON, the CMake process will build the pdf document containing the API documentation of the package.
+\item BUILD\_EXAMPLES (default to ON): If this option is ON, example application will be build and installed in the binary package resulting from the build process.
+\item BUILD\_PACKAGE\_REFERENCE (default to OFF): If this option is ON, the CMake process will generate a reference file for the package. This reference file is installed in a dedicated folder of the containing workspace that contains a reference file for each known PID package. This file be used for the management of package downloading and deployment (either for source repository and binary archives).
+\item BUILD\_WITH\_PRINT\_MESSAGES (default to OFF): If this option is ON, the preprocessor definition PRINT\_MESSAGES will be set. It should be used by developers each time they want to log information from their running code.
+\item USE\_LOCAL\_DEPLOYMENT (default to ON): If this option is ON, the package binary version resulting from the build process will be installed in a version folder with the form own-<version number> instead of a folder with <version number> form. This is useful for developers to precisely control which version of the code he uses. This option is used when working on multiple packages at the same time and when user want to target its own developed binary packages instead of already released ones.
+\item GENERATE\_INSTALLER (default to OFF): If this option is ON and USE\_LOCAL\_DEPLOYMENT is OFF, the CMake process will generate a "ready to install" relocatable binary archive of the package version that will be built. 
+\item REQUIRED\_PACKAGES\_AUTOMATIC\_DOWNLOAD (default to OFF): If this option is ON the CMake process will automatically try to install adequate binary package version when they cannot be found in the local workspace. The "automatic download" procedure will do one of the following  action:
+\begin{itemize}
+\item if the required package repository exists in the workspace, CMake will retrieve the adequate Git tag corresponding to the version to install, go to the corresponding commit and build the binary package for this commit.
+\item If the required package repository does not exist, CMake will use \textbf{package reference files} contained in the workspace in order to know where to find package on the internet. Then depending on the situation:
+\begin{itemize}
+\item CMake will download a binary package version archive that is 1) available on internet, 2) adequate regarding version constraints. After download, CMake will install the archive.
+\item if no adequate binary package version archive is available, then CMake will clone the git repository (if the user has access to it) and then do the same as the first possible action.
+\item if the user has no access to the package source repository, then the build/install process will stop on an error.
+\end{itemize}
+\end{itemize}
+\end{itemize}
+
 
 \subsection{Controlling package build process}
 \label{sec:rootCMakeConfig}
