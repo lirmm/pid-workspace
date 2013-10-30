@@ -755,6 +755,21 @@ function(declare_Package_Dependency dep_package version exact list_of_components
 
  	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${list_of_components} CACHE INTERNAL "")
+	
+	# managing automatic install process if needed 	
+	if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
+		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#testing if there is automatic install activated
+			list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES ${dep_package} INDEX)
+			if(INDEX EQUAL -1)
+			#if the package where not specified as REQUIRED in the find_package call, we face a case of conditional dependency => the package has not been registered as "to install" while now we know it must be installed
+				if(version)
+					add_To_Install_Package_Specification(${dep_package} "${version}" ${exact})
+				else()
+					add_To_Install_Package_Specification(${dep_package} "" FALSE)
+				endif()
+			endif()
+		endif()
+	endif()
 endfunction(declare_Package_Dependency)
 
 ### declare external dependancies
