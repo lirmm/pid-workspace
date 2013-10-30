@@ -1297,46 +1297,8 @@ const Bar * get_Attribute_Pointer() const;
 \item \textbf{Exceptions}: exceptions are the preferred error-reporting mechanism for C++, as opposed to returning integer error codes. Always document what exceptions can be thrown by your package, on each function / method. Do not throw exceptions from destructors. Do not throw exceptions from callbacks that you do not invoke directly. When your code can be interrupted by exceptions, you must ensure that resources you hold will be deallocated when stack variables go out of scope. In particular, mutexes must be released, and heap-allocated memory must be freed. Accomplish this safety by using smart pointers.
 \item \textbf{Documentation}: use doxygen annotations in header files to describe all methods (arguments, return value, usage, etc.), attributes, class (role and relationship with other classes), etc. These comments will be automatically included when the api documentation will be generated (see section~\ref{sec:apiCMakeHeaders}).
 \item \textbf{Licensing}: systematically apply a license, authors and version information at the beginning of all source file (C/C++ headers and source). For license text, see the license cmake script file corresponding to the license used (it can be found in the workspace, see section~\ref{sec:workspace}).
+\item \textbf{Threading}: avoid the management of multi-threading (processes/thread execution management, usage of IPC and synchronization mechanisms) into libraries and implement these mechanisms inside applications. Library should contain only computational code while applications embed control-flow management code. This rule is not valid for libraries, like those of middleware, implementing task management and communication mechanisms.
 \end{itemize}
-
-
-%
-%2.4.3 Libraries vs Executables
-%One important concern when dealing with real-time software is to separate control flow aspects from pure computation aspects. Indeed, depending on the middleware used, the management of the control flow can vary according to the programming paradigm : threads/tasks/processes (called tasks in the remainder of the report) handling can be more or less constrained by available middleware services as well as process communication and synchronization (IPC). In robotic middlewares (e.g. ROS, OROCOS) reusable components are software tasks that use some computational code to perform a given objective for robot control. Since middlewares programming models vary, tasks are not reusable from one to another. If the computation code is “merged” into control flow management code it becomes not reusable from one context to another.
-%
-%The best way is so to separate computational and control-flow management code in source code :
-%libraries (either shared, static or pure template header files) must contain computational code only : they cannot embeds code to deal with threads, processes, mutexes, semaphore or more generally any code dealing with processes synchronization and communication, shared memory management, scheduling, timing, etc.
-%executables have to define control flow management code according to the selected middleware (or OS if no middleware is used). It should not define complex computation code but only used the one defined in libraries it uses and “plug” it with control flow management code.
-%
-%The benefit of this policy is to maximize the reuse of the computational code (algorithms) among different component programing paradigms.  Of course this policy does not apply when the set of libraries of a package are designed to define services of a middleware. 
-%
-%Important remark : discriminate when to put code in a library or in an executable is not always really easy. This is particularly the case for “drivers” (code that manage externally accessible devices). In this case the best way to do is to discriminate protocol specification from protocol runtime behavior (that sometimes requires multi-threading) :
-%libraries implement the protocol specification : exchanged frames format encoding/decoding/ verification ; api for translation between high level requests and exchanged frames ; communication channel used.
-%executables implement the protocol runtime behavior : they put in place multi-threading when necessary, interruption handling, timing behavior, according to the programming constraints defined in the “driver” library they use.
-
-
-\subsection{Delivery}
-
-Packages should be delivered to third parties preferably in binary form, using a \textbf{package installer} (see section~\ref{sec:CMakeInstallBinary}). By delivered we mean:
-\begin{itemize}
-\item an OS installer for the package is created via CMake/CPack process presented before.
-\item the installer is put on a ftp server.
-\item the ftp address where to find the installer is referenced is the package.manifest file of the package.
-\item the package is updated together with the workspace, so that anyone can know the existence of the installer.
-\end{itemize}
-
-The reference installer mechanism is debian packages because ubuntu/debian is the reference OS and debian packaging system is far most powerful, considering dependencies management, than basic archive based packaging. Each time a package is delivered in binary form, a corresponding debian package should be provided, unless impossible (e.g. package is specific to Windows OS).
-
-Each time a new package version is available (tagged in master branch) at least one OS installer (preferably debian package) for that version should be provided.
-
-The policy to reference OS installers in the package.manifest file is the following:
-\begin{itemize}
-\item each time an installer for a new major or minor version of the package is available, it must be added to the package.manifest file.
-\item each time an installer for a new patch version of the package is available, it must replace the previous patch version for the same minor version.
-\end{itemize}
-
-
-
 
 \pagebreak
 
@@ -1782,5 +1744,27 @@ To search packages, they can simply navigate in the file system of the \textbf{c
 \item if the package is already installed in the \textbf{frameworks} folder he can simply follow the link.
 \item otherwise the link is broken, and the developer has to install the corresponding package.
 \end{itemize}
+
+
+DELIVERY
+
+Packages should be delivered to third parties preferably in binary form, using a \textbf{package installer} (see section~\ref{sec:CMakeInstallBinary}). By delivered we mean:
+\begin{itemize}
+\item an OS installer for the package is created via CMake/CPack process presented before.
+\item the installer is put on a ftp server.
+\item the ftp address where to find the installer is referenced is the package.manifest file of the package.
+\item the package is updated together with the workspace, so that anyone can know the existence of the installer.
+\end{itemize}
+
+The reference installer mechanism is debian packages because ubuntu/debian is the reference OS and debian packaging system is far most powerful, considering dependencies management, than basic archive based packaging. Each time a package is delivered in binary form, a corresponding debian package should be provided, unless impossible (e.g. package is specific to Windows OS).
+
+Each time a new package version is available (tagged in master branch) at least one OS installer (preferably debian package) for that version should be provided.
+
+The policy to reference OS installers in the package.manifest file is the following:
+\begin{itemize}
+\item each time an installer for a new major or minor version of the package is available, it must be added to the package.manifest file.
+\item each time an installer for a new patch version of the package is available, it must replace the previous patch version for the same minor version.
+\end{itemize}
+
 
 \end{document}
