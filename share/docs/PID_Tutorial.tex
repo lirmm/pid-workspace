@@ -279,6 +279,7 @@ A workspace is a folder (preferably named "workspace") with the following struct
 \end{itemize}
 
 \subsubsection{Installing binary packages in the workspace}
+\label{sec:workspaceInstall}
 
 The install folder contains installed binary version(s) of any package used by a user. Each of its direct sub directories is a folder representing a given installed package, that itself contains :
 \begin{itemize}
@@ -1111,7 +1112,7 @@ install(DIRECTORY img
 This later command will install the img folder (that is in the share folder) and all its content into the adequate share folder of the installed binary package. The same process can be used for instance for documents like README/INSTALL files, using the \texttt{install(FILE )} command.
 
 \subsection{Configuring the package}
-\label{sec:rootCMakeConfig}
+\label{sec:configCMake}
 
 PID packages provide a set of generic variables to allow the configuration of the build/install process. The configuration of these CMake cache variable is made using \texttt{ccmake ..} command in the \textbf{build} directory of the package and then by using Cmake configuration interface.
 \begin{itemize}
@@ -1137,13 +1138,42 @@ PID packages provide a set of generic variables to allow the configuration of th
 
 
 \subsection{Controlling package build process}
-\label{sec:rootCMakeConfig}
+\label{sec:buildCMake}
 
-TODO
+The package build process is controlled with native build tools. For now, only Linux is supported, so examples are provided considering the Makefile build control tool. All build related commands used must be called from the \textbf{build} folder of the package.
 
+As shown in section~\ref{sec:configCMake} CMake configuration tool is used to configure package: 
+\begin{verbatim}
+ccmake ..
+\end{verbatim}
+
+Then Each time a file or directory is added to the package CMake is used to reference it or each time any CMakeList.txt file of the package is modified:
+\begin{verbatim}
+cmake ..
+\end{verbatim}
+
+Once this last command has been executed, developers can use native build tool to build the package. PID system defines a set of targets that can be used:
+\begin{itemize}
+\item \texttt{make} compiles and links the source code.
+\item \texttt{make test} run tests (see~\ref{sec:testCMake}). Test units must have been compile first. This command is available only if BUILD\_AND\_RUN\_TESTS option has been set to ON.
+\item \texttt{make doc} generates API documentation (see~\ref{sec:apiCMake}). This command is available only if BUILD\_API\_DOC option has been set to ON. If BUILD\_LATEX\_API\_DOC option has been set to ON, the pdf document of the API is generated when running the command.
+\item \texttt{make install} installs the package binary version resulting from the build into the adequate folder of the workspace (see section~\ref{sec:workspaceInstall}).
+\item \texttt{make package} generates the binary package version relocatable archive (using the CPack tool). This command is available only if the GENERATE\_INSTALLER option has been set to ON and USE\_LOCAL\_DE-PLOYMENT option has been set to OFF.
+\item \texttt{make package\_install} install the binary package version relocatable archive in the adequate \textbf{installers} folder of the workspace (see section~\ref{sec:workspaceInstall}).
+\item \texttt{make build} runs all the previous commands sequentially in the adequate order (same order as items of this list) and according to options selected by the developer.
+\end{itemize}
+
+\paragraph{Important:} The build process takes place in release and debug mode in the same time: the \textbf{release} sub-folder of the \textbf{build} folder contains build artefacts for the \textit{Release} configuration mode and the \textbf{debug} sub-folder contains build artefacts for the \textit{Debug} configuration mode. Developers don't have to worry about these directories they are automatically created and managed by PID system. The CMake cache variables of the package (see section~\ref{sec:configCMake}) are the same for both configuration mode. Nevertheless, depending on the configuration mode, dependencies, notably those to external packages, can be different and so some dedicated CMake variables can appear in the CMake cache. The only think to understand is that variable with \texttt{\_DEBUG} appended are relative to \textit{Debug} mode otherwise they are relative to \textit{Release} mode. 
+
+\paragraph{Important:} The CMakeList.txt files of the package can do different things according to the configuration mode using the CMAKE\_BUILD\_TYPE variable to check built mode as in any  CMake script. Nevertheless there are some rules to respect in order to make PID work correctly:
+\begin{itemize}
+\item All components defined in \textit{Release} mode MUST BE DEFINED in \textit{Debug} mode and reversely. In other words, both modes define the same components for the package (i.e. with same names, using the same \texttt{declare\_PID\_Component} function).
+\item Components and package dependencies can be different between modes, nevertheless the developer should always keep in mind that debug version of a component should reflect as close as possible the release version. Unless the contrary is absolutely mandatory, dependencies to PID packages and PID components should be the same in both modes, only external dependencies should change.
+\end{itemize}
 
 \subsection{Resulting binary package}
-\label{sec:rootCMakeInstallBinary}
+\label{sec:CMakeInstallBinary}
+
 
 TODO 
 Dire qu'en gros il n'y a pas grand chose à faire.
