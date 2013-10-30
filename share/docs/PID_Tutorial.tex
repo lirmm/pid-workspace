@@ -165,7 +165,7 @@ GIT branches are used to organize the development workflow by registering "incre
 
 As GIT branches can be used to represent any type of concern their understanding can quickly become a real problem. That is why their usage is constrained according to a predefined pattern inspired from successful branching models. This pattern defines what is the meaning of branches, what they are use for and the way they are created and merged :
 
-\textbf{Main branches} (see in figure~\ref{fig-perm-branches}) have infinite lifetime and must always be usable : their last commit must point to a state in which the package is compilable and executable with unit tests successful.
+\textbf{Main branches} (see in figure~\ref{fig:perm-branches}) have infinite lifetime and must always be usable : their last commit must point to a state in which the package is compilable and executable with unit tests successful.
 \begin{itemize}
 \item The \textbf{master} branch contains the source code that always reflects a production-ready state. This branch is used to \textbf{tag} the released stable source code with version numbers but also to tag important intermediate states of the repository that reflect the development made for demonstrations and publications. 
 \item The \textbf{integration} branch contains the detailed history of all the modification that have been realized on the repository. The source code of HEAD (pointer on the current state of the repository) always reflects a state with the latest delivered development changes for the next release. This is where any automatic nightly builds are built from, if any.
@@ -177,27 +177,27 @@ As GIT branches can be used to represent any type of concern their understanding
 \center
 \includegraphics[scale=1]{images/permanent_branches.png}
 \caption{Permanent branches of a package}
-\label{fig-perm-branches}
+\label{fig:perm-branches}
 \end{figure}
 
 \begin{figure}
 \center
 \includegraphics[scale=1]{images/feature_branching.png}
 \caption{Relation between feature and integration branches}
-\label{fig-feature-branches}
+\label{fig:feature-branches}
 \end{figure}
 
 \textbf{Supporting branches} are temporary branches, used to aid parallel development between team members, ease tracking of features and to assist in quickly fixing live production problems.
 \begin{itemize}
-\item \textbf{Features} branches (see figure ~\ref{fig-feature-branches}) are used to develop new features /address new topics for the upcoming or a distant future release. Each feature branch must branch from the \textbf{integration} branch. A feature branch exists as long as the feature is in development, but will be merged back into develop (to definitely add the new feature to the upcoming release) or discarded (in case of a disappointing experiment). During its lifetime a feature should be updated from time to time with the modifications contained in the \textbf{integration} branch (issued for instance from the integration of other features). Doing so, the final merge of the feature will be more easy as the state of the feature will be not to far, in terms of importance of modifications, from the state of the \textbf{integration} branch.
-\item \textbf{Hotfixes} branches (see figure ~\ref{fig-hotfix-branches}) arise from the necessity to act immediately upon an undesired state of a released version. When a critical bug in a realease version must be resolved immediately, a hotfix branch may be branched off from the corresponding tag on the \textbf{master} branch that marks the production version. Hotfix branches are used to allow team members to continue their work (on the \textbf{integration} and \textbf{feature} branches), while another person is preparing a quick bug/security fix. When bugs are solved, the bug fix must be merged back into both \textbf{master} and \textbf{integration} branches. When merged the \textbf{master} branch is tagged with a new \textit{patch version number}.
+\item \textbf{Features} branches (see figure ~\ref{fig:feature-branches}) are used to develop new features /address new topics for the upcoming or a distant future release. Each feature branch must branch from the \textbf{integration} branch. A feature branch exists as long as the feature is in development, but will be merged back into develop (to definitely add the new feature to the upcoming release) or discarded (in case of a disappointing experiment). During its lifetime a feature should be updated from time to time with the modifications contained in the \textbf{integration} branch (issued for instance from the integration of other features). Doing so, the final merge of the feature will be more easy as the state of the feature will be not to far, in terms of importance of modifications, from the state of the \textbf{integration} branch.
+\item \textbf{Hotfixes} branches (see figure ~\ref{fig:hotfix-branches}) arise from the necessity to act immediately upon an undesired state of a released version. When a critical bug in a realease version must be resolved immediately, a hotfix branch may be branched off from the corresponding tag on the \textbf{master} branch that marks the production version. Hotfix branches are used to allow team members to continue their work (on the \textbf{integration} and \textbf{feature} branches), while another person is preparing a quick bug/security fix. When bugs are solved, the bug fix must be merged back into both \textbf{master} and \textbf{integration} branches. When merged the \textbf{master} branch is tagged with a new \textit{patch version number}.
 \end{itemize}
 
 \begin{figure}
 \center
 \includegraphics[scale=1]{images/hotfix_branching.png}
 \caption{Relation between hotfix and integration/master branches}
-\label{fig-hotfix-branches}
+\label{fig:hotfix-branches}
 \end{figure}
 
 \textbf{Naming Conventions:}
@@ -229,10 +229,10 @@ Privileges associated to each role are managed inside the \textbf{package server
 \center
 \includegraphics[scale=1]{images/collaborativework.png}
 \caption{Collaboration between developers and repository}
-\label{fig-collab}
+\label{fig:collaborativeWork}
 \end{figure}
 
-The basic scheme for collaborative working between package developers is presented in figure~\ref{fig-collab}. 
+The basic scheme for collaborative working between package developers is presented in figure~\ref{fig:collaborativeWork}. 
 Given a package, this package has an \textbf{official GIT repository} that is deployed on a given \textbf{package server}. This repository is \textit{official} because it centralizes information of the package and is public, which means that all concerned people (team, laboratory or more generally anyone registered in the server) can access to it. The access in itself is restricted with respects to roles:
 \begin{itemize}
 \item registered \textbf{administrators} have read/write access on the official package.
@@ -281,19 +281,19 @@ A workspace is a folder (preferably named "workspace") with the following struct
 \subsubsection{Installing binary packages in the workspace}
 \label{sec:workspaceInstall}
 
-The install folder contains installed binary version(s) of any package used by a user. Each of its direct sub directories is a folder representing a given installed package, that itself contains :
+The \textbf{install} folder contains installed binary version(s) of any package used by a user. Each of its direct sub directories is a folder representing a given installed package, that itself contains :
 \begin{itemize}
-\item as many folders as there are concurrent binary versions of the package installed. The name of the version folder reflects the installed package version it contains (e.g. : 1.3.5 ; 1.2.0, etc.). Version folder can be also local (correspond to an install from a source package currently developed in the workspace), in such a case they name is of the form : own-0.2.5, own-1.0.0, etc.)
+\item as many folders as there are concurrent binary versions of the package installed. The name of the version folder reflects the installed package version it contains (e.g. : 1.3.5 ; 1.2.0, etc.). Version folder can be also local (correspond to an install from a source package currently developed in the workspace), in such a case their name is of the form : own-0.2.5, own-1.0.0, etc.)
 \item an \textbf{installers} folder that contains all installable binary archives with each archive that corresponds to a specific version, for a specific system (linux, mac), in a specific mode (release, debug).
 \end{itemize}
 
 
 Each version folder is organized according to the following structure:
 \begin{itemize}
-\item the \textbf{bin} folder contains all executables provided by the package, except tests, in both debug and release modes. In other words it contains the result of the compilation of its corresponding package repository \textbf{include} folder.
+\item the \textbf{bin} folder contains all executables provided by the package, except tests, in both debug and release modes. In other words it contains the result of the compilation of its corresponding package repository \textbf{apps} folder.
 \item the \textbf{include} folder contains the exported interfaces of libraries. Basically, its direct sub-folders are libraries' root folder hierarchically organized the same way as in the package repository \textbf{include} folder.
 \item the \textbf{lib} folder contains libraries provided by the of the package in both debug and release modes.  In other words it contains the result of the compilation of its corresponding package repository \textbf{src} folder.
-\item the \textbf{share} folder contains documents and scripts that are useful to the package users: the Use<Package><Version>.cmake file is a specific script file used to identify elements and dependencies of the binary package ; its \textbf{doc} sub-folder  contains API documentation generated by \textbf{doxygen} ; the \textbf{cmake} sub-folder contains cmake scripts files that are required to use the package, like find scripts used to configure external packages ; the config sub-folder contains installed element contained in the corresponding config folder of the package repository \textbf{src} folder.
+\item the \textbf{share} folder contains documents and scripts that are useful to the package users: the Use<Package><Version>.cmake file is a specific script file used to identify elements and dependencies of the binary package ; its \textbf{doc} sub-folder  contains API documentation generated by \textbf{doxygen} ; the \textbf{cmake} sub-folder contains cmake scripts files that are required to use the package, like find scripts used to configure external packages ; the \textbf{config} sub-folder contains installed element contained in the corresponding config folder of the package repository \textbf{src} folder ; the \textbf{doc} sub-folder contains "hand-written" documents installed with the package.
 \item the \textbf{license.txt} file describes the license that applies to the software. This is a copy of the license file in package repository.
 \end{itemize}
 
@@ -1171,18 +1171,23 @@ Once this last command has been executed, developers can use native build tool t
 \item Components and package dependencies can be different between modes, nevertheless the developer should always keep in mind that debug version of a component should reflect as close as possible the release version. Unless the contrary is absolutely mandatory, dependencies to PID packages and PID components should be the same in both modes, only external dependencies should change.
 \end{itemize}
 
-\subsection{Resulting binary package}
+\subsection{Resulting binary package version}
 \label{sec:CMakeInstallBinary}
 
+From the complete build/install process (see section~\ref{sec:buildCMake}) a binary package version is generated and installed into the adequate folder of the workspace (see section~\ref{sec:workspaceInstall}). 
 
-TODO 
-Dire qu'en gros il n'y a pas grand chose à faire.
+The install process is managed by PID system so developer should not worry about how it takes place. The only exception is for documents and other resources (like images) placed into the source package repository's \textbf{share} folder that are installed by hand by developers (see section~\ref{sec:apiCMakeShare}).
 
-INSTALL 
+\begin{figure}
+\center
+\includegraphics[scale=1]{images/installedBinaryPackage.png}
+\caption{Example folder hierarchy for installed packages}
+\label{fig:installBinaryFolder}
+\end{figure}
 
-The shared and static version of each library will be installed in the adequate folder according to the system requirements. And the folder containing headers of the library will be installed in the include folder of the package framework version.
+Figure~\ref{fig:installBinaryFolder} provides an example of the workspace's install folder containing two installed packages. There can be many versions of the same package installed in the workspace as for the package "the-testpack-c", which has two versions installed. The \textbf{installers} folder for this later package may contains many binary package version relocatable archive (quickly called \textbf{package installer}), for instance two for each installed version. Indeed each binary version is associated with two \textbf{package installers}: one for \textit{Release} mode and one for \textit{Debug} mode. \textbf{Package installers} are zip archives (since cmake is able to compress and extract those archives in a cross-platform way) with following pattern for their name: <package name>-<package version number>-<operating system>[-dbg].zip. \textbf{Package installers} for \textit{Debug} mode have an additional "-dbg" postfix notation appended to their name.
 
-Same as for libraries applications will be installed in the bin folder of the package's framework version. If example executables have been built they will also be installed.
+Each binary package version folder also have a \texttt{.rpath} folder which is a PID specific folder used for configuring runtime links of PID components. It contains, for each binary executable component (share libraries binaries, applications binaries) of the package a set of symbolic links that points to the adequate shared libraries. PID system can reconfigure "on demand" run-time dependencies depending on the shared libraries versions installed and used. This system allows to create relocatable and reconfigurable binary code without using system mechanisms. Developers should never change the content of the \textbf{.rpath} folder "by hand", otherwise it could cause troubles.
 
 \pagebreak
 
