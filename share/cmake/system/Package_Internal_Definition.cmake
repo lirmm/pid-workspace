@@ -319,7 +319,10 @@ endif()
 # recursive call into subdirectories to build/install/test the package
 add_subdirectory(src)
 add_subdirectory(apps)
-add_subdirectory(test)
+if(BUILD_AND_RUN_TESTS)
+	enable_testing()
+	add_subdirectory(test)
+endif()
 add_subdirectory(share)
 
 ##########################################################
