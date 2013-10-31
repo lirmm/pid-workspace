@@ -253,6 +253,11 @@ function(add_Reference version system url url-dbg)
 endfunction(add_Reference)
 
 ###
+function(shadow_Repository_Address url)
+	set(${PROJECT_NAME}_ADDRESS ${url} CACHE INTERNAL "")
+endfunction(add_Reference)
+
+###
 function(add_Category category_spec)
 	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category_spec} CACHE INTERNAL "")
 endfunction(add_Category)

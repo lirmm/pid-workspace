@@ -39,6 +39,7 @@
 \includegraphics[scale=0.7]{images/logos_officiels.png}
 \end{figure}
 
+
 \pagebreak
 
 \part*{Introduction}
@@ -53,9 +54,13 @@ To achieve this goal the Finding, Writing, Compiling, Testing, Version controlli
 
 \pagebreak
 
-\part{Basic Concepts}
+\tableofcontents
 
-The following subsections explain basic concepts that need to be understood to start working with the PID methodology. First of all, root concepts are:
+\pagebreak
+
+\part{Fundamentals}
+
+The following subsections explain fundamentals that need to be understood to start working with the PID methodology. First of all, root concepts are:
 
 \begin{itemize}
 
@@ -298,6 +303,7 @@ Each version folder is organized according to the following structure:
 \end{itemize}
 
 \subsection{Workspace repository}
+\label{sec:workspaceRepository}
 
 The \textbf{official workspace} is a git repository that can be modified only by \textbf{administrators} of the server. It contains cmake scripts used notably to:
 \begin{itemize}
@@ -309,100 +315,144 @@ The \textbf{official workspace} can be forked into \textbf{private workspaces}, 
 
 \pagebreak
 
-\part{Using PID}
+\part{Usage}
 
-This part of the document provides many tutorials 
+This part of the document provides a detailed description on the usage of PID methodology's core concepts and tools. The first section describe how to use git tool to manage the collaborative work-flow. Second section describes how to use CMake tool to describe packages. Finally last section provides guidelines and advises to put in place good development practices.
+
 
 \section{Work-flow management with git}
 
-Now that all basic concepts and principles have been described, this last section shows how to use them during the development process.
+The purpose of this section is to define how to use the git tool to manage the whole life cycle of a project managed according to the principles of the PID methodology.
 
 \subsection{Installing Workspace and Packages}
 
-The first phase when starting development consists in installing a workspace on the local  station of a developer or administrator, and configuring it adequately.
+The first phase when starting development consists in installing a workspace on the local  station of a developer or administrator, and configuring it adequately. Figure~\ref{fig:install_workspace} provides a general overview of this operation.
 
-\subsubsection{Getting Last Workspace Version}
+\begin{figure}
+\center
+\includegraphics[scale=1]{images/installWorkspace.png}
+\caption{State diagram showing how to deal with workspace}
+\label{fig:install_workspace}
+\end{figure}
 
-This phase simply consists in cloning the workspace repository. Any member of the robotic department can clone this repository, but only administrators can  modify it.
 
+\subsubsection{Getting a workspace}
+
+The initial phase for any user is to \textbf{get a workspace on his local station}. More precisely a user needs to get a workspace repository that is connected to a \textbf{private workspace} (see section~\ref{sec:workspaceRepository}). This \textbf{private workspace} is used by a group of developers that work on same packages, for instance members of a same research team, members of a same research project, or even a single person for a PhD student whose work is isolated from the others. Only workspace administrators can create new private workspace repositories since their job is to know which persons can / have to work together.
+
+This initial phase simply consists in either (see figure~\ref{fig:install_workspace}):
+\begin{itemize}
+\item if a \textbf{new group} is created for the developer:
+\begin{enumerate}
+\item  an administrator \textit{forks} the \textbf{official workspace repository} to get a \textbf{private workspace} on a server.
+\item the developer \textit{clones} the \textbf{private workspace} in his local file system.
+\end{enumerate}
+\item if the developer will join an \textbf{existing group}:
+\begin{enumerate}
+\item  an administrator gives to him the privileges to access the \textbf{private workspace} of the group.
+\item the developer \textit{clones} the \textbf{private workspace} in his local file system.
+\end{enumerate}
+\end{itemize}
+
+Cloning and forking are similar operations, based on the clone action of the git tool like:
 \begin{verbatim}
-	git clone <global account>@<official server>:workspace.git
+	git clone <account>@<official server>:workspace.git
 \end{verbatim}
+The main difference between both actions is where they take place. \textit{Cloning} is supposed to be done on local station of developers while \textit{Forking} is a clone action done in the official server. \textit{Forking} operation requires more actions like connecting to server and managing rights for developers that can access to the private repository: this can be easily achieved with Web based tool like GitHub or GitLab, but this is beyond the scope of this document.
 
-When done the developer can start his work. The workspace is empty, which means it only contains available licenses description in \textbf{licenses} folder, references to available packages in \textbf{references} folder, generic package structure in \textbf{patterns} folder, \textbf{CMakeModules} folder with existing cmake scripts and a complete \textbf{categories} folder with links that target nothing. Its \textbf{packages} and \textbf{frameworks} are empty.
+When the local workspace repository has been cloned, the developer's workspace is empty, which means it only contains available licenses description in \textbf{licenses} folder, references to available packages in \textbf{references} folder but its \textbf{packages} and \textbf{install} folders are empty (see section~\ref{sec:workspace}).
 
-We have to notice that only \textbf{administrators} have direct write access to the official servers and developers may or not have read access. Consequently, developers cannot modify the workspace repository.
- 
-\subsubsection{Starting Development}
+\subsubsection{Adding packages to the workspace}
 
-Then the \textbf{developer} has two choices:
-\begin{itemize}
-\item either he starts the development of a new package,
-\item or he starts working on an existing package.
-\end{itemize}
+Since a \textbf{developer} is supposed to work on at least one package (but often more than one), he must add packages to its local workspace. To do so, he can create a new package and/or use existing packages.
 
-\paragraph{When a new package is created:}
+\paragraph{Creating a new package:}
 \begin{enumerate}
-\item an \textbf{administrator} creates an empty GIT repository and optionally an associated (sub)project (e.g. a \textit{redmine} project) on a given server (team or laboratory or open).
-\item the \textbf{administrator} initializes the repository. On his local station he does:
-\linebreak \verb|cd <workspace path>/packages/|
-\linebreak \verb|git clone <global account>@<official server address>:<new package>.git|
-\linebreak \verb|cd <new package>|
-\linebreak \verb|cp -R ../../../patterns/package/ .|
-\linebreak \verb|git tag -a v0.0.0 -m "creation of package"|
-\linebreak \verb|git checkout -b develop master|
-\linebreak \verb|git commit -a -m "initialization of package done"|
-\linebreak \verb|git push origin master|
-\linebreak \verb|git push origin develop|
-\item the \textbf{administrator} creates a private account on the same or another server (or uses an existing one) and he clones the new repository in this account:
-\linebreak \verb|git clone <global account>@<official server address>:<new package>.git|
-\linebreak \verb|cd <new package>|
-\item the \textbf{administrator} creates \textbf{feature branches} on private repository, by doing:
-\linebreak \verb|git checkout -b feature-<feature name> develop|
-\item the \textbf{administrator} registers the new developer (and any other person that may be involved in the development of this package) with ssh, so that he can access the git repository.
-\item now \textbf{developers} can update/work with the private repository as they wish. To do this on their local working station they do :
-\linebreak \verb|cd <workspace path>/packages/|
-\linebreak \verb|git clone <private account>@<any server address>:<new package>.git|
+\item the developer creates a new \textbf{private package repository} on a \textbf{package server}. For the moment no \textbf{official package repository} exists for that package.
+\item On his local station he then \textit{clones} the \textbf{private package repository} and initializes it the following way:
+\begin{verbatim}
+cd <workspace path>/packages
+git clone <account>@<private server>:<new package>.git
+cd <new package>
+cp -R ../../share/patterns/package .
+git commit -a -m "initialization of package done"
+git tag -a v0.0.0 -m "creation of package"
+git push origin master
+git push origin tags/v0.0.0
+git checkout -b integration master
+git push origin integration
+\end{verbatim}
+\item then the developer starts working with its local and the private repositories (TODO add ref), he is the only person that can access it. At the beginning the package has a generic structure as in section~\ref{} but is empty: the first thing to do is to define package using CMakeList.txt files (see section~\ref{sec:useCMake}) and to add content (i.e. source code).
+\item when the developer has reach a state in which the package can be delivered to the group he then:
+\begin{enumerate}
+\item generates/installs the \textbf{reference file} and the \textbf{find file} for that package using adequate CMake configuration (see section~\ref{sec:configCMake}): the \textbf{reference file} and the \textbf{find file} are respectively put is put into \textbf{references} and \textbf{find} folders of its local workspace (see section~\ref{sec:workspace}).
+\item updates the \textbf{private workspace repository} of its group by doing:
+\begin{verbatim}
+cd <workspace path>
+git add --all
+git commit -m "adding new package : <package added>"
+git push origin master
+\end{verbatim}
+\end{enumerate}
 \end{enumerate}
 
-When done the development can start inside a package that is generic: it contains only the folder hierarchy and pattern files (e.g. doxyfile, CMakeList.txt, package.manifest, .gitignore) that matches the package structure defined in section 1.
-
-\paragraph{When the developer start working on an existing package:} 
-He either works on existing features or on new features. In the first case the \textbf{administrator} simply has to register the \textbf{developer} on the existing private server (step 5-6). In the second case, the administrator has to choose:
-\begin{itemize}
-\item if a new private repository has to be created, for instance, in order to isolate the work made on new branches (steps 3 to 6).
-\item or if the developer uses an existing private repository with new branches (steps 4 to 6).
-\end{itemize}
- 
-Whatever the solution chosen, the development starts in a package that already  contains some specific software artefacts and has "generic files" already configured. The developer may then need to install new existing packages.
-
-\subsubsection{Installing Required Packages in the Workspace}
-
-When starting development with an existing package, this later can have one or more dependencies with another packages and with system. System dependencies must be fulfil using classical install process provided by the OS. They can be found when compiling the package for the first time with \textbf{cmake}. Package dependencies are managed in another way:
+\paragraph{Using existing packages:}
 \begin{enumerate}
-\item to know which package are required, the developer has to look at the \textbf{package.manifest} file. The \texttt{dependency} markups list the required packages.
-\item then the developer has to download and install these packages in its local workspace. To do so there are some alternatives:
-\begin{itemize}
-\item the developer has a \textbf{read access} to the official repository of the package (it is listed in the corresponding \texttt{dependency} markup). In this case he can simply do:
-\linebreak \verb|cd <workspace path>/packages/|
-\linebreak \verb|git clone <global account>@<official server>:<other package>.git|
-\linebreak \verb|cd <other package>|
-\linebreak \verb|git checkout tags/v<version compatible with requirements>|
-\linebreak \verb|cd build|
-\linebreak \verb|cmake ..|
-\linebreak \verb|make|
-\linebreak \verb|make install|
-\item The developer can take a look at the \texttt{<package name>.manifest} file in the \textbf{references} folder of the workspace to know if there are installers available and if they match the required version. In this case, the developer uses the OS installer system and target the required package framework. For instance, for a package that is a simple archive :
-\linebreak \verb|cd <workspace path>/frameworks/|
-\linebreak \verb|ftp ftp://ftp.gforge.fr/<other package>-<version>.tgz|
-\linebreak \verb|tar -xzvf <other package>-<version>.tar.gz|
-\end{itemize}
-\item When the last operation has been repeated for all packages, the frameworks of all packages contain adequate versions. Direct dependencies are resolved, but these required packages can in turn require other packages and OS dependencies. The current procedure has to be repeated recursively for each of these indirectly required packages.
+\item the \textbf{administrator} gives to the \textbf{developer} the adequate privileges on the used \textbf{private package repositories} (those developed by its group, or only part of them).
+\item On his local station the \textbf{developer} then \textit{clones} the \textbf{private package repository}:
+\begin{verbatim}
+cd <workspace path>/packages
+git clone <account>@<private server>:<used package>.git
+\end{verbatim}
+\item then the developer starts working with its local and the private repositories (TODO add ref).
 \end{enumerate}
+ 
+\textbf{Important remark:} all packages developed by a group must be \textbf{referenced} with the references files available in the \textbf{private workspace repository} of this group. Each package developed is itself connected to a given \textbf{private package repository} as explained in section~\ref{sec:gitrepositories}. Doing so each group work on an isolated development environment. Environments of groups are synchronized in two ways:
+\begin{itemize}
+\item \textbf{private package repositories} are updated with modifications made on \textbf{official package repositories} and reversely. These updates are completely managed by administrators who have the rights to modify \textbf{official package repositories}. This synchronization can be done progressively during packages development process.
+\item \textbf{official workspace repository} is updated with modifications made on \textbf{private workspace repositories}. These updates are completely managed by administrators who have the rights to modify \textbf{official workspace repository}. This synchronization is mainly done when development process in a group has reached a stable state and after the first release of packages that have been created by a group.
+\end{itemize}
 
-Once all the dependencies are satisfied, the development can truly start.
+\subsubsection{Installing other required packages in the workspace}
 
-\subsection{Collaborative Software Development}
+Whether a developer creates or use an existing package, this later can have dependencies with other packages and with system or external packages (see section~\ref{sec:rootCMakeDeps}). System dependencies are installed using standard install process provided by the OS (e.g. apt-get on Ubuntu/debian distributions) while external dependencies are installed "by hand". Package dependencies are installed using PID specific CMake procedure based on the \textbf{reference files}.
+
+Each \textbf{reference file} of the workspace provide meta-information on a given package, notably the address of its git repository and addresses where to find binary package versions relocatable archives of this package (see section~\ref{sec:CMakeInstallBinary}). These informations are used to install adequate version of a required package at let two alternatives to install a package dependency:
+\begin{itemize}
+\item the git repository is accessible (at least in reading) by the developer and he can then clone and build it.
+\item the adequate binary archives can be downloaded  by the developer and he can then directly install them.
+\end{itemize}
+In both cases, the process can be automatically managed by PID specific CMake scripts, which is the far most simple way. Otherwise the user can do this "by-hand", but this is beyond the scope of this document (i.e. reserved to expert users).
+
+The only important thing to understand is the role of \textbf{reference files} and how they must be managed. In \textbf{private and local workspace repositories}, there is a set of reference files that simply represent everything that is available. These reference files contain information on git repositories of packages, structured according to the following pattern:
+\begin{itemize}
+\item a reference file of a package that is not developed by the group contains the address of the \textbf{official package repository}. Members of the group don\textbf{'t have write access} to this repository and \textbf{may have read access or not}. It also contains addresses of downloadable binary package version relocatable archives whose access is generally open to all members of the robotic department or even sometime beyond (opened to partners, public access).
+\item a reference file of a package that is developed by the group contains the address of the \textbf{private package repository}. Each time a member of the group \textit{forks} an \textbf{official package repository} into a \textbf{private package repository} he has to:
+\begin{enumerate}
+\item \textit{clone} the \textbf{private package repository} into his local workspace.
+\item change the address of the package repository (official package repository address) with the address of the newly created \textbf{private package repository} (see section~\ref{sec:rootCMakeGeneral} and section~\ref{sec:PIDCMakefunctionsAPI_add_reference}).
+\item generate the new reference file using PID specific CMake package configuration (see section~\ref{sec:configCMake}).
+\item update the \textbf{private package repository}:
+\begin{verbatim}
+cd <workspace path>/packages/<new private package>
+git checkout integration
+git add CMakeList.txt
+git commit -m "updating git address of the repository"
+git push origin integration
+\end{verbatim}
+\item update the \textbf{private workspace repository} (whose references folder has been modified with an updated reference file for the package):
+\begin{verbatim}
+cd <workspace path>
+git add share/cmake/references/Ref<package>.cmake
+git commit -m "changing git repository address for <package>"
+git push origin master
+\end{verbatim}
+\end{enumerate}
+\end{itemize}
+
+When done, installation of packages repositories for other members of the group will be quite simple and will target adequate \textbf{private package repository} (for whose members will have right to access in read/write). Only administrator will be responsible to avoid doing mistakes when merging \textbf{private package repositories} into \textbf{official package repositories} and \textbf{private workspace repositories} into \textbf{official workspace repository}. Their main task will be (1) to remove references to \textbf{private package repositories} in package CMakeList.txt files and (2) to merge adequately \textbf{reference files} from private and official repositories.
+
+\subsection{Collaborative package development}
 
 All \textbf{developers} only work around \textbf{private repositories} of packages, while \textbf{administrators} are responsible of the update of \textbf{official repositories} according to the changes done in private repositories. Nearly all developments in \textbf{private repositories} are made in \textbf{feature branches}. The \textbf{develop branch} is used to merge and to solve conflict between features.
 
@@ -559,95 +609,10 @@ Then the last step consists in releasing the patch version on the official serve
 \linebreak \verb|git push origin master|
 \end{enumerate}
 
-
-\subsection{Updating workspace}
-
-Updating the workspace repository must be done:
-\begin{itemize}
-\item when a new package has been created and first released version has been published on package official server: the \textbf{package.manifest} file must be added  and renamed to the \textbf{references} folder of the workspace.
-\item when a new version of an existing package has been release on a package official server: the corresponding \textbf{package.manifest} in the the \textbf{references} folder of the workspace must be updated.
-\item when a new license is used in a \textbf{package.manifest} file: the corresponding license file must be added to the \textbf{licenses} folder of the workspace.
-\item when categories defined in a \textbf{package.manifest} file have changed: the folders for new (sub)categories have to be created ; the link to the package framework have to be created or suppressed (when the package has been removed from a category).
-\item when a new package is released on official server and it targets some categories: links to that packages have to be added to target (sub)categories folders.
-\end{itemize}
- 
-The update of the workspace is the work of the \textbf{administrators} only: they are responsible to guarantee the coherence of workspace repository structure and content.
-
-\subsubsection{Adding references to packages}
-
-When a package is added to the workspace official repository, on its local workstation an administrator of the package does:
-\begin{enumerate}
-\item Referencing the package in the workspace:
-\linebreak \verb|cd <path to the package>|
-\linebreak \verb|git pull origin master|
-\linebreak \verb|git checkout master|
-\linebreak \verb|cp package.manifest ../../references/<nameofpackage>.manifest|
-\linebreak \verb|git commit -a -m "adding package <package name>"|
-\item Looking package license in \textbf{package.manifest} and if the license does not exists in workspace create the corresponding license file:
-\linebreak \verb|cd <path to the workspace>|
-\linebreak \verb|cp patterns/license.license licenses/<licensename>.license|
-\linebreak \verb|writing the new license file...|
-\linebreak \verb|git commit -a -m "adding license <license name>"|
-\item Looking package categories in \textbf{package.manifest} file, and if categories do not exist, create them:
-\linebreak \verb|cd <path to the workspace>/categories|
-\linebreak \verb|mkdir <category path>|
-\linebreak \verb|git commit -a -m "adding category <category name>"|
-\item Adding a link to the package framework in each category folder defined in \textbf{package.manifest} file:
-\linebreak \verb|cd <path to the workspace>/<path to category folder>|
-\linebreak \verb|ln -s -t . <relative path to workspace root>/frameworks/<package name>|
-\linebreak \verb|git commit -a -m "adding link to <package> in <category name>"|
-\item If a package requires some system dependencies that the administrator think to be relevant for many developers, he can add the cmake script files used to configure these dependencies to the \textbf{CMakeModules} folder of the workspace.
-\linebreak \verb|cd <path to the workspace>/CMakeModules|
-\linebreak \verb|cp <path to the workspace>/packages/<name of package>/|
-\linebreak \verb| CMakeModules/<chosen dependency>.cmake .|
-\linebreak \verb|git commit -a -m "adding cmake script for <dependency>"|
-\item Updating the workspace official repository:
-\linebreak \verb|cd <path to the workspace>|
-\linebreak \verb|git pull origin master|
-\linebreak \verb|solving potential conflicts|
-\linebreak \verb|git push origin master|
-\end{enumerate}
-
-\subsubsection{Removing references to packages}
-
-The process is quite the same as previously except that only the package reference file is suppressed from the workspace references folder, not the license files or the categories.
-\begin{enumerate}
-\item Removing the package reference:
-\linebreak \verb|cd <path to the workspace>/references|
-\linebreak \verb|rm <package name>.manifest|
-\linebreak \verb|git commit -a -m "removing package <package name>"|
-\item Updating the workspace official repository:
-\linebreak \verb|cd <path to the workspace>|
-\linebreak \verb|git pull origin master|
-\linebreak \verb|solving potential conflicts|
-\linebreak \verb|git push origin master|
-\end{enumerate}
-
-\subsubsection{Updating references to packages}
-
-The update of a package reference must be done \textbf{each time a new version of the package is released} in the official repository of the package. The process is the same as for adding the package reference for the first time, except for categories:
-
-\begin{enumerate}
-\item Looking package categories in the new version of the \textbf{package.manifest} file, and if categories do not exist, create them:
-\linebreak \verb|cd <path to the workspace>/categories|
-\linebreak \verb|mkdir <category path>|
-\linebreak \verb|git commit -a -m "adding category <category name>"|
-\item Adding a link to the package framework in each category folder defined in \textbf{package.manifest} file:
-\linebreak \verb|cd <path to the workspace>/<path to category folder>|
-\linebreak \verb|ln -s -t . <relative path to workspace root>/frameworks/<package name>|
-\linebreak \verb|git commit -a -m "adding link to <package> in <category name>"|
-\item Removing links in each category folder no more defined in \textbf{package.manifest} file:
-\linebreak \verb|rm <path to the workspace>/<path to old category folder>/<package name>|
-\item Updating the workspace official repository:
-\linebreak \verb|cd <path to the workspace>|
-\linebreak \verb|git pull origin master|
-\linebreak \verb|solving potential conflicts|
-\linebreak \verb|git push origin master|
-\end{enumerate}
-
 \pagebreak
 
 \section{Package development with CMake}
+\label{sec:useCMake}
 
 When developing a package one need to handle information such as:
 \begin{itemize}
@@ -1351,12 +1316,21 @@ With PID there are few functions to use to precisely declare the content of a pa
 \textbf{Effect}: add another author to the list of authors of the package.
 
 \subsection{add\_PID\_Package\_Reference}
-\textbf{Inputs argument}:
+\label{sec:PIDCMakefunctionsAPI_add_reference}
+\textbf{Inputs argument}:  2 signatures whether the user wants to add a binary package reference or to shadow the official git repository address.
 \begin{itemize}
-\item BINARY VERSION <major> <minor> \{optional\}<patch>. This argument describes the full version number of the referenced binary package. <major> <minor> and <patch> are positive digits. If patch number is omitted then patch number is considered as 0.
+\item SOURCE option is used when user wants to shadow the official source repository address.
+\begin{itemize}
+\item URL <address>. This argument specifies the address of the \textbf{private git repository} to use instead of the official address.
+\end{itemize}
+\item BINARY option is used to add a reference to a binary package version.
+\begin{itemize}
+\item VERSION <major> <minor> \{optional\}<patch>. This argument describes the full version number of the referenced binary package. <major> <minor> and <patch> are positive digits. If patch number is omitted then patch number is considered as 0.
 \item SYSTEM <name>. This is the name of the target operating system. For now only linux supported.
 \item URL <url-rel> <url-dbg>. The two values of the URL arguments are: the url of the package binary in release version and the url of the package binary in debug version.
 \end{itemize}
+\end{itemize}
+
 \textbf{Constraints}: this function must be called in the root CMakeList.txt file of the package, after \texttt{declare\_PID\_Package} and before \texttt{build\_PID\_package}.\\
 \textbf{Effect}: reference addresses where to find a given binary package version for a given operating system. This information will be used to generate a CMake configuration file that will be used for retrieving adequate package versions.
 
