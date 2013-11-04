@@ -165,6 +165,7 @@ Each time a new version of a package is released, its version number must be inc
 \end{itemize}
 
 \subsubsection{Development process with GIT branches}
+\label{sec:gitbranches}
 
 GIT branches are used to organize the development workflow by registering "increments" made in the repository. Increments are modifications of the repository content, either source code, documentation, etc. A git repository can have many branches representing parallel development work. Most of time developers create branches to isolate the work they do on a specific concern as regard of the software development. This work is keep isolated from the work made on other concerns until developers think this is the good time to integrate (or discard) them. From time to time GIT branches are created, deleted, and merged. Merging consists in registering modifications made in two or more branches into a single branch.
 
@@ -424,7 +425,7 @@ Each \textbf{reference file} of the workspace provide meta-information on a give
 \end{itemize}
 In both cases, the process can be automatically managed by PID specific CMake scripts, which is the far most simple way. Otherwise the user can do this "by-hand", but this is beyond the scope of this document (i.e. reserved to expert users).
 
-The only important thing to understand is the role of \textbf{reference files} and how they must be managed. In \textbf{private and local workspace repositories}, there is a set of reference files that simply represent everything that is available. These reference files contain information on git repositories of packages, structured according to the following pattern:
+The only important thing to understand is the role of \textbf{reference files} and how they must be managed. In \textbf{private and local workspace repositories}, there is a set of \textbf{reference files that simply represent all available packages}. These reference files contain information on git repositories of packages, structured according to the following pattern:
 \begin{itemize}
 \item a reference file of a package that is not developed by the group contains the address of the \textbf{official package repository}. Members of the group don\textbf{'t have write access} to this repository and \textbf{may have read access or not}. It also contains addresses of downloadable binary package version relocatable archives whose access is generally open to all members of the robotic department or even sometime beyond (opened to partners, public access).
 \item a reference file of a package that is developed by the group contains the address of the \textbf{private package repository}. Each time a member of the group \textit{forks} an \textbf{official package repository} into a \textbf{private package repository} he has to:
@@ -454,116 +455,191 @@ When done, installation of packages repositories for other members of the group 
 
 \subsection{Collaborative package development}
 
-All \textbf{developers} only work around \textbf{private repositories} of packages, while \textbf{administrators} are responsible of the update of \textbf{official repositories} according to the changes done in private repositories. Nearly all developments in \textbf{private repositories} are made in \textbf{feature branches}. The \textbf{develop branch} is used to merge and to solve conflict between features.
+All \textbf{developers} only work around \textbf{private repositories} of packages, while \textbf{administrators} are responsible of the update of \textbf{official repositories} according to the changes done in private repositories. Most of developments in \textbf{private repositories} are made in \textbf{feature branches} and merged into the \textbf{integration branch} (see section~\ref{sec:gitbranches}).
 
-\subsubsection{Developing a Feature}
+\subsubsection{Handling feature branches}
 
-Common feature branches are already created, so the only thing to do for developers is to navigate between available feature branches and add content in branches :
 \begin{itemize}
-\item Each time a developer wants to start making modification of a given feature (for instance at the beginning of the day):
-\linebreak \verb|git checkout feature-<feature name>|
-\linebreak \verb|git pull origin feature-<feature name>|
-\linebreak \verb|=> solving potential conflicts|
+\item Creating a feature branch (derived from \textit{integration} branch):
+beginning of the day):
+\begin{verbatim}
+git checkout -b <feature name> integration
+\end{verbatim}
+\item When starting modification of a feature (for instance at the beginning of the day):
+\begin{verbatim}
+git checkout feature-<feature name> 
+// now working on <feature name> branch
+git pull origin feature-<feature name>
+// now <feature name> branch is up to date
+\end{verbatim}
 \item During development of a feature, developers need to frequently "save" their work locally:
-\linebreak \verb|git add <modified files>|
-\linebreak \verb|git commit -m "<telling modifications>"|
-\item Each time a developer wants to stop making modification of a given feature (for instance at the end of the day) or when important modification have been finished and committed:
-\linebreak \verb|git pull origin feature-<feature name>|
-\linebreak \verb|=> solving potential conflicts|
-\linebreak \verb|git push origin feature-<feature name>|
+\begin{verbatim}
+git add <modified or new files>
+git commit -m "<telling modifications>"
+\end{verbatim}
+\item When finishing modification of a feature (for instance at the end of the day or when important modifications have been finished and committed):
+\begin{verbatim}
+git pull origin feature-<feature name>
+git pull origin integration
+// update with evolutions of the integration branch
+git push origin feature-<feature name>
+\end{verbatim}
 \end{itemize}
 
 During development on a feature branch, a developer may need to test some ideas without disrupting the work of all people working on the feature. In that case, he can work with a \textbf{new local branch} forked from feature branch. Modifications in this branch stay always local to the developer station. Furthermore modification should not be too big, these branches are used to test some ideas or to do bug fixes, not for developing big features (this is the role of feature branches) !
 \begin{itemize}
-\item Creating a local branch for testing an idea :
-\linebreak \verb|git checkout feature-<feature name>|
-\linebreak \verb|git pull origin feature-<feature name>|
-\linebreak \verb|=> solving potential conflicts and testing|
-\linebreak \verb|git push origin feature-<feature name>|
-\linebreak \verb|git checkout -b <idea name> feature-<feature name>|
+\item Creating a local branch for testing an idea:
+\begin{verbatim}
+git checkout feature-<feature name>
+git pull origin feature-<feature name>
+//=> solving potential conflicts and testing
+git push origin feature-<feature name>
+git checkout -b <idea> feature-<feature name>
+\end{verbatim}
 \item During development of the idea, frequently save the work locally:
-\linebreak \verb|git add <all files modified>|
-\linebreak \verb|git commit -m "<telling modifications>"|
+\begin{verbatim}
+git add <modified or new files>
+git commit -m "<telling modifications>"
+\end{verbatim}
 \item When idea is OK and can be integrated to the feature:
-\linebreak \verb|git pull origin/feature-<feature name>|
-\linebreak \verb|=> solving potential conflicts and testing|
-\linebreak \verb|git rebase origin/feature-<feature name>|
-\linebreak \verb|git checkout feature-<feature name>|
-\linebreak \verb|git merge <idea>|
-\linebreak \verb|git branch -d <idea>|
-\linebreak \verb|git push origin feature-<feature name>|
+\begin{verbatim}
+git pull origin/feature-<feature name>
+//=> solving potential conflicts and testing
+git rebase origin/feature-<feature name>
+git checkout feature-<feature name>
+git merge <idea>
+git branch -d <idea>
+git push origin feature-<feature name>
+\end{verbatim}
 \item otherwise if the idea is not good:
-\linebreak \verb|git checkout feature-<feature name>|
-\linebreak \verb|git branch -d <idea>|
+\begin{verbatim}
+git checkout feature-<feature name>
+git branch -d <idea>
+\end{verbatim}
 \end{itemize}
 
-The idea behind the use of the rebase command is to let the history of the feature development as linear as possible, in order to 
+\subsubsection{Integration of features}
 
-\subsubsection{Integrating Features}
-
-During development process, features have to be incrementally integrated as soon as their development is finished and they have been tested. The integration can be done either by developers or administrators, but in all cases it requires every developers of the feature to be aware of this, to avoid big troubles.
+During development process, features are integrated as soon as their development is finished and their tests are OK. Integration simply consists in merging feature branch into integration branch:
 \begin{enumerate}
-\item Merging the feature in the development branch:
-\linebreak \verb|git checkout feature-<feature name>|
-\linebreak \verb|git pull origin develop|
-\linebreak \verb|=> solving conflicts and testing|
-\linebreak \verb|git checkout develop|
-\linebreak \verb|git merge --no-ff feature-<feature name>|
-\linebreak \verb|=> solving conflicts and testing|
-\item Deleting the feature branch:
-\linebreak \verb|git push origin develop|
-\linebreak \verb|git push origin --delete feature-<feature name>|
-\item Updating in local repository the branch that has been removed in remote repository (all users of the repository) :
-\linebreak \verb|git remote prune origin|
-\linebreak \verb|git branch -d feature-<feature name>|
+\item Merging the feature in the development branch (only developer responsible of the merge):
+\begin{verbatim}
+git checkout feature-<feature name>
+git pull origin feature-<feature name>
+//=> solving conflicts and testing, now feature is OK
+git pull origin integration
+//=> solving conflicts and testing, now feature ready to be merged
+git checkout integration
+git merge --no-ff feature-<feature name>
+//=> solving conflicts and testing, now integration OK
+\end{verbatim}
+\item Deleting the feature branch (only developer responsible of the merge):
+\begin{verbatim}
+git push origin integration
+git push origin --delete feature-<feature name>
+\end{verbatim}
+\item Updating local repositories after merge in the private repository (all developers of the repository) :
+\begin{verbatim}
+git remote prune origin
+git branch -d feature-<feature name>
+\end{verbatim}
 \end{enumerate} 
 
 \paragraph{Remarks:}
 \begin{itemize}
-\item The development of features is made in parallel and they are merged indirectly in the \textbf{develop branch} at the very end, one at a time: features don't synchronize until merge. This let the possibility to developers to change some parts of the API/structure without immediately impacting the work made on others features.
-\item The best way is to first create an initial feature branch that puts in place the general basis of the package (API, basic class hierarchy, etc.). Then, when this feature has been merged in develop branch, parallel development into many feature branches can start.
-\item When merging, the resolution of conflicts \textbf{must be realized in feature branch} to avoid any problem in the develop branch while conflicts resolution take place.
+\item The development of features is made in parallel and they are merged indirectly in the \textbf{integration} branch at the very end, one at a time: features don't synchronize until merge. This let the possibility to developers to change some parts of the API/structure without immediately impacting the work made on others features.
+\item The best way is to first create an initial feature branch that puts in place the general basis of the package (API, basic class hierarchy, etc.). Then, when this feature has been merged in \textbf{integration} branch, parallel development into many feature branches can start.
+\item When merging, the resolution of conflicts \textbf{must be realized in feature branch} to avoid any problem in the integration branch while conflicts resolution takes place.
 \end{itemize}
 
-\subsection{Releasing a Package Version}
+\subsubsection{Releasing a Package Version}
 
-Releasing package versions is the responsibility of administrators.
+Releasing package versions is the responsibility of administrators. It generally consists in merging \textbf{integration} branch into \textbf{master} branch and then tagging the result in master with a version number (see section~\ref{sec:versiontags}). 
 
-The first step is the update of the administrator station with modifications contained in private repository (named \texttt{private}):
+\paragraph{Version tags handling} is made the following way:
+\begin{itemize}
+\item creating a version number (annotated tags):
+\begin{verbatim}
+git tag -a v1.2.3 -m"<small description of the version>"
+git push origin tags/v1.2.3
+\end{verbatim}
+\item listing all available versions:
+\begin{verbatim}
+git tag -l 'v*'
+\end{verbatim} 
+\item showing the information of a given version: 
+\begin{verbatim}
+git show v<version number>
+\end{verbatim} 
+\item getting the released version in package history:
+\begin{verbatim}
+git checkout tags/v<version number>
+\end{verbatim} 
+\end{itemize}
+It sis also possible to use tags during on \textbf{integration} branch, for instance to memorize code state matching demos or papers. Then use \texttt{p<journal or conf>-<date>-<author>} pattern tags for papers and \texttt{d<name of demo>-<date>-<author>} pattern tags for demos.
+
+\paragraph{Administrator's repositories} are most of time more complex than simple developers ones as they reference the \textbf{official repository} and at least one \textbf{private repository}. Administrators must so manage multiple references to repositories:
+\begin{itemize}
+\item Creation of the local repository of a given package:
+\begin{verbatim}
+cd <path to workspace>/packages/
+git clone <package official repository>
+\end{verbatim}
+\item Registering a \textbf{private repository} for a given package:
+\begin{verbatim}
+cd <path to workspace>/packages/<package>
+git remote add <private repository name> <repository address>
+\end{verbatim}
+\item Getting the state of a private repository, without merging the result with administrator's local branches:
+\begin{verbatim}
+git fetch <private repository name>
+\end{verbatim}
+\begin{verbatim}
+git remote rm <private repository name>
+\end{verbatim}
+\end{itemize}
+
+The release process takes place into the \textbf{administrator}'s stations.
 \begin{enumerate}
-\item Merging develop into master:
-\linebreak \verb|git checkout develop|
-\linebreak \verb|git pull private develop|
-\linebreak \verb|git checkout master|
-\linebreak \verb|git merge --no-ff develop|
-\linebreak \verb|doing test and solving conflicts, if any|
-\linebreak Incrementing the version number in \textbf{package.manifest} file to get \texttt{<new version number>}.
-\linebreak \verb|git commit -a -m "Bumped version to <new version number>"|
-\linebreak \verb|git tag -a v<new version number>|
-\item Updating private repository with new release version (to simply update the \textbf{package.manifest} file):
-\linebreak \verb|git checkout develop|
-\linebreak Incrementing the version number in \textbf{package.manifest} file to get \texttt{<new version number>}.
-\linebreak \verb|git commit -a -m "Bumped version to <new version number>"|
-\linebreak \verb|git push private develop|
-\linebreak \verb|git push private master|
+\item Update administrator's station with modifications contained in integration branch of private (named \texttt{private}) and official (named \texttt{origin} for administrators) repositories :
+\begin{verbatim}
+git checkout integration
+git pull private integration
+//=> solving conflicts and testing
+git pull origin integration
+//=> solving conflicts and testing, now ready to be merged
+\end{verbatim}
+
+\item Merging master and integration branches in local repository of administrator's station:
+\begin{verbatim}
+git checkout master
+git pull private master
+git pull origin master
+//=> solving conflicts and testing
+git merge --no-ff integration
+//=> solving conflicts and testing, ready to be released
+\end{verbatim}
+
+\item Updating version number. Setting the adequate version number in the package's CMakeList.txt to get \texttt{<released version>}, rebuilding package and then:
+\begin{verbatim}
+git commit -a -m "Bumped version to <released version>"
+git tag -a v<released version> -m"<description of version>"
+\end{verbatim}
+
+\item Updating official and private repositories:
+\begin{verbatim}
+git push origin integration
+git push private integration
+git push origin master
+git push private master
+git push origin tags/v<released version>
+git push private tags/v<released version>
+//=> updated branches and tags of private and official repositories
+\end{verbatim}
 \end{enumerate}
 
-The second step consists in updating the official repository (named \texttt{origin} for the administrator):
-\begin{enumerate}
-\item Getting branches from official repository:
-\linebreak \verb|git checkout develop|
-\linebreak \verb|git pull origin develop|
-\linebreak \verb|doing test and solving conflicts, if any|
-\linebreak \verb|git checkout master|
-\linebreak \verb|git pull origin master|
-\linebreak \verb|doing test and solving conflicts, if any|
-\item Update the master and develop branches:
-\linebreak \verb|git push origin develop|
-\linebreak \verb|git push origin master|
-\end{enumerate}
-
-
-\subsection{Developing a Hotfix}
+ICI
+\subsubsection{Developing a hotfix}
 
 Creating a hot fix is always made on demand of an administrator, but can be realized either by himself or a developer. The process is quite the same as for features, but we suppose that only one developer is involved in this task, that should be quick: 
 \begin{enumerate}
@@ -1421,41 +1497,8 @@ With PID there are few functions to use to precisely declare the content of a pa
  
 GIT TAGS
  
-\paragraph{Handling tags for version numbers:}
-\begin{itemize}
-\item creating the version number (annotated tags):
-\linebreak \texttt{git tag -a v1.2.3 -m"<small description of the version>"}
-\item listing all available versions: 
-\linebreak \texttt{git tag -l 'v*'}
-\item showing the information of a given version: 
-\linebreak \texttt{git show v<version number>}
-\item getting the released version in package history: 
-\linebreak \texttt{git checkout tags/v<version number>}
-\end{itemize}
-
-
-It is also possible to apply tags to certain moment of the package's life in order to register important dates of package state and retrieve this state at any moment in the future. We define two other tag patterns to do so : publication tags, representing software developed to do experiments in the frame of a scientific publication and demo tags used to target versions that match working technical demonstrations. Demo and publication tags relies on last released version number and had specific information:
-\begin{itemize}
-\item \textbf{publication tags pattern} have the shape: \linebreak \texttt{pX.Y[.Z]-<journal-or-conference>-<year>}.
-\item \textbf{demo tags pattern} have the shape:
-\linebreak \texttt{dX.Y[.Z]-<name of demo>-<year>}.
-\end{itemize}
- 
 GIT BRANCHING
  
-\paragraph{Handling feature branches in GIT:}
-\begin{itemize}
-\item Creating a feature branch:
-\linebreak \texttt{git checkout -b <feature name> develop}
-\item Listing available branches:
-\linebreak \texttt{git branch -a}
-\item Incorporating a finished feature on develop:
-\linebreak \texttt{git checkout develop}
-\linebreak \texttt{git merge --no-ff feature-<feature name>}
-\linebreak \texttt{git branch -d  feature-<feature name>}
-\linebreak \texttt{git push origin develop}
-\end{itemize}
-
 
 \pagebreak
 \paragraph{Handling hotfixes branches in GIT:}
@@ -1476,171 +1519,14 @@ GIT BRANCHING
 
 COLLABORATIVE WORKING
 
-When an administrator decides to affect a pool of developers to the development of a package:
-\begin{enumerate}
-\item he first \texttt{clones} the official repository of the package into a private access area on the server, that is accessible (via ssh access) only to this pool of developers. 
-\linebreak \texttt{ssh <private area>}
-\linebreak \texttt{git clone <address of the package official repository>}
-\item Second, he creates one or more feature branches as described in previous section.
-\linebreak \texttt{git checkout -b <feature name> develop}
-\item Third, all developers in turn \texttt{clone} this private repository into their own work station so that they can work locally and update (\texttt{push/pull})the server version of the private repository.
-\linebreak \texttt{git clone <address of the package private repository>}
-\item When features development is done or aborted, the administrator deletes 
-the private repository on server by simply deleting the repository's folder and removing access to the users if necessary.
-\linebreak \texttt{ssh <private area>}
-\linebreak \texttt{rm <package private repository folder>}
-\end{enumerate}
- 
-\begin{itemize}
-\item Creating a local version of a package repository:
-\linebreak \texttt{cd <path to workspace>/packages/}
-\linebreak \texttt{git clone <address of the package official repository>}
-\item Registering a private repository for a given package on administrator workstation:
-\linebreak \texttt{cd <path to workspace>/packages/<package>}
-\linebreak \texttt{git remote add <private repository name> <private repository address>}
-\item To get the state of a private repository, without merging the result with administrator's local branches:
-\linebreak \texttt{git fetch <private repository name>}
-\item To remove a reference to a private repository (just after/before deletion of the repository by hand):
-\linebreak \texttt{git remote rm <private repository name>}
-\end{itemize} 
-
- 
-The development process of a package is always initiated by administrators:
-\begin{itemize}
-\item because they know which packages are already available and so which one can be used or extended in the frame of a master/PHD student or postdoc job.
-\item because they know who is already working on similar or complementary software.
-\item because they know which kind of constraints apply to code produced in the laboratory (licenses, access restriction, etc.)
-\end{itemize} 
-They are so the only persons that can truly:
-\begin{itemize}
-\item orient and help developers to increase their productivity by reusing existing code.
-\item optimize collaboration between developers.
-\item centralize the whole process.
-\end{itemize} 
-
 the \textbf{categories} folder is structured according a set of topics, each topic being itself a folder that in turn contains either other subcategories or \textbf{links to frameworks}. \textbf{categories} only goal is to help finding available packages (under binary form) according to a given theme. Considering a category, packages that are relevant for the theme it defines are referenced as links (symbolic relative links in Linux) to frameworks folders.
 
-
-\paragraph{Rules for the modification of the repository:}
-\begin{itemize}
-\item .gitignore cannot be modified.
-\item No new direct subfolder or file of the workspace root can be created or removed.
-\item files (package references, licenses definitions) can be added or removed only by administrators.
-\end{itemize}
-
-
-
-\subsubsection{General policy to manage many package versions}
-
-The following rules should be applied whenever developers want to install a given package version:
-\begin{itemize}
-\item Given a package version with given major and minor version numbers, its more recent patch version should always be used. If a new patch version becomes available (e.g. 1.4.2 after a hotfix on 1.4.1) it should replace older patch versions (e.g. 1.4.0 or 1.4.1) if any installed in the package framework. This ensures the developer to use a version with less bug or security problems.
-\item When a new backward compatible version (e.g. 1.5.0) of a package is to be installed, it may replace the previous version (e.g. 1.4.2) or be simply added to the framework. Most of time it is preferable to test effective compatibility between this new version and the code that was using the old version.
-\item When a new non backward compatible version of a package is to be installed (e.g. 2.0.0 while 1.4.2 is already installed), it should not immediately replace older versions. The package version is simply added to the package framework, which ensures that other packages can still work with an older version already installed.
-\end{itemize}
-
-\paragraph*{When to install ?}
-Generally, there are two main case when developer want to install a package version:
-\begin{itemize}
-\item they want to install software artefacts (libraries, scripts, etc.) coming from a package they are currently developing, in order to use them. In this case, package version is installed in the \textbf{own} folder of the framework. This folder is updated each time they compile their package.
-\item  they develop or use a package that requires other packages with version constraints. For a given required package, a released version with number contained between its min and max version constraints has to be installed. In the allowed "interval of versions", the last backward compatible version with last patch version should be installed.
-\end{itemize}
-
-\paragraph*{How to install ?}
-There are basically two way to install a given package version:
-\begin{itemize}
-\item from package repository: the developer has to go back to the given version in history (on master branch) and install it.
-\linebreak \texttt{git checkout master}
-\linebreak \texttt{git checkout tags/v<version number>}
-\linebreak \texttt{cd build}
-\linebreak \verb|{cmake .. - DCMAKE_INSTALL_PREFIX=../../frameworks/|
-\linebreak \verb|<package name>/<version number>/|
-\linebreak \texttt{make}
-\linebreak \texttt{make install}
-\item from an OS installer: it depends on the installer used but the install prefix has to be specified quite the same way as previously.
-\end{itemize}
-
-\subsection{Referencing Packages in Workspace}
-
-To reference available packages potentially accessible in the workspace, we use the \textbf{references} folder in which administrators put \textbf{package.manifest} files. In the workspace these files are used to tell to users which packages are available and where they can be found. When a package administrator wants to make the package available to others, he must add the corresponding \textbf{package.manifest} in the \textbf{references} folder of its workspace and commit the changes to the workspace. All users will then know the package existence whenever they update their workspace. When a package definitively become obsolete, the corresponding manifest file is removed from the \textbf{references} folder and the changes into the workspace are committed.
-
-\paragraph{Basic commands}
-\begin{itemize}
-\item Referencing a package :
-\linebreak copying the package.manifest file into the references folder of the workspace, and \textbf{rename it} in <name of package>.manifest (name of packages are supposed to be unique).
-\linebreak \texttt{git add <package name>.manifest}
-\linebreak \texttt{git commit -m "<package manifest file> is now referenced"}
-\linebreak \texttt{git push origin master}
-\item Updating available references (when updating the workspace):
-\linebreak \texttt{git pull origin master}
-\item Dereferencing a package
-\linebreak \texttt{git rm <package name>.manifest}
-\linebreak \texttt{git commit -m "<package manifest file> is no more referenced"}
-\linebreak git push origin master
-\end{itemize}
 
 \subsection{Licensing packages}
 
 The licensing of packages has to be done according to a general politics of the laboratory, team or sub-group. License is let free to their decision and constraints, nevertheless, as software licenses are the same for everybody, licenses definitions are shared between all people.
 
 The \textbf{licenses} folder contains definitions for all licenses that are available for use in package description. Each license is defined in a specific file that looks like this for the GPLv3 license (file name is "GNUGPLv3.license") :
-\begin{verbatim}
-<license id="GPLv3" fullname="GNU General Public 
-License version 3" organization="Free Software Foundation"/>
-<description>
-/*
-* <package_name> : <package_short_description>
-* Copyright (C) <year>  <authors_name>
-
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-</description>
-<legalterms>
-//input the full legal terms of the license here
-</legalterms>
-</license>
-\end{verbatim}
-
-
-\paragraph{Data Type Definition:}
-\begin{verbatim}
-<!DOCTYPE license [
-
-<!ELEMENT license (description, legalterms)>
-<!ELEMENT description (CDATA)>
-<!ELEMENT legalterms (CDATA)>
-
-<!ATTLIST license id CDATA #REQUIRED>
-<!ATTLIST license fullname CDATA #REQUIRED>
-<!ATTLIST license organization CDATA #REQUIRED>
-]>
-\end{verbatim}
-
-
-\paragraph{Explanations:}
-\begin{itemize}
-\item the \texttt{<license>} markup is the root of the XML description : it gives the short name of the license used as an identifier (\texttt{id}) in the package description as well as its complete legal name (\texttt{fullname})and the name of the \texttt{organization} that wrote it.
-\item the \texttt{<description>} markup contains a short text that has to be put by developers into any file used in the package (source, interface, test, etc.). Some part have tags with "<" and ">" characters : this is where package specific informations (name, authors, short description etc.) is written by developers.
-\item the \texttt{<legalterms>} markup contains the full legal text of the license. Thanks to this text a license text file can be generated and added with redistribution of packages (e.g. both in repositories and installers).
-\end{itemize}
-
-\paragraph{Important remarks:} 
-\begin{itemize}
-\item As a package has one license only, using different licenses requires to define different package.
-\item If a package has one license at a time this license can evolve along time.
-\item Only administrators can add/remove/modify license files in the workspace.
-\end{itemize}
 
 
 \subsection{Categorizing packages}

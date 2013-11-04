@@ -20,62 +20,55 @@
 \contentsline {paragraph}{Using existing packages:}{24}
 \contentsline {subsubsection}{\numberline {4.1.3}Installing other required packages in the workspace}{25}
 \contentsline {subsection}{\numberline {4.2}Collaborative package development}{26}
-\contentsline {subsubsection}{\numberline {4.2.1}Developing a Feature}{27}
-\contentsline {subsubsection}{\numberline {4.2.2}Integrating Features}{28}
+\contentsline {subsubsection}{\numberline {4.2.1}Handling feature branches}{27}
+\contentsline {subsubsection}{\numberline {4.2.2}Integration of features}{28}
 \contentsline {paragraph}{Remarks:}{29}
-\contentsline {subsection}{\numberline {4.3}Releasing a Package Version}{29}
-\contentsline {subsection}{\numberline {4.4}Developing a Hotfix}{30}
-\contentsline {section}{\numberline {5}Package development with CMake}{32}
-\contentsline {subsection}{\numberline {5.1}Package's root CMakeList.txt file}{33}
-\contentsline {subsubsection}{\numberline {5.1.1}General Meta-Information}{33}
-\contentsline {subsubsection}{\numberline {5.1.2}Dependencies with other packages}{35}
-\contentsline {subsubsection}{\numberline {5.1.3}Dealing with conditional dependencies}{36}
-\contentsline {subsection}{\numberline {5.2}Defining Library components}{38}
-\contentsline {subsubsection}{\numberline {5.2.1}Header libraries}{38}
-\contentsline {subsubsection}{\numberline {5.2.2}Static libraries}{40}
-\contentsline {subsubsection}{\numberline {5.2.3}Shared libraries}{41}
-\contentsline {subsection}{\numberline {5.3}Defining Application components}{42}
-\contentsline {subsubsection}{\numberline {5.3.1}Standard applications}{42}
-\contentsline {subsubsection}{\numberline {5.3.2}Example applications}{43}
-\contentsline {subsubsection}{\numberline {5.3.3}Test units}{44}
-\contentsline {subsection}{\numberline {5.4}Generating API documentation}{45}
-\contentsline {subsubsection}{\numberline {5.4.1}Documenting headers}{46}
-\contentsline {subsubsection}{\numberline {5.4.2}Adding some content by modifying Doxygen configuration file}{47}
-\contentsline {subsubsection}{\numberline {5.4.3}CMakeList.txt of the share folder}{48}
-\contentsline {subsection}{\numberline {5.5}Configuring the package}{49}
-\contentsline {subsection}{\numberline {5.6}Controlling package build process}{50}
-\contentsline {paragraph}{Important:}{52}
-\contentsline {paragraph}{Important:}{52}
-\contentsline {subsection}{\numberline {5.7}Resulting binary package version}{52}
-\contentsline {section}{\numberline {6}Good practices}{54}
-\contentsline {subsection}{\numberline {6.1}Structuring development with packages}{54}
-\contentsline {subsubsection}{\numberline {6.1.1}Overview}{54}
-\contentsline {subsubsection}{\numberline {6.1.2}General guideline applied to packages}{54}
-\contentsline {subsubsection}{\numberline {6.1.3}Guideline relative to developed functionalities}{55}
-\contentsline {subsection}{\numberline {6.2}Conventions}{56}
-\contentsline {subsubsection}{\numberline {6.2.1}Files and folders naming convention}{56}
-\contentsline {subsubsection}{\numberline {6.2.2}C/C++ objects naming convention}{57}
-\contentsline {subsubsection}{\numberline {6.2.3}C/C++ coding guideline}{57}
-\contentsline {section}{\numberline {7}PID cmake functions API}{62}
-\contentsline {subsection}{\numberline {7.1}declare\_PID\_Package}{62}
-\contentsline {subsection}{\numberline {7.2}set\_PID\_Package\_Version}{62}
-\contentsline {subsection}{\numberline {7.3}add\_PID\_Package\_Author}{63}
-\contentsline {subsection}{\numberline {7.4}add\_PID\_Package\_Reference}{63}
-\contentsline {subsection}{\numberline {7.5}declare\_PID\_Package\_Dependency}{64}
-\contentsline {subsection}{\numberline {7.6}build\_PID\_Package}{65}
-\contentsline {subsection}{\numberline {7.7}declare\_PID\_Component}{65}
-\contentsline {subsection}{\numberline {7.8}declare\_PID\_Component\_Dependency}{66}
-\contentsline {section}{\numberline {8}Examples}{68}
-\contentsline {paragraph}{Handling tags for version numbers:}{69}
-\contentsline {paragraph}{Handling feature branches in GIT:}{70}
-\contentsline {paragraph}{Handling hotfixes branches in GIT:}{71}
-\contentsline {paragraph}{Rules for the modification of the repository:}{73}
-\contentsline {subsubsection}{\numberline {8.0.1}General policy to manage many package versions}{73}
-\contentsline {subsection}{\numberline {8.1}Referencing Packages in Workspace}{74}
-\contentsline {paragraph}{Basic commands}{74}
-\contentsline {subsection}{\numberline {8.2}Licensing packages}{75}
-\contentsline {paragraph}{Data Type Definition:}{76}
-\contentsline {paragraph}{Explanations:}{76}
-\contentsline {paragraph}{Important remarks:}{76}
-\contentsline {subsection}{\numberline {8.3}Categorizing packages}{77}
-\contentsline {subsubsection}{\numberline {8.3.1}Working with categories}{78}
+\contentsline {subsubsection}{\numberline {4.2.3}Releasing a Package Version}{29}
+\contentsline {paragraph}{Version tags handling}{29}
+\contentsline {paragraph}{Administrator's repositories}{30}
+\contentsline {subsubsection}{\numberline {4.2.4}Developing a hotfix}{31}
+\contentsline {section}{\numberline {5}Package development with CMake}{34}
+\contentsline {subsection}{\numberline {5.1}Package's root CMakeList.txt file}{35}
+\contentsline {subsubsection}{\numberline {5.1.1}General Meta-Information}{35}
+\contentsline {subsubsection}{\numberline {5.1.2}Dependencies with other packages}{37}
+\contentsline {subsubsection}{\numberline {5.1.3}Dealing with conditional dependencies}{38}
+\contentsline {subsection}{\numberline {5.2}Defining Library components}{40}
+\contentsline {subsubsection}{\numberline {5.2.1}Header libraries}{40}
+\contentsline {subsubsection}{\numberline {5.2.2}Static libraries}{42}
+\contentsline {subsubsection}{\numberline {5.2.3}Shared libraries}{43}
+\contentsline {subsection}{\numberline {5.3}Defining Application components}{44}
+\contentsline {subsubsection}{\numberline {5.3.1}Standard applications}{44}
+\contentsline {subsubsection}{\numberline {5.3.2}Example applications}{45}
+\contentsline {subsubsection}{\numberline {5.3.3}Test units}{46}
+\contentsline {subsection}{\numberline {5.4}Generating API documentation}{47}
+\contentsline {subsubsection}{\numberline {5.4.1}Documenting headers}{48}
+\contentsline {subsubsection}{\numberline {5.4.2}Adding some content by modifying Doxygen configuration file}{49}
+\contentsline {subsubsection}{\numberline {5.4.3}CMakeList.txt of the share folder}{50}
+\contentsline {subsection}{\numberline {5.5}Configuring the package}{51}
+\contentsline {subsection}{\numberline {5.6}Controlling package build process}{52}
+\contentsline {paragraph}{Important:}{54}
+\contentsline {paragraph}{Important:}{54}
+\contentsline {subsection}{\numberline {5.7}Resulting binary package version}{54}
+\contentsline {section}{\numberline {6}Good practices}{56}
+\contentsline {subsection}{\numberline {6.1}Structuring development with packages}{56}
+\contentsline {subsubsection}{\numberline {6.1.1}Overview}{56}
+\contentsline {subsubsection}{\numberline {6.1.2}General guideline applied to packages}{56}
+\contentsline {subsubsection}{\numberline {6.1.3}Guideline relative to developed functionalities}{57}
+\contentsline {subsection}{\numberline {6.2}Conventions}{58}
+\contentsline {subsubsection}{\numberline {6.2.1}Files and folders naming convention}{58}
+\contentsline {subsubsection}{\numberline {6.2.2}C/C++ objects naming convention}{59}
+\contentsline {subsubsection}{\numberline {6.2.3}C/C++ coding guideline}{59}
+\contentsline {section}{\numberline {7}PID cmake functions API}{64}
+\contentsline {subsection}{\numberline {7.1}declare\_PID\_Package}{64}
+\contentsline {subsection}{\numberline {7.2}set\_PID\_Package\_Version}{64}
+\contentsline {subsection}{\numberline {7.3}add\_PID\_Package\_Author}{65}
+\contentsline {subsection}{\numberline {7.4}add\_PID\_Package\_Reference}{65}
+\contentsline {subsection}{\numberline {7.5}declare\_PID\_Package\_Dependency}{66}
+\contentsline {subsection}{\numberline {7.6}build\_PID\_Package}{67}
+\contentsline {subsection}{\numberline {7.7}declare\_PID\_Component}{67}
+\contentsline {subsection}{\numberline {7.8}declare\_PID\_Component\_Dependency}{68}
+\contentsline {section}{\numberline {8}Examples}{70}
+\contentsline {paragraph}{Handling hotfixes branches in GIT:}{72}
+\contentsline {subsection}{\numberline {8.1}Licensing packages}{72}
+\contentsline {subsection}{\numberline {8.2}Categorizing packages}{72}
+\contentsline {subsubsection}{\numberline {8.2.1}Working with categories}{74}
