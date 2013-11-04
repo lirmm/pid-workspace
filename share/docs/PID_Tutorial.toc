@@ -68,7 +68,6 @@
 \contentsline {subsection}{\numberline {7.7}declare\_PID\_Component}{67}
 \contentsline {subsection}{\numberline {7.8}declare\_PID\_Component\_Dependency}{68}
 \contentsline {section}{\numberline {8}Examples}{70}
-\contentsline {paragraph}{Handling hotfixes branches in GIT:}{72}
-\contentsline {subsection}{\numberline {8.1}Licensing packages}{72}
-\contentsline {subsection}{\numberline {8.2}Categorizing packages}{72}
-\contentsline {subsubsection}{\numberline {8.2.1}Working with categories}{74}
+\contentsline {subsection}{\numberline {8.1}Licensing packages}{71}
+\contentsline {subsection}{\numberline {8.2}Categorizing packages}{71}
+\contentsline {subsubsection}{\numberline {8.2.1}Working with categories}{73}

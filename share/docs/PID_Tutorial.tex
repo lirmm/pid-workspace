@@ -638,51 +638,62 @@ git push private tags/v<released version>
 \end{verbatim}
 \end{enumerate}
 
-ICI
 \subsubsection{Developing a hotfix}
 
-Creating a hot fix is always made on demand of an administrator, but can be realized either by himself or a developer. The process is quite the same as for features, but we suppose that only one developer is involved in this task, that should be quick: 
+Creating a hot fix is always made on demand of an administrator, but can be realized either by himself or a developer. The process is quite the same as for features: 
 \begin{enumerate}
-\item a package private repository is created or an existing one is used.
-\item The administrator gets the last released version number from \textbf{package.manifest} file (e.g. 1.2.0) and increments the patch version number to get the <new patch version number> (e.g. 1.2.1).
-\item Creating the hotfix branch in the private repository:
-\linebreak  \verb|git checkout -b hotfix-<new patch version number> master|
+\item Creating the hotfix branch in the private repository, derived from version <old version>:
+\begin{verbatim}
+git checkout tags/v<old version>
+git checkout -b hotfix-<new patch version>
+\end{verbatim}
 \item During the bug correction, committing locally:
-\linebreak \verb|git checkout hotfix-<new patch version number>|
-\linebreak \verb|git add <modified files>|
-\linebreak \verb|git commit -m "<commit message>"|
+\begin{verbatim}
+git add <modified files>
+git commit -m "<commit message>"
+\end{verbatim}
 \item Saving work in the private repository:
-\linebreak \verb|git push origin hotfix-<new patch version number>|
-\end{enumerate}
+\begin{verbatim}
+git push origin hotfix-<new patch version>
+\end{verbatim}
+\item Updating version number, when bug or security problems have been solved. Setting the adequate version number in the package's CMakeList.txt to get \texttt{<new patch version>}, rebuilding package and then:
+\begin{verbatim}
+git commit -a -m "Bumped version to <new patch version>"
+git push origin hotfix-<new patch version>
+\end{verbatim}
+\item Merging hotfix branch with master:
+\begin{verbatim}
+git checkout master
+git merge --no-ff hotfix-<new patch version>
+git tag -a v<new patch version> -m"<description of version>"
+git push origin master
+git push origin tags/v<new patch version>
+\end{verbatim}
+\item Merging the bug correction with the integration branch:
+\begin{verbatim}
+git checkout integration
+git merge --no-ff hotfix-<new patch version>
+//=> solving conflicts and testing
+git push origin integration
+\end{verbatim}
+\item Deleting hotfix branch on local and private repositories:
+\begin{verbatim}
+git branch -d hotfix-<new patch version>
+git push origin --delete hotfix-<new patch version>
+\end{verbatim}
+\item Releasing the patch version in the official repository. This is the role of administrators that do that on their own station:
+\begin{verbatim}
+git fetch private
+git checkout integration
+git pull private/integration
+//=> solving conflicts and testing
+git push origin integration
 
-When bug or security problems have been solved and tested, the development of the hotfix is finished. This is then the only time when the master branch can be modified in the private repository:
-\begin{enumerate}
-\item The responsible of the hotfix releases it:
-\linebreak \verb|git checkout hotfix-<new patch version number>|
-\linebreak \verb|changing version number is package.manifest file|
-\linebreak \verb|git commit -a -m "Bumped version to <new patch version number>"|
-\linebreak \verb|git checkout master|
-\linebreak \verb|git merge --no-ff hotfix-<new patch version number>|
-\linebreak \verb|git tag -a v<new patch version number>|
-\linebreak \verb|git push origin master|
-\linebreak \verb|git checkout develop|
-\linebreak \verb|git merge --no-ff hotfix-<new patch version number>|
-\linebreak \verb|doing some conflicts resolution if necessary|
-\linebreak \verb|git push origin develop|
-\item Then the hotfix branch is deleted:
-\linebreak \verb|git branch -d hotfix-<new patch version number>|
-\linebreak \verb|git push origin --delete hotfix-<new patch version number>|
-\end{enumerate}
-
-Then the last step consists in releasing the patch version on the official server. This is the role of administrators that do that on their own station:
-\begin{enumerate}
-\item Updating master and develop branches:
-\linebreak \verb|git pull private develop|
-\linebreak \verb|git pull private master|
-\item Checking that the hotfix solves the problem and that everything is OK.
-\item Updating official repository branches:
-\linebreak \verb|git push origin develop|
-\linebreak \verb|git push origin master|
+git checkout master
+git pull private/master
+git push origin master
+git push origin tags/v<new patch version>
+\end{verbatim}
 \end{enumerate}
 
 \pagebreak
@@ -1494,31 +1505,6 @@ With PID there are few functions to use to precisely declare the content of a pa
 
  The workspace also provides categories : each category defines a specific subject that helps classifying packages/frameworks. For instance the category sensor will reference all packages or frameworks that implement the driver of a sensor. Categories can be hierarchically refined into sub categories for instance the category camera refines the category sensors. Categories can be viewed as lists of links that target frameworks/packages. The process of classification of packages is itself coming from package description (i.e. a package specifies the categories it belongs to).
  
- 
-GIT TAGS
- 
-GIT BRANCHING
- 
-
-\pagebreak
-\paragraph{Handling hotfixes branches in GIT:}
-\begin{itemize}
-\item Creating a hotfix branch:
-\linebreak \texttt{git checkout -b hotfix-<patch version> master}
-\item Incorporating a finished hotfix on master and develop:
-\linebreak \texttt{git checkout master}
-\linebreak \texttt{git merge --no-ff hotfix-<patch version>}
-\linebreak \texttt{git tag -a <patch version>}
-\linebreak \texttt{git push origin master}
-\linebreak \texttt{git checkout develop}
-\linebreak \texttt{git merge --no-ff hotfix-<patch version>}
-\linebreak \texttt{git branch -d  hotfix-<patch version>}
-\linebreak \texttt{git push origin develop}
-\end{itemize}
-
-
-COLLABORATIVE WORKING
-
 the \textbf{categories} folder is structured according a set of topics, each topic being itself a folder that in turn contains either other subcategories or \textbf{links to frameworks}. \textbf{categories} only goal is to help finding available packages (under binary form) according to a given theme. Considering a category, packages that are relevant for the theme it defines are referenced as links (symbolic relative links in Linux) to frameworks folders.
 
 
@@ -1604,27 +1590,5 @@ To search packages, they can simply navigate in the file system of the \textbf{c
 \item if the package is already installed in the \textbf{frameworks} folder he can simply follow the link.
 \item otherwise the link is broken, and the developer has to install the corresponding package.
 \end{itemize}
-
-
-DELIVERY
-
-Packages should be delivered to third parties preferably in binary form, using a \textbf{package installer} (see section~\ref{sec:CMakeInstallBinary}). By delivered we mean:
-\begin{itemize}
-\item an OS installer for the package is created via CMake/CPack process presented before.
-\item the installer is put on a ftp server.
-\item the ftp address where to find the installer is referenced is the package.manifest file of the package.
-\item the package is updated together with the workspace, so that anyone can know the existence of the installer.
-\end{itemize}
-
-The reference installer mechanism is debian packages because ubuntu/debian is the reference OS and debian packaging system is far most powerful, considering dependencies management, than basic archive based packaging. Each time a package is delivered in binary form, a corresponding debian package should be provided, unless impossible (e.g. package is specific to Windows OS).
-
-Each time a new package version is available (tagged in master branch) at least one OS installer (preferably debian package) for that version should be provided.
-
-The policy to reference OS installers in the package.manifest file is the following:
-\begin{itemize}
-\item each time an installer for a new major or minor version of the package is available, it must be added to the package.manifest file.
-\item each time an installer for a new patch version of the package is available, it must replace the previous patch version for the same minor version.
-\end{itemize}
-
 
 \end{document}
