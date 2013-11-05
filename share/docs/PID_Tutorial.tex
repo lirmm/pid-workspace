@@ -1585,7 +1585,6 @@ INCLUDE_DIRS <Boost>/include)
 declare_PID_Component_Dependency(COMPONENT lib-c-sh EXPORT 
 DEPEND lib-y)
 
-
 #libC static -> dependency with libY
 declare_PID_Component(STATIC_LIB NAME lib-c-st DIRECTORY lib_c
 INTERNAL	 DEFINITIONS NA_VERY_SPECIFIC_IMPLEM)
@@ -1714,6 +1713,68 @@ Finally readers can also notice that dependencies are exported or not:
 
 \subsubsection{Applications}
 
+Applications source code is contained in the \textbf{apps} sub-folder of the package. The CMakeList.txt file of the \textbf{apps} folder declare available applications:
+
+\begin{verbatim}
+#1 first version (example) of application
+declare_PID_Component(EXAMPLE_APPLICATION NAME app-b1 
+     DIRECTORY app_B1)
+declare_PID_Component_Dependency(COMPONENT app-b1 
+     DEPEND lib-b-sh PACKAGE the-testpack-a)
+
+#2 second version of application
+declare_PID_Component(APPLICATION NAME app-b1-evolved 
+     DIRECTORY app_B1)
+declare_PID_Component_Dependency	(COMPONENT app-b1-evolved 
+     DEPEND lib-b-sh PACKAGE the-testpack-a)
+declare_PID_Component_Dependency	(COMPONENT app-b1-evolved
+DEPEND lib-c-sh 	INTERNAL_DEFINITIONS EVOLVED_IMPLEM)
+\end{verbatim}
+
+The declared applications are:
+\begin{itemize}
+\item \textit{app-b1} an example application, whose code is placed into the \texttt{app\_b1} sub-folder of the \textbf{apps} folder.
+\item \textit{app-b1-evolved} a standard application which share its source code with \textit{app-b1} (its source code is also in \texttt{app\_b1}).
+\end{itemize}
+
+The folder \texttt{<package root>/apps/app\_b1} contains a source file named \textit{app\_b1.cc} whose content is: 
+\begin{verbatim}
+#include <stdlib.h>
+extern "C"{
+#include <libB.h>
+}
+
+#ifdef EVOLVED_IMPLEM
+#include <libC.h>
+#endif
+
+int main(int argc, char* argv[]){
+#ifdef EVOLVED_IMPLEM
+	libb_function1(libb_function2());
+
+	YBuffer buff;
+	for (unsigned int i = 0;i < 10 ; i++){	
+		buff[i].three = i+1;
+		buff[i].four = 'c';
+		buff[i].five = (unsigned long) buff[i].three * 2;
+	}
+	libc_function1(buff);
+	libc_function2(buff);
+#else
+	libb_function1(libb_function2());
+#endif	
+return 0;
+}
+\end{verbatim}
+As readers can notice source code contains alternative implementations the same way as for \textit{lib-c-sh} and \textit{lib-s-st} libraries:
+\begin{itemize}
+\item \textit{app-b1} is the simple version, \texttt{EVOLVED\_IMPLEM} is let undefined (equivalent as going \texttt{INTERNAL\_DEFINITIONS} \texttt{NEVOLVED\_IMPLEM}). It is just a simple example of usage of library lib-b-sh.
+\item \textit{app-b1-evolved} is a more complex version. Readers have to notice that application \textbf{having no interface they cannot export any definition}. Contrary to libraries, applications declarations can so only use \texttt{INTERNAL\_DEFINITIONS} and \texttt{IMPORTED\_DEFINITIONS} keywords.
+\end{itemize}
+
+Both applications define a dependency to \textit{lib-b-sh} library of the package \textit{the-testpack-a}. \textit{app-b1-evolved} defines an additional dependency to \textit{lib-c-sh}. The usage of this library is conditional (in source code) depending on the \texttt{EVOLVED\_IMPLEM} preprocessor variable (that guards the \texttt{\#include<libC.h>} directive). For \textit{app-b1-evolved}, call to \texttt{declare\_PID\_Component\_Dependency} so uses the \texttt{INTERNAL\_DEFINITIONS} keyword to define \texttt{EVOLVED\_IMPLEM}.
+
+\subsection{Package the-testpack-c}
 
 
 
@@ -1722,19 +1783,11 @@ Finally readers can also notice that dependencies are exported or not:
 \part*{POUBELLE}
 
 
+CATEGORIES
+
  The workspace also provides categories : each category defines a specific subject that helps classifying packages/frameworks. For instance the category sensor will reference all packages or frameworks that implement the driver of a sensor. Categories can be hierarchically refined into sub categories for instance the category camera refines the category sensors. Categories can be viewed as lists of links that target frameworks/packages. The process of classification of packages is itself coming from package description (i.e. a package specifies the categories it belongs to).
  
 the \textbf{categories} folder is structured according a set of topics, each topic being itself a folder that in turn contains either other subcategories or \textbf{links to frameworks}. \textbf{categories} only goal is to help finding available packages (under binary form) according to a given theme. Considering a category, packages that are relevant for the theme it defines are referenced as links (symbolic relative links in Linux) to frameworks folders.
-
-
-\subsection{Licensing packages}
-
-The licensing of packages has to be done according to a general politics of the laboratory, team or sub-group. License is let free to their decision and constraints, nevertheless, as software licenses are the same for everybody, licenses definitions are shared between all people.
-
-The \textbf{licenses} folder contains definitions for all licenses that are available for use in package description. Each license is defined in a specific file that looks like this for the GPLv3 license (file name is "GNUGPLv3.license") :
-
-
-\subsection{Categorizing packages}
 
 When developing it is often useful to know which package provide some useful things relative to one or more topics. The aim of the \textbf{categories} folder is to standardize the classification and the finding of packages relevant for given concerns.
 
@@ -1789,7 +1842,7 @@ To organize the development, defining some "standard categories" should help dev
 
 Of course categories can evolve/change along time, when developers want new categories.
 
-\subsubsection{Working with categories}
+Working with categories
 
 The only people that can modify \textbf{categories} folder are package administrators. Each time a new package is created, developers define which are its relevant categories and wrote them in the package.manifest file of the package. When an administrator of a package wants to reference it :
 \begin{itemize}
