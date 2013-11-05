@@ -1,77 +1,84 @@
-\contentsline {part}{I\hspace {1em}Fundamentals}{5}
-\contentsline {section}{\numberline {1}Tooling}{6}
-\contentsline {section}{\numberline {2}Package}{6}
-\contentsline {subsection}{\numberline {2.1}Package Structure}{8}
-\contentsline {subsection}{\numberline {2.2}Package repository}{10}
-\contentsline {subsubsection}{\numberline {2.2.1}Version Numbers as GIT Tags}{10}
-\contentsline {subsubsection}{\numberline {2.2.2}Development process with GIT branches}{11}
-\contentsline {subsubsection}{\numberline {2.2.3}Collaborative working with GIT repositories}{14}
-\contentsline {section}{\numberline {3}Workspace}{18}
-\contentsline {subsection}{\numberline {3.1}Workspace organization}{18}
-\contentsline {subsubsection}{\numberline {3.1.1}Overview}{18}
-\contentsline {subsubsection}{\numberline {3.1.2}Installing binary packages in the workspace}{19}
-\contentsline {subsection}{\numberline {3.2}Workspace repository}{20}
-\contentsline {part}{II\hspace {1em}Usage}{21}
-\contentsline {section}{\numberline {4}Work-flow management with git}{21}
-\contentsline {subsection}{\numberline {4.1}Installing Workspace and Packages}{21}
-\contentsline {subsubsection}{\numberline {4.1.1}Getting a workspace}{21}
-\contentsline {subsubsection}{\numberline {4.1.2}Adding packages to the workspace}{23}
-\contentsline {paragraph}{Creating a new package:}{23}
-\contentsline {paragraph}{Using existing packages:}{24}
-\contentsline {subsubsection}{\numberline {4.1.3}Installing other required packages in the workspace}{25}
-\contentsline {subsection}{\numberline {4.2}Collaborative package development}{26}
-\contentsline {subsubsection}{\numberline {4.2.1}Handling feature branches}{27}
-\contentsline {subsubsection}{\numberline {4.2.2}Integration of features}{28}
-\contentsline {paragraph}{Remarks:}{29}
-\contentsline {subsubsection}{\numberline {4.2.3}Releasing a Package Version}{29}
-\contentsline {paragraph}{Version tags handling}{29}
-\contentsline {paragraph}{Administrator's repositories}{30}
-\contentsline {subsubsection}{\numberline {4.2.4}Developing a hotfix}{31}
-\contentsline {section}{\numberline {5}Package development with CMake}{34}
-\contentsline {subsection}{\numberline {5.1}Package's root CMakeList.txt file}{35}
-\contentsline {subsubsection}{\numberline {5.1.1}General Meta-Information}{35}
-\contentsline {subsubsection}{\numberline {5.1.2}Dependencies with other packages}{37}
-\contentsline {subsubsection}{\numberline {5.1.3}Dealing with conditional dependencies}{38}
-\contentsline {subsection}{\numberline {5.2}Defining Library components}{40}
-\contentsline {subsubsection}{\numberline {5.2.1}Header libraries}{40}
-\contentsline {subsubsection}{\numberline {5.2.2}Static libraries}{42}
-\contentsline {subsubsection}{\numberline {5.2.3}Shared libraries}{43}
-\contentsline {subsection}{\numberline {5.3}Defining Application components}{44}
-\contentsline {subsubsection}{\numberline {5.3.1}Standard applications}{44}
-\contentsline {subsubsection}{\numberline {5.3.2}Example applications}{45}
-\contentsline {subsubsection}{\numberline {5.3.3}Test units}{46}
-\contentsline {subsection}{\numberline {5.4}Generating API documentation}{47}
-\contentsline {subsubsection}{\numberline {5.4.1}Documenting headers}{48}
-\contentsline {subsubsection}{\numberline {5.4.2}Adding some content by modifying Doxygen configuration file}{49}
-\contentsline {subsubsection}{\numberline {5.4.3}CMakeList.txt of the share folder}{50}
-\contentsline {subsection}{\numberline {5.5}Configuring the package}{51}
-\contentsline {subsection}{\numberline {5.6}Controlling package build process}{52}
-\contentsline {paragraph}{Important:}{54}
-\contentsline {paragraph}{Important:}{54}
-\contentsline {subsection}{\numberline {5.7}Resulting binary package version}{54}
-\contentsline {section}{\numberline {6}Good practices}{56}
-\contentsline {subsection}{\numberline {6.1}Structuring development with packages}{56}
-\contentsline {subsubsection}{\numberline {6.1.1}Overview}{56}
-\contentsline {subsubsection}{\numberline {6.1.2}General guideline applied to packages}{56}
-\contentsline {subsubsection}{\numberline {6.1.3}Guideline relative to developed functionalities}{57}
-\contentsline {subsection}{\numberline {6.2}Conventions}{58}
-\contentsline {subsubsection}{\numberline {6.2.1}Files and folders naming convention}{58}
-\contentsline {subsubsection}{\numberline {6.2.2}C/C++ objects naming convention}{59}
-\contentsline {subsubsection}{\numberline {6.2.3}C/C++ coding guideline}{59}
-\contentsline {section}{\numberline {7}PID cmake functions API}{64}
-\contentsline {subsection}{\numberline {7.1}declare\_PID\_Package}{64}
-\contentsline {subsection}{\numberline {7.2}set\_PID\_Package\_Version}{64}
-\contentsline {subsection}{\numberline {7.3}add\_PID\_Package\_Author}{65}
-\contentsline {subsection}{\numberline {7.4}add\_PID\_Package\_Reference}{65}
-\contentsline {subsection}{\numberline {7.5}declare\_PID\_Package\_Dependency}{66}
-\contentsline {subsection}{\numberline {7.6}build\_PID\_Package}{67}
-\contentsline {subsection}{\numberline {7.7}declare\_PID\_Component}{67}
-\contentsline {subsection}{\numberline {7.8}declare\_PID\_Component\_Dependency}{68}
-\contentsline {section}{\numberline {8}Examples}{71}
-\contentsline {subsection}{\numberline {8.1}Package the-testpack-b}{71}
-\contentsline {subsubsection}{\numberline {8.1.1}Root CMakeList.txt}{71}
-\contentsline {subsubsection}{\numberline {8.1.2}Libraries}{72}
-\contentsline {paragraph}{shared code between lib-y and lib-y-bis libraries}{73}
-\contentsline {paragraph}{shared code between lib-c-sh and lib-c-st libraries}{75}
-\contentsline {subsubsection}{\numberline {8.1.3}Applications}{77}
-\contentsline {subsection}{\numberline {8.2}Package the-testpack-c}{79}
+\contentsline {part}{I\hspace {1em}Fundamentals}{6}
+\contentsline {section}{\numberline {1}Tooling}{7}
+\contentsline {section}{\numberline {2}Package}{7}
+\contentsline {subsection}{\numberline {2.1}Package Structure}{9}
+\contentsline {subsection}{\numberline {2.2}Package repository}{11}
+\contentsline {subsubsection}{\numberline {2.2.1}Version Numbers as GIT Tags}{11}
+\contentsline {subsubsection}{\numberline {2.2.2}Development process with GIT branches}{12}
+\contentsline {subsubsection}{\numberline {2.2.3}Collaborative working with GIT repositories}{15}
+\contentsline {section}{\numberline {3}Workspace}{19}
+\contentsline {subsection}{\numberline {3.1}Workspace organization}{19}
+\contentsline {subsubsection}{\numberline {3.1.1}Overview}{19}
+\contentsline {subsubsection}{\numberline {3.1.2}Installing binary packages in the workspace}{20}
+\contentsline {subsection}{\numberline {3.2}Workspace repository}{21}
+\contentsline {part}{II\hspace {1em}Usage}{22}
+\contentsline {section}{\numberline {4}Work-flow management with git}{22}
+\contentsline {subsection}{\numberline {4.1}Installing Workspace and Packages}{22}
+\contentsline {subsubsection}{\numberline {4.1.1}Getting a workspace}{22}
+\contentsline {subsubsection}{\numberline {4.1.2}Adding packages to the workspace}{24}
+\contentsline {paragraph}{Creating a new package:}{24}
+\contentsline {paragraph}{Using existing packages:}{25}
+\contentsline {subsubsection}{\numberline {4.1.3}Installing other required packages in the workspace}{26}
+\contentsline {subsection}{\numberline {4.2}Collaborative package development}{27}
+\contentsline {subsubsection}{\numberline {4.2.1}Handling feature branches}{28}
+\contentsline {subsubsection}{\numberline {4.2.2}Integration of features}{29}
+\contentsline {paragraph}{Remarks:}{30}
+\contentsline {subsubsection}{\numberline {4.2.3}Releasing a Package Version}{30}
+\contentsline {paragraph}{Version tags handling}{30}
+\contentsline {paragraph}{Administrator's repositories}{31}
+\contentsline {subsubsection}{\numberline {4.2.4}Developing a hotfix}{32}
+\contentsline {section}{\numberline {5}Package development with CMake}{35}
+\contentsline {subsection}{\numberline {5.1}Package's root CMakeList.txt file}{36}
+\contentsline {subsubsection}{\numberline {5.1.1}General Meta-Information}{36}
+\contentsline {subsubsection}{\numberline {5.1.2}Dependencies with other packages}{38}
+\contentsline {subsubsection}{\numberline {5.1.3}Dealing with conditional dependencies}{39}
+\contentsline {subsection}{\numberline {5.2}Defining Library components}{41}
+\contentsline {subsubsection}{\numberline {5.2.1}Header libraries}{41}
+\contentsline {subsubsection}{\numberline {5.2.2}Static libraries}{43}
+\contentsline {subsubsection}{\numberline {5.2.3}Shared libraries}{44}
+\contentsline {subsection}{\numberline {5.3}Defining Application components}{45}
+\contentsline {subsubsection}{\numberline {5.3.1}Standard applications}{45}
+\contentsline {subsubsection}{\numberline {5.3.2}Example applications}{46}
+\contentsline {subsubsection}{\numberline {5.3.3}Test units}{47}
+\contentsline {subsection}{\numberline {5.4}Generating API documentation}{48}
+\contentsline {subsubsection}{\numberline {5.4.1}Documenting headers}{49}
+\contentsline {subsubsection}{\numberline {5.4.2}Adding some content by modifying Doxygen configuration file}{50}
+\contentsline {subsubsection}{\numberline {5.4.3}CMakeList.txt of the share folder}{51}
+\contentsline {subsection}{\numberline {5.5}Configuring the package}{52}
+\contentsline {subsection}{\numberline {5.6}Controlling package build process}{53}
+\contentsline {paragraph}{Important:}{55}
+\contentsline {paragraph}{Important:}{55}
+\contentsline {subsection}{\numberline {5.7}Resulting binary package version}{55}
+\contentsline {section}{\numberline {6}Good practices}{57}
+\contentsline {subsection}{\numberline {6.1}Structuring development with packages}{57}
+\contentsline {subsubsection}{\numberline {6.1.1}Overview}{57}
+\contentsline {subsubsection}{\numberline {6.1.2}General guideline applied to packages}{57}
+\contentsline {subsubsection}{\numberline {6.1.3}Guideline relative to developed functionalities}{58}
+\contentsline {subsection}{\numberline {6.2}Conventions}{59}
+\contentsline {subsubsection}{\numberline {6.2.1}Files and folders naming convention}{59}
+\contentsline {subsubsection}{\numberline {6.2.2}C/C++ objects naming convention}{60}
+\contentsline {subsubsection}{\numberline {6.2.3}C/C++ coding guideline}{60}
+\contentsline {section}{\numberline {7}PID cmake functions API}{65}
+\contentsline {subsection}{\numberline {7.1}declare\_PID\_Package}{65}
+\contentsline {subsection}{\numberline {7.2}set\_PID\_Package\_Version}{65}
+\contentsline {subsection}{\numberline {7.3}add\_PID\_Package\_Author}{66}
+\contentsline {subsection}{\numberline {7.4}add\_PID\_Package\_Reference}{66}
+\contentsline {subsection}{\numberline {7.5}declare\_PID\_Package\_Dependency}{67}
+\contentsline {subsection}{\numberline {7.6}build\_PID\_Package}{68}
+\contentsline {subsection}{\numberline {7.7}declare\_PID\_Component}{68}
+\contentsline {subsection}{\numberline {7.8}declare\_PID\_Component\_Dependency}{69}
+\contentsline {section}{\numberline {8}Examples}{72}
+\contentsline {subsection}{\numberline {8.1}Package the-testpack-a}{72}
+\contentsline {subsubsection}{\numberline {8.1.1}Root CMakeList.txt}{72}
+\contentsline {subsubsection}{\numberline {8.1.2}Libraries}{73}
+\contentsline {paragraph}{Source code of lib-a library}{74}
+\contentsline {paragraph}{Source code of lib-x library}{75}
+\contentsline {paragraph}{Source code of lib-b-sh library}{77}
+\contentsline {subsubsection}{\numberline {8.1.3}Applications}{79}
+\contentsline {subsection}{\numberline {8.2}Package the-testpack-b}{79}
+\contentsline {subsubsection}{\numberline {8.2.1}Root CMakeList.txt}{79}
+\contentsline {subsubsection}{\numberline {8.2.2}Libraries}{81}
+\contentsline {paragraph}{shared code between lib-y and lib-y-bis libraries}{82}
+\contentsline {paragraph}{shared code between lib-c-sh and lib-c-st libraries}{84}
+\contentsline {subsubsection}{\numberline {8.2.3}Applications}{86}
+\contentsline {subsection}{\numberline {8.3}Licenses}{88}
