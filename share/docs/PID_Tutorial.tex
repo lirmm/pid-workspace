@@ -13,7 +13,7 @@
         \vskip3pt
         \large An integrated software development process
         	\vskip3pt
-        	\large Tutorial Document
+        	\large Users Document
     \end{minipage}
 }
 
@@ -717,7 +717,7 @@ The whole package development is organized and described with cmake, and the CMa
 \item the CMakeList.txt file contained in the \textbf{share} folder defines additional files to install, like configuration files used by libraries and/or applications (if any), documents, etc.
 \end{itemize}
 
-Each of these CMakeList.txt files must follow a predefined pattern. This pattern in mainly influenced by the use of PID specific CMake functions. The following subsections present examples on how to use these functions together with more classical CMake code in order to completely define a PID package.
+Each of these CMakeList.txt files must follow a predefined pattern. This pattern is mainly influenced by the use of PID specific CMake functions. The following subsections present examples on how to use these functions together with more classical CMake code in order to completely define a PID package.
 
 \subsection{Package's root CMakeList.txt file}
 \label{sec:rootCMake}
@@ -1491,9 +1491,228 @@ With PID there are few functions to use to precisely declare the content of a pa
 \textbf{Constraints}: Depending of the <type> of the component this function must be called in the adequate CMakeList.txt file (either in the \textbf{src}, \textbf{apps} or \textbf{test} folders. It must be called after the call to declare\_PID\_Component applied to the same declared component\\
 \textbf{Effect}: this function is used to define a dependency between a component in the current package and another component (headers, static or shared library), either an external component or a PID component. This will configure the build process for the component binary (if any).
 
+\pagebreak
+
 \section{Examples}
 \label{sec:Examples}
 
+\subsection{Package the-testpack-b}
+
+\subsubsection{Root CMakeList.txt}
+
+\begin{verbatim}
+PROJECT(the-testpack-b)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
+set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/../.. 
+	CACHE PATH "root of the packages workspace directory")
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+include(Package_Definition)
+
+declare_PID_Package(	
+   AUTHOR       Robin Passama 
+   INSTITUTION  LIRMM 
+   YEAR         2013 
+   LICENSE      CeCILL
+   ADDRESS      git@idh.lirmm.fr:perso/passama/the-testpack-b.git
+   DESCRIPTION  test package B for PID
+)
+
+set_PID_Package_Version(1 1)
+
+# adding some binary packages references
+add_PID_Package_Reference(	
+     BINARY VERSION 0 1 0 SYSTEM linux URL 	
+http://lirmm.lirmm.fr/FileX/get?auto=1&k=rfYTf1gkpI5XtEpQWVA
+http://lirmm.lirmm.fr/FileX/get?auto=1&k=oMyg4JVeeKYWpqwEFxE)
+
+add_PID_Package_Reference(
+     BINARY VERSION 1 1 SYSTEM linux URL 	
+http://lirmm.lirmm.fr/FileX/get?auto=1&k=DYt2j35Kw8ozOgHfoVA
+http://lirmm.lirmm.fr/FileX/get?auto=1&k=zEx02N4KWfzDWPTxiO)
+
+
+# from here we manage packages dependencies #
+find_package (Boost REQUIRED) #system library
+find_package (the-testpack-a 1.0 REQUIRED lib-b-sh lib-x)
+
+if(NOT Boost_FOUND)
+   message("FATAL_ERROR Boost has not been found 
+            -> impossible to build ${PROJECT_NAME} package")
+	return()
+endif()
+
+if(Boost_DIR-NOTFOUND)
+	set(BOOST_ROOT /usr)
+endif()
+
+declare_PID_Package_Dependency(
+    PACKAGE Boost 
+    EXTERNAL ${BOOST_ROOT} 
+    VERSION "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.
+${Boost_SUBMINOR_VERSION}")
+
+declare_PID_Package_Dependency (
+   PACKAGE the-testpack-a
+   PID VERSION 1 0 
+   COMPONENTS lib-b-sh lib-x)
+
+build_PID_Package()
+
+\end{verbatim}
+
+The package the-testpack-b (version 1.1) requires the Boost external package and the package the-testpack-a (version 1.0). It defines URL where to find binary package version relocatable archive using the \texttt{add\_PID\_Package\_Reference} function.
+
+\subsubsection{Libraries}
+
+Libraries source code is contained in \textbf{include} and \textbf{src} sub-folders of the package. The CMakeList.txt file of the \textbf{src} folder declare available libraries:
+
+\begin{verbatim}
+#libY -> dependency with libX
+declare_PID_Component(HEADER_LIB NAME lib-y DIRECTORY lib_y)
+declare_PID_Component_Dependency (COMPONENT lib-y EXPORT 
+DEPEND lib-x PACKAGE the-testpack-a
+EXPORTED_DEFINITIONS USE_EXTERNAL_LIB_X)
+
+#libYBis -> dependency with libX
+declare_PID_Component(HEADER_LIB NAME lib-y-bis DIRECTORY lib_y
+EXPORTED_DEFINITIONS NUSE_EXTERNAL_LIB_X)
+
+#libC shared -> dependency with libY
+declare_PID_Component(SHARED_LIB NAME lib-c-sh DIRECTORY lib_c
+INTERNAL DEFINITIONS A_VERY_SPECIFIC_IMPLEM)
+declare_PID_Component_Dependency(COMPONENT lib-c-sh EXTERNAL Boost 
+INCLUDE_DIRS <Boost>/include)
+declare_PID_Component_Dependency(COMPONENT lib-c-sh EXPORT 
+DEPEND lib-y)
+
+
+#libC static -> dependency with libY
+declare_PID_Component(STATIC_LIB NAME lib-c-st DIRECTORY lib_c
+INTERNAL	 DEFINITIONS NA_VERY_SPECIFIC_IMPLEM)
+declare_PID_Component_Dependency(COMPONENT lib-c-st EXTERNAL Boost 
+INCLUDE_DIRS <Boost>/include)
+declare_PID_Component_Dependency(COMPONENT lib-c-st EXPORT 
+DEPEND lib-y-bis)
+\end{verbatim}
+
+The declared libraries are:
+\begin{itemize}
+\item \textit{lib-y} a header library, whose header files are in the \textbf{lib\_y} sub-folder of the \textbf{include} folder.
+\item \textit{lib-y-bis} a header library, whose header files are the same as those of \textit{lib-y} (same folder used), but whose definitions used are different (thus modifying the behaviour of the library).
+\item \textit{lib-c-sh} a shared library, whose header files are in the \textbf{lib\_c} sub-folder of the \textbf{include} folder, and whose source files are in the \textbf{lib\_c} sub-folder of the \textbf{src} folder.
+\item \textit{lib-c-st} a static library based on the same source code that the \textit{lib-c-sh} library (same folders) but with different definitions and dependencies and built a different way (as an archive instead of a dynamic object).
+\end{itemize}
+
+\paragraph{shared code between lib-y and lib-y-bis libraries}
+The folder \texttt{<package root>/include/lib\_y} contains a header file named \textit{libY.h} whose content is: 
+\begin{verbatim}
+#ifndef LIBY_INCLUDE
+#define LIBY_INCLUDE
+#include <stdio.h>
+
+#ifdef USE_EXTERNAL_LIB_X
+#include <libX.h>
+typedef struct{
+    LibXType onetwo;
+    unsigned char three; char four;
+    unsigned long five;
+} LibYType;
+#else
+typedef struct{
+    char tutu [256];
+    unsigned char tata[12];
+    unsigned char three;
+    char four; unsigned long five;
+} LibYType;
+#endif
+
+typedef LibYType YBuffer[10];
+void liby_print(YBuffer yb){
+    for (unsigned int i = 0; i < 10;i++){
+#ifdef USE_EXTERNAL_LIB_X
+    #ifdef USE_LIBX_PRINT
+        libx_print(yb[i].onetwo);
+    #else 
+        #ifdef USE_LIBA_FOR_COMPUTING
+        libx_print_with_liba(&yb[i].onetwo);
+        #else
+           #error "NO IMPLEMENTATION AVAILABLE FOR LIBX !!!"
+        #endif
+     #endif
+	     printf("three : %d, four = %c, five : %lu\n", 
+	     yb[i].three, yb[i].four, yb[i].five);
+#else
+    printf("tutu : %s, tata : %s, three : %d, four = %c, 
+    five : %lu\n", yb[i].tutu, yb[i].tata, yb[i].three, 
+    yb[i].four, yb[i].five);
+#endif
+    }
+}
+#endif
+\end{verbatim}
+As reader can notice, depending on the value of the \texttt{USE\_EXTERNAL\_LIB\_X} preprocessor variable, this code will have different behaviours. It will notably condition the use of another library \textit{lib-x} supposed to be defined in another package, because it condition the \texttt{\#include<libX.h>} directive. In CMakeList.txt, the \textit{lib-y} header library component defines this preprocessor variable while the \textit{lib-y-bis} header library component undefines it:
+\begin{itemize}
+\item when \texttt{USE\_EXTERNAL\_LIB\_X} is defined it forces the use of a dependency to another component \textit{lib-x} of another package \textit{the-testpack-a}. When this dependency is declared the \texttt{EXPORTED\_DEFINITION} keyword is used to say that the preprocessor variable is defined in the interface (a header file) of \textit{lib-y}. In this case the \textit{lib-x} component is exported (use of \texttt{EXPORT} keyword in dependency declaration) since it is contained in the interface (a header file) of the \textit{lib-y} component.
+\item  when \texttt{USE\_EXTERNAL\_LIB\_X} is not defined (using \texttt{NUSE\_EXTERNAL\_LIB\_X} to negate it) the dependency to lib-x component is not defined (no \texttt{\#include<libX.h>} directive). Consequently the \texttt{EXPORTED\_DEFINITION} keyword is used directly into the \texttt{declare\_PID\_Component} function (see declaration of \textit{lib-y-bis}). Indeed, this preprocessor definition cannot be attached to a particular dependency (no dependency declared for \textit{lib-y-bis}).
+\end{itemize}
+This way we can associate different component to the same source code by playing on preprocessor variables. since these definition are exported they can be used by libraries that are using either version of this code (\textit{lib-y} or \textit{lib-y-bis}). For instance, we suppose that the \textit{lib-x} library also exports some preprocessor variable definitions, the same way as \textit{lib-y}: \texttt{USE\_LIBX\_PRINT} and \texttt{USE\_LIBA\_FOR\_COMPUTING}. The behaviour of \textit{lib-y} is conditional whether the preprocessor variable of \textit{lib-x} that has been defined by the component.
+
+\paragraph{shared code between lib-c-sh and lib-c-st libraries}
+The \texttt{<package root>/include/lib\_c} folder contains a header file named \textit{libC.h} whose content is: 
+\begin{verbatim}
+#ifndef LIBC_INCLUDE
+#define LIBC_INCLUDE
+
+#define LIB_C_CONST_VALUE 10.0256
+extern "C"{
+#include <libY.h> 
+}
+void libc_function1(YBuffer);
+void libc_function2(YBuffer);
+
+#endif
+\end{verbatim}
+The folder \texttt{<package root>/src/lib\_c} contains a source file named \textit{code1.cc} whose content is: 
+\begin{verbatim}
+
+#include <libC.h>
+#include <stdio.h>
+#include <boost/math/special_functions/factorials.hpp>
+
+void libc_function1(YBuffer data){
+    liby_print(data);
+    double res = boost::math::factorial<double>(data[0].five);
+    printf("factorial = %lf, with factor = %lf\n", res, 
+            res*LIB_C_CONST_VALUE);
+}
+
+void libc_function2(YBuffer data){
+#ifdef A_VERY_SPECIFIC_IMPLEM
+    printf("SPECIFIC libc_function2 !!!\n");
+    liby_print(data);
+#else
+    printf("STANDARD libc_function2 !!!\n");
+    liby_print(data);
+#endif
+}
+\end{verbatim}
+
+As readers can notice the interface (header files) is the same for both libraries \textit{lib-c-sh} and \textit{lib-c-st}: there is no use of a  preprocessor variable in \textit{libC.h} to differentiate alternative signatures. Apart from the nature of their resulting binary (archive of objects or dynamic object) their main difference is an alternative implementation of the function \texttt{libc\_function2}, using preprocessor variable \texttt{A\_VERY\_SPECIFIC\_IMPLEM} (in \textit{code1.cc}). This variable is defined by \textit{lib-c-sh} and undefined by \textit{lib-c-st} with the \texttt{INTERNAL} keyword (see CMakeList.txt) since it applies only to the implementation of both component, not their interface (otherwise it would be defined with the \texttt{EXPORTED\_DEFINITION} keyword, like for \textit{lib-y} and \textit{lib-y-bis}). 
+
+Both libraries have a dependency with the external Boost package (they need to know where are the include folders of that package) and they each define an internal dependency:
+\begin{itemize}
+\item \textit{lib-c-sh} depends on \textit{lib-y}, consequently \texttt{USE\_EXTERNAL\_LIB\_X} will be defined (by transitivity).
+\item \textit{lib-c-st} depends on \textit{lib-y-bis}, consequently \texttt{USE\_EXTERNAL\_LIB\_X} will be undefined (by transitivity).
+\end{itemize}
+Finally both libraries will have slightly different behaviours depending on either (1) their local implementation and (2) their dependencies.
+
+Finally readers can also notice that dependencies are exported or not:
+\begin{itemize}
+\item Dependency to external Boost package is not exported since the \texttt{\#include <boost/math/special\_functions/factorials.hpp>} directive is only in the \textit{code1.cc} source file.
+\item Dependencies to \textit{lib-y} or \textit{lib-y-bis} are exported since the \texttt{\#include <libY.h>} directive is in the interface (\textit{libC.h}) of both libraries.
+\end{itemize}
+
+\subsubsection{Applications}
 
 
 

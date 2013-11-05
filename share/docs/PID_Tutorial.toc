@@ -67,7 +67,13 @@
 \contentsline {subsection}{\numberline {7.6}build\_PID\_Package}{67}
 \contentsline {subsection}{\numberline {7.7}declare\_PID\_Component}{67}
 \contentsline {subsection}{\numberline {7.8}declare\_PID\_Component\_Dependency}{68}
-\contentsline {section}{\numberline {8}Examples}{70}
-\contentsline {subsection}{\numberline {8.1}Licensing packages}{71}
-\contentsline {subsection}{\numberline {8.2}Categorizing packages}{71}
-\contentsline {subsubsection}{\numberline {8.2.1}Working with categories}{73}
+\contentsline {section}{\numberline {8}Examples}{71}
+\contentsline {subsection}{\numberline {8.1}Package the-testpack-b}{71}
+\contentsline {subsubsection}{\numberline {8.1.1}Root CMakeList.txt}{71}
+\contentsline {subsubsection}{\numberline {8.1.2}Libraries}{72}
+\contentsline {paragraph}{shared code between lib-y and lib-y-bis libraries}{73}
+\contentsline {paragraph}{shared code between lib-c-sh and lib-c-st libraries}{75}
+\contentsline {subsubsection}{\numberline {8.1.3}Applications}{77}
+\contentsline {subsection}{\numberline {8.2}Licensing packages}{78}
+\contentsline {subsection}{\numberline {8.3}Categorizing packages}{78}
+\contentsline {subsubsection}{\numberline {8.3.1}Working with categories}{80}
