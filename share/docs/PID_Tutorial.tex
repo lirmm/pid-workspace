@@ -1552,7 +1552,6 @@ declare_PID_Component_Dependency(COMPONENT lib-x EXPORT DEPEND lib-a
    EXPORTED_DEFINITIONS USE_LIBA_FOR_COMPUTING)
 
 declare_PID_Component(SHARED_LIB NAME lib-b-sh DIRECTORY lib_b
-    INTERNAL DEFINITIONS NCOMMON_COMPLETE_VALUES 
     INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/common_code)
 declare_PID_Component_Dependency(COMPONENT lib-b-sh 
     EXPORT DEPEND lib-x
@@ -1765,8 +1764,9 @@ The \textit{lib-b-sh} is a shared library whose declaration follows the same rul
 \item header files contained in these additional include folders can be included in source code located inside any sub-folder of the \textbf{src} folder. In other word, it is shared between very different source code. Most of time it is used to provide common definition and constants between different components.
 \end{itemize}
 
-
 \subsubsection{Applications}
+
+ICI TODO
 
 \subsection{Package the-testpack-b}
 
@@ -2047,6 +2047,35 @@ As readers can notice source code contains alternative implementations the same 
 \end{itemize}
 
 Both applications define a dependency to \textit{lib-b-sh} library of the package \textit{the-testpack-a}. \textit{app-b1-evolved} defines an additional dependency to \textit{lib-c-sh}. The usage of this library is conditional (in source code) depending on the \texttt{EVOLVED\_IMPLEM} preprocessor variable (that guards the \texttt{\#include<libC.h>} directive). For \textit{app-b1-evolved}, call to \texttt{declare\_PID\_Component\_Dependency} so uses the \texttt{INTERNAL\_DEFINITIONS} keyword to define \texttt{EVOLVED\_IMPLEM}.
+
+\subsection{Discussion on packages}
+
+As reader can notice with previous examples, the complexity to declare component can be very high notably due to preprocessor variables definitions. This would be even worst if PID weren't rationalize the declaration of components notably at the moment when developers would use these libraries. For instance, PID completely automates the management of code dependencies transitivity, at compile-time,  link time and run-time.
+
+Nevertheless we discourage to overuse preprocessor variables inside library interfaces, developers should avoid their use them as often as possible. Shortly, keep it as simple as possible.
+
+To clarify the use of preprocessor definitions we propose the following strategy:
+\begin{itemize}
+\item when a preprocessor variable is to be used only in the implementation (source code) of the component (does not appear in its interface):
+\begin{itemize}
+\item if it conditions the use of a library (e.g. if it is used in a guard for a \texttt{\#include} directive whose target is an header file of another library) then it should be declared using \texttt{INTERNAL\_DEFINITIONS} keyword within a call to \texttt{declare\_PID\_Component\_Dependency}.
+\item otherwise it should be declared using \texttt{INTERNAL DEFINITIONS} keywords within a call to \texttt{declare\_PID\_Component}.
+\end{itemize}
+\item when a preprocessor variable is used in the interface (header files) of the component (whether it appears in its source code or not):
+\begin{itemize}
+\item if it conditions the use of a library, it is declared using the keyword \texttt{EXPORTED\_DEFINITIONS} in \texttt{declare\_PID\_Component\_Dependency}.
+\item otherwise it should be declared using \texttt{EXPORTED\_DEFINITIONS} keyword within a call to \texttt{declare\_PID\_Component}.
+\end{itemize}
+\end{itemize}
+
+We also propose additional good practices:
+\begin{itemize}
+\item By default, in the interface of a library (its header files), all preprocessor variables must be \textbf{either defined or explicitly undefined}. Explicitly undefining a preprocessor variable is achieved using the \texttt{N<variable name>} value. For instance, \texttt{NCOMMON\_COMPLETE\_VALUES} definition is used in component lib-b-sh declaration to undefine preprocessor macro \texttt{COMMON\_COMPLETE\_VALUES}.
+\item As an exception of previous rule, preprocessor variables that calling context is allowed to \textbf{define/explicitly undefine}, must be let undefined in component declaration function. They will be defined or explicitly undefined by components using this library thanks to the \texttt{IMPORTED\_DEFINITIONS} keyword. Take care at this later option since it may cause a lot of problems if misused. Notably, such a preprocessor variable \textbf{should never be used to modify the interface of the library}, except if the implementation of the modified part is in the interface (always the case for header libraries).
+\item For "private" definitions (used in the source code and not in the interface of the library) there is no particular rules.
+\end{itemize}
+
+\pagebreak
 
 \subsection{Licenses}
 \label{sec:licenses}

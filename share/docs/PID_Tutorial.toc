@@ -81,4 +81,5 @@
 \contentsline {paragraph}{shared code between lib-y and lib-y-bis libraries}{82}
 \contentsline {paragraph}{shared code between lib-c-sh and lib-c-st libraries}{84}
 \contentsline {subsubsection}{\numberline {8.2.3}Applications}{86}
-\contentsline {subsection}{\numberline {8.3}Licenses}{88}
+\contentsline {subsection}{\numberline {8.3}Discussion on packages}{88}
+\contentsline {subsection}{\numberline {8.4}Licenses}{90}
