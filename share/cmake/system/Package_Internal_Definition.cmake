@@ -255,7 +255,7 @@ endfunction(add_Reference)
 ###
 function(shadow_Repository_Address url)
 	set(${PROJECT_NAME}_ADDRESS ${url} CACHE INTERNAL "")
-endfunction(add_Reference)
+endfunction(shadow_Repository_Address)
 
 ###
 function(add_Category category_spec)
