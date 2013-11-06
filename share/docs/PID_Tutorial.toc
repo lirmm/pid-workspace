@@ -75,11 +75,11 @@
 \contentsline {paragraph}{Source code of lib-x library}{75}
 \contentsline {paragraph}{Source code of lib-b-sh library}{77}
 \contentsline {subsubsection}{\numberline {8.1.3}Applications}{79}
-\contentsline {subsection}{\numberline {8.2}Package the-testpack-b}{79}
-\contentsline {subsubsection}{\numberline {8.2.1}Root CMakeList.txt}{79}
-\contentsline {subsubsection}{\numberline {8.2.2}Libraries}{81}
-\contentsline {paragraph}{shared code between lib-y and lib-y-bis libraries}{82}
-\contentsline {paragraph}{shared code between lib-c-sh and lib-c-st libraries}{84}
-\contentsline {subsubsection}{\numberline {8.2.3}Applications}{86}
-\contentsline {subsection}{\numberline {8.3}Discussion on packages}{88}
-\contentsline {subsection}{\numberline {8.4}Licenses}{90}
+\contentsline {subsection}{\numberline {8.2}Package the-testpack-b}{81}
+\contentsline {subsubsection}{\numberline {8.2.1}Root CMakeList.txt}{81}
+\contentsline {subsubsection}{\numberline {8.2.2}Libraries}{82}
+\contentsline {paragraph}{shared code between lib-y and lib-y-bis libraries}{83}
+\contentsline {paragraph}{shared code between lib-c-sh and lib-c-st libraries}{85}
+\contentsline {subsubsection}{\numberline {8.2.3}Applications}{87}
+\contentsline {subsection}{\numberline {8.3}Discussion on packages}{89}
+\contentsline {subsection}{\numberline {8.4}Licenses}{91}

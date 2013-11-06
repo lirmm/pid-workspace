@@ -1653,12 +1653,10 @@ void libx_print(LibXType var){
 #ifdef USE_LIBA_FOR_COMPUTING
 #include <libA.h>
 void libx_print_with_liba(LibXType * var){
-	printf("libX print with LIBA since it is better !!\n");
 	liba_function1(&var->one);
 	liba_function3(var->two);
 }
 void libx_print_with_liba_again(LibXType * var){
-	printf("AGAIN libX print with LIBA since it is better !!\n");
 	liba_function2(var->one);
 	liba_function3(var->two);
 }
@@ -1766,7 +1764,51 @@ The \textit{lib-b-sh} is a shared library whose declaration follows the same rul
 
 \subsubsection{Applications}
 
-ICI TODO
+Applications source code is contained in \textbf{apps} folder of the package. The CMakeList.txt file of the \textbf{apps} folder declares available applications:
+\begin{verbatim}
+declare_PID_Component(APPLICATION NAME app-a-dyn DIRECTORY app_a)
+declare_PID_Component_Dependency	(COMPONENT app-a-dyn DEPEND lib-b-sh
+    INTERNAL_DEFINITIONS APP_A_CASE1)
+declare_PID_Component_Dependency(COMPONENT app-a-dyn 
+    LINKS SHARED ${CMAKE_THREAD_LIBS_INIT})
+\end{verbatim}
+
+It defines a single standard application named \textit{app-a-dyn} whose source code is placed in the \texttt{app\_a} sub folder of the \textbf{apps} folder. This later contains a unique file named \textit{app-a.c} that implements the executable:
+\begin{verbatim}
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <pthread.h>
+#include <time.h>
+#include <libB.h>
+
+pthread_t _thread;
+
+void* thread_function(void * args){
+#ifndef APP_A_CASE1
+	libb_function4();
+#else
+	libb_function1(libb_function2());
+	libb_function3();
+#endif
+	pthread_exit(NULL);
+}
+
+int main(int argc, char* argv[]){
+	if (pthread_create(&_thread, NULL, thread_function, NULL) < 0) {
+		printf("[ERROR] impossible to create the thread\n");
+		exit(0);
+	}
+	pthread_join(_thread, NULL);
+	return 0;	
+}
+\end{verbatim} 
+
+\textit{app-a-dyn} has two dependencies:
+\begin{itemize}
+\item it depends on \textit{lib-b-sh}. In the code, this is represented by the \texttt{\#include <libB.h>} directive. As readers can notice there is an alternative implementation in the  \texttt{thread\_function} implementation. \textit{app-a-dyn} is built with the alternative selected when \texttt{APP\_A\_CASE1} is defined (see \texttt{INTERNAL} \texttt{DEFINITIONS} in CMakeList.txt). Another application could use the other alternative by letting \texttt{APP\_A\_CASE1} undefined.
+\item it depends on system. The dependency declaration simply defines the used shared libraries using \texttt{LINK} \texttt{SHARED} keywords followed by libraries used. In the present example \texttt{\${CMAKE\_THREAD\_LIBS\_INIT}} is a CMake variable generate by the \texttt{find\_package} function call conating something like \texttt{-lpthread}.
+\end{itemize}
 
 \subsection{Package the-testpack-b}
 
