@@ -22,17 +22,13 @@ reset_All_Categories()
 foreach(a_package IN ITEMS ${ALL_AVAILABLE_PACKAGES})
 	classify_Package_Categories(${a_package})
 endforeach()
-# 5) printing categories
-set(MESSAGE_TO_PRINT "")
-print_categories(MESSAGE_TO_PRINT)
-set(CATEGORIES_MESSAGE "'${MESSAGE_TO_PRINT}'")
-message("${MESSAGE_TO_PRINT}")
+#5) registering categories
+write_Categories_File()
 
 #adding targets
 add_custom_target(list_categories
-	COMMAND ${CMAKE_COMMAND} -E  echo ${CATEGORIES_MESSAGE}
-
+	COMMAND ${CMAKE_COMMAND} -DREQUIRED_CATEGORY=$(name) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Categories.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-
 
 
