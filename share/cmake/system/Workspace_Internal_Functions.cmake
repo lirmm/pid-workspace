@@ -364,6 +364,19 @@ message("resolve_PID_Package ${package} ${version}")
 
 endfunction()
 
+###
+function(print_Available_Licenses)
+message("print_Available_Licenses")
+
+endfunction()
+
+
+###
+function(print_License_Info license)
+message("print_License_Info ${license}")
+
+endfunction()
+
 
 
 
