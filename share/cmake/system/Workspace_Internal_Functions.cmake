@@ -309,6 +309,7 @@ endif()
 set(${RESULT} TRUE PARENT_SCOPE)
 endfunction()
 
+
 ###
 function(print_Accessible_Binary package version system)
 set(printed_string "		${system}:")
@@ -342,3 +343,27 @@ else()
 endif()
 message("${printed_string}")
 endfunction()
+
+###
+function(create_PID_Package package)
+message("create_PID_Package ${package}")
+
+endfunction()
+
+
+###
+function(deploy_PID_Package package version)
+message("deploy_PID_Package ${package} ${version}")
+
+endfunction()
+
+
+###
+function(resolve_PID_Package package version)
+message("resolve_PID_Package ${package} ${version}")
+
+endfunction()
+
+
+
+

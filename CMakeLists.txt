@@ -26,29 +26,27 @@ endforeach()
 write_Categories_File()
 
 #adding targets
-add_custom_target(list_categories
+add_custom_target(list
 	COMMAND ${CMAKE_COMMAND} -DREQUIRED_CATEGORY=$(name) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Categories.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-add_custom_target(package_info
+add_custom_target(info
 	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Package_Info.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-
-#FROM HERE TODO
-add_custom_target(deploy_package
+add_custom_target(deploy
 	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -DREQUIRED_VERSION=$(version) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Deploy_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-add_custom_target(resolve_package
-	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -DREQUIRED_VERSION=$(version) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Bind_PID_Package.cmake
+add_custom_target(resolve
+	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -DREQUIRED_VERSION=$(version) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Resolve_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-add_custom_target(create_package
+add_custom_target(create
 	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Create_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
