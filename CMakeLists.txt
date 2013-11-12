@@ -31,4 +31,19 @@ add_custom_target(list_categories
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+add_custom_target(package_info
+	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Package_Info.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+add_custom_target(deploy_package
+	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -DREQUIRED_VERSION=$(version) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Deploy_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+add_custom_target(resolve_package
+	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -DREQUIRED_VERSION=$(version) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Bind_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 

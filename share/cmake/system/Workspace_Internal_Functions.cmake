@@ -52,7 +52,7 @@ endif()
 endfunction()
 
 
-
+###
 function(write_Categories_File)
 set(file ${CMAKE_BINARY_DIR}/CategoriesInfo.cmake)
 file(WRITE ${file} "")
@@ -63,7 +63,7 @@ foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
 endforeach()
 endfunction()
 
-
+###
 function(write_Category_In_File category thefile)
 file(APPEND ${thefile} "set(${category}_CATEGORY_CONTENT ${${category}_CATEGORY_CONTENT} CACHE INTERNAL \"\")\n")
 if(${category}_CATEGORIES)
@@ -74,16 +74,17 @@ if(${category}_CATEGORIES)
 endif()
 endfunction()
 
-
-function(find_category containing_category searched_category RESULT)
+###
+function(find_category containing_category searched_category RESULT CAT_TO_CALL)
 string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${searched_category})
-if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => searching a specific subcateogry of a category
+if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => searching category into a specific "category path"
 	list(GET CATEGORY_STRING_CONTENT 0 ROOT_OF_CATEGORY)
 	list(GET CATEGORY_STRING_CONTENT 1 REMAINING_OF_CATEGORY)
 
-	if(NOT containing_category)#otherwise no specific constraint apply to the search
+	if(containing_category)#if the searched category must be found into a super category
 		list(FIND containing_category ${ROOT_OF_CATEGORY} INDEX)
 		if(INDEX EQUAL -1)
+			message("${ROOT_OF_CATEGORY} cannot be found in ${containing_category}	")
 			set(${RESULT} FALSE PARENT_SCOPE)
 			return()
 		endif()
@@ -93,16 +94,27 @@ if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => sea
 		return()
 	endif()
 	set(SUB_RESULT FALSE)
-	find_category("${ROOT_OF_CATEGORY}" ${REMAINING_OF_CATEGORY} SUB_RESULT)
+	set(SUB_CAT_TO_CALL "")
+	find_category("${${ROOT_OF_CATEGORY}_CATEGORIES}" "${REMAINING_OF_CATEGORY}" SUB_RESULT SUB_CAT_TO_CALL)
 	if(SUB_RESULT)
 		set(${RESULT} TRUE PARENT_SCOPE)
+		set(${CAT_TO_CALL} ${SUB_CAT_TO_CALL} PARENT_SCOPE)
 	else()
 		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 	
 else()#this is a simple category name, just testing of this category exists
+	if(containing_category)
+		list(FIND containing_category ${searched_category} INDEX)
+		if(INDEX EQUAL -1)
+			set(${RESULT} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+
 	if(${searched_category}_CATEGORIES OR ${searched_category}_CATEGORY_CONTENT)
 		set(${RESULT} TRUE PARENT_SCOPE)
+		set(${CAT_TO_CALL} ${searched_category} PARENT_SCOPE)
 	else()
 		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
@@ -110,6 +122,7 @@ endif()
 
 endfunction()
 
+###
 function(print_Category category number_of_tabs)
 set(PRINTED_VALUE "")
 set(RESULT_STRING "")
@@ -136,4 +149,141 @@ if(${category}_CATEGORIES)
 endif()
 endfunction()
 
+###
+function(print_Package_Info package)
+message("PACKAGE: ${package}")
+fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
+message("DESCRIPTION: ${descr_string}")
+message("LICENSE: ${${package}_LICENSE}")
+message("DEVELOPMENT DATES: ${${package}_YEARS}")
+message("REPOSITORY: ${${package}_ADDRESS}")
+print_Package_Contact(${package})
+message("AUTHORS:")
+foreach(author IN ITEMS ${${package}_AUTHORS_AND_INSTITUTIONS})
+	print_Author(${author})
+endforeach()
+message("CATEGORIES:")
+foreach(category IN ITEMS ${${package}_CATEGORIES})
+	message("	${category}")
+endforeach()
+message("AVAILABLE BINARIES:")
+print_Package_Binaries(${package})
+endfunction()
 
+
+###
+function(extract_All_Words name_with_underscores all_words_in_list)
+set(res "")
+string(REPLACE "_" ";" res "${name_with_underscores}")
+set(${all_words_in_list} ${res} PARENT_SCOPE)
+endfunction()
+
+###
+function(fill_List_Into_String input_list res_string)
+set(res "")
+foreach(element IN ITEMS ${input_list})
+	set(res "${res} ${element}")
+endforeach()
+string(STRIP "${res}" res_finished)
+set(${res_string} ${res_finished} PARENT_SCOPE)
+endfunction()
+
+
+###
+function(print_Author author)
+string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
+list(GET author_institution 0 AUTHOR_NAME)
+list(GET author_institution 1 INSTITUTION_NAME)
+extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
+extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
+fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+if(NOT INSTITUTION_STRING STREQUAL "")
+	message("	${AUTHOR_STRING}:  ${INSTITUTION_STRING}")
+else()
+	message("	${AUTHOR_STRING}")
+endif()
+endfunction()
+
+###
+function(print_Package_Contact package)
+extract_All_Words("${${package}_MAIN_AUTHOR}" AUTHOR_ALL_WORDS)
+extract_All_Words("${${package}_MAIN_INSTITUTION}" INSTITUTION_ALL_WORDS)
+fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+if(NOT INSTITUTION_STRING STREQUAL "")
+	message("CONTACT: ${AUTHOR_STRING} - ${INSTITUTION_STRING}")
+else()
+	message("CONTACT: ${AUTHOR_STRING}")
+endif()
+endfunction()
+
+
+###
+function(print_Package_Binaries package)
+foreach(version IN ITEMS ${${package}_REFERENCES})
+	message("	${version}: ")
+	foreach(system IN ITEMS ${${package}_REFERENCE_${version}})
+		print_Accessible_Binary(${package} ${version} ${system})
+	endforeach()
+endforeach()
+endfunction()
+
+
+###
+function(test_binary_download package version system RESULT)
+set(download_url ${${package}_REFERENCE_${version}_${system}})
+set(download_url_dbg ${${package}_REFERENCE_${version}_${system}})
+set(destination ${CMAKE_BINARY_DIR}/temp.zip)
+set(res "")
+file(DOWNLOAD ${download_url} ${destination} STATUS res TIMEOUT 1)#waiting one second
+list(GET res 0 numeric_error)
+list(GET res 1 status)
+file(REMOVE ${destination})
+if(NOT numeric_error EQUAL 0)
+	set(${RESULT} FALSE PARENT_SCOPE)
+	return()
+endif()
+file(DOWNLOAD ${download_url_dbg} ${destination} STATUS res TIMEOUT 1)#waiting one second
+list(GET res 0 numeric_error)
+list(GET res 1 status)
+file(REMOVE ${destination})
+if(NOT numeric_error EQUAL 0)
+	set(${RESULT} FALSE PARENT_SCOPE)
+	return()
+endif()
+#reealse and debug version are accessible => OK
+set(${RESULT} TRUE PARENT_SCOPE)
+endfunction()
+
+###
+function(print_Accessible_Binary package version system)
+set(printed_string "		${system}:")
+#1) testing if binary can be installed
+if(UNIX AND NOT APPLE) 
+	if("${system}" STREQUAL "linux")
+		test_binary_download(${package} ${version} ${system} RESULT)
+		if(RESULT)
+			set(printed_string "${printed_string} INSTALLABLE")
+		else()
+			set(printed_string "${printed_string} NOT DOWNLOADABLE")
+		endif()
+	else()
+		set(printed_string "${printed_string} NOT INSTALLABLE")
+	endif()
+elseif(APPLE)
+	if("${system}" STREQUAL "macosx")
+		test_binary_download(${package} ${version} ${system} RESULT)
+		if(RESULT)
+			set(printed_string "${printed_string} INSTALLABLE")
+		else()
+			set(printed_string "${printed_string} NOT DOWNLOADABLE")
+		endif()
+	else()
+		set(printed_string "${printed_string} NOT INSTALLABLE")
+	endif()
+else()
+	set(printed_string "${printed_string} NOT INSTALLABLE")
+endif()
+message("${printed_string}")
+endfunction()
