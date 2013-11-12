@@ -36,6 +36,8 @@ add_custom_target(package_info
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+
+#FROM HERE TODO
 add_custom_target(deploy_package
 	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -DREQUIRED_VERSION=$(version) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Deploy_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -46,4 +48,8 @@ add_custom_target(resolve_package
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+add_custom_target(create_package
+	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Create_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
 

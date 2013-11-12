@@ -1,7 +1,7 @@
 #### referencing package the-testpack-b mode ####
 set(the-testpack-b_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
 set(the-testpack-b_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
-set(the-testpack-b_AUTHORS_AND_INSTITUTIONS _Robin_Passama(_LIRMM) CACHE INTERNAL "")
+set(the-testpack-b_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
 set(the-testpack-b_DESCRIPTION test;package;B;for;PID CACHE INTERNAL "")
 set(the-testpack-b_YEARS 2013 CACHE INTERNAL "")
 set(the-testpack-b_LICENSE CeCILL CACHE INTERNAL "")

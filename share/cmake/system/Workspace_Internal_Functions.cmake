@@ -162,12 +162,16 @@ message("AUTHORS:")
 foreach(author IN ITEMS ${${package}_AUTHORS_AND_INSTITUTIONS})
 	print_Author(${author})
 endforeach()
-message("CATEGORIES:")
-foreach(category IN ITEMS ${${package}_CATEGORIES})
-	message("	${category}")
-endforeach()
-message("AVAILABLE BINARIES:")
-print_Package_Binaries(${package})
+if(${package}_CATEGORIES)
+	message("CATEGORIES:")
+	foreach(category IN ITEMS ${${package}_CATEGORIES})
+		message("	${category}")
+	endforeach()
+endif()
+if(${package}_REFERENCES)
+	message("AVAILABLE BINARIES:")
+	print_Package_Binaries(${package})
+endif()
 endfunction()
 
 
@@ -199,7 +203,7 @@ extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
-	message("	${AUTHOR_STRING}:  ${INSTITUTION_STRING}")
+	message("	${AUTHOR_STRING} - ${INSTITUTION_STRING}")
 else()
 	message("	${AUTHOR_STRING}")
 endif()
@@ -231,28 +235,77 @@ endfunction()
 
 
 ###
+function(generate_Binary_Package_Name package version system mode RES_FILE RES_FOLDER)
+if(system STREQUAL "linux")
+	set(system_string Linux)
+elseif(system STREQUAL "macosx")
+	#TODO)
+endif()
+if(mode MATCHES Debug)
+	set(mode_string "-dbg")
+else()
+	set(mode_string "")
+endif()
+
+set(${RES_FILE} "${package}-${version}${mode_string}-${system_string}.zip" PARENT_SCOPE)
+set(${RES_FOLDER} "${package}-${version}${mode_string}-${system_string}" PARENT_SCOPE)
+endfunction(generate_Binary_Package_Name)
+
+###
 function(test_binary_download package version system RESULT)
+
+#testing release archive
 set(download_url ${${package}_REFERENCE_${version}_${system}})
-set(download_url_dbg ${${package}_REFERENCE_${version}_${system}})
-set(destination ${CMAKE_BINARY_DIR}/temp.zip)
+generate_Binary_Package_Name(${package} ${version} ${system} Release RES_FILE RES_FOLDER)
+set(destination ${CMAKE_BINARY_DIR}/${RES_FILE})
 set(res "")
-file(DOWNLOAD ${download_url} ${destination} STATUS res TIMEOUT 1)#waiting one second
+file(DOWNLOAD ${download_url} ${destination} STATUS res)#waiting one second
 list(GET res 0 numeric_error)
 list(GET res 1 status)
-file(REMOVE ${destination})
-if(NOT numeric_error EQUAL 0)
+if(NOT numeric_error EQUAL 0)#testing if connection can be established
 	set(${RESULT} FALSE PARENT_SCOPE)
 	return()
 endif()
-file(DOWNLOAD ${download_url_dbg} ${destination} STATUS res TIMEOUT 1)#waiting one second
-list(GET res 0 numeric_error)
-list(GET res 1 status)
-file(REMOVE ${destination})
-if(NOT numeric_error EQUAL 0)
+execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ${destination}
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	ERROR_VARIABLE error
+	OUTPUT_QUIET
+)
+file(REMOVE ${destination}) #removing archive file
+if(NOT error STREQUAL "")#testing if archive is valid
+	set(${RESULT} FALSE PARENT_SCOPE)
+	return()
+else()
+	file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/${RES_FOLDER})#cleaning (removing extracted folder)
+endif()
+
+
+#testing debug archive
+set(download_url_dbg ${${package}_REFERENCE_${version}_${system}_DEBUG})
+generate_Binary_Package_Name(${package} ${version} ${system} Debug RES_FILE RES_FOLDER)
+set(destination_dbg ${CMAKE_BINARY_DIR}/${RES_FILE})
+set(res_dbg "")
+file(DOWNLOAD ${download_url_dbg} ${destination_dbg} STATUS res_dbg)#waiting one second
+list(GET res_dbg 0 numeric_error_dbg)
+list(GET res_dbg 1 status_dbg)
+if(NOT numeric_error_dbg EQUAL 0)#testing if connection can be established
 	set(${RESULT} FALSE PARENT_SCOPE)
 	return()
 endif()
-#reealse and debug version are accessible => OK
+execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ${destination_dbg}
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	ERROR_VARIABLE error
+	OUTPUT_QUIET
+)
+file(REMOVE ${destination_dbg})#removing archive file
+if(NOT error STREQUAL "")#testing if archive is valid
+	set(${RESULT} FALSE PARENT_SCOPE)
+	return()
+else()
+	file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/${RES_FOLDER}) #cleaning (removing extracted folder)
+endif()
+
+#release and debug versions are accessible => OK
 set(${RESULT} TRUE PARENT_SCOPE)
 endfunction()
 
@@ -262,28 +315,30 @@ set(printed_string "		${system}:")
 #1) testing if binary can be installed
 if(UNIX AND NOT APPLE) 
 	if("${system}" STREQUAL "linux")
+		set(RESULT FALSE)
 		test_binary_download(${package} ${version} ${system} RESULT)
 		if(RESULT)
-			set(printed_string "${printed_string} INSTALLABLE")
+			set(printed_string "${printed_string} CAN BE INSTALLED")
 		else()
-			set(printed_string "${printed_string} NOT DOWNLOADABLE")
+			set(printed_string "${printed_string} CANNOT BE DOWNLOADED")
 		endif()
 	else()
-		set(printed_string "${printed_string} NOT INSTALLABLE")
+		set(printed_string "${printed_string} CANNOT BE INSTALLED")
 	endif()
 elseif(APPLE)
 	if("${system}" STREQUAL "macosx")
+		set(RESULT FALSE)
 		test_binary_download(${package} ${version} ${system} RESULT)
 		if(RESULT)
-			set(printed_string "${printed_string} INSTALLABLE")
+			set(printed_string "${printed_string} CAN BE INSTALLED")
 		else()
-			set(printed_string "${printed_string} NOT DOWNLOADABLE")
+			set(printed_string "${printed_string} CANNOT BE DOWNLOADED")
 		endif()
 	else()
-		set(printed_string "${printed_string} NOT INSTALLABLE")
+		set(printed_string "${printed_string} CANNOT BE INSTALLED")
 	endif()
 else()
-	set(printed_string "${printed_string} NOT INSTALLABLE")
+	set(printed_string "${printed_string} CANNOT BE INSTALLED")
 endif()
 message("${printed_string}")
 endfunction()
