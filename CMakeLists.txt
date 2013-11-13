@@ -15,7 +15,6 @@ foreach(a_ref_file IN ITEMS ${reference_files})
 	list(APPEND ALL_AVAILABLE_PACKAGES ${PACKAGE_NAME})
 	include(${a_ref_file})
 endforeach()
-message("available packages = ${ALL_AVAILABLE_PACKAGES}")
 # 3) resetting categories
 reset_All_Categories()
 # 4) extracting all available categories and classifying all packages in these categories
@@ -32,8 +31,8 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "info -- getting info on a given package using name=NAME_OF_PACKAGE argument."
 	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive. Use only name=NAME_OF_PACKAGE argument to deploy source repository or use in addition version=VERSION to deploy the specific binary version."
 	COMMAND ${CMAKE_COMMAND} -E echo "resolve -- resolving runtime dependencies of an already installed package. Use name=NAME_OF_PACKAGE and version=VERSION arguments to specify the target binary package."
-	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package. Use name=NAME_OF_PACKAGE to specify the name of the new package."
-	COMMAND ${CMAKE_COMMAND} -E echo "license -- Printing information on licenses or more precise information on a given license using name=NAME_OF_LICENSE argument."
+	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package. Use name=NAME_OF_PACKAGE to specify the name of the new package. Other optional arguments are: author, affiliation, license"
+	COMMAND ${CMAKE_COMMAND} -E echo "license -- Printing information on licenses or more precise information on a given license using name=NAME_OF_LICENSE argument or generating on standard output header comment for source files for a given package using package=NAME_OF_PACKAGE argument."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -63,7 +62,11 @@ add_custom_target(resolve
 
 ##creating a new package
 add_custom_target(create
-	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Create_PID_Package.cmake
+	COMMAND ${CMAKE_COMMAND} 	-DREQUIRED_PACKAGE=$(name) 
+					-DOPTIONAL_AUTHOR=$(author) 
+					-DOPTIONAL_INSTITUTION=$(affiliation)
+					-DOPTIONAL_LICENSE=$(license)
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Create_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 

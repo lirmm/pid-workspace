@@ -1,9 +1,0 @@
-<package name="<name of package>" address="address of the git repo"
-license="license used" version="version of the license">
-<description>
-A short description of what the package is doing.
-</description>
-<category name = "<classification of the package into category (one or more)>" />
-<author name="<authors names >" role="<author role>" institution="<institution for which the author works>" />
-</package>
-
