@@ -155,7 +155,7 @@ message("PACKAGE: ${package}")
 fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
 message("DESCRIPTION: ${descr_string}")
 message("LICENSE: ${${package}_LICENSE}")
-message("DEVELOPMENT DATES: ${${package}_YEARS}")
+message("DATES: ${${package}_YEARS}")
 message("REPOSITORY: ${${package}_ADDRESS}")
 print_Package_Contact(${package})
 message("AUTHORS:")
@@ -169,7 +169,7 @@ if(${package}_CATEGORIES)
 	endforeach()
 endif()
 if(${package}_REFERENCES)
-	message("AVAILABLE BINARIES:")
+	message("BINARY VERSIONS:")
 	print_Package_Binaries(${package})
 endif()
 endfunction()
@@ -379,13 +379,23 @@ endfunction()
 function(deploy_PID_Package package version)
 message("deploy_PID_Package ${package} ${version}")
 
+
 endfunction()
 
 
 ###
 function(resolve_PID_Package package version)
 message("resolve_PID_Package ${package} ${version}")
-
+set(PACKAGE_NAME ${package})
+set(PROJECT_NAME ${package})
+set(PACKAGE_VERSION ${version})
+set(WORKSPACE_DIR ../)
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)
+set(CMAKE_BINARY_DIR ${WORKSPACE_DIR}/pid) 
+include(${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake)
+if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
+	message("ERROR : cannot configure runtime dependencies for installed version ${version} of package ${package}")
+endif()
 endfunction()
 
 ###

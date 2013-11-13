@@ -7,6 +7,7 @@ if(REQUIRED_PACKAGE AND REQUIRED_VERSION)
 		OR NOT IS_DIRECTORY ../install/${REQUIRED_PACKAGE}/${REQUIRED_VERSION}
 	)
 		message("ERROR : binary package version ${REQUIRED_VERSION} is not installed on the system")
+		return()
 	endif()
 	resolve_PID_Package(${REQUIRED_PACKAGE} ${REQUIRED_VERSION})
 else()
