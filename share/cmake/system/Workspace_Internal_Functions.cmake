@@ -1,3 +1,10 @@
+########################################################################
+############ inclusion of required macros and functions ################
+########################################################################
+include(Package_Internal_Finding)
+include(Package_Internal_Configuration)
+include(Package_Internal_Referencing)
+
 ###
 function(classify_Package_Categories package)
 foreach(a_category IN ITEMS ${${package}_CATEGORIES})
@@ -407,10 +414,22 @@ endfunction()
 function(deploy_PID_Package package version)
 message("deploy_PID_Package ${package} ${version}")
 if("${version}" STREQUAL "")#deploying the source repository
-
-
+	set(DEPLOYED FALSE)
+	deploy_Package_Repository(DEPLOYED ${package})
+	if(DEPLOYED) 
+		deploy_Source_Package(INSTALLED ${package})
+		if(NOT INSTALLED)
+			message("Error : cannot install ${package}")
+			return()
+		endif()
+	else()
+		message("Error : cannot deploy ${package} repository")
+	endif()
 else()#deploying the target binary relocatable archive 
-
+	deploy_Binary_Package_Version(DEPLOYED ${package} ${version} TRUE)
+	if(NOT DEPLOYED) 
+		message("Error : cannot deploy ${package} binary archive version ${version}")
+	endif()
 endif()
 endfunction()
 
