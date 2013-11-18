@@ -485,6 +485,7 @@ endfunction(download_And_Install_Binary_Package)
 
 ### 
 function(build_And_Install_Source DEPLOYED package version)
+	message("DEBUG build workspace directory = ${WORKSPACE_DIR}")
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_WITH_PRINT_MESSAGES:BOOL=OFF -D USE_LOCAL_DEPLOYMENT:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D BUILD_PACKAGE_REFERENCE:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
@@ -493,11 +494,12 @@ function(build_And_Install_Source DEPLOYED package version)
 	execute_process(
 		COMMAND ${CMAKE_BUILD_TOOL} build
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-		ERROR_QUIET OUTPUT_QUIET		
+		ERROR_QUIET OUTPUT_QUIET	
 		)
 	if(EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
 		set(${DEPLOYED} TRUE PARENT_SCOPE)
 	else()
+		message("DEBUG problem : the use file does not exist")
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 	endif()
 
@@ -570,6 +572,7 @@ execute_process(
 		)
 
 if(NOT res) #no version available => BUG
+	message("DEBUG : NO output var !!!!")
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
@@ -577,7 +580,7 @@ string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN
 list(GET REFVNUMBERS 0 ref_major)
 list(GET REFVNUMBERS 1 ref_minor)
 string(REPLACE "\n" ";" GIT_VERSIONS ${res})
-
+message("DEBUG : available versions are : ${GIT_VERSIONS}")
 set(ALL_IS_OK FALSE)
 if(EXACT)
 	set(curr_max_patch_number -1)
@@ -627,6 +630,7 @@ else()
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 		return()
 	endif()
+	message("DEBUG : now building and installing code for ${package} with selected version : ${ref_major}.${curr_max_minor_number}.${curr_max_patch_number}")
 	build_And_Install_Package(ALL_IS_OK ${package} "${ref_major}.${curr_max_minor_number}.${curr_max_patch_number}")
 	
 endif()
@@ -659,14 +663,16 @@ foreach(branch IN ITEMS ${GIT_BRANCHES})
 endforeach()
 
 # 1) going to the adequate git tag matching the selected version
-
+message("DEBUG memorizing branch : ${curr_branch} and goinf to tagged version : ${version}")
 execute_process(COMMAND git checkout tags/v${version}
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
 		OUTPUT_QUIET ERROR_QUIET)
 # 2) building sources
 set(IS_BUILT FALSE)
+message("DEBUG : trying to build ${package} with version ${version}")
 build_And_Install_Source(IS_BUILT ${package} ${version})
 
+message("DEBUG : going back to ${curr_branch} branch")
 # 3) going back to the initial branch in use
 execute_process(COMMAND git checkout ${curr_branch}
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}

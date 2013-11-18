@@ -1,5 +1,5 @@
 include(CategoriesInfo.cmake)
-include(../share/cmake/system/Workspace_Internal_Functions.cmake)
+include(${WORKSPACE_DIR}/share/cmake/system/Workspace_Internal_Functions.cmake)
 
 if(REQUIRED_CATEGORY)
 	set(RESULT FALSE)

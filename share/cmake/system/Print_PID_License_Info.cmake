@@ -1,7 +1,7 @@
-include(../share/cmake/system/Workspace_Internal_Functions.cmake)
+include(${WORKSPACE_DIR}/share/cmake/system/Workspace_Internal_Functions.cmake)
 
 if(REQUIRED_LICENSE)
-	include(../share/cmake/licenses/License${REQUIRED_LICENSE}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+	include(${WORKSPACE_DIR}/share/cmake/licenses/License${REQUIRED_LICENSE}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(REQUIRED_STATUS STREQUAL NOTFOUND)
 		message("ERROR : License name ${REQUIRED_LICENSE} does not refer to any known license in the workspace")
 		return()

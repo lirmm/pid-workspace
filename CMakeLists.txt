@@ -38,31 +38,56 @@ add_custom_target(help ALL
 
 ##listing all packages ordered by categories OR listing the content of a given category
 add_custom_target(list
-	COMMAND ${CMAKE_COMMAND} -DREQUIRED_CATEGORY=$(name) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Categories.cmake
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DREQUIRED_CATEGORY=$(name) 
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Categories.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
 ##getting info on a package
 add_custom_target(info
-	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Package_Info.cmake
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DREQUIRED_PACKAGE=$(name) 
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Package_Info.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
 ##deploying a package (either soure repository or binary package relocatable archive) 
 add_custom_target(deploy
-	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -DREQUIRED_VERSION=$(version) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Deploy_PID_Package.cmake
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DPACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/install
+					-DCMAKE_FIND_LIBRARY_PREFIXES=${CMAKE_FIND_LIBRARY_PREFIXES}
+					-DCMAKE_FIND_LIBRARY_SUFFIXES=${CMAKE_FIND_LIBRARY_SUFFIXES}
+					-DREQUIRED_PACKAGE=$(name) 
+					-DREQUIRED_VERSION=$(version)
+					-DCMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
+					-DCMAKE_BUILD_TOOL=${CMAKE_BUILD_TOOL}
+					-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Deploy_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
 ##resolving runtime dependencies of an already installed package
 add_custom_target(resolve
-	COMMAND ${CMAKE_COMMAND} -DREQUIRED_PACKAGE=$(name) -DREQUIRED_VERSION=$(version) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Resolve_PID_Package.cmake
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DPACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/install
+					-DCMAKE_FIND_LIBRARY_PREFIXES=${CMAKE_FIND_LIBRARY_PREFIXES}
+					-DCMAKE_FIND_LIBRARY_SUFFIXES=${CMAKE_FIND_LIBRARY_SUFFIXES}
+					-DREQUIRED_PACKAGE=$(name) 
+					-DREQUIRED_VERSION=$(version)
+					-DCMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
+					-DCMAKE_BUILD_TOOL=${CMAKE_BUILD_TOOL}
+					-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Resolve_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
 ##creating a new package
 add_custom_target(create
-	COMMAND ${CMAKE_COMMAND} 	-DREQUIRED_PACKAGE=$(name) 
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DREQUIRED_PACKAGE=$(name) 
 					-DOPTIONAL_AUTHOR=$(author) 
 					-DOPTIONAL_INSTITUTION=$(affiliation)
 					-DOPTIONAL_LICENSE=$(license)
@@ -72,7 +97,9 @@ add_custom_target(create
 
 ##listing available licenses
 add_custom_target(license
-	COMMAND ${CMAKE_COMMAND} -DREQUIRED_LICENSE=$(name) -P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_License_Info.cmake
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DREQUIRED_LICENSE=$(name)
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_License_Info.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 

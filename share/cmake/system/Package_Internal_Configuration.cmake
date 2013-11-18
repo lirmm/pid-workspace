@@ -101,6 +101,7 @@ else()#the dependency has not been already found
 
 		else()
 			#WARNING recursive call to find package
+			message("DEBUG before find : dep= ${dependency}, version = ${${package}_DEPENDENCY_${dependency}_VERSION}")
 			find_package(
 				${dependency} 
 				${${package}_DEPENDENCY_${dependency}_VERSION} 
@@ -251,6 +252,7 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 		message("resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_PACKAGES}")
 		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
 			resolve_Package_Dependency(${package} ${installed})
+			message("is ${installed} FOUND ? ${${installed}_FOUND} ")
 			if(${installed}_FOUND)
 				if(${installed}_DEPENDENCIES${build_mode_suffix})
 					resolve_Package_Dependencies(${installed} "${build_mode_suffix}")#recursion : resolving dependencies for each package dependency
