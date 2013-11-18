@@ -235,6 +235,34 @@ endfunction()
 
 
 ###
+function(test_Package_Binary_Against_Platform package version IS_COMPATIBLE)
+foreach(system IN ITEMS ${${package}_REFERENCE_${version}})
+	if(system STREQUAL "linux" AND UNIX AND NOT APPLE)
+		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
+	elseif(system STREQUAL "macosx" AND APPLE)
+		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
+	endif()
+endforeach()
+set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
+endfunction()
+
+###
+function(exact_Version_Exists package version RESULT)
+list(FIND ${package}_REFERENCES ${version} INDEX)
+if(INDEX EQUAL -1)
+	set(${RESULT} FALSE PARENT_SCOPE)
+	return()
+else()
+	test_Package_Binary_Against_Platform(${package} ${version} COMPATIBLE)
+	if(COMPATIBLE)	
+		set(${RESULT} TRUE PARENT_SCOPE)
+	else()
+		set(${RESULT} FALSE PARENT_SCOPE)
+	endif()
+endif()
+endfunction()
+
+###
 function(generate_Binary_Package_Name package version system mode RES_FILE RES_FOLDER)
 if(system STREQUAL "linux")
 	set(system_string Linux)
@@ -348,7 +376,7 @@ endfunction()
 function(create_PID_Package package author institution license)
 message("create_PID_Package ${package}")
 #copying the pattern folder into teh package folder and renaming it
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ../share/patterns/package ../packages/${package})
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/package ${WORKSPACE_DIR}/packages/${package})
 #setting variables
 set(PACKAGE_NAME ${package})
 if(author AND NOT author STREQUAL "")
@@ -371,15 +399,19 @@ set(PACKAGE_DESCRIPTION "TODO: input a short description of package ${package} u
 string(TIMESTAMP date "%Y")
 set(PACKAGE_YEARS ${date}) 
 # generating the root CMakeLists.txt of the package
-configure_file(../share/patterns/CMakeLists.txt.in ../packages/${package}/CMakeLists.txt @ONLY)
+configure_file(${WORKSPACE_DIR}/share/patterns/CMakeLists.txt.in ../packages/${package}/CMakeLists.txt @ONLY)
 endfunction()
 
 
 ###
 function(deploy_PID_Package package version)
 message("deploy_PID_Package ${package} ${version}")
+if("${version}" STREQUAL "")#deploying the source repository
 
 
+else()#deploying the target binary relocatable archive 
+
+endif()
 endfunction()
 
 
@@ -398,7 +430,7 @@ endfunction()
 
 ###
 function(print_Available_Licenses)
-file(GLOB ALL_AVAILABLE_LICENSES ../share/cmake/licenses/*.cmake)
+file(GLOB ALL_AVAILABLE_LICENSES ${WORKSPACE_DIR}/share/cmake/licenses/*.cmake)
 list(REMOVE_DUPLICATES ALL_AVAILABLE_LICENSES)
 set(licenses "")
 foreach(licensefile IN ITEMS ${ALL_AVAILABLE_LICENSES})
