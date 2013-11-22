@@ -123,99 +123,116 @@ endif()
 endfunction(resolve_Package_Dependency)
 
 ###
-function (update_Config_Include_Dirs package component dep_package dep_component)
-	if(${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX})	
-		set(${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX} ${${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX}} ${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}} CACHE INTERNAL "")
+function (update_Config_Include_Dirs package component dep_package dep_component mode_suffix)
+	if(${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix})	
+		set(${package}_${component}_INCLUDE_DIRS${mode_suffix} ${${package}_${component}_INCLUDE_DIRS${mode_suffix}} ${${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix}} CACHE INTERNAL "")
 	endif()
 endfunction(update_Config_Include_Dirs)
 
 ###
-function (update_Config_Definitions package component dep_package dep_component)
-	if(${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX})
-		set(${package}_${component}_DEFINITIONS${USE_MODE_SUFFIX} ${${package}_${component}_DEFINITIONS${USE_MODE_SUFFIX}} ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}} CACHE INTERNAL "")
+function (update_Config_Definitions package component dep_package dep_component mode_suffix)
+	if(${dep_package}_${dep_component}_DEFINITIONS${mode_suffix})
+		set(${package}_${component}_DEFINITIONS${mode_suffix} ${${package}_${component}_DEFINITIONS${mode_suffix}} ${${dep_package}_${dep_component}_DEFINITIONS${mode_suffix}} CACHE INTERNAL "")
 	endif()
 endfunction(update_Config_Definitions)
 
 ###
-function(update_Config_Libraries package component dep_package dep_component)
-	if(${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX})
-		set(	${package}_${component}_LIBRARIES${USE_MODE_SUFFIX} 
-			${${package}_${component}_LIBRARIES${USE_MODE_SUFFIX}} 
-			${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}} 
+function(update_Config_Libraries package component dep_package dep_component mode_suffix)
+	if(${dep_package}_${dep_component}_LIBRARIES${mode_suffix})
+		set(	${package}_${component}_LIBRARIES${mode_suffix} 
+			${${package}_${component}_LIBRARIES${mode_suffix}} 
+			${${dep_package}_${dep_component}_LIBRARIES${mode_suffix}} 
 			CACHE INTERNAL "") #putting dependencies after component using them (to avoid linker problems)
 	endif()
 endfunction(update_Config_Libraries)
 
 ###
-function(init_Component_Build_Variables package component path_to_version)
-	set(${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
-	set(${package}_${component}_DEFINITIONS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
-	set(${package}_${component}_LIBRARIES${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
-	set(${package}_${component}_EXECUTABLE${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
+function(init_Component_Build_Variables package component path_to_version mode)
+	if(mode MATCHES Debug)
+		set(mode_suffix "_DEBUG")
+	else()
+		set(mode_suffix "")
+	endif()
+
+	set(${package}_${component}_INCLUDE_DIRS${mode_suffix} "" CACHE INTERNAL "")
+	set(${package}_${component}_DEFINITIONS${mode_suffix} "" CACHE INTERNAL "")
+	set(${package}_${component}_LIBRARIES${mode_suffix} "" CACHE INTERNAL "")
+	set(${package}_${component}_EXECUTABLE${mode_suffix} "" CACHE INTERNAL "")
 	is_Executable_Component(COMP_IS_EXEC ${package} ${component})
 	
 	if(NOT COMP_IS_EXEC)
 		#provided include dirs (cflags -I<path>)
-		set(${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX} "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
+		set(${package}_${component}_INCLUDE_DIRS${mode_suffix} "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
 		#additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
-		if(${package}_${component}_INC_DIRS${USE_MODE_SUFFIX})
-			resolve_External_Includes_Path(RES_INCLUDES "${${package}_${component}_INC_DIRS${USE_MODE_SUFFIX}}")
-			message("RES_INCLUDES for ${package} ${component} = ${RES_INCLUDES}")			
-			set(	${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX} 
-				${${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX}} 
+		if(${package}_${component}_INC_DIRS${mode_suffix})
+			resolve_External_Includes_Path(RES_INCLUDES "${${package}_${component}_INC_DIRS${mode_suffix}}" ${mode})
+			message("DEBUG RES_INCLUDES for ${package} ${component} = ${RES_INCLUDES}")			
+			set(	${package}_${component}_INCLUDE_DIRS${mode_suffix} 
+				${${package}_${component}_INCLUDE_DIRS${mode_suffix}} 
 				"${RES_INCLUDES}"
 				CACHE INTERNAL "")
 		endif()
 
 		#provided cflags (own CFLAGS and external/system exported CFLAGS)
-		if(${package}_${component}_DEFS${USE_MODE_SUFFIX}) 	
-			set(${package}_${component}_DEFINITIONS${USE_MODE_SUFFIX} ${${package}_${component}_DEFS${USE_MODE_SUFFIX}} CACHE INTERNAL "")
+		if(${package}_${component}_DEFS${mode_suffix}) 	
+			set(${package}_${component}_DEFINITIONS${mode_suffix} ${${package}_${component}_DEFS${mode_suffix}} CACHE INTERNAL "")
 		endif()
 
 		#provided library (ldflags -l<path>)
 		if(NOT ${package}_${component}_TYPE STREQUAL "HEADER")
-			set(${package}_${component}_LIBRARIES${USE_MODE_SUFFIX} "${path_to_version}/lib/${${package}_${component}_BINARY_NAME${USE_MODE_SUFFIX}}" CACHE INTERNAL "")
+			set(${package}_${component}_LIBRARIES${mode_suffix} "${path_to_version}/lib/${${package}_${component}_BINARY_NAME${mode_suffix}}" CACHE INTERNAL "")
 		endif()
 
 		#provided additionnal ld flags (exported external/system libraries and ldflags)		
-		if(${package}_${component}_LINKS${USE_MODE_SUFFIX})
-			resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${USE_MODE_SUFFIX}}")			
-			set(	${package}_${component}_LIBRARIES${USE_MODE_SUFFIX}
-				${${package}_${component}_LIBRARIES${USE_MODE_SUFFIX}}				
+		if(${package}_${component}_LINKS${mode_suffix})
+			resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${mode_suffix}}" ${mode})			
+			set(	${package}_${component}_LIBRARIES${mode_suffix}
+				${${package}_${component}_LIBRARIES${mode_suffix}}	
 				"${RES_LINKS}"
 				CACHE INTERNAL "")
 		endif()
-		#message("FINAL init_Component_Build_Variables : \nINCLUDES = ${${package}_${component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}\nDEFINITIONS = ${${package}_${component}_DEFINITIONS${USE_MODE_SUFFIX}}\nLIBRARIES = ${${package}_${component}_LIBRARIES${USE_MODE_SUFFIX}}\n")
+		#message("FINAL init_Component_Build_Variables : \nINCLUDES = ${${package}_${component}_INCLUDE_DIRS${mode_suffix}}\nDEFINITIONS = ${${package}_${component}_DEFINITIONS${mode_suffix}}\nLIBRARIES = ${${package}_${component}_LIBRARIES${mode_suffix}}\n")
 	elseif(${package}_${component}_TYPE STREQUAL "APP" OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
 		
-		set(${package}_${component}_EXECUTABLE${USE_MODE_SUFFIX} "${path_to_version}/bin/${${package}_${component}_BINARY_NAME${USE_MODE_SUFFIX}}" CACHE INTERNAL "")
+		set(${package}_${component}_EXECUTABLE${mode_suffix} "${path_to_version}/bin/${${package}_${component}_BINARY_NAME${mode_suffix}}" CACHE INTERNAL "")
 	endif()
 endfunction(init_Component_Build_Variables)
 
 ### 
-function(update_Component_Build_Variables_With_Dependency package component dep_package dep_component)
-configure_Package_Build_Variables(${dep_package})#!! recursion to get all updated infos
-if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${USE_MODE_SUFFIX})
-	update_Config_Include_Dirs(${package} ${component} ${dep_package} ${dep_component})
-	update_Config_Definitions(${package} ${component} ${dep_package} ${dep_component})
-	update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component})	
+function(update_Component_Build_Variables_With_Dependency package component dep_package dep_component mode)
+if(mode MATCHES Debug)
+	set(mode_suffix "_DEBUG")
+else()
+	set(mode_suffix "")
+endif()
+configure_Package_Build_Variables(${dep_package} ${mode})#!! recursion to get all updated infos
+if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${mode_suffix})
+	update_Config_Include_Dirs(${package} ${component} ${dep_package} ${dep_component} ${mode_suffix})
+	update_Config_Definitions(${package} ${component} ${dep_package} ${dep_component} ${mode_suffix})
+	update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} ${mode_suffix})	
 else()
 	if(NOT ${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")#static OR header lib
-		update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component})
+		update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} ${mode_suffix})
 	endif()
 	
 endif()
-endfunction(update_Component_Build_Variables_With_Dependency package)
+endfunction(update_Component_Build_Variables_With_Dependency)
 
 
-function(update_Component_Build_Variables_With_Internal_Dependency package component dep_component)
-if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX})
-	update_Config_Include_Dirs(${package} ${component} ${package} ${dep_component})
-	update_Config_Definitions(${package} ${component} ${package} ${dep_component})
-	update_Config_Libraries(${package} ${component} ${package} ${dep_component})	
+function(update_Component_Build_Variables_With_Internal_Dependency package component dep_component mode)
+if(mode MATCHES Debug)
+	set(mode_suffix "_DEBUG")
+else()
+	set(mode_suffix "")
+endif()
+
+if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${mode_suffix})
+	update_Config_Include_Dirs(${package} ${component} ${package} ${dep_component} ${mode_suffix})
+	update_Config_Definitions(${package} ${component} ${package} ${dep_component} ${mode_suffix})
+	update_Config_Libraries(${package} ${component} ${package} ${dep_component} ${mode_suffix})	
 else()#dep_component is not exported by component
 	if(NOT ${package}_${dep_component}_TYPE STREQUAL "SHARED")#static OR header lib
-		update_Config_Libraries(${package} ${component} ${package} ${dep_component})
+		update_Config_Libraries(${package} ${component} ${package} ${dep_component} ${mode_suffix})
 	endif()
 	
 endif()
@@ -272,7 +289,7 @@ endif()
 endfunction(resolve_Package_Dependencies)
 
 ###
-function(configure_Package_Build_Variables package_name)
+function(configure_Package_Build_Variables package_name mode)
 if(${package_name}_PREPARE_BUILD)#this is a guard to limit recursion
 	return()
 endif()
@@ -281,20 +298,24 @@ if(${package_name}_DURING_PREPARE_BUILD)
 	message(FATAL_ERROR "Alert : you have define cyclic dependencies between packages : Package ${package_name} is directly or undirectly requiring itself !")
 endif()
 
+if(mode MATCHES "Release")
+	set(mode_suffix "")
+else()
+	set(mode_suffix "_DEBUG")
+endif()
+
 set(${package_name}_DURING_PREPARE_BUILD TRUE)
 
 # 1) initializing all build variable that are directly provided by each component of the target package
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
-	message("DEBUG pakane name = ${package_name}, component = ${a_component}, root dir = ${${package_name}_ROOT_DIR}")
-	init_Component_Build_Variables(${package_name} ${a_component} ${${package_name}_ROOT_DIR})
+	init_Component_Build_Variables(${package_name} ${a_component} ${${package_name}_ROOT_DIR} "${mode_suffix}")
 endforeach()
 
 # 2) setting build variables with informations coming from package dependancies
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
-	foreach(a_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		#message("DEBUG undirect dependencies for ${package_name} ${a_component}") 
-		foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS${USE_MODE_SUFFIX}}) 
-			update_Component_Build_Variables_With_Dependency(${package_name} ${a_component} ${a_package} ${a_dep_component})
+	foreach(a_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES${mode_suffix}})
+		foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS${mode_suffix}}) 
+			update_Component_Build_Variables_With_Dependency(${package_name} ${a_component} ${a_package} ${a_dep_component} ${mode})
 		endforeach()
 	endforeach()
 endforeach()
@@ -302,8 +323,8 @@ endforeach()
 #3) setting build variables with informations coming from INTERNAL package dependancies
 # these have not been checked like the others since the package components discovering mecanism has already done the job 
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
-	foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}}) 
-		update_Component_Build_Variables_With_Internal_Dependency(${package_name} ${a_component} ${a_dep_component})
+	foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_INTERNAL_DEPENDENCIES${mode_suffix}}) 
+		update_Component_Build_Variables_With_Internal_Dependency(${package_name} ${a_component} ${a_dep_component} ${mode})
 	endforeach()
 endforeach()
 
@@ -334,7 +355,7 @@ set(undirect_deps)
 foreach(dep_package IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}})
 	foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}})
 		set(LIST_OF_DEP_SHARED)
-		find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${dep_package} ${dep_component} TRUE)
+		find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${dep_package} ${dep_component} TRUE ${CMAKE_BUILD_TYPE})
 		if(LIST_OF_DEP_SHARED)
 			list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
 		endif()
@@ -344,7 +365,7 @@ endforeach()
 # 2) searching each direct dependency in current package (no problem with undirect internal dependencies since undirect path only target install path which is not a problem for build)
 foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
 	set(LIST_OF_DEP_SHARED)
-	find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${PROJECT_NAME} ${dep_component} TRUE)
+	find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${PROJECT_NAME} ${dep_component} TRUE ${CMAKE_BUILD_TYPE})
 	if(LIST_OF_DEP_SHARED)
 		list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
 	endif()
@@ -360,14 +381,20 @@ endif()
 endfunction(resolve_Source_Component_Linktime_Dependencies)
 
 
-function(find_Dependent_Private_Shared_Libraries LIST_OF_UNDIRECT_DEPS package component is_direct)
+function(find_Dependent_Private_Shared_Libraries LIST_OF_UNDIRECT_DEPS package component is_direct mode)
 set(undirect_list)
+if(mode MATCHES Release)
+	set(mode_binary_suffix "")
+else()
+	set(mode_binary_suffix "-dbg")
+	set(mode_var_suffix "_DEBUG")
+endif()
 # 0) no need to search for systems dependencies as they can be found automatically using OS shared libraries binding mechanism
 
 # 1) searching public external dependencies 
 if(NOT is_direct) #otherwise external dependencies are direct dependencies so their LINKS (i.e. exported links) are already taken into account (not private)
-	if(${package}_${component}_LINKS${USE_MODE_SUFFIX})
-		resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${USE_MODE_SUFFIX}}")#resolving libraries path against external packages path
+	if(${package}_${component}_LINKS${mode_var_suffix})
+		resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
 		foreach(ext_dep IN ITEMS ${RES_LINKS})
 			is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
 			if(IS_SHARED)
@@ -378,8 +405,8 @@ if(NOT is_direct) #otherwise external dependencies are direct dependencies so th
 endif()
 
 # 1-bis) searching private external dependencies
-if(${package}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX})
-	resolve_External_Libs_Path(RES_PRIVATE_LINKS "${${package}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}")#resolving libraries path against external packages path
+if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
+	resolve_External_Libs_Path(RES_PRIVATE_LINKS "${${package}_${component}_PRIVATE_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
 	foreach(ext_dep IN ITEMS ${RES_PRIVATE_LINKS})
 		is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
 		if(IS_SHARED)
@@ -389,26 +416,26 @@ if(${package}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX})
 endif()
 
 # 2) searching in dependent packages
-foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}})
-	foreach(dep_component IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}}) 
+foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_suffix}})
+	foreach(dep_component IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${mode_var_suffix}}) 
 		set(UNDIRECT)
 		if(is_direct) # current component is a direct dependency of the application
 			if(	${dep_package}_${dep_component}_TYPE STREQUAL "STATIC"
 				OR ${dep_package}_${dep_component}_TYPE STREQUAL "HEADER"
-				OR ${package}_${component}_EXPORTS_${dep_package}_${dep_component}${USE_MODE_SUFFIX})
+				OR ${package}_${component}_EXPORTS_${dep_package}_${dep_component}${mode_var_suffix})
 				 #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application 
-				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} TRUE) 
+				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} TRUE ${mode}) 
 			else()#it is a shared lib that is not exported
-				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE) #the shared lib dependency is NOT a direct dependency of the application 
-				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${USE_MODE_SUFFIX}}")				
+				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application 
+				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")				
 			endif()
 		else() #current component is NOT a direct dependency of the application
 			if(	${dep_package}_${dep_component}_TYPE STREQUAL "STATIC"
 				OR ${dep_package}_${dep_component}_TYPE STREQUAL "HEADER")
-				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE)
+				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode})
 			else()#it is a shared lib that is exported or NOT
-				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE) #the shared lib dependency is a direct dependency of the application 
-				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${USE_MODE_SUFFIX}}")				
+				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode}) #the shared lib dependency is a direct dependency of the application 
+				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")				
 			endif()
 		endif()		
 		
@@ -419,24 +446,24 @@ foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${USE_MODE_SU
 endforeach()
 
 # 3) searching in current package
-foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
+foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix}})
 	set(UNDIRECT)
 	if(is_direct) # current component is a direct dependency of the application
 		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
 			OR ${package}_${dep_component}_TYPE STREQUAL "HEADER"
-			OR ${package}_${component}_INTERNAL_EXPORTS_${dep_component}${USE_MODE_SUFFIX})
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} TRUE) #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application 
+			OR ${package}_${component}_INTERNAL_EXPORTS_${dep_component}${mode_var_suffix})
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} TRUE ${mode}) #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application 
 		else()#it is a shared lib that is not exported
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE) #the shared lib dependency is NOT a direct dependency of the application 
-			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${USE_MODE_SUFFIX}}")				
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application 
+			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")				
 		endif()
 	else() #current component is NOT a direct dependency of the application
 		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
 			OR ${package}_${dep_component}_TYPE STREQUAL "HEADER")
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE)
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode})
 		else()#it is a shared lib that is exported or NOT
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE) #the shared lib dependency is NOT a direct dependency of the application in all cases 
-			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${USE_MODE_SUFFIX}}")
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application in all cases 
+			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")
 		endif()
 	endif()
 	
@@ -571,7 +598,7 @@ function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 
 	# 1) adding directly exported external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
 	if(${package}_${component}_LINKS${mode_var_suffix})#if there are exported links
-		resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${USE_MODE_SUFFIX}}")#resolving libraries path against external packages path
+		resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
 		if(RES_LINKS)
 			foreach(lib IN ITEMS ${RES_LINKS})
 				is_Shared_Lib_With_Path(IS_SHARED ${lib})
@@ -721,7 +748,7 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	get_Bin_Component_Runtime_Dependencies(ALL_SHARED_LIBS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	# 2) adding direct private external dependencies
 	if(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX})#if there are exported links
-		resolve_External_Libs_Path(RES_PRIVATE_LINKS "${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}")#resolving libraries path against external packages path
+		resolve_External_Libs_Path(RES_PRIVATE_LINKS "${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}" ${CMAKE_BUILD_TYPE})#resolving libraries path against external packages path
 		if(RES_PRIVATE_LINKS)
 			foreach(lib IN ITEMS ${RES_PRIVATE_LINKS})
 				is_Shared_Lib_With_Path(IS_SHARED ${lib})
@@ -744,12 +771,18 @@ endfunction(resolve_Source_Component_Runtime_Dependencies)
 ##################################################################################
 
 ###
-function(is_External_Package_Defined ref_package ext_package RES_PATH_TO_PACKAGE)
-if(DEFINED ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_REFERENCE_PATH${USE_MODE_SUFFIX})
-	set(${RES_PATH_TO_PACKAGE} ${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_REFERENCE_PATH${USE_MODE_SUFFIX}} PARENT_SCOPE)
-elseif(${ref_package}_DEPENDENCIES${USE_MODE_SUFFIX})
-	foreach(dep_pack IN ITEMS ${${ref_package}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		is_External_Package_Defined(${dep_pack} ${ext_package} PATHTO)
+function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
+if(mode MATCHES Debug)
+	set(mode_suffix "_DEBUG")
+else()
+	set(mode_suffix "")
+endif()
+
+if(DEFINED ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_REFERENCE_PATH${mode_suffix})
+	set(${RES_PATH_TO_PACKAGE} ${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_REFERENCE_PATH${mode_suffix}} PARENT_SCOPE)
+elseif(${ref_package}_DEPENDENCIES${mode_suffix})
+	foreach(dep_pack IN ITEMS ${${ref_package}_DEPENDENCIES${mode_suffix}})
+		is_External_Package_Defined(${dep_pack} ${ext_package} ${mode} PATHTO)
 		if(NOT EXT_PACKAGE-NOTFOUND)
 			set(${RES_PATH_TO_PACKAGE} ${PATHTO} PARENT_SCOPE)
 			return()
@@ -760,7 +793,7 @@ set(EXT_PACKAGE-NOTFOUND TRUE PARENT_SCOPE)
 endfunction(is_External_Package_Defined)
 
 ###
-function(resolve_External_Libs_Path COMPLETE_LINKS_PATH ext_links)
+function(resolve_External_Libs_Path COMPLETE_LINKS_PATH ext_links mode)
 set(res_links)
 foreach(link IN ITEMS ${ext_links})
 	string(REGEX REPLACE "^<([^>]+)>([^\\.]+\\.[a|la|so|dylib])" "\\1;\\2" RES ${link})
@@ -768,7 +801,7 @@ foreach(link IN ITEMS ${ext_links})
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
-		is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} PATHTO)
+		is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} ${mode} PATHTO )
 		if(EXT_PACKAGE-NOTFOUND)
 			message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")		
 		else()
@@ -780,7 +813,7 @@ foreach(link IN ITEMS ${ext_links})
 		if(NOT RES_WITH_PREFIX MATCHES ${link})
 			list(GET RES_WITH_PREFIX 0 link_prefix)
 			list(GET RES_WITH_PREFIX 1 ext_package_name)
-			is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} PATHTO)
+			is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} ${mode} PATHTO)
 			if(EXT_PACKAGE-NOTFOUND)
 				message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
 			endif()
@@ -801,13 +834,13 @@ set(${COMPLETE_LINKS_PATH} ${res_links} PARENT_SCOPE)
 endfunction(resolve_External_Libs_Path)
 
 ###
-function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH ext_inc_dirs)
+function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH ext_inc_dirs mode)
 set(res_includes)
 foreach(include_dir IN ITEMS ${ext_inc_dirs})
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${include_dir})
 	if(NOT RES MATCHES ${include_dir})# a replacement has taken place => this is a full path to an incude dir
 		list(GET RES 0 ext_package_name)
-		is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} PATHTO)
+		is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} ${mode} PATHTO)
 		if(EXT_PACKAGE-NOTFOUND)
 			message(FATAL_ERROR "undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 		endif()
@@ -824,7 +857,7 @@ foreach(include_dir IN ITEMS ${ext_inc_dirs})
 		if(NOT RES_WITH_PREFIX MATCHES ${include_dir})
 			list(GET RES_WITH_PREFIX 1 relative_path)
 			list(GET RES_WITH_PREFIX 0 ext_package_name)
-			is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} PATHTO)
+			is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} ${mode} PATHTO)
 			if(EXT_PACKAGE-NOTFOUND)
 				message(FATAL_ERROR "undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 			endif()

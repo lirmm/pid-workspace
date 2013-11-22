@@ -412,7 +412,8 @@ endfunction()
 
 ###
 function(deploy_PID_Package package version)
-message("deploy_PID_Package ${package} ${version}")
+set(PROJECT_NAME ${package})
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)
 if("${version}" STREQUAL "")#deploying the source repository
 	set(DEPLOYED FALSE)
 	deploy_Package_Repository(DEPLOYED ${package})

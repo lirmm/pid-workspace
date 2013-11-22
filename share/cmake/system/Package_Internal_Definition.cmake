@@ -309,7 +309,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 2) if all version are OK resolving all necessary variables (CFLAGS, LDFLAGS and include directories)
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
 		message("dependent package = ${dep_pack}")		
-		configure_Package_Build_Variables(${dep_pack})
+		configure_Package_Build_Variables(${dep_pack} ${CMAKE_BUILD_TYPE})
 	endforeach()
 
 	# 3) when done resolving runtime dependencies for all used package (direct or undirect)
