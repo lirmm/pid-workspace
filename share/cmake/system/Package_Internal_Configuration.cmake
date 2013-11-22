@@ -207,12 +207,12 @@ else()
 endif()
 configure_Package_Build_Variables(${dep_package} ${mode})#!! recursion to get all updated infos
 if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${mode_suffix})
-	update_Config_Include_Dirs(${package} ${component} ${dep_package} ${dep_component} ${mode_suffix})
-	update_Config_Definitions(${package} ${component} ${dep_package} ${dep_component} ${mode_suffix})
-	update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} ${mode_suffix})	
+	update_Config_Include_Dirs(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
+	update_Config_Definitions(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
+	update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")	
 else()
 	if(NOT ${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")#static OR header lib
-		update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} ${mode_suffix})
+		update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
 	endif()
 	
 endif()
@@ -227,12 +227,12 @@ else()
 endif()
 
 if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${mode_suffix})
-	update_Config_Include_Dirs(${package} ${component} ${package} ${dep_component} ${mode_suffix})
-	update_Config_Definitions(${package} ${component} ${package} ${dep_component} ${mode_suffix})
-	update_Config_Libraries(${package} ${component} ${package} ${dep_component} ${mode_suffix})	
+	update_Config_Include_Dirs(${package} ${component} ${package} ${dep_component} "${mode_suffix}")
+	update_Config_Definitions(${package} ${component} ${package} ${dep_component} "${mode_suffix}")
+	update_Config_Libraries(${package} ${component} ${package} ${dep_component} "${mode_suffix}")	
 else()#dep_component is not exported by component
 	if(NOT ${package}_${dep_component}_TYPE STREQUAL "SHARED")#static OR header lib
-		update_Config_Libraries(${package} ${component} ${package} ${dep_component} ${mode_suffix})
+		update_Config_Libraries(${package} ${component} ${package} ${dep_component} "${mode_suffix}")
 	endif()
 	
 endif()

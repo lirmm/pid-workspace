@@ -1418,10 +1418,10 @@ endfunction(fill_Component_Target_With_Package_Dependency)
 ### configure the target to link with an external dependancy
 function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_links)
 if(ext_links)
-	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${ext_links}")
+	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${ext_links}" ${CMAKE_BUILD_TYPE})
 endif()
 if(ext_inc_dirs)
-	resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${ext_inc_dirs}")
+	resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${ext_inc_dirs}" ${CMAKE_BUILD_TYPE})
 endif()
 is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
 if(COMP_IS_BUILT) #the component has a corresponding target
