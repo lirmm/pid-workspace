@@ -36,7 +36,6 @@ endfunction(test_Package_Location)
 function(resolve_Package_Dependency package dependency)
 
 if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
-	message("DEBUG resolve_Package_Dependency ${dependency} already FOUND !!")	
 	if(${package}_DEPENDENCY_${dependency}_VERSION) # a specific version is required
 	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT) #an exact version is required
 			
@@ -126,7 +125,6 @@ endfunction(resolve_Package_Dependency)
 function (update_Config_Include_Dirs package component dep_package dep_component mode_suffix)
 	if(${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix})	
 		set(${package}_${component}_INCLUDE_DIRS${mode_suffix} ${${package}_${component}_INCLUDE_DIRS${mode_suffix}} ${${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix}} CACHE INTERNAL "")
-	message("update_Config_Include_Dirs  inc dirs of ${dep_package}.${dep_component} var = ${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix} ; content=${${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix}}")
 	endif()
 endfunction(update_Config_Include_Dirs)
 
@@ -154,7 +152,6 @@ function(init_Component_Build_Variables package component path_to_version mode)
 	else()
 		set(mode_suffix "")
 	endif()
-	message("init_Component_Build_Variables ${package}.${component} mode = ${mode} suffix = ${mode_suffix}")
 	set(${package}_${component}_INCLUDE_DIRS${mode_suffix} "" CACHE INTERNAL "")
 	set(${package}_${component}_DEFINITIONS${mode_suffix} "" CACHE INTERNAL "")
 	set(${package}_${component}_LIBRARIES${mode_suffix} "" CACHE INTERNAL "")
@@ -192,7 +189,7 @@ function(init_Component_Build_Variables package component path_to_version mode)
 				"${RES_LINKS}"
 				CACHE INTERNAL "")
 		endif()
-		message("FINAL init_Component_Build_Variables ${package}.${component}: \nINCLUDES = ${${package}_${component}_INCLUDE_DIRS${mode_suffix}} (var=${package}_${component}_INCLUDE_DIRS${mode_suffix}) \nDEFINITIONS = ${${package}_${component}_DEFINITIONS${mode_suffix}} (var = ${package}_${component}_DEFINITIONS${mode_suffix}) \nLIBRARIES = ${${package}_${component}_LIBRARIES${mode_suffix}}\n")
+		#message("FINAL init_Component_Build_Variables ${package}.${component}: \nINCLUDES = ${${package}_${component}_INCLUDE_DIRS${mode_suffix}} (var=${package}_${component}_INCLUDE_DIRS${mode_suffix}) \nDEFINITIONS = ${${package}_${component}_DEFINITIONS${mode_suffix}} (var = ${package}_${component}_DEFINITIONS${mode_suffix}) \nLIBRARIES = ${${package}_${component}_LIBRARIES${mode_suffix}}\n")
 	elseif(${package}_${component}_TYPE STREQUAL "APP" OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
 		
 		set(${package}_${component}_EXECUTABLE${mode_suffix} "${path_to_version}/bin/${${package}_${component}_BINARY_NAME${mode_suffix}}" CACHE INTERNAL "")
@@ -208,7 +205,6 @@ else()
 endif()
 configure_Package_Build_Variables(${dep_package} ${mode})#!! recursion to get all updated infos
 if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${mode_suffix})
-message("update_Component_Build_Variables_With_Dependency ")
 	update_Config_Include_Dirs(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
 	update_Config_Definitions(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
 	update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")	
@@ -250,34 +246,34 @@ endif()
 
 # 1) managing package dependencies (the list of dependent packages is defined as ${package_name}_DEPENDENCIES)
 # - locating dependent packages in the workspace and configuring their build variables recursively
-message("DEBUG resolve_Package_Dependencies for ${package} ... step 1), dependencies are : ${${package}_DEPENDENCIES${build_mode_suffix}}")
+#message("DEBUG resolve_Package_Dependencies for ${package} ... step 1), dependencies are : ${${package}_DEPENDENCIES${build_mode_suffix}}")
 set(TO_INSTALL_DEPS)
 foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
 	# 1) resolving direct dependencies
 	message("DEBUG resolving dependency ${dep_pack} for package ${package}")
 	resolve_Package_Dependency(${package} ${dep_pack})
 	if(${dep_pack}_FOUND)
-		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-1), dependency ${dep_pack} FOUND !!")
+#		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-1), dependency ${dep_pack} FOUND !!")
 		if(${dep_pack}_DEPENDENCIES${build_mode_suffix})
 			resolve_Package_Dependencies(${dep_pack} ${mode})#recursion : resolving dependencies for each package dependency
 		endif()
 	else()
 		list(APPEND TO_INSTALL_DEPS ${dep_pack})
-		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-2), dependency ${dep_pack} NOT FOUND !!")
+#		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-2), dependency ${dep_pack} NOT FOUND !!")
 	endif()
 endforeach()
 
 # 2) for not found package
-message("DEBUG resolve_Package_Dependencies for ${package} ... step 2)")
+#message("DEBUG resolve_Package_Dependencies for ${package} ... step 2)")
 if(TO_INSTALL_DEPS) #there are dependencies to install
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_DEPS}")
+#		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_DEPS}")
 		set(INSTALLED_PACKAGES "")
 		install_Required_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES)
-		message("resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_PACKAGES}")
+#		message("resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_PACKAGES}")
 		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
 			resolve_Package_Dependency(${package} ${installed})
-			message("is ${installed} FOUND ? ${${installed}_FOUND} ")
+#			message("is ${installed} FOUND ? ${${installed}_FOUND} ")
 			if(${installed}_FOUND)
 				if(${installed}_DEPENDENCIES${build_mode_suffix})
 					resolve_Package_Dependencies(${installed} ${mode})#recursion : resolving dependencies for each package dependency
@@ -290,8 +286,8 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
-else()
-	message("DEBUG nothing to INSTALL !!")
+#else()
+#	message("DEBUG nothing to INSTALL !!")
 endif()
 
 endfunction(resolve_Package_Dependencies)

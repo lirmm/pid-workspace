@@ -307,7 +307,6 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	#here every package dependency should have been resolved OR ERROR
 	
 	# 2) if all version are OK resolving all necessary variables (CFLAGS, LDFLAGS and include directories)
-	message("USE_MODE=${USE_MODE_SUFFIX}, BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
 		configure_Package_Build_Variables(${dep_pack} ${CMAKE_BUILD_TYPE})
 	endforeach()
@@ -1312,7 +1311,7 @@ function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs
 
 # managing compile time flags (-I<path>)
 if(inc_dirs AND NOT inc_dirs STREQUAL "")
-	message("ADDITIONAL EXPORTED : include directories of ${component_name}${INSTALL_NAME_SUFFIX} = ${inc_dirs}")
+	#message("ADDITIONAL EXPORTED : include directories of ${component_name}${INSTALL_NAME_SUFFIX} = ${inc_dirs}")
 	foreach(dir IN ITEMS ${inc_dirs})
 		target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC "${dir}")
 	endforeach()
@@ -1320,7 +1319,7 @@ endif()
 
 # managing compile time flags (-D<preprocessor_defs>)
 if(defs AND NOT defs STREQUAL "")
-	message("ADDITIONAL EXPORTED : definitions of ${component_name}${INSTALL_NAME_SUFFIX} = ${defs}")
+	#message("ADDITIONAL EXPORTED : definitions of ${component_name}${INSTALL_NAME_SUFFIX} = ${defs}")
 	foreach(def IN ITEMS ${defs})
 		target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC "${def}")
 	endforeach()
@@ -1340,7 +1339,7 @@ function(manage_Additional_Component_Internal_Flags component_name inc_dirs defs
 # managing compile time flags
 if(inc_dirs AND NOT inc_dirs STREQUAL "")
 	foreach(dir IN ITEMS ${inc_dirs})
-		message("ADDITIONAL INTERNAL : include directories of ${component_name}${INSTALL_NAME_SUFFIX}")
+		#message("ADDITIONAL INTERNAL : include directories of ${component_name}${INSTALL_NAME_SUFFIX}")
 		target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE "${dir}")
 	endforeach()
 endif()
@@ -1348,7 +1347,7 @@ endif()
 # managing compile time flags
 if(defs AND NOT defs STREQUAL "")
 	foreach(def IN ITEMS ${defs})
-		message("ADDITIONAL INTERNAL : compile defs of ${component_name}${INSTALL_NAME_SUFFIX}")
+		#message("ADDITIONAL INTERNAL : compile defs of ${component_name}${INSTALL_NAME_SUFFIX}")
 		target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE "${def}")
 	endforeach()
 endif()
@@ -1394,7 +1393,6 @@ endfunction(fill_Component_Target_With_Internal_Dependency)
 
 ### configure the target to link with another component issued from another package
 function (fill_Component_Target_With_Package_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
-message("fill_Component_Target_With_Package_Dependency ${component} target with ${dep_package}-${dep_component} : comp_defs=${comp_defs} ; comp_exp_defs = ${comp_exp_defs} ; dep_defs${dep_defs}")
 is_Executable_Component(DEP_IS_EXEC ${dep_package} ${dep_component})
 if(NOT DEP_IS_EXEC)#the required package component is a library
 	
@@ -1413,8 +1411,8 @@ if(NOT DEP_IS_EXEC)#the required package component is a library
 		manage_Additional_Component_Internal_Flags(${component} "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
 		manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
 	endif()
-#TODO HERE 1)
-	message("fill_Component_Target_With_Package_Dependency ${component} target with ${dep_package}-${dep_component} : USE MODE SUFFIX vaut ${USE_MODE_SUFFIX}; includes (${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}) = ${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}} ; definitions = ${${PROJECT_NAME}_${component}_TEMP_DEFS} !")
+
+	#message("fill_Component_Target_With_Package_Dependency ${component} target with ${dep_package}-${dep_component} : USE MODE SUFFIX vaut ${USE_MODE_SUFFIX}; includes (${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}) = ${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}} ; definitions = ${${PROJECT_NAME}_${component}_TEMP_DEFS} !")
 else()
 	message(FATAL_ERROR "Executable component ${dep_component} from package ${dep_package} cannot be a dependency for component ${component}")	
 endif()
