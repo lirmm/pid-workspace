@@ -80,8 +80,8 @@ resolve_Package_Dependencies(${PACKAGE_NAME} "_DEBUG")
 resolve_Package_Dependencies(${PACKAGE_NAME} "")
 
 message("DEBUG RESOLVE PACKAGE BUILD DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
-configure_Package_Build_Variables(${PACKAGE_NAME} Debug)
-configure_Package_Build_Variables(${PACKAGE_NAME} Release)
+#configure_Package_Build_Variables(${PACKAGE_NAME} Debug)
+#configure_Package_Build_Variables(${PACKAGE_NAME} Release)
 
 message("DEBUG RESOLVE PACKAGE RUNTIME DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
 # resolving runtime dependencies

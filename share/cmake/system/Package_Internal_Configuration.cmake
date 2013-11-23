@@ -126,6 +126,7 @@ endfunction(resolve_Package_Dependency)
 function (update_Config_Include_Dirs package component dep_package dep_component mode_suffix)
 	if(${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix})	
 		set(${package}_${component}_INCLUDE_DIRS${mode_suffix} ${${package}_${component}_INCLUDE_DIRS${mode_suffix}} ${${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix}} CACHE INTERNAL "")
+	message("update_Config_Include_Dirs  inc dirs of ${dep_package}.${dep_component} var = ${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix} ; content=${${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix}}")
 	endif()
 endfunction(update_Config_Include_Dirs)
 
@@ -153,7 +154,7 @@ function(init_Component_Build_Variables package component path_to_version mode)
 	else()
 		set(mode_suffix "")
 	endif()
-
+	message("init_Component_Build_Variables ${package}.${component} mode = ${mode} suffix = ${mode_suffix}")
 	set(${package}_${component}_INCLUDE_DIRS${mode_suffix} "" CACHE INTERNAL "")
 	set(${package}_${component}_DEFINITIONS${mode_suffix} "" CACHE INTERNAL "")
 	set(${package}_${component}_LIBRARIES${mode_suffix} "" CACHE INTERNAL "")
@@ -191,7 +192,7 @@ function(init_Component_Build_Variables package component path_to_version mode)
 				"${RES_LINKS}"
 				CACHE INTERNAL "")
 		endif()
-		#message("FINAL init_Component_Build_Variables : \nINCLUDES = ${${package}_${component}_INCLUDE_DIRS${mode_suffix}}\nDEFINITIONS = ${${package}_${component}_DEFINITIONS${mode_suffix}}\nLIBRARIES = ${${package}_${component}_LIBRARIES${mode_suffix}}\n")
+		message("FINAL init_Component_Build_Variables ${package}.${component}: \nINCLUDES = ${${package}_${component}_INCLUDE_DIRS${mode_suffix}} (var=${package}_${component}_INCLUDE_DIRS${mode_suffix}) \nDEFINITIONS = ${${package}_${component}_DEFINITIONS${mode_suffix}} (var = ${package}_${component}_DEFINITIONS${mode_suffix}) \nLIBRARIES = ${${package}_${component}_LIBRARIES${mode_suffix}}\n")
 	elseif(${package}_${component}_TYPE STREQUAL "APP" OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
 		
 		set(${package}_${component}_EXECUTABLE${mode_suffix} "${path_to_version}/bin/${${package}_${component}_BINARY_NAME${mode_suffix}}" CACHE INTERNAL "")
@@ -207,6 +208,7 @@ else()
 endif()
 configure_Package_Build_Variables(${dep_package} ${mode})#!! recursion to get all updated infos
 if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${mode_suffix})
+message("update_Component_Build_Variables_With_Dependency ")
 	update_Config_Include_Dirs(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
 	update_Config_Definitions(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
 	update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")	
@@ -239,7 +241,13 @@ endif()
 endfunction(update_Component_Build_Variables_With_Internal_Dependency)
 
 
-function(resolve_Package_Dependencies package build_mode_suffix)
+function(resolve_Package_Dependencies package mode)
+if(mode MATCHES Debug)
+	set(build_mode_suffix "_DEBUG")
+else()
+	set(build_mode_suffix "")
+endif()
+
 # 1) managing package dependencies (the list of dependent packages is defined as ${package_name}_DEPENDENCIES)
 # - locating dependent packages in the workspace and configuring their build variables recursively
 message("DEBUG resolve_Package_Dependencies for ${package} ... step 1), dependencies are : ${${package}_DEPENDENCIES${build_mode_suffix}}")
@@ -251,7 +259,7 @@ foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
 	if(${dep_pack}_FOUND)
 		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-1), dependency ${dep_pack} FOUND !!")
 		if(${dep_pack}_DEPENDENCIES${build_mode_suffix})
-			resolve_Package_Dependencies(${dep_pack} "${build_mode_suffix}")#recursion : resolving dependencies for each package dependency
+			resolve_Package_Dependencies(${dep_pack} ${mode})#recursion : resolving dependencies for each package dependency
 		endif()
 	else()
 		list(APPEND TO_INSTALL_DEPS ${dep_pack})
@@ -272,7 +280,7 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 			message("is ${installed} FOUND ? ${${installed}_FOUND} ")
 			if(${installed}_FOUND)
 				if(${installed}_DEPENDENCIES${build_mode_suffix})
-					resolve_Package_Dependencies(${installed} "${build_mode_suffix}")#recursion : resolving dependencies for each package dependency
+					resolve_Package_Dependencies(${installed} ${mode})#recursion : resolving dependencies for each package dependency
 				endif()
 			else()
 				message(FATAL_ERROR "BUG : impossible to find installed package ${installed}")
@@ -298,7 +306,7 @@ if(${package_name}_DURING_PREPARE_BUILD)
 	message(FATAL_ERROR "Alert : you have define cyclic dependencies between packages : Package ${package_name} is directly or undirectly requiring itself !")
 endif()
 
-if(mode MATCHES "Release")
+if(mode MATCHES Release)
 	set(mode_suffix "")
 else()
 	set(mode_suffix "_DEBUG")
@@ -308,7 +316,7 @@ set(${package_name}_DURING_PREPARE_BUILD TRUE)
 
 # 1) initializing all build variable that are directly provided by each component of the target package
 foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
-	init_Component_Build_Variables(${package_name} ${a_component} ${${package_name}_ROOT_DIR} "${mode_suffix}")
+	init_Component_Build_Variables(${package_name} ${a_component} ${${package_name}_ROOT_DIR} ${mode})
 endforeach()
 
 # 2) setting build variables with informations coming from package dependancies
@@ -385,6 +393,7 @@ function(find_Dependent_Private_Shared_Libraries LIST_OF_UNDIRECT_DEPS package c
 set(undirect_list)
 if(mode MATCHES Release)
 	set(mode_binary_suffix "")
+	set(mode_var_suffix "")
 else()
 	set(mode_binary_suffix "-dbg")
 	set(mode_var_suffix "_DEBUG")

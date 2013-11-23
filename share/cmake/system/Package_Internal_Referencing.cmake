@@ -350,7 +350,7 @@ if(EXACT)
 	set(curr_patch_version -1)
 	foreach(version IN ITEMS ${available_versions})
 		string(REGEX REPLACE "^${ref_major}\\.${ref_minor}\\.([0-9]+)$" "\\1" PATCH ${version})
-		if(NOT "${PATCH}" STREQUAL "${version}")#it matched
+		if(NOT "${PATCH}" STREQUAL "${version}")#it matches
 			if(${PATCH} GREATER ${curr_patch_version})
 				set(curr_patch_version ${PATCH})
 			endif()	
@@ -364,7 +364,7 @@ else()
 	set(curr_min_minor_version ${ref_minor})
 	foreach(version IN ITEMS ${available_versions})
 		string(REGEX REPLACE "^${ref_major}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" VNUMBERS ${version})
-		if(NOT "${VNUMBERS}" STREQUAL "${version}")#it matched
+		if(NOT "${VNUMBERS}" STREQUAL "${version}")#it matches
 			list(GET VNUMBERS 0 compare_minor)
 			list(GET VNUMBERS 1 compare_patch)
 			if(${compare_minor} GREATER ${curr_min_minor_version})
