@@ -163,7 +163,7 @@ function(init_Component_Build_Variables package component path_to_version mode)
 		set(${package}_${component}_INCLUDE_DIRS${mode_suffix} "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
 		#additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
 		if(${package}_${component}_INC_DIRS${mode_suffix})
-			resolve_External_Includes_Path(RES_INCLUDES "${${package}_${component}_INC_DIRS${mode_suffix}}" ${mode})
+			resolve_External_Includes_Path(RES_INCLUDES ${package} "${${package}_${component}_INC_DIRS${mode_suffix}}" ${mode})
 			message("DEBUG RES_INCLUDES for ${package} ${component} = ${RES_INCLUDES}")			
 			set(	${package}_${component}_INCLUDE_DIRS${mode_suffix} 
 				${${package}_${component}_INCLUDE_DIRS${mode_suffix}} 
@@ -255,6 +255,7 @@ foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
 	if(${dep_pack}_FOUND)
 #		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-1), dependency ${dep_pack} FOUND !!")
 		if(${dep_pack}_DEPENDENCIES${build_mode_suffix})
+			message("invoking resolve_Package_Dependencies ${dep_pack} mode=${mode}")
 			resolve_Package_Dependencies(${dep_pack} ${mode})#recursion : resolving dependencies for each package dependency
 		endif()
 	else()
@@ -380,7 +381,8 @@ if(undirect_deps) #if true we need to be sure that the rpath-link does not conta
 	list(REMOVE_DUPLICATES undirect_deps)	
 	get_target_property(thelibs ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
 	set_target_properties(${component}${INSTALL_NAME_SUFFIX} PROPERTIES LINK_LIBRARIES "${thelibs};${undirect_deps}")
-	set(${THIRD_PARTY_LINKS} ${undirect_deps} PARENT_SCOPE)
+	#set(${THIRD_PARTY_LINKS} ${undirect_deps} PARENT_SCOPE)
+	#HERE UNCOMMENT
 endif()
 endfunction(resolve_Source_Component_Linktime_Dependencies)
 
@@ -399,7 +401,7 @@ endif()
 # 1) searching public external dependencies 
 if(NOT is_direct) #otherwise external dependencies are direct dependencies so their LINKS (i.e. exported links) are already taken into account (not private)
 	if(${package}_${component}_LINKS${mode_var_suffix})
-		resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
+		resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
 		foreach(ext_dep IN ITEMS ${RES_LINKS})
 			is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
 			if(IS_SHARED)
@@ -411,7 +413,7 @@ endif()
 
 # 1-bis) searching private external dependencies
 if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
-	resolve_External_Libs_Path(RES_PRIVATE_LINKS "${${package}_${component}_PRIVATE_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
+	resolve_External_Libs_Path(RES_PRIVATE_LINKS ${package} "${${package}_${component}_PRIVATE_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
 	foreach(ext_dep IN ITEMS ${RES_PRIVATE_LINKS})
 		is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
 		if(IS_SHARED)
@@ -529,7 +531,26 @@ function(resolve_Bin_Component_Runtime_Dependencies package component mode)
 if(	${package}_${component}_TYPE STREQUAL "SHARED" 
 	OR ${package}_${component}_TYPE STREQUAL "APP" 
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
+	if(mode MATCHES Debug)
+		set(mode_suffix "_DEBUG")
+	else()
+		set(mode_suffix "")
+	endif()
+	# 1) getting direct runtime dependencies	
 	get_Bin_Component_Runtime_Dependencies(ALL_SHARED_LIBS ${package} ${component} ${mode})#suppose that findPackage has resolved everything
+
+	# 2) adding direct private external dependencies
+	if(${package}_${component}_PRIVATE_LINKS${mode_suffix})#if there are exported links
+		resolve_External_Libs_Path(RES_PRIVATE_LINKS ${package} "${${package}_${component}_PRIVATE_LINKS${mode_suffix}}" ${mode})#resolving libraries path against external packages path
+		if(RES_PRIVATE_LINKS)
+			foreach(lib IN ITEMS ${RES_PRIVATE_LINKS})
+				is_Shared_Lib_With_Path(IS_SHARED ${lib})
+				if(IS_SHARED)
+					list(APPEND ALL_SHARED_LIBS ${lib})
+				endif()
+			endforeach()
+		endif()
+	endif()
 	create_Bin_Component_Symlinks(${package} ${component} ${mode} "${ALL_SHARED_LIBS}")
 endif()
 endfunction(resolve_Bin_Component_Runtime_Dependencies)
@@ -603,7 +624,7 @@ function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 
 	# 1) adding directly exported external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
 	if(${package}_${component}_LINKS${mode_var_suffix})#if there are exported links
-		resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
+		resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
 		if(RES_LINKS)
 			foreach(lib IN ITEMS ${RES_LINKS})
 				is_Shared_Lib_With_Path(IS_SHARED ${lib})
@@ -751,9 +772,10 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
 	# 1) getting all public runtime dependencies (including inherited ones)	
 	get_Bin_Component_Runtime_Dependencies(ALL_SHARED_LIBS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
+	
 	# 2) adding direct private external dependencies
 	if(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX})#if there are exported links
-		resolve_External_Libs_Path(RES_PRIVATE_LINKS "${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}" ${CMAKE_BUILD_TYPE})#resolving libraries path against external packages path
+		resolve_External_Libs_Path(RES_PRIVATE_LINKS ${PROJECT_NAME} "${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}" ${CMAKE_BUILD_TYPE})#resolving libraries path against external packages path
 		if(RES_PRIVATE_LINKS)
 			foreach(lib IN ITEMS ${RES_PRIVATE_LINKS})
 				is_Shared_Lib_With_Path(IS_SHARED ${lib})
@@ -782,11 +804,12 @@ if(mode MATCHES Debug)
 else()
 	set(mode_suffix "")
 endif()
-
+set(EXT_PACKAGE-NOTFOUND PARENT_SCOPE)
 if(DEFINED ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_REFERENCE_PATH${mode_suffix})
 	set(${RES_PATH_TO_PACKAGE} ${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_REFERENCE_PATH${mode_suffix}} PARENT_SCOPE)
+	return()
 elseif(${ref_package}_DEPENDENCIES${mode_suffix})
-	foreach(dep_pack IN ITEMS ${${ref_package}_DEPENDENCIES${mode_suffix}})
+	foreach(dep_pack IN ITEMS ${${ref_package}_DEPENDENCIES${mode_suffix}})#the external dependency may be issued from a third party => taking into account same path
 		is_External_Package_Defined(${dep_pack} ${ext_package} ${mode} PATHTO)
 		if(NOT EXT_PACKAGE-NOTFOUND)
 			set(${RES_PATH_TO_PACKAGE} ${PATHTO} PARENT_SCOPE)
@@ -798,7 +821,7 @@ set(EXT_PACKAGE-NOTFOUND TRUE PARENT_SCOPE)
 endfunction(is_External_Package_Defined)
 
 ###
-function(resolve_External_Libs_Path COMPLETE_LINKS_PATH ext_links mode)
+function(resolve_External_Libs_Path COMPLETE_LINKS_PATH package ext_links mode)
 set(res_links)
 foreach(link IN ITEMS ${ext_links})
 	string(REGEX REPLACE "^<([^>]+)>([^\\.]+\\.[a|la|so|dylib])" "\\1;\\2" RES ${link})
@@ -806,8 +829,9 @@ foreach(link IN ITEMS ${ext_links})
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
-		is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} ${mode} PATHTO )
-		if(EXT_PACKAGE-NOTFOUND)
+		unset(EXT_PACKAGE-NOTFOUND)		
+		is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
+		if(DEFINED EXT_PACKAGE-NOTFOUND)
 			message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")		
 		else()
 			set(fullpath ${PATHTO}${relative_path})
@@ -818,7 +842,7 @@ foreach(link IN ITEMS ${ext_links})
 		if(NOT RES_WITH_PREFIX MATCHES ${link})
 			list(GET RES_WITH_PREFIX 0 link_prefix)
 			list(GET RES_WITH_PREFIX 1 ext_package_name)
-			is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} ${mode} PATHTO)
+			is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
 			if(EXT_PACKAGE-NOTFOUND)
 				message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
 			endif()
@@ -839,13 +863,13 @@ set(${COMPLETE_LINKS_PATH} ${res_links} PARENT_SCOPE)
 endfunction(resolve_External_Libs_Path)
 
 ###
-function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH ext_inc_dirs mode)
+function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH package_context ext_inc_dirs mode)
 set(res_includes)
 foreach(include_dir IN ITEMS ${ext_inc_dirs})
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${include_dir})
 	if(NOT RES MATCHES ${include_dir})# a replacement has taken place => this is a full path to an incude dir
 		list(GET RES 0 ext_package_name)
-		is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} ${mode} PATHTO)
+		is_External_Package_Defined(${package_context} ${ext_package_name} ${mode} PATHTO)
 		if(EXT_PACKAGE-NOTFOUND)
 			message(FATAL_ERROR "undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 		endif()
@@ -862,7 +886,7 @@ foreach(include_dir IN ITEMS ${ext_inc_dirs})
 		if(NOT RES_WITH_PREFIX MATCHES ${include_dir})
 			list(GET RES_WITH_PREFIX 1 relative_path)
 			list(GET RES_WITH_PREFIX 0 ext_package_name)
-			is_External_Package_Defined(${PROJECT_NAME} ${ext_package_name} ${mode} PATHTO)
+			is_External_Package_Defined(${package_context} ${ext_package_name} ${mode} PATHTO)
 			if(EXT_PACKAGE-NOTFOUND)
 				message(FATAL_ERROR "undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 			endif()
