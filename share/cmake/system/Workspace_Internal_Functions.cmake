@@ -156,6 +156,7 @@ if(${category}_CATEGORIES)
 endif()
 endfunction()
 
+
 ###
 function(print_Package_Info package)
 message("PACKAGE: ${package}")
@@ -181,40 +182,6 @@ if(${package}_REFERENCES)
 endif()
 endfunction()
 
-
-###
-function(extract_All_Words name_with_underscores all_words_in_list)
-set(res "")
-string(REPLACE "_" ";" res "${name_with_underscores}")
-set(${all_words_in_list} ${res} PARENT_SCOPE)
-endfunction()
-
-###
-function(fill_List_Into_String input_list res_string)
-set(res "")
-foreach(element IN ITEMS ${input_list})
-	set(res "${res} ${element}")
-endforeach()
-string(STRIP "${res}" res_finished)
-set(${res_string} ${res_finished} PARENT_SCOPE)
-endfunction()
-
-
-###
-function(print_Author author)
-string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
-list(GET author_institution 0 AUTHOR_NAME)
-list(GET author_institution 1 INSTITUTION_NAME)
-extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
-extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
-if(NOT INSTITUTION_STRING STREQUAL "")
-	message("	${AUTHOR_STRING} - ${INSTITUTION_STRING}")
-else()
-	message("	${AUTHOR_STRING}")
-endif()
-endfunction()
 
 ###
 function(print_Package_Contact package)

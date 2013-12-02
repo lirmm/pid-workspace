@@ -1,3 +1,35 @@
+###
+function(extract_All_Words name_with_underscores all_words_in_list)
+set(res "")
+string(REPLACE "_" ";" res "${name_with_underscores}")
+set(${all_words_in_list} ${res} PARENT_SCOPE)
+endfunction()
+
+###
+function(fill_List_Into_String input_list res_string)
+set(res "")
+foreach(element IN ITEMS ${input_list})
+	set(res "${res} ${element}")
+endforeach()
+string(STRIP "${res}" res_finished)
+set(${res_string} ${res_finished} PARENT_SCOPE)
+endfunction()
+
+###
+function(print_Author author)
+string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
+list(GET author_institution 0 AUTHOR_NAME)
+list(GET author_institution 1 INSTITUTION_NAME)
+extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
+extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
+fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+if(NOT INSTITUTION_STRING STREQUAL "")
+	message("	${AUTHOR_STRING} - ${INSTITUTION_STRING}")
+else()
+	message("	${AUTHOR_STRING}")
+endif()
+endfunction()
 
 ###
 function(generate_Reference_File pathtonewfile)
@@ -6,7 +38,6 @@ file(WRITE ${file} "")
 file(APPEND ${file} "#### referencing package ${PROJECT_NAME} mode ####\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_MAIN_AUTHOR ${${PROJECT_NAME}_MAIN_AUTHOR} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_MAIN_INSTITUTION ${${PROJECT_NAME}_MAIN_INSTITUTION} CACHE INTERNAL \"\")\n")
-message("authors = ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
 set(res_string "")
 foreach(auth IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
 	set(res_string "${res_string};\"${auth}\"")
@@ -487,7 +518,7 @@ endfunction(download_And_Install_Binary_Package)
 function(build_And_Install_Source DEPLOYED package version)
 	message("DEBUG build workspace directory = ${WORKSPACE_DIR}")
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_WITH_PRINT_MESSAGES:BOOL=OFF -D USE_LOCAL_DEPLOYMENT:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D BUILD_PACKAGE_REFERENCE:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..
+		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_WITH_PRINT_MESSAGES:BOOL=OFF -D USE_LOCAL_DEPLOYMENT:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		ERROR_QUIET OUTPUT_QUIET
 		)

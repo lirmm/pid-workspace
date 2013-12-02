@@ -1,4 +1,8 @@
-include(${WORKSPACE_DIR}/share/cmake/system/Workspace_Internal_Functions.cmake)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
+
+include(Workspace_Internal_Functions)
 
 if(REQUIRED_PACKAGE)
 	include(${WORKSPACE_DIR}/share/cmake/references/Refer${REQUIRED_PACKAGE}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)

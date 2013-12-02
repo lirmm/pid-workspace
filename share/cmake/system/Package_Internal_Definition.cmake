@@ -402,7 +402,6 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	)
 
 
-
 endif()
 ###############################################################################
 ######### creating build target for easy sequencing all make commands #########

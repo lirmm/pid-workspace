@@ -122,7 +122,7 @@ if(version_dirs)#scanning non local versions
 		return()
 	endif()
 endif()
-endfunction (check_Exact_Version)
+endfunction(check_Exact_Version)
 
 
 ###  check if a version with constraints =major >=minor (with greater minor number available) exists (patch version is always let undefined)
