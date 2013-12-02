@@ -34,7 +34,6 @@ CMAKE_DEPENDENT_OPTION(GENERATE_INSTALLER "Package generates an OS installer for
 		         "NOT USE_LOCAL_DEPLOYMENT" OFF)
 
 option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" OFF)
-option(BUILD_PACKAGE_REFERENCE "Write a cmake script file that can be used later to find the package on the network" OFF)
 
 #################################################
 ############ MANAGING build mode ################
@@ -69,6 +68,11 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
 		VERBATIM
 	)
+	add_custom_target(reference
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} reference
+		VERBATIM
+	)
+
 
 	if(NOT EXISTS ${CMAKE_BINARY_DIR}/debug OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory debug WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -387,12 +391,27 @@ if(GENERATE_INSTALLER)
 endif(GENERATE_INSTALLER)
 
 ###############################################################################
+######### creating specific targets for easy management of the package ########
+###############################################################################
+
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	#copy the reference file of the package into the "references" folder of the workspace
+	add_custom_target(reference 
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
+		COMMAND ${CMAKE_COMMAND} -E echo "Package references have been registered into the worskpace"
+	)
+
+
+
+endif()
+###############################################################################
 ######### creating build target for easy sequencing all make commands #########
 ###############################################################################
 
 #creating a global build command
 if(GENERATE_INSTALLER)
 	if(CMAKE_BUILD_TYPE MATCHES Release)
+		
 		if(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
@@ -502,16 +521,9 @@ endif(GENERATE_INSTALLER)
 ######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
 #########################################################################################################################
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	if(BUILD_PACKAGE_REFERENCE)
-		if(${PROJECT_NAME}_ADDRESS)
-			generate_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake) 
-			#copy the file in the "references" folder of the workspace
-			file(COPY ${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/references)
-			message("The reference file Refer${PROJECT_NAME}.cmake of the package has been generated and copied into the workspace references folder (${WORKSPACE_DIR}/share/cmake/references)")
-		else()
-			message(WARNING "No GIT URL defined, impossible to generate a reference file for the package.")
-		endif()
-	endif(BUILD_PACKAGE_REFERENCE)
+	if(${PROJECT_NAME}_ADDRESS)
+		generate_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake) 
+	endif()
 endif()
 endmacro(build_Package)
 
@@ -609,7 +621,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "") #exported include directories
 
 else()#simply creating a "fake" target for header only library
-	file(	GLOB_RECURSE 
+	file(	GLOB_RECURSE
 		${PROJECT_NAME}_${c_name}_ALL_SOURCES 
 	       	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h" 
 		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh" 
