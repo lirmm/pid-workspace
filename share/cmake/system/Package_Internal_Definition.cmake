@@ -68,11 +68,16 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
 		VERBATIM
 	)
-	add_custom_target(reference
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} reference
+	add_custom_target(referencing
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} referencing
 		VERBATIM
 	)
-
+	if(NOT "${license}" STREQUAL "")
+		add_custom_target(licensing
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} licensing
+			VERBATIM
+		)
+	endif()
 
 	if(NOT EXISTS ${CMAKE_BINARY_DIR}/debug OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory debug WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -395,13 +400,26 @@ endif(GENERATE_INSTALLER)
 ###############################################################################
 
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	
 	#copy the reference file of the package into the "references" folder of the workspace
-	add_custom_target(reference 
+	add_custom_target(referencing
 		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
 		COMMAND ${CMAKE_COMMAND} -E echo "Package references have been registered into the worskpace"
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}	
 	)
-
-
+	
+	if(	DEFINED ${PROJECT_NAME}_LICENSE 
+		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+		message("creating the licensing target")
+		add_custom_target(licensing
+			COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+							-DREQUIRED_PACKAGE=${PROJECT_NAME}
+							-DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+							-DBINARY_DIR=${CMAKE_BINARY_DIR}
+							-P ${WORKSPACE_DIR}/share/cmake/system/Licensing_PID_Package_Files.cmake
+			VERBATIM
+		)
+	endif()
 endif()
 ###############################################################################
 ######### creating build target for easy sequencing all make commands #########
@@ -1056,13 +1074,19 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		if(LICENSE_IN-NOTFOUND)
 			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
 		else(LICENSE_IN-NOTFOUND)
+			foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
+				generate_Author_String(${author} STRING_TO_APPEND)
+				set(${PROJECT_NAME}_AUTHORS_LIST "${${PROJECT_NAME}_AUTHORS_LIST} ${STRING_TO_APPEND}")
+			endforeach()
 			include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
 			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
 			install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
+			file(WRITE ${CMAKE_BINARY_DIR}/share/file_header_comment.txt.in ${LICENSE_HEADER_FILE_DESCRIPTION})
 		endif(LICENSE_IN-NOTFOUND)
 	endif()
 endif()
 endfunction(generate_License_File)
+
 
 ### generating the Find<package>.cmake file of the package
 function(generate_Find_File)

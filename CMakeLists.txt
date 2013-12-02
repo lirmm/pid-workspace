@@ -44,14 +44,16 @@ add_custom_target(list
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+message("module path is : ${CMAKE_MODULE_PATH}")
 ##getting info on a package
 add_custom_target(info
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
-					-DREQUIRED_PACKAGE=$(name) 
+					-DREQUIRED_PACKAGE=$(name)
+					-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Package_Info.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-
+message("module path is : ${CMAKE_MODULE_PATH}")
 ##deploying a package (either soure repository or binary package relocatable archive) 
 add_custom_target(deploy
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
