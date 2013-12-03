@@ -398,6 +398,7 @@ string(TIMESTAMP date "%Y")
 set(PACKAGE_YEARS ${date}) 
 # generating the root CMakeLists.txt of the package
 configure_file(${WORKSPACE_DIR}/share/patterns/CMakeLists.txt.in ../packages/${package}/CMakeLists.txt @ONLY)
+#TODO intialize git features
 endfunction()
 
 

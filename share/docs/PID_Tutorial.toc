@@ -88,3 +88,7 @@
 \contentsline {subsection}{\numberline {9.1}Getting help}{96}
 \contentsline {subsection}{\numberline {9.2}listing packages by category}{96}
 \contentsline {subsection}{\numberline {9.3}Getting information about a package}{97}
+\contentsline {subsection}{\numberline {9.4}Getting information about available licenses}{97}
+\contentsline {subsection}{\numberline {9.5}Creating a new package}{97}
+\contentsline {subsection}{\numberline {9.6}Resolving runtime dependencies of an installed binary package}{98}
+\contentsline {subsection}{\numberline {9.7}Deploying a package in the local workspace}{98}

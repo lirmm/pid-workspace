@@ -14,6 +14,8 @@
         \large An integrated software development process
         	\vskip3pt
         	\large Users Document
+        	\vskip3pt
+        \normalsize	Version 1.0        	
     \end{minipage}
 }
 
@@ -2250,6 +2252,54 @@ Once this last command has been executed, developers can use native build tool t
 \begin{itemize}
 \item \textbf{Call}: \texttt{make info}
 \item \textbf{Arguments}: {required} name=<name of package>. e.g. make info name=the-testpack-a.
+\item \textbf{Effect}: provides some general information on the package like authors, contact, license type, etc. In addition it tells the user if binary archives can be installed (depends on access rights and OS configuration).
+\end{itemize}
+
+\subsection{Getting information about available licenses}
+\begin{itemize}
+\item \textbf{Call}: \texttt{make license}
+\item \textbf{Arguments}: 2 possibilities
+\begin{itemize}
+\item no argument. Listing available licenses.
+\item {optional} name=<name of a given license>. e.g. make license name=BSD. Provides precise information on the given license.
+\end{itemize}. 
+\item \textbf{Effect}: provides some general information on licenses. Using the second signature more precise information is available like license version, official name and authors owning copyright of the license.
+\end{itemize}
+
+\subsection{Creating a new package}
+\begin{itemize}
+\item \textbf{Call}: \texttt{make create}
+\item \textbf{Arguments}:
+\begin{itemize}
+\item name=<name of the new package>.
+\item {optional} license=<name of a given license>. If not specified default license "CeCILL" is used.
+\item {optional} author=<name of the author>. If not specified author will be the name of the current user on the machine.
+\item {optional} affiliation=<name of the institution to which the author belongs to>.
+\end{itemize}. 
+\item \textbf{Effect}: create a new "empty" package from scratch. This package will only exist in the local workspace of the user. He then must create a new private repository for this package and initialize it with the content of the local one.
+\end{itemize}
+
+
+\subsection{Resolving runtime dependencies of an installed binary package}
+\begin{itemize}
+\item \textbf{Call}: \texttt{make resolve}
+\item \textbf{Arguments}:
+\begin{itemize}
+\item name=<name of the binary package>.
+\item version=<version of the binary package>.
+\end{itemize}. 
+\item \textbf{Effect}: this command is used to resolve runtime dependencies of a binary package. For instance it will cause the binary package to use newer version of its required packages' libraries. This is useful when, for some reasons, runtime dependencies have been broken and need to be resolved or just to update the binary with new more recent dependencies.
+\end{itemize}
+
+\subsection{Deploying a package in the local workspace}
+\begin{itemize}
+\item \textbf{Call}: \texttt{make deploy}
+\item \textbf{Arguments}:
+\begin{itemize}
+\item name=<name of the package>.
+\item {optional} version=<version of the binary package>.
+\end{itemize}. 
+\item \textbf{Effect}: this command is used to deploy an existing package in the local workspace. By default, the source repository will be cloned/built/installed . If version is specified then the target relocatable binary version archive of the package is downloaded/resolved.
 \end{itemize}
 
 
