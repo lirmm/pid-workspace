@@ -276,12 +276,13 @@ The workspace is the place where developers work with packages (either those the
 A workspace is a folder (preferably named "workspace") with the following structure:
 \begin{itemize}
 \item the \textbf{.git} folder contains version control related information, managed by the git tool.
-
+\item the \textbf{CMakeLists.txt} file is the workspace configuration file from which workspace specific commands will be generated.
 \item the \textbf{install} folder contains packages' binaries installed by the user. 
 \item the \textbf{packages} folder contains all the packages developed by an author. Each sub-folder of \textbf{packages} is a local repository of a given package as presented previously.
 \item the \textbf{external} folder contains all the external packages used by the installed package (source or binary). Each subdirectory corresponds to an external package, whose content is in turn completely undefined.
 \item the \textbf{.gitignore} file is used to exclude  \textbf{install}, \textbf{packages} and \textbf{external} folders content from version control. This is mandatory since these folders content is supposed to be \textbf{ purely local a a user workstation}.
-\item the \textbf{share} folder contains important files used to manage packages. The \textbf{docs} sub-folder contains documentation including the present document ; the \textbf{cmake} folder contains all scripts and data required to describe, build, install, deploy and configure packages: the \textbf{find} sub-folder contains cmake find script for commonly used external packages ; the \textbf{system} sub-folder contains generic scripts ; \textbf{patterns} contains cmake pattern files used ; \textbf{references} contains cmake script files with meta-information about available packages ; \textbf{licenses} contains cmake script files containing available license description; 
+\item the \textbf{share} folder contains important files used to manage packages. The \textbf{docs} sub-folder contains documentation including the present document ; the \textbf{cmake} folder contains all scripts and data required to describe, build, install, deploy and configure packages: the \textbf{find} sub-folder contains cmake find script for commonly used external packages ; the \textbf{system} sub-folder contains generic scripts ; \textbf{patterns} contains cmake pattern files used ; \textbf{references} contains cmake script files with meta-information about available packages ; \textbf{licenses} contains cmake script files containing available license description;
+\item the \textbf{pid} folder is a kind of build directory for the workspace. This is where the user will configure the workspace and launch workspace specific commands.
 \end{itemize}
 
 \subsubsection{Installing binary packages in the workspace}
@@ -383,7 +384,7 @@ git push origin tags/v0.0.0
 git checkout -b integration master
 git push origin integration
 \end{verbatim}
-\item then the developer starts working with its local and the private repositories (TODO add ref), he is the only person that can access it. At the beginning the package has a generic structure as in section~\ref{} but is empty: the first thing to do is to define package using CMakeList.txt files (see section~\ref{sec:useCMake}) and to add content (i.e. source code).
+\item then the developer starts working with its local and the private repositories, he is the only person that can access it. At the beginning the package has a generic structure as in section~\ref{sec:PackageStruct} but is empty: the first thing to do is to define package using CMakeList.txt files (see section~\ref{sec:useCMake}) and to add content (i.e. source code).
 \item when the developer has reach a state in which the package can be delivered to the group he then:
 \begin{enumerate}
 \item generates/installs the \textbf{reference file} and the \textbf{find file} for that package using adequate CMake configuration (see section~\ref{sec:configCMake}): the \textbf{reference file} and the \textbf{find file} are respectively put is put into \textbf{references} and \textbf{find} folders of its local workspace (see section~\ref{sec:workspace}).
@@ -746,7 +747,7 @@ declare_PID_Package(
 )
 
 set_PID_Package_Version(1 1)
-
+add_PID_Package_Category(cat/subcat)
 # adding some binary packages references
 add_PID_Package_Reference(
     BINARY VERSION 0 1 0 SYSTEM linux 
@@ -779,6 +780,7 @@ Then the user fill other meta-informations that evolve during project life cycle
 \begin{itemize}
 \item the \texttt{set\_PID\_Package\_Version} function is used to set the currently developed version of the package. It take at least a MAJOR and MINOR numbers and optionally a PATCH number as arguments (default value for PATCH number is 0). The version number thus follows the same pattern as git \textbf{release versions}. Before a version is released with a git tag (see section~\ref{sec:versiontags}) this version number must be set adequately so that git tag matches cmake package version. Generally, the best way to do is set the version number used in the CMakeList.txt with the number of the next version to release.
 \item the \texttt{add\_PID\_Package\_Reference} function is used to register a downloadable binary version of the package. The VERSION keyword specify the version with MAJOR MINOR PATCH numbers. The SYSTEM keyword specifies the target operating system for which the binaries have been built. The two addresses after the URL keyword specify where the binary package version can be downloaded either in release (first address) and debug (second address) modes.
+\item the \texttt{add\_PID\_Package\_Category} function is used to specify to which categories the package belongs to. A Category is nothing more that a text identifier that tells what concerns are treated by the package. For instance for a package implementing a robot driver could belong to the "drivers/robot" category. Many categories can be defined for the same package. This information can be use at the workspace level (using workspace specific commands) to know which packages are bound to a given concern. This information just helps classifying packages.
 \end{itemize}
 
 \subsubsection{Dependencies with other packages}
@@ -1113,7 +1115,7 @@ This example is the way a function named \texttt{init\_MPO700\_Robot} is documen
 \begin{itemize}
 \item the \texttt{@brief} property gives a quick description of the function utility.
 \item the \texttt{@param} property documents each argument of the function.
-\item the \texttt{@retuen} property documents the return valeu of the function.
+\item the \texttt{@return} property documents the return valeu of the function.
 \end{itemize}
 
 For a more detailed explanation, readers should refer to the doxygen tool tutorials that can be found online. 
@@ -1172,7 +1174,6 @@ PID packages provide a set of generic variables to allow the configuration of th
 \item BUILD\_API\_DOC (default to ON): If this option is ON, the CMake process will build the html API documentation of the package.
 \item BUILD\_LATEX\_API\_DOC (default to OFF): If this option is ON and if BUILD\_API\_DOC is ON, the CMake process will build the pdf document containing the API documentation of the package.
 \item BUILD\_EXAMPLES (default to ON): If this option is ON, example application will be build and installed in the binary package resulting from the build process.
-\item BUILD\_PACKAGE\_REFERENCE (default to OFF): If this option is ON, the CMake process will generate a reference file for the package. This reference file is installed in a dedicated folder of the containing workspace that contains a reference file for each known PID package. This file be used for the management of package downloading and deployment (either for source repository and binary archives).
 \item BUILD\_WITH\_PRINT\_MESSAGES (default to OFF): If this option is ON, the preprocessor definition PRINT\_MESSAGES will be set. It should be used by developers each time they want to log information from their running code.
 \item USE\_LOCAL\_DEPLOYMENT (default to ON): If this option is ON, the package binary version resulting from the build process will be installed in a version folder with the form own-<version number> instead of a folder with <version number> form. This is useful for developers to precisely control which version of the code he uses. This option is used when working on multiple packages at the same time and when user want to target its own developed binary packages instead of already released ones.
 \item GENERATE\_INSTALLER (default to OFF): If this option is ON and USE\_LOCAL\_DEPLOYMENT is OFF, the CMake process will generate a "ready to install" relocatable binary archive of the package version that will be built. 
@@ -1213,6 +1214,8 @@ Once this last command has been executed, developers can use native build tool t
 \item \texttt{make package} generates the binary package version relocatable archive (using the CPack tool). This command is available only if the GENERATE\_INSTALLER option has been set to ON and USE\_LOCAL\_DE-PLOYMENT option has been set to OFF.
 \item \texttt{make package\_install} install the binary package version relocatable archive in the adequate \textbf{installers} folder of the workspace (see section~\ref{sec:workspaceInstall}).
 \item \texttt{make build} runs all the previous commands sequentially in the adequate order (same order as items of this list) and according to options selected by the developer.
+\item \texttt{make referencing} generates the reference file and places it in the adequate folder of the workspace. When done, the package is known in the local workspace and will be know by all users of the workspace when workspace repository will be updated.
+\item \texttt{make licensing} will add/update the license comment into each source file of the package (except test source files). 
 \end{itemize}
 
 \paragraph{Important:} The build process takes place in release and debug mode in the same time: the \textbf{release} sub-folder of the \textbf{build} folder contains build artefacts for the \textit{Release} configuration mode and the \textbf{debug} sub-folder contains build artefacts for the \textit{Debug} configuration mode. Developers don't have to worry about these directories they are automatically created and managed by PID system. The CMake cache variables of the package (see section~\ref{sec:configCMake}) are the same for both configuration mode. Nevertheless, depending on the configuration mode, dependencies, notably those to external packages, can be different and so some dedicated CMake variables can appear in the CMake cache. The only think to understand is that variable with \texttt{\_DEBUG} appended are relative to \textit{Debug} mode otherwise they are relative to \textit{Release} mode. 
@@ -1420,6 +1423,12 @@ With PID there are few functions to use to precisely declare the content of a pa
 
 \textbf{Constraints}: this function must be called in the root CMakeList.txt file of the package, after \texttt{declare\_PID\_Package} and before \texttt{build\_PID\_package}.\\
 \textbf{Effect}: reference addresses where to find a given binary package version for a given operating system. This information will be used to generate a CMake configuration file that will be used for retrieving adequate package versions.
+
+\subsection{add\_PID\_Package\_Category}
+\label{sec:PIDCMakefunctionsAPI_add_category}
+\textbf{Inputs argument}: a string specifying the category and (optionally) subcategories to which belong the package.
+\textbf{Constraints}: this function must be called in the root CMakeList.txt file of the package, after \texttt{declare\_PID\_Package} and before \texttt{build\_PID\_package}.\\
+\textbf{Effect}: register the package has being member of the given (sub)category.
 
 \subsection{declare\_PID\_Package\_Dependency}
 \textbf{Inputs argument}: 2 signatures whether the dependency is an external or a PID package.
@@ -2135,10 +2144,10 @@ set(	LICENSE_FULLNAME "Contrat de license de logiciel libre CeCILL")
 set(	LICENSE_AUTHORS  "CEA CNRS INRIA")
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION 
-"
-/* 	This file is part of the program ${PROJECT_NAME}
+"/* 	File: @PROJECT_FILENAME@ 	
+*	This file is part of the program ${PROJECT_NAME}
 *  	Program description : ${${PROJECT_NAME}_DESCRIPTION}
-*  	Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}. All Right reserved.
+*  	Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_LIST}. All Right reserved.
 *
 *	This software is free software: you can redistribute it and/or modify
 *	it under the terms of the ${LICENSE_NAME} license as published by
@@ -2160,16 +2169,17 @@ set(	LICENSE_LEGAL_TERMS
 Software license for the software named : ${PROJECT_NAME}
 
 Software description : ${${PROJECT_NAME}_DESCRIPTION}
-Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}
+Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_LIST}
 
-This software is free software: you can redistribute it and/or modify it under the terms of the ${LICENSE_NAME} license as published by
+This software is free software: you can redistribute it and/or modify it 
+under the terms of the ${LICENSE_NAME} license as published by
  ${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software 
 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
 
 Information about license applying to this software:
 License : ${LICENSE_NAME}
-Official name of the license : ${LICENSE_FULLNAME}
+Official name of the license : ${LICENSE_FULLNAME} 
 Version of the license : ${LICENSE_VERSION}
 License authors : ${LICENSE_AUTHORS}
 Additionnal information can be found on the official website of the CeCILL licenses family (http://www.cecill.info/index.en.html)
@@ -2204,87 +2214,43 @@ Furthermore, license files provide \texttt{LICENSE\_HEADER\_FILE\_DESCRIPTION} v
 
 \pagebreak
 
-\part*{POUBELLE}
+\section{PID workspace commands}
+\label{sec:PIDCMakeWorkspaceCommands}
 
+PID workspace provide a set of useful commands to manage workspace content. All these commands used must be called from the \textbf{pid} folder of the workspace.
 
-CATEGORIES
+Before being able to use this command, the must be built from CMake configuration script defined in CMakeLists.txt of the workspace (see section~\ref{sec:workspace}:
+\begin{verbatim}
+cd <workspace dir>/pid
+cmake ..
+\end{verbatim}
 
- The workspace also provides categories : each category defines a specific subject that helps classifying packages/frameworks. For instance the category sensor will reference all packages or frameworks that implement the driver of a sensor. Categories can be hierarchically refined into sub categories for instance the category camera refines the category sensors. Categories can be viewed as lists of links that target frameworks/packages. The process of classification of packages is itself coming from package description (i.e. a package specifies the categories it belongs to).
- 
-the \textbf{categories} folder is structured according a set of topics, each topic being itself a folder that in turn contains either other subcategories or \textbf{links to frameworks}. \textbf{categories} only goal is to help finding available packages (under binary form) according to a given theme. Considering a category, packages that are relevant for the theme it defines are referenced as links (symbolic relative links in Linux) to frameworks folders.
+Once this last command has been executed, developers can use native build tool to execute workspace specific commands. PID system defines a set of targets that can be used. These later are described in each subsection.
 
-When developing it is often useful to know which package provide some useful things relative to one or more topics. The aim of the \textbf{categories} folder is to standardize the classification and the finding of packages relevant for given concerns.
-
-The \textbf{categories} folder is structured into subfolders that describe known categories. Each category folder is itself structured the following way:
+\subsection{Getting help}
 \begin{itemize}
-\item sub folder describes sub categories. A sub category refines the topic of its containing category. For instance folders \textbf{arms} and \textbf{wheeled vehicles} are contained in the category folder \textbf{robot}. These sub categories can in turn be refined the same way.
-\item symbolic links represent target packages of the category. The name of the link is simply the name of the package, the target of the link is a given package framework. The target itself is always expressed as a \textbf{relative path} from the containing category folder to the target framework. By default these links target nothing in the file system as long as the package's framework has not been installed in the \textbf{frameworks} folder.
+\item \textbf{Call}: \texttt{make help}
+\item \textbf{Arguments}: none
+\item \textbf{Effect}: printing all available workspace specific commands and their required/optional arguments.
 \end{itemize}
 
-\paragraph*{Remark:} 
-a same package can be targeted by more than one link: it means that the package belongs to different (sub)categories according to the different point of view of the developers. Doing so, anyone can have his own point of view of the package depending on its center of interest.
-\linebreak
-
-To organize the development, defining some "standard categories" should help developers to classify their packages. This requires to list categories of code that is useful for robotic applications development. For instance :
+\subsection{listing packages by category}
 \begin{itemize}
-\item sensors
+\item \textbf{Call}: \texttt{make list}
+\item \textbf{Arguments}: 2 possibilities
 \begin{itemize}
-\item vision
-\begin{itemize}
-\item cameras
-\item kinects
-\item lasers
-\end{itemize}
-\item force sensors
-\item encoders
-\end{itemize}
-\item robots
-\begin{itemize}
-\item arms
-\item wheeled vehicles
-\item humanoids
-\end{itemize}
-\item simulators
-\item navigation
-\begin{itemize}
-\item cartography
-\item positioning
-\end{itemize}
-\item planning
-\begin{itemize}
-\item mission
-\item path
-\item trajectory
-\end{itemize}
-\item middleware
-\begin{itemize}
-\item ros
-\item contract
-\item orocos
-\end{itemize}
+\item no argument. Apply to all available categories.
+\item {optional} name=<name of a given (sub)category>. e.g. make list name=cat.Apply to a specific category and its subcategories.
+\end{itemize}. 
+\item \textbf{Effect}: listing all packages ordered by categories OR listing the content of a given category. The representation is made into a tree view in the console. This command is simply used to know which packages are available are what they are useful for.
+\item \textbf{Remark}: each category defines a specific subject that helps classifying packages. Categories can be hierarchically refined into sub categories for instance the category camera refines the category sensors. The process of categorization of packages is based on package description. Indeed a package specifies the categories it belongs to in its CMakeLists.txt (see section~\ref{sec:PIDCMakefunctionsAPI_add_category}).
 \end{itemize}
 
-Of course categories can evolve/change along time, when developers want new categories.
-
-Working with categories
-
-The only people that can modify \textbf{categories} folder are package administrators. Each time a new package is created, developers define which are its relevant categories and wrote them in the package.manifest file of the package. When an administrator of a package wants to reference it :
+\subsection{Getting information about a package}
 \begin{itemize}
-\item he first copy/rename the package.manifest file into the \textbf{references} folder.
-\item according to the relevant categories of tha package defined in the manifest, he:
-\begin{itemize}
-\item creates new (sub)category folders in the the \textbf{categories} folder of its workspace, if the corresponding categories do not exist.
-\item creates as many symbolic links that target the package framework as there are relevant categories for the package and put these links into the adequate category folders.
-\end{itemize}
-\item once done he commits its workspace.
+\item \textbf{Call}: \texttt{make info}
+\item \textbf{Arguments}: {required} name=<name of package>. e.g. make info name=the-testpack-a.
 \end{itemize}
 
-From developers point of view, categories just help finding packages that are relevant for given topics. Each time they update their workspace, all available categories and classification of packages according to categories are updated. 
-
-To search packages, they can simply navigate in the file system of the \textbf{categories} folder. 
-\begin{itemize}
-\item if the package is already installed in the \textbf{frameworks} folder he can simply follow the link.
-\item otherwise the link is broken, and the developer has to install the corresponding package.
-\end{itemize}
 
 \end{document}
