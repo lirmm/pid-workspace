@@ -20,32 +20,27 @@ foreach(a_file IN ITEMS ${all_files})
 	#getting appropriate corresponding characters in the source file  
 	string(LENGTH "${configured_header}" header_size)
 	file(READ ${a_file} beginning_of_file LIMIT ${header_size})
-	message("compared beggining of file is : ${beginning_of_file}")
-	message("compared header : ${configured_header}")
 	# comparing header of the source with configured header   
 	if(NOT "${beginning_of_file}" STREQUAL "${configured_header}")#headers are not matching !!
-		message("file ${a_file} does not contain the same license header")
 		#header comment must be updated or created
 		string(LENGTH "/* 	File: ${PROJECT_FILENAME}" beginning_of_header_size)
 		math(EXPR beginning_of_header_size "${beginning_of_header_size}+1")
 		file(READ ${a_file} first_line_of_file LIMIT ${beginning_of_header_size})		
 		file(READ ${a_file} full_content)
-		message("FIRST LINE =${first_line_of_file}!, TO COMPARE WITH=/* 	File: ${PROJECT_FILENAME}!")		
-		if("${first_line_of_file}" STREQUAL "/* 	File: ${PROJECT_FILENAME}") #the file already has a license comment
+		if("${first_line_of_file}" STREQUAL "/* 	File: ${PROJECT_FILENAME}\n") #the file already has a license comment
 			#this comment must be suppressed first
-			string(FIND ${full_content} "*/" position_of_first_comment_ending)
-			math(EXPR thelength "${position_of_first_comment_ending}+1")
-			string(SUBSTRING ${full_content} 0 ${thelength} res_file_content)
-			set(full_content ${res_file_content})
-			message("file ${a_file} header has changed !!!!")
+			string(FIND "${full_content}" "*/" position_of_first_comment_ending)
+			math(EXPR thelength "${position_of_first_comment_ending}+2")
+			string(SUBSTRING "${full_content}" ${thelength} -1 res_file_content)
+			set(full_content ${res_file_content})#now only code and user defined header comments (e.g. for doxygen) are part of the new file content  
+			message("RESULT = ${full_content}")
 		endif()
 		
 		# now adding the newly created header to the file
 		set(RES "${configured_header}")
 		set(RES "${RES}${full_content}")
-		message("new content for ${a_file} :\n ${RES}")	
-		#file(WRITE ${a_file} "${configured_header}")
-		#file(APPEND ${a_file} "${full_content}")
+		message("new content for ${a_file} :\n${RES}")	
+		file(WRITE ${a_file} "${RES}")
 	else()
 		message("file ${a_file} ALREADY contains a license header")	
 	endif()
