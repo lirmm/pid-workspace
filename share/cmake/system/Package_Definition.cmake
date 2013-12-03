@@ -1,9 +1,9 @@
 include(CMakeParseArguments)
 include(Package_Internal_Definition)
 
-### API : declare_PID_Package(AUTHOR main_author_name ... [INSTITUION ...] YEAR ... LICENSE license [ADDRESS address] DESCRIPTION ...)
+### API : declare_PID_Package(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... LICENSE license [ADDRESS address] DESCRIPTION ...)
 macro(declare_PID_Package)
-set(oneValueArgs LICENSE ADDRESS)
+set(oneValueArgs LICENSE ADDRESS MAIL)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
 cmake_parse_arguments(DECLARE_PID_PACKAGE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_PACKAGE_AUTHOR)
@@ -23,8 +23,9 @@ if(DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS}")
 endif()
 
-declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${DECLARE_PID_PACKAGE_YEAR}"
-			"${DECLARE_PID_PACKAGE_LICENSE}" "${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_DESCRIPTION}")
+declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${DECLARE_PID_PACKAGE_MAIL}"
+			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}" 
+			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_DESCRIPTION}")
 endmacro(declare_PID_Package)
 
 ### API : set_PID_Package_Version(major minor [patch])

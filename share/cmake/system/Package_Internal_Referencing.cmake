@@ -16,7 +16,7 @@ set(${res_string} ${res_finished} PARENT_SCOPE)
 endfunction()
 
 ###
-function(generate_Author_String author RES_STRING)
+function(generate_Full_Author_String author RES_STRING)
 string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
 list(GET author_institution 0 AUTHOR_NAME)
 list(GET author_institution 1 INSTITUTION_NAME)
@@ -32,12 +32,31 @@ endif()
 endfunction()
 
 ###
+function(generate_Contact_String author mail RES_STRING)
+extract_All_Words("${author}" AUTHOR_ALL_WORDS)
+fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+if(mail AND NOT mail STREQUAL "")
+	set(${RES_STRING} "${AUTHOR_STRING} (${mail})" PARENT_SCOPE)
+else()
+	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+endif()
+endfunction()
+
+###
+function(generate_Institution_String institution RES_STRING)
+extract_All_Words("${institution}" INSTITUTION_ALL_WORDS)
+fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+set(${RES_STRING} "${INSTITUTION_STRING}" PARENT_SCOPE)
+endfunction()
+
+###
 function(generate_Reference_File pathtonewfile)
 set(file ${pathtonewfile})
 file(WRITE ${file} "")
 file(APPEND ${file} "#### referencing package ${PROJECT_NAME} mode ####\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_MAIN_AUTHOR ${${PROJECT_NAME}_MAIN_AUTHOR} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_MAIN_INSTITUTION ${${PROJECT_NAME}_MAIN_INSTITUTION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_CONTACT_MAIL ${${PROJECT_NAME}_CONTACT_MAIL} CACHE INTERNAL \"\")\n")
 set(res_string "")
 foreach(auth IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
 	set(res_string "${res_string};\"${auth}\"")

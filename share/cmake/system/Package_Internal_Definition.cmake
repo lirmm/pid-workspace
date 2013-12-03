@@ -11,7 +11,7 @@ include(Package_Internal_Referencing)
 ##################################################################################
 ###########################  declaration of the package ##########################
 ##################################################################################
-macro(declare_Package author institution year license address description)
+macro(declare_Package author institution mail year license address description)
 #################################################
 ############ DECLARING options ##################
 #################################################
@@ -175,6 +175,7 @@ foreach(string_el IN ITEMS ${institution})
 	set(res_string "${res_string}_${string_el}")
 endforeach()
 set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_CONTACT_MAIL ${mail} CACHE INTERNAL "")
 
 set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
 set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
@@ -376,8 +377,10 @@ if(GENERATE_INSTALLER)
 	include(InstallRequiredSystemLibraries)
 	#common infos	
 	set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-	set(CPACK_PACKAGE_CONTACT ${${PROJECT_NAME}_MAIN_AUTHOR})
-	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${${PROJECT_NAME}_DESCRIPTION})
+	generate_Contact_String("${${PROJECT_NAME}_MAIN_AUTHOR}" "${${PROJECT_NAME}_CONTACT_MAIL}" RES_CONTACT)
+	set(CPACK_PACKAGE_CONTACT "${RES_CONTACT}")
+	generate_Institution_String("${${PROJECT_NAME}_DESCRIPTION}" RES_INSTITUTION)
+	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${RES_INSTITUTION}")
 	set(CPACK_PACKAGE_VENDOR ${${PROJECT_NAME}_MAIN_INSTITUTION})
 	set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/license.txt)
 	set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
@@ -1075,7 +1078,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
 		else(LICENSE_IN-NOTFOUND)
 			foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
-				generate_Author_String(${author} STRING_TO_APPEND)
+				generate_Full_Author_String(${author} STRING_TO_APPEND)
 				set(${PROJECT_NAME}_AUTHORS_LIST "${${PROJECT_NAME}_AUTHORS_LIST} ${STRING_TO_APPEND}")
 			endforeach()
 			include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
