@@ -2279,6 +2279,16 @@ Once this last command has been executed, developers can use native build tool t
 \item \textbf{Effect}: create a new "empty" package from scratch. This package will only exist in the local workspace of the user. He then must create a new private repository for this package and initialize it with the content of the local one.
 \end{itemize}
 
+\subsection{Synchronizing a local package to an empty remote repository}
+\begin{itemize}
+\item \textbf{Call}: \texttt{make connect}
+\item \textbf{Arguments}:
+\begin{itemize}
+\item name=<name of the new package>.
+\item url=<url of the remote repository>.
+\end{itemize}
+\item \textbf{Effect}: synchronizes the package with the target remote repository so that this repository becomes the "origin" of the package. This is typically used after a "create" command and after some modifications made by the package creator to provide the package to other users (that can then classically clone the repository).
+\end{itemize}
 
 \subsection{Resolving runtime dependencies of an installed binary package}
 \begin{itemize}
