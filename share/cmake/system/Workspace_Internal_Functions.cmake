@@ -375,6 +375,9 @@ function(create_PID_Package package author institution license)
 message("create_PID_Package ${package}")
 #copying the pattern folder into teh package folder and renaming it
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/package ${WORKSPACE_DIR}/packages/${package})
+# now configuring git
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git init)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v0.0.0 -m "creation of package")
 #setting variables
 set(PACKAGE_NAME ${package})
 if(author AND NOT author STREQUAL "")
@@ -398,7 +401,9 @@ string(TIMESTAMP date "%Y")
 set(PACKAGE_YEARS ${date}) 
 # generating the root CMakeLists.txt of the package
 configure_file(${WORKSPACE_DIR}/share/patterns/CMakeLists.txt.in ../packages/${package}/CMakeLists.txt @ONLY)
-#TODO intialize git features
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add --all)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "initialization of package done")
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout -b integration master)
 endfunction()
 
 

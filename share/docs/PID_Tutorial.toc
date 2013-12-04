@@ -58,7 +58,7 @@
 \contentsline {subsubsection}{\numberline {6.2.1}Files and folders naming convention}{61}
 \contentsline {subsubsection}{\numberline {6.2.2}C/C++ objects naming convention}{62}
 \contentsline {subsubsection}{\numberline {6.2.3}C/C++ coding guideline}{62}
-\contentsline {section}{\numberline {7}PID cmake functions API}{67}
+\contentsline {section}{\numberline {7}PID API}{67}
 \contentsline {subsection}{\numberline {7.1}declare\_PID\_Package}{67}
 \contentsline {subsection}{\numberline {7.2}set\_PID\_Package\_Version}{67}
 \contentsline {subsection}{\numberline {7.3}add\_PID\_Package\_Author}{68}
