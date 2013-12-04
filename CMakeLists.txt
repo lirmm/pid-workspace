@@ -4,6 +4,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/licenses)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/find)
 include(Workspace_Internal_Functions)
 
 set(ALL_AVAILABLE_PACKAGES "")
@@ -32,11 +33,12 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive. Use only name=NAME_OF_PACKAGE argument to deploy source repository or use in addition version=VERSION to deploy the specific binary version."
 	COMMAND ${CMAKE_COMMAND} -E echo "resolve -- resolving runtime dependencies of an already installed package. Use name=NAME_OF_PACKAGE and version=VERSION arguments to specify the target binary package."
 	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package. Use name=NAME_OF_PACKAGE to specify the name of the new package. Other optional arguments are: author, affiliation, license."
+	COMMAND ${CMAKE_COMMAND} -E echo "connect -- Synchronize local repository with an empty remote one. Required arguments are : name (name of the package) and url (url of the remote repository)."
 	COMMAND ${CMAKE_COMMAND} -E echo "license -- Printing information on licenses or more precise information on a given license using name=NAME_OF_LICENSE argument."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-##listing all packages ordered by categories OR listing the content of a given category
+## listing all packages ordered by categories OR listing the content of a given category
 add_custom_target(list
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-DREQUIRED_CATEGORY=$(name) 
@@ -44,8 +46,7 @@ add_custom_target(list
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-message("module path is : ${CMAKE_MODULE_PATH}")
-##getting info on a package
+## getting info on a package
 add_custom_target(info
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-DREQUIRED_PACKAGE=$(name)
@@ -53,8 +54,8 @@ add_custom_target(info
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Package_Info.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-message("module path is : ${CMAKE_MODULE_PATH}")
-##deploying a package (either soure repository or binary package relocatable archive) 
+
+## deploying a package (either soure repository or binary package relocatable archive) 
 add_custom_target(deploy
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-DPACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/install
@@ -70,7 +71,7 @@ add_custom_target(deploy
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-##resolving runtime dependencies of an already installed package
+## resolving runtime dependencies of an already installed package
 add_custom_target(resolve
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DPACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/install
@@ -86,18 +87,28 @@ add_custom_target(resolve
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-##creating a new package
+## creating a new package
 add_custom_target(create
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-DREQUIRED_PACKAGE=$(name) 
-					-DOPTIONAL_AUTHOR=$(author) 
-					-DOPTIONAL_INSTITUTION=$(affiliation)
+					-DOPTIONAL_AUTHOR="$(author)" 
+					-DOPTIONAL_INSTITUTION="$(affiliation)"
 					-DOPTIONAL_LICENSE=$(license)
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Create_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-##listing available licenses
+## creating a new package
+add_custom_target(connect
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DREQUIRED_PACKAGE=$(name) 
+					-DREQUIRED_GIT_URL=$(url) 
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Connect_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+
+## listing available licenses
 add_custom_target(license
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-DREQUIRED_LICENSE=$(name)
