@@ -4,6 +4,7 @@
 include(Package_Internal_Finding)
 include(Package_Internal_Configuration)
 include(Package_Internal_Referencing)
+include(Package_Internal_External_Package_Management)
 ##################################################################################
 #################### package management public functions and macros ##############
 ##################################################################################
@@ -201,6 +202,7 @@ endif()
 ############ MANAGING generic paths #############
 #################################################
 set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
+set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
 
