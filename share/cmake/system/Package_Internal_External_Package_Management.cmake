@@ -88,5 +88,223 @@ else()#package already required as "to install"
 endif()
 endfunction()
 
+###
+function(reset_To_Install_External_Packages)
+foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES})
+	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS})
+		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_${version}_EXACT CACHE INTERNAL "")
+	endforeach()
+	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_TOINSTALL_PACKAGES CACHE INTERNAL "")
+endfunction(reset_To_Install_External_Packages)
+
+function(need_Install_External_Packages NEED)
+if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES)
+	set(${NEED} TRUE PARENT_SCOPE)
+else()
+	set(${NEED} FALSE PARENT_SCOPE)
+endif()
+endfunction(need_Install_External_Packages)
+
+
+###
+function(install_Required_External_Packages list_of_packages_to_install INSTALLED_PACKAGES)
+set(successfully_installed "")
+set(not_installed "")
+foreach(dep_package IN ITEMS ${list_of_packages_to_install}) #while there are still packages to install
+	set(INSTALL_OK FALSE)
+	install_External_Package(INSTALL_OK ${dep_package})
+	if(INSTALL_OK)
+		list(APPEND successfully_installed ${dep_package})
+	else()
+		list(APPEND not_installed ${dep_package})
+	endif()
+endforeach()
+if(successfully_installed)
+	set(${INSTALLED_PACKAGES} ${successfully_installed} PARENT_SCOPE)
+endif()
+if(not_installed)
+	message(FATAL_ERROR "Some of the required external packages cannot be installed : ${not_installed}")
+endif()
+endfunction()
+
+
+###
+function(deploy_External_Package_Version DEPLOYED package VERSION)
+set(INSTALLED FALSE)
+#begin
+if(UNIX AND NOT APPLE)
+	set(curr_system linux)
+elseif(APPLE)
+	#TODO
+endif()
+###### downloading the binary package ######
+#release code
+set(FILE_BINARY "")
+set(FOLDER_BINARY "")
+generate_Binary_Package_Name(${package} ${VERSION} "Release" FILE_BINARY FOLDER_BINARY)
+set(download_url ${${package}_REFERENCE_${VERSION}_${curr_system}})
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res)
+list(GET res 0 numeric_error)
+list(GET res 1 status)
+if(NOT numeric_error EQUAL 0)
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	message(WARNING "install : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url}: ${status}")
+	return()
+endif()
+#debug code
+set(FILE_BINARY_DEBUG "")
+set(FOLDER_BINARY_DEBUG "")
+generate_Binary_Package_Name(${package} ${VERSION} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
+set(download_url_dbg ${${package}_REFERENCE_${VERSION}_${curr_system}_DEBUG})
+file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg)
+list(GET res-dbg 0 numeric_error_dbg)
+list(GET res-dbg 1 status_dbg)
+if(NOT numeric_error_dbg EQUAL 0)#there is an error
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	message(WARNING "install : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url_dbg} : ${status_dbg}")
+	return()
+endif()
+
+# installing
+if(NOT EXISTS ${WORKSPACE_DIR}/external/${package} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${package})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
+			WORKING_DIRECTORY ${WORKSPACE_DIR}/external/
+			ERROR_QUIET OUTPUT_QUIET)
+endif()
+# extracting binary archive in cross platform way
+set(error_res "")
+execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+
+if (error_res)
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	message(WARNING "install : cannot extract binary archives ${FILE_BINARY} ${FILE_BINARY_DEBUG}")
+	return()
+endif()
+
+# copying resulting folders into the install path in a cross platform way
+set(error_res "")
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}
+          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${package}
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+if (error_res)
+	set(${INSTALLED} FALSE PARENT_SCOPE)
+	message(WARNING "install : cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}")
+	return()
+endif()
+
+set(${DEPLOYED} TRUE PARENT_SCOPE)
+endfunction(deploy_External_Package_Version)
+
+
+###
+function(resolve_Required_External_Package_Version selected_version package)
+if(NOT ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS)#no specific version required
+	if(${package}_REFERENCES)
+		#simply searching to most up to date one in available references
+		set(CURRENT_VERSION 0.0.0)
+		foreach(ref IN ITEMS ${${package}_REFERENCES})
+			if(ref VERSION_GREATER ${CURRENT_VERSION})
+				set(CURRENT_VERSION ${ref})
+			endif()
+		endforeach()
+		set(${selected_version} "${CURRENT_VERSION}" PARENT_SCOPE)
+		return()
+	else()
+		set(${selected_version} PARENT_SCOPE)
+		message(FATAL_ERROR "Impossible to find a valid reference to any version of external package ${package}")
+		return()
+	endif()
+
+else()#specific version(s) required
+	list(REMOVE_DUPLICATES ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS)
+	#1) testing if a solution exists as regard of "exactness" of versions	
+	set(CURRENT_EXACT FALSE)
+	set(CURRENT_VERSION)
+	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS})
+		if(CURRENT_EXACT)
+			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT) #impossible to find two different exact versions solution
+				set(${selected_version} PARENT_SCOPE)
+				return()
+			elseif(${version} VERSION_GREATER ${CURRENT_VERSION})#any not xact version that is greater than current exact one makes the solution impossible 
+				set(${selected_version} PARENT_SCOPE)
+				return()
+			endif()
+
+		else()
+			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT)
+				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})			
+					set(CURRENT_EXACT TRUE)
+					set(CURRENT_VERSION ${version})
+				else()
+					set(${selected_version} PARENT_SCOPE)
+					return()
+				endif()
+
+			else()#getting the greater minimal required version
+				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})
+					set(CURRENT_VERSION ${version})
+				endif()
+			endif()
+			
+		endif()
+		
+	endforeach()
+	#2) testing if a solution exists as regard of "compatibility" of versions
+	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS})
+		if(NOT ${version} VERSION_EQUAL ${CURRENT_VERSION})
+			if(DEFINED ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO
+			AND NOT ${CURRENT_VERSION} VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
+				set(${selected_version} PARENT_SCOPE)
+				return()
+			endif()
+		endif()
+	endforeach()
+
+endif()
+
+set(${selected_version} "${CURRENT_VERSION}" PARENT_SCOPE)
+endfunction(resolve_Required_External_Package_Version)
+
+
+###
+function(install_External_Package INSTALL_OK package)
+
+# 0) test if reference of the external package exists in the workspace
+set(IS_EXISTING FALSE)  
+package_Reference_Exists_In_Workspace(IS_EXISTING ${package})
+if(NOT IS_EXISTING)
+	set(${INSTALL_OK} FALSE PARENT_SCOPE)
+	message(SEND_ERROR "Install : Unknown external package ${package} : cannot find any reference of this package in the workspace")
+	return()
+endif()
+include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
+if(${refer_path} STREQUAL NOTFOUND)
+	message(FATAL ERROR "Reference file not found for package ${package}!! BIG BUG since it is supposed to exist !!!")
+endif()
+
+# 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
+set(SELECTED)
+resolve_Required_External_Package_Version(SELECTED ${package})
+if(SELECTED)
+	#2) installing package
+	set(PACKAGE_BINARY_DEPLOYED FALSE)
+	#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number
+	deploy_External_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${SELECTED})
+	if(PACKAGE_BINARY_DEPLOYED) # if there is ONE adequate reference, downloading and installing it
+		set(${INSTALL_OK} TRUE PARENT_SCOPE)
+		return()
+	endif()
+else()
+	message(SEND_ERROR "Install : impossible to find an adequate version for external package ${package}")
+endif()
+
+set(${INSTALL_OK} FALSE PARENT_SCOPE)	
+endfunction(install_External_Package)
+
 
 

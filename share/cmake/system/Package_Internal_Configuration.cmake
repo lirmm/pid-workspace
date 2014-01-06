@@ -948,7 +948,7 @@ foreach(a_ext_dep IN ITEMS ${${package_name}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}
 	file(APPEND ${file} "set(${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX} ${${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 endforeach()
 
-# 2) package dependencies
+# 2) native package dependencies
 file(APPEND ${file} "#### declaration of package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 file(APPEND ${file} "set(${package_name}_DEPENDENCIES${MODE_SUFFIX} ${${package_name}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 foreach(a_dep IN ITEMS ${${package_name}_DEPENDENCIES${MODE_SUFFIX}})

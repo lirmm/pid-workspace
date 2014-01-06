@@ -297,6 +297,20 @@ endif()
 # from here only direct dependencies have been satisfied
 # 0) if there are packages to install it means that there are some unresolved required dependencies
 set(INSTALL_REQUIRED FALSE)
+need_Install_External_Packages(INSTALL_REQUIRED)
+if(INSTALL_REQUIRED)
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+		message("Getting required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES}")
+		set(INSTALLED_PACKAGES "")	
+		install_Required_External_Packages("${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES}" INSTALLED_PACKAGES)
+		message("Automatically installed external packages : ${INSTALLED_PACKAGES}")
+	else()
+		message(FATAL_ERROR "there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
+		return()
+	endif()
+endif()
+
+set(INSTALL_REQUIRED FALSE)
 need_Install_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
@@ -314,7 +328,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 1) resolving required packages versions (there can be multiple versions required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		resolve_Package_Dependencies(${dep_pack} "${USE_MODE_SUFFIX}")
+		resolve_Package_Dependencies(${dep_pack} "${USE_MODE_SUFFIX}")#HERE TODO -> gérer les external dependencies !!!
 	endforeach()
 	#here every package dependency should have been resolved OR ERROR
 	
@@ -1527,15 +1541,17 @@ set (${PROJECT_NAME}_VERSION CACHE INTERNAL "" )
 # package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")	
-	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")#TODO VERIFY
 endforeach()
 set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
 # external package dependencies declaration must be reinitialized 
-#foreach(dep_package IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
-#	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX} CACHE PATH "path to the root dir of ${dep_package} external package")
-#endforeach()
+foreach(dep_package IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")	
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
+endforeach()
 set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
 
@@ -1555,8 +1571,17 @@ foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
 	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
 	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
 endforeach()
+foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES})
+	set(${a_used_package}_FOUND CACHE INTERNAL "")
+	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
+	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
+	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
+endforeach()
+
 set(${PROJECT_NAME}_ALL_USED_PACKAGES CACHE INTERNAL "")
+set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES CACHE INTERNAL "")
 reset_To_Install_Packages()
+reset_To_Install_External_Packages()
 endfunction(reset_cached_variables)
 
 function(reset_Mode_Cache_Options)
