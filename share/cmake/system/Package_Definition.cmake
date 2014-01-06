@@ -224,7 +224,7 @@ endif()
 endmacro(declare_PID_Component)
 
 ### API : declare_PID_Package_Dependency (	PACKAGE name 
-#						<EXTERNAL [VERSION version_string [EXACT]] | NATIVE [VERSION major minor [EXACT]] >
+#						<EXTERNAL VERSION version_string [EXACT] | NATIVE VERSION major minor [EXACT] >
 #						[COMPONENTS component ...])
 macro(declare_PID_Package_Dependency)
 set(options EXTERNAL NATIVE)

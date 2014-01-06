@@ -993,14 +993,16 @@ endfunction(declare_System_Component_Dependency)
 ### dep_defs  : definitions in the interface of the external dependancy that must be defined when using this external dependancy, if any => definitions are exported if dependancy is exported
 ### export : if true the component export the external depenancy in its interface (export is always false if component is an application)
 ### inc_dirs : include directories to add to target component in order to build (these include dirs are expressed relatively) to the reference path to the external dependancy root dir
-### links : libraries and linker flags. libraries path are given relative to the dep_package REFERENCE_PATH
+### links : libraries and linker flags. libraries path are given relative to the dep_package root dir.
 function(declare_External_Component_Dependency component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs static_links shared_links)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
-if(DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX})
-	
+
+if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
+	message (FATAL_ERROR "the external package ${dep_package} is not defined !")
+else()
 #	if(NOT shared_links STREQUAL "") #the component has runtime dependencis with an external package
 #		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_USE_RUNTIME${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 #	endif()
@@ -1029,8 +1031,6 @@ if(DEFINED ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${US
 	else()
 		message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
 	endif()
-else()
-	message (FATAL_ERROR "the external package ${dep_package} is not defined !")
 endif()
 endfunction(declare_External_Component_Dependency)
 
