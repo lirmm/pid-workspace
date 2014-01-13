@@ -60,6 +60,10 @@ if(VERSION_DIRS)
 endif()
 endfunction()
 
+###########################################################################################
+################# internal functions to install external package version ##################
+###########################################################################################
+
 ###
 function(add_To_Install_External_Package_Specification package version exact)
 list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES ${package} INDEX)
@@ -96,7 +100,7 @@ foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES})
 	endforeach()
 	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS CACHE INTERNAL "")
 endforeach()
-set(${PROJECT_NAME}_TOINSTALL_PACKAGES CACHE INTERNAL "")
+set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES CACHE INTERNAL "")
 endfunction(reset_To_Install_External_Packages)
 
 function(need_Install_External_Packages NEED)
@@ -230,7 +234,7 @@ else()#specific version(s) required
 			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT) #impossible to find two different exact versions solution
 				set(${selected_version} PARENT_SCOPE)
 				return()
-			elseif(${version} VERSION_GREATER ${CURRENT_VERSION})#any not xact version that is greater than current exact one makes the solution impossible 
+			elseif(${version} VERSION_GREATER ${CURRENT_VERSION})#any not exact version that is greater than current exact one makes the solution impossible 
 				set(${selected_version} PARENT_SCOPE)
 				return()
 			endif()
@@ -240,7 +244,7 @@ else()#specific version(s) required
 				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})			
 					set(CURRENT_EXACT TRUE)
 					set(CURRENT_VERSION ${version})
-				else()
+				else()# current version is greater than exact one currently required => impossible 
 					set(${selected_version} PARENT_SCOPE)
 					return()
 				endif()
@@ -276,7 +280,7 @@ function(install_External_Package INSTALL_OK package)
 
 # 0) test if reference of the external package exists in the workspace
 set(IS_EXISTING FALSE)  
-package_Reference_Exists_In_Workspace(IS_EXISTING ${package})
+package_Reference_Exists_In_Workspace(IS_EXISTING External${package})
 if(NOT IS_EXISTING)
 	set(${INSTALL_OK} FALSE PARENT_SCOPE)
 	message(SEND_ERROR "Install : Unknown external package ${package} : cannot find any reference of this package in the workspace")
@@ -293,7 +297,6 @@ resolve_Required_External_Package_Version(SELECTED ${package})
 if(SELECTED)
 	#2) installing package
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
-	#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number
 	deploy_External_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${SELECTED})
 	if(PACKAGE_BINARY_DEPLOYED) # if there is ONE adequate reference, downloading and installing it
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
@@ -306,5 +309,166 @@ endif()
 set(${INSTALL_OK} FALSE PARENT_SCOPE)	
 endfunction(install_External_Package)
 
+
+###
+function(resolve_External_Package_Dependency package external_dependency)
+
+if(${external_dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
+	if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION) # a specific version is required
+	 	if( ${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT) #an exact version is required
+			
+			is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
+ 
+			if(IS_COMPATIBLE)
+				if(NEED_REFIND)
+					# OK installing the exact version instead
+					#WARNING call to find package
+					find_package(
+						${external_dependency} 
+						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION} 
+						EXACT
+						MODULE
+						REQUIRED
+						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS}
+					)
+				endif()
+				return()				
+			else() #not compatible
+				message(FATAL_ERROR "impossible to find compatible versions of dependent external package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION}.")
+				return()
+			endif()
+		else()#not an exact version required
+			is_External_Version_Compatible_With_Previous_Constraints (
+					COMPATIBLE_VERSION VERSION_TO_FIND 
+					${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION})
+			if(COMPATIBLE_VERSION)
+				if(VERSION_TO_FIND)
+					find_package(
+						${external_dependency} 
+						${VERSION_TO_FIND}
+						MODULE
+						REQUIRED
+						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS}
+					)
+				else()
+					return() # nothing to do more, the current used version is compatible with everything 	
+				endif()
+			else()
+				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION}.")
+				return()
+			endif()
+		endif()
+	else()
+		return()#by default the version is compatible (no constraints) so return 
+	endif()
+else()#the dependency has not been already found
+	message("DEBUG resolve_External_Package_Dependency ${external_dependency} NOT FOUND !!")	
+	if(	${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION)
+		
+		if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT) #an exact version has been specified
+			#WARNING recursive call to find package
+			find_package(
+				${external_dependency} 
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION} 
+				EXACT
+				MODULE
+				REQUIRED
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS}
+			)
+
+		else()
+			#WARNING recursive call to find package
+			message("DEBUG before find : dep= ${external_dependency}, version = ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION}")
+			find_package(
+				${external_dependency} 
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION} 
+				MODULE
+				REQUIRED
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS}
+			)
+		endif()
+	else()
+		find_package(
+			${external_dependency} 
+			MODULE
+			REQUIRED
+			${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS}
+		)
+	endif()
+endif()
+
+endfunction()
+
+
+### HERE TODO
+
+###
+function(is_Compatible_External_Version is_compatible package reference_version version_to_compare)
+set(${is_compatible} FALSE PARENT_SCOPE)
+get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)
+if(	NOT ${compare_major} EQUAL ${reference_major}
+	OR ${compare_minor} GREATER ${reference_minor})
+	return()#not compatible
+endif()
+set(${is_compatible} TRUE PARENT_SCOPE)
+endfunction()
+
+###
+function(is_Exact_External_Version_Compatible_With_Previous_Constraints 
+		is_compatible
+		need_finding
+		package
+		version_string)
+
+set(${is_compatible} FALSE PARENT_SCOPE)
+set(${need_finding} FALSE PARENT_SCOPE)
+if(${package}_REQUIRED_VERSION_EXACT)
+	if(NOT ${${package}_REQUIRED_VERSION_EXACT} VERSION_EQUAL ${version_string})#not compatible if versions are not the same				
+		return() 
+	endif()
+	set(${is_compatible} TRUE PARENT_SCOPE)
+	return()
+endif()
+
+#no exact version required
+foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
+	unset(COMPATIBLE_VERSION)
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_string} ${version})
+	if(NOT COMPATIBLE_VERSION)
+		return()#not compatible
+	endif()
+endforeach()
+
+set(${is_compatible} TRUE PARENT_SCOPE)	
+if(NOT ${${package}_VERSION_STRING} VERSION_EQUAL ${version_string})
+	set(${need_finding} TRUE PARENT_SCOPE) #need to find the new exact version
+endif()
+endfunction()
+
+
+###
+function(is_External_Version_Compatible_With_Previous_Constraints 
+		is_compatible		
+		version_to_find
+		package
+		version_string)
+
+set(${is_compatible} FALSE PARENT_SCOPE)
+# 1) testing compatibility and recording the higher constraint for minor version number
+if(${package}_REQUIRED_VERSION_EXACT)
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_string})
+	if(COMPATIBLE_VERSION)	
+		set(${is_compatible} TRUE PARENT_SCOPE)
+	endif()
+	return()#no need to set the version to find
+endif()
+
+foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version})
+endforeach()
+set(${is_compatible} TRUE PARENT_SCOPE)	
+
+
+endfunction()
 
 

@@ -28,7 +28,7 @@ set(EXTERNAL_PACKAGE_boost_SEARCH_PATH
   )
 
 set(boost_PID_KNOWN_VERSION 1.55.0)
-#set(boost_PID_KNOWN_VERSION_1.55.0_GREATER_VERSIONS_COMPATIBLE_UP_TO 4.5.0)#the 4.5.0 is the first version that is not compatible with 3.2.0 version !!
+#set(boost_PID_KNOWN_VERSION_1.55.0_GREATER_VERSIONS_COMPATIBLE_UP_TO 1.90)#the 1.90 is the first version that is not compatible with 1.55 version !!
 
 check_Directory_Exists(EXIST ${EXTERNAL_PACKAGE_boost_SEARCH_PATH})
 if(EXIST)
@@ -47,13 +47,13 @@ if(EXIST)
 	if(VERSION_TO_USE)#a good version of the package has been found
 		set(boost_FOUND TRUE CACHE INTERNAL "")
 		set(boost_ROOT_DIR ${EXTERNAL_PACKAGE_boost_SEARCH_PATH}/${VERSION_TO_USE} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_ALL_USED_PACKAGES ${${PROJECT_NAME}_ALL_USED_PACKAGES} boost CACHE INTERNAL "")
+		set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES} boost CACHE INTERNAL "")
 		if(boost_FIND_VERSION)
 			if(boost_FIND_VERSION_EXACT)
 				set(boost_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
 				set(boost_REQUIRED_VERSION_EXACT "${boost_FIND_VERSION_MAJOR}.${boost_FIND_VERSION_MINOR}.${boost_FIND_VERSION_PATCH}" CACHE INTERNAL "")
 			else()
-				set(the-testpack-a_ALL_REQUIRED_VERSIONS ${boost_ALL_REQUIRED_VERSIONS} "${boost_FIND_VERSION_MAJOR}.${boost_FIND_VERSION_MINOR}.${boost_FIND_VERSION_PATCH}" CACHE INTERNAL "")	
+				set(boost_ALL_REQUIRED_VERSIONS ${boost_ALL_REQUIRED_VERSIONS} "${boost_FIND_VERSION_MAJOR}.${boost_FIND_VERSION_MINOR}.${boost_FIND_VERSION_PATCH}" CACHE INTERNAL "")	
 			endif()
 		else()
 			set(boost_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version

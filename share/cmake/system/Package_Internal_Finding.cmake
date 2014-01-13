@@ -397,7 +397,7 @@ foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
 endforeach()
 
 set(${is_compatible} TRUE PARENT_SCOPE)	
-if(NOT ${${package_name}_VERSION_STRING} VERSION_EQUAL ${version_string})
+if(NOT ${${package}_VERSION_STRING} VERSION_EQUAL ${version_string})
 	set(${need_finding} TRUE PARENT_SCOPE) #need to find the new exact version
 endif()
 endfunction(is_Exact_Version_Compatible_With_Previous_Constraints)
@@ -437,7 +437,7 @@ set(${is_compatible} TRUE PARENT_SCOPE)
 
 # 2) now we have the greater constraint 
 set(max_version_constraint "${curr_major}.${curr_max_minor}")
-if(NOT ${${package_name}_VERSION_STRING} VERSION_GREATER ${max_version_constraint})
+if(NOT ${${package}_VERSION_STRING} VERSION_GREATER ${max_version_constraint})
 	set(${version_to_find} ${max_version_constraint} PARENT_SCOPE) #need to find the new version
 endif()
 

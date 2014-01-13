@@ -325,10 +325,10 @@ if(INSTALL_REQUIRED)
 endif()
 
 if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-	# 1) resolving required packages versions (there can be multiple versions required at the same time)
+	# 1) resolving required packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		resolve_Package_Dependencies(${dep_pack} "${USE_MODE_SUFFIX}")#HERE TODO -> gérer les external dependencies !!!
+		resolve_Package_Dependencies(${dep_pack} "${USE_MODE_SUFFIX}")
 	endforeach()
 	#here every package dependency should have been resolved OR ERROR
 	
@@ -831,7 +831,6 @@ function(declare_External_Package_Dependency dep_package version exact component
 	#HERE new way of managing external packages
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${components_list} CACHE INTERNAL "")
-	#HERE OLD WAY (TODO remove this) set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REFERENCE_PATH${USE_MODE_SUFFIX} ${path_to_dependency} CACHE PATH "Reference path to the root dir of external package (target version is ${version})")
 endfunction(declare_External_Package_Dependency)
 
 

@@ -20,11 +20,6 @@
 ##################################################################################
 ####################### configuring build time dependencies ######################
 ##################################################################################
-### ICI TODO gérer les envis d'erreur sur les message via un argument
-function(test_Package_Location FOUND package dependency)
-	
-endfunction(test_Package_Location)
-
 
 ###
 # each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
@@ -250,12 +245,10 @@ endif()
 set(TO_INSTALL_DEPS)
 foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
 	# 1) resolving direct dependencies
-	message("DEBUG resolving dependency ${dep_pack} for package ${package}")
 	resolve_Package_Dependency(${package} ${dep_pack})
 	if(${dep_pack}_FOUND)
 #		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-1), dependency ${dep_pack} FOUND !!")
 		if(${dep_pack}_DEPENDENCIES${build_mode_suffix})
-			message("invoking resolve_Package_Dependencies ${dep_pack} mode=${mode}")
 			resolve_Package_Dependencies(${dep_pack} ${mode})#recursion : resolving dependencies for each package dependency
 		endif()
 	else()
@@ -287,8 +280,6 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
-#else()
-#	message("DEBUG nothing to INSTALL !!")
 endif()
 
 endfunction(resolve_Package_Dependencies)
