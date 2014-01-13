@@ -399,18 +399,15 @@ endif()
 
 endfunction()
 
-
-### HERE TODO
-
 ###
 function(is_Compatible_External_Version is_compatible package reference_version version_to_compare)
-set(${is_compatible} FALSE PARENT_SCOPE)
-get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)
-if(	NOT ${compare_major} EQUAL ${reference_major}
-	OR ${compare_minor} GREATER ${reference_minor})
-	return()#not compatible
+
+if(${reference_version} VERSION_LESS ${${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO})  
+	set(${is_compatible} TRUE PARENT_SCOPE)
+else()
+	set(${is_compatible} FALSE PARENT_SCOPE)
 endif()
-set(${is_compatible} TRUE PARENT_SCOPE)
+
 endfunction()
 
 ###
@@ -456,7 +453,7 @@ function(is_External_Version_Compatible_With_Previous_Constraints
 set(${is_compatible} FALSE PARENT_SCOPE)
 # 1) testing compatibility and recording the higher constraint for minor version number
 if(${package}_REQUIRED_VERSION_EXACT)
-	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_string})
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${${package}_REQUIRED_VERSION_EXACT} ${version_string})
 	if(COMPATIBLE_VERSION)	
 		set(${is_compatible} TRUE PARENT_SCOPE)
 	endif()
@@ -464,7 +461,11 @@ if(${package}_REQUIRED_VERSION_EXACT)
 endif()
 
 foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
+	unset(COMPATIBLE_VERSION)	
 	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version})
+	if(NOT COMPATIBLE_VERSION)	
+		return()
+	endif()
 endforeach()
 set(${is_compatible} TRUE PARENT_SCOPE)	
 
