@@ -33,7 +33,7 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive. Use only name=NAME_OF_PACKAGE argument to deploy source repository or use in addition version=VERSION to deploy the specific binary version."
 	COMMAND ${CMAKE_COMMAND} -E echo "resolve -- resolving runtime dependencies of an already installed package. Use name=NAME_OF_PACKAGE and version=VERSION arguments to specify the target binary package."
 	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package. Use name=NAME_OF_PACKAGE to specify the name of the new package. Other optional arguments are: author, affiliation, license."
-	COMMAND ${CMAKE_COMMAND} -E echo "connect -- Synchronize local repository with an empty remote one. Required arguments are : name (name of the package) and url (url of the remote repository)."
+	COMMAND ${CMAKE_COMMAND} -E echo "connect -- Synchronize local repository with an empty remote one. Required arguments are : name to specify the name of the package and url to specify the url of the remote repository."
 	COMMAND ${CMAKE_COMMAND} -E echo "license -- Printing information on licenses or more precise information on a given license using name=NAME_OF_LICENSE argument."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -98,7 +98,7 @@ add_custom_target(create
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-## creating a new package
+## connect to newly created PID package to an existing empty repository
 add_custom_target(connect
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-DREQUIRED_PACKAGE=$(name) 

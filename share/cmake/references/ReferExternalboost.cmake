@@ -1,6 +1,6 @@
 #### referencing external package boost ####
-set(boost_PID_Package_AUTHOR _Robin_Passama CACHE INTERNAL "")
-set(boost_PID_Package_INSTITUTION _LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr CACHE INTERNAL "")
+set(boost_PID_Package_AUTHOR Robin Passama CACHE INTERNAL "")
+set(boost_PID_Package_INSTITUTION LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr CACHE INTERNAL "")
 set(boost_PID_Package_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
 set(boost_AUTHORS "Boost.org authors, see http://www.boost.org/" CACHE INTERNAL "")
 set(boost_LICENSES "Boost license" CACHE INTERNAL "")

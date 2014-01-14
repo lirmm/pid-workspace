@@ -477,10 +477,6 @@ endforeach()
 set(${is_compatible} TRUE PARENT_SCOPE)	
 endfunction()
 
-
-
-#HERE TODO VERIFY
-
 ###
 function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
 if(mode MATCHES Debug)
@@ -491,10 +487,10 @@ endif()
 set(EXT_PACKAGE-NOTFOUND PARENT_SCOPE)
 
 if(DEFINED ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${mode_suffix})
-	set(${RES_PATH_TO_PACKAGE} ${${WORKSPACE_DIR}/external/${ext_package}/${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${mode_suffix} PARENT_SCOPE)
+	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/external/${ext_package}/${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${mode_suffix}} PARENT_SCOPE)
 	return()
-elseif(${ref_package}_DEPENDENCIES${mode_suffix})
-	foreach(dep_pack IN ITEMS ${${ref_package}_DEPENDENCIES${mode_suffix}})#the external dependency may be issued from a third party => taking into account same path
+elseif(${ref_package}_DEPENDENCIES${mode_suffix}) #the external dependency may be issued from a third party native package
+	foreach(dep_pack IN ITEMS ${${ref_package}_DEPENDENCIES${mode_suffix}})
 		is_External_Package_Defined(${dep_pack} ${ext_package} ${mode} PATHTO)
 		if(NOT EXT_PACKAGE-NOTFOUND)
 			set(${RES_PATH_TO_PACKAGE} ${PATHTO} PARENT_SCOPE)
@@ -504,6 +500,7 @@ elseif(${ref_package}_DEPENDENCIES${mode_suffix})
 endif()
 set(EXT_PACKAGE-NOTFOUND TRUE PARENT_SCOPE)
 endfunction(is_External_Package_Defined)
+
 
 ###
 function(resolve_External_Libs_Path COMPLETE_LINKS_PATH package ext_links mode)
@@ -529,17 +526,17 @@ foreach(link IN ITEMS ${ext_links})
 			list(GET RES_WITH_PREFIX 1 ext_package_name)
 			is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
 			if(EXT_PACKAGE-NOTFOUND)
-				message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
+				message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!!")
 			endif()
 			liST(LENGTH RES_WITH_PREFIX SIZE)
 			if(SIZE EQUAL 3)
 				list(GET RES_WITH_PREFIX 2 relative_path)
-				set(fullpath ${link_prefix}${PATHTO}${relative_path})
+				set(fullpath ${link_prefix}${PATHTO}/${relative_path})
 			else()	
 				set(fullpath ${link_prefix}${PATHTO})
 			endif()
 			list(APPEND res_links ${fullpath})
-		else()#this is a link that does not require any replacement
+		else()#this is a link that does not require any replacement (e.g. -l<library name> or -L<system path>)
 			list(APPEND res_links ${link})
 		endif()
 	endif()

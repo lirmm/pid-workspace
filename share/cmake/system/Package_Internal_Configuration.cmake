@@ -100,7 +100,7 @@ else()#the dependency has not been already found
 
 		else()
 			#WARNING recursive call to find package
-			message("DEBUG before find : dep= ${dependency}, version = ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}")
+#			message("DEBUG before find : dep= ${dependency}, version = ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}")
 			find_package(
 				${dependency} 
 				${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
@@ -324,13 +324,13 @@ endif()
 endfunction(resolve_Package_Dependencies)
 
 ###
-function(configure_Package_Build_Variables package_name mode)
-if(${package_name}_PREPARE_BUILD)#this is a guard to limit recursion
+function(configure_Package_Build_Variables package mode)
+if(${package}_PREPARE_BUILD)#this is a guard to limit recursion
 	return()
 endif()
 
-if(${package_name}_DURING_PREPARE_BUILD)
-	message(FATAL_ERROR "Alert : you have define cyclic dependencies between packages : Package ${package_name} is directly or undirectly requiring itself !")
+if(${package}_DURING_PREPARE_BUILD)
+	message(FATAL_ERROR "Alert : you have define cyclic dependencies between packages : Package ${package} is directly or undirectly requiring itself !")
 endif()
 
 if(mode MATCHES Release)
@@ -339,32 +339,32 @@ else()
 	set(mode_suffix "_DEBUG")
 endif()
 
-set(${package_name}_DURING_PREPARE_BUILD TRUE)
+set(${package}_DURING_PREPARE_BUILD TRUE)
 
 # 1) initializing all build variable that are directly provided by each component of the target package
-foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
-	init_Component_Build_Variables(${package_name} ${a_component} ${${package_name}_ROOT_DIR} ${mode})
+foreach(a_component IN ITEMS ${${package}_COMPONENTS})
+	init_Component_Build_Variables(${package} ${a_component} ${${package}_ROOT_DIR} ${mode})
 endforeach()
 
 # 2) setting build variables with informations coming from package dependancies
-foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
-	foreach(a_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES${mode_suffix}})
-		foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS${mode_suffix}}) 
-			update_Component_Build_Variables_With_Dependency(${package_name} ${a_component} ${a_package} ${a_dep_component} ${mode})
+foreach(a_component IN ITEMS ${${package}_COMPONENTS}) 
+	foreach(a_package IN ITEMS ${${package}_${a_component}_DEPENDENCIES${mode_suffix}})
+		foreach(a_dep_component IN ITEMS ${${package}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS${mode_suffix}}) 
+			update_Component_Build_Variables_With_Dependency(${package} ${a_component} ${a_package} ${a_dep_component} ${mode})
 		endforeach()
 	endforeach()
 endforeach()
 
 #3) setting build variables with informations coming from INTERNAL package dependancies
 # these have not been checked like the others since the package components discovering mecanism has already done the job 
-foreach(a_component IN ITEMS ${${package_name}_COMPONENTS}) 
-	foreach(a_dep_component IN ITEMS ${${package_name}_${a_component}_INTERNAL_DEPENDENCIES${mode_suffix}}) 
-		update_Component_Build_Variables_With_Internal_Dependency(${package_name} ${a_component} ${a_dep_component} ${mode})
+foreach(a_component IN ITEMS ${${package}_COMPONENTS}) 
+	foreach(a_dep_component IN ITEMS ${${package}_${a_component}_INTERNAL_DEPENDENCIES${mode_suffix}}) 
+		update_Component_Build_Variables_With_Internal_Dependency(${package} ${a_component} ${a_dep_component} ${mode})
 	endforeach()
 endforeach()
 
-set(${package_name}_PREPARE_BUILD TRUE)
-set(${package_name}_DURING_PREPARE_BUILD FALSE)
+set(${package}_PREPARE_BUILD TRUE)
+set(${package}_DURING_PREPARE_BUILD FALSE)
 # no need to check system/external dependencies as they are already  treaten as special cases (see variable <package>__<component>_LINKS and <package>__<component>_DEFS of components)
 # quite like in pkg-config tool
 endfunction(configure_Package_Build_Variables)
@@ -528,7 +528,7 @@ if(${package}_PREPARE_RUNTIME)#this is a guard to limit recursion -> the runtime
 endif()
 
 if(${package}_DURING_PREPARE_RUNTIME)
-	message(FATAL_ERROR "Alert : cyclic dependencies between packages found : Package ${package_name} is undirectly requiring itself !")
+	message(FATAL_ERROR "Alert : cyclic dependencies between packages found : Package ${package} is undirectly requiring itself !")
 	return()
 endif()
 set(${package}_DURING_PREPARE_RUNTIME TRUE)
@@ -828,22 +828,22 @@ endfunction(resolve_Source_Component_Runtime_Dependencies)
 ############################## install the dependancies ########################## 
 ########### functions used to create the use<package><version>.cmake  ############ 
 ##################################################################################
-function(write_Use_File file package_name build_mode)
+function(write_Use_File file package build_mode)
 set(MODE_SUFFIX "")
 if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode 
 	file(APPEND ${file} "######### declaration of package components ########\n")
-	file(APPEND ${file} "set(${package_name}_COMPONENTS ${${package_name}_COMPONENTS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package_name}_COMPONENTS_APPS ${${package_name}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package_name}_COMPONENTS_LIBS ${${package_name}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${${package}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
 	
 	file(APPEND ${file} "####### internal specs of package components #######\n")
-	foreach(a_component IN ITEMS ${${package_name}_COMPONENTS_LIBS})
-		file(APPEND ${file} "set(${package_name}_${a_component}_TYPE ${${package_name}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package_name}_${a_component}_HEADER_DIR_NAME ${${package_name}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package_name}_${a_component}_HEADERS ${${package_name}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
+	foreach(a_component IN ITEMS ${${package}_COMPONENTS_LIBS})
+		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_HEADER_DIR_NAME ${${package}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_HEADERS ${${package}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
 	endforeach()
-	foreach(a_component IN ITEMS ${${package_name}_COMPONENTS_APPS})
-		file(APPEND ${file} "set(${package_name}_${a_component}_TYPE ${${package_name}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
+	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
+		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
 	endforeach()
 else()
 	set(MODE_SUFFIX _DEBUG)
@@ -853,57 +853,57 @@ endif()
 
 # 1) external package dependencies
 file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-file(APPEND ${file} "set(${package_name}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package_name}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
-foreach(a_ext_dep IN ITEMS ${${package_name}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
-	file(APPEND ${file} "set(${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX} ${${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	if(${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX})
-		file(APPEND ${file} "set(${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+foreach(a_ext_dep IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
+	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	if(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX})
+		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
 	else()
-		file(APPEND ${file} "set(${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
 	endif()
-	file(APPEND ${file} "set(${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX} ${${package_name}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 endforeach()
 
 # 2) native package dependencies
 file(APPEND ${file} "#### declaration of package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-file(APPEND ${file} "set(${package_name}_DEPENDENCIES${MODE_SUFFIX} ${${package_name}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-foreach(a_dep IN ITEMS ${${package_name}_DEPENDENCIES${MODE_SUFFIX}})
-	file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${package_name}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	if(${package_name}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX})
-		file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${package}_DEPENDENCIES${MODE_SUFFIX} ${${package}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+foreach(a_dep IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
+	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	if(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX})
+		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
 	else()
-		file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
 	endif()
-	file(APPEND ${file} "set(${package_name}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX} ${${package_name}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 endforeach()
 
 # 3) internal+external components specifications
 file(APPEND ${file} "#### declaration of components exported flags and binary in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
-	is_Built_Component(IS_BUILT_COMP ${package_name} ${a_component})
-	is_Executable_Component(IS_EXEC_COMP ${package_name} ${a_component})
+foreach(a_component IN ITEMS ${${package}_COMPONENTS})
+	is_Built_Component(IS_BUILT_COMP ${package} ${a_component})
+	is_Executable_Component(IS_EXEC_COMP ${package} ${a_component})
 	if(IS_BUILT_COMP)#if not a pure header library
-		file(APPEND ${file} "set(${package_name}_${a_component}_BINARY_NAME${MODE_SUFFIX} ${${package_name}_${a_component}_BINARY_NAME${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_BINARY_NAME${MODE_SUFFIX} ${${package}_${a_component}_BINARY_NAME${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
 	if(NOT IS_EXEC_COMP)#it is a library
-		file(APPEND ${file} "set(${package_name}_${a_component}_INC_DIRS${MODE_SUFFIX} ${${package_name}_${a_component}_INC_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package_name}_${a_component}_DEFS${MODE_SUFFIX} ${${package_name}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package_name}_${a_component}_LINKS${MODE_SUFFIX} ${${package_name}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package_name}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package_name}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_INC_DIRS${MODE_SUFFIX} ${${package}_${a_component}_INC_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} ${${package}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
 endforeach()
 
 # 4) package internal component dependencies
 file(APPEND ${file} "#### declaration package internal component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
-	if(${package_name}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}) # the component has internal dependencies
-		file(APPEND ${file} "set(${package_name}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package_name}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		foreach(a_int_dep IN ITEMS ${${package_name}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}})
-			if(${package_name}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX})
-				file(APPEND ${file} "set(${package_name}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")				
+foreach(a_component IN ITEMS ${${package}_COMPONENTS})
+	if(${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}) # the component has internal dependencies
+		file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		foreach(a_int_dep IN ITEMS ${${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}})
+			if(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX})
+				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")				
 			else()
-				file(APPEND ${file} "set(${package_name}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")			
+				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")			
 			endif()
 		endforeach()
 	endif()
@@ -911,16 +911,16 @@ endforeach()
 
 # 5) component dependencies 
 file(APPEND ${file} "#### declaration of component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
-	if(${package_name}_${a_component}_DEPENDENCIES${MODE_SUFFIX}) # the component has package dependencies
-		file(APPEND ${file} "set(${package_name}_${a_component}_DEPENDENCIES${MODE_SUFFIX} ${${package_name}_${a_component}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		foreach(dep_package IN ITEMS ${${package_name}_${a_component}_DEPENDENCIES${MODE_SUFFIX}})
-			file(APPEND ${file} "set(${package_name}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX} ${${package_name}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-			foreach(dep_component IN ITEMS ${${package_name}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}})
-				if(${package_name}_${a_component}_EXPORT_${dep_package}_${dep_component})
-					file(APPEND ${file} "set(${package_name}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+foreach(a_component IN ITEMS ${${package}_COMPONENTS})
+	if(${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}) # the component has package dependencies
+		file(APPEND ${file} "set(${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		foreach(dep_package IN ITEMS ${${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}})
+			file(APPEND ${file} "set(${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX} ${${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+			foreach(dep_component IN ITEMS ${${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}})
+				if(${package}_${a_component}_EXPORT_${dep_package}_${dep_component})
+					file(APPEND ${file} "set(${package}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
 				else()
-					file(APPEND ${file} "set(${package_name}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+					file(APPEND ${file} "set(${package}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
 				endif()
 			endforeach()
 		endforeach()
