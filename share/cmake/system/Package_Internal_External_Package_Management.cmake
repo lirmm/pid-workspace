@@ -60,51 +60,52 @@ if(VERSION_DIRS)
 endif()
 endfunction()
 
-###########################################################################################
-################# internal functions to install external package version ##################
-###########################################################################################
+
+#########################################################################################################
+####################### internal functions for external dependencies management #########################
+#########################################################################################################
 
 ###
 function(add_To_Install_External_Package_Specification package version exact)
-list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES ${package} INDEX)
+list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
 if(INDEX EQUAL -1)#not found
-	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES} ${package} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}} ${package} CACHE INTERNAL "")
 	if(version AND NOT version STREQUAL "")
-		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS "${version}" CACHE INTERNAL "")
+		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
 		if(version_exact)
-			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT TRUE CACHE INTERNAL "")
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		else()
-			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT FALSE CACHE INTERNAL "")
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
 		endif()
 	endif()
 else()#package already required as "to install"
-	list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS ${version} INDEX)
+	list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} ${version} INDEX)
 	if(INDEX EQUAL -1)#version not already required
-		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS "${version}" CACHE INTERNAL "")
+		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
 		if(version_exact)
-			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT TRUE CACHE INTERNAL "")
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		else()
-			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT FALSE CACHE INTERNAL "")
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
 		endif()
 	elseif(version_exact) #if this version was previously not exact it becomes exact if exact is required
-			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT TRUE CACHE INTERNAL "")		
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")		
 	endif()
 endif()
 endfunction()
 
 ###
 function(reset_To_Install_External_Packages)
-foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES})
-	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS})
-		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_${version}_EXACT CACHE INTERNAL "")
+foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}})
+	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS${USE_MODE_SUFFIX}})
+		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_${version}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	endforeach()
-	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS CACHE INTERNAL "")
+	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endforeach()
-set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES CACHE INTERNAL "")
+set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_To_Install_External_Packages)
 
 function(need_Install_External_Packages NEED)
-if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES)
+if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX})
 	set(${NEED} TRUE PARENT_SCOPE)
 else()
 	set(${NEED} FALSE PARENT_SCOPE)
@@ -205,9 +206,10 @@ set(${DEPLOYED} TRUE PARENT_SCOPE)
 endfunction(deploy_External_Package_Version)
 
 
+
 ###
 function(resolve_Required_External_Package_Version selected_version package)
-if(NOT ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS)#no specific version required
+if(NOT ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})#no specific version required
 	if(${package}_REFERENCES)
 		#simply searching to most up to date one in available references
 		set(CURRENT_VERSION 0.0.0)
@@ -225,13 +227,13 @@ if(NOT ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS)#no specific versi
 	endif()
 
 else()#specific version(s) required
-	list(REMOVE_DUPLICATES ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS)
+	list(REMOVE_DUPLICATES ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	#1) testing if a solution exists as regard of "exactness" of versions	
 	set(CURRENT_EXACT FALSE)
 	set(CURRENT_VERSION)
-	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS})
+	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}})
 		if(CURRENT_EXACT)
-			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT) #impossible to find two different exact versions solution
+			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX}) #impossible to find two different exact versions solution
 				set(${selected_version} PARENT_SCOPE)
 				return()
 			elseif(${version} VERSION_GREATER ${CURRENT_VERSION})#any not exact version that is greater than current exact one makes the solution impossible 
@@ -240,7 +242,7 @@ else()#specific version(s) required
 			endif()
 
 		else()
-			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT)
+			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX})
 				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})			
 					set(CURRENT_EXACT TRUE)
 					set(CURRENT_VERSION ${version})
@@ -259,7 +261,7 @@ else()#specific version(s) required
 		
 	endforeach()
 	#2) testing if a solution exists as regard of "compatibility" of versions
-	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS})
+	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}})
 		if(NOT ${version} VERSION_EQUAL ${CURRENT_VERSION})
 			if(DEFINED ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO
 			AND NOT ${CURRENT_VERSION} VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
@@ -311,13 +313,18 @@ endfunction(install_External_Package)
 
 
 ###
-function(resolve_External_Package_Dependency package external_dependency)
+function(resolve_External_Package_Dependency package external_dependency mode)
+if(mode MATCHES Debug)
+	set(build_mode_suffix "_DEBUG")
+else()
+	set(build_mode_suffix "")
+endif()
 
 if(${external_dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
-	if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION) # a specific version is required
-	 	if( ${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT) #an exact version is required
+	if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}) # a specific version is required
+	 	if( ${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version is required
 			
-			is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
+			is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
  
 			if(IS_COMPATIBLE)
 				if(NEED_REFIND)
@@ -325,22 +332,22 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
 					#WARNING call to find package
 					find_package(
 						${external_dependency} 
-						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION} 
+						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}} 
 						EXACT
 						MODULE
 						REQUIRED
-						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS}
+						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${build_mode_suffix}}
 					)
 				endif()
 				return()				
 			else() #not compatible
-				message(FATAL_ERROR "impossible to find compatible versions of dependent external package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION}.")
+				message(FATAL_ERROR "impossible to find compatible versions of dependent external package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}.")
 				return()
 			endif()
 		else()#not an exact version required
 			is_External_Version_Compatible_With_Previous_Constraints (
 					COMPATIBLE_VERSION VERSION_TO_FIND 
-					${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION})
+					${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}})
 			if(COMPATIBLE_VERSION)
 				if(VERSION_TO_FIND)
 					find_package(
@@ -348,13 +355,13 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
 						${VERSION_TO_FIND}
 						MODULE
 						REQUIRED
-						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS}
+						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${build_mode_suffix}}
 					)
 				else()
 					return() # nothing to do more, the current used version is compatible with everything 	
 				endif()
 			else()
-				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION}.")
+				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}.")
 				return()
 			endif()
 		endif()
@@ -363,28 +370,28 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
 	endif()
 else()#the dependency has not been already found
 	message("DEBUG resolve_External_Package_Dependency ${external_dependency} NOT FOUND !!")	
-	if(	${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION)
+	if(	${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix})
 		
-		if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT) #an exact version has been specified
+		if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version has been specified
 			#WARNING recursive call to find package
 			find_package(
 				${external_dependency} 
-				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION} 
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}} 
 				EXACT
 				MODULE
 				REQUIRED
-				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS}
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${build_mode_suffix}}
 			)
 
 		else()
 			#WARNING recursive call to find package
-			message("DEBUG before find : dep= ${external_dependency}, version = ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION}")
+			message("DEBUG before find : dep= ${external_dependency}, version = ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}")
 			find_package(
 				${external_dependency} 
-				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION} 
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}} 
 				MODULE
 				REQUIRED
-				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS}
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${build_mode_suffix}}
 			)
 		endif()
 	else()
@@ -392,7 +399,7 @@ else()#the dependency has not been already found
 			${external_dependency} 
 			MODULE
 			REQUIRED
-			${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS}
+			${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${build_mode_suffix}}
 		)
 	endif()
 endif()
@@ -468,8 +475,119 @@ foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
 	endif()
 endforeach()
 set(${is_compatible} TRUE PARENT_SCOPE)	
-
-
 endfunction()
+
+
+
+#HERE TODO VERIFY
+
+###
+function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
+if(mode MATCHES Debug)
+	set(mode_suffix "_DEBUG")
+else()
+	set(mode_suffix "")
+endif()
+set(EXT_PACKAGE-NOTFOUND PARENT_SCOPE)
+
+if(DEFINED ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${mode_suffix})
+	set(${RES_PATH_TO_PACKAGE} ${${WORKSPACE_DIR}/external/${ext_package}/${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${mode_suffix} PARENT_SCOPE)
+	return()
+elseif(${ref_package}_DEPENDENCIES${mode_suffix})
+	foreach(dep_pack IN ITEMS ${${ref_package}_DEPENDENCIES${mode_suffix}})#the external dependency may be issued from a third party => taking into account same path
+		is_External_Package_Defined(${dep_pack} ${ext_package} ${mode} PATHTO)
+		if(NOT EXT_PACKAGE-NOTFOUND)
+			set(${RES_PATH_TO_PACKAGE} ${PATHTO} PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
+endif()
+set(EXT_PACKAGE-NOTFOUND TRUE PARENT_SCOPE)
+endfunction(is_External_Package_Defined)
+
+###
+function(resolve_External_Libs_Path COMPLETE_LINKS_PATH package ext_links mode)
+set(res_links)
+foreach(link IN ITEMS ${ext_links})
+	string(REGEX REPLACE "^<([^>]+)>([^\\.]+\\.[a|la|so|dylib])" "\\1;\\2" RES ${link})
+	if(NOT RES MATCHES ${link})# a replacement has taken place => this is a full path to a library
+		set(fullpath)
+		list(GET RES 0 ext_package_name)
+		list(GET RES 1 relative_path)
+		unset(EXT_PACKAGE-NOTFOUND)		
+		is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
+		if(DEFINED EXT_PACKAGE-NOTFOUND)
+			message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")		
+		else()
+			set(fullpath ${PATHTO}${relative_path})
+			list(APPEND res_links ${fullpath})				
+		endif()
+	else() # this may be a link with a prefix (like -L<path>) that need replacement
+		string(REGEX REPLACE "^([^<]+)<([^>]+)>(.*)" "\\1;\\2;\\3" RES_WITH_PREFIX ${link})
+		if(NOT RES_WITH_PREFIX MATCHES ${link})
+			list(GET RES_WITH_PREFIX 0 link_prefix)
+			list(GET RES_WITH_PREFIX 1 ext_package_name)
+			is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
+			if(EXT_PACKAGE-NOTFOUND)
+				message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
+			endif()
+			liST(LENGTH RES_WITH_PREFIX SIZE)
+			if(SIZE EQUAL 3)
+				list(GET RES_WITH_PREFIX 2 relative_path)
+				set(fullpath ${link_prefix}${PATHTO}${relative_path})
+			else()	
+				set(fullpath ${link_prefix}${PATHTO})
+			endif()
+			list(APPEND res_links ${fullpath})
+		else()#this is a link that does not require any replacement
+			list(APPEND res_links ${link})
+		endif()
+	endif()
+endforeach()
+set(${COMPLETE_LINKS_PATH} ${res_links} PARENT_SCOPE)
+endfunction(resolve_External_Libs_Path)
+
+###
+function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH package_context ext_inc_dirs mode)
+set(res_includes)
+foreach(include_dir IN ITEMS ${ext_inc_dirs})
+	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${include_dir})
+	if(NOT RES MATCHES ${include_dir})# a replacement has taken place => this is a full path to an incude dir of an external package
+		list(GET RES 0 ext_package_name)
+		is_External_Package_Defined(${package_context} ${ext_package_name} ${mode} PATHTO)
+		if(EXT_PACKAGE-NOTFOUND)
+			message(FATAL_ERROR "undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
+		endif()
+		liST(LENGTH RES SIZE)
+		if(SIZE EQUAL 2)#the package name has a suffix (relative path)
+			list(GET RES 1 relative_path)
+			set(fullpath ${PATHTO}${relative_path})
+		else()	#no suffix append to the external package name
+			set(fullpath ${PATHTO})
+		endif()
+		list(APPEND res_includes ${fullpath})
+	else() # this may be an include dir with a prefix (-I<path>) that need replacement
+		string(REGEX REPLACE "^-I<([^>]+)>(.*)" "\\1;\\2" RES_WITH_PREFIX ${include_dir})
+		if(NOT RES_WITH_PREFIX MATCHES ${include_dir})
+			list(GET RES_WITH_PREFIX 1 relative_path)
+			list(GET RES_WITH_PREFIX 0 ext_package_name)
+			is_External_Package_Defined(${package_context} ${ext_package_name} ${mode} PATHTO)
+			if(EXT_PACKAGE-NOTFOUND)
+				message(FATAL_ERROR "undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
+			endif()
+			set(fullpath ${PATHTO}${relative_path})
+			list(APPEND res_includes ${fullpath})
+		else()#this is an include dir that does not require any replacement ! (should be avoided)
+			string(REGEX REPLACE "^-I(.+)" "\\1" RES_WITHOUT_PREFIX ${include_dir})			
+			if(NOT RES_WITHOUT_PREFIX MATCHES ${include_dir})
+				list(APPEND res_includes ${RES_WITHOUT_PREFIX})
+			else()
+				list(APPEND res_includes ${include_dir})
+			endif()				
+		endif()
+	endif()
+endforeach()
+set(${COMPLETE_INCLUDES_PATH} ${res_includes} PARENT_SCOPE)
+endfunction(resolve_External_Includes_Path)
 
 

@@ -388,7 +388,7 @@ endif()
 #no exact version required	
 get_Version_String_Numbers("${version_string}.0" exact_major exact_minor exact_patch)
 foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
-	message("version required=${version_required}, exact_major=${exact_major}, exact_minor=${exact_minor}")
+#	message("version required=${version_required}, exact_major=${exact_major}, exact_minor=${exact_minor}")
 	unset(COMPATIBLE_VERSION)
 	is_Compatible_Version(COMPATIBLE_VERSION ${package} ${exact_major} ${exact_minor} ${version_required})
 	if(NOT COMPATIBLE_VERSION)

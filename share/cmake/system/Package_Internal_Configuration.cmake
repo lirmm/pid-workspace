@@ -28,13 +28,18 @@
 # ${package}_DEPENDENCY_${dependency}_VERSION		# version if a version if specified
 # ${package}_DEPENDENCY_${dependency}_VERSION_EXACT	# TRUE if exact version is required
 # ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
-function(resolve_Package_Dependency package dependency)
+function(resolve_Package_Dependency package dependency mode)
+if(mode MATCHES Debug)
+	set(build_mode_suffix "_DEBUG")
+else()
+	set(build_mode_suffix "")
+endif()
 
 if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
-	if(${package}_DEPENDENCY_${dependency}_VERSION) # a specific version is required
-	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT) #an exact version is required
+	if(${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}) # a specific version is required
+	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version is required
 			
-			is_Exact_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
+			is_Exact_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
  
 			if(IS_COMPATIBLE)
 				if(NEED_REFIND)
@@ -42,22 +47,22 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 					#WARNING call to find package
 					find_package(
 						${dependency} 
-						${${package}_DEPENDENCY_${dependency}_VERSION} 
+						${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
 						EXACT
 						MODULE
 						REQUIRED
-						${${package}_DEPENDENCY_${dependency}_COMPONENTS}
+						${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
 					)
 				endif()
 				return()				
 			else() #not compatible
-				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_DEPENDENCY_${dependency}_VERSION}.")
+				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}.")
 				return()
 			endif()
 		else()#not an exact version required
 			is_Version_Compatible_With_Previous_Constraints (
 					COMPATIBLE_VERSION VERSION_TO_FIND 
-					${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION})
+					${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}})
 			if(COMPATIBLE_VERSION)
 				if(VERSION_TO_FIND)
 					find_package(
@@ -65,13 +70,13 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 						${VERSION_TO_FIND}
 						MODULE
 						REQUIRED
-						${${package}_DEPENDENCY_${dependency}_COMPONENTS}
+						${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
 					)
 				else()
 					return() # nothing to do more, the current used version is compatible with everything 	
 				endif()
 			else()
-				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_DEPENDENCY_${dependency}_VERSION}.")
+				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}.")
 				return()
 			endif()
 		endif()
@@ -79,29 +84,29 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 		return()#by default the version is compatible (no constraints) so return 
 	endif()
 else()#the dependency has not been already found
-	message("DEBUG resolve_Package_Dependency ${dependency} NOT FOUND !!")	
-	if(	${package}_DEPENDENCY_${dependency}_VERSION)
+#	message("DEBUG resolve_Package_Dependency ${dependency} NOT FOUND !!")	
+	if(${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix})
 		
-		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT) #an exact version has been specified
+		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version has been specified
 			#WARNING recursive call to find package
 			find_package(
 				${dependency} 
-				${${package}_DEPENDENCY_${dependency}_VERSION} 
+				${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
 				EXACT
 				MODULE
 				REQUIRED
-				${${package}_DEPENDENCY_${dependency}_COMPONENTS}
+				${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
 			)
 
 		else()
 			#WARNING recursive call to find package
-			message("DEBUG before find : dep= ${dependency}, version = ${${package}_DEPENDENCY_${dependency}_VERSION}")
+			message("DEBUG before find : dep= ${dependency}, version = ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}")
 			find_package(
 				${dependency} 
-				${${package}_DEPENDENCY_${dependency}_VERSION} 
+				${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
 				MODULE
 				REQUIRED
-				${${package}_DEPENDENCY_${dependency}_COMPONENTS}
+				${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
 			)
 		endif()
 	else()
@@ -109,7 +114,7 @@ else()#the dependency has not been already found
 			${dependency} 
 			MODULE
 			REQUIRED
-			${${package}_DEPENDENCY_${dependency}_COMPONENTS}
+			${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
 		)
 	endif()
 endif()
@@ -246,7 +251,7 @@ endif()
 set(TO_INSTALL_EXTERNAL_DEPS)
 foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${build_mode_suffix}})
 	# 1) resolving direct dependencies
-	resolve_External_Package_Dependency(${package} ${dep_ext_pack})
+	resolve_External_Package_Dependency(${package} ${dep_ext_pack} ${mode})
 	if(NOT ${dep_ext_pack}_FOUND)
 		list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
 	endif()
@@ -258,17 +263,17 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
 #		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_EXTERNAL_DEPS}")
 		set(INSTALLED_EXTERNAL_PACKAGES "")
-		install_Required_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
+		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
 #		message("resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_EXTERNAL_PACKAGES}")
 		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
-			resolve_External_Package_Dependency(${package} ${installed})
+			resolve_External_Package_Dependency(${package} ${installed} ${mode})
 #			message("is ${installed} FOUND ? ${${installed}_FOUND} ")
 			if(NOT ${installed}_FOUND)
-				message(FATAL_ERROR "BUG : impossible to find installed package ${installed}")
+				message(FATAL_ERROR "BUG : impossible to find installed external package ${installed}")
 			endif()	
 		endforeach()
 	else()	
-		message(FATAL_ERROR "there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
+		message(FATAL_ERROR "there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${build_mode_suffix}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
 endif()
@@ -280,7 +285,7 @@ endif()
 set(TO_INSTALL_DEPS)
 foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
 	# 1) resolving direct dependencies
-	resolve_Package_Dependency(${package} ${dep_pack})
+	resolve_Package_Dependency(${package} ${dep_pack} ${mode})
 	if(${dep_pack}_FOUND)
 #		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-1), dependency ${dep_pack} FOUND !!")
 		if(${dep_pack}_DEPENDENCIES${build_mode_suffix})
@@ -301,7 +306,7 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 		install_Required_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES)
 #		message("resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_PACKAGES}")
 		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
-			resolve_Package_Dependency(${package} ${installed})
+			resolve_Package_Dependency(${package} ${installed} ${mode})
 #			message("is ${installed} FOUND ? ${${installed}_FOUND} ")
 			if(${installed}_FOUND)
 				if(${installed}_DEPENDENCIES${build_mode_suffix})
@@ -312,7 +317,7 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 			endif()	
 		endforeach()
 	else()	
-		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
+		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${build_mode_suffix}}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
 endif()
@@ -817,119 +822,6 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	create_Source_Component_Symlinks(${component}${INSTALL_NAME_SUFFIX} "${ALL_SHARED_LIBS}")
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
-
-##################################################################################
-####################### external dependencies management #########################
-##################################################################################
-
-###
-function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
-if(mode MATCHES Debug)
-	set(mode_suffix "_DEBUG")
-else()
-	set(mode_suffix "")
-endif()
-set(EXT_PACKAGE-NOTFOUND PARENT_SCOPE)
-
-if(DEFINED ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${USE_MODE_SUFFIX})
-	set(${RES_PATH_TO_PACKAGE} ${${WORKSPACE_DIR}/external/${ext_package}/${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${USE_MODE_SUFFIX}} PARENT_SCOPE)
-	return()
-elseif(${ref_package}_DEPENDENCIES${mode_suffix})
-	foreach(dep_pack IN ITEMS ${${ref_package}_DEPENDENCIES${mode_suffix}})#the external dependency may be issued from a third party => taking into account same path
-		is_External_Package_Defined(${dep_pack} ${ext_package} ${mode} PATHTO)
-		if(NOT EXT_PACKAGE-NOTFOUND)
-			set(${RES_PATH_TO_PACKAGE} ${PATHTO} PARENT_SCOPE)
-			return()
-		endif()
-	endforeach()
-endif()
-set(EXT_PACKAGE-NOTFOUND TRUE PARENT_SCOPE)
-endfunction(is_External_Package_Defined)
-
-###
-function(resolve_External_Libs_Path COMPLETE_LINKS_PATH package ext_links mode)
-set(res_links)
-foreach(link IN ITEMS ${ext_links})
-	string(REGEX REPLACE "^<([^>]+)>([^\\.]+\\.[a|la|so|dylib])" "\\1;\\2" RES ${link})
-	if(NOT RES MATCHES ${link})# a replacement has taken place => this is a full path to a library
-		set(fullpath)
-		list(GET RES 0 ext_package_name)
-		list(GET RES 1 relative_path)
-		unset(EXT_PACKAGE-NOTFOUND)		
-		is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
-		if(DEFINED EXT_PACKAGE-NOTFOUND)
-			message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")		
-		else()
-			set(fullpath ${PATHTO}${relative_path})
-			list(APPEND res_links ${fullpath})				
-		endif()
-	else() # this may be a link with a prefix (like -L<path>) that need replacement
-		string(REGEX REPLACE "^([^<]+)<([^>]+)>(.*)" "\\1;\\2;\\3" RES_WITH_PREFIX ${link})
-		if(NOT RES_WITH_PREFIX MATCHES ${link})
-			list(GET RES_WITH_PREFIX 0 link_prefix)
-			list(GET RES_WITH_PREFIX 1 ext_package_name)
-			is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
-			if(EXT_PACKAGE-NOTFOUND)
-				message(FATAL_ERROR "undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
-			endif()
-			liST(LENGTH RES_WITH_PREFIX SIZE)
-			if(SIZE EQUAL 3)
-				list(GET RES_WITH_PREFIX 2 relative_path)
-				set(fullpath ${link_prefix}${PATHTO}${relative_path})
-			else()	
-				set(fullpath ${link_prefix}${PATHTO})
-			endif()
-			list(APPEND res_links ${fullpath})
-		else()#this is a link that does not require any replacement
-			list(APPEND res_links ${link})
-		endif()
-	endif()
-endforeach()
-set(${COMPLETE_LINKS_PATH} ${res_links} PARENT_SCOPE)
-endfunction(resolve_External_Libs_Path)
-
-###
-function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH package_context ext_inc_dirs mode)
-set(res_includes)
-foreach(include_dir IN ITEMS ${ext_inc_dirs})
-	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${include_dir})
-	if(NOT RES MATCHES ${include_dir})# a replacement has taken place => this is a full path to an incude dir
-		list(GET RES 0 ext_package_name)
-		is_External_Package_Defined(${package_context} ${ext_package_name} ${mode} PATHTO)
-		if(EXT_PACKAGE-NOTFOUND)
-			message(FATAL_ERROR "undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
-		endif()
-		liST(LENGTH RES SIZE)
-		if(SIZE EQUAL 2)#the package name has a suffix (relative path)
-			list(GET RES 1 relative_path)
-			set(fullpath ${PATHTO}${relative_path})
-		else()	#no suffix append to the external package name
-			set(fullpath ${PATHTO})
-		endif()
-		list(APPEND res_includes ${fullpath})
-	else() # this may be an include dir with a prefix (-I<path>) that need replacement
-		string(REGEX REPLACE "^-I<([^>]+)>(.*)" "\\1;\\2" RES_WITH_PREFIX ${include_dir})
-		if(NOT RES_WITH_PREFIX MATCHES ${include_dir})
-			list(GET RES_WITH_PREFIX 1 relative_path)
-			list(GET RES_WITH_PREFIX 0 ext_package_name)
-			is_External_Package_Defined(${package_context} ${ext_package_name} ${mode} PATHTO)
-			if(EXT_PACKAGE-NOTFOUND)
-				message(FATAL_ERROR "undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
-			endif()
-			set(fullpath ${PATHTO}${relative_path})
-			list(APPEND res_includes ${fullpath})
-		else()#this is an include dir that does not require any replacement ! (should be avoided)
-			string(REGEX REPLACE "^-I(.+)" "\\1" RES_WITHOUT_PREFIX ${include_dir})			
-			if(NOT RES_WITHOUT_PREFIX MATCHES ${include_dir})
-				list(APPEND res_includes ${RES_WITHOUT_PREFIX})
-			else()
-				list(APPEND res_includes ${include_dir})
-			endif()				
-		endif()
-	endif()
-endforeach()
-set(${COMPLETE_INCLUDES_PATH} ${res_includes} PARENT_SCOPE)
-endfunction(resolve_External_Includes_Path)
 
 
 ##################################################################################
