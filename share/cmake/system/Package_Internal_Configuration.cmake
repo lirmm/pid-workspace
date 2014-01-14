@@ -239,9 +239,44 @@ else()
 	set(build_mode_suffix "")
 endif()
 
-# 1) managing package dependencies (the list of dependent packages is defined as ${package_name}_DEPENDENCIES)
+################## external packages ##################
+
+# 1) managing external package dependencies (the list of dependent packages is defined as ${package}_EXTERNAL_DEPENDENCIES)
+# - locating dependent external packages in the workspace and configuring their build variables recursively
+set(TO_INSTALL_EXTERNAL_DEPS)
+foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${build_mode_suffix}})
+	# 1) resolving direct dependencies
+	resolve_External_Package_Dependency(${package} ${dep_ext_pack})
+	if(NOT ${dep_ext_pack}_FOUND)
+		list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
+	endif()
+endforeach()
+
+# 2) for not found package
+#message("DEBUG resolve_Package_Dependencies for ${package} ... step 2)")
+if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+#		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_EXTERNAL_DEPS}")
+		set(INSTALLED_EXTERNAL_PACKAGES "")
+		install_Required_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
+#		message("resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_EXTERNAL_PACKAGES}")
+		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
+			resolve_External_Package_Dependency(${package} ${installed})
+#			message("is ${installed} FOUND ? ${${installed}_FOUND} ")
+			if(NOT ${installed}_FOUND)
+				message(FATAL_ERROR "BUG : impossible to find installed package ${installed}")
+			endif()	
+		endforeach()
+	else()	
+		message(FATAL_ERROR "there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES}. You may download them \"by hand\" or use the required packages automatic download option")
+		return()
+	endif()
+endif()
+
+################## native packages ##################
+
+# 1) managing package dependencies (the list of dependent packages is defined as ${package}_DEPENDENCIES)
 # - locating dependent packages in the workspace and configuring their build variables recursively
-#message("DEBUG resolve_Package_Dependencies for ${package} ... step 1), dependencies are : ${${package}_DEPENDENCIES${build_mode_suffix}}")
 set(TO_INSTALL_DEPS)
 foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
 	# 1) resolving direct dependencies
@@ -281,7 +316,6 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 		return()
 	endif()
 endif()
-
 endfunction(resolve_Package_Dependencies)
 
 ###
