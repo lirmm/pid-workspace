@@ -825,9 +825,10 @@ function(declare_Package_Dependency dep_package version exact list_of_components
 endfunction(declare_Package_Dependency)
 
 ### declare external dependancies
-function(declare_External_Package_Dependency dep_package version exact components_list)#OLD arg : path_to_dependency
+function(declare_External_Package_Dependency dep_package version exact components_list)
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+	
 	#HERE new way of managing external packages
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${components_list} CACHE INTERNAL "")

@@ -31,6 +31,7 @@ set(eigen_PID_KNOWN_VERSION 3.2.0)
 #set(eigen_PID_KNOWN_VERSION_3.2.0_GREATER_VERSIONS_COMPATIBLE_UP_TO 4.5.0)#the 4.5.0 is the first version that is not compatible with 3.2.0 version !!
 
 check_Directory_Exists(EXIST ${EXTERNAL_PACKAGE_eigen_SEARCH_PATH})
+
 if(EXIST)
 	# at this stage the only thing to do is to check for versions
 	#variables that will be filled by generic functions
