@@ -429,7 +429,6 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	
 	if(	DEFINED ${PROJECT_NAME}_LICENSE 
 		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
-		message("creating the licensing target")
 		add_custom_target(licensing
 			COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 							-DREQUIRED_PACKAGE=${PROJECT_NAME}
@@ -835,7 +834,6 @@ function(declare_External_Package_Dependency dep_package version exact component
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${components_list} CACHE INTERNAL "")
 	
-	message("eigen version is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}")
 endfunction(declare_External_Package_Dependency)
 
 
