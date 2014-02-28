@@ -349,7 +349,7 @@ endif()
 # recursive call into subdirectories to build/install/test the package
 add_subdirectory(src)
 add_subdirectory(apps)
-if(BUILD_AND_RUN_TESTS)
+if(BUILD_AND_RUN_TESTS AND ${CMAKE_BUILD_TYPE} MATCHES Release)
 	enable_testing()
 	add_subdirectory(test)
 endif()

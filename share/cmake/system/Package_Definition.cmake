@@ -410,3 +410,43 @@ else()#system dependency
 endif()
 endmacro(declare_PID_Component_Dependency)
 
+
+### API : run_PID_Test (NAME 			test_name
+#			<EXE name | COMPONENT 	name [PACKAGE name]>
+#			ARGUMENTS	 	list_of_args
+#			)
+macro(run_PID_Test)
+set(oneValueArgs NAME EXE COMPONENT PACKAGE)
+set(multiValueArgs ARGUMENTS)
+cmake_parse_arguments(RUN_PID_TEST "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+if(RUN_PID_TEST_UNPARSED_ARGUMENTS)
+	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}")
+endif()
+if(NOT RUN_PID_TEST_NAME)
+	message(FATAL_ERROR "bad arguments : a name must be given to the test (using NAME <name> syntax) !")
+endif()
+
+if(NOT RUN_PID_TEST_EXE AND NOT RUN_PID_TEST_COMPONENT)
+	message(FATAL_ERROR "bad arguments : an executable must be defined. Using EXE you can use an executable present on your system or by using COMPONENT. In this later case you must specify a PID executable component. If the PACKAGE keyword is used then this component will be found in another package than the current one.")
+endif()
+
+if(RUN_PID_TEST_EXE AND RUN_PID_TEST_COMPONENT)
+	message(FATAL_ERROR "bad arguments : you must use either a system executable (using EXE keyword) OR a PID application component (using COMPONENT keyword)")
+endif()
+
+if(RUN_PID_TEST_EXE)
+	add_test("${RUN_PID_TEST_NAME}" "${RUN_PID_TEST_EXE}" ${RUN_PID_TEST_ARGUMENTS})
+else()#RUN_PID_TEST_COMPONENT
+	if(RUN_PID_TEST_PACKAGE)#component coming from another PID package
+		#testing if TARGET component exist TODO
+		#TODO getting path to component
+	else()#internal component
+		#testing if TARGET component exist TODO
+		
+		add_test(${RUN_PID_TEST_NAME} ${RUN_PID_TEST_COMPONENT} ${RUN_PID_TEST_ARGUMENTS})
+	endif()
+endif()
+
+endmacro(run_PID_Test)
+
+

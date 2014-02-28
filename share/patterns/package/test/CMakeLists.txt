@@ -4,7 +4,6 @@
 # declare_PID_Component			(TEST_APPLICATION 	NAME  <test unit 2>	DIRECTORY <ANOTHER DIR>) 
 
 
-#add_test(<test1 name> <test unit 1> arg1 arg2 ... )
-#add_test(<test2 name> <test unit 1> arg1 arg2 ... )
-#add_test(<test3 name> <test unit 2> arg1 arg2 ... )
+#run_PID_Test (NAME checking-xxx COMPONENT <test unit 1> ARGUMENTS ...)
+#run_PID_Test (NAME checking-xxx COMPONENT <test unit 2> ARGUMENTS ...)
 
