@@ -731,10 +731,12 @@ file(	GLOB_RECURSE
 	${PROJECT_NAME}_${c_name}_ALL_SOURCES 
 	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.c" 
 	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cc" 
-	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cpp" 
+	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cpp"
+	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cxx"
 	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.h" 
 	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hpp" 
 	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hh"
+	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hxx"
 )
 
 #defining the target to build the application
@@ -832,6 +834,8 @@ function(declare_External_Package_Dependency dep_package version exact component
 	#HERE new way of managing external packages
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${components_list} CACHE INTERNAL "")
+	
+	message("eigen version is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}")
 endfunction(declare_External_Package_Dependency)
 
 
@@ -1483,22 +1487,19 @@ endif()
 if(ext_inc_dirs)
 	resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH ${PROJECT_NAME} "${ext_inc_dirs}" ${CMAKE_BUILD_TYPE})
 endif()
-is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
-if(COMP_IS_BUILT) #the component has a corresponding target
 
-	# setting compile/linkage definitions for the component target
-	if(export)
-		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${ext_defs})
-		manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
-		manage_Additional_Component_Exported_Flags(${component} "${COMPLETE_INCLUDES_PATH}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${COMPLETE_LINKS_PATH}")
+# setting compile/linkage definitions for the component target
+if(export)
+	set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${ext_defs})
+	manage_Additional_Component_Internal_Flags(${component} "" "${comp_defs}")
+	manage_Additional_Component_Exported_Flags(${component} "${COMPLETE_INCLUDES_PATH}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${COMPLETE_LINKS_PATH}")
 
-	else()
-		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${ext_defs})		
-		manage_Additional_Component_Internal_Flags(${component} "${COMPLETE_INCLUDES_PATH}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
-		manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${COMPLETE_LINKS_PATH}")
-	endif()
+else()
+	set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${ext_defs})		
+	manage_Additional_Component_Internal_Flags(${component} "${COMPLETE_INCLUDES_PATH}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}")
+	manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${COMPLETE_LINKS_PATH}")
+endif()
 
-endif()#do nothing in case of a pure header component
 endfunction(fill_Component_Target_With_External_Dependency)
 
 
