@@ -328,7 +328,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 1) resolving required packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		resolve_Package_Dependencies(${dep_pack} "${USE_MODE_SUFFIX}")
+		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
 	endforeach()
 	#here every package dependency should have been resolved OR ERROR
 	
@@ -913,7 +913,7 @@ endfunction(declare_Internal_Component_Dependency)
 function(declare_Package_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
 	# ${PROJECT_NAME}_${component}_DEPENDENCIES			# packages used by the component ${component} of the current package
 	# ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS	# components of package ${dep_package} used by component ${component} of current package
-#message("declare_Package_Component_Dependency : component = ${component}, dep_package = ${dep_package}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
+message("declare_Package_Component_Dependency : component = ${component}, dep_package = ${dep_package}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
@@ -1133,7 +1133,7 @@ endmacro(generate_Use_File)
 
 ### configure variables exported by component that will be used to generate the package cmake use file
 function (configure_Install_Variables component export include_dirs dep_defs exported_defs static_links shared_links)
-
+message("configure_Install_Variables component=${component} export=${export} include_dirs=${include_dirs} dep_defs=${dep_defs} exported_defs=${exported_defs} static_links=${static_links} shared_links=${shared_links}")
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(	NOT dep_defs STREQUAL "" 
@@ -1366,7 +1366,7 @@ endfunction(generate_API)
 
 ### configure the target with exported flags (cflags and ldflags)
 function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs links)
-
+#message("manage_Additional_Component_Exported_Flags ${component_name} ${inc_dirs} ${defs} ${links}")
 # managing compile time flags (-I<path>)
 if(inc_dirs AND NOT inc_dirs STREQUAL "")
 	#message("ADDITIONAL EXPORTED : include directories of ${component_name}${INSTALL_NAME_SUFFIX} = ${inc_dirs}")
@@ -1394,6 +1394,7 @@ endfunction(manage_Additional_Component_Exported_Flags)
 
 ### configure the target with internal flags (cflags only)
 function(manage_Additional_Component_Internal_Flags component_name inc_dirs defs)
+#message("manage_Additional_Component_Internal_Flags ${component_name} ${inc_dirs} ${defs}")
 # managing compile time flags
 if(inc_dirs AND NOT inc_dirs STREQUAL "")
 	foreach(dir IN ITEMS ${inc_dirs})
@@ -1451,11 +1452,16 @@ endfunction(fill_Component_Target_With_Internal_Dependency)
 
 ### configure the target to link with another component issued from another package
 function (fill_Component_Target_With_Package_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
+#message("DEBUG fill_Component_Target_With_Package_Dependency component=${component} dep_package=${dep_package} dep_component=${dep_component} export=${export} comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
 is_Executable_Component(DEP_IS_EXEC ${dep_package} ${dep_component})
 if(NOT DEP_IS_EXEC)#the required package component is a library
 	
 	if(export)
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
+		#message("DEBUG ${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX} = ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}}")
+		#message("DEBUG ${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX} = ${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}")
+		#message("DEBUG ${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX} = ${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
+
 		if(${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX})
 			list(APPEND ${PROJECT_NAME}_${component}_TEMP_DEFS ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
 		endif()		
@@ -1470,7 +1476,6 @@ if(NOT DEP_IS_EXEC)#the required package component is a library
 		manage_Additional_Component_Exported_Flags(${component} "" "${comp_exp_defs}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
 	endif()
 
-	#message("fill_Component_Target_With_Package_Dependency ${component} target with ${dep_package}-${dep_component} : USE MODE SUFFIX vaut ${USE_MODE_SUFFIX}; includes (${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}) = ${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}} ; definitions = ${${PROJECT_NAME}_${component}_TEMP_DEFS} !")
 else()
 	message(FATAL_ERROR "Executable component ${dep_component} from package ${dep_package} cannot be a dependency for component ${component}")	
 endif()

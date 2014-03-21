@@ -369,7 +369,7 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
 		return()#by default the version is compatible (no constraints) so return 
 	endif()
 else()#the dependency has not been already found
-	message("DEBUG resolve_External_Package_Dependency ${external_dependency} NOT FOUND !!")	
+	#message("DEBUG resolve_External_Package_Dependency ${external_dependency} NOT FOUND !!")	
 	if(	${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix})
 		
 		if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version has been specified
@@ -385,7 +385,7 @@ else()#the dependency has not been already found
 
 		else()
 			#WARNING recursive call to find package
-			message("DEBUG before find : dep= ${external_dependency}, version = ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}")
+			#message("DEBUG before find : dep= ${external_dependency}, version = ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}")
 			find_package(
 				${external_dependency} 
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}} 
@@ -409,12 +409,15 @@ endfunction()
 ###
 function(is_Compatible_External_Version is_compatible package reference_version version_to_compare)
 
-if(${reference_version} VERSION_LESS ${${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO})  
-	set(${is_compatible} TRUE PARENT_SCOPE)
+if(${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO)
+	if(${reference_version} VERSION_LESS ${${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO})  
+		set(${is_compatible} TRUE PARENT_SCOPE)
+	else()
+		set(${is_compatible} FALSE PARENT_SCOPE)
+	endif()
 else()
-	set(${is_compatible} FALSE PARENT_SCOPE)
+	set(${is_compatible} TRUE PARENT_SCOPE) #if not specified it means that there are no known greater version that is not compatible
 endif()
-
 endfunction()
 
 ###
@@ -437,7 +440,7 @@ endif()
 #no exact version required
 foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
 	unset(COMPATIBLE_VERSION)
-	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_string} ${version})
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version_string})
 	if(NOT COMPATIBLE_VERSION)
 		return()#not compatible
 	endif()
@@ -456,7 +459,7 @@ function(is_External_Version_Compatible_With_Previous_Constraints
 		version_to_find
 		package
 		version_string)
-
+#message("DEBUG is_External_Version_Compatible_With_Previous_Constraints is_compatible=${is_compatible} version_to_find=${version_to_find} package=${package} version_string=${version_string}")
 set(${is_compatible} FALSE PARENT_SCOPE)
 # 1) testing compatibility and recording the higher constraint for minor version number
 if(${package}_REQUIRED_VERSION_EXACT)
@@ -468,9 +471,9 @@ if(${package}_REQUIRED_VERSION_EXACT)
 endif()
 
 foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
-	unset(COMPATIBLE_VERSION)	
-	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version})
-	if(NOT COMPATIBLE_VERSION)	
+	unset(COMPATIBLE_VERSION)
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version_string})
+	if(NOT COMPATIBLE_VERSION)
 		return()
 	endif()
 endforeach()

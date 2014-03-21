@@ -183,7 +183,7 @@ function(init_Component_Build_Variables package component path_to_version mode)
 
 		#provided additionnal ld flags (exported external/system libraries and ldflags)		
 		if(${package}_${component}_LINKS${mode_suffix})
-			resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${mode_suffix}}" ${mode})			
+			resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${mode_suffix}}" ${mode})			
 			set(	${package}_${component}_LIBRARIES${mode_suffix}
 				${${package}_${component}_LIBRARIES${mode_suffix}}	
 				"${RES_LINKS}"
@@ -238,6 +238,7 @@ endfunction(update_Component_Build_Variables_With_Internal_Dependency)
 
 
 function(resolve_Package_Dependencies package mode)
+#message("DEBUG resolve_Package_Dependencies package=${package} mode=${mode}")
 if(mode MATCHES Debug)
 	set(build_mode_suffix "_DEBUG")
 else()
@@ -251,6 +252,7 @@ endif()
 set(TO_INSTALL_EXTERNAL_DEPS)
 foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${build_mode_suffix}})
 	# 1) resolving direct dependencies
+	
 	resolve_External_Package_Dependency(${package} ${dep_ext_pack} ${mode})
 	if(NOT ${dep_ext_pack}_FOUND)
 		list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
@@ -264,10 +266,10 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 #		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_EXTERNAL_DEPS}")
 		set(INSTALLED_EXTERNAL_PACKAGES "")
 		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
-#		message("resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_EXTERNAL_PACKAGES}")
+#		message("DEBUG resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_EXTERNAL_PACKAGES}")
 		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
 			resolve_External_Package_Dependency(${package} ${installed} ${mode})
-#			message("is ${installed} FOUND ? ${${installed}_FOUND} ")
+#			message("DEBUG is ${installed} FOUND ? ${${installed}_FOUND} ")
 			if(NOT ${installed}_FOUND)
 				message(FATAL_ERROR "BUG : impossible to find installed external package ${installed}")
 			endif()	
@@ -325,6 +327,7 @@ endfunction(resolve_Package_Dependencies)
 
 ###
 function(configure_Package_Build_Variables package mode)
+message(DEBUG configure_Package_Build_Variables package=${package} mode=${mode})
 if(${package}_PREPARE_BUILD)#this is a guard to limit recursion
 	return()
 endif()
