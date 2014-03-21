@@ -136,7 +136,7 @@ if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in 
 	list_Local_Version_Subdirectories(version_dirs ${package_install_dir})
 	if(version_dirs)#scanning local versions  
 		foreach(version IN ITEMS ${version_dirs})
-			string(REGEX REPLACE "^own-${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1" A_VERSION "${version}")
+			string(REGEX REPLACE "^own-${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
 			if(NOT (A_VERSION STREQUAL "${version}"))#there is a match
 				list(GET A_VERSION 0 minor)
 				list(GET A_VERSION 1 patch)
