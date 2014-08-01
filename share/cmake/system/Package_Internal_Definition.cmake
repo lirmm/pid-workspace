@@ -350,6 +350,7 @@ endif()
 add_subdirectory(src)
 add_subdirectory(apps)
 if(BUILD_AND_RUN_TESTS AND ${CMAKE_BUILD_TYPE} MATCHES Release)
+	message("You asked to TEST something")
 	enable_testing()
 	add_subdirectory(test)
 endif()
@@ -485,23 +486,12 @@ if(GENERATE_INSTALLER)
 			endif(BUILD_API_DOC)
 		endif(BUILD_AND_RUN_TESTS)
 	else(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS)
-			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL} 
-				COMMAND ${CMAKE_BUILD_TOOL} test
-				COMMAND ${CMAKE_BUILD_TOOL} install
-				COMMAND ${CMAKE_BUILD_TOOL} package
-				COMMAND ${CMAKE_BUILD_TOOL} package_install
-			) 
-		else(BUILD_AND_RUN_TESTS)
-			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL} 
-				COMMAND ${CMAKE_BUILD_TOOL} install
-				COMMAND ${CMAKE_BUILD_TOOL} package
-				COMMAND ${CMAKE_BUILD_TOOL} package_install
-			)  
-		endif(BUILD_AND_RUN_TESTS)
-
+		add_custom_target(build 
+			COMMAND ${CMAKE_BUILD_TOOL} 
+			COMMAND ${CMAKE_BUILD_TOOL} install
+			COMMAND ${CMAKE_BUILD_TOOL} package
+			COMMAND ${CMAKE_BUILD_TOOL} package_install
+		) 
 	endif(CMAKE_BUILD_TYPE MATCHES Release)
 
 else(GENERATE_INSTALLER)
@@ -535,20 +525,11 @@ else(GENERATE_INSTALLER)
 				)
 			endif(BUILD_API_DOC)
 		endif()
-	else(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS)
+	else(CMAKE_BUILD_TYPE MATCHES Release)#debug
 			add_custom_target(build 
 				COMMAND ${CMAKE_BUILD_TOOL}
-				COMMAND ${CMAKE_BUILD_TOOL} test
 				COMMAND ${CMAKE_BUILD_TOOL} install
 			) 
-		else(BUILD_AND_RUN_TESTS)
-			
-			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL} 
-				COMMAND ${CMAKE_BUILD_TOOL} install
-			) 
-		endif(BUILD_AND_RUN_TESTS)
 	endif(CMAKE_BUILD_TYPE MATCHES Release)
 endif(GENERATE_INSTALLER)
 
