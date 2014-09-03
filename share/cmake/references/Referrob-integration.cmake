@@ -7,5 +7,5 @@ set(rob-integration_DESCRIPTION an API to ease integration of various robotics c
 set(rob-integration_YEARS 2014 CACHE INTERNAL "")
 set(rob-integration_LICENSE CeCILL-C CACHE INTERNAL "")
 set(rob-integration_ADDRESS git@rob-dev.lirmm.fr:rob-developers/rob-integration.git CACHE INTERNAL "")
-set(rob-integration_CATEGORIES  CACHE INTERNAL "")
+set(rob-integration_CATEGORIES data/primitive;data/physic;data/geometry CACHE INTERNAL "")
 set(rob-integration_REFERENCES  CACHE INTERNAL "")
