@@ -7,5 +7,5 @@ set(rob-knowbotics_DESCRIPTION an API to ease integration of various robotics co
 set(rob-knowbotics_YEARS 2014 CACHE INTERNAL "")
 set(rob-knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
 set(rob-knowbotics_ADDRESS git@rob-dev.lirmm.fr:rob-developers/rob-knowbotics.git CACHE INTERNAL "")
-set(rob-knowbotics_CATEGORIES data/primitive;data/physic;data/geometry CACHE INTERNAL "")
+set(rob-knowbotics_CATEGORIES data/primitive;data/physic;data/geometry;middleware/integration CACHE INTERNAL "")
 set(rob-knowbotics_REFERENCES  CACHE INTERNAL "")
