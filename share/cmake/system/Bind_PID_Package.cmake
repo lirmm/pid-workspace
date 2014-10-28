@@ -52,7 +52,7 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS})
 			list(APPEND NOT_DEFINED_EXT_DEPS ${ext_dep})
 		endif()
 		
-	endif()
+	endif() 
 endforeach()
 if(NOT_DEFINED_EXT_DEPS OR NOT_DEFINED_EXT_DEPS_DEBUG)
 	message(WARNING "Following external packages path has been automatically set. To resolve their path by hand use -DCONFIG_<package>=<path> option when calling this script")
