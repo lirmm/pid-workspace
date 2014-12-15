@@ -281,13 +281,13 @@ macro(build_Package)
 
 set(CMAKE_SKIP_BUILD_RPATH FALSE) # don't skip the full RPATH for the build tree
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install RPATH already
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE) #do not use any ink info when installing
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE) #do not use any link time info when installing
 
-#set(CMAKE_INSTALL_RPATH "${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_INSTALL_LIB_PATH}") 
 if(UNIX AND NOT APPLE)
 	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
-else() #TODO with APPLE
-	message("install system is compatible with UNIX systems but not APPLE")
+elseif (APPLE)
+	set(CMAKE_MACOSX_RPATH TRUE)
+	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to @rpath to enable easy package relocation
 endif()
 
 #################################################################################
@@ -622,8 +622,14 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 			LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
 		)
 		#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
-		
+		if(UNIX AND NOT APPLE)
+			set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		elseif(APPLE)
+			set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		else()
+			message(FATAL_ERROR "only UNIX (inclusing MACOSX) shared libraries are handled")
+		endif()		
+
 		if(NOT internal_links STREQUAL "") #usefull only when trully linking so only beneficial to shared libs
 			target_link_library(${c_name}${INSTALL_NAME_SUFFIX} ${internal_links})
 		endif()
@@ -729,7 +735,11 @@ if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 		RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
 	)
 	#setting the default rpath for the target	
-	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
+	if(UNIX AND NOT APPLE)
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
+	elseif(APPLE)#TODO VERIFY
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
+	endif()
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
 	# NB : tests do not need to be relocatable since they are purely local
 endif()
@@ -1586,15 +1596,18 @@ endfunction(reset_Mode_Cache_Options)
 ###
 function(is_A_System_Reference_Path path IS_SYSTEM)
 
-if(UNIX AND NOT APPLE)
-	if(path STREQUAL / OR PATH STREQUAL /usr OR PATH STREQUAL /usr/local)
+if(UNIX)
+	if(path STREQUAL / OR path STREQUAL /usr OR path STREQUAL /usr/local)
 		set(${IS_SYSTEM} TRUE PARENT_SCOPE)
 	else()
 		set(${IS_SYSTEM} FALSE PARENT_SCOPE)
 	endif()
+endif()
 
-elseif(APPLE)
-	#TODO
+if(APPLE AND NOT ${IS_SYSTEM})
+	if(path STREQUAL /Library/Frameworks OR path STREQUAL /Network/Library/Frameworks OR path STREQUAL /System/Library/Framework)
+		set(${IS_SYSTEM} TRUE PARENT_SCOPE)
+	endif()
 endif()
 
 endfunction(is_A_System_Reference_Path)

@@ -142,7 +142,7 @@ set(INSTALLED FALSE)
 if(UNIX AND NOT APPLE)
 	set(curr_system linux)
 elseif(APPLE)
-	#TODO
+	set(curr_system darwin)#HERE TODO VERIFY
 endif()
 ###### downloading the binary package ######
 #release code
