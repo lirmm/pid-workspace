@@ -331,7 +331,7 @@ function(get_Available_Binary_Package_Versions package list_of_versions)
 if(UNIX AND NOT APPLE)
 	set(curr_system linux)
 elseif(APPLE)
-	set(curr_system macosx)#TODO change with the name given by bundle generator
+	set(curr_system darwin)#TODO VERIFY NAMING
 else()
 	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
 	return()
@@ -442,8 +442,8 @@ endfunction(deploy_Binary_Package_Version)
 function(generate_Binary_Package_Name package version mode RES_FILE RES_FOLDER)
 if(UNIX AND NOT APPLE)
 	set(system_string Linux)
-elseif(APPLE)#TODO
-
+elseif(APPLE)#TODO verify naming
+	set(system_string Darwin)
 endif()
 if(mode MATCHES Debug)
 	set(mode_string "-dbg")
@@ -460,7 +460,7 @@ function(download_And_Install_Binary_Package INSTALLED package version_string)
 if(UNIX AND NOT APPLE)
 	set(curr_system linux)
 elseif(APPLE)
-	#TODO
+	set(curr_system darwin)
 endif()
 ###### downloading the binary package ######
 #release code
