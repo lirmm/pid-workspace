@@ -1,5 +1,5 @@
+include(Package_Internal_Definition NO_POLICY_SCOPE)
 include(CMakeParseArguments)
-include(Package_Internal_Definition)
 
 ### API : declare_PID_Package(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... LICENSE license [ADDRESS address] DESCRIPTION ...)
 macro(declare_PID_Package)

@@ -1,10 +1,18 @@
 ########################################################################
+##################### definition of CMake policies #####################
+########################################################################
+cmake_policy(SET CMP0026 OLD) #disable warning when reading LOCATION property
+cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
+cmake_policy(SET CMP0037 OLD) #allow to redefine standard target such as clean
+cmake_policy(SET CMP0045 OLD) #allow to test if a target exist without a warning
+
+########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-include(Package_Internal_Finding)
-include(Package_Internal_Configuration)
-include(Package_Internal_Referencing)
-include(Package_Internal_External_Package_Management)
+include(Package_Internal_Finding NO_POLICY_SCOPE)
+include(Package_Internal_Configuration NO_POLICY_SCOPE)
+include(Package_Internal_Referencing NO_POLICY_SCOPE)
+include(Package_Internal_External_Package_Management NO_POLICY_SCOPE)
 ##################################################################################
 #################### package management public functions and macros ##############
 ##################################################################################
@@ -221,7 +229,7 @@ function(set_Current_Version major minor patch)
 	set (${PROJECT_NAME}_VERSION_MINOR ${minor} CACHE INTERNAL "")
 	set (${PROJECT_NAME}_VERSION_PATCH ${patch} CACHE INTERNAL "")
 	set (${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH} CACHE INTERNAL "")
-	message(STATUS "version currently built = "${${PROJECT_NAME}_VERSION})
+	message(STATUS "version currently built = " ${${PROJECT_NAME}_VERSION})
 
 	#################################################
 	############ MANAGING install paths #############
@@ -748,7 +756,6 @@ endif()
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories
-
 get_target_property(EXE_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
 get_filename_component(EXE_NAME ${EXE_NAME} NAME)
 set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${EXE_NAME} CACHE INTERNAL "") #name of the executable
@@ -1047,8 +1054,8 @@ endfunction(declare_External_Component_Dependency)
 ### printing variables for components in the package ################
 macro(print_Component_Variables)
 	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
-	message("libraries : "${${PROJECT_NAME}_COMPONENTS_LIBS})
-	message("applications : "${${PROJECT_NAME}_COMPONENTS_APPS})
+	message("libraries : " ${${PROJECT_NAME}_COMPONENTS_LIBS})
+	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
 
 	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		message("COMPONENT : ${component}")

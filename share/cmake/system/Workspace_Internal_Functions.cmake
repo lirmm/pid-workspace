@@ -1,9 +1,9 @@
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-include(Package_Internal_Finding)
-include(Package_Internal_Configuration)
-include(Package_Internal_Referencing)
+include(Package_Internal_Finding NO_POLICY_SCOPE)
+include(Package_Internal_Configuration NO_POLICY_SCOPE)
+include(Package_Internal_Referencing NO_POLICY_SCOPE)
 
 ###
 function(classify_Package_Categories package)
