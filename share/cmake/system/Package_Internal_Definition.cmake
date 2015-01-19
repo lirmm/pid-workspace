@@ -1,7 +1,7 @@
 ########################################################################
 ##################### definition of CMake policies #####################
 ########################################################################
-if(${CMAKE_VERSION} VERSION_GREATER "2.8.12") 
+if(${CMAKE_VERSION} VERSION_LESS "3.0")
 cmake_policy(SET CMP0026 OLD) #disable warning when reading LOCATION property
 cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
 cmake_policy(SET CMP0037 OLD) #allow to redefine standard target such as clean
