@@ -8,7 +8,7 @@ set(boost_DESCRIPTION external package providing many usefull C++ libraries, rep
 set(boost_CATEGORIES system/threading;system/io;system/timing;language/container;language/meta CACHE INTERNAL "")
 set(boost_REFERENCES 1.55.0 CACHE INTERNAL "")
 set(boost_REFERENCE_1.55.0 linux CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0_linux http://rob-dev.lirmm.fr/pid_external_deps/ext-boost/repository/archive.tar.gz?ref=linux-32b-1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0_linux_DEBUG http://rob-dev.lirmm.fr/pid_external_deps/ext-boost/repository/archive.tar.gz?ref=linux-32b-1.55.0 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_linux https://rob-dev.lirmm.fr/pid_external_deps/ext-boost/repository/archive.tar.gz?ref=linux-32b-1.55.0 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_linux_DEBUG https://rob-dev.lirmm.fr/pid_external_deps/ext-boost/repository/archive.tar.gz?ref=linux-32b-1.55.0 CACHE INTERNAL "")
 
 
