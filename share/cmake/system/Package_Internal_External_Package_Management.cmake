@@ -145,12 +145,17 @@ elseif(APPLE)
 	set(curr_system darwin)#HERE TODO VERIFY
 endif()
 ###### downloading the binary package ######
-#release code
+message("downloading the binary package, please wait ...")
+#1) release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
 generate_Binary_Package_Name(${package} ${VERSION} "Release" FILE_BINARY FOLDER_BINARY)
-set(download_url ${${package}_REFERENCE_${VERSION}_${curr_system}})
-file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res TLS_VERIFY OFF)
+set(download_url ${${package}_REFERENCE_${VERSION}_${curr_system}_url})
+set(FOLDER_BINARY ${${package}_REFERENCE_${VERSION}_${curr_system}_folder})
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory release
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_QUIET OUTPUT_QUIET)
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
@@ -158,32 +163,55 @@ if(NOT numeric_error EQUAL 0)
 	message(WARNING "install : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url}: ${status}")
 	return()
 endif()
-#debug code
-set(FILE_BINARY_DEBUG "")
-set(FOLDER_BINARY_DEBUG "")
-generate_Binary_Package_Name(${package} ${VERSION} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
-set(download_url_dbg ${${package}_REFERENCE_${VERSION}_${curr_system}_DEBUG})
-file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg)
-list(GET res-dbg 0 numeric_error_dbg)
-list(GET res-dbg 1 status_dbg)
-if(NOT numeric_error_dbg EQUAL 0)#there is an error
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
-	message(WARNING "install : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url_dbg} : ${status_dbg}")
-	return()
+#2) debug code (optionnal for external packages => just to avoid unecessary redoing code download)
+if(EXISTS ${package}_REFERENCE_${VERSION}_${curr_system}_url_DEBUG)
+	set(FILE_BINARY_DEBUG "")
+	set(FOLDER_BINARY_DEBUG "")
+	generate_Binary_Package_Name(${package} ${VERSION} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
+	set(download_url_dbg ${${package}_REFERENCE_${VERSION}_${curr_system}_url_DEBUG})
+	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${VERSION}_${curr_system}_folder_DEBUG})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory debug
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_QUIET OUTPUT_QUIET)
+	file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
+	list(GET res-dbg 0 numeric_error_dbg)
+	list(GET res-dbg 1 status_dbg)
+	if(NOT numeric_error_dbg EQUAL 0)#there is an error
+		set(${DEPLOYED} FALSE PARENT_SCOPE)
+		message(WARNING "install : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url_dbg} : ${status_dbg}")
+		return()
+	endif()
 endif()
 
-# installing
+######## installing the external package ##########
+# 1) creating the external package root folder and the version folder
 if(NOT EXISTS ${WORKSPACE_DIR}/external/${package} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${package})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
 			WORKING_DIRECTORY ${WORKSPACE_DIR}/external/
 			ERROR_QUIET OUTPUT_QUIET)
 endif()
-# extracting binary archive in cross platform way
+if(NOT EXISTS ${WORKSPACE_DIR}/external/${package}/${VERSION} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${package}/${VERSION})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${VERSION}
+		WORKING_DIRECTORY ${WORKSPACE_DIR}/external/${package}
+		ERROR_QUIET OUTPUT_QUIET)
+endif()
+
+
+
+# 2) extracting binary archive in cross platform way
 set(error_res "")
-execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+message("decompressing the binary package, please wait ...")
+if(EXISTS download_url_dbg)
+	execute_process(
+          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/debug
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
+else()
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/release
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+endif()
 
 if (error_res)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
@@ -191,15 +219,35 @@ if (error_res)
 	return()
 endif()
 
-# copying resulting folders into the install path in a cross platform way
+# 3) copying resulting folders into the install path in a cross platform way
+message("installing the binary package into the workspace, please wait ...")
 set(error_res "")
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}
-          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${package}
+if(EXISTS download_url_dbg)
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${VERSION}
+          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${package}/${VERSION}
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
+else()
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${VERSION}/
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+endif()
+
 if (error_res)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message(WARNING "install : cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}")
+	message(WARNING "install : cannot extract folder from ${FOLDER_BINARY} ${FOLDER_BINARY_DEBUG}")
 	return()
+endif()
+# 4) removing generated artifacts
+if(EXISTS download_url_dbg)
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/debug
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
+		ERROR_QUIET OUTPUT_QUIET)
+else()
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
+		ERROR_QUIET OUTPUT_QUIET)
 endif()
 
 set(${DEPLOYED} TRUE PARENT_SCOPE)

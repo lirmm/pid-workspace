@@ -8,7 +8,6 @@ set(eigen_DESCRIPTION external package for linear algebra, repackaged for PID CA
 set(eigen_CATEGORIES math/linear_algebra;math/matrix CACHE INTERNAL "")
 set(eigen_REFERENCES 3.2.0 CACHE INTERNAL "")
 set(eigen_REFERENCE_3.2.0 linux CACHE INTERNAL "")
-set(eigen_REFERENCE_3.2.0_linux http://lirmm.lirmm.fr/FileX/get?auto=1&k=FpCyoH0dZCHOqi7rG4i CACHE INTERNAL "")
-set(eigen_REFERENCE_3.2.0_linux_DEBUG http://lirmm.lirmm.fr/FileX/get?auto=1&k=FpCyoH0dZCHOqi7rG4i CACHE INTERNAL "")
-
+set(eigen_REFERENCE_3.2.0_linux_url https://rob-dev.lirmm.fr/pid_external_deps/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.0_linux_folder ext-eigen.git CACHE INTERNAL "")
 
