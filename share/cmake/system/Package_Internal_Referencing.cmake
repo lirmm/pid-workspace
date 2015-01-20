@@ -451,7 +451,7 @@ else()
 	set(mode_string "")
 endif()
 
-set(${RES_FILE} "${package}-${version}${mode_string}-${system_string}.zip" PARENT_SCOPE)
+set(${RES_FILE} "${package}-${version}${mode_string}-${system_string}.tar.gz" PARENT_SCOPE)
 set(${RES_FOLDER} "${package}-${version}${mode_string}-${system_string}" PARENT_SCOPE)
 endfunction(generate_Binary_Package_Name)
 
@@ -468,7 +468,7 @@ set(FILE_BINARY "")
 set(FOLDER_BINARY "")
 generate_Binary_Package_Name(${package} ${version_string} "Release" FILE_BINARY FOLDER_BINARY)
 set(download_url ${${package}_REFERENCE_${version_string}_${curr_system}})
-file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res)
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res SHOW_PROGRESS)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
@@ -476,12 +476,13 @@ if(NOT numeric_error EQUAL 0)
 	message(WARNING "install : problem when downloading binary version ${version_string} of package ${package} from address ${download_url}: ${status}")
 	return()
 endif()
-#debug code
+
+#debug code 
 set(FILE_BINARY_DEBUG "")
 set(FOLDER_BINARY_DEBUG "")
 generate_Binary_Package_Name(${package} ${version_string} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
-set(download_url_dbg ${${package}_REFERENCE_${version_string}_${curr_system}_DEBUG})
-file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg)
+set(download_url_dbg ${${package}_REFERENCE_${version_string}_${curr_system}_url_DEBUG})
+file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS)
 list(GET res-dbg 0 numeric_error_dbg)
 list(GET res-dbg 1 status_dbg)
 if(NOT numeric_error_dbg EQUAL 0)#there is an error
@@ -490,37 +491,40 @@ if(NOT numeric_error_dbg EQUAL 0)#there is an error
 	return()
 endif()
 
-# installing
+######## installing the package ##########
+# 1) creating the package root folder
 if(NOT EXISTS ${WORKSPACE_DIR}/install/${package} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${package})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
 			WORKING_DIRECTORY ${WORKSPACE_DIR}/install/
 			ERROR_QUIET OUTPUT_QUIET)
 endif()
-# extracting binary archive in cross platform way
+
+# 2) extracting binary archive in a cross platform way
 set(error_res "")
 execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
           	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
-
 if (error_res)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
 	message(WARNING "install : cannot extract binary archives ${FILE_BINARY} ${FILE_BINARY_DEBUG}")
 	return()
 endif()
 
-# copying resulting folders into the install path in a cross platform way
+# 3) copying resulting folders into the install path in a cross platform way
 set(error_res "")
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${package}
-          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${package}
-		ERROR_VARIABLE error_res OUTPUT_QUIET)
+execute_process(
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${package}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${package}
+	ERROR_VARIABLE error_res OUTPUT_QUIET)
+
 if (error_res)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
 	message(WARNING "install : cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}")
 	return()
 endif()
 
-# post install configuration of the workspace
+############ post install configuration of the workspace ############
 set(PACKAGE_NAME ${package})
 set(PACKAGE_VERSION ${version_string})
 include(${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake)
