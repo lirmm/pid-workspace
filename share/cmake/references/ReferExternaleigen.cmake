@@ -6,8 +6,14 @@ set(eigen_AUTHORS "Eigen developers team, see http://eigen.tuxfamily.org" CACHE 
 set(eigen_LICENSES "MPL2" CACHE INTERNAL "")
 set(eigen_DESCRIPTION external package for linear algebra, repackaged for PID CACHE INTERNAL "")
 set(eigen_CATEGORIES math/linear_algebra;math/matrix CACHE INTERNAL "")
+
+#3.2.0 reference
 set(eigen_REFERENCES 3.2.0 CACHE INTERNAL "")
-set(eigen_REFERENCE_3.2.0 linux CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.0 linux darwin CACHE INTERNAL "")
+#linux
 set(eigen_REFERENCE_3.2.0_linux_url https://rob-dev.lirmm.fr/pid_external_deps/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
 set(eigen_REFERENCE_3.2.0_linux_folder ext-eigen.git CACHE INTERNAL "")
+#darwin (macosx)
+set(eigen_REFERENCE_3.2.0_darwin_url https://rob-dev.lirmm.fr/pid_external_deps/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.0_darwin_folder ext-eigen.git CACHE INTERNAL "")
 
