@@ -143,6 +143,9 @@ if(UNIX AND NOT APPLE)
 	set(curr_system linux)
 elseif(APPLE)
 	set(curr_system darwin)#HERE TODO VERIFY
+else()
+	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
+	return()
 endif()
 ###### downloading the binary package ######
 message("downloading the binary package, please wait ...")
