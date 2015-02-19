@@ -122,7 +122,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
 	# searching new cache entries in release mode cache	
 	foreach(line IN ITEMS ${LINES_RELEASE})
-		if(NOT ${line} STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
+		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
 			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
 			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
 				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
@@ -141,7 +141,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	# searching new cache entries in debug mode cache	
 	foreach(line IN ITEMS ${LINES_DEBUG})
-		if(NOT ${line} STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
+		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
 			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
 			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
 				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
