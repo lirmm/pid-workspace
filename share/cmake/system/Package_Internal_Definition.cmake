@@ -44,7 +44,7 @@ option(USE_LOCAL_DEPLOYMENT "Package uses tests" ON)
 CMAKE_DEPENDENT_OPTION(GENERATE_INSTALLER "Package generates an OS installer for linux with debian" ON
 		         "NOT USE_LOCAL_DEPLOYMENT" OFF)
 
-option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" OFF)
+option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
 
 #################################################
 ############ MANAGING build mode ################
@@ -297,7 +297,7 @@ if(UNIX AND NOT APPLE)
 	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
 elseif (APPLE)
 	set(CMAKE_MACOSX_RPATH TRUE)
-#	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to @rpath to enable easy package relocation
+	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to @rpath to enable easy package relocation
 endif()
 
 #################################################################################
@@ -639,10 +639,10 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 		if(UNIX AND NOT APPLE)
 			set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
 		elseif(APPLE)
-			set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../lib;@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+			set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
 		else()
 			message(FATAL_ERROR "only UNIX (inclusing MACOSX) shared libraries are handled")
-		endif()		
+		endif()
 
 		if(NOT internal_links STREQUAL "") #usefull only when trully linking so only beneficial to shared libs
 			target_link_library(${c_name}${INSTALL_NAME_SUFFIX} ${internal_links})
@@ -753,7 +753,7 @@ if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 	if(UNIX AND NOT APPLE)
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
 	elseif(APPLE)#TODO VERIFY
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../lib;@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
 	endif()
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
 	# NB : tests do not need to be relocatable since they are purely local
@@ -1137,7 +1137,7 @@ endmacro(generate_Use_File)
 
 ### configure variables exported by component that will be used to generate the package cmake use file
 function (configure_Install_Variables component export include_dirs dep_defs exported_defs static_links shared_links)
-message("configure_Install_Variables component=${component} export=${export} include_dirs=${include_dirs} dep_defs=${dep_defs} exported_defs=${exported_defs} static_links=${static_links} shared_links=${shared_links}")
+#message("configure_Install_Variables component=${component} export=${export} include_dirs=${include_dirs} dep_defs=${dep_defs} exported_defs=${exported_defs} static_links=${static_links} shared_links=${shared_links}")
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(	NOT dep_defs STREQUAL "" 
