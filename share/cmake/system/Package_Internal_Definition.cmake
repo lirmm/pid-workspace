@@ -609,12 +609,15 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.c" 
 		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cc" 
 		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cpp" 
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cxx" 
 		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.h" 
 		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hpp" 
 		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hh"
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hxx"
 	       	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h" 
 		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh" 
 		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
+		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
 	)
 	
 	#defining shared and/or static targets for the library and
@@ -657,10 +660,11 @@ else()#simply creating a "fake" target for header only library
 	       	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h" 
 		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh" 
 		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
+		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
 	)
 	#add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC IMPORTED GLOBAL)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX) #to allow CMake to knwo the linker to use (will not be trully called) for the "fake library" target 	
+	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX) #to allow CMake to know the linker to use (will be called but create en empty statis library) for the "fake library" target 	
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
 endif()
 

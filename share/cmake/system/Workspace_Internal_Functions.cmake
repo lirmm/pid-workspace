@@ -1,6 +1,12 @@
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
+if(NOT ${CMAKE_VERSION} VERSION_LESS "3.0")
+cmake_policy(SET CMP0026 OLD) #disable warning when reading LOCATION property
+cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
+cmake_policy(SET CMP0037 OLD) #allow to redefine standard target such as clean
+cmake_policy(SET CMP0045 OLD) #allow to test if a target exist without a warning
+endif()
 include(Package_Internal_Finding NO_POLICY_SCOPE)
 include(Package_Internal_Configuration NO_POLICY_SCOPE)
 include(Package_Internal_Referencing NO_POLICY_SCOPE)

@@ -1,11 +1,11 @@
-PROJECT(pid-workspace)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
-
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/licenses)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/find)
-include(Workspace_Internal_Functions)
+include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+
+PROJECT(pid-workspace)
 
 set(ALL_AVAILABLE_PACKAGES "")
 # 1) searching for all reference files. 
