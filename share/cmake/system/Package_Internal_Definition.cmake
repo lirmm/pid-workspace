@@ -585,8 +585,8 @@ set(${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME ${dirname} CACHE INTERNAL "")
 file(	GLOB_RECURSE
 	${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE
 	RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}
-       	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h" 
-	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh" 
+	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h"
+	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh"
 	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
 	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
 )
@@ -600,23 +600,22 @@ install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${
 install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hpp")
 install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hh")
 
-
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 	#collect sources for the library
 	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/${dirname})
 
 	file(	GLOB_RECURSE 
-		${PROJECT_NAME}_${c_name}_ALL_SOURCES 
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.c" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cc" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cpp" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cxx" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.h" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hpp" 
+		${PROJECT_NAME}_${c_name}_ALL_SOURCES
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.c"
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cc"
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cpp"
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cxx"
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.h"
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hpp"
 		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hh"
 		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hxx"
-	       	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh" 
+		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h"
+		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh"
 		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
 		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
 	)
@@ -656,16 +655,27 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "") #exported include directories
 
 else()#simply creating a "fake" target for header only library
-	file(	GLOB_RECURSE
-		${PROJECT_NAME}_${c_name}_ALL_SOURCES 
-	       	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
-		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
-	)
-	#add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC IMPORTED GLOBAL)
+	if(APPLE)
+		file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/fake_for_macosx.cpp "void fake_function(){}")#used for clang ar tool to work properly
+		file(	GLOB_RECURSE
+			${PROJECT_NAME}_${c_name}_ALL_SOURCES
+			"${CMAKE_CURRENT_BINARY_DIR}/fake_for_macosx.cpp"
+			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h"
+			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh"
+			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
+			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
+		)
+	elseif(UNIX)
+		file(	GLOB_RECURSE
+			${PROJECT_NAME}_${c_name}_ALL_SOURCES
+			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h"
+			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh"
+			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
+			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
+		)
+	endif()
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX) #to allow CMake to know the linker to use (will be called but create en empty statis library) for the "fake library" target 	
+	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX) #to allow CMake to know the linker to use (will be called but create en empty static library) for the "fake library" target 	
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
 endif()
 
