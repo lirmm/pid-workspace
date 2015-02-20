@@ -457,8 +457,6 @@ if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
 	endforeach()
 endif()
 
-message("--- find_Dependent_Private_Shared_Libraries for ${component} in mode ${CMAKE_BUILD_TYPE}  --- EXTERNAL undirect deps = ${undirect_list}")
-
 # 2) searching in dependent packages
 foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_suffix}})
 	foreach(dep_component IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${mode_var_suffix}}) 
@@ -488,8 +486,6 @@ foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_su
 		endif()
 	endforeach()
 endforeach()
-
-message("--- find_Dependent_Private_Shared_Libraries for ${component} in mode ${CMAKE_BUILD_TYPE} --- OTHER PACKAGE undirect deps = ${undirect_list}")
 
 message("PACKAGE ROOT DIRECTORY = ${${package}_ROOT_DIR}")
 

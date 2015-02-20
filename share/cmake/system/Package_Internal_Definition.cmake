@@ -38,7 +38,7 @@ CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api docu
 		         "BUILD_API_DOC" OFF)
 
 option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
-option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
+#option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
 
 option(USE_LOCAL_DEPLOYMENT "Package uses tests" ON)
 CMAKE_DEPENDENT_OPTION(GENERATE_INSTALLER "Package generates an OS installer for linux with debian" ON
@@ -211,14 +211,15 @@ endif()
 #################################################
 ############ MANAGING generic paths #############
 #################################################
+set(${PROJECT_NAME}_ROOT_DIR ${CMAKE_SOURCE_DIR})
 set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
 
-if(BUILD_WITH_PRINT_MESSAGES)
-	add_definitions(-DPRINT_MESSAGES)
-endif(BUILD_WITH_PRINT_MESSAGES)
+#if(BUILD_WITH_PRINT_MESSAGES)
+#	add_definitions(-DPRINT_MESSAGES)
+#endif(BUILD_WITH_PRINT_MESSAGES)
 endmacro(declare_Package)
 
 
