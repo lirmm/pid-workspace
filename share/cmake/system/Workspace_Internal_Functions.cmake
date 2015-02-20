@@ -309,7 +309,7 @@ function(generate_Binary_Package_Name package version system mode RES_FILE RES_F
 if(system STREQUAL "linux")
 	set(system_string Linux)
 elseif(system STREQUAL "darwin")
-	set(system_string Darwin)#TODO HERE verify naming
+	set(system_string Darwin)
 endif()
 if(mode MATCHES Debug)
 	set(mode_string "-dbg")

@@ -167,7 +167,7 @@ function(install_Required_Packages list_of_packages_to_install INSTALLED_PACKAGE
 set(successfully_installed "")
 set(not_installed "")
 foreach(dep_package IN ITEMS ${list_of_packages_to_install}) #while there are still packages to install
-	message("DEBUG : install required packages : ${dep_package}")
+	#message("DEBUG : install required packages : ${dep_package}")
 	set(INSTALL_OK FALSE)
 	install_Package(INSTALL_OK ${dep_package})
 	if(INSTALL_OK)
@@ -227,7 +227,7 @@ else()
 	set(IS_EXISTING)
 	package_Reference_Exists_In_Workspace(IS_EXISTING ${package})
 	if(IS_EXISTING)
-		message("DEBUG package ${package} reference exists in workspace !")
+		#message("DEBUG package ${package} reference exists in workspace !")
 		set(USE_SOURCES FALSE)
 	else()
 		set(${INSTALL_OK} FALSE PARENT_SCOPE)
@@ -235,7 +235,7 @@ else()
 		return()
 	endif()
 endif()
-message("DEBUG required versions = ${${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX}}")
+#message("DEBUG required versions = ${${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX}}")
 if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 # 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
 	set(POSSIBLE FALSE)
@@ -247,7 +247,7 @@ if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 		set(${INSTALL_OK} FALSE PARENT_SCOPE)
 		return()
 	endif()
-	message("DEBUG a min version has been chosen : ${VERSION_MIN} and is exact ? = ${EXACT}")
+	#message("DEBUG a min version has been chosen : ${VERSION_MIN} and is exact ? = ${EXACT}")
 	set(NO_VERSION FALSE)	
 else()
 	set(NO_VERSION TRUE)
@@ -269,7 +269,7 @@ else()#using references
 	include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
 	if(NOT ${refer_path} STREQUAL NOTFOUND)
-		message("DEBUG : trying to deploy a binary package !!")
+		#message("DEBUG : trying to deploy a binary package !!")
 		if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number 
 			deploy_Binary_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
 		else()# deploying the most up to date version
@@ -331,7 +331,7 @@ function(get_Available_Binary_Package_Versions package list_of_versions)
 if(UNIX AND NOT APPLE)
 	set(curr_system linux)
 elseif(APPLE)
-	set(curr_system darwin)#TODO VERIFY NAMING
+	set(curr_system darwin)
 else()
 	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
 	return()
@@ -387,7 +387,7 @@ if(NOT available_versions)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
-message("DEBUG available versions : ${available_versions}")
+#message("DEBUG available versions : ${available_versions}")
 
 # taking the adequate version
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN})
@@ -427,7 +427,7 @@ else()
 		endif()
 	endforeach()
 	if(${curr_patch_version} GREATER -1)#at least one match
-		message("DEBUG : installing package ${package} with version ${ref_major}.${curr_min_minor_version}.${curr_patch_version}")
+		#message("DEBUG : installing package ${package} with version ${ref_major}.${curr_min_minor_version}.${curr_patch_version}")
 		download_And_Install_Binary_Package(INSTALLED ${package} "${ref_major}.${curr_min_minor_version}.${curr_patch_version}")
 	endif()
 endif()
@@ -440,10 +440,10 @@ endfunction(deploy_Binary_Package_Version)
 
 ###
 function(generate_Binary_Package_Name package version mode RES_FILE RES_FOLDER)
-if(UNIX AND NOT APPLE)
-	set(system_string Linux)
-elseif(APPLE)#TODO verify naming
-	set(system_string Darwin)
+if(APPLE)
+	set(system_string Darwin)	
+elseif(UNIX)
+	set(system_string Linux)	
 endif()
 if(mode MATCHES Debug)
 	set(mode_string "-dbg")
@@ -459,7 +459,7 @@ endfunction(generate_Binary_Package_Name)
 function(download_And_Install_Binary_Package INSTALLED package version_string)
 if(APPLE)
 	set(curr_system darwin)	
-elseif(APPLE)
+elseif(UNIX)
 	set(curr_system linux)
 endif()
 ###### downloading the binary package ######
@@ -538,7 +538,7 @@ endfunction(download_And_Install_Binary_Package)
 
 ### 
 function(build_And_Install_Source DEPLOYED package version)
-	message("DEBUG build workspace directory = ${WORKSPACE_DIR}")
+	#message("DEBUG build workspace directory = ${WORKSPACE_DIR}")
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_WITH_PRINT_MESSAGES:BOOL=OFF -D USE_LOCAL_DEPLOYMENT:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
@@ -633,7 +633,7 @@ string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN
 list(GET REFVNUMBERS 0 ref_major)
 list(GET REFVNUMBERS 1 ref_minor)
 string(REPLACE "\n" ";" GIT_VERSIONS ${res})
-message("DEBUG : available versions are : ${GIT_VERSIONS}")
+#message("DEBUG : available versions are : ${GIT_VERSIONS}")
 set(ALL_IS_OK FALSE)
 if(EXACT)
 	set(curr_max_patch_number -1)
@@ -683,7 +683,7 @@ else()
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 		return()
 	endif()
-	message("DEBUG : now building and installing code for ${package} with selected version : ${ref_major}.${curr_max_minor_number}.${curr_max_patch_number}")
+	#message("DEBUG : now building and installing code for ${package} with selected version : ${ref_major}.${curr_max_minor_number}.${curr_max_patch_number}")
 	build_And_Install_Package(ALL_IS_OK ${package} "${ref_major}.${curr_max_minor_number}.${curr_max_patch_number}")
 	
 endif()
@@ -716,7 +716,7 @@ foreach(branch IN ITEMS ${GIT_BRANCHES})
 endforeach()
 
 # 1) going to the adequate git tag matching the selected version
-message("DEBUG memorizing branch : ${curr_branch} and goinf to tagged version : ${version}")
+#message("DEBUG memorizing branch : ${curr_branch} and goinf to tagged version : ${version}")
 execute_process(COMMAND git checkout tags/v${version}
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
 		OUTPUT_QUIET ERROR_QUIET)
@@ -725,7 +725,7 @@ set(IS_BUILT FALSE)
 message("DEBUG : trying to build ${package} with version ${version}")
 build_And_Install_Source(IS_BUILT ${package} ${version})
 
-message("DEBUG : going back to ${curr_branch} branch")
+#message("DEBUG : going back to ${curr_branch} branch")
 # 3) going back to the initial branch in use
 execute_process(COMMAND git checkout ${curr_branch}
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}

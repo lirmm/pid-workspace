@@ -142,7 +142,7 @@ set(INSTALLED FALSE)
 if(UNIX AND NOT APPLE)
 	set(curr_system linux)
 elseif(APPLE)
-	set(curr_system darwin)#HERE TODO VERIFY
+	set(curr_system darwin)
 else()
 	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
 	return()
