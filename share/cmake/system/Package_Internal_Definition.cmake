@@ -303,7 +303,7 @@ endif()
 #################################################################################
 ############ MANAGING the configuration of package dependencies #################
 #################################################################################
-message("MARK 1")
+
 # from here only direct dependencies have been satisfied
 # 0) if there are packages to install it means that there are some unresolved required dependencies
 set(INSTALL_REQUIRED FALSE)
@@ -333,7 +333,7 @@ if(INSTALL_REQUIRED)
 		return()
 	endif()
 endif()
-message("MARK 2")
+message("MARK 1")
 if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 1) resolving required packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
@@ -355,7 +355,7 @@ endif()
 #################################################
 ############ MANAGING the BUILD #################
 #################################################
-
+message("MARK 2 ... add_subdirectories")
 # recursive call into subdirectories to build/install/test the package
 add_subdirectory(src)
 add_subdirectory(apps)
@@ -364,7 +364,7 @@ if(BUILD_AND_RUN_TESTS AND ${CMAKE_BUILD_TYPE} MATCHES Release)
 	add_subdirectory(test)
 endif()
 add_subdirectory(share)
-message("MARK 3")
+message("MARK 3 .. after add_subdirectory")
 ##########################################################
 ############ MANAGING non source files ###################
 ##########################################################
@@ -376,8 +376,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 generate_Use_File() #generating/installing the version specific cmake "use" file
 generate_API() #generating/installing the API documentation
-
-message("MARK 4 .. after add_subdirectory")
+message("MARK 4")
 #resolving link time dependencies for executables
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
 	will_be_Built(RES ${component})
