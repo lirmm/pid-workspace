@@ -1087,7 +1087,7 @@ macro(print_Component component)
 		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
 		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
 		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-endmacro(print component)
+endmacro(print_Component)
 
 macro(print_Component_Variables)
 	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
