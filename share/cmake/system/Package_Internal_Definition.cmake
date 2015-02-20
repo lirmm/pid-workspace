@@ -1400,7 +1400,7 @@ endif()
 
 # managing link time flags
 if(links AND NOT links STREQUAL "")
-	message("adding links to ${component_name} : " ${links})
+	message("adding links to ${component_name}${INSTALL_NAME_SUFFIX} : " ${links})
 	foreach(link IN ITEMS ${links})
 		target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} ${link})
 	endforeach()
