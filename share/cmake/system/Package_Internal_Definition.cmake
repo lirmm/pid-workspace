@@ -297,13 +297,13 @@ if(UNIX AND NOT APPLE)
 	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
 elseif (APPLE)
 	set(CMAKE_MACOSX_RPATH TRUE)
-	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to @rpath to enable easy package relocation
+	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to @loader_path to enable easy package relocation TODO solve the BUG
 endif()
 
 #################################################################################
 ############ MANAGING the configuration of package dependencies #################
 #################################################################################
-
+message("MARK 1")
 # from here only direct dependencies have been satisfied
 # 0) if there are packages to install it means that there are some unresolved required dependencies
 set(INSTALL_REQUIRED FALSE)
@@ -333,7 +333,7 @@ if(INSTALL_REQUIRED)
 		return()
 	endif()
 endif()
-
+message("MARK 2")
 if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 1) resolving required packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
@@ -364,7 +364,7 @@ if(BUILD_AND_RUN_TESTS AND ${CMAKE_BUILD_TYPE} MATCHES Release)
 	add_subdirectory(test)
 endif()
 add_subdirectory(share)
-
+message("MARK 3")
 ##########################################################
 ############ MANAGING non source files ###################
 ##########################################################
@@ -377,6 +377,7 @@ endif()
 generate_Use_File() #generating/installing the version specific cmake "use" file
 generate_API() #generating/installing the API documentation
 
+message("MARK 4 .. after add_subdirectory")
 #resolving link time dependencies for executables
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
 	will_be_Built(RES ${component})
@@ -385,6 +386,7 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
 	endif()
 endforeach()
 
+message("MARK 5")
 #resolving runtime dependencies
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	will_be_Built(RES ${component})
@@ -392,7 +394,7 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		resolve_Source_Component_Runtime_Dependencies(${component} "${${component}_THIRD_PARTY_LINKS}")
 	endif()
 endforeach()
-
+message("MARK 6")
 #print_Component_Variables()
 
 #################################################
@@ -648,7 +650,6 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 		endif()
 	endif()
 	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
-	message("internal links for ${c_name}${INSTALL_NAME_SUFFIX} ...")
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
 	# registering the binary name
 	get_target_property(LIB_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
@@ -689,7 +690,6 @@ set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE I
 set(${PROJECT_NAME}_COMPONENTS_LIBS "${${PROJECT_NAME}_COMPONENTS_LIBS};${c_name}" CACHE INTERNAL "")
 # global variable to know that the component has been declared (must be reinitialized at each run of cmake)
 mark_As_Declared(${c_name})
-message("declare FINISHED for ${c_name}${INSTALL_NAME_SUFFIX} ...")
 endfunction(declare_Library_Component)
 
 
