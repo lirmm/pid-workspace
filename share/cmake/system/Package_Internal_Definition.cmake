@@ -650,7 +650,6 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
 	message("internal links for ${c_name}${INSTALL_NAME_SUFFIX} ...")
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
-	message("internal links for ${c_name}${INSTALL_NAME_SUFFIX} ... DONE")
 	# registering the binary name
 	get_target_property(LIB_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
 	get_filename_component(LIB_NAME ${LIB_NAME} NAME)
@@ -690,6 +689,7 @@ set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE I
 set(${PROJECT_NAME}_COMPONENTS_LIBS "${${PROJECT_NAME}_COMPONENTS_LIBS};${c_name}" CACHE INTERNAL "")
 # global variable to know that the component has been declared (must be reinitialized at each run of cmake)
 mark_As_Declared(${c_name})
+message("declare FINISHED for ${c_name}${INSTALL_NAME_SUFFIX} ...")
 endfunction(declare_Library_Component)
 
 
