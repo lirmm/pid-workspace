@@ -33,7 +33,7 @@ foreach(a_file IN ITEMS ${all_files})
 			math(EXPR thelength "${position_of_first_comment_ending}+2")
 			string(SUBSTRING "${full_content}" ${thelength} -1 res_file_content)
 			set(full_content ${res_file_content})#now only code and user defined header comments (e.g. for doxygen) are part of the new file content  
-			message("RESULT = ${full_content}")
+			#message("RESULT = ${full_content}")
 		endif()
 		
 		# now adding the newly created header to the file

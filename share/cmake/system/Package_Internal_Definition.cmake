@@ -653,7 +653,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 	get_target_property(LIB_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
 	get_filename_component(LIB_NAME ${LIB_NAME} NAME)
 	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "") #exported include directories
-
+	message("BINARY NAME = " ${${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX}})
 else()#simply creating a "fake" target for header only library
 	if(APPLE)
 		file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/fake_for_macosx.cpp "void fake_function(){}")#used for clang ar tool to work properly
