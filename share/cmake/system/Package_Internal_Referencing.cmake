@@ -457,10 +457,10 @@ endfunction(generate_Binary_Package_Name)
 
 ###
 function(download_And_Install_Binary_Package INSTALLED package version_string)
-if(UNIX AND NOT APPLE)
-	set(curr_system linux)
+if(APPLE)
+	set(curr_system darwin)	
 elseif(APPLE)
-	set(curr_system darwin)
+	set(curr_system linux)
 endif()
 ###### downloading the binary package ######
 #release code
