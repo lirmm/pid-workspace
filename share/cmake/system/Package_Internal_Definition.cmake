@@ -751,6 +751,7 @@ file(	GLOB_RECURSE
 #defining the target to build the application
 add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
 manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
+message("internal links for ${${c_name}${INSTALL_NAME_SUFFIX}} = " ${internal_link_flags})
 manage_Additional_Component_Exported_Flags(${c_name} "" "" "${internal_link_flags}")
 
 if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
@@ -1399,7 +1400,7 @@ endif()
 # managing link time flags
 if(links AND NOT links STREQUAL "")
 	foreach(link IN ITEMS ${links})
-		message("adding link : " ${link})	
+		message("adding link to ${component_name} : " ${link})	
 		target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} ${link})
 	endforeach()
 endif()
