@@ -491,6 +491,7 @@ endforeach()
 
 message("--- find_Dependent_Private_Shared_Libraries for ${component} in mode ${CMAKE_BUILD_TYPE} --- OTHER PACKAGE undirect deps = ${undirect_list}")
 
+message("PACKAGE ROOT DIRECTORY = ${${package}_ROOT_DIR}")
 
 # 3) searching in current package
 foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix}})
@@ -510,7 +511,7 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode})
 		else()#it is a shared lib that is exported or NOT
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application in all cases 
-			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")
+			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")#adding this shared lib to the links of the application
 		endif()
 	endif()
 	
