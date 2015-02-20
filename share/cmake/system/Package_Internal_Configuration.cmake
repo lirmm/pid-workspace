@@ -504,7 +504,7 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 				#special case => the currenlty built package is the target package (may be not the case on recursion on another package)
 				# we cannot target the lib folder as it does not exist at build time in the build tree
 				# we simply target the corresponding build "target"
-				list(APPEND undirect_list "${dep_component}${mode_var_suffix}}")		
+				list(APPEND undirect_list "${dep_component}${mode_binary_suffix}")		
 			else()			
 				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")		
 			endif()		
@@ -521,7 +521,7 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 				#special case => the currenlty built package is the target package (may be not the case on recursion on another package)
 				# we cannot target the lib folder as it does not exist at build time in the build tree
 				# we simply target the corresponding build "target"
-				list(APPEND undirect_list "${dep_component}${mode_var_suffix}}")		
+				list(APPEND undirect_list "${dep_component}${mode_binary_suffix}")		
 			else()			
 				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")		
 			endif()	
