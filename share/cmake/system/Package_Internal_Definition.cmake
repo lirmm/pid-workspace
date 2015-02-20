@@ -865,7 +865,7 @@ endfunction(declare_External_Package_Dependency)
 ### export : if true the component export the dep_component in its interface (export is always false if component is an application)
 
 function(declare_Internal_Component_Dependency component dep_component export comp_defs comp_exp_defs dep_defs)
-#message("declare_Internal_Component_Dependency : component = ${component}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
+message("declare_Internal_Component_Dependency : component = ${component}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
 set(COMP_WILL_BE_BUILT FALSE)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
