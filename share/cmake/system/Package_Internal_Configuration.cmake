@@ -400,8 +400,6 @@ foreach(dep_package IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MO
 	endforeach()
 endforeach()
 
-message("1) undirect dependencies for ${component} in mode ${CMAKE_BUILD_TYPE} from other package = ${undirect_deps}")
-
 # 2) searching each direct dependency in current package (no problem with undirect internal dependencies since undirect path only target install path which is not a problem for build)
 foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
 	set(LIST_OF_DEP_SHARED)
@@ -410,8 +408,6 @@ foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENC
 		list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
 	endif()
 endforeach()
-
-message("2) undirect dependencies for ${component} in mode ${CMAKE_BUILD_TYPE} from local package = ${undirect_deps}")
 
 if(undirect_deps) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
 	list(REMOVE_DUPLICATES undirect_deps)	
@@ -487,8 +483,6 @@ foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_su
 	endforeach()
 endforeach()
 
-message("PACKAGE ROOT DIRECTORY = ${${package}_ROOT_DIR}")
-
 # 3) searching in current package
 foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix}})
 	set(UNDIRECT)
@@ -532,8 +526,6 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 		list(APPEND undirect_list ${UNDIRECT})
 	endif()
 endforeach()
-
-message("--- find_Dependent_Private_Shared_Libraries for ${component} in mode ${CMAKE_BUILD_TYPE} --- INTERNAL undirect deps = ${undirect_list}")
 
 if(undirect_list) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
 	list(REMOVE_DUPLICATES undirect_list)
