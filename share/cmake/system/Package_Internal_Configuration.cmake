@@ -498,16 +498,33 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 			OR ${package}_${component}_INTERNAL_EXPORTS_${dep_component}${mode_var_suffix})
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} TRUE ${mode}) #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application 
 		else()#it is a shared lib that is not exported
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application 
-			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")				
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application
+			#adding this shared lib to the links of the application
+			if(${package} STREQUAL ${PROJECT_NAME})
+				#special case => the currenlty built package is the target package (may be not the case on recursion on another package)
+				# we cannot target the lib folder as it does not exist at build time in the build tree
+				# we simply target the corresponding build "target"
+				list(APPEND undirect_list "${dep_component}${mode_var_suffix}}")		
+			else()			
+				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")		
+			endif()		
 		endif()
 	else() #current component is NOT a direct dependency of the application
 		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
 			OR ${package}_${dep_component}_TYPE STREQUAL "HEADER")
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode})
 		else()#it is a shared lib that is exported or NOT
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application in all cases 
-			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")#adding this shared lib to the links of the application
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application in all cases
+			
+			#adding this shared lib to the links of the application
+			if(${package} STREQUAL ${PROJECT_NAME})
+				#special case => the currenlty built package is the target package (may be not the case on recursion on another package)
+				# we cannot target the lib folder as it does not exist at build time in the build tree
+				# we simply target the corresponding build "target"
+				list(APPEND undirect_list "${dep_component}${mode_var_suffix}}")		
+			else()			
+				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")		
+			endif()	
 		endif()
 	endif()
 	

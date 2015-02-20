@@ -211,7 +211,6 @@ endif()
 #################################################
 ############ MANAGING generic paths #############
 #################################################
-set(${PROJECT_NAME}_ROOT_DIR ${CMAKE_SOURCE_DIR})
 set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
@@ -1522,7 +1521,7 @@ endfunction(fill_Component_Target_With_External_Dependency)
 
 ### reset components related cached variables 
 function(reset_component_cached_variables component)
-# unsetting package dependencies
+# resetting package dependencies
 foreach(a_dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}})
 	foreach(a_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${USE_MODE_SUFFIX}})
 		set(${PROJECT_NAME}_${component}_EXPORT_${a_dep_pack}_${a_dep_comp}${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -1531,13 +1530,13 @@ foreach(a_dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MOD
 endforeach()
 set(${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}  CACHE INTERNAL "")
 
-# unsetting internal dependencies
+# resetting internal dependencies
 foreach(a_internal_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
 	set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${a_internal_dep_comp}${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endforeach()
 set(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
-#unsetting all other variables
+#ezsetting all other variables
 set(${PROJECT_NAME}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_HEADERS CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} CACHE INTERNAL "")
