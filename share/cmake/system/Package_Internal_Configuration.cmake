@@ -962,3 +962,18 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once
 	file(APPEND ${file} "${DEBUG_CONTENT}")
 endif()
 endfunction(create_Use_File)
+
+function(clean_Install_Dir)
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode dependent, cleaning performed in the release mode (since we get complete info at this step)
+	if(	EXISTS ${WORKSPACE_DIR}/install/${PROJECT_NAME} AND IS_DIRECTORY  ${WORKSPACE_DIR}/install/${PROJECT_NAME}
+		AND EXISTS ${WORKSPACE_DIR}/install/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH})
+		#the adequate install dir exists and so must be checked
+		set(new_file ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake)
+		set(previous_file ${WORKSPACE_DIR}/install/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake)
+		# since cannot include directly these files (otherwise will cause BIG troubles because redefining existing variables)
+		# calling a script that will do the job in its own context
+		# here TODO
+	endif()
+endif()
+endfunction(clean_Install_Dir)
+

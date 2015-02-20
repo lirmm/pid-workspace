@@ -538,9 +538,8 @@ endfunction(download_And_Install_Binary_Package)
 
 ### 
 function(build_And_Install_Source DEPLOYED package version)
-	#message("DEBUG build workspace directory = ${WORKSPACE_DIR}")
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_WITH_PRINT_MESSAGES:BOOL=OFF -D USE_LOCAL_DEPLOYMENT:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..
+		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D USE_LOCAL_DEPLOYMENT:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		ERROR_QUIET OUTPUT_QUIET
 		)
@@ -552,7 +551,6 @@ function(build_And_Install_Source DEPLOYED package version)
 	if(EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
 		set(${DEPLOYED} TRUE PARENT_SCOPE)
 	else()
-		message("DEBUG problem : the use file does not exist")
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 	endif()
 
@@ -716,7 +714,7 @@ foreach(branch IN ITEMS ${GIT_BRANCHES})
 endforeach()
 
 # 1) going to the adequate git tag matching the selected version
-#message("DEBUG memorizing branch : ${curr_branch} and goinf to tagged version : ${version}")
+#message("DEBUG memorizing branch : ${curr_branch} and going to tagged version : ${version}")
 execute_process(COMMAND git checkout tags/v${version}
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
 		OUTPUT_QUIET ERROR_QUIET)

@@ -252,9 +252,6 @@ set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
 
-#if(BUILD_WITH_PRINT_MESSAGES)
-#	add_definitions(-DPRINT_MESSAGES)
-#endif(BUILD_WITH_PRINT_MESSAGES)
 endmacro(declare_Package)
 
 
@@ -408,8 +405,11 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	#installing the share/cmake folder (may contain specific find scripts for external libs used by the package)
 	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 endif()
-generate_Use_File() #generating/installing the version specific cmake "use" file
-generate_API() #generating/installing the API documentation
+generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
+generate_API() #generating the API documentation configuration file and the rule to launche doxygen and install the doc
+
+#resolve a cleaning of the target install folder if needed
+clean_Install_Dir()
 
 #resolving link time dependencies for executables
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
