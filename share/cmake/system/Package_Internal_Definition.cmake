@@ -333,7 +333,7 @@ if(INSTALL_REQUIRED)
 		return()
 	endif()
 endif()
-message("MARK 1")
+
 if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 1) resolving required packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
@@ -355,7 +355,6 @@ endif()
 #################################################
 ############ MANAGING the BUILD #################
 #################################################
-message("MARK 2 ... add_subdirectories")
 # recursive call into subdirectories to build/install/test the package
 add_subdirectory(src)
 add_subdirectory(apps)
@@ -364,8 +363,6 @@ if(BUILD_AND_RUN_TESTS AND ${CMAKE_BUILD_TYPE} MATCHES Release)
 	add_subdirectory(test)
 endif()
 add_subdirectory(share)
-message("MARK 3 .. after add_subdirectory")
-print_Component_Variables()
 ##########################################################
 ############ MANAGING non source files ###################
 ##########################################################
@@ -377,6 +374,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 generate_Use_File() #generating/installing the version specific cmake "use" file
 generate_API() #generating/installing the API documentation
+
+print_Component_Variables()
 message("MARK 4")
 #resolving link time dependencies for executables
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
@@ -385,7 +384,7 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
 		resolve_Source_Component_Linktime_Dependencies(${component} ${component}_THIRD_PARTY_LINKS)	
 	endif()
 endforeach()
-
+print_Component_Variables()
 message("MARK 5")
 #resolving runtime dependencies
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
@@ -1071,7 +1070,7 @@ endfunction(declare_External_Component_Dependency)
 
 ### printing variables for components in the package ################
 macro(print_Component component)
-	message("COMPONENT : ${component}")
+	message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX}")
 	message("INTERFACE : ")
 		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
 		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
