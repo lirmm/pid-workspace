@@ -400,7 +400,7 @@ foreach(dep_package IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MO
 	endforeach()
 endforeach()
 
-message("1) undirect dependencies from other package = ${undirect_deps}")
+message("1) undirect dependencies for ${component} in mode ${CMAKE_BUILD_TYPE} from other package = ${undirect_deps}")
 
 # 2) searching each direct dependency in current package (no problem with undirect internal dependencies since undirect path only target install path which is not a problem for build)
 foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
@@ -411,12 +411,11 @@ foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENC
 	endif()
 endforeach()
 
-message("2) undirect dependencies from local package = ${undirect_deps}")
+message("2) undirect dependencies for ${component} in mode ${CMAKE_BUILD_TYPE} from local package = ${undirect_deps}")
 
 if(undirect_deps) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
 	list(REMOVE_DUPLICATES undirect_deps)	
 	get_target_property(thelibs ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
-	message("resolve ... the libs = ${thelibs}")
 	set_target_properties(${component}${INSTALL_NAME_SUFFIX} PROPERTIES LINK_LIBRARIES "${thelibs};${undirect_deps}")
 	set(${THIRD_PARTY_LINKS} ${undirect_deps} PARENT_SCOPE)#TODO here verify it is OK
 endif()
@@ -458,7 +457,7 @@ if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
 	endforeach()
 endif()
 
-message("--- find_Dependent_Private_Shared_Libraries --- EXTERNAL undirect deps = ${undirect_list}")
+message("--- find_Dependent_Private_Shared_Libraries for ${component} in mode ${CMAKE_BUILD_TYPE}  --- EXTERNAL undirect deps = ${undirect_list}")
 
 # 2) searching in dependent packages
 foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_suffix}})
@@ -490,7 +489,7 @@ foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_su
 	endforeach()
 endforeach()
 
-message("--- find_Dependent_Private_Shared_Libraries --- OETHR PACKAGE undirect deps = ${undirect_list}")
+message("--- find_Dependent_Private_Shared_Libraries for ${component} in mode ${CMAKE_BUILD_TYPE} --- OTHER PACKAGE undirect deps = ${undirect_list}")
 
 
 # 3) searching in current package
@@ -520,7 +519,7 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 	endif()
 endforeach()
 
-message("--- find_Dependent_Private_Shared_Libraries --- INTERNAL undirect deps = ${undirect_list}")
+message("--- find_Dependent_Private_Shared_Libraries for ${component} in mode ${CMAKE_BUILD_TYPE} --- INTERNAL undirect deps = ${undirect_list}")
 
 if(undirect_list) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
 	list(REMOVE_DUPLICATES undirect_list)
