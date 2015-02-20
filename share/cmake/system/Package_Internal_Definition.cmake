@@ -642,10 +642,10 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 			LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
 		)
 		#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
-		if(UNIX AND NOT APPLE)
-			set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
-		elseif(APPLE)
+		if(APPLE)
 			set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		elseif(UNIX)
+			set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
 		else()
 			message(FATAL_ERROR "only UNIX (inclusing MACOSX) shared libraries are handled")
 		endif()
