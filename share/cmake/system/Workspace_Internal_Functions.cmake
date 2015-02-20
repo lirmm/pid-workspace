@@ -317,7 +317,7 @@ else()
 	set(mode_string "")
 endif()
 
-set(${RES_FILE} "${package}-${version}${mode_string}-${system_string}.zip" PARENT_SCOPE)
+set(${RES_FILE} "${package}-${version}${mode_string}-${system_string}.tar.gz" PARENT_SCOPE)
 set(${RES_FOLDER} "${package}-${version}${mode_string}-${system_string}" PARENT_SCOPE)
 endfunction(generate_Binary_Package_Name)
 
