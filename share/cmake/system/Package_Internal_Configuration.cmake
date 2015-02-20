@@ -400,7 +400,7 @@ foreach(dep_package IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MO
 	endforeach()
 endforeach()
 
-message("1) undirect dependencies = ${undirect_deps}")
+message("1) undirect dependencies from other package = ${undirect_deps}")
 
 # 2) searching each direct dependency in current package (no problem with undirect internal dependencies since undirect path only target install path which is not a problem for build)
 foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
@@ -411,7 +411,7 @@ foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENC
 	endif()
 endforeach()
 
-message("2) undirect dependencies = ${undirect_deps}")
+message("2) undirect dependencies from local package = ${undirect_deps}")
 
 if(undirect_deps) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
 	list(REMOVE_DUPLICATES undirect_deps)	
@@ -457,6 +457,8 @@ if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
 		endif()
 	endforeach()
 endif()
+
+message("--- find_Dependent_Private_Shared_Libraries --- undirect deps = ${undirect_list}")
 
 # 2) searching in dependent packages
 foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_suffix}})
