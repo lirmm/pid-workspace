@@ -391,8 +391,6 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	endif()
 endforeach()
 
-print_Component_Variables()
-
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############
 #################################################
@@ -557,6 +555,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		generate_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake) 
 	endif()
 endif()
+print_Component_Variables()
 endmacro(build_Package)
 
 ##################################################################################
