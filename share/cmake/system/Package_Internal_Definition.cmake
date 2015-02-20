@@ -40,7 +40,7 @@ CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api docu
 option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
 #option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
 
-option(USE_LOCAL_DEPLOYMENT "Package uses tests" ON)
+option(USE_LOCAL_DEPLOYMENT "Package uses tests" OFF)
 CMAKE_DEPENDENT_OPTION(GENERATE_INSTALLER "Package generates an OS installer for linux with debian" ON
 		         "NOT USE_LOCAL_DEPLOYMENT" OFF)
 
@@ -83,6 +83,42 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} referencing
 		VERBATIM
 	)
+
+	add_custom_target(install
+		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Debug artefacts
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} install
+		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} install
+		VERBATIM
+	)
+
+	add_custom_target(uninstall
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} uninstall
+		VERBATIM
+	)
+
+	if(BUILD_AND_RUN_TESTS)
+		add_custom_target(test
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} test
+			VERBATIM
+		)
+	endif()
+
+	if(BUILD_API_DOC)
+		add_custom_target(doc
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} doc
+			VERBATIM
+		)
+	endif()
+
+	if(GENERATE_INSTALLER)
+		add_custom_target(package
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package_install
+			VERBATIM
+		)
+	endif()
+
 	if(NOT "${license}" STREQUAL "")
 		add_custom_target(licensing
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} licensing
@@ -442,6 +478,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}	
 	)
 	
+	#licensing all files of the project 
 	if(	DEFINED ${PROJECT_NAME}_LICENSE 
 		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
 		add_custom_target(licensing
@@ -453,7 +490,23 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 			VERBATIM
 		)
 	endif()
+
+	# adding an uninstall command (uninstall the whole installed version)
+	if(USE_LOCAL_DEPLOYMENT)
+		add_custom_target(uninstall
+			COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION} (own version)
+			COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${PROJECT_NAME}/own-${${PROJECT_NAME}_VERSION}
+			VERBATIM
+		)
+	else()
+		add_custom_target(uninstall
+			COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
+			COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
+			VERBATIM
+		)
+	endif()
 endif()
+
 ###############################################################################
 ######### creating build target for easy sequencing all make commands #########
 ###############################################################################
