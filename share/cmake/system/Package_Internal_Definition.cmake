@@ -365,6 +365,7 @@ if(BUILD_AND_RUN_TESTS AND ${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 add_subdirectory(share)
 message("MARK 3 .. after add_subdirectory")
+print_Component_Variables()
 ##########################################################
 ############ MANAGING non source files ###################
 ##########################################################
@@ -394,7 +395,7 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	endif()
 endforeach()
 message("MARK 6")
-#print_Component_Variables()
+print_Component_Variables()
 
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############
@@ -1069,28 +1070,32 @@ endfunction(declare_External_Component_Dependency)
 ##################################################################################
 
 ### printing variables for components in the package ################
+macro(print_Component component)
+	message("COMPONENT : ${component}")
+	message("INTERFACE : ")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
+		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
+		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_INTERFACE_LIBRARIES)
+		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")		
+		
+	message("IMPLEMENTATION :")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
+		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
+		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
+		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+endmacro(print component)
+
 macro(print_Component_Variables)
 	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
 	message("libraries : " ${${PROJECT_NAME}_COMPONENTS_LIBS})
 	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
 
 	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-		message("COMPONENT : ${component}")
-		message("INTERFACE : ")
-			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
-			message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
-			message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_INTERFACE_LIBRARIES)
-			message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")		
-			
-		message("IMPLEMENTATION :")
-			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
-			message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
-			message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
-			message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")		
+		print_Component(${component})	
 	endforeach()
 endmacro(print_Component_Variables)
 
