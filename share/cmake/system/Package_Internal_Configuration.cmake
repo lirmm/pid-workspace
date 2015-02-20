@@ -400,6 +400,8 @@ foreach(dep_package IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MO
 	endforeach()
 endforeach()
 
+message("1) undirect dependencies = ${undirect_deps}")
+
 # 2) searching each direct dependency in current package (no problem with undirect internal dependencies since undirect path only target install path which is not a problem for build)
 foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
 	set(LIST_OF_DEP_SHARED)
@@ -409,13 +411,14 @@ foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENC
 	endif()
 endforeach()
 
+message("2) undirect dependencies = ${undirect_deps}")
 
 if(undirect_deps) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
 	list(REMOVE_DUPLICATES undirect_deps)	
 	get_target_property(thelibs ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
+	message("resolve ... the libs = ${thelibs}")
 	set_target_properties(${component}${INSTALL_NAME_SUFFIX} PROPERTIES LINK_LIBRARIES "${thelibs};${undirect_deps}")
-	#set(${THIRD_PARTY_LINKS} ${undirect_deps} PARENT_SCOPE)
-	#HERE UNCOMMENT
+	set(${THIRD_PARTY_LINKS} ${undirect_deps} PARENT_SCOPE)#TODO here verify it is OK
 endif()
 endfunction(resolve_Source_Component_Linktime_Dependencies)
 

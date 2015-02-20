@@ -380,9 +380,7 @@ generate_API() #generating/installing the API documentation
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
 	will_be_Built(RES ${component})
 	if(RES)
-		resolve_Source_Component_Linktime_Dependencies(${component} ${component}_THIRD_PARTY_LINKS)	
-		message("third party = ${${component}_THIRD_PARTY_LINKS}")
-
+		resolve_Source_Component_Linktime_Dependencies(${component} ${component}_THIRD_PARTY_LINKS)
 	endif()
 endforeach()
 print_Component_Variables()
