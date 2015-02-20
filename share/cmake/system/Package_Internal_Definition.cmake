@@ -391,7 +391,7 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	endif()
 endforeach()
 
-#print_Component_Variables()
+print_Component_Variables()
 
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############
