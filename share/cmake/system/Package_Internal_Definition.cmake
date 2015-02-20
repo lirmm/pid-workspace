@@ -644,7 +644,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 		endif()
 
 		if(NOT internal_links STREQUAL "") #usefull only when trully linking so only beneficial to shared libs
-			target_link_library(${c_name}${INSTALL_NAME_SUFFIX} ${internal_links})
+			target_link_libraries(${c_name}${INSTALL_NAME_SUFFIX} ${internal_links})
 		endif()
 	endif()
 	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
@@ -1399,8 +1399,8 @@ endif()
 
 # managing link time flags
 if(links AND NOT links STREQUAL "")
+	message("adding links to ${component_name} : " ${links})
 	foreach(link IN ITEMS ${links})
-		message("adding link to ${component_name} : " ${link})	
 		target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} ${link})
 	endforeach()
 endif()
