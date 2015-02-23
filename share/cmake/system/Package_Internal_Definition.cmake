@@ -411,6 +411,8 @@ generate_API() #generating the API documentation configuration file and the rule
 #resolve a cleaning of the target install folder if needed
 clean_Install_Dir()
 
+clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
+
 #resolving link time dependencies for executables
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
 	will_be_Built(RES ${component})
@@ -651,14 +653,13 @@ file(	GLOB_RECURSE
 )
 
 
-#message("relative headers are : ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE}")
-
 set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
+set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
+foreach(header IN ITEMS ${${PROJECT_NAME}_${c_name}_HEADERS})
+	set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "(${header}$)|(${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN})")
+endforeach()
 
-install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.h")
-install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hpp")
-install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hh")
-install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING PATTERN "*.hxx")
+install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 	#collect sources for the library

@@ -328,10 +328,10 @@ endfunction(deploy_Package_Repository)
 function(get_Available_Binary_Package_Versions package list_of_versions)
 
 #configuring target system
-if(UNIX AND NOT APPLE)
+if(APPLE)
+	set(curr_system darwin)	
+elseif(UNIX)
 	set(curr_system linux)
-elseif(APPLE)
-	set(curr_system darwin)
 else()
 	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
 	return()
@@ -720,7 +720,7 @@ execute_process(COMMAND git checkout tags/v${version}
 		OUTPUT_QUIET ERROR_QUIET)
 # 2) building sources
 set(IS_BUILT FALSE)
-message("DEBUG : trying to build ${package} with version ${version}")
+#message("DEBUG : trying to build ${package} with version ${version}")
 build_And_Install_Source(IS_BUILT ${package} ${version})
 
 #message("DEBUG : going back to ${curr_branch} branch")
