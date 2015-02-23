@@ -67,6 +67,15 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	################################################################################################
 	############ creating custom targets to delegate calls to mode specific targets ################
 	################################################################################################
+	#adding a target to check if source tree need to be rebuilt
+	add_custom_target(checksources ALL
+			COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
+						 -DPACKAGE_NAME=${PROJECT_NAME}
+						 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake
+						 -P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Modification.cmake		
+			VERBATIM
+    	)
+
 	add_custom_target(build ALL
 		COMMAND ${CMAKE_COMMAND} -E  echo Building ${PROJECT_NAME} in Debug mode
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
@@ -407,11 +416,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
 generate_API() #generating the API documentation configuration file and the rule to launche doxygen and install the doc
-
-#resolve a cleaning of the target install folder if needed
-clean_Install_Dir()
-
 clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
+generate_Info_File() #generating a cmake "info" file containing info about source code of components 
 
 #resolving link time dependencies for executables
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
@@ -507,6 +513,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 			VERBATIM
 		)
 	endif()
+
+	
 endif()
 
 ###############################################################################
@@ -625,7 +633,7 @@ function(declare_Library_Component c_name dirname type internal_inc_dirs interna
 set(DECLARED FALSE)
 is_Declared(${c_name} DECLARED)
 if(DECLARED)
-	message(FATAL_ERROR "declare_Library_Component : a component with the same name ${c_name} is already defined")
+	message(FATAL_ERROR "When declaring the library ${c_name} : a component with the same name is already defined")
 	return()
 endif()	
 #indicating that the component has been declared and need to be completed
@@ -652,7 +660,6 @@ file(	GLOB_RECURSE
 	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
 )
 
-
 set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
 foreach(header IN ITEMS ${${PROJECT_NAME}_${c_name}_HEADERS})
@@ -665,6 +672,27 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 	#collect sources for the library
 	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/${dirname})
 
+	## 1) collect info about the sources for registration purpose
+	#register the source dir
+	if(${CMAKE_BUILD_TYPE} MATCHES Release)	
+		set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
+	
+		file(	GLOB_RECURSE 
+			${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE
+			RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR} 
+			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.c"
+			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cc"
+			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cpp"
+			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cxx"
+			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.h"
+			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hpp"
+			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hh"
+			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hxx"
+		)
+		set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
+		
+	endif()
+	## 2) collect sources for build process
 	file(	GLOB_RECURSE 
 		${PROJECT_NAME}_${c_name}_ALL_SOURCES
 		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.c"
@@ -725,6 +753,7 @@ else()#simply creating a "fake" target for header only library
 			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
 			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
 		)
+
 	elseif(UNIX)
 		file(	GLOB_RECURSE
 			${PROJECT_NAME}_${c_name}_ALL_SOURCES
@@ -734,6 +763,7 @@ else()#simply creating a "fake" target for header only library
 			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
 		)
 	endif()
+
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
 	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX) #to allow CMake to know the linker to use (will be called but create en empty static library) for the "fake library" target 	
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
@@ -822,11 +852,29 @@ if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 	#setting the default rpath for the target	
 	if(UNIX AND NOT APPLE)
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
-	elseif(APPLE)#TODO VERIFY
+	elseif(APPLE)
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
 	endif()
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
 	# NB : tests do not need to be relocatable since they are purely local
+endif()
+
+#registering source code for the component
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	file(	GLOB_RECURSE 
+		${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE
+		RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.c" 
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cc" 
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cpp"
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cxx"
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.h" 
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hpp" 
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hh"
+		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hxx"
+	)
+	set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
 endif()
 
 # registering exported flags for all kinds of apps => empty variables since applications export no flags
@@ -1208,6 +1256,10 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 endmacro(generate_Use_File)
 
+### generating the Info<package>.cmake file for the current package
+macro(generate_Info_File)
+create_Info_File()
+endmacro(generate_Info_File)
 
 ### configure variables exported by component that will be used to generate the package cmake use file
 function (configure_Install_Variables component export include_dirs dep_defs exported_defs static_links shared_links)
@@ -1532,9 +1584,6 @@ if(NOT DEP_IS_EXEC)#the required package component is a library
 	
 	if(export)
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
-		#message("DEBUG ${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX} = ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}}")
-		#message("DEBUG ${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX} = ${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}")
-		#message("DEBUG ${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX} = ${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
 
 		if(${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX})
 			list(APPEND ${PROJECT_NAME}_${component}_TEMP_DEFS ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
@@ -1597,7 +1646,7 @@ foreach(a_internal_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEP
 endforeach()
 set(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
-#ezsetting all other variables
+#resetting all other variables
 set(${PROJECT_NAME}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_HEADERS CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -1605,6 +1654,8 @@ set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_SOURCE_CODE CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_SOURCE_DIR CACHE INTERNAL "")
 endfunction(reset_component_cached_variables)
 
 ### resetting all internal cached variables that would cause some troubles
@@ -1620,7 +1671,7 @@ set (${PROJECT_NAME}_VERSION CACHE INTERNAL "" )
 foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")	
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")#TODO VERIFY
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endforeach()
 set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 

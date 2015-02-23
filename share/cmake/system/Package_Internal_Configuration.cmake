@@ -979,3 +979,30 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release
 endif()
 endfunction(clean_Install_Dir)
 
+
+###############################################################################################
+############################## providing info on the package content ########################## 
+#################### function used to create the Info<package>.cmake  ######################### 
+###############################################################################################
+
+function(create_Info_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
+	set(file ${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake)
+	file(WRITE ${file} "")#resetting the file content
+	file(APPEND ${file} "######### declaration of package components ########\n")
+	file(APPEND ${file} "set(${PROJECT_NAME}_COMPONENTS ${${PROJECT_NAME}_COMPONENTS} CACHE INTERNAL \"\")\n")
+	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})		
+		if(${PROJECT_NAME}_${a_component}_SOURCE_DIR)
+			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_DIR ${${PROJECT_NAME}_${a_component}_SOURCE_DIR} CACHE INTERNAL \"\")\n")
+			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_CODE ${${PROJECT_NAME}_${a_component}_SOURCE_CODE} CACHE INTERNAL \"\")\n")
+		endif()
+		if(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME)	
+			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME ${${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
+			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADERS ${${PROJECT_NAME}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
+
+		endif()
+	endforeach()
+endif()
+
+endfunction(create_Info_File)
+
