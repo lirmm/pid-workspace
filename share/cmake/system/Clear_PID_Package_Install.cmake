@@ -7,40 +7,43 @@ function(remove_Installed_Component component package install_version workspace)
 	if(	${INSTALLED_${component}_TYPE} STREQUAL "HEADER")
 		if(${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE} EQUAL 1)
 			file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME})#removing header dir
-			math(EXPR ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0)
+			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0 PARENT_SCOPE)
 		else()
-			math(EXPR ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)
+			math(EXPR NB_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)
+			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NB_USAGES} PARENT_SCOPE)
 		endif()
 	elseif( ${INSTALLED_${component}_TYPE} STREQUAL "STATIC")
 		if(${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE} EQUAL 1)
 			file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME})#removing header dir
-			math(EXPR ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0)
+			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0 PARENT_SCOPE)
 		else()
-			math(EXPR ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)
+			math(EXPR NB_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)
+			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NB_USAGES} PARENT_SCOPE)
 		endif()
 		file(REMOVE ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME} ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME_DEBUG})#removing binaries
 	elseif( ${INSTALLED_${component}_TYPE} STREQUAL "SHARED")
 		if(${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE} EQUAL 1)
 			file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME})#removing header dir
-			math(EXPR ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0)
+			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0 PARENT_SCOPE)
 		else()
-			math(EXPR ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)
+			math(EXPR NB_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)
+			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NB_USAGES} PARENT_SCOPE)
 		endif()
 		file(REMOVE ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME} ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME_DEBUG})#removing binaries
-		file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/.rpath/${INSTALLED_${component}_BINARY_NAME} ${PATH_TO_INSTALL_DIR}/.rpath/${INSTALLED_${component}_BINARY_NAME_DEBUG})#removing related rpath folder
+		file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/.rpath/${component} ${PATH_TO_INSTALL_DIR}/.rpath/${component}-dbg)#removing related rpath folder
 
 	elseif(	${INSTALLED_${component}_TYPE} STREQUAL "EXAMPLE")
-		file(REMOVE ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME} ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME_DEBUG})#removing binaries
-		file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/.rpath/${INSTALLED_${component}_BINARY_NAME} ${PATH_TO_INSTALL_DIR}/.rpath/${INSTALLED_${component}_BINARY_NAME_DEBUG})#removing related rpath folder
+		file(REMOVE ${PATH_TO_INSTALL_DIR}/bin/${INSTALLED_${component}_BINARY_NAME} ${PATH_TO_INSTALL_DIR}/bin/${INSTALLED_${component}_BINARY_NAME_DEBUG})#removing binaries
+		file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/.rpath/${component} ${PATH_TO_INSTALL_DIR}/.rpath/${component}-dbg)#removing related rpath folder
 
 	elseif( ${INSTALLED_${component}_TYPE} STREQUAL "APP")
-		file(REMOVE ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME} ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME_DEBUG})#removing binaries
-		file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/.rpath/${INSTALLED_${component}_BINARY_NAME} ${PATH_TO_INSTALL_DIR}/.rpath/${INSTALLED_${component}_BINARY_NAME_DEBUG})#removing related rpath folder
+		file(REMOVE ${PATH_TO_INSTALL_DIR}/bin/${INSTALLED_${component}_BINARY_NAME} ${PATH_TO_INSTALL_DIR}/bin/${INSTALLED_${component}_BINARY_NAME_DEBUG})#removing binaries
+		file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/.rpath/${component} ${PATH_TO_INSTALL_DIR}/.rpath/${component}-dbg)#removing related rpath folder
 	endif()
 endfunction(remove_Installed_Component)
 
 
-function(check_Headers_Modifications all_components_to_check component package install_version workspace)
+function(check_Headers_Modifications all_components_to_check package install_version workspace)
 set(PATH_TO_INSTALL_DIR ${workspace}/install/${package}/${install_version})
 
 foreach(component IN ITEMS ${all_components_to_check}) #for each remaining existing component
@@ -49,11 +52,11 @@ foreach(component IN ITEMS ${all_components_to_check}) #for each remaining exist
 		OR ${INSTALLED_${component}_TYPE} STREQUAL "STATIC"
 		OR ${INSTALLED_${component}_TYPE} STREQUAL "SHARED")#if component is a library its header folder still exist at this step (not removed by previous function)
 		# checking header folder modification/suppression
-		if(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME} STREQUAL "${INSTALLED_${component}_HEADER_DIR_NAME}")#same header include folder
+		if("${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}" STREQUAL "${INSTALLED_${component}_HEADER_DIR_NAME}")#same header include folder
 			foreach(header_name IN ITEMS ${INSTALLED_${component}_HEADERS})
 				list(FIND ${PACKAGE_NAME}_${component}_HEADERS ${header_name} FIND_INDEX)
-				if(INDEX EQUAL -1)#this header file does no more exists
-					file(REMOVE ${header_name})
+				if(FIND_INDEX EQUAL -1)#this header file does no more exists
+					file(REMOVE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME}/${header_name})
 				endif()
 
 			endforeach()
@@ -67,11 +70,6 @@ foreach(component IN ITEMS ${all_components_to_check}) #for each remaining exist
 			endif()
 
 		endif()
-				
-
-		# old headers = ${INSTALLED_${component}_HEADERS}
-		# new headers = ${${PACKAGE_NAME}_${component}_HEADERS}
-		
 	endif()
 endforeach()
 endfunction(check_Headers_Modifications)
@@ -96,20 +94,23 @@ endif()
 #registering interesting infos for each existing component
 set(INSTALLED_COMPONENTS ${${PACKAGE_NAME}_COMPONENTS})
 foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
+	set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0)
+endforeach()
+
+foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
 	if(	${${PACKAGE_NAME}_${component}_TYPE} STREQUAL "HEADER")
 		set(INSTALLED_${component}_TYPE HEADER)
 
 		set(INSTALLED_${component}_HEADER_DIR_NAME ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
-		math(EXPR NUMBER_OF_USAGES ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}+1)
+		math(EXPR NUMBER_OF_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}+1)
 		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NUMBER_OF_USAGES})
 
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})
-
 	elseif( ${${PACKAGE_NAME}_${component}_TYPE} STREQUAL "STATIC")
 		set(INSTALLED_${component}_TYPE STATIC)
 
 		set(INSTALLED_${component}_HEADER_DIR_NAME ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
-		math(EXPR NUMBER_OF_USAGES ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}+1)
+		math(EXPR NUMBER_OF_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}+1)
 		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NUMBER_OF_USAGES})
 
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})
@@ -120,7 +121,7 @@ foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
 		set(INSTALLED_${component}_TYPE SHARED)
 
 		set(INSTALLED_${component}_HEADER_DIR_NAME ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
-		math(EXPR NUMBER_OF_USAGES ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}+1)
+		math(EXPR NUMBER_OF_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}+1)
 		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NUMBER_OF_USAGES})
 
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})
@@ -143,13 +144,15 @@ endforeach()
 include(${NEW_USE_FILE})
 set(TO_CHECK_COMPONENTS ${INSTALLED_COMPONENTS})
 foreach(component IN ITEMS ${INSTALLED_COMPONENTS}) #for each existing component
-	list(FIND ${${PACKAGE_NAME}_COMPONENTS} ${component} FIND_INDEX)
+	list(FIND ${PACKAGE_NAME}_COMPONENTS ${component} FIND_INDEX)
 	if(FIND_INDEX EQUAL -1)#component no more exists => remove corresponding files if necessary
+		message("need to remove ${component}")
 		remove_Installed_Component(${component} ${PACKAGE_NAME} ${PACKAGE_INSTALL_VERSION} ${WORKSPACE_DIR})
 		list(REMOVE_ITEM TO_CHECK_COMPONENTS ${component})
 	endif()
 endforeach()
 
 #component exists, check for header files/folders suppression/changes
-check_Headers_Modifications(${TO_CHECK_COMPONENTS} ${component} ${PACKAGE_NAME} ${PACKAGE_INSTALL_VERSION} ${WORKSPACE_DIR})
-
+if(TO_CHECK_COMPONENTS)
+	check_Headers_Modifications("${TO_CHECK_COMPONENTS}" ${PACKAGE_NAME} ${PACKAGE_INSTALL_VERSION} ${WORKSPACE_DIR})
+endif()
