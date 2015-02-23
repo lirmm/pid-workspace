@@ -328,10 +328,10 @@ endfunction(deploy_Package_Repository)
 function(get_Available_Binary_Package_Versions package list_of_versions)
 
 #configuring target system
-if(UNIX AND NOT APPLE)
+if(APPLE)
+	set(curr_system darwin)	
+elseif(UNIX)
 	set(curr_system linux)
-elseif(APPLE)
-	set(curr_system darwin)#TODO VERIFY NAMING
 else()
 	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
 	return()
@@ -440,10 +440,10 @@ endfunction(deploy_Binary_Package_Version)
 
 ###
 function(generate_Binary_Package_Name package version mode RES_FILE RES_FOLDER)
-if(UNIX AND NOT APPLE)
-	set(system_string Linux)
-elseif(APPLE)#TODO verify naming
+if(APPLE)
 	set(system_string Darwin)
+elseif(UNIX)
+	set(system_string Linux)
 endif()
 if(mode MATCHES Debug)
 	set(mode_string "-dbg")
@@ -716,16 +716,16 @@ foreach(branch IN ITEMS ${GIT_BRANCHES})
 endforeach()
 
 # 1) going to the adequate git tag matching the selected version
-message("DEBUG memorizing branch : ${curr_branch} and goinf to tagged version : ${version}")
+#message("DEBUG memorizing branch : ${curr_branch} and goinf to tagged version : ${version}")
 execute_process(COMMAND git checkout tags/v${version}
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
 		OUTPUT_QUIET ERROR_QUIET)
 # 2) building sources
 set(IS_BUILT FALSE)
-message("DEBUG : trying to build ${package} with version ${version}")
+#message("DEBUG : trying to build ${package} with version ${version}")
 build_And_Install_Source(IS_BUILT ${package} ${version})
 
-message("DEBUG : going back to ${curr_branch} branch")
+#message("DEBUG : going back to ${curr_branch} branch")
 # 3) going back to the initial branch in use
 execute_process(COMMAND git checkout ${curr_branch}
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}

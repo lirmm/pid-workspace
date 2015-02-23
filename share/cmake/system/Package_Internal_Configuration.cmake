@@ -962,3 +962,19 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once
 	file(APPEND ${file} "${DEBUG_CONTENT}")
 endif()
 endfunction(create_Use_File)
+
+function(clean_Install_Dir)
+
+if(	${CMAKE_BUILD_TYPE} MATCHES Release 
+	AND EXISTS ${WORKSPACE_DIR}/install/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH})# if package is already installed
+	execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} 
+						 -DPACKAGE_NAME=${PROJECT_NAME}
+						 -DPACKAGE_INSTALL_VERSION=${${PROJECT_NAME}_DEPLOY_PATH} 
+						 -DPACKAGE_VERSION=${${PROJECT_NAME}_VERSION}
+						 -DNEW_USE_FILE=${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake
+						 -P ${WORKSPACE_DIR}/share/cmake/system/Clear_PID_Package_Install.cmake
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
+
+endfunction(clean_Install_Dir)
+

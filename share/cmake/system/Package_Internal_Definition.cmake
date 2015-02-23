@@ -216,9 +216,6 @@ set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
 
-#if(BUILD_WITH_PRINT_MESSAGES)
-#	add_definitions(-DPRINT_MESSAGES)
-#endif(BUILD_WITH_PRINT_MESSAGES)
 endmacro(declare_Package)
 
 
@@ -374,6 +371,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 generate_Use_File() #generating/installing the version specific cmake "use" file
 generate_API() #generating/installing the API documentation
+
+clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
 
 #resolving link time dependencies for executables
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
