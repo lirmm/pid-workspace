@@ -68,21 +68,24 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	############ creating custom targets to delegate calls to mode specific targets ################
 	################################################################################################
 	#adding a target to check if source tree need to be rebuilt
-	add_custom_target(checksources ALL
+	add_custom_target(checksources
+			COMMAND ${CMAKE_COMMAND} -E  echo Checking for modified source tree
 			COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						 -DPACKAGE_NAME=${PROJECT_NAME}
-						 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake
+						 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/release/share/Info${PROJECT_NAME}.cmake
 						 -P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Modification.cmake		
 			VERBATIM
     	)
 
-	add_custom_target(build ALL
+	add_custom_target(build
 		COMMAND ${CMAKE_COMMAND} -E  echo Building ${PROJECT_NAME} in Debug mode
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
 		COMMAND ${CMAKE_COMMAND} -E  echo Building ${PROJECT_NAME} in Release mode
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
 		VERBATIM
 	)
+
+	add_dependencies(build checksources)
 	add_custom_target(clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
@@ -410,14 +413,16 @@ add_subdirectory(share)
 ##########################################################
 generate_License_File() # generating/installing the file containing license info about the package
 generate_Find_File() # generating/installing the generic cmake find file for the package
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	#installing the share/cmake folder (may contain specific find scripts for external libs used by the package)
-	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
-endif()
+
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
 generate_API() #generating the API documentation configuration file and the rule to launche doxygen and install the doc
 clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
 generate_Info_File() #generating a cmake "info" file containing info about source code of components 
+
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	#installing the share/cmake folder (may contain specific find scripts for external libs used by the package)
+	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+endif()
 
 #resolving link time dependencies for executables
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
