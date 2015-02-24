@@ -99,15 +99,25 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	add_dependencies(build reconfigure)
 
+	add_custom_target(global_main ALL
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL}
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL}
+		COMMENT "Compiling and linking package (Debug and Release modes) ..."	
+		VERBATIM
+	)
+
+
 	# redefinition of clean target (cleaning the build tree)
 	add_custom_target(clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
+		COMMENT "Cleaning package (Debug and Release modes) ..."	
 		VERBATIM
 	)
 	# reference file generation target
 	add_custom_target(referencing
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} referencing
+		COMMENT "Generating and installing reference to the package ..."
 		VERBATIM
 	)
 
@@ -117,12 +127,14 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} install
+		COMMENT "Installing the package ..."
 		VERBATIM
 	)
 	
 	# uninstall target (cleaning the install tree) 
 	add_custom_target(uninstall
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} uninstall
+		COMMENT "Uninstalling the package ..."
 		VERBATIM
 	)
 
@@ -130,6 +142,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		# test target (launch test units) 
 		add_custom_target(test
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} test
+			COMMENT "Launching tests ..."
 			VERBATIM
 		)
 	endif()
@@ -138,6 +151,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		# doc target (generation of API documentation) 
 		add_custom_target(doc
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} doc
+			COMMENT "Generating API documentation ..."
 			VERBATIM
 		)
 	endif()
@@ -147,6 +161,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		add_custom_target(package
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package_install
+			COMMENT "Generating and installing system binary package ..."
 			VERBATIM
 		)
 	endif()
@@ -155,6 +170,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		# target to add licensing information to all source files
 		add_custom_target(licensing
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} licensing
+			COMMENT "Applying license to sources ..."
 			VERBATIM
 		)
 	endif()
