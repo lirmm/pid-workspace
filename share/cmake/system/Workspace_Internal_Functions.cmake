@@ -573,4 +573,54 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin --tags)
 endfunction()
 
+###
+function(clear_PID_Package package version)
+
+if(	EXISTS ${WORKSPACE_DIR}/install/${package}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${package}
+
+	if("${version}" MATCHES "own-[0-9]+\.[0-9]+\.[0-9]+"		#specific own version targetted
+		OR "${version}" MATCHES "[0-9]+\.[0-9]+\.[0-9]+")	#specific version targetted
+
+		if( EXISTS ${WORKSPACE_DIR}/install/${package}/${version}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${package}/${version})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${package}/${version})
+		else()
+			message(ERROR "package ${package} version ${version} does not resides in workspace install directory")
+		endif()
+
+	elseif("${version}" MATCHES "own")#all own version targetted
+		file(	GLOB TO_SUPPRESS
+			"${WORKSPACE_DIR}/install/${package}/own-*")
+		foreach (folder IN ITEMS ${TO_SUPPRESS})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${folder})
+		endforeach()
+	elseif("${version}" MATCHES "all")#all versions targetted (including own versions and installers folder)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${package})
+	else()
+		message(ERROR "invalid version string : ${version}, possible inputs are version numbers (with or without own- prefix), all and own")
+	endif()
+else()
+	message(ERROR "package ${package} does not resides in workspace install directory")
+endif()
+
+endfunction()
+
+###
+function(remove_PID_Package package)
+
+if(	EXISTS ${WORKSPACE_DIR}/packages/${package}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
+	
+	if(	EXISTS ${WORKSPACE_DIR}/install/${package}
+		clear_PID_Package(${package} all)
+	endif()
+
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/packages/${package})
+	
+else()
+	message(ERROR "package ${package} does not resides in workspace")
+endif()
+
+endfunction()
 

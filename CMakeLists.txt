@@ -36,6 +36,9 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "connect -- Synchronize local repository with an empty remote one. Required arguments are : name to specify the name of the package and url to specify the url of the remote repository."
 	COMMAND ${CMAKE_COMMAND} -E echo "license -- Printing information on licenses or more precise information on a given license using name=NAME_OF_LICENSE argument."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	COMMAND ${CMAKE_COMMAND} -E echo "clear -- Clearing the whole install directory of a package using name=NAME_OF_PACKAGE, version=all|own|own-<version>|version arguments."
+	COMMAND ${CMAKE_COMMAND} -E echo "remove -- Removing the target package from the workspace using name=NAME_OF_PACKAGE argument."
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
 ## listing all packages ordered by categories OR listing the content of a given category
@@ -115,4 +118,23 @@ add_custom_target(license
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_License_Info.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
+
+## clearing a package install directory
+add_custom_target(clear
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DTARGET_PACKAGE=$(name)
+					-DTARGET_VERSION=$(version)					
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Clear_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+
+## completely remove a package from workspace
+add_custom_target(remove
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DTARGET_PACKAGE=$(name)
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Remove_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 
