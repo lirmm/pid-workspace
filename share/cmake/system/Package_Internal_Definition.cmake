@@ -67,7 +67,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	################################################################################################
 	############ creating custom targets to delegate calls to mode specific targets ################
 	################################################################################################
-	#adding a target to check if source tree need to be rebuilt
+	# target to check if source tree need to be rebuilt
 	add_custom_target(checksources
 			COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						 -DPACKAGE_NAME=${PROJECT_NAME}
@@ -76,19 +76,20 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			COMMENT "Checking for modified source tree ..."
     	)
 
+	# target to reconfigure the project
 	add_custom_command(OUTPUT ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
 			COMMAND ${CMAKE_BUILD_TOOL} rebuild_cache
 			COMMAND ${CMAKE_COMMAND} -E touch ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
 			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources
 			COMMENT "Reconfiguring the package ..."
-    	)
-
+    	)	
 	add_custom_target(reconfigure
 			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt			
     	)
 	
 	add_dependencies(reconfigure checksources)
 
+	# global build target
 	add_custom_target(build
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
@@ -98,16 +99,19 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	add_dependencies(build reconfigure)
 
+	# redefinition of clean target (cleaning the build tree)
 	add_custom_target(clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
 		VERBATIM
 	)
+	# reference file generation target
 	add_custom_target(referencing
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} referencing
 		VERBATIM
 	)
 
+	# redefinition of install target
 	add_custom_target(install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Debug artefacts
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} install
@@ -115,13 +119,15 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} install
 		VERBATIM
 	)
-
+	
+	# uninstall target (cleaning the install tree) 
 	add_custom_target(uninstall
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} uninstall
 		VERBATIM
 	)
 
 	if(BUILD_AND_RUN_TESTS)
+		# test target (launch test units) 
 		add_custom_target(test
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} test
 			VERBATIM
@@ -129,6 +135,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	endif()
 
 	if(BUILD_API_DOC)
+		# doc target (generation of API documentation) 
 		add_custom_target(doc
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} doc
 			VERBATIM
@@ -136,6 +143,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	endif()
 
 	if(GENERATE_INSTALLER)
+		# package target (generation and install of a UNIX binary packet) 
 		add_custom_target(package
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package_install
@@ -144,6 +152,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	endif()
 
 	if(NOT "${license}" STREQUAL "")
+		# target to add licensing information to all source files
 		add_custom_target(licensing
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} licensing
 			VERBATIM
