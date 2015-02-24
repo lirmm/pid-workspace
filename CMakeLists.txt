@@ -35,9 +35,10 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package. Use name=NAME_OF_PACKAGE to specify the name of the new package. Other optional arguments are: author, affiliation, license."
 	COMMAND ${CMAKE_COMMAND} -E echo "connect -- Synchronize local repository with an empty remote one. Required arguments are : name to specify the name of the package and url to specify the url of the remote repository."
 	COMMAND ${CMAKE_COMMAND} -E echo "license -- Printing information on licenses or more precise information on a given license using name=NAME_OF_LICENSE argument."
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-	COMMAND ${CMAKE_COMMAND} -E echo "clear -- Clearing the whole install directory of a package using name=NAME_OF_PACKAGE, version=all|own|own-<version>|version arguments."
+	COMMAND ${CMAKE_COMMAND} -E echo "clear -- Clearing the whole install directory of a package using name=NAME_OF_PACKAGE, version=all or own or own-version or version arguments."
 	COMMAND ${CMAKE_COMMAND} -E echo "remove -- Removing the target package from the workspace using name=NAME_OF_PACKAGE argument."
+	COMMAND ${CMAKE_COMMAND} -E echo "register -- Registering the target package in the workspace using name=NAME_OF_PACKAGE argument. The package is published so that people with adequate rights can now deploy it adequately."
+	COMMAND ${CMAKE_COMMAND} -E echo "release -- Releasing the target package using name=NAME_OF_PACKAGE argument and nextversion=MAJOR or MINOR or PATCH to indicate how to icnrease version number. The release mainly consists in good tagging of branches and publication to the server."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -137,4 +138,22 @@ add_custom_target(remove
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+
+## register a package in the workspace
+add_custom_target(register
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DTARGET_PACKAGE=$(name)
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Register_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+
+## releasing a package
+add_custom_target(release
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DTARGET_PACKAGE=$(name)
+					-DNEXT_VERSION=$(nextversion)
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Release_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
 
