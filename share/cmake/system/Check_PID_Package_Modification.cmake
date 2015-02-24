@@ -33,6 +33,8 @@ endfunction(Find_Unique_Elements)
 if(EXISTS ${SOURCE_PACKAGE_CONTENT}) #the package has already been configured
 	include(${SOURCE_PACKAGE_CONTENT}) #import source code meta-information (which file for each component) 
 else()
+	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/checksources "")
+	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/rebuilt "")
 	return()
 endif()
 
@@ -127,6 +129,7 @@ if(REMOVED_FILES OR ADDED_FILES)#try make rebuild_cache
 		message("ERROR : There are files that have been added to source tree : ${ADDED_FILES}")
 	endif()	
 	
-	message(FATAL_ERROR "You need to reconfigure your package using cmake command before building it")
+	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/checksources "")
 endif()
+
 

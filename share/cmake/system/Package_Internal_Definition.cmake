@@ -69,23 +69,35 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	################################################################################################
 	#adding a target to check if source tree need to be rebuilt
 	add_custom_target(checksources
-			COMMAND ${CMAKE_COMMAND} -E  echo Checking for modified source tree
 			COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						 -DPACKAGE_NAME=${PROJECT_NAME}
 						 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/release/share/Info${PROJECT_NAME}.cmake
 						 -P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Modification.cmake		
-			VERBATIM
+			COMMENT "Checking for modified source tree ..."
     	)
 
+	add_custom_command(OUTPUT ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
+			COMMAND ${CMAKE_BUILD_TOOL} rebuild_cache
+			COMMAND ${CMAKE_COMMAND} -E touch ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
+			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources
+			COMMENT "Reconfiguring the package ..."
+    	)
+
+	add_custom_target(reconfigure
+			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt			
+    	)
+	
+	add_dependencies(reconfigure checksources)
+
 	add_custom_target(build
-		COMMAND ${CMAKE_COMMAND} -E  echo Building ${PROJECT_NAME} in Debug mode
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
-		COMMAND ${CMAKE_COMMAND} -E  echo Building ${PROJECT_NAME} in Release mode
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
+		COMMENT "Building package (Debug and Release modes) ..."	
 		VERBATIM
 	)
 
-	add_dependencies(build checksources)
+	add_dependencies(build reconfigure)
+
 	add_custom_target(clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
