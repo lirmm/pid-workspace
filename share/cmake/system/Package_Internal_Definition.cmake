@@ -64,6 +64,9 @@ elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 	set ( USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "")
 	
 elseif(${CMAKE_BINARY_DIR} MATCHES build)
+	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
+	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt "")
+	
 	################################################################################################
 	############ creating custom targets to delegate calls to mode specific targets ################
 	################################################################################################
@@ -705,7 +708,7 @@ file(	GLOB_RECURSE
 set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
 foreach(header IN ITEMS ${${PROJECT_NAME}_${c_name}_HEADERS})
-	set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "(${header}$)|(${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN})")
+	set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "${header}|${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 endforeach()
 
 install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
