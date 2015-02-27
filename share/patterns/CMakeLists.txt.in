@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
 set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/../.. CACHE PATH "root of the packages workspace directory")
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system) # using generic scripts/modules of the workspace
 include(Package_Definition NO_POLICY_SCOPE)

@@ -544,7 +544,7 @@ function(build_And_Install_Source DEPLOYED package version)
 		ERROR_QUIET OUTPUT_QUIET
 		)
 	execute_process(
-		COMMAND ${CMAKE_BUILD_TOOL} build
+		COMMAND ${CMAKE_MAKE_PROGRAM} build
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		ERROR_QUIET OUTPUT_QUIET	
 		)

@@ -1,12 +1,10 @@
 ########################################################################
 ##################### definition of CMake policies #####################
 ########################################################################
-if(NOT ${CMAKE_VERSION} VERSION_LESS "3.0")
 cmake_policy(SET CMP0026 OLD) #disable warning when reading LOCATION property
 cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
 cmake_policy(SET CMP0037 OLD) #allow to redefine standard target such as clean
 cmake_policy(SET CMP0045 OLD) #allow to test if a target exist without a warning
-endif()
 
 ########################################################################
 ############ inclusion of required macros and functions ################
@@ -46,6 +44,8 @@ CMAKE_DEPENDENT_OPTION(GENERATE_INSTALLER "Package generates an OS installer for
 
 option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
 
+option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
+
 #################################################
 ############ MANAGING build mode ################
 #################################################
@@ -81,7 +81,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	# target to reconfigure the project
 	add_custom_command(OUTPUT ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
-			COMMAND ${CMAKE_BUILD_TOOL} rebuild_cache
+			COMMAND ${CMAKE_MAKE_PROGRAM} rebuild_cache
 			COMMAND ${CMAKE_COMMAND} -E touch ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
 			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources
 			COMMENT "Reconfiguring the package ..."
@@ -94,8 +94,8 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	# global build target
 	add_custom_target(build
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 		COMMENT "Building package (Debug and Release modes) ..."	
 		VERBATIM
 	)
@@ -103,8 +103,8 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	add_dependencies(build reconfigure)
 
 	add_custom_target(global_main ALL
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL}
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL}
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM}
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM}
 		COMMENT "Compiling and linking package (Debug and Release modes) ..."	
 		VERBATIM
 	)
@@ -112,14 +112,14 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	# redefinition of clean target (cleaning the build tree)
 	add_custom_target(clean
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} clean
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} clean
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
 		COMMENT "Cleaning package (Debug and Release modes) ..."	
 		VERBATIM
 	)
 	# reference file generation target
 	add_custom_target(referencing
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} referencing
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} referencing
 		COMMENT "Generating and installing reference to the package ..."
 		VERBATIM
 	)
@@ -127,16 +127,16 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	# redefinition of install target
 	add_custom_target(install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Debug artefacts
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} install
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} install
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} install
 		COMMENT "Installing the package ..."
 		VERBATIM
 	)
 	
 	# uninstall target (cleaning the install tree) 
 	add_custom_target(uninstall
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} uninstall
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} uninstall
 		COMMENT "Uninstalling the package ..."
 		VERBATIM
 	)
@@ -144,7 +144,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	if(BUILD_AND_RUN_TESTS)
 		# test target (launch test units) 
 		add_custom_target(test
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} test
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} test
 			COMMENT "Launching tests ..."
 			VERBATIM
 		)
@@ -153,7 +153,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	if(BUILD_API_DOC)
 		# doc target (generation of API documentation) 
 		add_custom_target(doc
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} doc
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} doc
 			COMMENT "Generating API documentation ..."
 			VERBATIM
 		)
@@ -162,8 +162,8 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	if(GENERATE_INSTALLER)
 		# package target (generation and install of a UNIX binary packet) 
 		add_custom_target(package
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package_install
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package_install
 			COMMENT "Generating and installing system binary package ..."
 			VERBATIM
 		)
@@ -172,7 +172,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	if(NOT "${license}" STREQUAL "")
 		# target to add licensing information to all source files
 		add_custom_target(licensing
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} licensing
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} licensing
 			COMMENT "Applying license to sources ..."
 			VERBATIM
 		)
@@ -573,46 +573,46 @@ if(GENERATE_INSTALLER)
 		if(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} test
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
+					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			else(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} test
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
+					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			endif(BUILD_API_DOC) 
 		else(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
+					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			else(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
+					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			endif(BUILD_API_DOC)
 		endif(BUILD_AND_RUN_TESTS)
 	else(CMAKE_BUILD_TYPE MATCHES Release)
 		add_custom_target(build 
-			COMMAND ${CMAKE_BUILD_TOOL} 
-			COMMAND ${CMAKE_BUILD_TOOL} install
-			COMMAND ${CMAKE_BUILD_TOOL} package
-			COMMAND ${CMAKE_BUILD_TOOL} package_install
+			COMMAND ${CMAKE_MAKE_PROGRAM} 
+			COMMAND ${CMAKE_MAKE_PROGRAM} install
+			COMMAND ${CMAKE_MAKE_PROGRAM} package
+			COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 		) 
 	endif(CMAKE_BUILD_TYPE MATCHES Release)
 
@@ -621,36 +621,36 @@ else(GENERATE_INSTALLER)
 		if(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} test
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			else(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} test
-					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			endif(BUILD_API_DOC) 
 		else(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			else(BUILD_API_DOC) 
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL}
-					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			endif(BUILD_API_DOC)
 		endif()
 	else(CMAKE_BUILD_TYPE MATCHES Release)#debug
 			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL}
-				COMMAND ${CMAKE_BUILD_TOOL} install
+				COMMAND ${CMAKE_MAKE_PROGRAM}
+				COMMAND ${CMAKE_MAKE_PROGRAM} install
 			) 
 	endif(CMAKE_BUILD_TYPE MATCHES Release)
 endif(GENERATE_INSTALLER)

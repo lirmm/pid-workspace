@@ -1,12 +1,11 @@
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-if(NOT ${CMAKE_VERSION} VERSION_LESS "3.0")
 cmake_policy(SET CMP0026 OLD) #disable warning when reading LOCATION property
 cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
 cmake_policy(SET CMP0037 OLD) #allow to redefine standard target such as clean
 cmake_policy(SET CMP0045 OLD) #allow to test if a target exist without a warning
-endif()
+
 include(Package_Internal_Finding NO_POLICY_SCOPE)
 include(Package_Internal_Configuration NO_POLICY_SCOPE)
 include(Package_Internal_Referencing NO_POLICY_SCOPE)
@@ -612,8 +611,8 @@ endfunction()
 ###
 function(register_PID_Package package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git checkout master)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_BUILD_TOOL} install)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_BUILD_TOOL} referencing)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} install)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} referencing)
 if(EXISTS ${WORKSPACE_DIR}/share/cmake/find/Find${package}.cmake AND EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/find/Find${package}.cmake)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/references/Refer${package}.cmake)
