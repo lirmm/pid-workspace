@@ -48,9 +48,9 @@ set(PATH_TO_INSTALL_DIR ${workspace}/install/${package}/${install_version})
 
 foreach(component IN ITEMS ${all_components_to_check}) #for each remaining existing component
 	#component exists, check for header files/folders suppression/changes
-	if(	${INSTALLED_${component}_TYPE} STREQUAL "HEADER" 
-		OR ${INSTALLED_${component}_TYPE} STREQUAL "STATIC"
-		OR ${INSTALLED_${component}_TYPE} STREQUAL "SHARED")#if component is a library its header folder still exist at this step (not removed by previous function)
+	if(	"${INSTALLED_${component}_TYPE}" STREQUAL "HEADER" 
+		OR "${INSTALLED_${component}_TYPE}" STREQUAL "STATIC"
+		OR "${INSTALLED_${component}_TYPE}" STREQUAL "SHARED")#if component is a library its header folder still exist at this step (not removed by previous function)
 		# checking header folder modification/suppression
 		if("${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}" STREQUAL "${INSTALLED_${component}_HEADER_DIR_NAME}")#same header include folder
 			foreach(header_name IN ITEMS ${INSTALLED_${component}_HEADERS})
@@ -92,9 +92,12 @@ else()
 endif()
 
 #registering interesting infos for each existing component
-set(INSTALLED_COMPONENTS ${${PACKAGE_NAME}_COMPONENTS})
-foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
-	set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0)
+
+foreach(component IN ITEMS ${${PACKAGE_NAME}_COMPONENTS})
+	if(NOT ${${PACKAGE_NAME}_${component}_TYPE} STREQUAL "TEST")
+		list(APPEND INSTALLED_COMPONENTS ${component})
+		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0) #initializing usage of headers
+	endif()
 endforeach()
 
 foreach(component IN ITEMS ${INSTALLED_COMPONENTS})

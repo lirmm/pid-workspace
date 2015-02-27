@@ -46,6 +46,22 @@ option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of 
 
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
 
+##########################################################
+############ checking system properties ##################
+##########################################################
+
+### parallel builds management
+if(ENABLE_PARALLEL_BUILD)
+	include(ProcessorCount)
+	ProcessorCount(NUMBER_OF_JOBS)
+	math(EXPR NUMBER_OF_JOBS ${NUMBER_OF_JOBS}+1)
+	if(${NUMBER_OF_JOBS} GREATER 1)
+		set(PARALLEL_JOBS_FLAG "-j${NUMBER_OF_JOBS}" CACHE INTERNAL "")
+	endif()
+else()
+	set(PARALLEL_JOBS_FLAG CACHE INTERNAL "")
+endif()
+
 #################################################
 ############ MANAGING build mode ################
 #################################################
@@ -103,12 +119,11 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	add_dependencies(build reconfigure)
 
 	add_custom_target(global_main ALL
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM}
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM}
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 		COMMENT "Compiling and linking package (Debug and Release modes) ..."	
 		VERBATIM
 	)
-
 
 	# redefinition of clean target (cleaning the build tree)
 	add_custom_target(clean
@@ -573,8 +588,8 @@ if(GENERATE_INSTALLER)
 		if(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_MAKE_PROGRAM}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
@@ -582,8 +597,8 @@ if(GENERATE_INSTALLER)
 				)
 			else(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_MAKE_PROGRAM}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
 					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
@@ -592,7 +607,7 @@ if(GENERATE_INSTALLER)
 		else(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
@@ -600,7 +615,7 @@ if(GENERATE_INSTALLER)
 				)
 			else(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
 					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
@@ -609,7 +624,7 @@ if(GENERATE_INSTALLER)
 		endif(BUILD_AND_RUN_TESTS)
 	else(CMAKE_BUILD_TYPE MATCHES Release)
 		add_custom_target(build 
-			COMMAND ${CMAKE_MAKE_PROGRAM} 
+			COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 			COMMAND ${CMAKE_MAKE_PROGRAM} install
 			COMMAND ${CMAKE_MAKE_PROGRAM} package
 			COMMAND ${CMAKE_MAKE_PROGRAM} package_install
@@ -621,35 +636,35 @@ else(GENERATE_INSTALLER)
 		if(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_MAKE_PROGRAM}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			else(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_MAKE_PROGRAM}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			endif(BUILD_API_DOC) 
 		else(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			else(BUILD_API_DOC) 
 				add_custom_target(build 
-					COMMAND ${CMAKE_MAKE_PROGRAM}
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			endif(BUILD_API_DOC)
 		endif()
 	else(CMAKE_BUILD_TYPE MATCHES Release)#debug
 			add_custom_target(build 
-				COMMAND ${CMAKE_MAKE_PROGRAM}
+				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 				COMMAND ${CMAKE_MAKE_PROGRAM} install
 			) 
 	endif(CMAKE_BUILD_TYPE MATCHES Release)

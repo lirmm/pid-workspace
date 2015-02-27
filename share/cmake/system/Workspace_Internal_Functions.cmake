@@ -51,7 +51,6 @@ if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthes => 
 	#classifying subcategories by recursion
 	classify_Category(${REMAINING_OF_CATEGORY} ${package} ${ROOT_OF_CATEGORY}_CATEGORIES)
 else()#there is no sub categories
-	#string(REGEX REPLACE "^(.+)$" "\\1" ROOT_OF_CATEGORY ${category_full_string})
 	# adding the current category to its containing category	
 	set(temp_container ${${container_variable}} ${category_full_string})
 	list(REMOVE_DUPLICATES temp_container)
