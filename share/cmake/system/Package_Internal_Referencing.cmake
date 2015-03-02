@@ -538,16 +538,24 @@ endfunction(download_And_Install_Binary_Package)
 
 ### 
 function(build_And_Install_Source DEPLOYED package version)
+
+	if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/CMakeCache.txt)	
+		#first step populating the cache if needed		
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} ..
+			WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+			ERROR_QUIET OUTPUT_QUIET
+			)
+	endif()	
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D USE_LOCAL_DEPLOYMENT:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..
+		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D USE_LOCAL_DEPLOYMENT:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-		ERROR_QUIET OUTPUT_QUIET
 		)
 	execute_process(
-		COMMAND ${CMAKE_MAKE_PROGRAM} build
+		COMMAND ${CMAKE_BUILD_TOOL} build
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-		ERROR_QUIET OUTPUT_QUIET	
 		)
+
 	if(EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
 		set(${DEPLOYED} TRUE PARENT_SCOPE)
 	else()
@@ -567,7 +575,7 @@ execute_process(
 		)
 
 if(NOT res) #no version available => BUG
-	message("Error No version available")	
+	message("Error : no version available for source package ${package}")	
 	return()
 endif()
 string(REPLACE "\n" ";" GIT_VERSIONS ${res})
@@ -598,7 +606,7 @@ foreach(version IN ITEMS ${GIT_VERSIONS})
 	endif()
 endforeach()
 if(curr_max_patch_number EQUAL -1 OR curr_max_minor_number EQUAL -1 OR curr_max_major_number EQUAL -1)#i.e. nothing found
-	message("Error : no version found")
+	message("Error : no adequate version found for package ${package}")
 	return()
 endif()
 
@@ -606,10 +614,9 @@ set(ALL_IS_OK FALSE)
 build_And_Install_Package(ALL_IS_OK ${package} "${curr_max_major_number}.${curr_max_minor_number}.${curr_max_patch_number}")
 
 if(ALL_IS_OK)
-	message("SUCCESS : Build and install OK !!")	
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 else()
-	message("Error : Build and install FAILED !!")
+	message("Error : automatic build and install of package ${package} FAILED !!")
 endif()
 
 endfunction(deploy_Source_Package)
@@ -690,9 +697,7 @@ endif()
 
 if(ALL_IS_OK)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
-	message("deploy_Source_Package_Version : DEPLOYED !!")
 else()
-	message("deploy_Source_Package_Version : NOT DEPLOYED")
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 endif()
 
@@ -724,7 +729,6 @@ execute_process(COMMAND git checkout tags/v${version}
 set(IS_BUILT FALSE)
 #message("DEBUG : trying to build ${package} with version ${version}")
 build_And_Install_Source(IS_BUILT ${package} ${version})
-
 #message("DEBUG : going back to ${curr_branch} branch")
 # 3) going back to the initial branch in use
 execute_process(COMMAND git checkout ${curr_branch}
