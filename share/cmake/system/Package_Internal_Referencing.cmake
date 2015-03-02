@@ -559,6 +559,7 @@ endfunction(build_And_Install_Source)
 ###
 function(deploy_Source_Package DEPLOYED package)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number 
+set(${DEPLOYED} FALSE PARENT_SCOPE)
 execute_process(
 		COMMAND git tag -l v*
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
@@ -566,7 +567,7 @@ execute_process(
 		)
 
 if(NOT res) #no version available => BUG
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	message("Error No version available")	
 	return()
 endif()
 string(REPLACE "\n" ";" GIT_VERSIONS ${res})
@@ -597,7 +598,7 @@ foreach(version IN ITEMS ${GIT_VERSIONS})
 	endif()
 endforeach()
 if(curr_max_patch_number EQUAL -1 OR curr_max_minor_number EQUAL -1 OR curr_max_major_number EQUAL -1)#i.e. nothing found
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	message("Error : no version found")
 	return()
 endif()
 
@@ -605,9 +606,10 @@ set(ALL_IS_OK FALSE)
 build_And_Install_Package(ALL_IS_OK ${package} "${curr_max_major_number}.${curr_max_minor_number}.${curr_max_patch_number}")
 
 if(ALL_IS_OK)
+	message("SUCCESS : Build and install OK !!")	
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 else()
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	message("Error : Build and install FAILED !!")
 endif()
 
 endfunction(deploy_Source_Package)
