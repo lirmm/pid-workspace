@@ -6,6 +6,6 @@ set(api-driver-fri_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM)" CACHE 
 set(api-driver-fri_DESCRIPTION Wrapper for the FRI library CACHE INTERNAL "")
 set(api-driver-fri_YEARS 2015 CACHE INTERNAL "")
 set(api-driver-fri_LICENSE CeCILL-C CACHE INTERNAL "")
-set(api-driver-fri_ADDRESS git@rob-dev.lirmm.fr:kuka-lwr-knowbotics/api-driver-fri.git CACHE INTERNAL "")
+set(api-driver-fri_ADDRESS git@rob-dev.lirmm.fr:kuka-lwr/api-driver-fri.git CACHE INTERNAL "")
 set(api-driver-fri_CATEGORIES driver/fri CACHE INTERNAL "")
 set(api-driver-fri_REFERENCES  CACHE INTERNAL "")

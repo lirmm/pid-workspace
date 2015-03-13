@@ -6,6 +6,6 @@ set(shadow-hand-driver-vrep_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM
 set(shadow-hand-driver-vrep_DESCRIPTION A package to interface with a simulated Shadow Dexterous hand on V-REP CACHE INTERNAL "")
 set(shadow-hand-driver-vrep_YEARS 2015 CACHE INTERNAL "")
 set(shadow-hand-driver-vrep_LICENSE CeCILL-C CACHE INTERNAL "")
-set(shadow-hand-driver-vrep_ADDRESS git@rob-dev.lirmm.fr:vrep/shadow-hand-driver-vrep.git CACHE INTERNAL "")
+set(shadow-hand-driver-vrep_ADDRESS git@rob-dev.lirmm.fr:shadow-hands/shadow-hand-driver-vrep.git CACHE INTERNAL "")
 set(shadow-hand-driver-vrep_CATEGORIES robot/hand;driver/vrep CACHE INTERNAL "")
 set(shadow-hand-driver-vrep_REFERENCES  CACHE INTERNAL "")
