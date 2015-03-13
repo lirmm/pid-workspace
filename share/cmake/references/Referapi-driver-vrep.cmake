@@ -6,6 +6,6 @@ set(api-driver-vrep_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM)" CACHE
 set(api-driver-vrep_DESCRIPTION Wrapper for the V-REP C/C++ remote API CACHE INTERNAL "")
 set(api-driver-vrep_YEARS 20145 CACHE INTERNAL "")
 set(api-driver-vrep_LICENSE CeCILL-C CACHE INTERNAL "")
-set(api-driver-vrep_ADDRESS git@rob-dev.lirmm.fr:vrep/apidrivervrep.git CACHE INTERNAL "")
+set(api-driver-vrep_ADDRESS git@rob-dev.lirmm.fr:vrep/api-driver-vrep.git CACHE INTERNAL "")
 set(api-driver-vrep_CATEGORIES driver/vrep CACHE INTERNAL "")
 set(api-driver-vrep_REFERENCES  CACHE INTERNAL "")
