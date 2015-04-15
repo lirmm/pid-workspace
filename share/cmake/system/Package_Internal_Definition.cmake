@@ -40,8 +40,6 @@ CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api docu
 option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
 #option(BUILD_WITH_PRINT_MESSAGES "Package generates print in console" OFF)
 
-option(USE_LOCAL_DEPLOYMENT "Package uses tests" OFF)
-
 option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OFF)
 
 option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
@@ -338,11 +336,7 @@ function(set_Current_Version major minor patch)
 	#################################################
 	############ MANAGING install paths #############
 	#################################################
-	if(USE_LOCAL_DEPLOYMENT)
-		set(${PROJECT_NAME}_DEPLOY_PATH own-${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
-	else(USE_LOCAL_DEPLOYMENT)
-		set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
-	endif(USE_LOCAL_DEPLOYMENT) 
+	set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
@@ -562,20 +556,11 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	endif()
 
 	# adding an uninstall command (uninstall the whole installed version)
-	if(USE_LOCAL_DEPLOYMENT)
-		add_custom_target(uninstall
-			COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION} (own version)
-			COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${PROJECT_NAME}/own-${${PROJECT_NAME}_VERSION}
-			VERBATIM
-		)
-	else()
-		add_custom_target(uninstall
-			COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
-			COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
-			VERBATIM
-		)
-	endif()
-
+	add_custom_target(uninstall
+		COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
+		COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
+		VERBATIM
+	)
 	
 endif()
 
@@ -1781,7 +1766,6 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_LATEX_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_AND_RUN_TESTS OFF CACHE BOOL "" FORCE)
-set(USE_LOCAL_DEPLOYMENT OFF CACHE BOOL "" FORCE)
 set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)
 #include the cmake script that sets the options coming from the global build configuration
