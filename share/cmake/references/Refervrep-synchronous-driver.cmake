@@ -1,0 +1,11 @@
+#### referencing package vrep-synchronous-driver mode ####
+set(vrep-synchronous-driver_MAIN_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
+set(vrep-synchronous-driver_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(vrep-synchronous-driver_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
+set(vrep-synchronous-driver_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
+set(vrep-synchronous-driver_DESCRIPTION A;Knowbotics;driver;that;allow;synchronous;operation;with;V-REP CACHE INTERNAL "")
+set(vrep-synchronous-driver_YEARS 2015 CACHE INTERNAL "")
+set(vrep-synchronous-driver_LICENSE CeCILL-C CACHE INTERNAL "")
+set(vrep-synchronous-driver_ADDRESS git@rob-dev.lirmm.fr:vrep/vrep-synchronous-driver.git CACHE INTERNAL "")
+set(vrep-synchronous-driver_CATEGORIES driver/vrep CACHE INTERNAL "")
+set(vrep-synchronous-driver_REFERENCES  CACHE INTERNAL "")
