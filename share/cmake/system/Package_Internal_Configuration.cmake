@@ -164,7 +164,7 @@ function(init_Component_Build_Variables package component path_to_version mode)
 		#additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
 		if(${package}_${component}_INC_DIRS${mode_suffix})
 			resolve_External_Includes_Path(RES_INCLUDES ${package} "${${package}_${component}_INC_DIRS${mode_suffix}}" ${mode})
-			message("DEBUG RES_INCLUDES for ${package} ${component} = ${RES_INCLUDES}")			
+			#message("DEBUG RES_INCLUDES for ${package} ${component} = ${RES_INCLUDES}")			
 			set(	${package}_${component}_INCLUDE_DIRS${mode_suffix} 
 				${${package}_${component}_INCLUDE_DIRS${mode_suffix}} 
 				"${RES_INCLUDES}"
@@ -327,7 +327,7 @@ endfunction(resolve_Package_Dependencies)
 
 ###
 function(configure_Package_Build_Variables package mode)
-message(DEBUG configure_Package_Build_Variables package=${package} mode=${mode})
+#message(DEBUG configure_Package_Build_Variables package=${package} mode=${mode})
 if(${package}_PREPARE_BUILD)#this is a guard to limit recursion
 	return()
 endif()

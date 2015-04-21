@@ -81,7 +81,7 @@ set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in USE_LOCAL_DEPLOYMENT mode (e.g. DEVELOPMENT VERSIONS HAVE GREATER PRIORITIES)
 	list_Local_Version_Subdirectories(version_dirs ${package_install_dir})
 	if(version_dirs)#scanning local versions  
-		set(curr_patch_version 0)
+		set(curr_patch_version -1)
 		foreach(patch IN ITEMS ${version_dirs})
 			string(REGEX REPLACE "^own-${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
 			if(	NOT (A_VERSION STREQUAL "${patch}")#there is a match
