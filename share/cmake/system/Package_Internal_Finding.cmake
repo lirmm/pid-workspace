@@ -105,11 +105,11 @@ endif()
 
 #no adequate local version found OR local version not used
 list_Version_Subdirectories(version_dirs ${package_install_dir})
-if(version_dirs)#scanning non local versions  
-	set(curr_patch_version 0)		
+if(version_dirs)#scanning non local versions
+	set(curr_patch_version -1)
 	foreach(patch IN ITEMS ${version_dirs})
 		string(REGEX REPLACE "^${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
-		if(	NOT (A_VERSION STREQUAL "${patch}")#there is a match
+		if(	NOT (A_VERSION STREQUAL "${patch}") #there is a match
 			AND ${A_VERSION} GREATER ${curr_patch_version})#newer patch version
 			set(curr_patch_version ${A_VERSION})
 			set(result true)	
