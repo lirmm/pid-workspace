@@ -24,6 +24,20 @@ include(Package_Internal_External_Package_Management NO_POLICY_SCOPE)
 ##################################################################################
 macro(declare_Package author institution mail year license address description)
 #################################################
+############ GETTING GENERAL INFO ###############
+#################################################
+include(CheckTypeSize)
+set(${PROJECT_NAME}_ARCH CACHE INTERNAL "")
+if(${CMAKE_SIZEOF_VOID_P} EQUAL 2)
+	set(${PROJECT_NAME}_ARCH 16 CACHE INTERNAL "")
+elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
+	set(${PROJECT_NAME}_ARCH 32 CACHE INTERNAL "")
+elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+	set(${PROJECT_NAME}_ARCH 64 CACHE INTERNAL "")
+endif()
+
+
+#################################################
 ############ DECLARING options ##################
 #################################################
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the package
