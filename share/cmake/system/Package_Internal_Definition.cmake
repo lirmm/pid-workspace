@@ -26,7 +26,6 @@ macro(declare_Package author institution mail year license address description)
 #################################################
 ############ GETTING GENERAL INFO ###############
 #################################################
-include(CheckTypeSize)
 set(${PROJECT_NAME}_ARCH CACHE INTERNAL "")
 if(${CMAKE_SIZEOF_VOID_P} EQUAL 2)
 	set(${PROJECT_NAME}_ARCH 16 CACHE INTERNAL "")
