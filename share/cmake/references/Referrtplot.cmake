@@ -1,0 +1,11 @@
+#### referencing package rtplot mode ####
+set(rtplot_MAIN_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
+set(rtplot_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(rtplot_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
+set(rtplot_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
+set(rtplot_DESCRIPTION rtplot;takes;commands;from;stdin;to;display;graphs.;See;the;wiki;for;usage CACHE INTERNAL "")
+set(rtplot_YEARS 2015 CACHE INTERNAL "")
+set(rtplot_LICENSE CeCILL-C CACHE INTERNAL "")
+set(rtplot_ADDRESS git@rob-dev.lirmm.fr:pid_external_deps/rtplot.git CACHE INTERNAL "")
+set(rtplot_CATEGORIES  CACHE INTERNAL "")
+set(rtplot_REFERENCES  CACHE INTERNAL "")
