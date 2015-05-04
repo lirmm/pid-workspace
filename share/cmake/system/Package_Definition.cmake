@@ -399,12 +399,11 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 				"${static_links}"
 				"${shared_links}")
 else()#system dependency
-	if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_LINKS)
-		message(FATAL_ERROR "bad arguments : the LINKS keyword must be used if you want to specify a system dependency.")
-	endif()
+
 	declare_System_Component_Dependency(
 			${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 			${export}
+			"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
 			"${comp_defs}" 
 			"${comp_exp_defs}"
 			"${dep_defs}"
