@@ -331,6 +331,7 @@ set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
+set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ../share/resources CACHE INTERNAL "")
 
 endmacro(declare_Package)
 
@@ -710,6 +711,9 @@ endif()
 #a library defines a folder containing one or more headers and/or subdirectories 
 set(${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${dirname})
 
+#any component defines a folder containing zero or more resource files
+set(${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH}/${c_name})
+
 set(${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME ${dirname} CACHE INTERNAL "")
 file(	GLOB_RECURSE
 	${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE
@@ -725,7 +729,7 @@ set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
 foreach(header IN ITEMS ${${PROJECT_NAME}_${c_name}_HEADERS})
 	set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "^.*${header}$|${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 endforeach()
-message("PATTERN = ${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
+
 install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
@@ -829,6 +833,11 @@ else()#simply creating a "fake" target for header only library
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
 endif()
 
+install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+if(EXISTS ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH})
+	install(DIRECTORY ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH} DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/resources/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain runtime resources provided (e.g. config files) by the component
+endif()
+
 # registering exported flags for all kinds of libs
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
 set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported links
@@ -880,6 +889,9 @@ endif()
 
 #managing sources for the application
 
+#any component defines a folder containing zero or more resource files
+set(${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH}/${c_name})
+
 if(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP"
 	OR ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")	
 	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/apps/${dirname} CACHE INTERNAL "")
@@ -904,7 +916,7 @@ add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${${PROJECT_NAME}_${c_name}_ALL_S
 manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
 manage_Additional_Component_Exported_Flags(${c_name} "" "" "${internal_link_flags}")
 
-if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
+if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")# NB : tests do not need to be relocatable since they are purely local
 	# adding the application to the list of installed components when make install is called (not for test applications)
 	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} 
 		RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
@@ -915,8 +927,10 @@ if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")
 	elseif(APPLE)
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
 	endif()
-	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
-	# NB : tests do not need to be relocatable since they are purely local
+	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+	if(EXISTS ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH})
+		install(DIRECTORY ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH} DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/resources/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain runtime resources provided (e.g. config files) by the component
+	endif()	
 endif()
 
 #registering source code for the component
