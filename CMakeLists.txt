@@ -13,6 +13,9 @@ file(GLOB reference_files ${CMAKE_SOURCE_DIR}/share/cmake/references/Refer*.cmak
 # 2) including all reference files and memorizing packages names
 foreach(a_ref_file IN ITEMS ${reference_files})
 	string(REGEX REPLACE "^${CMAKE_SOURCE_DIR}/share/cmake/references/Refer([^\\.]+)\\.cmake$" "\\1" PACKAGE_NAME ${a_ref_file})
+	if(PACKAGE_NAME MATCHES External)#it is an external package
+		string(REGEX REPLACE "^External([^\\.]+)$" "\\1" PACKAGE_NAME ${PACKAGE_NAME})
+	endif()
 	list(APPEND ALL_AVAILABLE_PACKAGES ${PACKAGE_NAME})
 	include(${a_ref_file})
 endforeach()
@@ -20,6 +23,7 @@ endforeach()
 reset_All_Categories()
 # 4) extracting all available categories and classifying all packages in these categories
 foreach(a_package IN ITEMS ${ALL_AVAILABLE_PACKAGES})
+	message("categorizing package ${a_package}")	
 	classify_Package_Categories(${a_package})
 endforeach()
 #5) registering categories

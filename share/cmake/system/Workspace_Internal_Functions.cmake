@@ -323,11 +323,17 @@ endfunction(generate_Binary_Package_Name)
 function(test_binary_download package version system RESULT)
 
 #testing release archive
-set(download_url ${${package}_REFERENCE_${version}_${system}})
+set(download_url ${${package}_REFERENCE_${version}_${system}_url})
+set(FOLDER_BINARY ${${package}_REFERENCE_${version}_${system}_folder})
+
 generate_Binary_Package_Name(${package} ${version} ${system} Release RES_FILE RES_FOLDER)
-set(destination ${CMAKE_BINARY_DIR}/${RES_FILE})
+set(destination ${CMAKE_BINARY_DIR}/share/${RES_FILE})
 set(res "")
-file(DOWNLOAD ${download_url} ${destination} STATUS res)#waiting one second
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory share
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+			ERROR_QUIET OUTPUT_QUIET)
+
+file(DOWNLOAD ${download_url} ${destination} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)#waiting one second
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)#testing if connection can be established
@@ -335,7 +341,7 @@ if(NOT numeric_error EQUAL 0)#testing if connection can be established
 	return()
 endif()
 execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ${destination}
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 	ERROR_VARIABLE error
 	OUTPUT_QUIET
 )
@@ -344,33 +350,39 @@ if(NOT error STREQUAL "")#testing if archive is valid
 	set(${RESULT} FALSE PARENT_SCOPE)
 	return()
 else()
-	file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/${RES_FOLDER})#cleaning (removing extracted folder)
+	file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/share/${RES_FOLDER})#cleaning (removing extracted folder)
 endif()
 
 
 #testing debug archive
-set(download_url_dbg ${${package}_REFERENCE_${version}_${system}_DEBUG})
-generate_Binary_Package_Name(${package} ${version} ${system} Debug RES_FILE RES_FOLDER)
-set(destination_dbg ${CMAKE_BINARY_DIR}/${RES_FILE})
-set(res_dbg "")
-file(DOWNLOAD ${download_url_dbg} ${destination_dbg} STATUS res_dbg)#waiting one second
-list(GET res_dbg 0 numeric_error_dbg)
-list(GET res_dbg 1 status_dbg)
-if(NOT numeric_error_dbg EQUAL 0)#testing if connection can be established
-	set(${RESULT} FALSE PARENT_SCOPE)
-	return()
-endif()
-execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ${destination_dbg}
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-	ERROR_VARIABLE error
-	OUTPUT_QUIET
-)
-file(REMOVE ${destination_dbg})#removing archive file
-if(NOT error STREQUAL "")#testing if archive is valid
-	set(${RESULT} FALSE PARENT_SCOPE)
-	return()
-else()
-	file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/${RES_FOLDER}) #cleaning (removing extracted folder)
+if(EXISTS ${package}_REFERENCE_${version}_${system}_url_DEBUG)
+	set(download_url_dbg ${${package}_REFERENCE_${version}_${system}_url_DEBUG})
+	set(FOLDER_BINARY_dbg ${${package}_REFERENCE_${version}_${system}_folder_DEBUG})
+	generate_Binary_Package_Name(${package} ${version} ${system} Debug RES_FILE RES_FOLDER)
+	set(destination_dbg ${CMAKE_BINARY_DIR}/share/${RES_FILE})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory share
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+			ERROR_QUIET OUTPUT_QUIET)
+	set(res_dbg "")
+	file(DOWNLOAD ${download_url_dbg} ${destination_dbg} STATUS res_dbg)#waiting one second
+	list(GET res_dbg 0 numeric_error_dbg)
+	list(GET res_dbg 1 status_dbg)
+	if(NOT numeric_error_dbg EQUAL 0)#testing if connection can be established
+		set(${RESULT} FALSE PARENT_SCOPE)
+		return()
+	endif()
+	execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ${destination_dbg}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+		ERROR_VARIABLE error
+		OUTPUT_QUIET
+	)
+	file(REMOVE ${destination_dbg})#removing archive file
+	if(NOT error STREQUAL "")#testing if archive is valid
+		set(${RESULT} FALSE PARENT_SCOPE)
+		return()
+	else()
+		file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/share/${RES_FOLDER}) #cleaning (removing extracted folder)
+	endif()
 endif()
 
 #release and debug versions are accessible => OK
