@@ -331,7 +331,7 @@ set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
-set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ../share/resources CACHE INTERNAL "")
+set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resources CACHE INTERNAL "")
 
 endmacro(declare_Package)
 
@@ -478,16 +478,22 @@ add_subdirectory(share)
 ##########################################################
 generate_License_File() # generating/installing the file containing license info about the package
 generate_Find_File() # generating/installing the generic cmake find file for the package
-
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
 generate_API() #generating the API documentation configuration file and the rule to launche doxygen and install the doc
 clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
 generate_Info_File() #generating a cmake "info" file containing info about source code of components 
 
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
+#installing specific folders of the share sub directory
+if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)
 	#installing the share/cmake folder (may contain specific find scripts for external libs used by the package)
 	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 endif()
+
+if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/resources)
+	#installing the share/resource folder (may contain )
+	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+endif()
+
 
 #resolving link time dependencies for executables
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
@@ -690,7 +696,8 @@ endmacro(build_Package)
 # internal_inc_dirs : additionnal include dirs (internal to package, that contains header files, e.g. like common definition between package components, that don't have to be exported since not in the interface)
 # internal_links : only for executables or shared libs some internal linker flags used to build the component 
 # exported_links : only for static and shared libs : some linker flags (not a library inclusion, e.g. -l<li> or full path to a lib) that must be used when linking with the component
-function(declare_Library_Component c_name dirname type internal_inc_dirs internal_defs exported_defs internal_links)
+#runtime resources: for all, path to file relative to and present in share/resources folder
+function(declare_Library_Component c_name dirname type internal_inc_dirs internal_defs exported_defs internal_links runtime_resources)
 set(DECLARED FALSE)
 is_Declared(${c_name} DECLARED)
 if(DECLARED)
@@ -711,8 +718,6 @@ endif()
 #a library defines a folder containing one or more headers and/or subdirectories 
 set(${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${dirname})
 
-#any component defines a folder containing zero or more resource files
-set(${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH}/${c_name})
 
 set(${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME ${dirname} CACHE INTERNAL "")
 file(	GLOB_RECURSE
@@ -834,7 +839,16 @@ else()#simply creating a "fake" target for header only library
 endif()
 
 install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
-if(EXISTS ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH})
+#create a .rpath folder in each build mode path so that everything can work in the build tree
+set(${c_name}${INSTALL_NAME_SUFFIX}_BUILD_RPATH_DIR ${CMAKE_BINARY_DIR}/.rpath/${c_name}${INSTALL_NAME_SUFFIX}) 
+if(EXISTS ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH} AND NOT "${runtime_resources}" STREQUAL "")
+	# managing runtime resources
+	foreach(resource IN ITEMS ${runtime_resources})
+		set(file_PATH ../share/resources/${resource})
+				
+	
+	endforeach()
+
 	install(DIRECTORY ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH} DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/resources/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain runtime resources provided (e.g. config files) by the component
 endif()
 
@@ -857,7 +871,7 @@ endfunction(declare_Library_Component)
 # internal_defs : definitions that affects the implementation of the application component
 # internal_link_flags : additionnal linker flags that affects required to link the application component
 # internal_inc_dirs : additionnal include dirs (internal to project, that contains header files, e.g. common definition between components that don't have to be exported)
-function(declare_Application_Component c_name dirname type internal_inc_dirs internal_defs internal_link_flags)
+function(declare_Application_Component c_name dirname type internal_inc_dirs internal_defs internal_link_flags runtime_resources)
 set(DECLARED FALSE)
 is_Declared(${c_name} DECLARED)
 if(DECLARED)
@@ -890,7 +904,6 @@ endif()
 #managing sources for the application
 
 #any component defines a folder containing zero or more resource files
-set(${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH}/${c_name})
 
 if(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP"
 	OR ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")	
@@ -1567,7 +1580,6 @@ endif()
 	set(BUILD_API_DOC OFF FORCE)
 endif()
 endfunction(generate_API)
-
 
 ### configure the target with exported flags (cflags and ldflags)
 function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs links)

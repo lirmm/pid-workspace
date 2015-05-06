@@ -129,11 +129,12 @@ endmacro(build_PID_Package)
 #				DIRECTORY dirname 
 #				<STATIC_LIB|SHARED_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
 #				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [LINKS link ...] ] 
-#				[EXPORTED_DEFINITIONS def ...] )
+#				[EXPORTED_DEFINITIONS def ...] 
+#				[RUNTIME_RESOURCES <some path to files in the share/resources dir>])
 macro(declare_PID_Component)
 set(options STATIC_LIB SHARED_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
 set(oneValueArgs NAME DIRECTORY)
-set(multiValueArgs INTERNAL EXPORTED_DEFINITIONS)
+set(multiValueArgs INTERNAL EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}")
@@ -205,13 +206,20 @@ if(DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS)
 	set(exported_defs ${DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS})
 endif()
 
+set(runtime_resources "")
+if(DECLARE_PID_COMPONENT_RUNTIME_RESOURCES)
+	set(runtime_resources ${DECLARE_PID_COMPONENT_RUNTIME_RESOURCES})
+endif()
+
+
 if(type MATCHES APP OR type MATCHES EXAMPLE OR type MATCHES TEST)
 	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME} 
 					${DECLARE_PID_COMPONENT_DIRECTORY} 
 					${type} 
 					"${internal_inc_dirs}" 
 					"${internal_defs}" 
-					"${internal_link_flags}")
+					"${internal_link_flags}"
+					"${runtime_resources}")
 else() #it is a library
 	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME} 
 					${DECLARE_PID_COMPONENT_DIRECTORY} 
@@ -219,7 +227,8 @@ else() #it is a library
 					"${internal_inc_dirs}"
 					"${internal_defs}"
 					"${exported_defs}" 
-					"${internal_link_flags}")
+					"${internal_link_flags}"
+					"${runtime_resources}")
 endif()
 
 endmacro(declare_PID_Component)
