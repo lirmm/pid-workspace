@@ -688,6 +688,21 @@ endif()
 #print_Component_Variables()
 endmacro(build_Package)
 
+function(manage_Build_Tree_Runtime_Paths c_name mode_suffix resources)
+#create a .rpath folder in each build mode path so that everything can work in the build tree
+set(BUILD_RPATH_DIR ${CMAKE_BINARY_DIR}/.rpath/${c_name}${mode_suffix}) 
+if(EXISTS ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH} AND NOT "${resources}" STREQUAL "")
+	# managing runtime resources
+	foreach(resource IN ITEMS ${resources})
+		set(file_PATH ${CMAKE_SOURCE_DIR}/share/resources/${resource})#the path contained by the link 
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E create_symlink ${file_PATH} ${BUILD_RPATH_DIR}/${resource}
+		)
+	endforeach()
+endif()
+endfunction(manage_Build_Tree_Runtime_Paths)
+
+
 ##################################################################################
 ###################### declaration of a library component ########################
 ##################################################################################
@@ -839,18 +854,7 @@ else()#simply creating a "fake" target for header only library
 endif()
 
 install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
-#create a .rpath folder in each build mode path so that everything can work in the build tree
-set(${c_name}${INSTALL_NAME_SUFFIX}_BUILD_RPATH_DIR ${CMAKE_BINARY_DIR}/.rpath/${c_name}${INSTALL_NAME_SUFFIX}) 
-if(EXISTS ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH} AND NOT "${runtime_resources}" STREQUAL "")
-	# managing runtime resources
-	foreach(resource IN ITEMS ${runtime_resources})
-		set(file_PATH ../share/resources/${resource})
-				
-	
-	endforeach()
-
-	install(DIRECTORY ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH} DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/resources/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain runtime resources provided (e.g. config files) by the component
-endif()
+manage_Build_Tree_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
 
 # registering exported flags for all kinds of libs
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
@@ -963,6 +967,9 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
 endif()
+
+install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+manage_Build_Tree_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
 
 # registering exported flags for all kinds of apps => empty variables since applications export no flags
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
