@@ -77,7 +77,6 @@ execute_process(
 )
 endfunction(create_Symlink)
 
-
 ###
 function(create_Rpath_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
 #first creating the path where to put symlinks if it does not exist
@@ -87,9 +86,6 @@ get_filename_component(A_FILE ${path_to_target} NAME)
 #second creating the symlink
 create_Symlink(${path_to_target} ${FULL_RPATH_DIR}/${A_FILE})
 endfunction(create_Rpath_Symlink)
-
-###
-
 
 ###
 function(install_Rpath_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
