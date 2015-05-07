@@ -15,6 +15,7 @@ include(Package_Internal_Finding NO_POLICY_SCOPE)
 include(Package_Internal_Configuration NO_POLICY_SCOPE)
 include(Package_Internal_Referencing NO_POLICY_SCOPE)
 include(Package_Internal_External_Package_Management NO_POLICY_SCOPE)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 ##################################################################################
 #################### package management public functions and macros ##############
 ##################################################################################
@@ -454,7 +455,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	
 	# 2) if all version are OK resolving all necessary variables (CFLAGS, LDFLAGS and include directories)
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		configure_Package_Build_Variables(${dep_pack} ${CMAKE_BUILD_TYPE})
+		configure_Package_Build_Variables("${dep_pack}"	 "${CMAKE_BUILD_TYPE}")
 	endforeach()
 
 	# 3) when done resolving runtime dependencies for all used package (direct or undirect)
@@ -491,7 +492,7 @@ endif()
 
 if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/resources)
 	#installing the share/resource folder (may contain )
-	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/resources DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 endif()
 
 
@@ -688,21 +689,6 @@ endif()
 #print_Component_Variables()
 endmacro(build_Package)
 
-function(manage_Build_Tree_Runtime_Paths c_name mode_suffix resources)
-#create a .rpath folder in each build mode path so that everything can work in the build tree
-set(BUILD_RPATH_DIR ${CMAKE_BINARY_DIR}/.rpath/${c_name}${mode_suffix}) 
-if(EXISTS ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH} AND NOT "${resources}" STREQUAL "")
-	# managing runtime resources
-	foreach(resource IN ITEMS ${resources})
-		set(file_PATH ${CMAKE_SOURCE_DIR}/share/resources/${resource})#the path contained by the link 
-		execute_process(
-			COMMAND ${CMAKE_COMMAND} -E create_symlink ${file_PATH} ${BUILD_RPATH_DIR}/${resource}
-		)
-	endforeach()
-endif()
-endfunction(manage_Build_Tree_Runtime_Paths)
-
-
 ##################################################################################
 ###################### declaration of a library component ########################
 ##################################################################################
@@ -854,7 +840,8 @@ else()#simply creating a "fake" target for header only library
 endif()
 
 install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
-manage_Build_Tree_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
+manage_Install_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
+manage_Build_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
 
 # registering exported flags for all kinds of libs
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
@@ -968,8 +955,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
 endif()
 
-install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
-manage_Build_Tree_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
+manage_Build_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
+manage_Install_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
 
 # registering exported flags for all kinds of apps => empty variables since applications export no flags
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
@@ -1267,40 +1254,31 @@ else()
 endif()
 endfunction(declare_External_Component_Dependency)
 
+
 ##################################################################################
 ############# auxiliary package management internal functions and macros #########
 ##################################################################################
 
-### printing variables for components in the package ################
-macro(print_Component component)
-	message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX}")
-	message("INTERFACE : ")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
-		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
-		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_INTERFACE_LIBRARIES)
-		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")		
-		
-	message("IMPLEMENTATION :")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
-		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
-		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
-		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-endmacro(print_Component)
-
-macro(print_Component_Variables)
-	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
-	message("libraries : " ${${PROJECT_NAME}_COMPONENTS_LIBS})
-	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
-
-	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-		print_Component(${component})	
+function(manage_Build_Tree_Direct_Runtime_Paths c_name mode_suffix resources)
+if(EXISTS ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH} AND NOT "${resources}" STREQUAL "")
+	# managing runtime resources
+	foreach(resource IN ITEMS ${resources})
+		set(file_PATH ${CMAKE_SOURCE_DIR}/share/resources/${resource})#the path contained by the link
+		create_Rpath_Symlink(${file_PATH} ${CMAKE_BINARY_DIR} ${c_name}${mode_suffix})
 	endforeach()
-endmacro(print_Component_Variables)
+endif()
+endfunction(manage_Build_Tree_Direct_Runtime_Paths)
 
+
+function(manage_Install_Tree_Direct_Runtime_Paths c_name mode_suffix resources)
+if(EXISTS ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH} AND NOT "${resources}" STREQUAL "")
+	# managing runtime resources at install time
+	foreach(resource IN ITEMS ${resources})
+		set(file_PATH ../../share/resources/${resource})#the path contained by the link
+		install_Rpath_Symlink(${file_PATH} ${${PROJECT_NAME}_DEPLOY_PATH} ${c_name}${mode_suffix})
+	endforeach()
+endif()
+endfunction(manage_Install_Tree_Direct_Runtime_Paths)
 
 ### generating the license of the package
 function(generate_License_File)
@@ -1818,24 +1796,4 @@ set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)
 #include the cmake script that sets the options coming from the global build configuration
 include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
 endfunction(reset_Mode_Cache_Options)
-
-###
-function(is_A_System_Reference_Path path IS_SYSTEM)
-
-if(UNIX)
-	if(path STREQUAL / OR path STREQUAL /usr OR path STREQUAL /usr/local)
-		set(${IS_SYSTEM} TRUE PARENT_SCOPE)
-	else()
-		set(${IS_SYSTEM} FALSE PARENT_SCOPE)
-	endif()
-endif()
-
-if(APPLE AND NOT ${IS_SYSTEM})
-	if(path STREQUAL /Library/Frameworks OR path STREQUAL /Network/Library/Frameworks OR path STREQUAL /System/Library/Framework)
-		set(${IS_SYSTEM} TRUE PARENT_SCOPE)
-	endif()
-endif()
-
-endfunction(is_A_System_Reference_Path)
-
 
