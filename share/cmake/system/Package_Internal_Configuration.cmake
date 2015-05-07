@@ -164,7 +164,7 @@ function(init_Component_Build_Variables package component path_to_version mode)
 		#additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
 		if(${package}_${component}_INC_DIRS${mode_suffix})
 			resolve_External_Includes_Path(RES_INCLUDES ${package} "${${package}_${component}_INC_DIRS${mode_suffix}}" ${mode})
-			message("DEBUG RES_INCLUDES for ${package} ${component} = ${RES_INCLUDES}")			
+			#message("DEBUG RES_INCLUDES for ${package} ${component} = ${RES_INCLUDES}")			
 			set(	${package}_${component}_INCLUDE_DIRS${mode_suffix} 
 				${${package}_${component}_INCLUDE_DIRS${mode_suffix}} 
 				"${RES_INCLUDES}"
@@ -183,7 +183,7 @@ function(init_Component_Build_Variables package component path_to_version mode)
 
 		#provided additionnal ld flags (exported external/system libraries and ldflags)		
 		if(${package}_${component}_LINKS${mode_suffix})
-			resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${mode_suffix}}" ${mode})			
+			resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${mode_suffix}}" ${mode})			
 			set(	${package}_${component}_LIBRARIES${mode_suffix}
 				${${package}_${component}_LIBRARIES${mode_suffix}}	
 				"${RES_LINKS}"
@@ -238,6 +238,7 @@ endfunction(update_Component_Build_Variables_With_Internal_Dependency)
 
 
 function(resolve_Package_Dependencies package mode)
+#message("DEBUG resolve_Package_Dependencies package=${package} mode=${mode}")
 if(mode MATCHES Debug)
 	set(build_mode_suffix "_DEBUG")
 else()
@@ -251,6 +252,7 @@ endif()
 set(TO_INSTALL_EXTERNAL_DEPS)
 foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${build_mode_suffix}})
 	# 1) resolving direct dependencies
+	
 	resolve_External_Package_Dependency(${package} ${dep_ext_pack} ${mode})
 	if(NOT ${dep_ext_pack}_FOUND)
 		list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
@@ -264,10 +266,10 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 #		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_EXTERNAL_DEPS}")
 		set(INSTALLED_EXTERNAL_PACKAGES "")
 		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
-#		message("resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_EXTERNAL_PACKAGES}")
+#		message("DEBUG resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_EXTERNAL_PACKAGES}")
 		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
 			resolve_External_Package_Dependency(${package} ${installed} ${mode})
-#			message("is ${installed} FOUND ? ${${installed}_FOUND} ")
+#			message("DEBUG is ${installed} FOUND ? ${${installed}_FOUND} ")
 			if(NOT ${installed}_FOUND)
 				message(FATAL_ERROR "BUG : impossible to find installed external package ${installed}")
 			endif()	
@@ -325,6 +327,7 @@ endfunction(resolve_Package_Dependencies)
 
 ###
 function(configure_Package_Build_Variables package mode)
+#message(DEBUG configure_Package_Build_Variables package=${package} mode=${mode})
 if(${package}_PREPARE_BUILD)#this is a guard to limit recursion
 	return()
 endif()
@@ -406,13 +409,11 @@ foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENC
 	endif()
 endforeach()
 
-
 if(undirect_deps) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
 	list(REMOVE_DUPLICATES undirect_deps)	
 	get_target_property(thelibs ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
 	set_target_properties(${component}${INSTALL_NAME_SUFFIX} PROPERTIES LINK_LIBRARIES "${thelibs};${undirect_deps}")
-	#set(${THIRD_PARTY_LINKS} ${undirect_deps} PARENT_SCOPE)
-	#HERE UNCOMMENT
+	set(${THIRD_PARTY_LINKS} ${undirect_deps} PARENT_SCOPE)#TODO here verify it is OK
 endif()
 endfunction(resolve_Source_Component_Linktime_Dependencies)
 
@@ -491,16 +492,33 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 			OR ${package}_${component}_INTERNAL_EXPORTS_${dep_component}${mode_var_suffix})
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} TRUE ${mode}) #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application 
 		else()#it is a shared lib that is not exported
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application 
-			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")				
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application
+			#adding this shared lib to the links of the application
+			if(${package} STREQUAL ${PROJECT_NAME})
+				#special case => the currenlty built package is the target package (may be not the case on recursion on another package)
+				# we cannot target the lib folder as it does not exist at build time in the build tree
+				# we simply target the corresponding build "target"
+				list(APPEND undirect_list "${dep_component}${mode_binary_suffix}")		
+			else()			
+				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")		
+			endif()		
 		endif()
 	else() #current component is NOT a direct dependency of the application
 		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
 			OR ${package}_${dep_component}_TYPE STREQUAL "HEADER")
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode})
 		else()#it is a shared lib that is exported or NOT
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application in all cases 
-			list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application in all cases
+			
+			#adding this shared lib to the links of the application
+			if(${package} STREQUAL ${PROJECT_NAME})
+				#special case => the currenlty built package is the target package (may be not the case on recursion on another package)
+				# we cannot target the lib folder as it does not exist at build time in the build tree
+				# we simply target the corresponding build "target"
+				list(APPEND undirect_list "${dep_component}${mode_binary_suffix}")		
+			else()			
+				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")		
+			endif()	
 		endif()
 	endif()
 	
@@ -508,7 +526,6 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 		list(APPEND undirect_list ${UNDIRECT})
 	endif()
 endforeach()
-
 
 if(undirect_list) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
 	list(REMOVE_DUPLICATES undirect_list)
@@ -945,3 +962,49 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once
 	file(APPEND ${file} "${DEBUG_CONTENT}")
 endif()
 endfunction(create_Use_File)
+
+function(clean_Install_Dir)
+
+if(	${CMAKE_BUILD_TYPE} MATCHES Release 
+	AND EXISTS ${WORKSPACE_DIR}/install/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH})# if package is already installed
+	# calling a script that will do the job in its own context (to avoid problem when including cmake scripts that would redefine critic variables)
+	execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} 
+						 -DPACKAGE_NAME=${PROJECT_NAME}
+						 -DPACKAGE_INSTALL_VERSION=${${PROJECT_NAME}_DEPLOY_PATH} 
+						 -DPACKAGE_VERSION=${${PROJECT_NAME}_VERSION}
+						 -DNEW_USE_FILE=${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake
+						 -P ${WORKSPACE_DIR}/share/cmake/system/Clear_PID_Package_Install.cmake
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
+endfunction(clean_Install_Dir)
+
+
+###############################################################################################
+############################## providing info on the package content ########################## 
+#################### function used to create the Info<package>.cmake  ######################### 
+###############################################################################################
+
+function(create_Info_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
+	set(file ${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake)
+	file(WRITE ${file} "")#resetting the file content
+	file(APPEND ${file} "######### declaration of package components ########\n")
+	file(APPEND ${file} "set(${PROJECT_NAME}_COMPONENTS ${${PROJECT_NAME}_COMPONENTS} CACHE INTERNAL \"\")\n")
+	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})		
+		if(NOT ${${PROJECT_NAME}_${a_component}_TYPE} STREQUAL "TEST")
+			if(${PROJECT_NAME}_${a_component}_SOURCE_DIR)
+				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_DIR ${${PROJECT_NAME}_${a_component}_SOURCE_DIR} CACHE INTERNAL \"\")\n")
+				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_CODE ${${PROJECT_NAME}_${a_component}_SOURCE_CODE} CACHE INTERNAL \"\")\n")
+			endif()
+			if(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME)	
+				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME ${${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
+				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADERS ${${PROJECT_NAME}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
+
+			endif()
+		endif()
+	endforeach()
+endif()
+
+endfunction(create_Info_File)
+

@@ -1,9 +1,14 @@
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-include(Package_Internal_Finding)
-include(Package_Internal_Configuration)
-include(Package_Internal_Referencing)
+cmake_policy(SET CMP0026 OLD) #disable warning when reading LOCATION property
+cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
+cmake_policy(SET CMP0037 OLD) #allow to redefine standard target such as clean
+cmake_policy(SET CMP0045 OLD) #allow to test if a target exist without a warning
+
+include(Package_Internal_Finding NO_POLICY_SCOPE)
+include(Package_Internal_Configuration NO_POLICY_SCOPE)
+include(Package_Internal_Referencing NO_POLICY_SCOPE)
 
 ###
 function(classify_Package_Categories package)
@@ -46,7 +51,6 @@ if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthes => 
 	#classifying subcategories by recursion
 	classify_Category(${REMAINING_OF_CATEGORY} ${package} ${ROOT_OF_CATEGORY}_CATEGORIES)
 else()#there is no sub categories
-	#string(REGEX REPLACE "^(.+)$" "\\1" ROOT_OF_CATEGORY ${category_full_string})
 	# adding the current category to its containing category	
 	set(temp_container ${${container_variable}} ${category_full_string})
 	list(REMOVE_DUPLICATES temp_container)
@@ -275,7 +279,7 @@ function(test_Package_Binary_Against_Platform package version IS_COMPATIBLE)
 foreach(system IN ITEMS ${${package}_REFERENCE_${version}})
 	if(system STREQUAL "linux" AND UNIX AND NOT APPLE)
 		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
-	elseif(system STREQUAL "macosx" AND APPLE)
+	elseif(system STREQUAL "darwin" AND APPLE)
 		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 	endif()
 endforeach()
@@ -302,8 +306,8 @@ endfunction()
 function(generate_Binary_Package_Name package version system mode RES_FILE RES_FOLDER)
 if(system STREQUAL "linux")
 	set(system_string Linux)
-elseif(system STREQUAL "macosx")
-	#TODO)
+elseif(system STREQUAL "darwin")
+	set(system_string Darwin)
 endif()
 if(mode MATCHES Debug)
 	set(mode_string "-dbg")
@@ -311,7 +315,7 @@ else()
 	set(mode_string "")
 endif()
 
-set(${RES_FILE} "${package}-${version}${mode_string}-${system_string}.zip" PARENT_SCOPE)
+set(${RES_FILE} "${package}-${version}${mode_string}-${system_string}.tar.gz" PARENT_SCOPE)
 set(${RES_FOLDER} "${package}-${version}${mode_string}-${system_string}" PARENT_SCOPE)
 endfunction(generate_Binary_Package_Name)
 
@@ -319,11 +323,17 @@ endfunction(generate_Binary_Package_Name)
 function(test_binary_download package version system RESULT)
 
 #testing release archive
-set(download_url ${${package}_REFERENCE_${version}_${system}})
+set(download_url ${${package}_REFERENCE_${version}_${system}_url})
+set(FOLDER_BINARY ${${package}_REFERENCE_${version}_${system}_folder})
+
 generate_Binary_Package_Name(${package} ${version} ${system} Release RES_FILE RES_FOLDER)
-set(destination ${CMAKE_BINARY_DIR}/${RES_FILE})
+set(destination ${CMAKE_BINARY_DIR}/share/${RES_FILE})
 set(res "")
-file(DOWNLOAD ${download_url} ${destination} STATUS res)#waiting one second
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory share
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+			ERROR_QUIET OUTPUT_QUIET)
+
+file(DOWNLOAD ${download_url} ${destination} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)#waiting one second
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)#testing if connection can be established
@@ -331,7 +341,7 @@ if(NOT numeric_error EQUAL 0)#testing if connection can be established
 	return()
 endif()
 execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ${destination}
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 	ERROR_VARIABLE error
 	OUTPUT_QUIET
 )
@@ -340,33 +350,39 @@ if(NOT error STREQUAL "")#testing if archive is valid
 	set(${RESULT} FALSE PARENT_SCOPE)
 	return()
 else()
-	file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/${RES_FOLDER})#cleaning (removing extracted folder)
+	file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/share/${RES_FOLDER})#cleaning (removing extracted folder)
 endif()
 
 
 #testing debug archive
-set(download_url_dbg ${${package}_REFERENCE_${version}_${system}_DEBUG})
-generate_Binary_Package_Name(${package} ${version} ${system} Debug RES_FILE RES_FOLDER)
-set(destination_dbg ${CMAKE_BINARY_DIR}/${RES_FILE})
-set(res_dbg "")
-file(DOWNLOAD ${download_url_dbg} ${destination_dbg} STATUS res_dbg)#waiting one second
-list(GET res_dbg 0 numeric_error_dbg)
-list(GET res_dbg 1 status_dbg)
-if(NOT numeric_error_dbg EQUAL 0)#testing if connection can be established
-	set(${RESULT} FALSE PARENT_SCOPE)
-	return()
-endif()
-execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ${destination_dbg}
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-	ERROR_VARIABLE error
-	OUTPUT_QUIET
-)
-file(REMOVE ${destination_dbg})#removing archive file
-if(NOT error STREQUAL "")#testing if archive is valid
-	set(${RESULT} FALSE PARENT_SCOPE)
-	return()
-else()
-	file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/${RES_FOLDER}) #cleaning (removing extracted folder)
+if(EXISTS ${package}_REFERENCE_${version}_${system}_url_DEBUG)
+	set(download_url_dbg ${${package}_REFERENCE_${version}_${system}_url_DEBUG})
+	set(FOLDER_BINARY_dbg ${${package}_REFERENCE_${version}_${system}_folder_DEBUG})
+	generate_Binary_Package_Name(${package} ${version} ${system} Debug RES_FILE RES_FOLDER)
+	set(destination_dbg ${CMAKE_BINARY_DIR}/share/${RES_FILE})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory share
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+			ERROR_QUIET OUTPUT_QUIET)
+	set(res_dbg "")
+	file(DOWNLOAD ${download_url_dbg} ${destination_dbg} STATUS res_dbg)#waiting one second
+	list(GET res_dbg 0 numeric_error_dbg)
+	list(GET res_dbg 1 status_dbg)
+	if(NOT numeric_error_dbg EQUAL 0)#testing if connection can be established
+		set(${RESULT} FALSE PARENT_SCOPE)
+		return()
+	endif()
+	execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ${destination_dbg}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+		ERROR_VARIABLE error
+		OUTPUT_QUIET
+	)
+	file(REMOVE ${destination_dbg})#removing archive file
+	if(NOT error STREQUAL "")#testing if archive is valid
+		set(${RESULT} FALSE PARENT_SCOPE)
+		return()
+	else()
+		file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/share/${RES_FOLDER}) #cleaning (removing extracted folder)
+	endif()
 endif()
 
 #release and debug versions are accessible => OK
@@ -391,7 +407,7 @@ if(UNIX AND NOT APPLE)
 		set(printed_string "${printed_string} CANNOT BE INSTALLED")
 	endif()
 elseif(APPLE)
-	if("${system}" STREQUAL "macosx")
+	if("${system}" STREQUAL "darwin")
 		set(RESULT FALSE)
 		test_binary_download(${package} ${version} ${system} RESULT)
 		if(RESULT)
@@ -448,14 +464,15 @@ endfunction()
 ###
 function(deploy_PID_Package package version)
 set(PROJECT_NAME ${package})
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
 if("${version}" STREQUAL "")#deploying the source repository
 	set(DEPLOYED FALSE)
 	deploy_Package_Repository(DEPLOYED ${package})
-	if(DEPLOYED) 
+	if(DEPLOYED)
+		set(INSTALLED FALSE)
 		deploy_Source_Package(INSTALLED ${package})
 		if(NOT INSTALLED)
-			message("Error : cannot install ${package}")
+			message("Error : cannot install ${package} after deployment")
 			return()
 		endif()
 	else()
@@ -564,6 +581,150 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch origin)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin --tags)
 endfunction()
 
+###
+function(clear_PID_Package package version)
+if("${version}" MATCHES "own-[0-9]+\\.[0-9]+\\.[0-9]+"		#specific own version targetted
+	OR "${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
+
+	if( EXISTS ${WORKSPACE_DIR}/install/${package}/${version}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${package}/${version})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${package}/${version})
+	else()
+		message(ERROR "package ${package} version ${version} does not resides in workspace install directory")
+	endif()
+
+elseif("${version}" MATCHES "own")#all own version targetted
+	file(	GLOB TO_SUPPRESS
+		"${WORKSPACE_DIR}/install/${package}/own-*")
+	foreach (folder IN ITEMS ${TO_SUPPRESS})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${folder})
+	endforeach()
+elseif("${version}" MATCHES "all")#all versions targetted (including own versions and installers folder)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${package})
+else()
+	message(ERROR "invalid version string : ${version}, possible inputs are version numbers (with or without own- prefix), all and own")
+endif()
+endfunction()
+
+###
+function(remove_PID_Package package)
+
+if(	EXISTS ${WORKSPACE_DIR}/install/${package})
+	clear_PID_Package(${package} all)
+endif()
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/packages/${package})
+endfunction()
+
+
+###
+function(register_PID_Package package)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git checkout master)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_BUILD_TOOL} install)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_BUILD_TOOL} referencing)
+if(EXISTS ${WORKSPACE_DIR}/share/cmake/find/Find${package}.cmake AND EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/find/Find${package}.cmake)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/references/Refer${package}.cmake)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git commit -m "${package} registered")
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git push origin master)
+else()
+	message("ERROR : problem registering package ${package}, cannot generate adequate cmake files")
+endif()
+endfunction()
+
+
+###
+
+function(get_Version_Number_And_Repo_From_Package package NUMBER STRING_NUMBER ADDRESS)
+set(${ADDRESS} PARENT_SCOPE)
+file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
+foreach(line IN ITEMS ${PACKAGE_METADATA})
+	string(REGEX REPLACE "^.*set_PID_Package_Version\\(([0-9]+)(\\ +)([0-9]+)(\\ *)([0-9]*)(\\ *)\\).*$" "\\1;\\3;\\5" A_VERSION ${line})
+	if(NOT "${line}" STREQUAL "${A_VERSION}")
+		set(VERSION_COMMAND ${A_VERSION})#only taking the last instruction since it shadows previous ones
+	endif()
+	string(REGEX REPLACE "^.*ADDRESS[\\ \\\t]+([^\\ \\\t]+\\.git).*$" "\\1" AN_ADDRESS ${line})
+	if(NOT "${line}" STREQUAL "${AN_ADDRESS}")
+		set(${ADDRESS} ${AN_ADDRESS} PARENT_SCOPE)#an address had been found
+	endif()
+endforeach()
+if(VERSION_COMMAND)
+	#from here we are sure there is at least 2 digits 
+	list(GET VERSION_COMMAND 0 MAJOR)
+	list(GET VERSION_COMMAND 1 MINOR)
+	list(LENGTH VERSION_COMMAND size_of_version)
+	if(NOT size_of_version GREATER 2)
+		set(PATCH 0)
+		list(APPEND VERSION_COMMAND 0)
+	else()
+		list(GET VERSION_COMMAND 2 PATCH)
+	endif()
+	set(${STRING_NUMBER} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
+else()
+	set(${STRING_NUMBER} "" PARENT_SCOPE)
+endif()
+
+set(${NUMBER} ${VERSION_COMMAND} PARENT_SCOPE)
+endfunction(get_Version_Number_And_Repo_From_Package)
+
+
+function(set_Version_Number_To_Package package major minor patch)
+
+file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
+string(REGEX REPLACE "^(.*)set_PID_Package_Version\\(([0-9]+)(\\ +)([0-9]+)(\\ *)([0-9]*)(\\ *)\\)(.*)$" "\\1;\\8" PACKAGE_METADATA_WITHOUT_VERSION ${PACKAGE_METADATA})
+
+list(GET PACKAGE_METADATA_WITHOUT_VERSION 0 BEGIN)
+list(GET PACKAGE_METADATA_WITHOUT_VERSION 1 END)
+
+set(TO_WRITE "${BEGIN}set_PID_Package_Version(${major} ${minor} ${patch})${END}")
+file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${TO_WRITE}) #getting global info on the package
+
+endfunction(set_Version_Number_To_Package)
+
+function(release_PID_Package package next)
+### registering current version
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration) #force going to integration branch
+get_Version_Number_And_Repo_From_Package(${package} NUMBER STRING_NUMBER ADDRESS)
+message("address is ---${ADDRESS}---")
+if(NOT NUMBER)
+	message("ERROR : problem releasing package ${package}, bad version format")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout master) #force going to master branch
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge integration)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v${STRING_NUMBER} -m "releasing version ${STRING_NUMBER}")
+if(ADDRESS)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master)#releasing on master branch
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin v${STRING_NUMBER})#releasing version tag
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge master)#just in case of...
+
+### now starting a new version
+list(GET NUMBER 0 major)
+list(GET NUMBER 1 minor)
+list(GET NUMBER 2 patch)
+if("${next}" STREQUAL "MAJOR")
+	math(EXPR major "${major}+1")
+	set(minor 0)
+	set(patch 0)
+elseif("${next}" STREQUAL "MINOR")
+	math(EXPR minor "${minor}+1")
+	set(patch 0)
+elseif("${next}" STREQUAL "PATCH")
+	math(EXPR patch "${patch}+1")
+else()#default behavior
+	math(EXPR minor "${minor}+1")
+	set(patch 0)
+endif()
+set_Version_Number_To_Package(${package} ${major} ${minor} ${patch})
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "start new version ${major}.${minor}.${patch}")
+if(ADDRESS)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration)
+endif()
+endfunction()
 

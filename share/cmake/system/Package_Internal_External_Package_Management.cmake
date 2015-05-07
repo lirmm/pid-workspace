@@ -142,15 +142,23 @@ set(INSTALLED FALSE)
 if(UNIX AND NOT APPLE)
 	set(curr_system linux)
 elseif(APPLE)
-	#TODO
+	set(curr_system darwin)
+else()
+	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
+	return()
 endif()
 ###### downloading the binary package ######
-#release code
+message("downloading the binary package, please wait ...")
+#1) release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
 generate_Binary_Package_Name(${package} ${VERSION} "Release" FILE_BINARY FOLDER_BINARY)
-set(download_url ${${package}_REFERENCE_${VERSION}_${curr_system}})
-file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res)
+set(download_url ${${package}_REFERENCE_${VERSION}_${curr_system}_url})
+set(FOLDER_BINARY ${${package}_REFERENCE_${VERSION}_${curr_system}_folder})
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory release
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_QUIET OUTPUT_QUIET)
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
@@ -158,32 +166,55 @@ if(NOT numeric_error EQUAL 0)
 	message(WARNING "install : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url}: ${status}")
 	return()
 endif()
-#debug code
-set(FILE_BINARY_DEBUG "")
-set(FOLDER_BINARY_DEBUG "")
-generate_Binary_Package_Name(${package} ${VERSION} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
-set(download_url_dbg ${${package}_REFERENCE_${VERSION}_${curr_system}_DEBUG})
-file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg)
-list(GET res-dbg 0 numeric_error_dbg)
-list(GET res-dbg 1 status_dbg)
-if(NOT numeric_error_dbg EQUAL 0)#there is an error
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
-	message(WARNING "install : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url_dbg} : ${status_dbg}")
-	return()
+#2) debug code (optionnal for external packages => just to avoid unecessary redoing code download)
+if(EXISTS ${package}_REFERENCE_${VERSION}_${curr_system}_url_DEBUG)
+	set(FILE_BINARY_DEBUG "")
+	set(FOLDER_BINARY_DEBUG "")
+	generate_Binary_Package_Name(${package} ${VERSION} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
+	set(download_url_dbg ${${package}_REFERENCE_${VERSION}_${curr_system}_url_DEBUG})
+	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${VERSION}_${curr_system}_folder_DEBUG})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory debug
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_QUIET OUTPUT_QUIET)
+	file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
+	list(GET res-dbg 0 numeric_error_dbg)
+	list(GET res-dbg 1 status_dbg)
+	if(NOT numeric_error_dbg EQUAL 0)#there is an error
+		set(${DEPLOYED} FALSE PARENT_SCOPE)
+		message(WARNING "install : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url_dbg} : ${status_dbg}")
+		return()
+	endif()
 endif()
 
-# installing
+######## installing the external package ##########
+# 1) creating the external package root folder and the version folder
 if(NOT EXISTS ${WORKSPACE_DIR}/external/${package} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${package})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
 			WORKING_DIRECTORY ${WORKSPACE_DIR}/external/
 			ERROR_QUIET OUTPUT_QUIET)
 endif()
-# extracting binary archive in cross platform way
+if(NOT EXISTS ${WORKSPACE_DIR}/external/${package}/${VERSION} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${package}/${VERSION})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${VERSION}
+		WORKING_DIRECTORY ${WORKSPACE_DIR}/external/${package}
+		ERROR_QUIET OUTPUT_QUIET)
+endif()
+
+
+
+# 2) extracting binary archive in cross platform way
 set(error_res "")
-execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+message("decompressing the binary package, please wait ...")
+if(EXISTS download_url_dbg)
+	execute_process(
+          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/debug
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
+else()
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/release
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+endif()
 
 if (error_res)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
@@ -191,15 +222,35 @@ if (error_res)
 	return()
 endif()
 
-# copying resulting folders into the install path in a cross platform way
+# 3) copying resulting folders into the install path in a cross platform way
+message("installing the binary package into the workspace, please wait ...")
 set(error_res "")
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}
-          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${package}
+if(EXISTS download_url_dbg)
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${VERSION}
+          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${package}/${VERSION}
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
+else()
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${VERSION}/
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+endif()
+
 if (error_res)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message(WARNING "install : cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}")
+	message(WARNING "install : cannot extract folder from ${FOLDER_BINARY} ${FOLDER_BINARY_DEBUG}")
 	return()
+endif()
+# 4) removing generated artifacts
+if(EXISTS download_url_dbg)
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/debug
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
+		ERROR_QUIET OUTPUT_QUIET)
+else()
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
+		ERROR_QUIET OUTPUT_QUIET)
 endif()
 
 set(${DEPLOYED} TRUE PARENT_SCOPE)
@@ -369,7 +420,7 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
 		return()#by default the version is compatible (no constraints) so return 
 	endif()
 else()#the dependency has not been already found
-	message("DEBUG resolve_External_Package_Dependency ${external_dependency} NOT FOUND !!")	
+	#message("DEBUG resolve_External_Package_Dependency ${external_dependency} NOT FOUND !!")	
 	if(	${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix})
 		
 		if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version has been specified
@@ -385,7 +436,7 @@ else()#the dependency has not been already found
 
 		else()
 			#WARNING recursive call to find package
-			message("DEBUG before find : dep= ${external_dependency}, version = ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}")
+			#message("DEBUG before find : dep= ${external_dependency}, version = ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}")
 			find_package(
 				${external_dependency} 
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}} 
@@ -409,12 +460,15 @@ endfunction()
 ###
 function(is_Compatible_External_Version is_compatible package reference_version version_to_compare)
 
-if(${reference_version} VERSION_LESS ${${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO})  
-	set(${is_compatible} TRUE PARENT_SCOPE)
+if(${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO)
+	if(${reference_version} VERSION_LESS ${${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO})  
+		set(${is_compatible} TRUE PARENT_SCOPE)
+	else()
+		set(${is_compatible} FALSE PARENT_SCOPE)
+	endif()
 else()
-	set(${is_compatible} FALSE PARENT_SCOPE)
+	set(${is_compatible} TRUE PARENT_SCOPE) #if not specified it means that there are no known greater version that is not compatible
 endif()
-
 endfunction()
 
 ###
@@ -437,7 +491,7 @@ endif()
 #no exact version required
 foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
 	unset(COMPATIBLE_VERSION)
-	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_string} ${version})
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version_string})
 	if(NOT COMPATIBLE_VERSION)
 		return()#not compatible
 	endif()
@@ -456,7 +510,7 @@ function(is_External_Version_Compatible_With_Previous_Constraints
 		version_to_find
 		package
 		version_string)
-
+#message("DEBUG is_External_Version_Compatible_With_Previous_Constraints is_compatible=${is_compatible} version_to_find=${version_to_find} package=${package} version_string=${version_string}")
 set(${is_compatible} FALSE PARENT_SCOPE)
 # 1) testing compatibility and recording the higher constraint for minor version number
 if(${package}_REQUIRED_VERSION_EXACT)
@@ -468,9 +522,9 @@ if(${package}_REQUIRED_VERSION_EXACT)
 endif()
 
 foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
-	unset(COMPATIBLE_VERSION)	
-	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version})
-	if(NOT COMPATIBLE_VERSION)	
+	unset(COMPATIBLE_VERSION)
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version_string})
+	if(NOT COMPATIBLE_VERSION)
 		return()
 	endif()
 endforeach()
@@ -506,7 +560,7 @@ endfunction(is_External_Package_Defined)
 function(resolve_External_Libs_Path COMPLETE_LINKS_PATH package ext_links mode)
 set(res_links)
 foreach(link IN ITEMS ${ext_links})
-	string(REGEX REPLACE "^<([^>]+)>([^\\.]+\\.[a|la|so|dylib])" "\\1;\\2" RES ${link})
+	string(REGEX REPLACE "^<([^>]+)>([^\\.]+\\.[a|la|so|dylib].*)" "\\1;\\2" RES ${link})
 	if(NOT RES MATCHES ${link})# a replacement has taken place => this is a full path to a library
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
@@ -541,6 +595,7 @@ foreach(link IN ITEMS ${ext_links})
 		endif()
 	endif()
 endforeach()
+#message("resolve_External_Libs_Path=${res_links}")
 set(${COMPLETE_LINKS_PATH} ${res_links} PARENT_SCOPE)
 endfunction(resolve_External_Libs_Path)
 

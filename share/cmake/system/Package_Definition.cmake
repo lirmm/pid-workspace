@@ -1,5 +1,6 @@
+
+include(Package_Internal_Definition NO_POLICY_SCOPE)
 include(CMakeParseArguments)
-include(Package_Internal_Definition)
 
 ### API : declare_PID_Package(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... LICENSE license [ADDRESS address] DESCRIPTION ...)
 macro(declare_PID_Package)
@@ -128,11 +129,12 @@ endmacro(build_PID_Package)
 #				DIRECTORY dirname 
 #				<STATIC_LIB|SHARED_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
 #				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [LINKS link ...] ] 
-#				[EXPORTED_DEFINITIONS def ...] )
+#				[EXPORTED_DEFINITIONS def ...] 
+#				[RUNTIME_RESOURCES <some path to files in the share/resources dir>])
 macro(declare_PID_Component)
 set(options STATIC_LIB SHARED_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
 set(oneValueArgs NAME DIRECTORY)
-set(multiValueArgs INTERNAL EXPORTED_DEFINITIONS)
+set(multiValueArgs INTERNAL EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}")
@@ -204,13 +206,20 @@ if(DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS)
 	set(exported_defs ${DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS})
 endif()
 
+set(runtime_resources "")
+if(DECLARE_PID_COMPONENT_RUNTIME_RESOURCES)
+	set(runtime_resources ${DECLARE_PID_COMPONENT_RUNTIME_RESOURCES})
+endif()
+
+
 if(type MATCHES APP OR type MATCHES EXAMPLE OR type MATCHES TEST)
 	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME} 
 					${DECLARE_PID_COMPONENT_DIRECTORY} 
 					${type} 
 					"${internal_inc_dirs}" 
 					"${internal_defs}" 
-					"${internal_link_flags}")
+					"${internal_link_flags}"
+					"${runtime_resources}")
 else() #it is a library
 	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME} 
 					${DECLARE_PID_COMPONENT_DIRECTORY} 
@@ -218,7 +227,8 @@ else() #it is a library
 					"${internal_inc_dirs}"
 					"${internal_defs}"
 					"${exported_defs}" 
-					"${internal_link_flags}")
+					"${internal_link_flags}"
+					"${runtime_resources}")
 endif()
 
 endmacro(declare_PID_Component)
@@ -258,41 +268,43 @@ elseif(DECLARE_PID_DEPENDENCY_EXTERNAL)
 	endif()
 	declare_External_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${DECLARE_PID_DEPENDENCY_EXTERNAL_VERSION}" "${exact}" "${DECLARE_PID_DEPENDENCY_EXTERNAL_COMPONENTS}")
 elseif(DECLARE_PID_DEPENDENCY_NATIVE)
-	if(NOT DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS)
-		message(FATAL_ERROR "bad arguments : at least one component dependency must be defined")
-	endif()
-	set(options EXACT)
-	set(multiValueArgs VERSION COMPONENTS)
-	cmake_parse_arguments(DECLARE_PID_DEPENDENCY_NATIVE "${options}" "" "${multiValueArgs}" ${DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS})
-	if(DECLARE_PID_DEPENDENCY_PID_UNPARSED_ARGUMENTS)
-		message(FATAL_ERROR "bad arguments : there are some unknown arguments ${DECLARE_PID_DEPENDENCY_NATIVE_UNPARSED_ARGUMENTS}")
-	endif()
+	if(DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS)
+		set(options EXACT)
+		set(multiValueArgs VERSION COMPONENTS)
+		cmake_parse_arguments(DECLARE_PID_DEPENDENCY_NATIVE "${options}" "" "${multiValueArgs}" ${DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS})
+		if(DECLARE_PID_DEPENDENCY_PID_UNPARSED_ARGUMENTS)
+			message(FATAL_ERROR "bad arguments : there are some unknown arguments ${DECLARE_PID_DEPENDENCY_NATIVE_UNPARSED_ARGUMENTS}")
+		endif()
 
-	set(exact FALSE)
-	if(DECLARE_PID_DEPENDENCY_NATIVE_VERSION)
-		list(LENGTH DECLARE_PID_DEPENDENCY_NATIVE_VERSION SIZE)
-		if(SIZE EQUAL 2)
-			list(GET DECLARE_PID_DEPENDENCY_NATIVE_VERSION 0 MAJOR)
-			list(GET DECLARE_PID_DEPENDENCY_NATIVE_VERSION 1 MINOR)
-			set(VERS_NUMB "${MAJOR}.${MINOR}")
+		set(exact FALSE)
+		if(DECLARE_PID_DEPENDENCY_NATIVE_VERSION)
+			list(LENGTH DECLARE_PID_DEPENDENCY_NATIVE_VERSION SIZE)
+			if(SIZE EQUAL 2)
+				list(GET DECLARE_PID_DEPENDENCY_NATIVE_VERSION 0 MAJOR)
+				list(GET DECLARE_PID_DEPENDENCY_NATIVE_VERSION 1 MINOR)
+				set(VERS_NUMB "${MAJOR}.${MINOR}")
+			else()
+				message(FATAL_ERROR "bad arguments : you need to input a major and a minor number")
+			endif()
+			if(DECLARE_PID_DEPENDENCY_NATIVE_EXACT)
+				set(exact TRUE)
+			endif()
+
 		else()
-			message(FATAL_ERROR "bad arguments : you need to input a major and a minor number")
+			set(VERS_NUMB "")
 		endif()
-		if(DECLARE_PID_DEPENDENCY_NATIVE_EXACT)
-			set(exact TRUE)
+	
+		if(DECLARE_PID_DEPENDENCY_NATIVE_COMPONENTS)
+			list(LENGTH DECLARE_PID_DEPENDENCY_NATIVE_COMPONENTS SIZE)
+			if(SIZE LESS 1)
+				message(FATAL_ERROR "bad arguments : at least one component dependency must be defined")
+			endif()
 		endif()
-
+		declare_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${VERS_NUMB}" ${exact} "${DECLARE_PID_DEPENDENCY_NATIVE_COMPONENTS}")
 	else()
-		set(VERS_NUMB "")
+		declare_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "" FALSE "")
 	endif()
 	
-	if(DECLARE_PID_DEPENDENCY_NATIVE_COMPONENTS)
-		list(LENGTH DECLARE_PID_DEPENDENCY_NATIVE_COMPONENTS SIZE)
-		if(SIZE LESS 1)
-			message(FATAL_ERROR "bad arguments : at least one component dependency must be defined")
-		endif()
-	endif()
-	declare_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${VERS_NUMB}" ${exact} "${DECLARE_PID_DEPENDENCY_NATIVE_COMPONENTS}")
 endif()
 endmacro(declare_PID_Package_Dependency)
 
@@ -396,12 +408,11 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 				"${static_links}"
 				"${shared_links}")
 else()#system dependency
-	if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_LINKS)
-		message(FATAL_ERROR "bad arguments : the LINKS keyword must be used if you want to specify a system dependency.")
-	endif()
+
 	declare_System_Component_Dependency(
 			${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 			${export}
+			"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
 			"${comp_defs}" 
 			"${comp_exp_defs}"
 			"${dep_defs}"
@@ -409,4 +420,74 @@ else()#system dependency
 			"${shared_links}")
 endif()
 endmacro(declare_PID_Component_Dependency)
+
+
+### API : run_PID_Test (NAME 			test_name
+#			<EXE name | COMPONENT 	name [PACKAGE name]>
+#			ARGUMENTS	 	list_of_args
+#			)
+macro(run_PID_Test)
+set(oneValueArgs NAME EXE COMPONENT PACKAGE)
+set(multiValueArgs ARGUMENTS)
+cmake_parse_arguments(RUN_PID_TEST "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+if(RUN_PID_TEST_UNPARSED_ARGUMENTS)
+	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}")
+endif()
+if(NOT RUN_PID_TEST_NAME)
+	message(FATAL_ERROR "bad arguments : a name must be given to the test (using NAME <name> syntax) !")
+endif()
+
+if(NOT RUN_PID_TEST_EXE AND NOT RUN_PID_TEST_COMPONENT)
+	message(FATAL_ERROR "bad arguments : an executable must be defined. Using EXE you can use an executable present on your system or by using COMPONENT. In this later case you must specify a PID executable component. If the PACKAGE keyword is used then this component will be found in another package than the current one.")
+endif()
+
+if(RUN_PID_TEST_EXE AND RUN_PID_TEST_COMPONENT)
+	message(FATAL_ERROR "bad arguments : you must use either a system executable (using EXE keyword) OR a PID application component (using COMPONENT keyword)")
+endif()
+
+if(RUN_PID_TEST_EXE)
+	add_test("${RUN_PID_TEST_NAME}" "${RUN_PID_TEST_EXE}" ${RUN_PID_TEST_ARGUMENTS})
+else()#RUN_PID_TEST_COMPONENT
+	if(RUN_PID_TEST_PACKAGE)#component coming from another PID package
+		#testing if TARGET component exist TODO
+		#TODO getting path to component
+	else()#internal component
+		#testing if TARGET component exist TODO
+		
+		add_test(${RUN_PID_TEST_NAME} ${RUN_PID_TEST_COMPONENT} ${RUN_PID_TEST_ARGUMENTS})
+	endif()
+endif()
+
+endmacro(run_PID_Test)
+
+
+### API : external_Package_Path (NAME external_package PATH result)
+macro(external_PID_Package_Path)
+set(oneValueArgs NAME PATH)
+cmake_parse_arguments(EXT_PACKAGE_PATH "" "${oneValueArgs}" "" ${ARGN} )
+if(NOT EXT_PACKAGE_PATH_NAME OR NOT EXT_PACKAGE_PATH_PATH)
+	message(FATAL_ERROR "bad arguments : a name of an external package must be provided with name and a variable containg the resulting path must be set with PATH")
+endif()
+set(${EXT_PACKAGE_PATH_PATH})
+is_External_Package_Defined(${PROJECT_NAME} "${EXT_PACKAGE_PATH_NAME}" ${CMAKE_BUILD_TYPE} ${EXT_PACKAGE_PATH_PATH})
+
+endmacro(external_PID_Package_Path)
+
+
+### API : create_Install_Symlink (PATH where_to_create NAME symlink_name TARGET target_of_symlink)
+macro(create_PID_Install_Symlink)
+set(oneValueArgs NAME PATH TARGET)
+cmake_parse_arguments(CREATE_INSTALL_SYMLINK "" "${oneValueArgs}" "" ${ARGN} )
+if(NOT CREATE_INSTALL_SYMLINK_NAME OR NOT CREATE_INSTALL_SYMLINK_PATH OR NOT CREATE_INSTALL_SYMLINK_TARGET)
+	message(FATAL_ERROR "bad arguments : a name for teh new symlink created must be provided with name, the PATH relative to its install location must be provided with PATH and the target of the symlink must be provided with TARGET")
+endif()
+set(FULL_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_DEPLOY_PATH}/${CREATE_INSTALL_SYMLINK_PATH})
+set( link   ${CREATE_INSTALL_SYMLINK_NAME})
+set( target ${CREATE_INSTALL_SYMLINK_TARGET})
+
+add_custom_target(install_symlink_${link} ALL
+        COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_INSTALL_PATH}/${link}
+	COMMAND ${CMAKE_COMMAND} -E chdir ${FULL_INSTALL_PATH} ${CMAKE_COMMAND} -E  create_symlink ${target} ${link})
+
+endmacro(create_PID_Install_Symlink)
 

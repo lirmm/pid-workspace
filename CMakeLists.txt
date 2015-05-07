@@ -1,11 +1,11 @@
-PROJECT(pid-workspace)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
-
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/licenses)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/find)
-include(Workspace_Internal_Functions)
+include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+
+PROJECT(pid-workspace)
 
 set(ALL_AVAILABLE_PACKAGES "")
 # 1) searching for all reference files. 
@@ -13,6 +13,9 @@ file(GLOB reference_files ${CMAKE_SOURCE_DIR}/share/cmake/references/Refer*.cmak
 # 2) including all reference files and memorizing packages names
 foreach(a_ref_file IN ITEMS ${reference_files})
 	string(REGEX REPLACE "^${CMAKE_SOURCE_DIR}/share/cmake/references/Refer([^\\.]+)\\.cmake$" "\\1" PACKAGE_NAME ${a_ref_file})
+	if(PACKAGE_NAME MATCHES External)#it is an external package
+		string(REGEX REPLACE "^External([^\\.]+)$" "\\1" PACKAGE_NAME ${PACKAGE_NAME})
+	endif()
 	list(APPEND ALL_AVAILABLE_PACKAGES ${PACKAGE_NAME})
 	include(${a_ref_file})
 endforeach()
@@ -20,6 +23,7 @@ endforeach()
 reset_All_Categories()
 # 4) extracting all available categories and classifying all packages in these categories
 foreach(a_package IN ITEMS ${ALL_AVAILABLE_PACKAGES})
+	message("categorizing package ${a_package}")	
 	classify_Package_Categories(${a_package})
 endforeach()
 #5) registering categories
@@ -35,6 +39,10 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package. Use name=NAME_OF_PACKAGE to specify the name of the new package. Other optional arguments are: author, affiliation, license."
 	COMMAND ${CMAKE_COMMAND} -E echo "connect -- Synchronize local repository with an empty remote one. Required arguments are : name to specify the name of the package and url to specify the url of the remote repository."
 	COMMAND ${CMAKE_COMMAND} -E echo "license -- Printing information on licenses or more precise information on a given license using name=NAME_OF_LICENSE argument."
+	COMMAND ${CMAKE_COMMAND} -E echo "clear -- Clearing the whole install directory of a package using name=NAME_OF_PACKAGE, version=all or own or own-version or version arguments."
+	COMMAND ${CMAKE_COMMAND} -E echo "remove -- Removing the target package from the workspace using name=NAME_OF_PACKAGE argument."
+	COMMAND ${CMAKE_COMMAND} -E echo "register -- Registering the target package in the workspace using name=NAME_OF_PACKAGE argument. The package is published so that people with adequate rights can now deploy it adequately."
+	COMMAND ${CMAKE_COMMAND} -E echo "release -- Releasing the target package using name=NAME_OF_PACKAGE argument and nextversion=MAJOR or MINOR or PATCH to indicate how to icnrease version number. The release mainly consists in good tagging of branches and publication to the server."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -113,6 +121,43 @@ add_custom_target(license
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-DREQUIRED_LICENSE=$(name)
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_License_Info.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+## clearing a package install directory
+add_custom_target(clear
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DTARGET_PACKAGE=$(name)
+					-DTARGET_VERSION=$(version)					
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Clear_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+
+## completely remove a package from workspace
+add_custom_target(remove
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DTARGET_PACKAGE=$(name)
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Remove_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+
+## register a package in the workspace
+add_custom_target(register
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DTARGET_PACKAGE=$(name)
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Register_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+
+## releasing a package
+add_custom_target(release
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DTARGET_PACKAGE=$(name)
+					-DNEXT_VERSION=$(nextversion)
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Release_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
