@@ -256,6 +256,13 @@ else()
 endif()
 endfunction(will_be_Built)
 
+### registering the binary name of a component
+function(register_Component_Binary c_name)
+	get_target_property(LIB_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
+	get_filename_component(LIB_NAME ${LIB_NAME} NAME)
+	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "")
+endfunction(register_Component_Binary)
+
 #############################################################################################
 ############### API functions for managing user options cache variables #####################
 #############################################################################################

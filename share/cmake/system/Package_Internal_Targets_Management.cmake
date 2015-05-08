@@ -10,26 +10,49 @@ function(create_Shared_Lib_Target c_name sources exported_inc_dirs internal_inc_
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	elseif(UNIX)
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
-	else()
-		message(FATAL_ERROR "only UNIX (inclusing MACOSX) shared libraries are handled")
 	endif()
 
-	if(NOT internal_links STREQUAL "") #usefull only when trully linking so only beneficial to shared libs
-		target_link_libraries(${c_name}${INSTALL_NAME_SUFFIX} ${internal_links})
-	endif()
+	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs};${exported_inc_dirs}" "${internal_defs};${exported_defs}" "${exported_links};${internal_links}")
+	manage_Additional_Component_Exported_Flags(${c_name} "${exported_inc_dirs}" "${exported_defs}" "${exported_links}")
 endfunction(create_Shared_Lib_Target)
 
 ###create a static lib target for a newly defined library
-function(create_Static_Lib_Target c_name sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_links internal_links)
+function(create_Static_Lib_Target c_name sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${sources})
 	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
 		ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
 	)
+	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs};${exported_inc_dirs}" "${internal_defs};${exported_defs}" "")#no linking with static libraries so do not manage internal_flags
+	manage_Additional_Component_Exported_Flags(${c_name} "${exported_inc_dirs}" "${exported_defs}" "${exported_links}")
 
 endfunction(create_Static_Lib_Target)
 
+###create a shared lib target for a newly defined library
+function(create_Header_Lib_Target c_name exported_inc_dirs exported_defs exported_links)
+	add_library(${c_name}${INSTALL_NAME_SUFFIX} INTERFACE)
+	manage_Additional_Component_Exported_Flags(${c_name} "${exported_inc_dirs}" "${exported_defs}" "${exported_links}")
+endfunction(create_Header_Lib_Target)
 
+###create an executable target for a newly defined application
+function(create_Executable_Target c_name sources internal_inc_dirs internal_defs internal_links)
+	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
+	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}" "${internal_links}")
+	# adding the application to the list of installed components when make install is called (not for test applications)
+	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} 
+		RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
+	)
+	#setting the default rpath for the target	
+	if(APPLE)
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
+	elseif(UNIX)
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
+	endif()
+endfunction(create_Executable_Target)
 
+function(create_TestUnit_Target c_name sources internal_inc_dirs internal_defs internal_links)
+	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
+	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}" "${internal_links}")
+endfunction(create_TestUnit_Target)
 
 ### configure the target with exported flags (cflags and ldflags)
 function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs links)
