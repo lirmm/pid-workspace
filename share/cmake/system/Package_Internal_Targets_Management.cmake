@@ -1,3 +1,35 @@
+###create a shared lib target for a newly defined library
+function(create_Shared_Lib_Target c_name sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_links internal_links)
+	add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
+		
+	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
+		LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
+	)
+	#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
+	if(APPLE)
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+	elseif(UNIX)
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+	else()
+		message(FATAL_ERROR "only UNIX (inclusing MACOSX) shared libraries are handled")
+	endif()
+
+	if(NOT internal_links STREQUAL "") #usefull only when trully linking so only beneficial to shared libs
+		target_link_libraries(${c_name}${INSTALL_NAME_SUFFIX} ${internal_links})
+	endif()
+endfunction(create_Shared_Lib_Target)
+
+###create a static lib target for a newly defined library
+function(create_Static_Lib_Target c_name sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_links internal_links)
+	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${sources})
+	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
+		ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
+	)
+
+endfunction(create_Static_Lib_Target)
+
+
+
 
 ### configure the target with exported flags (cflags and ldflags)
 function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs links)
@@ -5,28 +37,28 @@ function(manage_Additional_Component_Exported_Flags component_name inc_dirs defs
 # managing compile time flags (-I<path>)
 if(inc_dirs AND NOT inc_dirs STREQUAL "")
 	foreach(dir IN ITEMS ${inc_dirs})
-		target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC "${dir}")
+		target_include_directories(${component_name}${INSTALL_NAME_SUFFIX} INTERFACE "${dir}")
 	endforeach()
 endif()
 
 # managing compile time flags (-D<preprocessor_defs>)
 if(defs AND NOT defs STREQUAL "")
 	foreach(def IN ITEMS ${defs})
-		target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PUBLIC "${def}")
+		target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} INTERFACE "${def}")
 	endforeach()
 endif()
 
 # managing link time flags
 if(links AND NOT links STREQUAL "")
 	foreach(link IN ITEMS ${links})
-		target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} ${link})
+		target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} INTERFACE ${link})
 	endforeach()
 endif()
 endfunction(manage_Additional_Component_Exported_Flags)
 
 
 ### configure the target with internal flags (cflags only)
-function(manage_Additional_Component_Internal_Flags component_name inc_dirs defs)
+function(manage_Additional_Component_Internal_Flags component_name inc_dirs defs links)
 #message("manage_Additional_Component_Internal_Flags name=${component_name} include dirs=${inc_dirs} defs=${defs}")
 # managing compile time flags
 if(inc_dirs AND NOT inc_dirs STREQUAL "")
@@ -41,6 +73,14 @@ if(defs AND NOT defs STREQUAL "")
 		target_compile_definitions(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE "${def}")
 	endforeach()
 endif()
+
+# managing link time flags
+if(links AND NOT links STREQUAL "")
+	foreach(link IN ITEMS ${links})
+		target_link_libraries(${component_name}${INSTALL_NAME_SUFFIX} PRIVATE ${link})
+	endforeach()
+endif()
+
 endfunction(manage_Additional_Component_Internal_Flags)
 
 function(manage_Additionnal_Component_Inherited_Flags component dep_component export)

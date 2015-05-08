@@ -306,11 +306,11 @@ set(CMAKE_SKIP_BUILD_RPATH FALSE) # don't skip the full RPATH for the build tree
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install RPATH already
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE) #do not use any link time info when installing
 
-if(UNIX AND NOT APPLE)
-	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
-elseif (APPLE)
+if(APPLE)
 	set(CMAKE_MACOSX_RPATH TRUE)
-	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to @loader_path to enable easy package relocation TODO solve the BUG
+	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to @loader_path to enable easy package relocation
+elseif (UNIX)
+	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
 endif()
 
 #################################################################################
@@ -600,7 +600,7 @@ endmacro(build_Package)
 # internal_links : only for executables or shared libs some internal linker flags used to build the component 
 # exported_links : only for static and shared libs : some linker flags (not a library inclusion, e.g. -l<li> or full path to a lib) that must be used when linking with the component
 #runtime resources: for all, path to file relative to and present in share/resources folder
-function(declare_Library_Component c_name dirname type internal_inc_dirs internal_defs exported_defs internal_links runtime_resources)
+function(declare_Library_Component c_name dirname type internal_inc_dirs internal_defs exported_defs internal_links exported_links runtime_resources)
 set(DECLARED FALSE)
 is_Declared(${c_name} DECLARED)
 if(DECLARED)
@@ -684,60 +684,42 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 	#defining shared and/or static targets for the library and
 	#adding the targets to the list of installed components when make install is called
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "STATIC")
-		add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-		install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
-			ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
-		)
-
+		create_Static_Lib_Target(${c_name} "${${PROJECT_NAME}_${name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${exported_links}" "${internal_links}")
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
-		add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-		
-		install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
-			LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
-		)
-		#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
-		if(APPLE)
-			set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
-		elseif(UNIX)
-			set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
-		else()
-			message(FATAL_ERROR "only UNIX (inclusing MACOSX) shared libraries are handled")
-		endif()
-
-		if(NOT internal_links STREQUAL "") #usefull only when trully linking so only beneficial to shared libs
-			target_link_libraries(${c_name}${INSTALL_NAME_SUFFIX} ${internal_links})
-		endif()
+		create_Shared_Lib_Target(${c_name} "${${PROJECT_NAME}_${name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${exported_links}" "${internal_links}")
 	endif()
-	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}")
+	#TODO move in dedicated functions
+	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs};${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_defs};${exported_defs}" "")
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
 	# registering the binary name
 	get_target_property(LIB_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
 	get_filename_component(LIB_NAME ${LIB_NAME} NAME)
 	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "") #exported include directories
 else()#simply creating a "fake" target for header only library
-	if(APPLE)
-		file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/fake_for_macosx.cpp "void fake_function(){}")#used for clang ar tool to work properly
-		file(	GLOB_RECURSE
-			${PROJECT_NAME}_${c_name}_ALL_SOURCES
-			"${CMAKE_CURRENT_BINARY_DIR}/fake_for_macosx.cpp"
-			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h"
-			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh"
-			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
-			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
-		)
+	#if(APPLE)
+	#	file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/fake_for_macosx.cpp "void fake_function(){}")#used for clang ar tool to work properly
+	#	file(	GLOB_RECURSE
+	#		${PROJECT_NAME}_${c_name}_ALL_SOURCES
+	#		"${CMAKE_CURRENT_BINARY_DIR}/fake_for_macosx.cpp"
+	#		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h"
+	#		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh"
+	#		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
+	#		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
+	#	)
+	#
+	#elseif(UNIX)
+	#	file(	GLOB_RECURSE
+	#		${PROJECT_NAME}_${c_name}_ALL_SOURCES
+	#		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h"
+	#		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh"
+	#		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
+	#		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
+	#	)
+	#endif()
 
-	elseif(UNIX)
-		file(	GLOB_RECURSE
-			${PROJECT_NAME}_${c_name}_ALL_SOURCES
-			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h"
-			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh"
-			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
-			"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
-		)
-	endif()
-
-	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
-	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX) #to allow CMake to know the linker to use (will be called but create en empty static library) for the "fake library" target 	
+	#add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${${PROJECT_NAME}_${c_name}_ALL_SOURCES})
+	add_library(${c_name}${INSTALL_NAME_SUFFIX} INTERFACE)
+	#set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES LINKER_LANGUAGE CXX) #to allow CMake to know the linker to use (will be called but create en empty static library) for the "fake library" target 	
 	manage_Additional_Component_Exported_Flags(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "")
 endif()
 
@@ -861,7 +843,6 @@ endif()
 #managing runtime resource at build time
 manage_Build_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
 
-
 # registering exported flags for all kinds of apps => empty variables since applications export no flags
 set(${PROJECT_NAME}_${c_name}_DEFS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_LINKS${USE_MODE_SUFFIX} "" CACHE INTERNAL "")
@@ -975,7 +956,6 @@ else()
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "")
-		#NEW		
 		# setting compile definitions for configuring the "fake" target
 		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} TRUE "" "${comp_exp_defs}"  "${dep_defs}")
 
