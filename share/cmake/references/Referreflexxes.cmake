@@ -1,0 +1,11 @@
+#### referencing package reflexxes mode ####
+set(reflexxes_MAIN_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
+set(reflexxes_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(reflexxes_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
+set(reflexxes_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
+set(reflexxes_DESCRIPTION Wrapper;for;the;Reflexxes;Type-II;library CACHE INTERNAL "")
+set(reflexxes_YEARS 2015 CACHE INTERNAL "")
+set(reflexxes_LICENSE CeCILL-C CACHE INTERNAL "")
+set(reflexxes_ADDRESS git@rob-dev.lirmm.fr:pid_external_deps/reflexxes.git CACHE INTERNAL "")
+set(reflexxes_CATEGORIES  CACHE INTERNAL "")
+set(reflexxes_REFERENCES  CACHE INTERNAL "")
