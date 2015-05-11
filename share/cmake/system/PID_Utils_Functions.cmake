@@ -98,7 +98,6 @@ install(CODE "
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
 				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
 	endif()
-	message(\" creating link to ${path_to_target} as ${FULL_RPATH_DIR}/${A_FILE}\")
 	execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
 				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
 	message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
@@ -106,3 +105,64 @@ install(CODE "
 ")# creating links "on the fly" when installing
 
 endfunction(install_Rpath_Symlink)
+
+###
+function (check_Directory_Exists is_existing path)
+if(	EXISTS "${path}" 
+	AND IS_DIRECTORY "${path}"
+  )
+	set(${is_existing} TRUE PARENT_SCOPE)
+	return()
+endif()
+set(${is_existing} FALSE PARENT_SCOPE)
+endfunction(check_Directory_Exists)
+
+###
+function(get_Version_String_Numbers version_string major minor patch)
+string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" A_VERSION "${version_string}")
+if(NOT A_VERSION STREQUAL "${version_string}")
+	list(GET A_VERSION 0 major_vers)
+	list(GET A_VERSION 1 minor_vers)
+	list(GET A_VERSION 2 patch_vers)
+	set(${major} ${major_vers} PARENT_SCOPE)
+	set(${minor} ${minor_vers} PARENT_SCOPE)
+	set(${patch} ${patch_vers} PARENT_SCOPE)
+else()
+	message(FATAL_ERROR "BUG : corrupted version string : ${version_string}")
+endif()	
+endfunction(get_Version_String_Numbers)
+
+###
+function (document_Version_Strings package_name major minor patch)
+	set(${package_name}_VERSION_MAJOR ${major} CACHE INTERNAL "")
+	set(${package_name}_VERSION_MINOR ${minor} CACHE INTERNAL "")
+	set(${package_name}_VERSION_PATCH ${patch} CACHE INTERNAL "")
+	set(${package_name}_VERSION_STRING "${major}.${minor}.${patch}" CACHE INTERNAL "")
+	set(${package_name}_VERSION_RELATIVE_PATH "${major}.${minor}.${patch}" CACHE INTERNAL "")
+endfunction(document_Version_Strings)
+
+###
+function(list_Version_Subdirectories result curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+	foreach(child ${children})
+		if(IS_DIRECTORY ${curdir}/${child})
+			list(APPEND dirlist ${child})
+		endif()
+	endforeach()
+	list(REMOVE_ITEM dirlist "installers")
+	set(${result} ${dirlist} PARENT_SCOPE)
+endfunction(list_Version_Subdirectories)
+
+
+###
+function(is_Compatible_Version is_compatible reference_major reference_minor version_to_compare)
+set(${is_compatible} FALSE PARENT_SCOPE)
+get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)
+if(	NOT ${compare_major} EQUAL ${reference_major}
+	OR ${compare_minor} GREATER ${reference_minor})
+	return()#not compatible
+endif()
+set(${is_compatible} TRUE PARENT_SCOPE)
+endfunction(is_Compatible_Version)
+
