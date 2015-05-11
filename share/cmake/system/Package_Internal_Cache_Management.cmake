@@ -113,6 +113,67 @@ endfunction(add_Category)
 ############### API functions for setting components related cache variables ################
 #############################################################################################
 
+### configure variables exported by component that will be used to generate the package cmake use file
+function (configure_Install_Variables component export include_dirs dep_defs exported_defs static_links shared_links)
+#message("configure_Install_Variables component=${component} export=${export} include_dirs=${include_dirs} dep_defs=${dep_defs} exported_defs=${exported_defs} static_links=${static_links} shared_links=${shared_links}")
+# configuring the export
+if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
+	if(	NOT dep_defs STREQUAL "" 
+		OR NOT exported_defs  STREQUAL "")	
+		set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
+			${exported_defs} ${dep_defs}
+			CACHE INTERNAL "")
+	endif()
+	if(NOT include_dirs STREQUAL "")
+		set(	${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} 
+			${${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX}} 
+			${include_dirs}
+			CACHE INTERNAL "")
+	endif()
+	# links are exported since we will need to resolve symbols in the third party components that will the use the component 	
+	if(NOT shared_links STREQUAL "")
+		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
+			${shared_links}			
+			CACHE INTERNAL "")
+	endif()
+	if(NOT static_links STREQUAL "")
+		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
+			${static_links}			
+			CACHE INTERNAL "")
+	endif()
+
+else() # otherwise no need to register them since no more useful
+	if(NOT exported_defs STREQUAL "") 
+		#just add the exported defs of the component not those of the dependency
+		set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
+			${exported_defs}
+			CACHE INTERNAL "")
+	endif()
+	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared lib
+		if (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER" 
+			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
+		)
+		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
+			${static_links}			
+			CACHE INTERNAL "")
+		endif()
+	endif()
+	if(NOT shared_links STREQUAL "")#shared links are privates (not exported) -> these links are used to process executables linking
+		set(	${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}			
+			${shared_links}
+			CACHE INTERNAL "")
+	endif()
+endif()
+
+endfunction(configure_Install_Variables)
+
+
 ### reset components related cached variables 
 function(reset_Component_Cached_Variables component)
 # resetting package dependencies
