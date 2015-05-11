@@ -3,107 +3,10 @@
 ##################auxiliary functions to check package version####################
 ##################################################################################
 
-###
-function(get_Version_String_Numbers version_string major minor patch)
-string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" A_VERSION "${version_string}")
-if(NOT A_VERSION STREQUAL "${version_string}")
-	list(GET A_VERSION 0 major_vers)
-	list(GET A_VERSION 1 minor_vers)
-	list(GET A_VERSION 2 patch_vers)
-	set(${major} ${major_vers} PARENT_SCOPE)
-	set(${minor} ${minor_vers} PARENT_SCOPE)
-	set(${patch} ${patch_vers} PARENT_SCOPE)
-else()
-	message(FATAL_ERROR "BUG : corrupted version string : ${version_string}")
-endif()	
-endfunction(get_Version_String_Numbers)
-
-###
-function (document_Version_Strings is_local package_name major minor patch)
-if(is_local)
-	set(${package_name}_VERSION_MAJOR ${major} CACHE INTERNAL "")
-	set(${package_name}_VERSION_MINOR ${minor} CACHE INTERNAL "")
-	set(${package_name}_VERSION_PATCH ${patch} CACHE INTERNAL "")
-	set(${package_name}_VERSION_STRING "${major}.${minor}.${patch}" CACHE INTERNAL "")
-	set(${package_name}_VERSION_RELATIVE_PATH "own-${${package_name}_VERSION_STRING}" CACHE INTERNAL "")
-	
-else(is_local)
-	set(${package_name}_VERSION_MAJOR ${major} CACHE INTERNAL "")
-	set(${package_name}_VERSION_MINOR ${minor} CACHE INTERNAL "")
-	set(${package_name}_VERSION_PATCH ${patch} CACHE INTERNAL "")
-	set(${package_name}_VERSION_STRING "${major}.${minor}.${patch}" CACHE INTERNAL "")
-	set(${package_name}_VERSION_RELATIVE_PATH "${major}.${minor}.${patch}" CACHE INTERNAL "")
-endif(is_local)
-endfunction(document_Version_Strings)
-
-###
-function(list_Version_Subdirectories result curdir)
-	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
-	set(dirlist "")
-	foreach(child ${children})
-		string(REGEX MATCH "^own-.*$" LOCAL ${child})
-		if(IS_DIRECTORY ${curdir}/${child} AND NOT LOCAL)
-			list(APPEND dirlist ${child})
-		endif()
-	endforeach()
-	list(REMOVE_ITEM dirlist "installers")
-	set(${result} ${dirlist} PARENT_SCOPE)
-endfunction(list_Version_Subdirectories)
-
-
-###
-function(list_Local_Version_Subdirectories result curdir)
-	file(GLOB children RELATIVE ${curdir} ${curdir}/own-*)
-	set(dirlist "")
-	foreach(child ${children})
-		if(IS_DIRECTORY ${curdir}/${child})
-			list(APPEND dirlist ${child})
-		endif()
-	endforeach()
-	set(${result} ${dirlist} PARENT_SCOPE)
-endfunction(list_Local_Version_Subdirectories)
-
-###
-function (check_Directory_Exists is_existing path)
-if(	EXISTS "${path}" 
-	AND IS_DIRECTORY "${path}"
-  )
-	set(${is_existing} TRUE PARENT_SCOPE)
-	return()
-endif()
-set(${is_existing} FALSE PARENT_SCOPE)
-endfunction(check_Directory_Exists)
-
 ### check if an exact major.minor version exists (patch version is always let undefined)
 function (check_Exact_Version 	VERSION_HAS_BEEN_FOUND 
 				package_name package_install_dir major_version minor_version) #minor version cannot be increased
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
-if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in USE_LOCAL_DEPLOYMENT mode (e.g. DEVELOPMENT VERSIONS HAVE GREATER PRIORITIES)
-	list_Local_Version_Subdirectories(version_dirs ${package_install_dir})
-	if(version_dirs)#scanning local versions  
-		set(curr_patch_version -1)
-		foreach(patch IN ITEMS ${version_dirs})
-			string(REGEX REPLACE "^own-${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
-			if(	NOT (A_VERSION STREQUAL "${patch}")#there is a match
-				AND ${A_VERSION} GREATER ${curr_patch_version})#newer patch version
-				set(curr_patch_version ${A_VERSION})
-				#set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-				set(result true)
-			endif()
-		endforeach()
-	
-		if(result)#a good local version has been found
-			message("a local version has been found with hasbeenfound=${VERSION_HAS_BEEN_FOUND}!!")			
-			set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)			
-			document_Version_Strings(TRUE ${package_name} ${major_version} ${minor_version} ${curr_patch_version})
-			return() 	
-		endif()	
-	unset(version_dirs)	
-	endif()
-	
-endif()
-
-#no adequate local version found OR local version not used
 list_Version_Subdirectories(version_dirs ${package_install_dir})
 if(version_dirs)#scanning non local versions
 	set(curr_patch_version -1)
@@ -118,7 +21,7 @@ if(version_dirs)#scanning non local versions
 	
 	if(result)#at least a good version has been found
 		set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-		document_Version_Strings(FALSE ${package_name} ${major_version} ${minor_version} ${curr_patch_version})
+		document_Version_Strings(${package_name} ${major_version} ${minor_version} ${curr_patch_version})
 		return()
 	endif()
 endif()
@@ -129,40 +32,6 @@ endfunction(check_Exact_Version)
 function(check_Best_Version 	VERSION_HAS_BEEN_FOUND
 				package_name package_install_dir major_version minor_version)#major version cannot be increased
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
-
-if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in USE_LOCAL_DEPLOYMENT mode (e.g. DEVELOPMENT VERSIONS HAVE GREATER PRIORITIES)
-	set(curr_max_minor_version ${minor_version})
-	set(curr_patch_version 0)
-	list_Local_Version_Subdirectories(version_dirs ${package_install_dir})
-	if(version_dirs)#scanning local versions  
-		foreach(version IN ITEMS ${version_dirs})
-			string(REGEX REPLACE "^own-${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
-			if(NOT (A_VERSION STREQUAL "${version}"))#there is a match
-				list(GET A_VERSION 0 minor)
-				list(GET A_VERSION 1 patch)
-				if("${minor}" EQUAL "${curr_max_minor_version}" 
-				AND ("${patch}" EQUAL "${curr_patch_version}" OR "${patch}" GREATER "${curr_patch_version}"))
-					set(result true)		
-					#a more recent patch version found with same max minor version
-					set(curr_patch_version ${patch})
-				elseif("${minor}" GREATER "${curr_max_minor_version}")
-					set(result true)	
-					#a greater minor version found
-					set(curr_max_minor_version ${minor})
-					set(curr_patch_version ${patch})	
-				endif()
-			endif()
-		endforeach()
-	
-		if(result)#a good local version has been found
-			set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-			document_Version_Strings(TRUE ${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
-			return() 	
-		endif()	
-	endif()
-	unset(version_dirs)
-endif()
-#no adequate local version found OR local version not used
 set(curr_max_minor_version ${minor_version})
 set(curr_patch_version 0)
 list_Version_Subdirectories(version_dirs ${package_install_dir})
@@ -188,7 +57,7 @@ if(version_dirs)#scanning local versions
 endif()
 if(result)#at least a good version has been found
 	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-	document_Version_Strings(FALSE ${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
+	document_Version_Strings(${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
 endif()
 endfunction(check_Best_Version)
 
@@ -197,29 +66,6 @@ endfunction(check_Best_Version)
 function(check_Last_Version 	VERSION_HAS_BEEN_FOUND
 				package_name package_install_dir)#taking local version or the most recent if not available
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
-
-if(USE_LOCAL_DEPLOYMENT) #local versions have priorities over non local ones in USE_LOCAL_DEPLOYMENT mode (i.e. DEVELOPMENT VERSIONS HAVE GREATER PRIORITIES)
-	list_Local_Version_Subdirectories(local_versions ${package_install_dir})
-	if(local_versions)
-		set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-		set(version_string_curr "0.0.0")
-		foreach(local_version_dir IN ITEMS ${local_versions})
-			set(VERSION_NUMBER)		
-			string(REGEX REPLACE "^own-([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1\.\\2\.\\3" VERSION_NUMBER ${local_version_dir})
-			if(	VERSION_NUMBER
-				AND NOT (VERSION_NUMBER STREQUAL "${local_version_dir}") #there is a match
-				AND ${version_string_curr} VERSION_LESS "${VERSION_NUMBER}")
-				set(version_string_curr ${VERSION_NUMBER})
-			endif()
-		endforeach()
-		get_Version_String_Numbers(${version_string_curr} major minor patch)
-		document_Version_Strings(TRUE ${package_name} ${major} ${minor} ${patch})
-		return()
-	endif()
-
-endif()
-
-#no local version found OR local version not used
 list_Version_Subdirectories(non_local_versions ${package_install_dir})
 if(non_local_versions)  
 	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
@@ -230,7 +76,7 @@ if(non_local_versions)
 		endif()
 	endforeach()
 	get_Version_String_Numbers(${version_string_curr} major minor patch)
-	document_Version_Strings(FALSE ${package_name} ${major} ${minor} ${patch})
+	document_Version_Strings(${package_name} ${major} ${minor} ${patch})
 endif()
 endfunction(check_Last_Version)
 
@@ -251,7 +97,7 @@ if(idx EQUAL -1)#the component is NOT an application
 	if(idx EQUAL -1)#the component is NOT a library either
 		return() #ERROR
 	else()#the component is a library 
-		#for a lib checking first level headers and optionnaly library
+		#for a lib checking headers and then binaries
 		if(DEFINED ${package_name}_${component_name}_HEADERS)#a library must have HEADERS defined otherwise ERROR
 			#checking existence of all its exported headers			
 			foreach(header IN ITEMS ${${package_name}_${component_name}_HEADERS})
@@ -264,7 +110,7 @@ if(idx EQUAL -1)#the component is NOT an application
 				endif()
 			endforeach()
 		else()
-			return()	
+			return()
 		endif()
 		#now checking for binaries if necessary
 		if(	${package_name}_${component_name}_TYPE STREQUAL "STATIC"
@@ -298,7 +144,7 @@ else()#the component is an application
 		set(${COMPONENT_ELEMENT_NOTFOUND} FALSE  PARENT_SCOPE)
 	else()
 		return()
-	endif()	
+	endif()
 endif()
 
 endfunction(check_Component_Elements_Exist)
@@ -358,16 +204,6 @@ foreach(requested_component IN ITEMS ${list_of_components})
 endforeach()
 endfunction (select_Components)
 
-###
-function(is_Compatible_Version is_compatible package reference_major reference_minor version_to_compare)
-set(${is_compatible} FALSE PARENT_SCOPE)
-get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)
-if(	NOT ${compare_major} EQUAL ${reference_major}
-	OR ${compare_minor} GREATER ${reference_minor})
-	return()#not compatible
-endif()
-set(${is_compatible} TRUE PARENT_SCOPE)
-endfunction(is_Compatible_Version)
 
 ###
 function(is_Exact_Version_Compatible_With_Previous_Constraints 
@@ -390,7 +226,7 @@ get_Version_String_Numbers("${version_string}.0" exact_major exact_minor exact_p
 foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
 #	message("version required=${version_required}, exact_major=${exact_major}, exact_minor=${exact_minor}")
 	unset(COMPATIBLE_VERSION)
-	is_Compatible_Version(COMPATIBLE_VERSION ${package} ${exact_major} ${exact_minor} ${version_required})
+	is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_required})
 	if(NOT COMPATIBLE_VERSION)
 		return()#not compatible
 	endif()
@@ -443,5 +279,110 @@ endif()
 
 endfunction(is_Version_Compatible_With_Previous_Constraints)
 
+############################################################################
+################ macros used to write cmake find scripts ###################
+############################################################################
+macro(exitFindScript package message_to_send)
+	if(${package}_FIND_REQUIRED)
+		message(SEND_ERROR ${message_to_send})#fatal error
+		return()
+	elseif(${package}_FIND_QUIETLY)
+		return()#simply exitting
+	else()
+		message(STATUS ${message_to_send})#simple notification message
+		return() 
+	endif()
+endmacro(exitFindScript)
 
+macro(finding_Package package)
+set(${package}_FOUND FALSE CACHE INTERNAL "")
 
+#workspace dir must be defined for each package build
+set(PACKAGE_${package}_SEARCH_PATH
+    ${PACKAGE_BINARY_INSTALL_DIR}/${package}
+    CACHE
+    INTERNAL
+    "path to the package install dir containing versions of the package : ${package}"
+  )
+
+check_Directory_Exists(EXIST ${PACKAGE_${package}_SEARCH_PATH})
+if(EXIST)
+	# at this stage the only thing to do is to check for versions
+
+	#variables that will be filled by generic functions
+	if(${package}_FIND_VERSION)
+		if(${package}_FIND_VERSION_EXACT) #using a specific version (only patch number can be adapted, first searching if there is any local version matching constraints, otherwise search for a non local version)
+			check_Exact_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR})
+		else() #using the best version as regard of version constraints (only non local version are used)
+			check_Best_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR})
+		endif()
+	else() #no specific version targetted using last available version (takes the last version available either local or non local - local first)
+		check_Last_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH})
+	endif()
+
+	if(VERSION_HAS_BEEN_FOUND)#a good version of the package has been found
+		set(PATH_TO_PACKAGE_VERSION ${PACKAGE_${package}_SEARCH_PATH}/${${package}_VERSION_RELATIVE_PATH})	
+		if(${package}_FIND_COMPONENTS) #specific components must be checked, taking only selected components	
+				
+			select_Components(${package} ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} "${${package}_FIND_COMPONENTS}")
+			if(USE_FILE_NOTFOUND)
+				exitFindScript("The selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted")
+			endif()
+
+			if(NOT ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND)
+				exitFindScript("Some of the requested components of the package ${package} are missing (version chosen is ${${package}_VERSION_STRING}, requested is ${${package}_FIND_VERSION}),either bad names specified or broken package versionning")
+			endif()	
+		
+		else()#no component check, register all of them
+			all_Components("${package}" ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION})
+			if(USE_FILE_NOTFOUND)
+				exitFindScript("The  selected version of the-testpack-a (${${package}_VERSION_STRING}) has no configuration file or file is corrupted")
+			endif(D)
+				
+		endif()
+
+		#here everything has been found => setting global standard CMake find process variables to adequate values
+		set(${package}_FOUND TRUE CACHE INTERNAL "")
+		set(${package}_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
+		set(${PROJECT_NAME}_ALL_USED_PACKAGES ${${PROJECT_NAME}_ALL_USED_PACKAGES} ${package} CACHE INTERNAL "")
+		if(${package}_FIND_VERSION)
+			if(${package}_FIND_VERSION_EXACT)
+				set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
+				set(${package}_REQUIRED_VERSION_EXACT "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" CACHE INTERNAL "")
+			else()
+				set(${package}_ALL_REQUIRED_VERSIONS ${${package}_ALL_REQUIRED_VERSIONS} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" CACHE INTERNAL "")	
+			endif()
+		else()
+			set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
+			set(${package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "") #unset the exact required version	
+		endif()
+		
+	else()#no adequate version found
+		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+			if(${package}_FIND_REQUIRED)
+				if(${package}_FIND_VERSION)
+					add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" ${${package}_FIND_VERSION_EXACT})
+				else()
+					add_To_Install_Package_Specification(${package} "" FALSE)
+				endif()
+			endif()
+		else()
+			exitFindScript("The package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace")
+		endif()
+	endif()
+else() #if the directory does not exist it means the package cannot be found
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+		if(${package}_FIND_REQUIRED)
+			if(${package}_FIND_VERSION)
+				add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" ${${package}_FIND_VERSION_EXACT})
+			else()
+				add_To_Install_Package_Specification(${package} "" FALSE)
+			endif()
+		endif()
+	else()
+		exitFindScript("The required package ${package} cannot be found in the workspace")
+	endif()
+
+endif()
+
+endmacro(finding_Package)

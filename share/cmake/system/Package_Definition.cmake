@@ -129,12 +129,12 @@ endmacro(build_PID_Package)
 #				DIRECTORY dirname 
 #				<STATIC_LIB|SHARED_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
 #				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [LINKS link ...] ] 
-#				[EXPORTED_DEFINITIONS def ...] 
+#				[EXPORTED [DEFINITIONS def ...] [LINKS link ...]
 #				[RUNTIME_RESOURCES <some path to files in the share/resources dir>])
 macro(declare_PID_Component)
 set(options STATIC_LIB SHARED_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
 set(oneValueArgs NAME DIRECTORY)
-set(multiValueArgs INTERNAL EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
+set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}")
@@ -199,11 +199,21 @@ if(DECLARE_PID_COMPONENT_INTERNAL)
 endif()
 
 set(exported_defs "")
-if(DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS)
+if(DECLARE_PID_COMPONENT_EXPORTED)
 	if(type MATCHES APP OR type MATCHES EXAMPLE OR type MATCHES TEST)
 		message(FATAL_ERROR "bad arguments : Applications cannot export anything (invalid use of the export keyword)")
 	endif()
-	set(exported_defs ${DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS})
+	if(DECLARE_PID_COMPONENT_EXPORTED STREQUAL "")
+		message(FATAL_ERROR "bad arguments : EXPORTED keyword must be followed by by at least one DEFINITIONS OR LINKS")
+	endif()
+	set(exported_multiValueArgs DEFINITIONS LINKS)
+	cmake_parse_arguments(DECLARE_PID_COMPONENT_EXPORTED "" "" "${exported_multiValueArgs}" ${DECLARE_PID_COMPONENT_EXPORTED} )
+	if(DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS)
+		set(exported_defs ${DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS})
+	endif()
+	if(DECLARE_PID_COMPONENT_EXPORTED_LINKS)
+		set(exported_link_flags ${DECLARE_PID_COMPONENT_EXPORTED_LINKS})
+	endif()
 endif()
 
 set(runtime_resources "")
@@ -228,6 +238,7 @@ else() #it is a library
 					"${internal_defs}"
 					"${exported_defs}" 
 					"${internal_link_flags}"
+					"${exported_link_flags}"
 					"${runtime_resources}")
 endif()
 

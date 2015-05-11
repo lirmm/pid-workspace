@@ -1,19 +1,3 @@
-###
-function(extract_All_Words name_with_underscores all_words_in_list)
-set(res "")
-string(REPLACE "_" ";" res "${name_with_underscores}")
-set(${all_words_in_list} ${res} PARENT_SCOPE)
-endfunction()
-
-###
-function(fill_List_Into_String input_list res_string)
-set(res "")
-foreach(element IN ITEMS ${input_list})
-	set(res "${res} ${element}")
-endforeach()
-string(STRIP "${res}" res_finished)
-set(${res_string} ${res_finished} PARENT_SCOPE)
-endfunction()
 
 ###
 function(generate_Full_Author_String author RES_STRING)

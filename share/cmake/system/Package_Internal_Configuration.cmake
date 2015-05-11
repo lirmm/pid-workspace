@@ -275,7 +275,7 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 			endif()	
 		endforeach()
 	else()	
-		message(FATAL_ERROR "there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${build_mode_suffix}. You may download them \"by hand\" or use the required packages automatic download option")
+		message(FATAL_ERROR "there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${build_mode_suffix}}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
 endif()
@@ -613,29 +613,9 @@ else()
 	return()
 endif()
 
-#creatings rpath folders if necessary
-if(	NOT EXISTS ${${bin_package}_ROOT_DIR}/.rpath 
-	OR NOT IS_DIRECTORY ${${bin_package}_ROOT_DIR}/.rpath)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${bin_package}_ROOT_DIR}/.rpath)
-endif()
-
-if(	NOT EXISTS ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}
-	OR NOT IS_DIRECTORY ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string})
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string})
-endif()
-
 #creatings symbolic links
 foreach(lib IN ITEMS ${shared_libs})
-	get_filename_component(A_LIB_FILE ${lib} NAME)
-	if(	EXISTS ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${A_LIB_FILE} 
-		AND IS_SYMLINK ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${A_LIB_FILE})
-		execute_process(
-			COMMAND ${CMAKE_COMMAND} -E remove -f ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${A_LIB_FILE}
-		)
-	endif()
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E create_symlink ${lib} ${${bin_package}_ROOT_DIR}/.rpath/${bin_component}${mode_string}/${A_LIB_FILE}
-	)
+	create_Rpath_Symlink(${lib} ${${bin_package}_ROOT_DIR} ${bin_component}${mode_string})
 endforeach()
 endfunction(create_Bin_Component_Symlinks)
 
@@ -681,7 +661,6 @@ function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 			endforeach()
 		endif()
 	endif()
-	
 	
 
 	# 2) adding package components dependencies
@@ -781,34 +760,8 @@ endfunction(is_Bin_Component_Exporting_Other_Components)
 
 ### configuring source components (currntly built) runtime paths (links to libraries)
 function(create_Source_Component_Symlinks bin_component shared_libs)
-install(CODE "
-	#creatings rpath folders if necessary
-	if(	NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR} 
-		OR NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${PROJECT_NAME}_INSTALL_RPATH_DIR} 
-				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-	endif()
-	#create the folder that will contain symbolic links to shared libraries used by the component (will allow full relocation of components runtime dependencies at install time)
-	if(	NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}
-		OR NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}
-				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-	endif()
-	")
-
 foreach(lib IN ITEMS ${shared_libs})
-	get_filename_component(A_LIB_FILE "${lib}" NAME)	
-	install(CODE "
-		if(	EXISTS ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE} 
-			AND IS_SYMLINK ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE}
-					WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-		endif()
-		execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${lib} ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE}
-					WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-		message(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${bin_component}/${A_LIB_FILE}\")
-
-		")# creating links "on the fly" when installing
+	install_Rpath_Symlink(${lib} ${${PROJECT_NAME}_DEPLOY_PATH} ${bin_component})
 endforeach()
 endfunction(create_Source_Component_Symlinks)
 
@@ -858,9 +811,11 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_HEADER_DIR_NAME ${${package}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_HEADERS ${${package}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
 	endforeach()
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
 	endforeach()
 else()
 	set(MODE_SUFFIX _DEBUG)
