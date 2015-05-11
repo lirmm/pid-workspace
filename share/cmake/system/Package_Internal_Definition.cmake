@@ -723,9 +723,9 @@ file(	GLOB_RECURSE
 set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
 foreach(header IN ITEMS ${${PROJECT_NAME}_${c_name}_HEADERS})
-	set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "${header}|${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
+	set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "^.*${header}$|${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 endforeach()
-
+message("PATTERN = ${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
@@ -1153,8 +1153,9 @@ endfunction(declare_Package_Component_Dependency)
 ### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of system dependancy, if any => definitions are not exported
 ### dep_defs  : definitions in the interface of the system dependancy that must be defined when using this system dependancy, if any => definitions are exported if dependancy is exported
 ### export : if true the component export the depenancy in its interface (export is always false if component is an application)
+### inc_dirs : include directories to add to target component in order to build (these include dirs are expressed with absolute path)
 ### links : links defined by the system dependancy, will be exported in any case (except by executables components)
-function(declare_System_Component_Dependency component export comp_defs comp_exp_defs dep_defs static_links shared_links)
+function(declare_System_Component_Dependency component export inc_dirs comp_defs comp_exp_defs dep_defs static_links shared_links)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
@@ -1166,19 +1167,19 @@ set(TARGET_LINKS ${static_links} ${shared_links})
 
 if (IS_EXEC_COMP)
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "" "${TARGET_LINKS}")
+	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 	
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
-	configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}")
+	configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}")
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "" "${TARGET_LINKS}")
+	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	#prepare the dependancy export
-	configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}") #export is necessarily true for a pure header library
+	configure_Install_Variables(${component} TRUE "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}") #export is necessarily true for a pure header library
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "" "${TARGET_LINKS}")
+	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 else()
 	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
 endif()

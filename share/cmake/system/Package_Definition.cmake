@@ -399,12 +399,11 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 				"${static_links}"
 				"${shared_links}")
 else()#system dependency
-	if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_LINKS)
-		message(FATAL_ERROR "bad arguments : the LINKS keyword must be used if you want to specify a system dependency.")
-	endif()
+
 	declare_System_Component_Dependency(
 			${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 			${export}
+			"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
 			"${comp_defs}" 
 			"${comp_exp_defs}"
 			"${dep_defs}"
@@ -452,4 +451,34 @@ endif()
 
 endmacro(run_PID_Test)
 
+
+### API : external_Package_Path (NAME external_package PATH result)
+macro(external_PID_Package_Path)
+set(oneValueArgs NAME PATH)
+cmake_parse_arguments(EXT_PACKAGE_PATH "" "${oneValueArgs}" "" ${ARGN} )
+if(NOT EXT_PACKAGE_PATH_NAME OR NOT EXT_PACKAGE_PATH_PATH)
+	message(FATAL_ERROR "bad arguments : a name of an external package must be provided with name and a variable containg the resulting path must be set with PATH")
+endif()
+set(${EXT_PACKAGE_PATH_PATH})
+is_External_Package_Defined(${PROJECT_NAME} "${EXT_PACKAGE_PATH_NAME}" ${CMAKE_BUILD_TYPE} ${EXT_PACKAGE_PATH_PATH})
+
+endmacro(external_PID_Package_Path)
+
+
+### API : create_Install_Symlink (PATH where_to_create NAME symlink_name TARGET target_of_symlink)
+macro(create_PID_Install_Symlink)
+set(oneValueArgs NAME PATH TARGET)
+cmake_parse_arguments(CREATE_INSTALL_SYMLINK "" "${oneValueArgs}" "" ${ARGN} )
+if(NOT CREATE_INSTALL_SYMLINK_NAME OR NOT CREATE_INSTALL_SYMLINK_PATH OR NOT CREATE_INSTALL_SYMLINK_TARGET)
+	message(FATAL_ERROR "bad arguments : a name for teh new symlink created must be provided with name, the PATH relative to its install location must be provided with PATH and the target of the symlink must be provided with TARGET")
+endif()
+set(FULL_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_DEPLOY_PATH}/${CREATE_INSTALL_SYMLINK_PATH})
+set( link   ${CREATE_INSTALL_SYMLINK_NAME})
+set( target ${CREATE_INSTALL_SYMLINK_TARGET})
+
+add_custom_target(install_symlink_${link} ALL
+        COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_INSTALL_PATH}/${link}
+	COMMAND ${CMAKE_COMMAND} -E chdir ${FULL_INSTALL_PATH} ${CMAKE_COMMAND} -E  create_symlink ${target} ${link})
+
+endmacro(create_PID_Install_Symlink)
 
