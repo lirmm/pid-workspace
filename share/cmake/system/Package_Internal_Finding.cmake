@@ -279,6 +279,108 @@ endif()
 
 endfunction(is_Version_Compatible_With_Previous_Constraints)
 
+
+###
+# each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
+# other variables set by the package version use file 
+# ${package}_DEPENDENCY_${dependency}_REQUIRED		# TRUE if package is required FALSE otherwise (QUIET MODE)
+# ${package}_DEPENDENCY_${dependency}_VERSION		# version if a version if specified
+# ${package}_DEPENDENCY_${dependency}_VERSION_EXACT	# TRUE if exact version is required
+# ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
+function(resolve_Package_Dependency package dependency mode)
+if(mode MATCHES Debug)
+	set(build_mode_suffix "_DEBUG")
+else()
+	set(build_mode_suffix "")
+endif()
+
+if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
+	if(${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}) # a specific version is required
+	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version is required
+			
+			is_Exact_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
+ 
+			if(IS_COMPATIBLE)
+				if(NEED_REFIND)
+					# OK installing the exact version instead
+					#WARNING call to find package
+					find_package(
+						${dependency} 
+						${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
+						EXACT
+						MODULE
+						REQUIRED
+						${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
+					)
+				endif()
+				return()				
+			else() #not compatible
+				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}.")
+				return()
+			endif()
+		else()#not an exact version required
+			is_Version_Compatible_With_Previous_Constraints (
+					COMPATIBLE_VERSION VERSION_TO_FIND 
+					${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}})
+			if(COMPATIBLE_VERSION)
+				if(VERSION_TO_FIND)
+					find_package(
+						${dependency} 
+						${VERSION_TO_FIND}
+						MODULE
+						REQUIRED
+						${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
+					)
+				else()
+					return() # nothing to do more, the current used version is compatible with everything 	
+				endif()
+			else()
+				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}.")
+				return()
+			endif()
+		endif()
+	else()
+		return()#by default the version is compatible (no constraints) so return 
+	endif()
+else()#the dependency has not been already found
+#	message("DEBUG resolve_Package_Dependency ${dependency} NOT FOUND !!")	
+	if(${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix})
+		
+		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version has been specified
+			#WARNING recursive call to find package
+			find_package(
+				${dependency} 
+				${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
+				EXACT
+				MODULE
+				REQUIRED
+				${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
+			)
+
+		else()
+			#WARNING recursive call to find package
+#			message("DEBUG before find : dep= ${dependency}, version = ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}")
+			find_package(
+				${dependency} 
+				${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
+				MODULE
+				REQUIRED
+				${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
+			)
+		endif()
+	else()
+		find_package(
+			${dependency} 
+			MODULE
+			REQUIRED
+			${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
+		)
+	endif()
+endif()
+
+endfunction(resolve_Package_Dependency)
+
+
 ############################################################################
 ################ macros used to write cmake find scripts ###################
 ############################################################################

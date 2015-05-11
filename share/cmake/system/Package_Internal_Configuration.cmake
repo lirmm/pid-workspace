@@ -22,106 +22,6 @@
 ##################################################################################
 
 ###
-# each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
-# other variables set by the package version use file 
-# ${package}_DEPENDENCY_${dependency}_REQUIRED		# TRUE if package is required FALSE otherwise (QUIET MODE)
-# ${package}_DEPENDENCY_${dependency}_VERSION		# version if a version if specified
-# ${package}_DEPENDENCY_${dependency}_VERSION_EXACT	# TRUE if exact version is required
-# ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
-function(resolve_Package_Dependency package dependency mode)
-if(mode MATCHES Debug)
-	set(build_mode_suffix "_DEBUG")
-else()
-	set(build_mode_suffix "")
-endif()
-
-if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
-	if(${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}) # a specific version is required
-	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version is required
-			
-			is_Exact_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
- 
-			if(IS_COMPATIBLE)
-				if(NEED_REFIND)
-					# OK installing the exact version instead
-					#WARNING call to find package
-					find_package(
-						${dependency} 
-						${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
-						EXACT
-						MODULE
-						REQUIRED
-						${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
-					)
-				endif()
-				return()				
-			else() #not compatible
-				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}.")
-				return()
-			endif()
-		else()#not an exact version required
-			is_Version_Compatible_With_Previous_Constraints (
-					COMPATIBLE_VERSION VERSION_TO_FIND 
-					${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}})
-			if(COMPATIBLE_VERSION)
-				if(VERSION_TO_FIND)
-					find_package(
-						${dependency} 
-						${VERSION_TO_FIND}
-						MODULE
-						REQUIRED
-						${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
-					)
-				else()
-					return() # nothing to do more, the current used version is compatible with everything 	
-				endif()
-			else()
-				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}.")
-				return()
-			endif()
-		endif()
-	else()
-		return()#by default the version is compatible (no constraints) so return 
-	endif()
-else()#the dependency has not been already found
-#	message("DEBUG resolve_Package_Dependency ${dependency} NOT FOUND !!")	
-	if(${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix})
-		
-		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version has been specified
-			#WARNING recursive call to find package
-			find_package(
-				${dependency} 
-				${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
-				EXACT
-				MODULE
-				REQUIRED
-				${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
-			)
-
-		else()
-			#WARNING recursive call to find package
-#			message("DEBUG before find : dep= ${dependency}, version = ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}")
-			find_package(
-				${dependency} 
-				${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
-				MODULE
-				REQUIRED
-				${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
-			)
-		endif()
-	else()
-		find_package(
-			${dependency} 
-			MODULE
-			REQUIRED
-			${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
-		)
-	endif()
-endif()
-
-endfunction(resolve_Package_Dependency)
-
-###
 function (update_Config_Include_Dirs package component dep_package dep_component mode_suffix)
 	if(${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix})	
 		set(${package}_${component}_INCLUDE_DIRS${mode_suffix} ${${package}_${component}_INCLUDE_DIRS${mode_suffix}} ${${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix}} CACHE INTERNAL "")
@@ -575,7 +475,8 @@ endfunction(resolve_Package_Runtime_Dependencies)
 
 ### resolve runtime dependencies for components
 function(resolve_Bin_Component_Runtime_Dependencies package component mode)
-if(	${package}_${component}_TYPE STREQUAL "SHARED" 
+if(	${package}_${component}_TYPE STREQUAL "SHARED"
+	OR ${package}_${component}_TYPE STREQUAL "MODULE" 
 	OR ${package}_${component}_TYPE STREQUAL "APP" 
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
 	if(mode MATCHES Debug)
@@ -619,22 +520,6 @@ foreach(lib IN ITEMS ${shared_libs})
 endforeach()
 endfunction(create_Bin_Component_Symlinks)
 
-###
-function(is_Shared_Lib_With_Path SHARED input_link)
-set(${SHARED} FALSE PARENT_SCOPE)
-get_filename_component(LIB_TYPE ${input_link} EXT)
-if(LIB_TYPE AND LIB_TYPE)
-	if(UNIX AND NOT APPLE) 		
-		if(LIB_TYPE MATCHES "^\\.so(\\.[^\\.]+)*$")#found shared lib
-			set(${SHARED} TRUE PARENT_SCOPE)
-		endif()
-	elseif(APPLE)
-		if(LIB_TYPE MATCHES "^\\.dylib(\\.[^\\.]+)*$")#found shared lib
-			set(${SHARED} TRUE PARENT_SCOPE)
-		endif()
-	endif()
-endif()
-endfunction(is_Shared_Lib_With_Path)
 
 ### recursive function to find runtime dependencies
 function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package component mode)
@@ -768,6 +653,7 @@ endfunction(create_Source_Component_Symlinks)
 ### 
 function(resolve_Source_Component_Runtime_Dependencies component THIRD_PARTY_LIBS)
 if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE" 
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP" 
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
 	# 1) getting all public runtime dependencies (including inherited ones)	
@@ -809,8 +695,10 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 	file(APPEND ${file} "####### internal specs of package components #######\n")
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_LIBS})
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_HEADER_DIR_NAME ${${package}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_HEADERS ${${package}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
+		if(NOT ${package}_${a_component}_TYPE STREQUAL "MODULE")#modules do not have public interfaces
+			file(APPEND ${file} "set(${package}_${a_component}_HEADER_DIR_NAME ${${package}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
+			file(APPEND ${file} "set(${package}_${a_component}_HEADERS ${${package}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
+		endif()
 		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
 	endforeach()
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
@@ -918,6 +806,9 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once
 endif()
 endfunction(create_Use_File)
 
+###############################################################################################
+############################## cleaning the installed tree #################################### 
+###############################################################################################
 function(clean_Install_Dir)
 
 if(	${CMAKE_BUILD_TYPE} MATCHES Release 

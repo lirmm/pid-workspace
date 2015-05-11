@@ -166,3 +166,116 @@ endif()
 set(${is_compatible} TRUE PARENT_SCOPE)
 endfunction(is_Compatible_Version)
 
+
+###
+function(generate_Full_Author_String author RES_STRING)
+string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
+list(GET author_institution 0 AUTHOR_NAME)
+list(GET author_institution 1 INSTITUTION_NAME)
+extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
+extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
+fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+if(NOT INSTITUTION_STRING STREQUAL "")
+	set(${RES_STRING} "${AUTHOR_STRING} (${INSTITUTION_STRING})" PARENT_SCOPE)
+else()
+	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+endif()
+endfunction()
+
+###
+function(generate_Contact_String author mail RES_STRING)
+extract_All_Words("${author}" AUTHOR_ALL_WORDS)
+fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+if(mail AND NOT mail STREQUAL "")
+	set(${RES_STRING} "${AUTHOR_STRING} (${mail})" PARENT_SCOPE)
+else()
+	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+endif()
+endfunction()
+
+###
+function(generate_Institution_String institution RES_STRING)
+extract_All_Words("${institution}" INSTITUTION_ALL_WORDS)
+fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+set(${RES_STRING} "${INSTITUTION_STRING}" PARENT_SCOPE)
+endfunction()
+
+###
+function(get_All_Sources_Relative RESULT dir)
+file(	GLOB_RECURSE 
+	RES
+	RELATIVE ${dir} 
+	"${dir}/*.c"
+	"${dir}/*.cc"
+	"${dir}/*.cpp"
+	"${dir}/*.cxx"
+	"${dir}/*.h"
+	"${dir}/*.hpp"
+	"${dir}/*.hh"
+	"${dir}/*.hxx"
+)
+set (${RESULT} ${RES} PARENT_SCOPE)
+endfunction(get_All_Sources_Relative)
+
+###
+function(get_All_Sources_Absolute RESULT dir)
+file(	GLOB_RECURSE 
+	RES
+	${dir} 
+	"${dir}/*.c"
+	"${dir}/*.cc"
+	"${dir}/*.cpp"
+	"${dir}/*.cxx"
+	"${dir}/*.h"
+	"${dir}/*.hpp"
+	"${dir}/*.hh"
+	"${dir}/*.hxx"
+)
+set (${RESULT} ${RES} PARENT_SCOPE)
+endfunction(get_All_Sources_Absolute)
+
+###
+function(get_All_Headers_Relative RESULT dir)
+file(	GLOB_RECURSE 
+	RES
+	RELATIVE ${dir} 
+	"${dir}/*.h"
+	"${dir}/*.hpp"
+	"${dir}/*.hh"
+	"${dir}/*.hxx"
+)
+set (${RESULT} ${RES} PARENT_SCOPE)
+endfunction(get_All_Headers_Relative)
+
+###
+function(get_All_Headers_Absolute RESULT dir)
+file(	GLOB_RECURSE 
+	RES
+	${dir} 
+	"${dir}/*.h"
+	"${dir}/*.hpp"
+	"${dir}/*.hh"
+	"${dir}/*.hxx"
+)
+set (${RESULT} ${RES} PARENT_SCOPE)
+endfunction(get_All_Headers_Absolute)
+
+###
+function(is_Shared_Lib_With_Path SHARED input_link)
+set(${SHARED} FALSE PARENT_SCOPE)
+get_filename_component(LIB_TYPE ${input_link} EXT)
+if(LIB_TYPE)
+	if(APPLE) 		
+		if(LIB_TYPE MATCHES "^\\.dylib(\\.[^\\.]+)*$")#found shared lib
+			set(${SHARED} TRUE PARENT_SCOPE)
+		endif()
+	elseif(UNIX)
+		if(LIB_TYPE MATCHES "^\\.so(\\.[^\\.]+)*$")#found shared lib
+			set(${SHARED} TRUE PARENT_SCOPE)
+		endif()
+	endif()
+endif()
+endfunction(is_Shared_Lib_With_Path)
+
+

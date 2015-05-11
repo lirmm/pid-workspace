@@ -1,39 +1,5 @@
 
 ###
-function(generate_Full_Author_String author RES_STRING)
-string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
-list(GET author_institution 0 AUTHOR_NAME)
-list(GET author_institution 1 INSTITUTION_NAME)
-extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
-extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
-if(NOT INSTITUTION_STRING STREQUAL "")
-	set(${RES_STRING} "${AUTHOR_STRING} (${INSTITUTION_STRING})" PARENT_SCOPE)
-else()
-	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
-endif()
-endfunction()
-
-###
-function(generate_Contact_String author mail RES_STRING)
-extract_All_Words("${author}" AUTHOR_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-if(mail AND NOT mail STREQUAL "")
-	set(${RES_STRING} "${AUTHOR_STRING} (${mail})" PARENT_SCOPE)
-else()
-	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
-endif()
-endfunction()
-
-###
-function(generate_Institution_String institution RES_STRING)
-extract_All_Words("${institution}" INSTITUTION_ALL_WORDS)
-fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
-set(${RES_STRING} "${INSTITUTION_STRING}" PARENT_SCOPE)
-endfunction()
-
-###
 function(generate_Reference_File pathtonewfile)
 set(file ${pathtonewfile})
 file(WRITE ${file} "")

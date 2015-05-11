@@ -295,6 +295,7 @@ if (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "TEST"
 	OR ${package}_${component}_TYPE STREQUAL "STATIC"
 	OR ${package}_${component}_TYPE STREQUAL "SHARED"
+	OR ${package}_${component}_TYPE STREQUAL "MODULE"
 )
 	set(${ret_var} TRUE PARENT_SCOPE)
 else()
@@ -319,9 +320,9 @@ endfunction(will_be_Built)
 
 ### registering the binary name of a component
 function(register_Component_Binary c_name)
-	get_target_property(LIB_NAME ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
-	get_filename_component(LIB_NAME ${LIB_NAME} NAME)
-	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${LIB_NAME} CACHE INTERNAL "")
+	get_target_property(BIN_LOC ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
+	get_filename_component(BIN_NAME ${BIN_LOC} NAME)
+	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${BIN_NAME} CACHE INTERNAL "")
 endfunction(register_Component_Binary)
 
 #############################################################################################
