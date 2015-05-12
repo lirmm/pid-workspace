@@ -48,6 +48,37 @@ endfunction(reset_Mode_Cache_Options)
 ############################################################################
 ############### API functions for setting global package info ##############
 ############################################################################
+
+### printing variables for components in the package ################
+macro(print_Component component)
+	message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX}")
+	message("INTERFACE : ")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
+		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
+		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_INTERFACE_LIBRARIES)
+		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")		
+		
+	message("IMPLEMENTATION :")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
+		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
+		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
+		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+endmacro(print_Component)
+
+macro(print_Component_Variables)
+	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
+	message("libraries : " ${${PROJECT_NAME}_COMPONENTS_LIBS})
+	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
+
+	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+		print_Component(${component})	
+	endforeach()
+endmacro(print_Component_Variables)
+
 function(init_Package_Info_Cache_Variables author institution mail description year license address)
 set(res_string)	
 foreach(string_el IN ITEMS ${author})
@@ -81,6 +112,7 @@ function(set_Version_Cache_Variables major minor patch)
 	set (${PROJECT_NAME}_VERSION_PATCH ${patch} CACHE INTERNAL "")
 	set (${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH} CACHE INTERNAL "")
 endfunction(set_Version_Cache_Variables)
+
 
 function(reset_Version_Cache_Variables)
 #resetting general info about the package : only list are reset
@@ -371,6 +403,45 @@ function(register_Component_Binary c_name)
 	get_filename_component(BIN_NAME ${BIN_LOC} NAME)
 	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${BIN_NAME} CACHE INTERNAL "")
 endfunction(register_Component_Binary)
+
+
+#resolving dependencies
+function(is_Bin_Component_Exporting_Other_Components RESULT package component mode)
+set(${RESULT} FALSE PARENT_SCOPE)
+if(mode MATCHES Release)
+	set(mode_var_suffix "")
+elseif(mode MATCHES Debug)
+	set(mode_var_suffix "_DEBUG")
+else()
+	message(FATAL_ERROR "Bug : unknown mode ${mode}")
+	return()
+endif()
+#scanning external dependencies
+if(${package}_${component}_LINKS${mode_var_suffix}) #only exported links here
+	set(${RESULT} TRUE PARENT_SCOPE)
+	return()
+endif()
+
+# scanning internal dependencies
+if(${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
+	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
+		if(${package}_${component}_INTERNAL_EXPORT_${int_dep}${mode_var_suffix})
+			set(${RESULT} TRUE PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()		
+endif()
+
+# scanning package dependencies
+foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
+	foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${mode_var_suffix})
+		if(${package}_${component}_EXPORT_${dep_pack}_${ext_dep}${mode_var_suffix})
+			set(${RESULT} TRUE PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
+endforeach()
+endfunction(is_Bin_Component_Exporting_Other_Components)
 
 ##############################################################################################################
 ############### API functions for managing cache variables bound to package dependencies #####################

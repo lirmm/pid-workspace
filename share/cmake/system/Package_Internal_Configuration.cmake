@@ -21,102 +21,14 @@
 ####################### configuring build time dependencies ######################
 ##################################################################################
 
-function(resolve_Package_Dependencies package mode)
-#message("DEBUG resolve_Package_Dependencies package=${package} mode=${mode}")
-if(mode MATCHES Debug)
-	set(build_mode_suffix "_DEBUG")
-else()
-	set(build_mode_suffix "")
-endif()
-
-################## external packages ##################
-
-# 1) managing external package dependencies (the list of dependent packages is defined as ${package}_EXTERNAL_DEPENDENCIES)
-# - locating dependent external packages in the workspace and configuring their build variables recursively
-set(TO_INSTALL_EXTERNAL_DEPS)
-foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${build_mode_suffix}})
-	# 1) resolving direct dependencies
-	
-	resolve_External_Package_Dependency(${package} ${dep_ext_pack} ${mode})
-	if(NOT ${dep_ext_pack}_FOUND)
-		list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
-	endif()
-endforeach()
-
-# 2) for not found package
-#message("DEBUG resolve_Package_Dependencies for ${package} ... step 2)")
-if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-#		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_EXTERNAL_DEPS}")
-		set(INSTALLED_EXTERNAL_PACKAGES "")
-		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
-#		message("DEBUG resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_EXTERNAL_PACKAGES}")
-		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
-			resolve_External_Package_Dependency(${package} ${installed} ${mode})
-#			message("DEBUG is ${installed} FOUND ? ${${installed}_FOUND} ")
-			if(NOT ${installed}_FOUND)
-				message(FATAL_ERROR "BUG : impossible to find installed external package ${installed}")
-			endif()	
-		endforeach()
-	else()	
-		message(FATAL_ERROR "there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${build_mode_suffix}}. You may download them \"by hand\" or use the required packages automatic download option")
-		return()
-	endif()
-endif()
-
-################## native packages ##################
-
-# 1) managing package dependencies (the list of dependent packages is defined as ${package}_DEPENDENCIES)
-# - locating dependent packages in the workspace and configuring their build variables recursively
-set(TO_INSTALL_DEPS)
-foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
-	# 1) resolving direct dependencies
-	resolve_Package_Dependency(${package} ${dep_pack} ${mode})
-	if(${dep_pack}_FOUND)
-#		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-1), dependency ${dep_pack} FOUND !!")
-		if(${dep_pack}_DEPENDENCIES${build_mode_suffix})
-			resolve_Package_Dependencies(${dep_pack} ${mode})#recursion : resolving dependencies for each package dependency
-		endif()
-	else()
-		list(APPEND TO_INSTALL_DEPS ${dep_pack})
-#		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-2), dependency ${dep_pack} NOT FOUND !!")
-	endif()
-endforeach()
-
-# 2) for not found package
-#message("DEBUG resolve_Package_Dependencies for ${package} ... step 2)")
-if(TO_INSTALL_DEPS) #there are dependencies to install
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-#		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_DEPS}")
-		set(INSTALLED_PACKAGES "")
-		install_Required_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES)
-#		message("resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_PACKAGES}")
-		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
-			resolve_Package_Dependency(${package} ${installed} ${mode})
-#			message("is ${installed} FOUND ? ${${installed}_FOUND} ")
-			if(${installed}_FOUND)
-				if(${installed}_DEPENDENCIES${build_mode_suffix})
-					resolve_Package_Dependencies(${installed} ${mode})#recursion : resolving dependencies for each package dependency
-				endif()
-			else()
-				message(FATAL_ERROR "BUG : impossible to find installed package ${installed}")
-			endif()	
-		endforeach()
-	else()	
-		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${build_mode_suffix}}. You may download them \"by hand\" or use the required packages automatic download option")
-		return()
-	endif()
-endif()
-endfunction(resolve_Package_Dependencies)
-
 ###
 function(configure_Package_Build_Variables package mode)
 #message(DEBUG configure_Package_Build_Variables package=${package} mode=${mode})
-if(${package}_PREPARE_BUILD)#this is a guard to limit recursion
+if(${package}_PREPARE_BUILD)#this is a guard to limit unecessary recursion
 	return()
 endif()
 
-if(${package}_DURING_PREPARE_BUILD)
+if(${package}_DURING_PREPARE_BUILD)#this is a guard to avoid cyclic recursion
 	message(FATAL_ERROR "Alert : you have define cyclic dependencies between packages : Package ${package} is directly or undirectly requiring itself !")
 endif()
 
@@ -598,45 +510,6 @@ function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 	set(${ALL_SHARED_LIBS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Runtime_Dependencies)
 
-
-
-#resolving dependencies
-function(is_Bin_Component_Exporting_Other_Components RESULT package component mode)
-set(${RESULT} FALSE PARENT_SCOPE)
-if(mode MATCHES Release)
-	set(mode_var_suffix "")
-elseif(mode MATCHES Debug)
-	set(mode_var_suffix "_DEBUG")
-else()
-	message(FATAL_ERROR "Bug : unknown mode ${mode}")
-	return()
-endif()
-#scanning external dependencies
-if(${package}_${component}_LINKS${mode_var_suffix}) #only exported links here
-	set(${RESULT} TRUE PARENT_SCOPE)
-	return()
-endif()
-
-# scanning internal dependencies
-if(${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
-	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
-		if(${package}_${component}_INTERNAL_EXPORT_${int_dep}${mode_var_suffix})
-			set(${RESULT} TRUE PARENT_SCOPE)
-			return()
-		endif()
-	endforeach()		
-endif()
-
-# scanning package dependencies
-foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
-	foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${mode_var_suffix})
-		if(${package}_${component}_EXPORT_${dep_pack}_${ext_dep}${mode_var_suffix})
-			set(${RESULT} TRUE PARENT_SCOPE)
-			return()
-		endif()
-	endforeach()
-endforeach()
-endfunction(is_Bin_Component_Exporting_Other_Components)
 
 ##################################################################################
 ####################### source package run time dependencies #####################

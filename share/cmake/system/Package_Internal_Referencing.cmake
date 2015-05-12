@@ -31,6 +31,89 @@ foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
 endforeach()
 endfunction(generate_Reference_File)
 
+###
+function(resolve_Package_Dependencies package mode)
+#message("DEBUG resolve_Package_Dependencies package=${package} mode=${mode}")
+if(mode MATCHES Debug)
+	set(build_mode_suffix "_DEBUG")
+else()
+	set(build_mode_suffix "")
+endif()
+
+################## external packages ##################
+
+# 1) managing external package dependencies (the list of dependent packages is defined as ${package}_EXTERNAL_DEPENDENCIES)
+# - locating dependent external packages in the workspace and configuring their build variables recursively
+set(TO_INSTALL_EXTERNAL_DEPS)
+foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${build_mode_suffix}})
+	# 1) resolving direct dependencies
+	
+	resolve_External_Package_Dependency(${package} ${dep_ext_pack} ${mode})
+	if(NOT ${dep_ext_pack}_FOUND)
+		list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
+	endif()
+endforeach()
+
+# 2) for not found package
+#message("DEBUG resolve_Package_Dependencies for ${package} ... step 2)")
+if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+#		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_EXTERNAL_DEPS}")
+		set(INSTALLED_EXTERNAL_PACKAGES "")
+		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
+#		message("DEBUG resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_EXTERNAL_PACKAGES}")
+		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
+			resolve_External_Package_Dependency(${package} ${installed} ${mode})
+#			message("DEBUG is ${installed} FOUND ? ${${installed}_FOUND} ")
+			if(NOT ${installed}_FOUND)
+				message(FATAL_ERROR "BUG : impossible to find installed external package ${installed}")
+			endif()	
+		endforeach()
+	else()	
+		message(FATAL_ERROR "there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${build_mode_suffix}}. You may download them \"by hand\" or use the required packages automatic download option")
+		return()
+	endif()
+endif()
+
+################## native packages ##################
+
+# 1) managing package dependencies (the list of dependent packages is defined as ${package}_DEPENDENCIES)
+# - locating dependent packages in the workspace and configuring their build variables recursively
+set(TO_INSTALL_DEPS)
+foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
+	# 1) resolving direct dependencies
+	resolve_Package_Dependency(${package} ${dep_pack} ${mode})
+	if(${dep_pack}_FOUND)
+		if(${dep_pack}_DEPENDENCIES${build_mode_suffix})
+			resolve_Package_Dependencies(${dep_pack} ${mode})#recursion : resolving dependencies for each package dependency
+		endif()
+	else()
+		list(APPEND TO_INSTALL_DEPS ${dep_pack})
+	endif()
+endforeach()
+
+# 2) for not found package
+if(TO_INSTALL_DEPS) #there are dependencies to install
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+		set(INSTALLED_PACKAGES "")
+		install_Required_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES)
+		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
+			resolve_Package_Dependency(${package} ${installed} ${mode})
+			if(${installed}_FOUND)
+				if(${installed}_DEPENDENCIES${build_mode_suffix})
+					resolve_Package_Dependencies(${installed} ${mode})#recursion : resolving dependencies for each package dependency
+				endif()
+			else()
+				message(FATAL_ERROR "BUG : impossible to find installed package ${installed}")
+			endif()	
+		endforeach()
+	else()	
+		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${build_mode_suffix}}. You may download them \"by hand\" or use the required packages automatic download option")
+		return()
+	endif()
+endif()
+endfunction(resolve_Package_Dependencies)
+
 #############################################################################################
 ############################### functions for Native Packages ###############################
 #############################################################################################
@@ -296,7 +379,6 @@ if(NOT available_versions)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
-#message("DEBUG available versions : ${available_versions}")
 
 # taking the adequate version
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN})
@@ -336,7 +418,6 @@ else()
 		endif()
 	endforeach()
 	if(${curr_patch_version} GREATER -1)#at least one match
-		#message("DEBUG : installing package ${package} with version ${ref_major}.${curr_min_minor_version}.${curr_patch_version}")
 		download_And_Install_Binary_Package(INSTALLED ${package} "${ref_major}.${curr_min_minor_version}.${curr_patch_version}")
 	endif()
 endif()
@@ -515,7 +596,7 @@ foreach(version IN ITEMS ${GIT_VERSIONS})
 	endif()
 endforeach()
 if(curr_max_patch_number EQUAL -1 OR curr_max_minor_number EQUAL -1 OR curr_max_major_number EQUAL -1)#i.e. nothing found
-	message("Error : no adequate version found for package ${package}")
+	message("ERROR : no adequate version found for package ${package}")
 	return()
 endif()
 
@@ -525,7 +606,7 @@ build_And_Install_Package(ALL_IS_OK ${package} "${curr_max_major_number}.${curr_
 if(ALL_IS_OK)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 else()
-	message("Error : automatic build and install of package ${package} FAILED !!")
+	message("ERROR : automatic build and install of package ${package} FAILED !!")
 endif()
 
 endfunction(deploy_Source_Package)

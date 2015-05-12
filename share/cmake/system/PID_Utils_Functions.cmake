@@ -1,34 +1,4 @@
 
-### printing variables for components in the package ################
-macro(print_Component component)
-	message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX}")
-	message("INTERFACE : ")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
-		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
-		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_INTERFACE_LIBRARIES)
-		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")		
-		
-	message("IMPLEMENTATION :")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
-		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
-		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
-		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-endmacro(print_Component)
-
-macro(print_Component_Variables)
-	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
-	message("libraries : " ${${PROJECT_NAME}_COMPONENTS_LIBS})
-	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
-
-	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-		print_Component(${component})	
-	endforeach()
-endmacro(print_Component_Variables)
-
 ###
 function(is_A_System_Reference_Path path IS_SYSTEM)
 
@@ -118,6 +88,15 @@ set(${is_existing} FALSE PARENT_SCOPE)
 endfunction(check_Directory_Exists)
 
 ###
+function (document_Version_Strings package_name major minor patch)
+	set(${package_name}_VERSION_MAJOR ${major} CACHE INTERNAL "")
+	set(${package_name}_VERSION_MINOR ${minor} CACHE INTERNAL "")
+	set(${package_name}_VERSION_PATCH ${patch} CACHE INTERNAL "")
+	set(${package_name}_VERSION_STRING "${major}.${minor}.${patch}" CACHE INTERNAL "")
+	set(${package_name}_VERSION_RELATIVE_PATH "${major}.${minor}.${patch}" CACHE INTERNAL "")
+endfunction(document_Version_Strings)
+
+###
 function(get_Version_String_Numbers version_string major minor patch)
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" A_VERSION "${version_string}")
 if(NOT A_VERSION STREQUAL "${version_string}")
@@ -131,15 +110,6 @@ else()
 	message(FATAL_ERROR "BUG : corrupted version string : ${version_string}")
 endif()	
 endfunction(get_Version_String_Numbers)
-
-###
-function (document_Version_Strings package_name major minor patch)
-	set(${package_name}_VERSION_MAJOR ${major} CACHE INTERNAL "")
-	set(${package_name}_VERSION_MINOR ${minor} CACHE INTERNAL "")
-	set(${package_name}_VERSION_PATCH ${patch} CACHE INTERNAL "")
-	set(${package_name}_VERSION_STRING "${major}.${minor}.${patch}" CACHE INTERNAL "")
-	set(${package_name}_VERSION_RELATIVE_PATH "${major}.${minor}.${patch}" CACHE INTERNAL "")
-endfunction(document_Version_Strings)
 
 ###
 function(list_Version_Subdirectories result curdir)
