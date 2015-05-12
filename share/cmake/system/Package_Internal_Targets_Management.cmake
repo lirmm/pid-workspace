@@ -1,3 +1,22 @@
+############################################################################
+############### API functions for internal targets management ##############
+############################################################################
+
+###create a module lib target for a newly defined library
+function(create_Module_Lib_Target c_name sources internal_inc_dirs internal_defs internal_links)
+	add_library(${c_name}${INSTALL_NAME_SUFFIX} MODULE ${sources})
+	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
+		LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
+	)
+	#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
+	if(APPLE)
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+	elseif(UNIX)
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+	endif()
+	manage_Additional_Component_Internal_Flags(${c_name} "${internal_inc_dirs}" "${internal_defs}" "${internal_links}")
+endfunction(create_Module_Lib_Target)
+
 ###create a shared lib target for a newly defined library
 function(create_Shared_Lib_Target c_name sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_links internal_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
@@ -200,5 +219,13 @@ else()
 endif()
 
 endfunction(fill_Component_Target_With_External_Dependency)
+
+############################################################################
+############### API functions for imported targets management ##############
+############################################################################
+
+
+
+
 
 

@@ -22,104 +22,52 @@
 ##################################################################################
 
 ###
-# each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
-# other variables set by the package version use file 
-# ${package}_DEPENDENCY_${dependency}_REQUIRED		# TRUE if package is required FALSE otherwise (QUIET MODE)
-# ${package}_DEPENDENCY_${dependency}_VERSION		# version if a version if specified
-# ${package}_DEPENDENCY_${dependency}_VERSION_EXACT	# TRUE if exact version is required
-# ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
-function(resolve_Package_Dependency package dependency mode)
-if(mode MATCHES Debug)
-	set(build_mode_suffix "_DEBUG")
+function(configure_Package_Build_Variables package mode)
+#message(DEBUG configure_Package_Build_Variables package=${package} mode=${mode})
+if(${package}_PREPARE_BUILD)#this is a guard to limit unecessary recursion
+	return()
+endif()
+
+if(${package}_DURING_PREPARE_BUILD)#this is a guard to avoid cyclic recursion
+	message(FATAL_ERROR "Alert : you have define cyclic dependencies between packages : Package ${package} is directly or undirectly requiring itself !")
+endif()
+
+if(mode MATCHES Release)
+	set(mode_suffix "")
 else()
-	set(build_mode_suffix "")
+	set(mode_suffix "_DEBUG")
 endif()
 
-if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
-	if(${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}) # a specific version is required
-	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version is required
-			
-			is_Exact_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
- 
-			if(IS_COMPATIBLE)
-				if(NEED_REFIND)
-					# OK installing the exact version instead
-					#WARNING call to find package
-					find_package(
-						${dependency} 
-						${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
-						EXACT
-						MODULE
-						REQUIRED
-						${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
-					)
-				endif()
-				return()				
-			else() #not compatible
-				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}.")
-				return()
-			endif()
-		else()#not an exact version required
-			is_Version_Compatible_With_Previous_Constraints (
-					COMPATIBLE_VERSION VERSION_TO_FIND 
-					${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}})
-			if(COMPATIBLE_VERSION)
-				if(VERSION_TO_FIND)
-					find_package(
-						${dependency} 
-						${VERSION_TO_FIND}
-						MODULE
-						REQUIRED
-						${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
-					)
-				else()
-					return() # nothing to do more, the current used version is compatible with everything 	
-				endif()
-			else()
-				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}.")
-				return()
-			endif()
-		endif()
-	else()
-		return()#by default the version is compatible (no constraints) so return 
-	endif()
-else()#the dependency has not been already found
-#	message("DEBUG resolve_Package_Dependency ${dependency} NOT FOUND !!")	
-	if(${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix})
-		
-		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version has been specified
-			#WARNING recursive call to find package
-			find_package(
-				${dependency} 
-				${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
-				EXACT
-				MODULE
-				REQUIRED
-				${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
-			)
+set(${package}_DURING_PREPARE_BUILD TRUE)
 
-		else()
-			#WARNING recursive call to find package
-#			message("DEBUG before find : dep= ${dependency}, version = ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}")
-			find_package(
-				${dependency} 
-				${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
-				MODULE
-				REQUIRED
-				${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
-			)
-		endif()
-	else()
-		find_package(
-			${dependency} 
-			MODULE
-			REQUIRED
-			${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
-		)
-	endif()
-endif()
+# 1) initializing all build variable that are directly provided by each component of the target package
+foreach(a_component IN ITEMS ${${package}_COMPONENTS})
+	init_Component_Build_Variables(${package} ${a_component} ${${package}_ROOT_DIR} ${mode})
+endforeach()
 
-endfunction(resolve_Package_Dependency)
+# 2) setting build variables with informations coming from package dependancies
+foreach(a_component IN ITEMS ${${package}_COMPONENTS}) 
+	foreach(a_package IN ITEMS ${${package}_${a_component}_DEPENDENCIES${mode_suffix}})
+		foreach(a_dep_component IN ITEMS ${${package}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS${mode_suffix}}) 
+			update_Component_Build_Variables_With_Dependency(${package} ${a_component} ${a_package} ${a_dep_component} ${mode})
+		endforeach()
+	endforeach()
+endforeach()
+
+#3) setting build variables with informations coming from INTERNAL package dependancies
+# these have not been checked like the others since the package components discovering mecanism has already done the job 
+foreach(a_component IN ITEMS ${${package}_COMPONENTS}) 
+	foreach(a_dep_component IN ITEMS ${${package}_${a_component}_INTERNAL_DEPENDENCIES${mode_suffix}}) 
+		update_Component_Build_Variables_With_Internal_Dependency(${package} ${a_component} ${a_dep_component} ${mode})
+	endforeach()
+endforeach()
+
+set(${package}_PREPARE_BUILD TRUE)
+set(${package}_DURING_PREPARE_BUILD FALSE)
+# no need to check system/external dependencies as they are already  treaten as special cases (see variable <package>__<component>_LINKS and <package>__<component>_DEFS of components)
+# quite like in pkg-config tool
+endfunction(configure_Package_Build_Variables)
+
 
 ###
 function (update_Config_Include_Dirs package component dep_package dep_component mode_suffix)
@@ -235,143 +183,6 @@ else()#dep_component is not exported by component
 	
 endif()
 endfunction(update_Component_Build_Variables_With_Internal_Dependency)
-
-
-function(resolve_Package_Dependencies package mode)
-#message("DEBUG resolve_Package_Dependencies package=${package} mode=${mode}")
-if(mode MATCHES Debug)
-	set(build_mode_suffix "_DEBUG")
-else()
-	set(build_mode_suffix "")
-endif()
-
-################## external packages ##################
-
-# 1) managing external package dependencies (the list of dependent packages is defined as ${package}_EXTERNAL_DEPENDENCIES)
-# - locating dependent external packages in the workspace and configuring their build variables recursively
-set(TO_INSTALL_EXTERNAL_DEPS)
-foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${build_mode_suffix}})
-	# 1) resolving direct dependencies
-	
-	resolve_External_Package_Dependency(${package} ${dep_ext_pack} ${mode})
-	if(NOT ${dep_ext_pack}_FOUND)
-		list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
-	endif()
-endforeach()
-
-# 2) for not found package
-#message("DEBUG resolve_Package_Dependencies for ${package} ... step 2)")
-if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-#		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_EXTERNAL_DEPS}")
-		set(INSTALLED_EXTERNAL_PACKAGES "")
-		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
-#		message("DEBUG resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_EXTERNAL_PACKAGES}")
-		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
-			resolve_External_Package_Dependency(${package} ${installed} ${mode})
-#			message("DEBUG is ${installed} FOUND ? ${${installed}_FOUND} ")
-			if(NOT ${installed}_FOUND)
-				message(FATAL_ERROR "BUG : impossible to find installed external package ${installed}")
-			endif()	
-		endforeach()
-	else()	
-		message(FATAL_ERROR "there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${build_mode_suffix}}. You may download them \"by hand\" or use the required packages automatic download option")
-		return()
-	endif()
-endif()
-
-################## native packages ##################
-
-# 1) managing package dependencies (the list of dependent packages is defined as ${package}_DEPENDENCIES)
-# - locating dependent packages in the workspace and configuring their build variables recursively
-set(TO_INSTALL_DEPS)
-foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
-	# 1) resolving direct dependencies
-	resolve_Package_Dependency(${package} ${dep_pack} ${mode})
-	if(${dep_pack}_FOUND)
-#		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-1), dependency ${dep_pack} FOUND !!")
-		if(${dep_pack}_DEPENDENCIES${build_mode_suffix})
-			resolve_Package_Dependencies(${dep_pack} ${mode})#recursion : resolving dependencies for each package dependency
-		endif()
-	else()
-		list(APPEND TO_INSTALL_DEPS ${dep_pack})
-#		message("DEBUG resolve_Package_Dependencies for ${package} ... step 1-2), dependency ${dep_pack} NOT FOUND !!")
-	endif()
-endforeach()
-
-# 2) for not found package
-#message("DEBUG resolve_Package_Dependencies for ${package} ... step 2)")
-if(TO_INSTALL_DEPS) #there are dependencies to install
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-#		message("DEBUG resolve_Package_Dependencies for ${package} need to install packages : ${TO_INSTALL_DEPS}")
-		set(INSTALLED_PACKAGES "")
-		install_Required_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES)
-#		message("resolve_Package_Dependencies for ${package} ... step 2, packages installed are : ${INSTALLED_PACKAGES}")
-		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
-			resolve_Package_Dependency(${package} ${installed} ${mode})
-#			message("is ${installed} FOUND ? ${${installed}_FOUND} ")
-			if(${installed}_FOUND)
-				if(${installed}_DEPENDENCIES${build_mode_suffix})
-					resolve_Package_Dependencies(${installed} ${mode})#recursion : resolving dependencies for each package dependency
-				endif()
-			else()
-				message(FATAL_ERROR "BUG : impossible to find installed package ${installed}")
-			endif()	
-		endforeach()
-	else()	
-		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${build_mode_suffix}}. You may download them \"by hand\" or use the required packages automatic download option")
-		return()
-	endif()
-endif()
-endfunction(resolve_Package_Dependencies)
-
-###
-function(configure_Package_Build_Variables package mode)
-#message(DEBUG configure_Package_Build_Variables package=${package} mode=${mode})
-if(${package}_PREPARE_BUILD)#this is a guard to limit recursion
-	return()
-endif()
-
-if(${package}_DURING_PREPARE_BUILD)
-	message(FATAL_ERROR "Alert : you have define cyclic dependencies between packages : Package ${package} is directly or undirectly requiring itself !")
-endif()
-
-if(mode MATCHES Release)
-	set(mode_suffix "")
-else()
-	set(mode_suffix "_DEBUG")
-endif()
-
-set(${package}_DURING_PREPARE_BUILD TRUE)
-
-# 1) initializing all build variable that are directly provided by each component of the target package
-foreach(a_component IN ITEMS ${${package}_COMPONENTS})
-	init_Component_Build_Variables(${package} ${a_component} ${${package}_ROOT_DIR} ${mode})
-endforeach()
-
-# 2) setting build variables with informations coming from package dependancies
-foreach(a_component IN ITEMS ${${package}_COMPONENTS}) 
-	foreach(a_package IN ITEMS ${${package}_${a_component}_DEPENDENCIES${mode_suffix}})
-		foreach(a_dep_component IN ITEMS ${${package}_${a_component}_DEPENDENCY_${a_package}_COMPONENTS${mode_suffix}}) 
-			update_Component_Build_Variables_With_Dependency(${package} ${a_component} ${a_package} ${a_dep_component} ${mode})
-		endforeach()
-	endforeach()
-endforeach()
-
-#3) setting build variables with informations coming from INTERNAL package dependancies
-# these have not been checked like the others since the package components discovering mecanism has already done the job 
-foreach(a_component IN ITEMS ${${package}_COMPONENTS}) 
-	foreach(a_dep_component IN ITEMS ${${package}_${a_component}_INTERNAL_DEPENDENCIES${mode_suffix}}) 
-		update_Component_Build_Variables_With_Internal_Dependency(${package} ${a_component} ${a_dep_component} ${mode})
-	endforeach()
-endforeach()
-
-set(${package}_PREPARE_BUILD TRUE)
-set(${package}_DURING_PREPARE_BUILD FALSE)
-# no need to check system/external dependencies as they are already  treaten as special cases (see variable <package>__<component>_LINKS and <package>__<component>_DEFS of components)
-# quite like in pkg-config tool
-endfunction(configure_Package_Build_Variables)
-
 
 ##################################################################################
 ################## finding shared libs dependencies for the linker ###############
@@ -575,7 +386,8 @@ endfunction(resolve_Package_Runtime_Dependencies)
 
 ### resolve runtime dependencies for components
 function(resolve_Bin_Component_Runtime_Dependencies package component mode)
-if(	${package}_${component}_TYPE STREQUAL "SHARED" 
+if(	${package}_${component}_TYPE STREQUAL "SHARED"
+	OR ${package}_${component}_TYPE STREQUAL "MODULE" 
 	OR ${package}_${component}_TYPE STREQUAL "APP" 
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
 	if(mode MATCHES Debug)
@@ -619,22 +431,6 @@ foreach(lib IN ITEMS ${shared_libs})
 endforeach()
 endfunction(create_Bin_Component_Symlinks)
 
-###
-function(is_Shared_Lib_With_Path SHARED input_link)
-set(${SHARED} FALSE PARENT_SCOPE)
-get_filename_component(LIB_TYPE ${input_link} EXT)
-if(LIB_TYPE AND LIB_TYPE)
-	if(UNIX AND NOT APPLE) 		
-		if(LIB_TYPE MATCHES "^\\.so(\\.[^\\.]+)*$")#found shared lib
-			set(${SHARED} TRUE PARENT_SCOPE)
-		endif()
-	elseif(APPLE)
-		if(LIB_TYPE MATCHES "^\\.dylib(\\.[^\\.]+)*$")#found shared lib
-			set(${SHARED} TRUE PARENT_SCOPE)
-		endif()
-	endif()
-endif()
-endfunction(is_Shared_Lib_With_Path)
 
 ### recursive function to find runtime dependencies
 function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package component mode)
@@ -715,45 +511,6 @@ function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package componen
 endfunction(get_Bin_Component_Runtime_Dependencies)
 
 
-
-#resolving dependencies
-function(is_Bin_Component_Exporting_Other_Components RESULT package component mode)
-set(${RESULT} FALSE PARENT_SCOPE)
-if(mode MATCHES Release)
-	set(mode_var_suffix "")
-elseif(mode MATCHES Debug)
-	set(mode_var_suffix "_DEBUG")
-else()
-	message(FATAL_ERROR "Bug : unknown mode ${mode}")
-	return()
-endif()
-#scanning external dependencies
-if(${package}_${component}_LINKS${mode_var_suffix}) #only exported links here
-	set(${RESULT} TRUE PARENT_SCOPE)
-	return()
-endif()
-
-# scanning internal dependencies
-if(${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
-	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
-		if(${package}_${component}_INTERNAL_EXPORT_${int_dep}${mode_var_suffix})
-			set(${RESULT} TRUE PARENT_SCOPE)
-			return()
-		endif()
-	endforeach()		
-endif()
-
-# scanning package dependencies
-foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
-	foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${mode_var_suffix})
-		if(${package}_${component}_EXPORT_${dep_pack}_${ext_dep}${mode_var_suffix})
-			set(${RESULT} TRUE PARENT_SCOPE)
-			return()
-		endif()
-	endforeach()
-endforeach()
-endfunction(is_Bin_Component_Exporting_Other_Components)
-
 ##################################################################################
 ####################### source package run time dependencies #####################
 ##################################################################################
@@ -768,6 +525,7 @@ endfunction(create_Source_Component_Symlinks)
 ### 
 function(resolve_Source_Component_Runtime_Dependencies component THIRD_PARTY_LIBS)
 if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE" 
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP" 
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
 	# 1) getting all public runtime dependencies (including inherited ones)	
@@ -793,131 +551,9 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
 
-
-##################################################################################
-############################## install the dependancies ########################## 
-########### functions used to create the use<package><version>.cmake  ############ 
-##################################################################################
-function(write_Use_File file package build_mode)
-set(MODE_SUFFIX "")
-if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode 
-	file(APPEND ${file} "######### declaration of package components ########\n")
-	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${${package}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
-	
-	file(APPEND ${file} "####### internal specs of package components #######\n")
-	foreach(a_component IN ITEMS ${${package}_COMPONENTS_LIBS})
-		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_HEADER_DIR_NAME ${${package}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_HEADERS ${${package}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
-	endforeach()
-	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
-		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
-	endforeach()
-else()
-	set(MODE_SUFFIX _DEBUG)
-endif()
-
-#mode dependent info written adequately depending the mode 
-
-# 1) external package dependencies
-file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-
-foreach(a_ext_dep IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
-	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	if(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX})
-		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
-	else()
-		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
-	endif()
-	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-endforeach()
-
-# 2) native package dependencies
-file(APPEND ${file} "#### declaration of package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-file(APPEND ${file} "set(${package}_DEPENDENCIES${MODE_SUFFIX} ${${package}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-foreach(a_dep IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
-	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	if(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX})
-		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
-	else()
-		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
-	endif()
-	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-endforeach()
-
-# 3) internal+external components specifications
-file(APPEND ${file} "#### declaration of components exported flags and binary in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN ITEMS ${${package}_COMPONENTS})
-	is_Built_Component(IS_BUILT_COMP ${package} ${a_component})
-	is_Executable_Component(IS_EXEC_COMP ${package} ${a_component})
-	if(IS_BUILT_COMP)#if not a pure header library
-		file(APPEND ${file} "set(${package}_${a_component}_BINARY_NAME${MODE_SUFFIX} ${${package}_${a_component}_BINARY_NAME${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	endif()
-	if(NOT IS_EXEC_COMP)#it is a library
-		file(APPEND ${file} "set(${package}_${a_component}_INC_DIRS${MODE_SUFFIX} ${${package}_${a_component}_INC_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} ${${package}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	endif()
-endforeach()
-
-# 4) package internal component dependencies
-file(APPEND ${file} "#### declaration package internal component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN ITEMS ${${package}_COMPONENTS})
-	if(${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}) # the component has internal dependencies
-		file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		foreach(a_int_dep IN ITEMS ${${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}})
-			if(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX})
-				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")				
-			else()
-				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")			
-			endif()
-		endforeach()
-	endif()
-endforeach()
-
-# 5) component dependencies 
-file(APPEND ${file} "#### declaration of component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN ITEMS ${${package}_COMPONENTS})
-	if(${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}) # the component has package dependencies
-		file(APPEND ${file} "set(${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		foreach(dep_package IN ITEMS ${${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}})
-			file(APPEND ${file} "set(${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX} ${${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-			foreach(dep_component IN ITEMS ${${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}})
-				if(${package}_${a_component}_EXPORT_${dep_package}_${dep_component})
-					file(APPEND ${file} "set(${package}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
-				else()
-					file(APPEND ${file} "set(${package}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
-				endif()
-			endforeach()
-		endforeach()
-	endif()
-endforeach()
-endfunction(write_Use_File)
-
-function(create_Use_File)
-if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
-	set(file ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake)
-else()
-	set(file ${CMAKE_BINARY_DIR}/share/UseDebugTemp)
-endif()
-
-#resetting the file content
-file(WRITE ${file} "")
-write_Use_File(${file} ${PROJECT_NAME} ${CMAKE_BUILD_TYPE})
-
-#finalizing release mode by agregating info from the debug mode
-if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
-	file(READ "${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp" DEBUG_CONTENT)
-	file(APPEND ${file} "${DEBUG_CONTENT}")
-endif()
-endfunction(create_Use_File)
-
+###############################################################################################
+############################## cleaning the installed tree #################################### 
+###############################################################################################
 function(clean_Install_Dir)
 
 if(	${CMAKE_BUILD_TYPE} MATCHES Release 
@@ -934,32 +570,4 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release
 endif()
 endfunction(clean_Install_Dir)
 
-
-###############################################################################################
-############################## providing info on the package content ########################## 
-#################### function used to create the Info<package>.cmake  ######################### 
-###############################################################################################
-
-function(create_Info_File)
-if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
-	set(file ${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake)
-	file(WRITE ${file} "")#resetting the file content
-	file(APPEND ${file} "######### declaration of package components ########\n")
-	file(APPEND ${file} "set(${PROJECT_NAME}_COMPONENTS ${${PROJECT_NAME}_COMPONENTS} CACHE INTERNAL \"\")\n")
-	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})		
-		if(NOT ${${PROJECT_NAME}_${a_component}_TYPE} STREQUAL "TEST")
-			if(${PROJECT_NAME}_${a_component}_SOURCE_DIR)
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_DIR ${${PROJECT_NAME}_${a_component}_SOURCE_DIR} CACHE INTERNAL \"\")\n")
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_CODE ${${PROJECT_NAME}_${a_component}_SOURCE_CODE} CACHE INTERNAL \"\")\n")
-			endif()
-			if(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME)	
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME ${${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADERS ${${PROJECT_NAME}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
-
-			endif()
-		endif()
-	endforeach()
-endif()
-
-endfunction(create_Info_File)
 

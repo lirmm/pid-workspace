@@ -14,7 +14,6 @@ cmake_policy(SET CMP0045 OLD) #allow to test if a target exist without a warning
 include(Package_Internal_Finding NO_POLICY_SCOPE)
 include(Package_Internal_Configuration NO_POLICY_SCOPE)
 include(Package_Internal_Referencing NO_POLICY_SCOPE)
-include(Package_Internal_External_Package_Management NO_POLICY_SCOPE)
 include(Package_Internal_Cache_Management NO_POLICY_SCOPE)
 include(Package_Internal_Documentation_Management NO_POLICY_SCOPE)
 include(Package_Internal_Targets_Management NO_POLICY_SCOPE)
@@ -610,37 +609,33 @@ endif()
 #indicating that the component has been declared and need to be completed
 if(type STREQUAL "HEADER"
 OR type STREQUAL "STATIC"
-OR type STREQUAL "SHARED")
+OR type STREQUAL "SHARED"
+OR type STREQUAL "MODULE")
 	set(${PROJECT_NAME}_${c_name}_TYPE ${type} CACHE INTERNAL "")
 else()
-	message(FATAL_ERROR "you must specify a type (HEADER, STATIC or SHARED) for your library")
+	message(FATAL_ERROR "you must specify a type (HEADER, STATIC, SHARED or MODULE) for your library")
 	return()
 endif()
 
 ### managing headers ###
-#a library defines a folder containing one or more headers and/or subdirectories 
+if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") # a module library has no declared interface (only used dynamically)
+#a library defines a folder containing one or more headers and/or subdirectories
 set(${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${dirname})
-
-
 set(${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME ${dirname} CACHE INTERNAL "")
-file(	GLOB_RECURSE
-	${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE
-	RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}
-	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h"
-	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh"
-	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
-	"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
-)
 
+get_All_Headers_Relative(${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR})
 set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
 foreach(header IN ITEMS ${${PROJECT_NAME}_${c_name}_HEADERS})
 	set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "^.*${header}$|${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 endforeach()
-
 install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 
-if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
+get_All_Headers_Absolute(${PROJECT_NAME}_${c_name}_ALL_HEADERS ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR})
+endif()
+
+
+if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has no source code (generates no binary)
 	#collect sources for the library
 	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/${dirname})
 
@@ -648,45 +643,21 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 	#register the source dir
 	if(${CMAKE_BUILD_TYPE} MATCHES Release)	
 		set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
-	
-		file(	GLOB_RECURSE 
-			${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE
-			RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR} 
-			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.c"
-			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cc"
-			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cpp"
-			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cxx"
-			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.h"
-			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hpp"
-			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hh"
-			"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hxx"
-		)
+		get_All_Sources_Relative(${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 		set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
 		
 	endif()
 	## 2) collect sources for build process
-	file(	GLOB_RECURSE 
-		${PROJECT_NAME}_${c_name}_ALL_SOURCES
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.c"
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cc"
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cpp"
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cxx"
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.h"
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hpp"
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hh"
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hxx"
-		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.h"
-		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hh"
-		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hpp"
-		"${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/*.hxx"
-	)
-	
+	get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
+	list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_ALL_HEADERS})
 	#defining shared and/or static targets for the library and
 	#adding the targets to the list of installed components when make install is called
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "STATIC")
 		create_Static_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${exported_links}")
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
 		create_Shared_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${exported_links}" "${internal_links}")
+	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
+		create_Module_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${internal_links}")
 	endif()
 	register_Component_Binary(${c_name})
 else()#simply creating a "fake" target for header only library
@@ -757,18 +728,7 @@ elseif(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
 	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/test/${dirname} CACHE INTERNAL "")
 endif()
 
-file(	GLOB_RECURSE 
-	${PROJECT_NAME}_${c_name}_ALL_SOURCES 
-	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.c" 
-	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cc" 
-	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cpp"
-	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cxx"
-	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.h" 
-	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hpp" 
-	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hh"
-	"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hxx"
-)
-
+get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 #defining the target to build the application
 
 if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")# NB : tests do not need to be relocatable since they are purely local
@@ -786,18 +746,7 @@ endif()
 
 #registering source code for the component
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	file(	GLOB_RECURSE 
-		${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE
-		RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.c" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cc" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cpp"
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.cxx"
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.h" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hpp" 
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hh"
-		"${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR}/*.hxx"
-	)
+	get_All_Sources_Relative(${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 	set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
 endif()

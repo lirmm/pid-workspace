@@ -127,12 +127,12 @@ endmacro(build_PID_Package)
 
 ### API : declare_PID_Component(NAME name 
 #				DIRECTORY dirname 
-#				<STATIC_LIB|SHARED_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
+#				<STATIC_LIB|SHARED_LIB|MODULE_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
 #				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [LINKS link ...] ] 
 #				[EXPORTED [DEFINITIONS def ...] [LINKS link ...]
 #				[RUNTIME_RESOURCES <some path to files in the share/resources dir>])
 macro(declare_PID_Component)
-set(options STATIC_LIB SHARED_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
+set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
 set(oneValueArgs NAME DIRECTORY)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -155,6 +155,10 @@ if(DECLARE_PID_COMPONENT_SHARED_LIB)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "SHARED")
 endif()
+if(DECLARE_PID_COMPONENT_MODULE_LIB)
+	math(EXPR nb_options "${nb_options}+1")
+	set(type "MODULE")
+endif()
 if(DECLARE_PID_COMPONENT_HEADER_LIB)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "HEADER")
@@ -172,7 +176,7 @@ if(DECLARE_PID_COMPONENT_TEST_APPLICATION)
 	set(type "TEST")
 endif()
 if(NOT nb_options EQUAL 1)
-	message(FATAL_ERROR "bad arguments : only one type must be given for the component")
+	message(FATAL_ERROR "bad arguments : only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION|TEST_APPLICATION) must be given for the component")
 endif()
 
 set(internal_defs "")

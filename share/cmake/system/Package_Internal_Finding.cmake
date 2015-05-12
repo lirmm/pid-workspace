@@ -27,7 +27,6 @@ if(version_dirs)#scanning non local versions
 endif()
 endfunction(check_Exact_Version)
 
-
 ###  check if a version with constraints =major >=minor (with greater minor number available) exists (patch version is always let undefined)
 function(check_Best_Version 	VERSION_HAS_BEEN_FOUND
 				package_name package_install_dir major_version minor_version)#major version cannot be increased
@@ -80,9 +79,72 @@ if(non_local_versions)
 endif()
 endfunction(check_Last_Version)
 
-##################################################################################
-##################auxiliary functions to check components info  ##################
-##################################################################################
+###########################################################################################
+################# auxiliary functions to check external package version ###################
+###########################################################################################
+
+###
+function(check_External_Minimum_Version VERSION_FOUND package search_path version)
+set(${VERSION_FOUND} PARENT_SCOPE)
+list_Version_Subdirectories(VERSION_DIRS ${search_path})
+if(VERSION_DIRS)
+	foreach(version_dir IN ITEMS ${VERSION_DIRS})
+		if(version_dir VERSION_EQUAL version OR version_dir VERSION_GREATER version)
+			if(highest_version)
+				if(version_dir VERSION_GREATER highest_version 
+				AND version_dir VERSION_LESS "${${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO}")
+					set(highest_version ${version_dir})
+				endif()
+			else()
+				set(highest_version ${version_dir})	
+			endif()			
+		endif()
+
+	endforeach()
+	if(highest_version)
+		set(${VERSION_FOUND} ${highest_version} PARENT_SCOPE)
+	endif()
+endif()
+endfunction()
+
+###
+function(check_External_Last_Version VERSION_FOUND search_path)
+set(${VERSION_FOUND} PARENT_SCOPE)
+list_Version_Subdirectories(VERSION_DIRS ${search_path})
+if(VERSION_DIRS)
+
+	foreach(version_dir IN ITEMS ${VERSION_DIRS})
+		if(highest_version)
+			if(version_dir VERSION_GREATER highest_version)
+				set(highest_version ${version_dir})
+			endif()
+		else()
+			set(highest_version ${version_dir})
+		endif()
+	endforeach()
+	if(highest_version)
+		set(${VERSION_FOUND} ${highest_version} PARENT_SCOPE)
+	endif()
+endif()
+endfunction()
+
+
+### check if an exact major.minor.patch version of the external package exists
+function(check_External_Exact_Version VERSION_FOUND search_path version)
+set(${VERSION_FOUND} PARENT_SCOPE)
+list_Version_Subdirectories(VERSION_DIRS ${search_path})
+if(VERSION_DIRS)
+	list(FIND VERSION_DIRS ${version} INDEX)
+	if(INDEX EQUAL -1)
+		return()
+	endif()
+	set(${VERSION_FOUND} ${version} PARENT_SCOPE)		
+endif()
+endfunction(check_External_Exact_Version)
+
+#########################################################################################################
+################## auxiliary functions to check components info (native packages only) ##################
+#########################################################################################################
 
 #checking elements of a component
 function(check_Component_Elements_Exist COMPONENT_ELEMENT_NOTFOUND package_path package_name component_name)
@@ -205,6 +267,10 @@ endforeach()
 endfunction (select_Components)
 
 
+#########################################################################################################
+######################### auxiliary functions to check version info (native packages) ###################
+#########################################################################################################
+
 ###
 function(is_Exact_Version_Compatible_With_Previous_Constraints 
 		is_compatible
@@ -278,6 +344,286 @@ if(NOT ${${package}_VERSION_STRING} VERSION_GREATER ${max_version_constraint})
 endif()
 
 endfunction(is_Version_Compatible_With_Previous_Constraints)
+
+
+#########################################################################################################
+####################### auxiliary functions to check version info (external packages) ###################
+#########################################################################################################
+
+
+###
+function(is_Compatible_External_Version is_compatible package reference_version version_to_compare)
+
+if(${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO)
+	if(${reference_version} VERSION_LESS ${${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO})  
+		set(${is_compatible} TRUE PARENT_SCOPE)
+	else()
+		set(${is_compatible} FALSE PARENT_SCOPE)
+	endif()
+else()
+	set(${is_compatible} TRUE PARENT_SCOPE) #if not specified it means that there are no known greater version that is not compatible
+endif()
+endfunction()
+
+###
+function(is_Exact_External_Version_Compatible_With_Previous_Constraints 
+		is_compatible
+		need_finding
+		package
+		version_string)
+
+set(${is_compatible} FALSE PARENT_SCOPE)
+set(${need_finding} FALSE PARENT_SCOPE)
+if(${package}_REQUIRED_VERSION_EXACT)
+	if(NOT ${${package}_REQUIRED_VERSION_EXACT} VERSION_EQUAL ${version_string})#not compatible if versions are not the same				
+		return() 
+	endif()
+	set(${is_compatible} TRUE PARENT_SCOPE)
+	return()
+endif()
+
+#no exact version required
+foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
+	unset(COMPATIBLE_VERSION)
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version_string})
+	if(NOT COMPATIBLE_VERSION)
+		return()#not compatible
+	endif()
+endforeach()
+
+set(${is_compatible} TRUE PARENT_SCOPE)	
+if(NOT ${${package}_VERSION_STRING} VERSION_EQUAL ${version_string})
+	set(${need_finding} TRUE PARENT_SCOPE) #need to find the new exact version
+endif()
+endfunction()
+
+
+###
+function(is_External_Version_Compatible_With_Previous_Constraints 
+		is_compatible		
+		version_to_find
+		package
+		version_string)
+#message("DEBUG is_External_Version_Compatible_With_Previous_Constraints is_compatible=${is_compatible} version_to_find=${version_to_find} package=${package} version_string=${version_string}")
+set(${is_compatible} FALSE PARENT_SCOPE)
+# 1) testing compatibility and recording the higher constraint for minor version number
+if(${package}_REQUIRED_VERSION_EXACT)
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${${package}_REQUIRED_VERSION_EXACT} ${version_string})
+	if(COMPATIBLE_VERSION)	
+		set(${is_compatible} TRUE PARENT_SCOPE)
+	endif()
+	return()#no need to set the version to find
+endif()
+
+foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
+	unset(COMPATIBLE_VERSION)
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version_string})
+	if(NOT COMPATIBLE_VERSION)
+		return()
+	endif()
+endforeach()
+set(${is_compatible} TRUE PARENT_SCOPE)	
+endfunction(is_External_Version_Compatible_With_Previous_Constraints)
+
+
+#########################################################################################################
+################## functions to resolve packages dependencies globally ##################################
+#########################################################################################################
+
+###
+# each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
+# other variables set by the package version use file 
+# ${package}_DEPENDENCY_${dependency}_REQUIRED		# TRUE if package is required FALSE otherwise (QUIET MODE)
+# ${package}_DEPENDENCY_${dependency}_VERSION		# version if a version if specified
+# ${package}_DEPENDENCY_${dependency}_VERSION_EXACT	# TRUE if exact version is required
+# ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
+function(resolve_Package_Dependency package dependency mode)
+if(mode MATCHES Debug)
+	set(build_mode_suffix "_DEBUG")
+else()
+	set(build_mode_suffix "")
+endif()
+
+if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
+	if(${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}) # a specific version is required
+	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version is required
+			
+			is_Exact_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
+ 
+			if(IS_COMPATIBLE)
+				if(NEED_REFIND)
+					# OK installing the exact version instead
+					#WARNING call to find package
+					find_package(
+						${dependency} 
+						${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
+						EXACT
+						MODULE
+						REQUIRED
+						${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
+					)
+				endif()
+				return()				
+			else() #not compatible
+				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}.")
+				return()
+			endif()
+		else()#not an exact version required
+			is_Version_Compatible_With_Previous_Constraints (
+					COMPATIBLE_VERSION VERSION_TO_FIND 
+					${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}})
+			if(COMPATIBLE_VERSION)
+				if(VERSION_TO_FIND)
+					find_package(
+						${dependency} 
+						${VERSION_TO_FIND}
+						MODULE
+						REQUIRED
+						${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
+					)
+				else()
+					return() # nothing to do more, the current used version is compatible with everything 	
+				endif()
+			else()
+				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}.")
+				return()
+			endif()
+		endif()
+	else()
+		return()#by default the version is compatible (no constraints) so return 
+	endif()
+else()#the dependency has not been already found
+#	message("DEBUG resolve_Package_Dependency ${dependency} NOT FOUND !!")	
+	if(${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix})
+		
+		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version has been specified
+			#WARNING recursive call to find package
+			find_package(
+				${dependency} 
+				${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
+				EXACT
+				MODULE
+				REQUIRED
+				${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
+			)
+
+		else()
+			#WARNING recursive call to find package
+#			message("DEBUG before find : dep= ${dependency}, version = ${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}}")
+			find_package(
+				${dependency} 
+				${${package}_DEPENDENCY_${dependency}_VERSION${build_mode_suffix}} 
+				MODULE
+				REQUIRED
+				${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
+			)
+		endif()
+	else()
+		find_package(
+			${dependency} 
+			MODULE
+			REQUIRED
+			${${package}_DEPENDENCY_${dependency}_COMPONENTS${build_mode_suffix}}
+		)
+	endif()
+endif()
+
+endfunction(resolve_Package_Dependency)
+
+###
+function(resolve_External_Package_Dependency package external_dependency mode)
+if(mode MATCHES Debug)
+	set(build_mode_suffix "_DEBUG")
+else()
+	set(build_mode_suffix "")
+endif()
+
+if(${external_dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
+	if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}) # a specific version is required
+	 	if( ${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version is required
+			
+			is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
+ 
+			if(IS_COMPATIBLE)
+				if(NEED_REFIND)
+					# OK installing the exact version instead
+					#WARNING call to find package
+					find_package(
+						${external_dependency} 
+						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}} 
+						EXACT
+						MODULE
+						REQUIRED
+						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${build_mode_suffix}}
+					)
+				endif()
+				return()				
+			else() #not compatible
+				message(FATAL_ERROR "impossible to find compatible versions of dependent external package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}.")
+				return()
+			endif()
+		else()#not an exact version required
+			is_External_Version_Compatible_With_Previous_Constraints (
+					COMPATIBLE_VERSION VERSION_TO_FIND 
+					${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}})
+			if(COMPATIBLE_VERSION)
+				if(VERSION_TO_FIND)
+					find_package(
+						${external_dependency} 
+						${VERSION_TO_FIND}
+						MODULE
+						REQUIRED
+						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${build_mode_suffix}}
+					)
+				else()
+					return() # nothing to do more, the current used version is compatible with everything 	
+				endif()
+			else()
+				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}.")
+				return()
+			endif()
+		endif()
+	else()
+		return()#by default the version is compatible (no constraints) so return 
+	endif()
+else()#the dependency has not been already found
+	#message("DEBUG resolve_External_Package_Dependency ${external_dependency} NOT FOUND !!")	
+	if(	${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix})
+		
+		if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${build_mode_suffix}) #an exact version has been specified
+			#WARNING recursive call to find package
+			find_package(
+				${external_dependency} 
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}} 
+				EXACT
+				MODULE
+				REQUIRED
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${build_mode_suffix}}
+			)
+
+		else()
+			#WARNING recursive call to find package
+			#message("DEBUG before find : dep= ${external_dependency}, version = ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}}")
+			find_package(
+				${external_dependency} 
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${build_mode_suffix}} 
+				MODULE
+				REQUIRED
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${build_mode_suffix}}
+			)
+		endif()
+	else()
+		find_package(
+			${external_dependency} 
+			MODULE
+			REQUIRED
+			${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${build_mode_suffix}}
+		)
+	endif()
+endif()
+
+endfunction(resolve_External_Package_Dependency)
+
 
 ############################################################################
 ################ macros used to write cmake find scripts ###################

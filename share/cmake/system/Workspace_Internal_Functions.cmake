@@ -9,6 +9,8 @@ cmake_policy(SET CMP0045 OLD) #allow to test if a target exist without a warning
 include(Package_Internal_Finding NO_POLICY_SCOPE)
 include(Package_Internal_Configuration NO_POLICY_SCOPE)
 include(Package_Internal_Referencing NO_POLICY_SCOPE)
+include(Package_Internal_Targets_Management NO_POLICY_SCOPE)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 ###
 function(classify_Package_Categories package)
