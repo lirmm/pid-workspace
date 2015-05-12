@@ -1,3 +1,50 @@
+#############################################################################################
+############### API functions for managing user options cache variables #####################
+#############################################################################################
+macro(declare_Mode_Cache_Options)
+
+include(CMakeDependentOption)
+option(BUILD_EXAMPLES "Package builds examples" OFF)
+option(BUILD_API_DOC "Package generates the HTML API documentation" ON)
+CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF
+		         "BUILD_API_DOC" OFF)
+option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
+option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OFF)
+option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
+option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
+
+endmacro(declare_Mode_Cache_Options)
+
+macro(manage_Parrallel_Build_Option)
+
+### parallel builds management
+if(ENABLE_PARALLEL_BUILD)
+	include(ProcessorCount)
+	ProcessorCount(NUMBER_OF_JOBS)
+	math(EXPR NUMBER_OF_JOBS ${NUMBER_OF_JOBS}+1)
+	if(${NUMBER_OF_JOBS} GREATER 1)
+		set(PARALLEL_JOBS_FLAG "-j${NUMBER_OF_JOBS}" CACHE INTERNAL "")
+	endif()
+else()
+	set(PARALLEL_JOBS_FLAG CACHE INTERNAL "")
+endif()
+
+endmacro(manage_Parrallel_Build_Option)
+
+
+function(reset_Mode_Cache_Options)
+#unset all global options
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
+set(BUILD_LATEX_API_DOC OFF CACHE BOOL "" FORCE)
+set(BUILD_AND_RUN_TESTS OFF CACHE BOOL "" FORCE)
+set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)
+#include the cmake script that sets the options coming from the global build configuration
+include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
+endfunction(reset_Mode_Cache_Options)
+
+
 ############################################################################
 ############### API functions for setting global package info ##############
 ############################################################################
@@ -325,48 +372,258 @@ function(register_Component_Binary c_name)
 	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${BIN_NAME} CACHE INTERNAL "")
 endfunction(register_Component_Binary)
 
-#############################################################################################
-############### API functions for managing user options cache variables #####################
-#############################################################################################
-macro(declare_Mode_Cache_Options)
+##############################################################################################################
+############### API functions for managing cache variables bound to package dependencies #####################
+##############################################################################################################
 
-include(CMakeDependentOption)
-option(BUILD_EXAMPLES "Package builds examples" OFF)
-option(BUILD_API_DOC "Package generates the HTML API documentation" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF
-		         "BUILD_API_DOC" OFF)
-option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
-option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OFF)
-option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
-option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
-
-endmacro(declare_Mode_Cache_Options)
-
-macro(manage_Parrallel_Build_Option)
-
-### parallel builds management
-if(ENABLE_PARALLEL_BUILD)
-	include(ProcessorCount)
-	ProcessorCount(NUMBER_OF_JOBS)
-	math(EXPR NUMBER_OF_JOBS ${NUMBER_OF_JOBS}+1)
-	if(${NUMBER_OF_JOBS} GREATER 1)
-		set(PARALLEL_JOBS_FLAG "-j${NUMBER_OF_JOBS}" CACHE INTERNAL "")
+###
+function(add_To_Install_Package_Specification package version version_exact)
+list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
+if(INDEX EQUAL -1)#not found
+	set(${PROJECT_NAME}_TOINSTALL_PACKAGES ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}} ${package} CACHE INTERNAL "")
+	if(version AND NOT version STREQUAL "")
+		set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
+		if(version_exact)
+			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
+		else()
+			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+		endif()
 	endif()
+else()#package already required as "to install"
+	list(FIND ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} ${version} INDEX)
+	if(INDEX EQUAL -1)#version not already required
+		set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
+		if(version_exact)
+			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
+		else()
+			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+		endif()
+	elseif(version_exact) #if this version was previously not exact it becomes exact if exact is required
+			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")		
+	endif()
+endif()
+endfunction(add_To_Install_Package_Specification)
+
+###
+function(reset_To_Install_Packages)
+foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}})
+	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_${pack}_VERSIONS${USE_MODE_SUFFIX}})
+		set(${PROJECT_NAME}_TOINSTALL_${pack}_${version}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	endforeach()
+	set(${PROJECT_NAME}_TOINSTALL_${pack}_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} CACHE INTERNAL "")
+endfunction(reset_To_Install_Packages)
+
+###
+function(need_Install_Packages NEED)
+if(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX})
+	set(${NEED} TRUE PARENT_SCOPE)
 else()
-	set(PARALLEL_JOBS_FLAG CACHE INTERNAL "")
+	set(${NEED} FALSE PARENT_SCOPE)
+endif()
+endfunction(need_Install_Packages)
+
+
+###
+function(add_To_Install_External_Package_Specification package version exact)
+list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
+if(INDEX EQUAL -1)#not found
+	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}} ${package} CACHE INTERNAL "")
+	if(version AND NOT version STREQUAL "")
+		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
+		if(version_exact)
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
+		else()
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+		endif()
+	endif()
+else()#package already required as "to install"
+	list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} ${version} INDEX)
+	if(INDEX EQUAL -1)#version not already required
+		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
+		if(version_exact)
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
+		else()
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+		endif()
+	elseif(version_exact) #if this version was previously not exact it becomes exact if exact is required
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")		
+	endif()
+endif()
+endfunction(add_To_Install_External_Package_Specification)
+
+###
+function(reset_To_Install_External_Packages)
+foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}})
+	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS${USE_MODE_SUFFIX}})
+		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_${version}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	endforeach()
+	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} CACHE INTERNAL "")
+endfunction(reset_To_Install_External_Packages)
+
+###
+function(need_Install_External_Packages NEED)
+if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX})
+	set(${NEED} TRUE PARENT_SCOPE)
+else()
+	set(${NEED} FALSE PARENT_SCOPE)
+endif()
+endfunction(need_Install_External_Packages)
+
+
+##################################################################################
+############################## install the dependancies ########################## 
+########### functions used to create the use<package><version>.cmake  ############ 
+##################################################################################
+function(write_Use_File file package build_mode)
+set(MODE_SUFFIX "")
+if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode 
+	file(APPEND ${file} "######### declaration of package components ########\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${${package}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
+	
+	file(APPEND ${file} "####### internal specs of package components #######\n")
+	foreach(a_component IN ITEMS ${${package}_COMPONENTS_LIBS})
+		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
+		if(NOT ${package}_${a_component}_TYPE STREQUAL "MODULE")#modules do not have public interfaces
+			file(APPEND ${file} "set(${package}_${a_component}_HEADER_DIR_NAME ${${package}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
+			file(APPEND ${file} "set(${package}_${a_component}_HEADERS ${${package}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
+		endif()
+		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
+	endforeach()
+	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
+		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
+	endforeach()
+else()
+	set(MODE_SUFFIX _DEBUG)
 endif()
 
-endmacro(manage_Parrallel_Build_Option)
+#mode dependent info written adequately depending the mode 
 
+# 1) external package dependencies
+file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
-function(reset_Mode_Cache_Options)
-#unset all global options
-set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
-set(BUILD_LATEX_API_DOC OFF CACHE BOOL "" FORCE)
-set(BUILD_AND_RUN_TESTS OFF CACHE BOOL "" FORCE)
-set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)
-#include the cmake script that sets the options coming from the global build configuration
-include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
-endfunction(reset_Mode_Cache_Options)
+foreach(a_ext_dep IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
+	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	if(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX})
+		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+	else()
+		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+	endif()
+	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+endforeach()
+
+# 2) native package dependencies
+file(APPEND ${file} "#### declaration of package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+file(APPEND ${file} "set(${package}_DEPENDENCIES${MODE_SUFFIX} ${${package}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+foreach(a_dep IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
+	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	if(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX})
+		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+	else()
+		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+	endif()
+	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+endforeach()
+
+# 3) internal+external components specifications
+file(APPEND ${file} "#### declaration of components exported flags and binary in ${CMAKE_BUILD_TYPE} mode ####\n")
+foreach(a_component IN ITEMS ${${package}_COMPONENTS})
+	is_Built_Component(IS_BUILT_COMP ${package} ${a_component})
+	is_Executable_Component(IS_EXEC_COMP ${package} ${a_component})
+	if(IS_BUILT_COMP)#if not a pure header library
+		file(APPEND ${file} "set(${package}_${a_component}_BINARY_NAME${MODE_SUFFIX} ${${package}_${a_component}_BINARY_NAME${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	endif()
+	if(NOT IS_EXEC_COMP)#it is a library
+		file(APPEND ${file} "set(${package}_${a_component}_INC_DIRS${MODE_SUFFIX} ${${package}_${a_component}_INC_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} ${${package}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	endif()
+endforeach()
+
+# 4) package internal component dependencies
+file(APPEND ${file} "#### declaration package internal component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+foreach(a_component IN ITEMS ${${package}_COMPONENTS})
+	if(${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}) # the component has internal dependencies
+		file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		foreach(a_int_dep IN ITEMS ${${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}})
+			if(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX})
+				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")				
+			else()
+				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")			
+			endif()
+		endforeach()
+	endif()
+endforeach()
+
+# 5) component dependencies 
+file(APPEND ${file} "#### declaration of component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+foreach(a_component IN ITEMS ${${package}_COMPONENTS})
+	if(${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}) # the component has package dependencies
+		file(APPEND ${file} "set(${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		foreach(dep_package IN ITEMS ${${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}})
+			file(APPEND ${file} "set(${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX} ${${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+			foreach(dep_component IN ITEMS ${${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}})
+				if(${package}_${a_component}_EXPORT_${dep_package}_${dep_component})
+					file(APPEND ${file} "set(${package}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+				else()
+					file(APPEND ${file} "set(${package}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+				endif()
+			endforeach()
+		endforeach()
+	endif()
+endforeach()
+endfunction(write_Use_File)
+
+function(create_Use_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
+	set(file ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake)
+else()
+	set(file ${CMAKE_BINARY_DIR}/share/UseDebugTemp)
+endif()
+
+#resetting the file content
+file(WRITE ${file} "")
+write_Use_File(${file} ${PROJECT_NAME} ${CMAKE_BUILD_TYPE})
+
+#finalizing release mode by agregating info from the debug mode
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
+	file(READ "${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp" DEBUG_CONTENT)
+	file(APPEND ${file} "${DEBUG_CONTENT}")
+endif()
+endfunction(create_Use_File)
+
+###############################################################################################
+############################## providing info on the package content ########################## 
+#################### function used to create the Info<package>.cmake  ######################### 
+###############################################################################################
+
+function(create_Info_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
+	set(file ${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake)
+	file(WRITE ${file} "")#resetting the file content
+	file(APPEND ${file} "######### declaration of package components ########\n")
+	file(APPEND ${file} "set(${PROJECT_NAME}_COMPONENTS ${${PROJECT_NAME}_COMPONENTS} CACHE INTERNAL \"\")\n")
+	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})		
+		if(NOT ${${PROJECT_NAME}_${a_component}_TYPE} STREQUAL "TEST")
+			if(${PROJECT_NAME}_${a_component}_SOURCE_DIR)
+				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_DIR ${${PROJECT_NAME}_${a_component}_SOURCE_DIR} CACHE INTERNAL \"\")\n")
+				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_CODE ${${PROJECT_NAME}_${a_component}_SOURCE_CODE} CACHE INTERNAL \"\")\n")
+			endif()
+			if(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME)	
+				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME ${${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
+				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADERS ${${PROJECT_NAME}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
+
+			endif()
+		endif()
+	endforeach()
+endif()
+
+endfunction(create_Info_File)

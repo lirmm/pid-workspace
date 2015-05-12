@@ -21,122 +21,6 @@
 ####################### configuring build time dependencies ######################
 ##################################################################################
 
-###
-function (update_Config_Include_Dirs package component dep_package dep_component mode_suffix)
-	if(${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix})	
-		set(${package}_${component}_INCLUDE_DIRS${mode_suffix} ${${package}_${component}_INCLUDE_DIRS${mode_suffix}} ${${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix}} CACHE INTERNAL "")
-	endif()
-endfunction(update_Config_Include_Dirs)
-
-###
-function (update_Config_Definitions package component dep_package dep_component mode_suffix)
-	if(${dep_package}_${dep_component}_DEFINITIONS${mode_suffix})
-		set(${package}_${component}_DEFINITIONS${mode_suffix} ${${package}_${component}_DEFINITIONS${mode_suffix}} ${${dep_package}_${dep_component}_DEFINITIONS${mode_suffix}} CACHE INTERNAL "")
-	endif()
-endfunction(update_Config_Definitions)
-
-###
-function(update_Config_Libraries package component dep_package dep_component mode_suffix)
-	if(${dep_package}_${dep_component}_LIBRARIES${mode_suffix})
-		set(	${package}_${component}_LIBRARIES${mode_suffix} 
-			${${package}_${component}_LIBRARIES${mode_suffix}} 
-			${${dep_package}_${dep_component}_LIBRARIES${mode_suffix}} 
-			CACHE INTERNAL "") #putting dependencies after component using them (to avoid linker problems)
-	endif()
-endfunction(update_Config_Libraries)
-
-###
-function(init_Component_Build_Variables package component path_to_version mode)
-	if(mode MATCHES Debug)
-		set(mode_suffix "_DEBUG")
-	else()
-		set(mode_suffix "")
-	endif()
-	set(${package}_${component}_INCLUDE_DIRS${mode_suffix} "" CACHE INTERNAL "")
-	set(${package}_${component}_DEFINITIONS${mode_suffix} "" CACHE INTERNAL "")
-	set(${package}_${component}_LIBRARIES${mode_suffix} "" CACHE INTERNAL "")
-	set(${package}_${component}_EXECUTABLE${mode_suffix} "" CACHE INTERNAL "")
-	is_Executable_Component(COMP_IS_EXEC ${package} ${component})
-	
-	if(NOT COMP_IS_EXEC)
-		#provided include dirs (cflags -I<path>)
-		set(${package}_${component}_INCLUDE_DIRS${mode_suffix} "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
-		#additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
-		if(${package}_${component}_INC_DIRS${mode_suffix})
-			resolve_External_Includes_Path(RES_INCLUDES ${package} "${${package}_${component}_INC_DIRS${mode_suffix}}" ${mode})
-			#message("DEBUG RES_INCLUDES for ${package} ${component} = ${RES_INCLUDES}")			
-			set(	${package}_${component}_INCLUDE_DIRS${mode_suffix} 
-				${${package}_${component}_INCLUDE_DIRS${mode_suffix}} 
-				"${RES_INCLUDES}"
-				CACHE INTERNAL "")
-		endif()
-
-		#provided cflags (own CFLAGS and external/system exported CFLAGS)
-		if(${package}_${component}_DEFS${mode_suffix}) 	
-			set(${package}_${component}_DEFINITIONS${mode_suffix} ${${package}_${component}_DEFS${mode_suffix}} CACHE INTERNAL "")
-		endif()
-
-		#provided library (ldflags -l<path>)
-		if(NOT ${package}_${component}_TYPE STREQUAL "HEADER")
-			set(${package}_${component}_LIBRARIES${mode_suffix} "${path_to_version}/lib/${${package}_${component}_BINARY_NAME${mode_suffix}}" CACHE INTERNAL "")
-		endif()
-
-		#provided additionnal ld flags (exported external/system libraries and ldflags)		
-		if(${package}_${component}_LINKS${mode_suffix})
-			resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${mode_suffix}}" ${mode})			
-			set(	${package}_${component}_LIBRARIES${mode_suffix}
-				${${package}_${component}_LIBRARIES${mode_suffix}}	
-				"${RES_LINKS}"
-				CACHE INTERNAL "")
-		endif()
-		#message("FINAL init_Component_Build_Variables ${package}.${component}: \nINCLUDES = ${${package}_${component}_INCLUDE_DIRS${mode_suffix}} (var=${package}_${component}_INCLUDE_DIRS${mode_suffix}) \nDEFINITIONS = ${${package}_${component}_DEFINITIONS${mode_suffix}} (var = ${package}_${component}_DEFINITIONS${mode_suffix}) \nLIBRARIES = ${${package}_${component}_LIBRARIES${mode_suffix}}\n")
-	elseif(${package}_${component}_TYPE STREQUAL "APP" OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
-		
-		set(${package}_${component}_EXECUTABLE${mode_suffix} "${path_to_version}/bin/${${package}_${component}_BINARY_NAME${mode_suffix}}" CACHE INTERNAL "")
-	endif()
-endfunction(init_Component_Build_Variables)
-
-### 
-function(update_Component_Build_Variables_With_Dependency package component dep_package dep_component mode)
-if(mode MATCHES Debug)
-	set(mode_suffix "_DEBUG")
-else()
-	set(mode_suffix "")
-endif()
-configure_Package_Build_Variables(${dep_package} ${mode})#!! recursion to get all updated infos
-if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${mode_suffix})
-	update_Config_Include_Dirs(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
-	update_Config_Definitions(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
-	update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")	
-else()
-	if(NOT ${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")#static OR header lib
-		update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
-	endif()
-	
-endif()
-endfunction(update_Component_Build_Variables_With_Dependency)
-
-
-function(update_Component_Build_Variables_With_Internal_Dependency package component dep_component mode)
-if(mode MATCHES Debug)
-	set(mode_suffix "_DEBUG")
-else()
-	set(mode_suffix "")
-endif()
-
-if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${mode_suffix})
-	update_Config_Include_Dirs(${package} ${component} ${package} ${dep_component} "${mode_suffix}")
-	update_Config_Definitions(${package} ${component} ${package} ${dep_component} "${mode_suffix}")
-	update_Config_Libraries(${package} ${component} ${package} ${dep_component} "${mode_suffix}")	
-else()#dep_component is not exported by component
-	if(NOT ${package}_${dep_component}_TYPE STREQUAL "SHARED")#static OR header lib
-		update_Config_Libraries(${package} ${component} ${package} ${dep_component} "${mode_suffix}")
-	endif()
-	
-endif()
-endfunction(update_Component_Build_Variables_With_Internal_Dependency)
-
-
 function(resolve_Package_Dependencies package mode)
 #message("DEBUG resolve_Package_Dependencies package=${package} mode=${mode}")
 if(mode MATCHES Debug)
@@ -272,6 +156,121 @@ set(${package}_DURING_PREPARE_BUILD FALSE)
 # quite like in pkg-config tool
 endfunction(configure_Package_Build_Variables)
 
+
+###
+function (update_Config_Include_Dirs package component dep_package dep_component mode_suffix)
+	if(${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix})	
+		set(${package}_${component}_INCLUDE_DIRS${mode_suffix} ${${package}_${component}_INCLUDE_DIRS${mode_suffix}} ${${dep_package}_${dep_component}_INCLUDE_DIRS${mode_suffix}} CACHE INTERNAL "")
+	endif()
+endfunction(update_Config_Include_Dirs)
+
+###
+function (update_Config_Definitions package component dep_package dep_component mode_suffix)
+	if(${dep_package}_${dep_component}_DEFINITIONS${mode_suffix})
+		set(${package}_${component}_DEFINITIONS${mode_suffix} ${${package}_${component}_DEFINITIONS${mode_suffix}} ${${dep_package}_${dep_component}_DEFINITIONS${mode_suffix}} CACHE INTERNAL "")
+	endif()
+endfunction(update_Config_Definitions)
+
+###
+function(update_Config_Libraries package component dep_package dep_component mode_suffix)
+	if(${dep_package}_${dep_component}_LIBRARIES${mode_suffix})
+		set(	${package}_${component}_LIBRARIES${mode_suffix} 
+			${${package}_${component}_LIBRARIES${mode_suffix}} 
+			${${dep_package}_${dep_component}_LIBRARIES${mode_suffix}} 
+			CACHE INTERNAL "") #putting dependencies after component using them (to avoid linker problems)
+	endif()
+endfunction(update_Config_Libraries)
+
+###
+function(init_Component_Build_Variables package component path_to_version mode)
+	if(mode MATCHES Debug)
+		set(mode_suffix "_DEBUG")
+	else()
+		set(mode_suffix "")
+	endif()
+	set(${package}_${component}_INCLUDE_DIRS${mode_suffix} "" CACHE INTERNAL "")
+	set(${package}_${component}_DEFINITIONS${mode_suffix} "" CACHE INTERNAL "")
+	set(${package}_${component}_LIBRARIES${mode_suffix} "" CACHE INTERNAL "")
+	set(${package}_${component}_EXECUTABLE${mode_suffix} "" CACHE INTERNAL "")
+	is_Executable_Component(COMP_IS_EXEC ${package} ${component})
+	
+	if(NOT COMP_IS_EXEC)
+		#provided include dirs (cflags -I<path>)
+		set(${package}_${component}_INCLUDE_DIRS${mode_suffix} "${path_to_version}/include/${${package}_${component}_HEADER_DIR_NAME}" CACHE INTERNAL "")
+		#additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
+		if(${package}_${component}_INC_DIRS${mode_suffix})
+			resolve_External_Includes_Path(RES_INCLUDES ${package} "${${package}_${component}_INC_DIRS${mode_suffix}}" ${mode})
+			#message("DEBUG RES_INCLUDES for ${package} ${component} = ${RES_INCLUDES}")			
+			set(	${package}_${component}_INCLUDE_DIRS${mode_suffix} 
+				${${package}_${component}_INCLUDE_DIRS${mode_suffix}} 
+				"${RES_INCLUDES}"
+				CACHE INTERNAL "")
+		endif()
+
+		#provided cflags (own CFLAGS and external/system exported CFLAGS)
+		if(${package}_${component}_DEFS${mode_suffix}) 	
+			set(${package}_${component}_DEFINITIONS${mode_suffix} ${${package}_${component}_DEFS${mode_suffix}} CACHE INTERNAL "")
+		endif()
+
+		#provided library (ldflags -l<path>)
+		if(NOT ${package}_${component}_TYPE STREQUAL "HEADER")
+			set(${package}_${component}_LIBRARIES${mode_suffix} "${path_to_version}/lib/${${package}_${component}_BINARY_NAME${mode_suffix}}" CACHE INTERNAL "")
+		endif()
+
+		#provided additionnal ld flags (exported external/system libraries and ldflags)		
+		if(${package}_${component}_LINKS${mode_suffix})
+			resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${mode_suffix}}" ${mode})			
+			set(	${package}_${component}_LIBRARIES${mode_suffix}
+				${${package}_${component}_LIBRARIES${mode_suffix}}	
+				"${RES_LINKS}"
+				CACHE INTERNAL "")
+		endif()
+		#message("FINAL init_Component_Build_Variables ${package}.${component}: \nINCLUDES = ${${package}_${component}_INCLUDE_DIRS${mode_suffix}} (var=${package}_${component}_INCLUDE_DIRS${mode_suffix}) \nDEFINITIONS = ${${package}_${component}_DEFINITIONS${mode_suffix}} (var = ${package}_${component}_DEFINITIONS${mode_suffix}) \nLIBRARIES = ${${package}_${component}_LIBRARIES${mode_suffix}}\n")
+	elseif(${package}_${component}_TYPE STREQUAL "APP" OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
+		
+		set(${package}_${component}_EXECUTABLE${mode_suffix} "${path_to_version}/bin/${${package}_${component}_BINARY_NAME${mode_suffix}}" CACHE INTERNAL "")
+	endif()
+endfunction(init_Component_Build_Variables)
+
+### 
+function(update_Component_Build_Variables_With_Dependency package component dep_package dep_component mode)
+if(mode MATCHES Debug)
+	set(mode_suffix "_DEBUG")
+else()
+	set(mode_suffix "")
+endif()
+configure_Package_Build_Variables(${dep_package} ${mode})#!! recursion to get all updated infos
+if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${mode_suffix})
+	update_Config_Include_Dirs(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
+	update_Config_Definitions(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
+	update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")	
+else()
+	if(NOT ${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")#static OR header lib
+		update_Config_Libraries(${package} ${component} ${dep_package} ${dep_component} "${mode_suffix}")
+	endif()
+	
+endif()
+endfunction(update_Component_Build_Variables_With_Dependency)
+
+
+function(update_Component_Build_Variables_With_Internal_Dependency package component dep_component mode)
+if(mode MATCHES Debug)
+	set(mode_suffix "_DEBUG")
+else()
+	set(mode_suffix "")
+endif()
+
+if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${mode_suffix})
+	update_Config_Include_Dirs(${package} ${component} ${package} ${dep_component} "${mode_suffix}")
+	update_Config_Definitions(${package} ${component} ${package} ${dep_component} "${mode_suffix}")
+	update_Config_Libraries(${package} ${component} ${package} ${dep_component} "${mode_suffix}")	
+else()#dep_component is not exported by component
+	if(NOT ${package}_${dep_component}_TYPE STREQUAL "SHARED")#static OR header lib
+		update_Config_Libraries(${package} ${component} ${package} ${dep_component} "${mode_suffix}")
+	endif()
+	
+endif()
+endfunction(update_Component_Build_Variables_With_Internal_Dependency)
 
 ##################################################################################
 ################## finding shared libs dependencies for the linker ###############
@@ -679,133 +678,6 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
 
-
-##################################################################################
-############################## install the dependancies ########################## 
-########### functions used to create the use<package><version>.cmake  ############ 
-##################################################################################
-function(write_Use_File file package build_mode)
-set(MODE_SUFFIX "")
-if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode 
-	file(APPEND ${file} "######### declaration of package components ########\n")
-	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${${package}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
-	
-	file(APPEND ${file} "####### internal specs of package components #######\n")
-	foreach(a_component IN ITEMS ${${package}_COMPONENTS_LIBS})
-		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
-		if(NOT ${package}_${a_component}_TYPE STREQUAL "MODULE")#modules do not have public interfaces
-			file(APPEND ${file} "set(${package}_${a_component}_HEADER_DIR_NAME ${${package}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
-			file(APPEND ${file} "set(${package}_${a_component}_HEADERS ${${package}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
-		endif()
-		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
-	endforeach()
-	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
-		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
-	endforeach()
-else()
-	set(MODE_SUFFIX _DEBUG)
-endif()
-
-#mode dependent info written adequately depending the mode 
-
-# 1) external package dependencies
-file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-
-foreach(a_ext_dep IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
-	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	if(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX})
-		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
-	else()
-		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
-	endif()
-	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-endforeach()
-
-# 2) native package dependencies
-file(APPEND ${file} "#### declaration of package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-file(APPEND ${file} "set(${package}_DEPENDENCIES${MODE_SUFFIX} ${${package}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-foreach(a_dep IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
-	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	if(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX})
-		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
-	else()
-		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
-	endif()
-	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-endforeach()
-
-# 3) internal+external components specifications
-file(APPEND ${file} "#### declaration of components exported flags and binary in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN ITEMS ${${package}_COMPONENTS})
-	is_Built_Component(IS_BUILT_COMP ${package} ${a_component})
-	is_Executable_Component(IS_EXEC_COMP ${package} ${a_component})
-	if(IS_BUILT_COMP)#if not a pure header library
-		file(APPEND ${file} "set(${package}_${a_component}_BINARY_NAME${MODE_SUFFIX} ${${package}_${a_component}_BINARY_NAME${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	endif()
-	if(NOT IS_EXEC_COMP)#it is a library
-		file(APPEND ${file} "set(${package}_${a_component}_INC_DIRS${MODE_SUFFIX} ${${package}_${a_component}_INC_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} ${${package}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	endif()
-endforeach()
-
-# 4) package internal component dependencies
-file(APPEND ${file} "#### declaration package internal component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN ITEMS ${${package}_COMPONENTS})
-	if(${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}) # the component has internal dependencies
-		file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		foreach(a_int_dep IN ITEMS ${${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}})
-			if(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX})
-				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")				
-			else()
-				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")			
-			endif()
-		endforeach()
-	endif()
-endforeach()
-
-# 5) component dependencies 
-file(APPEND ${file} "#### declaration of component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN ITEMS ${${package}_COMPONENTS})
-	if(${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}) # the component has package dependencies
-		file(APPEND ${file} "set(${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		foreach(dep_package IN ITEMS ${${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}})
-			file(APPEND ${file} "set(${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX} ${${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-			foreach(dep_component IN ITEMS ${${package}_${a_component}_DEPENDENCY_${dep_package}_COMPONENTS${MODE_SUFFIX}})
-				if(${package}_${a_component}_EXPORT_${dep_package}_${dep_component})
-					file(APPEND ${file} "set(${package}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
-				else()
-					file(APPEND ${file} "set(${package}_${a_component}_EXPORT_${dep_package}_${dep_component}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
-				endif()
-			endforeach()
-		endforeach()
-	endif()
-endforeach()
-endfunction(write_Use_File)
-
-function(create_Use_File)
-if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
-	set(file ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake)
-else()
-	set(file ${CMAKE_BINARY_DIR}/share/UseDebugTemp)
-endif()
-
-#resetting the file content
-file(WRITE ${file} "")
-write_Use_File(${file} ${PROJECT_NAME} ${CMAKE_BUILD_TYPE})
-
-#finalizing release mode by agregating info from the debug mode
-if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
-	file(READ "${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp" DEBUG_CONTENT)
-	file(APPEND ${file} "${DEBUG_CONTENT}")
-endif()
-endfunction(create_Use_File)
-
 ###############################################################################################
 ############################## cleaning the installed tree #################################### 
 ###############################################################################################
@@ -825,32 +697,4 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release
 endif()
 endfunction(clean_Install_Dir)
 
-
-###############################################################################################
-############################## providing info on the package content ########################## 
-#################### function used to create the Info<package>.cmake  ######################### 
-###############################################################################################
-
-function(create_Info_File)
-if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
-	set(file ${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake)
-	file(WRITE ${file} "")#resetting the file content
-	file(APPEND ${file} "######### declaration of package components ########\n")
-	file(APPEND ${file} "set(${PROJECT_NAME}_COMPONENTS ${${PROJECT_NAME}_COMPONENTS} CACHE INTERNAL \"\")\n")
-	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})		
-		if(NOT ${${PROJECT_NAME}_${a_component}_TYPE} STREQUAL "TEST")
-			if(${PROJECT_NAME}_${a_component}_SOURCE_DIR)
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_DIR ${${PROJECT_NAME}_${a_component}_SOURCE_DIR} CACHE INTERNAL \"\")\n")
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_CODE ${${PROJECT_NAME}_${a_component}_SOURCE_CODE} CACHE INTERNAL \"\")\n")
-			endif()
-			if(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME)	
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME ${${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADERS ${${PROJECT_NAME}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
-
-			endif()
-		endif()
-	endforeach()
-endif()
-
-endfunction(create_Info_File)
 

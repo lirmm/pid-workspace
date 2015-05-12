@@ -1,3 +1,7 @@
+############################################################################
+############### API functions for internal targets management ##############
+############################################################################
+
 ###create a module lib target for a newly defined library
 function(create_Module_Lib_Target c_name sources internal_inc_dirs internal_defs internal_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} MODULE ${sources})
@@ -215,5 +219,13 @@ else()
 endif()
 
 endfunction(fill_Component_Target_With_External_Dependency)
+
+############################################################################
+############### API functions for imported targets management ##############
+############################################################################
+
+
+
+
 
 
