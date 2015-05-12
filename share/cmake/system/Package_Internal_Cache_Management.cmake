@@ -443,6 +443,7 @@ foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${mode_var_suffix}
 endforeach()
 endfunction(is_Bin_Component_Exporting_Other_Components)
 
+
 ##############################################################################################################
 ############### API functions for managing cache variables bound to package dependencies #####################
 ##############################################################################################################
@@ -673,10 +674,10 @@ endfunction(create_Use_File)
 
 ###############################################################################################
 ############################## providing info on the package content ########################## 
-#################### function used to create the Info<package>.cmake  ######################### 
 ###############################################################################################
 
-function(create_Info_File)
+#################### function used to create the Info<package>.cmake  ######################### 
+function(generate_Info_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
 	set(file ${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake)
 	file(WRITE ${file} "")#resetting the file content
@@ -697,4 +698,55 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once
 	endforeach()
 endif()
 
-endfunction(create_Info_File)
+endfunction(generate_Info_File)
+
+
+############ function used to create the license.txt file of the package  ###########
+function(generate_License_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	if(	DEFINED ${PROJECT_NAME}_LICENSE 
+		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+	
+		find_file(	LICENSE   
+				"License${${PROJECT_NAME}_LICENSE}.cmake"
+				PATH "${WORKSPACE_DIR}/share/cmake/system"
+				NO_DEFAULT_PATH
+			)
+		set(LICENSE ${LICENSE} CACHE INTERNAL "")
+		
+		if(LICENSE_IN-NOTFOUND)
+			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
+		else(LICENSE_IN-NOTFOUND)
+			foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
+				generate_Full_Author_String(${author} STRING_TO_APPEND)
+				set(${PROJECT_NAME}_AUTHORS_LIST "${${PROJECT_NAME}_AUTHORS_LIST} ${STRING_TO_APPEND}")
+			endforeach()
+			include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
+			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
+			install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
+			file(WRITE ${CMAKE_BINARY_DIR}/share/file_header_comment.txt.in ${LICENSE_HEADER_FILE_DESCRIPTION})
+		endif(LICENSE_IN-NOTFOUND)
+	endif()
+endif()
+endfunction(generate_License_File)
+
+############ function used to create the  Find<package>.cmake file of the package  ###########
+function(generate_Find_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	# generating/installing the generic cmake find file for the package 
+	configure_file(${WORKSPACE_DIR}/share/cmake/patterns/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
+	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
+endif()
+endfunction(generate_Find_File)
+
+############ function used to create the Use<package>-<version>.cmake file of the package  ###########
+macro(generate_Use_File)
+create_Use_File()
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	install(	FILES ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake 
+			DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}
+	)
+endif()
+endmacro(generate_Use_File)
+
+
