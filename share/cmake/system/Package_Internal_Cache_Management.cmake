@@ -193,8 +193,7 @@ endfunction(add_Category)
 #############################################################################################
 
 ### configure variables exported by component that will be used to generate the package cmake use file
-function (configure_Install_Variables component export include_dirs dep_defs exported_defs static_links shared_links)
-#message("configure_Install_Variables component=${component} export=${export} include_dirs=${include_dirs} dep_defs=${dep_defs} exported_defs=${exported_defs} static_links=${static_links} shared_links=${shared_links}")
+function (configure_Install_Variables component export include_dirs dep_defs exported_defs static_links shared_links runtime_resources)
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(	NOT dep_defs STREQUAL "" 
@@ -249,7 +248,12 @@ else() # otherwise no need to register them since no more useful
 			CACHE INTERNAL "")
 	endif()
 endif()
-
+if(NOT runtime_resources STREQUAL "")
+	set(	${PROJECT_NAME}_${component}_RUNTIME_RESOURCES
+		${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES}
+		${runtime_resources} 
+		CACHE INTERNAL "")
+endif()
 endfunction(configure_Install_Variables)
 
 
@@ -280,8 +284,15 @@ set(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL 
 set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_SOURCE_CODE CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_SOURCE_DIR CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
+
+function(init_Component_Cached_Variables_For_Export component exported_defs exported_links runtime_resources)
+set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
+set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${exported_links}" CACHE INTERNAL "") #exported links
+set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories (not useful to set it there since they will be exported "manually")
+set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} "${runtime_resources}" CACHE INTERNAL "")#runtime resources are exported by default
+endfunction(init_Component_Cached_Variables_For_Export)
 
 ### resetting all internal cached variables that would cause some troubles
 function(reset_All_Component_Cached_Variables)
@@ -396,6 +407,21 @@ else()
 	set(${result} TRUE PARENT_SCOPE)
 endif()
 endfunction(will_be_Built)
+
+### 
+function(will_be_Installed result component)
+set(DECLARED FALSE)
+is_Declared(${component} DECLARED)
+if(NOT DECLARED)
+	set(${result} FALSE PARENT_SCOPE)
+	message(FATAL_ERROR "component ${component} does not exist")
+elseif( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND NOT BUILD_EXAMPLES))
+	set(${result} FALSE PARENT_SCOPE)
+else()
+	set(${result} TRUE PARENT_SCOPE)
+endif()
+endfunction(will_be_Installed)
 
 ### registering the binary name of a component
 function(register_Component_Binary c_name)
