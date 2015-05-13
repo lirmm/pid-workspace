@@ -704,7 +704,7 @@ endif()
 # specifically managing examples 	
 if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE") 
 	add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced		
-	if(NOT ${BUILD_EXAMPLES}) #examples are not built so no need to continue
+	if(NOT ${BUILD_EXAMPLES}) #examples are not built / installed / exported so no need to continue
 		mark_As_Declared(${c_name})		
 		return()
 	endif()
@@ -714,11 +714,8 @@ elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
 		return()
 	endif()
 endif()
-
+will_be_Installed(COMP_WILL_BE_INSTALLED ${c_name})
 #managing sources for the application
-
-#any component defines a folder containing zero or more resource files
-
 if(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP"
 	OR ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")	
 	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/apps/${dirname} CACHE INTERNAL "")
@@ -753,15 +750,15 @@ endif()
 manage_Build_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
 
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags
-init_Component_Cached_Variables_For_Export(${c_name} "" "" "${runtime_resources}")
-
+if(COMP_WILL_BE_INSTALLED)
+	init_Component_Cached_Variables_For_Export(${c_name} "" "" "${runtime_resources}")
+endif()
 #updating global variables of the CMake process	
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name}" CACHE INTERNAL "")
 # global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
 mark_As_Declared(${c_name})
 endfunction(declare_Application_Component)
-
 
 ##################################################################################
 ####### specifying a dependency between the current package and another one ######
@@ -964,7 +961,9 @@ is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 set(TARGET_LINKS ${static_links} ${shared_links})
 
 if (IS_EXEC_COMP)
-	configure_Install_Variables(${component} FALSE "" "" "" "" "" "${runtime_resources}")
+	if(COMP_WILL_BE_INSTALLED)
+		configure_Install_Variables(${component} FALSE "" "" "" "" "" "${runtime_resources}")
+	endif()	
 	# setting compile definitions for the target
 	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 elseif(IS_BUILT_COMP)
@@ -1014,7 +1013,9 @@ else()
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 	set(TARGET_LINKS ${static_links} ${shared_links})
 	if (IS_EXEC_COMP)
-		configure_Install_Variables(${component} FALSE "" "" "" "" "" "${runtime_resources}")
+		if(COMP_WILL_BE_INSTALLED)
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${runtime_resources}")
+		endif()		
 		# setting compile definitions for the target		
 		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 	elseif(IS_BUILT_COMP)
