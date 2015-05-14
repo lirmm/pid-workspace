@@ -940,7 +940,8 @@ endif()
 
 endfunction(declare_Package_Component_Dependency)
 
-### declare system (add-hoc) dependancy between a component of the current package and system components (should be used as rarely as possible, except for "true" system dependencies like math, threads, etc.). Usable only with libraries described with -l option. 
+### declare system (add-hoc) dependancy between a component of the current package and system components.
+### details: declare an dependancy that does not create new targets, it directly configure the "component" with adequate flags coming from the OS components. Should be used as rarely as possible, except for "true" system dependencies like math, threads, etc. Use -l option when linking with libraries (eventually together with -L options).
 ### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of the system dependancy, if any  => definitions are exported
 ### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of system dependancy, if any => definitions are not exported
 ### dep_defs  : definitions in the interface of the system dependancy that must be defined when using this system dependancy, if any => definitions are exported if dependancy is exported
@@ -989,7 +990,8 @@ endif()
 endfunction(declare_System_Component_Dependency)
 
 
-### declare external (add-hoc) dependancy between components of current and an external package (should be used prior to system dependencies for all dependencies that are not true system dependencies, event if installed in default systems folders)
+### declare external (add-hoc) dependancy between components of current and an external package.  
+### details: declare an external dependancy that does not create new targets, it directly configure the "component" with adequate flags coming from "dep_package". Should be used prior to system dependencies for all dependencies that are not true system dependencies, even if installed in default systems folders). 
 ### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of the exported dependancy, if any  => definitions are exported
 ### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of external dependancy, if any => definitions are not exported
 ### dep_defs  : definitions in the interface of the external dependancy that must be defined when using this external dependancy, if any => definitions are exported if dependancy is exported
@@ -1041,7 +1043,6 @@ if(COMP_WILL_BE_INSTALLED)
 endif()
 
 endfunction(declare_External_Component_Dependency)
-
 
 ##################################################################################
 ############# auxiliary package management internal functions and macros #########
