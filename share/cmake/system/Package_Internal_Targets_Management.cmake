@@ -176,7 +176,7 @@ if(NOT DEP_IS_HF)#the required package component is a library
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
 		if(${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX})
 			list(APPEND ${PROJECT_NAME}_${component}_TEMP_DEFS ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
-		endif()		
+		endif()
 		manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_defs}" "")
 		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
 	else()

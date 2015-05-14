@@ -904,8 +904,6 @@ set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} FALSE CACHE
 is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})	
 is_HeaderFree_Component(IS_HF_DEP ${dep_package} ${dep_component})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
-
-#TODO how to declare runtime dependencies to components
 if (IS_HF_COMP)
 	# setting compile definitions for configuring the target
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency		
