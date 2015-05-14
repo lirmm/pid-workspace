@@ -150,8 +150,8 @@ endfunction(manage_Additionnal_Component_Inherited_Flags)
 
 ### configure the target to link with another target issued from a component of the same package
 function (fill_Component_Target_With_Internal_Dependency component dep_component export comp_defs comp_exp_defs dep_defs)
-is_Executable_Component(DEP_IS_EXEC ${PROJECT_NAME} ${dep_component})
-if(NOT DEP_IS_EXEC)#the required internal component is a library 
+is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_component})
+if(NOT DEP_IS_HF)#the required internal component is a library 
 	if(export)	
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
 		manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_defs}" "")				
@@ -163,20 +163,17 @@ if(NOT DEP_IS_EXEC)#the required internal component is a library
 		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "")
 		manage_Additionnal_Component_Inherited_Flags(${component} ${dep_component} "${INSTALL_NAME_SUFFIX}" FALSE)
 	endif()
-else()
-	message(FATAL_ERROR "Executable component ${dep_c_name} cannot be a dependency for component ${component}")	
-endif()
+endif()#else, it is an application or a module => runtime dependency declaration
 endfunction(fill_Component_Target_With_Internal_Dependency)
 
 
 ### configure the target to link with another component issued from another package
 function (fill_Component_Target_With_Package_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
-is_Executable_Component(DEP_IS_EXEC ${dep_package} ${dep_component})
-if(NOT DEP_IS_EXEC)#the required package component is a library
+is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
+if(NOT DEP_IS_HF)#the required package component is a library
 	
 	if(export)
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
-
 		if(${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX})
 			list(APPEND ${PROJECT_NAME}_${component}_TEMP_DEFS ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
 		endif()		
@@ -190,10 +187,7 @@ if(NOT DEP_IS_EXEC)#the required package component is a library
 		manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
 		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "")
 	endif()
-
-else()
-	message(FATAL_ERROR "Executable component ${dep_component} from package ${dep_package} cannot be a dependency for component ${component}")	
-endif()
+endif()	#else, it is an application or a module => runtime dependency declaration
 endfunction(fill_Component_Target_With_Package_Dependency)
 
 

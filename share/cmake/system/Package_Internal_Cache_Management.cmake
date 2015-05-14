@@ -248,10 +248,11 @@ else() # otherwise no need to register them since no more useful
 			CACHE INTERNAL "")
 	endif()
 endif()
+
 if(NOT runtime_resources STREQUAL "")
 	set(	${PROJECT_NAME}_${component}_RUNTIME_RESOURCES
 		${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES}
-		${runtime_resources} 
+		${runtime_resources}
 		CACHE INTERNAL "")
 endif()
 endfunction(configure_Install_Variables)
@@ -364,6 +365,20 @@ endfunction(is_Declared)
 function(reset_Declared)
 set(${PROJECT_NAME}_DECLARED_COMPS CACHE INTERNAL "")
 endfunction(reset_Declared)
+
+
+### to know if the component is an application
+function(is_HeaderFree_Component ret_var package component)
+if (	${package}_${component}_TYPE STREQUAL "APP"
+	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
+	OR ${package}_${component}_TYPE STREQUAL "TEST"
+	OR ${package}_${component}_TYPE STREQUAL "MODULE"
+	)
+	set(${ret_var} TRUE PARENT_SCOPE)
+else()
+	set(${ret_var} FALSE PARENT_SCOPE)
+endif()
+endfunction(is_HeaderFree_Component)
 
 
 ### to know if the component is an application
@@ -581,11 +596,9 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 			file(APPEND ${file} "set(${package}_${a_component}_HEADER_DIR_NAME ${${package}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
 			file(APPEND ${file} "set(${package}_${a_component}_HEADERS ${${package}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
 		endif()
-		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
 	endforeach()
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
 	endforeach()
 else()
 	set(MODE_SUFFIX _DEBUG)
@@ -624,16 +637,18 @@ endforeach()
 file(APPEND ${file} "#### declaration of components exported flags and binary in ${CMAKE_BUILD_TYPE} mode ####\n")
 foreach(a_component IN ITEMS ${${package}_COMPONENTS})
 	is_Built_Component(IS_BUILT_COMP ${package} ${a_component})
-	is_Executable_Component(IS_EXEC_COMP ${package} ${a_component})
+	is_HeaderFree_Component(IS_HF_COMP ${package} ${a_component})
 	if(IS_BUILT_COMP)#if not a pure header library
 		file(APPEND ${file} "set(${package}_${a_component}_BINARY_NAME${MODE_SUFFIX} ${${package}_${a_component}_BINARY_NAME${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
-	if(NOT IS_EXEC_COMP)#it is a library
+	if(NOT IS_HF_COMP)#it is a library but not a module library
 		file(APPEND ${file} "set(${package}_${a_component}_INC_DIRS${MODE_SUFFIX} ${${package}_${a_component}_INC_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} ${${package}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
+	file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX} ${${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+
 endforeach()
 
 # 4) package internal component dependencies

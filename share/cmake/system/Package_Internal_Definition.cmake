@@ -831,19 +831,24 @@ if(NOT DECLARED)
 	message(FATAL_ERROR "Problem : component ${dep_component} is not defined in current package")
 endif()
 #guarding depending type of involved components
-is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})	
-is_Executable_Component(IS_EXEC_DEP ${PROJECT_NAME} ${dep_component})
+is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})	
+is_HeaderFree_Component(IS_HF_DEP ${PROJECT_NAME} ${dep_component})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
-if(IS_EXEC_DEP)
-	message(FATAL_ERROR "an executable component (${dep_component}) cannot be a dependancy !!")
-	return()
-else()
-	set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
-	if (IS_EXEC_COMP)
+set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+if (IS_HF_COMP)
+	if(IS_HF_DEP)
+		# setting compile definitions for configuring the target
+		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "" "")
+	else()
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
-		
-	elseif(IS_BUILT_COMP)
+	endif()	
+elseif(IS_BUILT_COMP)
+	if(IS_HF_DEP)
+		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
+		# setting compile definitions for configuring the target
+		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "${comp_exp_defs}" "")
+	else()
 		#prepare the dependancy export
 		if(export)
 			set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
@@ -852,24 +857,27 @@ else()
 
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
-		
-	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+	endif()	
+elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+	if(IS_HF_DEP)
+		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
+		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "" "${comp_exp_defs}"  "")	
+	else()
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "")
 		# setting compile definitions for configuring the "fake" target
 		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} TRUE "" "${comp_exp_defs}"  "${dep_defs}")
-
-	else()
-		message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
-		return()
 	endif()
-	# include directories and links do not require to be added 
-	# declare the internal dependency
-	set(	${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} 
-		${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_component}
-		CACHE INTERNAL "")
+else()
+	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
+	return()
 endif()
+# include directories and links do not require to be added 
+# declare the internal dependency
+set(	${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} 
+	${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_component}
+	CACHE INTERNAL "")
 endfunction(declare_Internal_Component_Dependency)
 
 
@@ -877,7 +885,7 @@ endfunction(declare_Internal_Component_Dependency)
 ### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of ${dep_component}, if any => definitions are exported
 ### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of ${dep_component}, if any => definitions are not exported
 ### dep_defs  : definitions in the interface of ${dep_component} that must be defined when ${component} uses ${dep_component}, if any => definitions are exported if dep_component is exported
-### export : if true the component export the dep_component in its interface (export is always false if component is an application)
+### export : if true the component export the dep_component in its interface (export is always false if component is an application or a module library)
 function(declare_Package_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
 	# ${PROJECT_NAME}_${component}_DEPENDENCIES			# packages used by the component ${component} of the current package
 	# ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS	# components of package ${dep_package} used by component ${component} of current package
@@ -893,39 +901,53 @@ endif()
 
 set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} FALSE CACHE INTERNAL "")
 #guarding depending type of involved components
-is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})	
-is_Executable_Component(IS_EXEC_DEP ${dep_package} ${dep_component})
+is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})	
+is_HeaderFree_Component(IS_HF_DEP ${dep_package} ${dep_component})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
-if(IS_EXEC_DEP)
-	message(FATAL_ERROR "an executable component (${dep_component}) cannot be a dependancy !!")
-	return()
-else()
-	if (IS_EXEC_COMP)
-		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
-		#do not export anything
 
-	elseif(IS_BUILT_COMP)
-		#prepare the dependancy export
-		if(export)
+#TODO how to declare runtime dependencies to components
+if (IS_HF_COMP)
+	# setting compile definitions for configuring the target
+	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency		
+		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "")
+		
+	else()	#the dependency has a build interface			
+		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
+	#do not export anything
+	endif()
+elseif(IS_BUILT_COMP)
+	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
+		# setting compile definitions for configuring the target
+		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "${comp_exp_defs}" "")		
+		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
+
+	else()	#the dependency has a build interface			
+		if(export)#prepare the dependancy export
 			set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "")
 		endif()
 		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "" "")
 
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
+	endif()
 
-	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+		# setting compile definitions for configuring the target
+	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency		
+		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "" "${comp_exp_defs}" "")#=> no build export
+		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
+	else()	#the dependency has a build interface			
+
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "")
 		# setting compile definitions for configuring the "fake" target
 		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} TRUE "" "${comp_exp_defs}" "${dep_defs}")
-
-	else()
-		message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
-		return()
 	endif()
+else()
+	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
+	return()
+endif()
 
 #links and include directories do not require to be added (will be found automatically)	
 set(	${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX} 
@@ -936,7 +958,6 @@ set(	${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE
 	${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}}
 	${dep_component} 
 	CACHE INTERNAL "")
-endif()
 
 endfunction(declare_Package_Component_Dependency)
 
@@ -957,11 +978,11 @@ endif()
 will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
 
 #guarding depending type of involved components
-is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})
+is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 set(TARGET_LINKS ${static_links} ${shared_links})
 
-if (IS_EXEC_COMP)
+if (IS_HF_COMP)
 	if(COMP_WILL_BE_INSTALLED)
 		configure_Install_Variables(${component} FALSE "" "" "" "" "" "${runtime_resources}")
 	endif()	
@@ -1011,10 +1032,10 @@ if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFF
 else()
 
 	#guarding depending type of involved components
-	is_Executable_Component(IS_EXEC_COMP ${PROJECT_NAME} ${component})
+	is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 	set(TARGET_LINKS ${static_links} ${shared_links})
-	if (IS_EXEC_COMP)
+	if (IS_HF_COMP)
 		if(COMP_WILL_BE_INSTALLED)
 			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${runtime_resources}")
 		endif()		
