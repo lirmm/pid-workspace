@@ -219,10 +219,10 @@ endfunction(fill_Component_Target_With_External_Dependency)
 ############################################################################
 function (create_All_Imported_Dependency_Targets package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-
+	#collect only the package dependencies, not the internnal ones 
 	foreach(a_dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 		foreach(a_dep_component IN ITEMS ${${package}_${component}_DEPENDENCY_${a_dep_package}_COMPONENTS${VAR_SUFFIX}})
-			#for all direct dependencies			
+			#for all direct package dependencies	
 			create_Dependency_Target(${a_dep_package} ${a_dep_component} ${mode})
 			bind_Imported_Target(${package} ${component} ${a_dep_package} ${a_dep_component} ${mode})
 		endforeach()
@@ -309,24 +309,27 @@ endfunction(create_Imported_Executable_Target)
 
 function(bind_Target component dep_package dep_component mode comp_defs comp_exp_defs dep_defs)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-is_Built_Component(IS_BUILT ${dep_package} ${dep_component})
-if(IS_BUILT)
+is_Built_Component(DEP_IS_BUILT ${dep_package} ${dep_component})
+is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
+
+if(DEP_IS_BUILT)
 	#use definitions and links for building the target
 	target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE "${comp_defs}" "${comp_exp_defs}" " ${dep_defs}")
-	target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_package}-${dep_component}${TARGET_SUFFIX})
-
-	target_include_directories(${component}${TARGET_SUFFIX} PRIVATE 
-		$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
 	
-	target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE 
-		$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+	if(NOT DEP_IS_HF)
+		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_package}-${dep_component}${TARGET_SUFFIX})
 
-	target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE 
-		$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
+		target_include_directories(${component}${TARGET_SUFFIX} PRIVATE 
+			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+	
+		target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE 
+			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
+		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE 
+			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
+	endif()
 endif()
 
-is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
 if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
 	if(export)
 		target_compile_definitions(${component}${TARGET_SUFFIX} INTERFACE "${comp_exp_defs}" "${dep_defs}")
@@ -351,23 +354,25 @@ endfunction(bind_Target)
 
 function(bind_Internal_Target component dep_component mode comp_defs comp_exp_defs dep_defs)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-is_Built_Component(IS_BUILT ${PROJECT_NAME} ${dep_component})
-if(IS_BUILT)
+is_Built_Component(DEP_IS_BUILT ${PROJECT_NAME} ${dep_component})
+is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_component})
+if(DEP_IS_BUILT)
 	#use definitions and links for building the target
 	target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE "${comp_defs}" "${comp_exp_defs}" " ${dep_defs}")
-	target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_component}${TARGET_SUFFIX})
-
-	target_include_directories(${component}${TARGET_SUFFIX} PRIVATE 
+	if(NOT DEP_IS_HF)
+		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_component}${TARGET_SUFFIX})
+		target_include_directories(${component}${TARGET_SUFFIX} PRIVATE 
 		$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
 	
-	target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE 
+		target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE 
 		$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
-	target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE 
+		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE 
 		$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
+	endif()
 endif()
 
-is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_component})
+
 if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
 	if(export)
 		target_compile_definitions(${component}${TARGET_SUFFIX} INTERFACE "${comp_exp_defs}" "${dep_defs}")
@@ -397,7 +402,6 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
 if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
 	if(export)
-		
 		target_link_libraries(${package}-${component}${TARGET_SUFFIX} INTERFACE ${dep_package}-${dep_component}${TARGET_SUFFIX})
 		target_include_directories(${package}-${component}${TARGET_SUFFIX} INTERFACE 
 		$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)

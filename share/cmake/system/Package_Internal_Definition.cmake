@@ -838,16 +838,22 @@ set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX}
 if (IS_HF_COMP)
 	if(IS_HF_DEP)
 		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "" "")
+		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "" "")
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
+
 	else()
 		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
+		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
+
 	endif()	
 elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
 		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "${comp_exp_defs}" "")
+		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "${comp_exp_defs}" "")
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
+
 	else()
 		#prepare the dependancy export
 		if(export)
@@ -856,18 +862,23 @@ elseif(IS_BUILT_COMP)
 		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "" "")
 
 		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
+		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 	endif()	
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	if(IS_HF_DEP)
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
-		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "" "${comp_exp_defs}"  "")	
+		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "" "${comp_exp_defs}"  "")	
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
+
 	else()
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "")
 		# setting compile definitions for configuring the "fake" target
-		fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} TRUE "" "${comp_exp_defs}"  "${dep_defs}")
+		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} TRUE "" "${comp_exp_defs}"  "${dep_defs}")
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
+
 	endif()
 else()
 	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
@@ -907,16 +918,18 @@ is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 if (IS_HF_COMP)
 	# setting compile definitions for configuring the target
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency		
-		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "")
-		
+		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "")
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
 	else()	#the dependency has a build interface			
-		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
+		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
 	#do not export anything
 	endif()
 elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
 		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "${comp_exp_defs}" "")		
+		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "${comp_exp_defs}" "")
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
 
 	else()	#the dependency has a build interface			
@@ -926,13 +939,16 @@ elseif(IS_BUILT_COMP)
 		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "" "")
 
 		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
+		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 	endif()
 
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		# setting compile definitions for configuring the target
-	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency		
-		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "" "${comp_exp_defs}" "")#=> no build export
+	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
+
+		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "" "${comp_exp_defs}" "")#=> no build export
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
 	else()	#the dependency has a build interface			
 
@@ -940,7 +956,9 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "")
 		# setting compile definitions for configuring the "fake" target
-		fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} TRUE "" "${comp_exp_defs}" "${dep_defs}")
+		fill_Component_Target_With_Dependency(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
+
+		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 	endif()
 else()
 	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
