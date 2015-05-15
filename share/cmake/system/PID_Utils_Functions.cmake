@@ -402,3 +402,15 @@ endforeach()
 set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
 endfunction(resolve_External_Resources_Path)
 
+
+###
+function(get_Mode_Variables TARGET_SUFFIX VAR_SUFFIX mode)
+if(mode MATCHES Release)
+	set(${TARGET_SUFFIX} PARENT_SCOPE)
+	set(${VAR_SUFFIX} PARENT_SCOPE)
+else()
+	set(${TARGET_SUFFIX} -dbg PARENT_SCOPE)
+	set(${VAR_SUFFIX} _DEBUG PARENT_SCOPE)
+endif()
+endfunction(get_Mode_Variables)
+
