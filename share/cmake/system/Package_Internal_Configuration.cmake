@@ -2,28 +2,28 @@
 ####################### new API => configure the package with dependencies  #####################
 #################################################################################################
 
-function( list_Public_Includes INCLUDES package component mode)
+function(list_Public_Includes INCLUDES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
 
 set(${INCLUDES} "${${package}_ROOT_DIR}/include/${${package}_${component}_HEADER_DIR_NAME}" PARENT_SCOPE)
 #additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
 if(${package}_${component}_INC_DIRS${mode_suffix})
 	resolve_External_Includes_Path(RES_INCLUDES ${package} "${${package}_${component}_INC_DIRS${VAR_SUFFIX}}" ${mode})
-	set(	${INCLUDES} ${INCLUDES} "${RES_INCLUDES}" PARENT_SCOPE)
+	set(${INCLUDES} ${INCLUDES} "${RES_INCLUDES}" PARENT_SCOPE)
 endif()
 
 endfunction(list_Public_Includes)
 
-function( list_Public_Links LINKS package component mode)
+function(list_Public_Links LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
 #provided additionnal ld flags (exported external/system libraries and ldflags)		
 if(${package}_${component}_LINKS${VAR_SUFFIX})
 	resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})
-set(${LINKS} ${LINKS} "${RES_LINKS}" PARENT_SCOPE)
+set(${LINKS} "${RES_LINKS}" PARENT_SCOPE)
 endif()
 endfunction(list_Public_Links)
 
-function( list_Public_Definitions DEFS package component mode)
+function(list_Public_Definitions DEFS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
 if(${package}_${component}_DEFS${VAR_SUFFIX}) 	
 	set(${DEFS} ${${package}_${component}_DEFS${VAR_SUFFIX}} PARENT_SCOPE)

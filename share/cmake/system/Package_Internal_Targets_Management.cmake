@@ -232,7 +232,7 @@ endfunction(create_All_Imported_Dependency_Targets)
 
 function (create_Dependency_Target dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(NOT TARGET ${dep_package}-${dep_component}${TARGET_SUFFIX})#target does not exist
+if(NOT TARGET 	${dep_package}-${dep_component}${TARGET_SUFFIX})#target does not exist
 #create the dependent target (#may produce recursion to build undirect dependencies of targets
 	if(${dep_package}_${dep_component}_TYPE STREQUAL "APP"
 		OR ${dep_package}_${dep_component}_TYPE STREQUAL "EXAMPLE")
@@ -240,11 +240,11 @@ if(NOT TARGET ${dep_package}-${dep_component}${TARGET_SUFFIX})#target does not e
 	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "MODULE")
 		create_Imported_Module_Library_Target(${dep_package} ${dep_component} ${mode})
 	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")
-		create_Imported_Shared_Library_Target (${dep_package} ${dep_component} ${mode})
+		create_Imported_Shared_Library_Target(${dep_package} ${dep_component} ${mode})
 	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "STATIC")
-		create_Imported_Static_Library_Target (${dep_package} ${dep_component} ${mode})
+		create_Imported_Static_Library_Target(${dep_package} ${dep_component} ${mode})
 	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "HEADER")
-		create_Imported_Header_Library_Target (${dep_package} ${dep_component} ${mode})
+		create_Imported_Header_Library_Target(${dep_package} ${dep_component} ${mode})
 	endif()
 	create_All_Imported_Dependency_Targets(${dep_package} ${dep_component} ${mode})
 endif()
@@ -255,7 +255,7 @@ function(create_Imported_Header_Library_Target package component mode)
 	add_library(${package}-${component}${TARGET_SUFFIX} INTERFACE IMPORTED GLOBAL)
 	list_Public_Includes(INCLUDES ${package} ${component} ${mode})
 	list_Public_Links(LINKS ${package} ${component} ${mode})
-	list_Public_Definitions(DEFS ${package} ${component})
+	list_Public_Definitions(DEFS ${package} ${component} ${mode})
 	manage_Additional_Component_Exported_Flags(${package}-${component} "${TARGET_SUFFIX}" "${INCLUDES}" "${DEFS}" "${LINKS}")
 endfunction(create_Imported_Header_Library_Target)
 
@@ -264,37 +264,37 @@ function(create_Imported_Static_Library_Target package component mode)
 	add_library(${package}-${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL)
 
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTY IMPORTED_LOCATION "${LOCATION_RES}")
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")
 
 	list_Public_Includes(INCLUDES ${package} ${component} ${mode})
 	list_Public_Links(LINKS ${package} ${component} ${mode})
-	list_Public_Definitions(DEFS ${package} ${component})
+	list_Public_Definitions(DEFS ${package} ${component} ${mode})
 
 	manage_Additional_Component_Exported_Flags(${package}-${component} "${TARGET_SUFFIX}" "${INCLUDES}" "${DEFS}" "${LINKS}")
 endfunction(create_Imported_Static_Library_Target)
 
-function(create_Imported_Shared_Library_Target package name mode)
+function(create_Imported_Shared_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
-	add_library(${package}-${name}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)
+	add_library(${package}-${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)
 	
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTY IMPORTED_LOCATION "${LOCATION_RES}")
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")
 
 	list_Public_Includes(INCLUDES ${package} ${component} ${mode})
 	list_Public_Links(LINKS ${package} ${component} ${mode})
-	list_Public_Definitions(DEFS ${package} ${component})
-	manage_Additional_Component_Exported_Flags(${package}-${name} "${TARGET_SUFFIX}" "${INCLUDES}" "${DEFS}" "${LINKS}")
+	list_Public_Definitions(DEFS ${package} ${component} ${mode})
+	manage_Additional_Component_Exported_Flags(${package}-${component} "${TARGET_SUFFIX}" "${INCLUDES}" "${DEFS}" "${LINKS}")
 
 	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${mode})
-	manage_Additional_Component_Internal_Flags(${package}-${name} "${TARGET_SUFFIX}" "" "" "${PRIVATE_LINKS}")
+	manage_Additional_Component_Internal_Flags(${package}-${component} "${TARGET_SUFFIX}" "" "" "${PRIVATE_LINKS}")
 endfunction(create_Imported_Shared_Library_Target)
 
-function(create_Imported_Module_Library_Target package name mode)
+function(create_Imported_Module_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
-	add_library(${package}-${name}${TARGET_SUFFIX} MODULE IMPORTED GLOBAL)
+	add_library(${package}-${component}${TARGET_SUFFIX} MODULE IMPORTED GLOBAL)
 
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode} ${${package}_ROOT_DIR})
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTY IMPORTED_LOCATION "${LOCATION_RES}")
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")
 	#no need to do more, a module is kind of an executable in this case
 endfunction(create_Imported_Module_Library_Target)
 
@@ -304,18 +304,19 @@ function(create_Imported_Executable_Target package name mode)
 	add_executable(${package}-${name}${TARGET_SUFFIX} IMPORTED GLOBAL)
 	
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode} ${${package}_ROOT_DIR})
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTY IMPORTED_LOCATION "${LOCATION_RES}")
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")
 endfunction(create_Imported_Executable_Target)
 
 function(bind_Target component dep_package dep_component mode comp_defs comp_exp_defs dep_defs)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-is_Built_Component(DEP_IS_BUILT ${dep_package} ${dep_component})
+is_Built_Component(COMP_IS_BUILT ${dep_package} ${component})
 is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
 
-if(DEP_IS_BUILT)
+if(COMP_IS_BUILT)
 	#use definitions and links for building the target
-	target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE "${comp_defs}" "${comp_exp_defs}" " ${dep_defs}")
-	
+	set(internal_defs ${comp_defs} ${comp_exp_defs} ${dep_defs})
+	manage_Additional_Component_Internal_Flags(${component} "${TARGET_SUFFIX}" "" "${internal_defs}" "")
+		
 	if(NOT DEP_IS_HF)
 		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_package}-${dep_component}${TARGET_SUFFIX})
 
@@ -325,14 +326,16 @@ if(DEP_IS_BUILT)
 		target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE 
 			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
-		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE 
-			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
+		#target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE 
+		#$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
 	endif()
 endif()
 
 if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
 	if(export)
-		target_compile_definitions(${component}${TARGET_SUFFIX} INTERFACE "${comp_exp_defs}" "${dep_defs}")
+		set(internal_defs ${comp_exp_defs} ${dep_defs})
+		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "${internal_defs}" "")
+
 		target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_package}-${dep_component}${TARGET_SUFFIX})
 		
 		target_include_directories(${component}${TARGET_SUFFIX} INTERFACE 
@@ -341,11 +344,11 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 		target_compile_definitions(${component}${TARGET_SUFFIX} INTERFACE
 		$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
-		target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE 
-		$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
+		#target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE 
+		#$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
 
 	else()
-		target_compile_definitions(${component}${TARGET_SUFFIX} INTERFACE "${comp_exp_defs}")
+		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "${comp_exp_defs}" "")
 	endif()
 	
 endif()	#else, it is an application or a module => runtime dependency declaration only
@@ -354,41 +357,46 @@ endfunction(bind_Target)
 
 function(bind_Internal_Target component dep_component mode comp_defs comp_exp_defs dep_defs)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-is_Built_Component(DEP_IS_BUILT ${PROJECT_NAME} ${dep_component})
+is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
 is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_component})
-if(DEP_IS_BUILT)
+message("bind_Internal_Target ${component} ${dep_component} ${mode} defs=<${comp_defs}> exp_def=<${comp_exp_defs}> deps_defs=<${dep_defs}>")
+if(COMP_IS_BUILT)# interface library cannot receive PRIVATE PROPERTIES 
 	#use definitions and links for building the target
-	target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE "${comp_defs}" "${comp_exp_defs}" " ${dep_defs}")
-	if(NOT DEP_IS_HF)
-		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_component}${TARGET_SUFFIX})
-		target_include_directories(${component}${TARGET_SUFFIX} PRIVATE 
-		$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
-	
-		target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE 
-		$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+	set(internal_defs ${comp_defs} ${comp_exp_defs} ${dep_defs})
+	manage_Additional_Component_Internal_Flags(${component} "${TARGET_SUFFIX}" "" "${internal_defs}" "")
 
-		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE 
-		$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
+	if(NOT DEP_IS_HF)#the dependency may export some things
+		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_component}${TARGET_SUFFIX})
+		
+		target_include_directories(${component}${TARGET_SUFFIX} PRIVATE 
+			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+
+		target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE 
+			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+
+		#target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE
+		#	$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
 	endif()
 endif()
 
 
 if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
 	if(export)
-		target_compile_definitions(${component}${TARGET_SUFFIX} INTERFACE "${comp_exp_defs}" "${dep_defs}")
+		set(internal_defs ${comp_exp_defs} ${dep_defs})
+		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "${internal_defs}" "")
 		target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_component}${TARGET_SUFFIX})
 		
 		target_include_directories(${component}${TARGET_SUFFIX} INTERFACE 
-		$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
 
 		target_compile_definitions(${component}${TARGET_SUFFIX} INTERFACE
-		$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
-		target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE 
-		$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
+		#target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE 
+		#	$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
 
 	else()
-		target_compile_definitions(${component}${TARGET_SUFFIX} INTERFACE "${comp_exp_defs}")
+		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "${comp_exp_defs}" "")
 	endif()
 	
 endif()	#else, it is an application or a module => runtime dependency declaration only
@@ -421,12 +429,12 @@ endif()	#else, it is an application or a module => runtime dependency declaratio
 endfunction(bind_Imported_Target)
 
 
-function (fill_Component_Target_With_Dependency package component dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
-if(${package} STREQUAL ${dep_package})#target created elsewhere since internal target
-	bind_Internal_Target(${component} ${dep_component} ${mode} ${comp_defs} ${comp_exp_defs} ${dep_defs})	
+function (fill_Component_Target_With_Dependency component dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
+if(${PROJECT_NAME} STREQUAL ${dep_package})#target already created elsewhere since internal target
+	bind_Internal_Target(${component} ${dep_component} ${mode} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 else()# it is an external dependency
 	create_Dependency_Target(${dep_package} ${dep_component} ${mode})
-	bind_Target( ${component} ${dep_package} ${dep_component} ${mode} ${comp_defs} ${comp_exp_defs} ${dep_defs})
+	bind_Target(${component} ${dep_package} ${dep_component} ${mode} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 endif()
 endfunction(fill_Component_Target_With_Dependency)
 
