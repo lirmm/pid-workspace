@@ -249,4 +249,44 @@ function(create_Imported_Executable_Target package name mode_suffix location)
 endfunction(create_Imported_Executable_Target)
 
 
+function (fill_Component_Target_With_Dependency package component dep_package dep_component mode_suffix export comp_defs comp_exp_defs dep_defs)
 
+if(NOT TARGET ${dep_package}-${dep_component}${mode_suffix})#target does not exist
+#create the dependent target (#may produce recursion to build undirect dependencies of targets
+	if(${dep_package}_${dep_component}_TYPE STREQUAL "APP"
+		OR ${dep_package}_${dep_component}_TYPE STREQUAL "EXAMPLE")
+		create_Imported_Executable_Target(${dep_package} ${dep_component} ${mode_suffix})
+	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "MODULE")
+		create_Imported_Module_Library_Target(${dep_package} ${dep_component} ${mode_suffix})
+	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")
+		create_Imported_Shared_Library_Target (${dep_package} ${dep_component} ${mode_suffix})
+	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "STATIC")
+		create_Imported_Static_Library_Target (${dep_package} ${dep_component} ${mode_suffix})
+	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "HEADER")
+		create_Imported_Header_Library_Target (${dep_package} ${dep_component} ${mode_suffix})
+	endif()
+endif()
+
+is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
+if(NOT DEP_IS_HF)#the required package component is a library
+	
+
+	if(export)
+		set(${package}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
+		if(${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX})
+			list(APPEND ${package}_${component}_TEMP_DEFS ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
+		endif()
+		manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_defs}" "")
+		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
+	else()
+		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})
+		if(${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX})
+			list(APPEND ${PROJECT_NAME}_${component}_TEMP_DEFS ${${dep_package}_${dep_component}_DEFINITIONS${USE_MODE_SUFFIX}})
+		endif()		
+		manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${${dep_package}_${dep_component}_INCLUDE_DIRS${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${${dep_package}_${dep_component}_LIBRARIES${USE_MODE_SUFFIX}}")
+		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "")
+	endif()
+endif()	#else, it is an application or a module => runtime dependency declaration
+
+
+endfunction(fill_Component_Target_With_Dependency)
