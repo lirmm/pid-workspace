@@ -285,8 +285,8 @@ function(create_Imported_Shared_Library_Target package component mode)
 	list_Public_Definitions(DEFS ${package} ${component} ${mode})
 	manage_Additional_Component_Exported_Flags(${package}-${component} "${TARGET_SUFFIX}" "${INCLUDES}" "${DEFS}" "${LINKS}")
 
-	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${mode})
-	manage_Additional_Component_Internal_Flags(${package}-${component} "${TARGET_SUFFIX}" "" "" "${PRIVATE_LINKS}")
+	 #list_Private_Links(PRIVATE_LINKS ${package} ${component} ${mode})
+	#manage_Additional_Component_Internal_Flags(${package}-${component} "${TARGET_SUFFIX}" "" "" "${PRIVATE_LINKS}")
 endfunction(create_Imported_Shared_Library_Target)
 
 function(create_Imported_Module_Library_Target package component mode)
@@ -417,8 +417,8 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 		target_compile_definitions(${package}-${component}${TARGET_SUFFIX} INTERFACE
 		$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
-		target_link_libraries(${package}-${component}${TARGET_SUFFIX} INTERFACE 
-		$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
+		#target_link_libraries(${package}-${component}${TARGET_SUFFIX} INTERFACE 
+		#$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_LINK_LIBRARIES>)
 
 	else()
 		target_compile_definitions(${package}-${component}${TARGET_SUFFIX} INTERFACE "${comp_exp_defs}")
