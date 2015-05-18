@@ -1,55 +1,8 @@
-###
-function(extract_All_Words name_with_underscores all_words_in_list)
-set(res "")
-string(REPLACE "_" ";" res "${name_with_underscores}")
-set(${all_words_in_list} ${res} PARENT_SCOPE)
-endfunction()
+#############################################################################################
+############### API functions for managing references on dependent packages #################
+#############################################################################################
 
-###
-function(fill_List_Into_String input_list res_string)
-set(res "")
-foreach(element IN ITEMS ${input_list})
-	set(res "${res} ${element}")
-endforeach()
-string(STRIP "${res}" res_finished)
-set(${res_string} ${res_finished} PARENT_SCOPE)
-endfunction()
-
-###
-function(generate_Full_Author_String author RES_STRING)
-string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
-list(GET author_institution 0 AUTHOR_NAME)
-list(GET author_institution 1 INSTITUTION_NAME)
-extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
-extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
-if(NOT INSTITUTION_STRING STREQUAL "")
-	set(${RES_STRING} "${AUTHOR_STRING} (${INSTITUTION_STRING})" PARENT_SCOPE)
-else()
-	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
-endif()
-endfunction()
-
-###
-function(generate_Contact_String author mail RES_STRING)
-extract_All_Words("${author}" AUTHOR_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-if(mail AND NOT mail STREQUAL "")
-	set(${RES_STRING} "${AUTHOR_STRING} (${mail})" PARENT_SCOPE)
-else()
-	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
-endif()
-endfunction()
-
-###
-function(generate_Institution_String institution RES_STRING)
-extract_All_Words("${institution}" INSTITUTION_ALL_WORDS)
-fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
-set(${RES_STRING} "${INSTITUTION_STRING}" PARENT_SCOPE)
-endfunction()
-
-###
+### generate the reference file used to retrieve packages
 function(generate_Reference_File pathtonewfile)
 set(file ${pathtonewfile})
 file(WRITE ${file} "")
@@ -79,52 +32,88 @@ endforeach()
 endfunction(generate_Reference_File)
 
 ###
-function(add_To_Install_Package_Specification package version version_exact)
-list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
-if(INDEX EQUAL -1)#not found
-	set(${PROJECT_NAME}_TOINSTALL_PACKAGES ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}} ${package} CACHE INTERNAL "")
-	if(version AND NOT version STREQUAL "")
-		set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
-		if(version_exact)
-			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-		else()
-			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
-		endif()
-	endif()
-else()#package already required as "to install"
-	list(FIND ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} ${version} INDEX)
-	if(INDEX EQUAL -1)#version not already required
-		set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
-		if(version_exact)
-			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-		else()
-			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
-		endif()
-	elseif(version_exact) #if this version was previously not exact it becomes exact if exact is required
-			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")		
-	endif()
-endif()
-endfunction(add_To_Install_Package_Specification)
-
-###
-function(reset_To_Install_Packages)
-foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}})
-	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_${pack}_VERSIONS${USE_MODE_SUFFIX}})
-		set(${PROJECT_NAME}_TOINSTALL_${pack}_${version}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	endforeach()
-	set(${PROJECT_NAME}_TOINSTALL_${pack}_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-endforeach()
-set(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} CACHE INTERNAL "")
-endfunction(reset_To_Install_Packages)
-
-function(need_Install_Packages NEED)
-if(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX})
-	set(${NEED} TRUE PARENT_SCOPE)
+function(resolve_Package_Dependencies package mode)
+#message("DEBUG resolve_Package_Dependencies package=${package} mode=${mode}")
+if(mode MATCHES Debug)
+	set(build_mode_suffix "_DEBUG")
 else()
-	set(${NEED} FALSE PARENT_SCOPE)
+	set(build_mode_suffix "")
 endif()
-endfunction(need_Install_Packages)
 
+################## external packages ##################
+
+# 1) managing external package dependencies (the list of dependent packages is defined as ${package}_EXTERNAL_DEPENDENCIES)
+# - locating dependent external packages in the workspace and configuring their build variables recursively
+set(TO_INSTALL_EXTERNAL_DEPS)
+foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${build_mode_suffix}})
+	# 1) resolving direct dependencies
+	
+	resolve_External_Package_Dependency(${package} ${dep_ext_pack} ${mode})
+	if(NOT ${dep_ext_pack}_FOUND)
+		list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
+	endif()
+endforeach()
+
+# 2) for not found package
+#message("DEBUG resolve_Package_Dependencies for ${package} ... step 2)")
+if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+		set(INSTALLED_EXTERNAL_PACKAGES "")
+		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
+		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
+			resolve_External_Package_Dependency(${package} ${installed} ${mode})
+			if(NOT ${installed}_FOUND)
+				message(FATAL_ERROR "BUG : impossible to find installed external package ${installed}")
+			endif()
+		endforeach()
+	else()	
+		message(FATAL_ERROR "there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${build_mode_suffix}}. You may download them \"by hand\" or use the required packages automatic download option")
+		return()
+	endif()
+endif()
+
+################## native packages ##################
+
+# 1) managing package dependencies (the list of dependent packages is defined as ${package}_DEPENDENCIES)
+# - locating dependent packages in the workspace and configuring their build variables recursively
+set(TO_INSTALL_DEPS)
+foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${build_mode_suffix}})
+	# 1) resolving direct dependencies
+	resolve_Package_Dependency(${package} ${dep_pack} ${mode})
+	if(${dep_pack}_FOUND)
+		if(${dep_pack}_DEPENDENCIES${build_mode_suffix})
+			resolve_Package_Dependencies(${dep_pack} ${mode})#recursion : resolving dependencies for each package dependency
+		endif()
+	else()
+		list(APPEND TO_INSTALL_DEPS ${dep_pack})
+	endif()
+endforeach()
+
+# 2) for not found package
+if(TO_INSTALL_DEPS) #there are dependencies to install
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+		set(INSTALLED_PACKAGES "")
+		install_Required_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES)
+		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
+			resolve_Package_Dependency(${package} ${installed} ${mode})
+			if(${installed}_FOUND)
+				if(${installed}_DEPENDENCIES${build_mode_suffix})
+					resolve_Package_Dependencies(${installed} ${mode})#recursion : resolving dependencies for each package dependency
+				endif()
+			else()
+				message(FATAL_ERROR "BUG : impossible to find installed package ${installed}")
+			endif()	
+		endforeach()
+	else()	
+		message(FATAL_ERROR "there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${build_mode_suffix}}. You may download them \"by hand\" or use the required packages automatic download option")
+		return()
+	endif()
+endif()
+endfunction(resolve_Package_Dependencies)
+
+#############################################################################################
+############################### functions for Native Packages ###############################
+#############################################################################################
 
 ###
 function(resolve_Required_Package_Version version_possible min_version is_exact package)
@@ -387,7 +376,6 @@ if(NOT available_versions)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
-#message("DEBUG available versions : ${available_versions}")
 
 # taking the adequate version
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN})
@@ -427,7 +415,6 @@ else()
 		endif()
 	endforeach()
 	if(${curr_patch_version} GREATER -1)#at least one match
-		#message("DEBUG : installing package ${package} with version ${ref_major}.${curr_min_minor_version}.${curr_patch_version}")
 		download_And_Install_Binary_Package(INSTALLED ${package} "${ref_major}.${curr_min_minor_version}.${curr_patch_version}")
 	endif()
 endif()
@@ -606,7 +593,7 @@ foreach(version IN ITEMS ${GIT_VERSIONS})
 	endif()
 endforeach()
 if(curr_max_patch_number EQUAL -1 OR curr_max_minor_number EQUAL -1 OR curr_max_major_number EQUAL -1)#i.e. nothing found
-	message("Error : no adequate version found for package ${package}")
+	message("ERROR : no adequate version found for package ${package}")
 	return()
 endif()
 
@@ -616,7 +603,7 @@ build_And_Install_Package(ALL_IS_OK ${package} "${curr_max_major_number}.${curr_
 if(ALL_IS_OK)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 else()
-	message("Error : automatic build and install of package ${package} FAILED !!")
+	message("ERROR : automatic build and install of package ${package} FAILED !!")
 endif()
 
 endfunction(deploy_Source_Package)
@@ -743,4 +730,254 @@ endif()
 endfunction(build_And_Install_Package)
 
 
+#############################################################################################
+############################### functions for external Packages #############################
+#############################################################################################
+
+###
+function(resolve_Required_External_Package_Version selected_version package)
+if(NOT ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})#no specific version required
+	if(${package}_REFERENCES)
+		#simply searching to most up to date one in available references
+		set(CURRENT_VERSION 0.0.0)
+		foreach(ref IN ITEMS ${${package}_REFERENCES})
+			if(ref VERSION_GREATER ${CURRENT_VERSION})
+				set(CURRENT_VERSION ${ref})
+			endif()
+		endforeach()
+		set(${selected_version} "${CURRENT_VERSION}" PARENT_SCOPE)
+		return()
+	else()
+		set(${selected_version} PARENT_SCOPE)
+		message(FATAL_ERROR "Impossible to find a valid reference to any version of external package ${package}")
+		return()
+	endif()
+
+else()#specific version(s) required
+	list(REMOVE_DUPLICATES ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
+	#1) testing if a solution exists as regard of "exactness" of versions	
+	set(CURRENT_EXACT FALSE)
+	set(CURRENT_VERSION)
+	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}})
+		if(CURRENT_EXACT)
+			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX}) #impossible to find two different exact versions solution
+				set(${selected_version} PARENT_SCOPE)
+				return()
+			elseif(${version} VERSION_GREATER ${CURRENT_VERSION})#any not exact version that is greater than current exact one makes the solution impossible 
+				set(${selected_version} PARENT_SCOPE)
+				return()
+			endif()
+
+		else()
+			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX})
+				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})			
+					set(CURRENT_EXACT TRUE)
+					set(CURRENT_VERSION ${version})
+				else()# current version is greater than exact one currently required => impossible 
+					set(${selected_version} PARENT_SCOPE)
+					return()
+				endif()
+
+			else()#getting the greater minimal required version
+				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})
+					set(CURRENT_VERSION ${version})
+				endif()
+			endif()
+			
+		endif()
+		
+	endforeach()
+	#2) testing if a solution exists as regard of "compatibility" of versions
+	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}})
+		if(NOT ${version} VERSION_EQUAL ${CURRENT_VERSION})
+			if(DEFINED ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO
+			AND NOT ${CURRENT_VERSION} VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
+				set(${selected_version} PARENT_SCOPE)
+				return()
+			endif()
+		endif()
+	endforeach()
+
+endif()
+
+set(${selected_version} "${CURRENT_VERSION}" PARENT_SCOPE)
+endfunction(resolve_Required_External_Package_Version)
+
+
+###
+function(install_External_Package INSTALL_OK package)
+
+# 0) test if reference of the external package exists in the workspace
+set(IS_EXISTING FALSE)  
+package_Reference_Exists_In_Workspace(IS_EXISTING External${package})
+if(NOT IS_EXISTING)
+	set(${INSTALL_OK} FALSE PARENT_SCOPE)
+	message(SEND_ERROR "Install : Unknown external package ${package} : cannot find any reference of this package in the workspace")
+	return()
+endif()
+include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
+if(${refer_path} STREQUAL NOTFOUND)
+	message(FATAL ERROR "Reference file not found for package ${package}!! BIG BUG since it is supposed to exist !!!")
+endif()
+
+# 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
+set(SELECTED)
+resolve_Required_External_Package_Version(SELECTED ${package})
+if(SELECTED)
+	#2) installing package
+	set(PACKAGE_BINARY_DEPLOYED FALSE)
+	deploy_External_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${SELECTED})
+	if(PACKAGE_BINARY_DEPLOYED) # if there is ONE adequate reference, downloading and installing it
+		set(${INSTALL_OK} TRUE PARENT_SCOPE)
+		return()
+	endif()
+else()
+	message(SEND_ERROR "Install : impossible to find an adequate version for external package ${package}")
+endif()
+
+set(${INSTALL_OK} FALSE PARENT_SCOPE)	
+endfunction(install_External_Package)
+
+###
+function(install_Required_External_Packages list_of_packages_to_install INSTALLED_PACKAGES)
+set(successfully_installed "")
+set(not_installed "")
+foreach(dep_package IN ITEMS ${list_of_packages_to_install}) #while there are still packages to install
+	set(INSTALL_OK FALSE)
+	install_External_Package(INSTALL_OK ${dep_package})
+	if(INSTALL_OK)
+		list(APPEND successfully_installed ${dep_package})
+	else()
+		list(APPEND not_installed ${dep_package})
+	endif()
+endforeach()
+if(successfully_installed)
+	set(${INSTALLED_PACKAGES} ${successfully_installed} PARENT_SCOPE)
+endif()
+if(not_installed)
+	message(FATAL_ERROR "Some of the required external packages cannot be installed : ${not_installed}")
+endif()
+endfunction(install_Required_External_Packages)
+
+
+###
+function(deploy_External_Package_Version DEPLOYED package VERSION)
+set(INSTALLED FALSE)
+#begin
+if(UNIX AND NOT APPLE)
+	set(curr_system linux)
+elseif(APPLE)
+	set(curr_system darwin)
+else()
+	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
+	return()
+endif()
+###### downloading the binary package ######
+message("downloading the binary package, please wait ...")
+#1) release code
+set(FILE_BINARY "")
+set(FOLDER_BINARY "")
+generate_Binary_Package_Name(${package} ${VERSION} "Release" FILE_BINARY FOLDER_BINARY)
+set(download_url ${${package}_REFERENCE_${VERSION}_${curr_system}_url})
+set(FOLDER_BINARY ${${package}_REFERENCE_${VERSION}_${curr_system}_folder})
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory release
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_QUIET OUTPUT_QUIET)
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
+list(GET res 0 numeric_error)
+list(GET res 1 status)
+if(NOT numeric_error EQUAL 0)
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	message(WARNING "install : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url}: ${status}")
+	return()
+endif()
+#2) debug code (optionnal for external packages => just to avoid unecessary redoing code download)
+if(EXISTS ${package}_REFERENCE_${VERSION}_${curr_system}_url_DEBUG)
+	set(FILE_BINARY_DEBUG "")
+	set(FOLDER_BINARY_DEBUG "")
+	generate_Binary_Package_Name(${package} ${VERSION} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
+	set(download_url_dbg ${${package}_REFERENCE_${VERSION}_${curr_system}_url_DEBUG})
+	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${VERSION}_${curr_system}_folder_DEBUG})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory debug
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_QUIET OUTPUT_QUIET)
+	file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
+	list(GET res-dbg 0 numeric_error_dbg)
+	list(GET res-dbg 1 status_dbg)
+	if(NOT numeric_error_dbg EQUAL 0)#there is an error
+		set(${DEPLOYED} FALSE PARENT_SCOPE)
+		message(WARNING "install : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url_dbg} : ${status_dbg}")
+		return()
+	endif()
+endif()
+
+######## installing the external package ##########
+# 1) creating the external package root folder and the version folder
+if(NOT EXISTS ${WORKSPACE_DIR}/external/${package} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${package})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
+			WORKING_DIRECTORY ${WORKSPACE_DIR}/external/
+			ERROR_QUIET OUTPUT_QUIET)
+endif()
+if(NOT EXISTS ${WORKSPACE_DIR}/external/${package}/${VERSION} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${package}/${VERSION})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${VERSION}
+		WORKING_DIRECTORY ${WORKSPACE_DIR}/external/${package}
+		ERROR_QUIET OUTPUT_QUIET)
+endif()
+
+
+
+# 2) extracting binary archive in cross platform way
+set(error_res "")
+message("decompressing the binary package, please wait ...")
+if(EXISTS download_url_dbg)
+	execute_process(
+          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/debug
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+else()
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/release
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+endif()
+
+if (error_res)
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	message(WARNING "install : cannot extract binary archives ${FILE_BINARY} ${FILE_BINARY_DEBUG}")
+	return()
+endif()
+
+# 3) copying resulting folders into the install path in a cross platform way
+message("installing the binary package into the workspace, please wait ...")
+set(error_res "")
+if(EXISTS download_url_dbg)
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${VERSION}
+          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${package}/${VERSION}
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+else()
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${VERSION}/
+		ERROR_VARIABLE error_res OUTPUT_QUIET)
+endif()
+
+if (error_res)
+	set(${INSTALLED} FALSE PARENT_SCOPE)
+	message(WARNING "install : cannot extract folder from ${FOLDER_BINARY} ${FOLDER_BINARY_DEBUG}")
+	return()
+endif()
+# 4) removing generated artifacts
+if(EXISTS download_url_dbg)
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/debug
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
+		ERROR_QUIET OUTPUT_QUIET)
+else()
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
+		ERROR_QUIET OUTPUT_QUIET)
+endif()
+
+set(${DEPLOYED} TRUE PARENT_SCOPE)
+endfunction(deploy_External_Package_Version)
 

@@ -127,14 +127,14 @@ endmacro(build_PID_Package)
 
 ### API : declare_PID_Component(NAME name 
 #				DIRECTORY dirname 
-#				<STATIC_LIB|SHARED_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
+#				<STATIC_LIB|SHARED_LIB|MODULE_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
 #				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [LINKS link ...] ] 
-#				[EXPORTED_DEFINITIONS def ...] 
+#				[EXPORTED [DEFINITIONS def ...] [LINKS link ...]
 #				[RUNTIME_RESOURCES <some path to files in the share/resources dir>])
 macro(declare_PID_Component)
-set(options STATIC_LIB SHARED_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
+set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
 set(oneValueArgs NAME DIRECTORY)
-set(multiValueArgs INTERNAL EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
+set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}")
@@ -155,6 +155,10 @@ if(DECLARE_PID_COMPONENT_SHARED_LIB)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "SHARED")
 endif()
+if(DECLARE_PID_COMPONENT_MODULE_LIB)
+	math(EXPR nb_options "${nb_options}+1")
+	set(type "MODULE")
+endif()
 if(DECLARE_PID_COMPONENT_HEADER_LIB)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "HEADER")
@@ -172,7 +176,7 @@ if(DECLARE_PID_COMPONENT_TEST_APPLICATION)
 	set(type "TEST")
 endif()
 if(NOT nb_options EQUAL 1)
-	message(FATAL_ERROR "bad arguments : only one type must be given for the component")
+	message(FATAL_ERROR "bad arguments : only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION|TEST_APPLICATION) must be given for the component")
 endif()
 
 set(internal_defs "")
@@ -199,11 +203,23 @@ if(DECLARE_PID_COMPONENT_INTERNAL)
 endif()
 
 set(exported_defs "")
-if(DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS)
+if(DECLARE_PID_COMPONENT_EXPORTED)
 	if(type MATCHES APP OR type MATCHES EXAMPLE OR type MATCHES TEST)
 		message(FATAL_ERROR "bad arguments : Applications cannot export anything (invalid use of the export keyword)")
+	elseif(type MATCHES MODULE)
+		message(FATAL_ERROR "bad arguments : Module librairies cannot export anything (invalid use of the export keyword)")
 	endif()
-	set(exported_defs ${DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS})
+	if(DECLARE_PID_COMPONENT_EXPORTED STREQUAL "")
+		message(FATAL_ERROR "bad arguments : EXPORTED keyword must be followed by by at least one DEFINITIONS OR LINKS")
+	endif()
+	set(exported_multiValueArgs DEFINITIONS LINKS)
+	cmake_parse_arguments(DECLARE_PID_COMPONENT_EXPORTED "" "" "${exported_multiValueArgs}" ${DECLARE_PID_COMPONENT_EXPORTED} )
+	if(DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS)
+		set(exported_defs ${DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS})
+	endif()
+	if(DECLARE_PID_COMPONENT_EXPORTED_LINKS)
+		set(exported_link_flags ${DECLARE_PID_COMPONENT_EXPORTED_LINKS})
+	endif()
 endif()
 
 set(runtime_resources "")
@@ -228,6 +244,7 @@ else() #it is a library
 					"${internal_defs}"
 					"${exported_defs}" 
 					"${internal_link_flags}"
+					"${exported_link_flags}"
 					"${runtime_resources}")
 endif()
 
@@ -311,16 +328,17 @@ endmacro(declare_PID_Package_Dependency)
 
 ### API : declare_PID_Component_Dependency (	COMPONENT name
 #						[EXPORT] 
-#						<DEPEND dep_component [PACKAGE dep_package] 
-#						| [EXTERNAL ext_package INCLUDE_DIRS dir ...] LINKS [STATIC link ...] [SHARED link ...]>
-#						[INTERNAL_DEFINITIONS def ...]  
+#						<DEPEND|NATIVE dep_component [PACKAGE dep_package] 
+#						| [EXTERNAL ext_package INCLUDE_DIRS dir ... RUNTIME_RESOURCES ...] LINKS [STATIC link ...] [SHARED link ...]>
+#						[INTERNAL_DEFINITIONS def ...]
 #						[IMPORTED_DEFINITIONS def ...]
 #						[EXPORTED_DEFINITIONS def ...]
+#						
 #						)
 macro(declare_PID_Component_Dependency)
 set(options EXPORT)
-set(oneValueArgs COMPONENT DEPEND PACKAGE EXTERNAL)
-set(multiValueArgs INCLUDE_DIRS LINKS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS)
+set(oneValueArgs COMPONENT DEPEND NATIVE PACKAGE EXTERNAL)
+set(multiValueArgs INCLUDE_DIRS LINKS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}")
@@ -367,25 +385,36 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS)
 endif()
 
 
-if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
+if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE)
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
-		message(FATAL_ERROR "bad arguments : EXTERNAL (requiring an external package) and DEPEND (requiring a PID component) keywords cannot be used simultaneously")
+		message(FATAL_ERROR "bad arguments : keywords EXTERNAL (requiring an external package) and NATIVE (or DEPEND) (requiring a PID component) cannot be used simultaneously")
 	endif()
-
+	if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
+		set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND})
+	else()
+		set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE})
+	endif()
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE)#package dependency
 		declare_Package_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT} 
 					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} 
-					${DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND}
+					${target_component}
 					${export}
 					"${comp_defs}" 
 					"${comp_exp_defs}"
 					"${dep_defs}"
 					)
 	else()#internal dependency
+		message("	comp=<${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}>
+					depend=<${target_component}> 
+					export=<${export}>
+					comp_defs= <${comp_defs}>
+					comp_exp_defs = <${comp_exp_defs}>
+					depdefs = <${dep_defs}>
+			")
 		declare_Internal_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
-					${DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND} 
+					${target_component} 
 					${export}
 					"${comp_defs}" 
 					"${comp_exp_defs}"
@@ -394,9 +423,7 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
 	endif()
 
 elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
-	if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS)
-		message(FATAL_ERROR "bad arguments : the INCLUDE_DIRS keyword must be used when the package is declared as external. It is used to find the external package's components interfaces.")
-	endif()
+
 	declare_External_Component_Dependency(
 				${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 				${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} 
@@ -406,7 +433,8 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 				"${comp_exp_defs}"
 				"${dep_defs}"
 				"${static_links}"
-				"${shared_links}")
+				"${shared_links}"
+				"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
 else()#system dependency
 
 	declare_System_Component_Dependency(
@@ -417,7 +445,8 @@ else()#system dependency
 			"${comp_exp_defs}"
 			"${dep_defs}"
 			"${static_links}"
-			"${shared_links}")
+			"${shared_links}"
+			"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
 endif()
 endmacro(declare_PID_Component_Dependency)
 
