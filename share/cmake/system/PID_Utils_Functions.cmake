@@ -330,7 +330,6 @@ foreach(link IN ITEMS ${ext_links})
 		endif()
 	endif()
 endforeach()
-#message("resolve_External_Libs_Path=${res_links}")
 set(${COMPLETE_LINKS_PATH} ${res_links} PARENT_SCOPE)
 endfunction(resolve_External_Libs_Path)
 

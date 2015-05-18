@@ -242,7 +242,7 @@ else() # otherwise no need to register them since no more useful
 			CACHE INTERNAL "")
 		endif()
 	endif()
-	if(NOT shared_links STREQUAL "")#shared links are privates (not exported) -> these links are used to process executables linking
+	if(NOT shared_links STREQUAL "")#private links are shared "non exported" libraries -> these links are used to process executables linking
 		set(	${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}
 			${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}
 			${shared_links}

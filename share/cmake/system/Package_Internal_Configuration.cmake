@@ -187,7 +187,7 @@ function(init_Component_Build_Variables package component path_to_version mode)
 
 		#provided additionnal ld flags (exported external/system libraries and ldflags)		
 		if(${package}_${component}_LINKS${mode_suffix})
-			resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${mode_suffix}}" ${mode})			
+			resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${mode_suffix}}" ${mode})
 			set(	${package}_${component}_LIBRARIES${mode_suffix}
 				${${package}_${component}_LIBRARIES${mode_suffix}}	
 				"${RES_LINKS}"
