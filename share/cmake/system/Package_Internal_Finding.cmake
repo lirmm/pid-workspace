@@ -683,7 +683,7 @@ if(EXIST)
 			all_Components("${package}" ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION})
 			if(USE_FILE_NOTFOUND)
 				exitFindScript("The  selected version of the-testpack-a (${${package}_VERSION_STRING}) has no configuration file or file is corrupted")
-			endif(D)
+			endif()
 				
 		endif()
 

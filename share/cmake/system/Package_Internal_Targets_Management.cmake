@@ -207,14 +207,16 @@ endif()
 
 # setting compile/linkage definitions for the component target
 if(export)
-	set(TEMP_DEFS ${comp_exp_defs} ${ext_defs} ${comp_defs})
-	manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "${COMPLETE_LINKS_PATH}")
+	if(NOT ${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
+		set(TEMP_DEFS ${comp_exp_defs} ${ext_defs} ${comp_defs})
+		manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "${COMPLETE_LINKS_PATH}")
+	endif()
 	set(TEMP_DEFS ${comp_exp_defs} ${ext_defs})
 	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "${COMPLETE_LINKS_PATH}")
 
 else()
-	set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${ext_defs} ${comp_defs})		
-	manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${COMPLETE_LINKS_PATH}")
+	set(TEMP_DEFS ${comp_defs} ${ext_defs} ${comp_defs})		
+	manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "${COMPLETE_LINKS_PATH}")
 	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "${COMPLETE_LINKS_PATH}")
 endif()
 
@@ -262,6 +264,7 @@ endfunction(create_Dependency_Target)
 
 function(manage_Additional_Imported_Component_Flags package component mode inc_dirs defs public_links private_links)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+
 if(inc_dirs AND NOT inc_dirs STREQUAL "")
 	foreach(dir IN ITEMS ${inc_dirs})
 		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${dir}")

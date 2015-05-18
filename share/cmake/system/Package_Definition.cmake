@@ -405,13 +405,6 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 					"${dep_defs}"
 					)
 	else()#internal dependency
-		message("	comp=<${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}>
-					depend=<${target_component}> 
-					export=<${export}>
-					comp_defs= <${comp_defs}>
-					comp_exp_defs = <${comp_exp_defs}>
-					depdefs = <${dep_defs}>
-			")
 		declare_Internal_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${target_component} 

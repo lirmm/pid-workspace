@@ -5,13 +5,13 @@
 function(list_Public_Includes INCLUDES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
 
-set(${INCLUDES} "${${package}_ROOT_DIR}/include/${${package}_${component}_HEADER_DIR_NAME}" PARENT_SCOPE)
+set(RES "${${package}_ROOT_DIR}/include/${${package}_${component}_HEADER_DIR_NAME}")
 #additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
 if(${package}_${component}_INC_DIRS${mode_suffix})
 	resolve_External_Includes_Path(RES_INCLUDES ${package} "${${package}_${component}_INC_DIRS${VAR_SUFFIX}}" ${mode})
-	set(${INCLUDES} ${INCLUDES} "${RES_INCLUDES}" PARENT_SCOPE)
+	set(RES ${RES} ${RES_INCLUDES})
 endif()
-
+set(${INCLUDES} ${RES} PARENT_SCOPE)
 endfunction(list_Public_Includes)
 
 function(list_Public_Links LINKS package component mode)
