@@ -355,14 +355,14 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	#here every package dependency should have been resolved OR ERROR
 	
 	# 2) if all version are OK resolving all necessary variables (CFLAGS, LDFLAGS and include directories)
-	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		configure_Package_Build_Variables("${dep_pack}"	 "${CMAKE_BUILD_TYPE}")
-	endforeach()
+	#foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
+	#	configure_Package_Build_Variables("${dep_pack}"	 "${CMAKE_BUILD_TYPE}")
+	#endforeach()
 
 	# 3) when done resolving runtime dependencies for all used package (direct or undirect)
-	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
-	endforeach()
+	#foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
+	#	resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
+	#endforeach()
 endif()
 #################################################
 ############ MANAGING the BUILD #################
@@ -749,7 +749,7 @@ endif()
 #managing runtime resource at build time
 manage_Build_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
 
-# registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags
+# registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
 if(COMP_WILL_BE_INSTALLED)
 	init_Component_Cached_Variables_For_Export(${c_name} "" "" "${runtime_resources}")
 endif()

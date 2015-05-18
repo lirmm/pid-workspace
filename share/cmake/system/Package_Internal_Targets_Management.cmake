@@ -278,14 +278,14 @@ endif()
 # managing link time flags (public links are always put in the interface
 if(public_links AND NOT public_links STREQUAL "")
 	foreach(link IN ITEMS ${public_links})
-		set_property(TARGET${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${link}")
+		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${link}")
 	endforeach()
 endif()
 
 # managing link time flags (public links are always put in the interface
 if(private_links AND NOT private_links STREQUAL "")
 	foreach(link IN ITEMS ${private_links})
-		set_property(TARGET${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${link}")
+		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${link}")
 	endforeach()
 endif()
 

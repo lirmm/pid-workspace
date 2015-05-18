@@ -287,13 +287,7 @@ endfunction(resolve_Source_Component_Linktime_Dependencies)
 
 function(find_Dependent_Private_Shared_Libraries LIST_OF_UNDIRECT_DEPS package component is_direct mode)
 set(undirect_list)
-if(mode MATCHES Release)
-	set(mode_binary_suffix "")
-	set(mode_var_suffix "")
-else()
-	set(mode_binary_suffix "-dbg")
-	set(mode_var_suffix "_DEBUG")
-endif()
+get_Mode_Variables(mode_binary_suffix mode_var_suffix ${mode})
 # 0) no need to search for systems dependencies as they can be found automatically using OS shared libraries binding mechanism
 
 # 1) searching public external dependencies 
@@ -442,21 +436,18 @@ endfunction(resolve_Package_Runtime_Dependencies)
 
 ### resolve runtime dependencies for components
 function(resolve_Bin_Component_Runtime_Dependencies package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(	${package}_${component}_TYPE STREQUAL "SHARED"
 	OR ${package}_${component}_TYPE STREQUAL "MODULE" 
 	OR ${package}_${component}_TYPE STREQUAL "APP" 
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
-	if(mode MATCHES Debug)
-		set(mode_suffix "_DEBUG")
-	else()
-		set(mode_suffix "")
-	endif()
+	
 	# 1) getting direct runtime dependencies	
 	get_Bin_Component_Runtime_Dependencies(ALL_SHARED_LIBS ${package} ${component} ${mode})#suppose that findPackage has resolved everything
 
 	# 2) adding direct private external dependencies
-	if(${package}_${component}_PRIVATE_LINKS${mode_suffix})#if there are exported links
-		resolve_External_Libs_Path(RES_PRIVATE_LINKS ${package} "${${package}_${component}_PRIVATE_LINKS${mode_suffix}}" ${mode})#resolving libraries path against external packages path
+	if(${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX})#if there are exported links
+		resolve_External_Libs_Path(RES_PRIVATE_LINKS ${package} "${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
 		if(RES_PRIVATE_LINKS)
 			foreach(lib IN ITEMS ${RES_PRIVATE_LINKS})
 				is_Shared_Lib_With_Path(IS_SHARED ${lib})
@@ -473,97 +464,82 @@ endfunction(resolve_Bin_Component_Runtime_Dependencies)
 
 ### configuring components runtime paths (links to libraries)
 function(create_Bin_Component_Symlinks bin_package bin_component mode shared_libs)
-if(mode MATCHES Release)
-	set(mode_string "")
-elseif(mode MATCHES Debug)
-	set(mode_string "-dbg")
-else()
-	return()
-endif()
-
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #creatings symbolic links
 foreach(lib IN ITEMS ${shared_libs})
-	create_Rpath_Symlink(${lib} ${${bin_package}_ROOT_DIR} ${bin_component}${mode_string})
+	create_Rpath_Symlink(${lib} ${${bin_package}_ROOT_DIR} ${bin_component}${TARGET_SUFFIX})
 endforeach()
 endfunction(create_Bin_Component_Symlinks)
 
 
 ### recursive function to find runtime dependencies
 function(get_Bin_Component_Runtime_Dependencies ALL_SHARED_LIBS package component mode)
-	if(mode MATCHES Release)
-		set(mode_binary_suffix "")
-		set(mode_var_suffix "")
-	elseif(mode MATCHES Debug)
-		set(mode_binary_suffix "-dbg")
-		set(mode_var_suffix "_DEBUG")
-	else()
-		return()
-	endif()
-	set(result "")
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
+set(result "")
 
-	# 1) adding directly exported external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
-	if(${package}_${component}_LINKS${mode_var_suffix})#if there are exported links
-		resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
-		if(RES_LINKS)
-			foreach(lib IN ITEMS ${RES_LINKS})
-				is_Shared_Lib_With_Path(IS_SHARED ${lib})
-				if(IS_SHARED)
-					list(APPEND result ${lib})
-				endif()
-			endforeach()
-		endif()
-	endif()
-	
-
-	# 2) adding package components dependencies
-	foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_suffix}})
-		#message("DEBUG : ${component}  depends on package ${dep_pack}")
-		foreach(dep_comp IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${mode_var_suffix}})
-			#message("DEBUG : ${component} depends on package ${dep_comp} in ${dep_pack}")
-			if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC")		
-				get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${dep_pack} ${dep_comp} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
-				if(INT_DEP_SHARED_LIBS)
-					list(APPEND result ${INT_DEP_SHARED_LIBS})
-				endif()
-			elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED")
-				list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${mode_var_suffix}})#the shared library is a direct dependency of the component
-				is_Bin_Component_Exporting_Other_Components(EXPORTING ${dep_pack} ${dep_comp} ${mode})
-				if(EXPORTING) # doing transitive search only if shared libs export something
-					get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${dep_pack} ${dep_comp} ${mode}) #need to resolve external symbols whether the component is exported or not
-					if(INT_DEP_SHARED_LIBS)# guarding against shared libs presence
-						list(APPEND result ${INT_DEP_SHARED_LIBS})
-					endif()
-				endif() #no need to resolve external symbols if the shared library component is not exported
+# 1) adding directly exported external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
+if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
+	resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+	if(RES_LINKS)
+		foreach(lib IN ITEMS ${RES_LINKS})
+			is_Shared_Lib_With_Path(IS_SHARED ${lib})
+			if(IS_SHARED)
+				list(APPEND result ${lib})
 			endif()
 		endforeach()
-	endforeach()
-	#message("DEBUG : runtime deps for component ${component}, AFTER PACKAGE DEPENDENCIES => ${result} ")
+	endif()
+endif()
 
-	# 3) adding internal components dependencies
-	foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix}})
-		if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")		
-			get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
+
+# 2) adding package components dependencies
+foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
+	#message("DEBUG : ${component}  depends on package ${dep_pack}")
+	foreach(dep_comp IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX}})
+		#message("DEBUG : ${component} depends on package ${dep_comp} in ${dep_pack}")
+		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC")		
+			get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${dep_pack} ${dep_comp} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
 			if(INT_DEP_SHARED_LIBS)
 				list(APPEND result ${INT_DEP_SHARED_LIBS})
 			endif()
-		elseif(${package}_${int_dep}_TYPE STREQUAL "SHARED")
-			# no need to link internal dependencies with symbolic links (they will be found automatically)
-			is_Bin_Component_Exporting_Other_Components(EXPORTING ${package} ${int_dep} ${mode})
+		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED")
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the shared library is a direct dependency of the component
+			is_Bin_Component_Exporting_Other_Components(EXPORTING ${dep_pack} ${dep_comp} ${mode})
 			if(EXPORTING) # doing transitive search only if shared libs export something
-				get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not
+				get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${dep_pack} ${dep_comp} ${mode}) #need to resolve external symbols whether the component is exported or not
 				if(INT_DEP_SHARED_LIBS)# guarding against shared libs presence
 					list(APPEND result ${INT_DEP_SHARED_LIBS})
 				endif()
 			endif() #no need to resolve external symbols if the shared library component is not exported
 		endif()
 	endforeach()
-	#message("DEBUG : runtime deps for component ${component}, AFTER INTERNAL DEPENDENCIES => ${result} ")
-	# 4) adequately removing first duplicates in the list
-	list(REVERSE result)
-	list(REMOVE_DUPLICATES result)
-	list(REVERSE result)
-	#message("DEBUG : runtime deps for component ${component}, AFTER RETURNING => ${result} ")
-	set(${ALL_SHARED_LIBS} ${result} PARENT_SCOPE)
+endforeach()
+#message("DEBUG : runtime deps for component ${component}, AFTER PACKAGE DEPENDENCIES => ${result} ")
+
+# 3) adding internal components dependencies
+foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+	if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")		
+		get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
+		if(INT_DEP_SHARED_LIBS)
+			list(APPEND result ${INT_DEP_SHARED_LIBS})
+		endif()
+	elseif(${package}_${int_dep}_TYPE STREQUAL "SHARED")
+		# no need to link internal dependencies with symbolic links (they will be found automatically)
+		is_Bin_Component_Exporting_Other_Components(EXPORTING ${package} ${int_dep} ${mode})
+		if(EXPORTING) # doing transitive search only if shared libs export something
+			get_Bin_Component_Runtime_Dependencies(INT_DEP_SHARED_LIBS ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not
+			if(INT_DEP_SHARED_LIBS)# guarding against shared libs presence
+				list(APPEND result ${INT_DEP_SHARED_LIBS})
+			endif()
+		endif() #no need to resolve external symbols if the shared library component is not exported
+	endif()
+endforeach()
+#message("DEBUG : runtime deps for component ${component}, AFTER INTERNAL DEPENDENCIES => ${result} ")
+# 4) adequately removing first duplicates in the list
+list(REVERSE result)
+list(REMOVE_DUPLICATES result)
+list(REVERSE result)
+#message("DEBUG : runtime deps for component ${component}, AFTER RETURNING => ${result} ")
+set(${ALL_SHARED_LIBS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Runtime_Dependencies)
 
 
