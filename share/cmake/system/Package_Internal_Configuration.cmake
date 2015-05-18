@@ -180,6 +180,7 @@ function(init_Component_Build_Variables package component path_to_version mode)
 		endif()
 
 		#provided library (ldflags -l<path>)
+		## WITHOUT TARGET : uncomment following block
 		if(NOT ${package}_${component}_TYPE STREQUAL "HEADER")
 			set(${package}_${component}_LIBRARIES${mode_suffix} "${path_to_version}/lib/${${package}_${component}_BINARY_NAME${mode_suffix}}" CACHE INTERNAL "")
 		endif()

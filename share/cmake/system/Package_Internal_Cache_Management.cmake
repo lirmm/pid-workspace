@@ -50,23 +50,24 @@ endfunction(reset_Mode_Cache_Options)
 ############################################################################
 
 ### printing variables for components in the package ################
-macro(print_Component component)
+macro(print_Component component imported)
 	message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX}")
 	message("INTERFACE : ")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
-		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
-		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_INTERFACE_LIBRARIES)
-		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")		
-		
-	message("IMPLEMENTATION :")
+	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
+	message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
+	message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_LINK_LIBRARIES)
+	message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+	if(NOT ${imported} AND NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+		message("IMPLEMENTATION :")
 		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
 		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
 		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
 		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
 		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
 		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+	endif()
 endmacro(print_Component)
 
 macro(print_Component_Variables)
@@ -75,7 +76,7 @@ macro(print_Component_Variables)
 	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
 
 	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-		print_Component(${component})	
+		print_Component(${component} FALSE)	
 	endforeach()
 endmacro(print_Component_Variables)
 
@@ -231,7 +232,7 @@ else() # otherwise no need to register them since no more useful
 			${exported_defs}
 			CACHE INTERNAL "")
 	endif()
-	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared lib
+	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared lib (otherwise they simply disappear)
 		if (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER" 
 			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
 		)
@@ -243,7 +244,7 @@ else() # otherwise no need to register them since no more useful
 	endif()
 	if(NOT shared_links STREQUAL "")#shared links are privates (not exported) -> these links are used to process executables linking
 		set(	${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}			
+			${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}
 			${shared_links}
 			CACHE INTERNAL "")
 	endif()
@@ -366,6 +367,30 @@ function(reset_Declared)
 set(${PROJECT_NAME}_DECLARED_COMPS CACHE INTERNAL "")
 endfunction(reset_Declared)
 
+function(export_Component IS_EXPORTING package component dep_package dep_component mode)
+is_HeaderFree_Component(IS_HF ${package} ${component})
+if(IS_HF)
+	set(${IS_EXPORTING} FALSE PARENT_SCOPE)
+	return()
+endif()
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
+
+if(package STREQUAL "${dep_package}")
+	if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
+		set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+	else()
+		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
+	endif()
+else()
+	if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX})
+		set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+	else()
+		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
+	endif()	
+
+endif()
+
+endfunction(export_Component)
 
 ### to know if the component is an application
 function(is_HeaderFree_Component ret_var package component)

@@ -389,21 +389,32 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
 		message(FATAL_ERROR "bad arguments : keywords EXTERNAL (requiring an external package) and NATIVE (or DEPEND) (requiring a PID component) cannot be used simultaneously")
 	endif()
-
+	if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
+		set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND})
+	else()
+		set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE})
+	endif()
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE)#package dependency
 		declare_Package_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT} 
 					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} 
-					${DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND}
+					${target_component}
 					${export}
 					"${comp_defs}" 
 					"${comp_exp_defs}"
 					"${dep_defs}"
 					)
 	else()#internal dependency
+		message("	comp=<${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}>
+					depend=<${target_component}> 
+					export=<${export}>
+					comp_defs= <${comp_defs}>
+					comp_exp_defs = <${comp_exp_defs}>
+					depdefs = <${dep_defs}>
+			")
 		declare_Internal_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
-					${DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND} 
+					${target_component} 
 					${export}
 					"${comp_defs}" 
 					"${comp_exp_defs}"
