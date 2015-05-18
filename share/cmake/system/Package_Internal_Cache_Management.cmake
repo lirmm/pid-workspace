@@ -50,23 +50,24 @@ endfunction(reset_Mode_Cache_Options)
 ############################################################################
 
 ### printing variables for components in the package ################
-macro(print_Component component)
+macro(print_Component component imported)
 	message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX}")
 	message("INTERFACE : ")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
-		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
-		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_INTERFACE_LIBRARIES)
-		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")		
-		
-	message("IMPLEMENTATION :")
+	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
+	message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
+	message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_LINK_LIBRARIES)
+	message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+	if(NOT ${imported} AND NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+		message("IMPLEMENTATION :")
 		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
 		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
 		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
 		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
 		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
 		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+	endif()
 endmacro(print_Component)
 
 macro(print_Component_Variables)
@@ -75,7 +76,7 @@ macro(print_Component_Variables)
 	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
 
 	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-		print_Component(${component})	
+		print_Component(${component} FALSE)	
 	endforeach()
 endmacro(print_Component_Variables)
 
@@ -193,8 +194,7 @@ endfunction(add_Category)
 #############################################################################################
 
 ### configure variables exported by component that will be used to generate the package cmake use file
-function (configure_Install_Variables component export include_dirs dep_defs exported_defs static_links shared_links)
-#message("configure_Install_Variables component=${component} export=${export} include_dirs=${include_dirs} dep_defs=${dep_defs} exported_defs=${exported_defs} static_links=${static_links} shared_links=${shared_links}")
+function (configure_Install_Variables component export include_dirs dep_defs exported_defs static_links shared_links runtime_resources)
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(	NOT dep_defs STREQUAL "" 
@@ -232,7 +232,7 @@ else() # otherwise no need to register them since no more useful
 			${exported_defs}
 			CACHE INTERNAL "")
 	endif()
-	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared lib
+	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared lib (otherwise they simply disappear)
 		if (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER" 
 			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
 		)
@@ -242,14 +242,20 @@ else() # otherwise no need to register them since no more useful
 			CACHE INTERNAL "")
 		endif()
 	endif()
-	if(NOT shared_links STREQUAL "")#shared links are privates (not exported) -> these links are used to process executables linking
+	if(NOT shared_links STREQUAL "")#private links are shared "non exported" libraries -> these links are used to process executables linking
 		set(	${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}			
+			${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}
 			${shared_links}
 			CACHE INTERNAL "")
 	endif()
 endif()
 
+if(NOT runtime_resources STREQUAL "")
+	set(	${PROJECT_NAME}_${component}_RUNTIME_RESOURCES
+		${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES}
+		${runtime_resources}
+		CACHE INTERNAL "")
+endif()
 endfunction(configure_Install_Variables)
 
 
@@ -280,8 +286,15 @@ set(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL 
 set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_SOURCE_CODE CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_SOURCE_DIR CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
+
+function(init_Component_Cached_Variables_For_Export component exported_defs exported_links runtime_resources)
+set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
+set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${exported_links}" CACHE INTERNAL "") #exported links
+set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories (not useful to set it there since they will be exported "manually")
+set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} "${runtime_resources}" CACHE INTERNAL "")#runtime resources are exported by default
+endfunction(init_Component_Cached_Variables_For_Export)
 
 ### resetting all internal cached variables that would cause some troubles
 function(reset_All_Component_Cached_Variables)
@@ -354,6 +367,44 @@ function(reset_Declared)
 set(${PROJECT_NAME}_DECLARED_COMPS CACHE INTERNAL "")
 endfunction(reset_Declared)
 
+function(export_Component IS_EXPORTING package component dep_package dep_component mode)
+is_HeaderFree_Component(IS_HF ${package} ${component})
+if(IS_HF)
+	set(${IS_EXPORTING} FALSE PARENT_SCOPE)
+	return()
+endif()
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
+
+if(package STREQUAL "${dep_package}")
+	if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
+		set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+	else()
+		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
+	endif()
+else()
+	if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX})
+		set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+	else()
+		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
+	endif()	
+
+endif()
+
+endfunction(export_Component)
+
+### to know if the component is an application
+function(is_HeaderFree_Component ret_var package component)
+if (	${package}_${component}_TYPE STREQUAL "APP"
+	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
+	OR ${package}_${component}_TYPE STREQUAL "TEST"
+	OR ${package}_${component}_TYPE STREQUAL "MODULE"
+	)
+	set(${ret_var} TRUE PARENT_SCOPE)
+else()
+	set(${ret_var} FALSE PARENT_SCOPE)
+endif()
+endfunction(is_HeaderFree_Component)
+
 
 ### to know if the component is an application
 function(is_Executable_Component ret_var package component)
@@ -384,18 +435,23 @@ endfunction(is_Built_Component)
 
 ### 
 function(will_be_Built result component)
-set(DECLARED FALSE)
-is_Declared(${component} DECLARED)
-if(NOT DECLARED)
-	set(${result} FALSE PARENT_SCOPE)
-	message(FATAL_ERROR "component ${component} does not exist")
-elseif( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
+if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND NOT BUILD_EXAMPLES))
 	set(${result} FALSE PARENT_SCOPE)
 else()
 	set(${result} TRUE PARENT_SCOPE)
 endif()
 endfunction(will_be_Built)
+
+### 
+function(will_be_Installed result component)
+if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND NOT BUILD_EXAMPLES))
+	set(${result} FALSE PARENT_SCOPE)
+else()
+	set(${result} TRUE PARENT_SCOPE)
+endif()
+endfunction(will_be_Installed)
 
 ### registering the binary name of a component
 function(register_Component_Binary c_name)
@@ -442,6 +498,7 @@ foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${mode_var_suffix}
 	endforeach()
 endforeach()
 endfunction(is_Bin_Component_Exporting_Other_Components)
+
 
 ##############################################################################################################
 ############### API functions for managing cache variables bound to package dependencies #####################
@@ -564,11 +621,9 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 			file(APPEND ${file} "set(${package}_${a_component}_HEADER_DIR_NAME ${${package}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
 			file(APPEND ${file} "set(${package}_${a_component}_HEADERS ${${package}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
 		endif()
-		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
 	endforeach()
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES ${${package}_${a_component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
 	endforeach()
 else()
 	set(MODE_SUFFIX _DEBUG)
@@ -607,16 +662,18 @@ endforeach()
 file(APPEND ${file} "#### declaration of components exported flags and binary in ${CMAKE_BUILD_TYPE} mode ####\n")
 foreach(a_component IN ITEMS ${${package}_COMPONENTS})
 	is_Built_Component(IS_BUILT_COMP ${package} ${a_component})
-	is_Executable_Component(IS_EXEC_COMP ${package} ${a_component})
+	is_HeaderFree_Component(IS_HF_COMP ${package} ${a_component})
 	if(IS_BUILT_COMP)#if not a pure header library
 		file(APPEND ${file} "set(${package}_${a_component}_BINARY_NAME${MODE_SUFFIX} ${${package}_${a_component}_BINARY_NAME${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
-	if(NOT IS_EXEC_COMP)#it is a library
+	if(NOT IS_HF_COMP)#it is a library but not a module library
 		file(APPEND ${file} "set(${package}_${a_component}_INC_DIRS${MODE_SUFFIX} ${${package}_${a_component}_INC_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} ${${package}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
+	file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX} ${${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+
 endforeach()
 
 # 4) package internal component dependencies
@@ -673,10 +730,10 @@ endfunction(create_Use_File)
 
 ###############################################################################################
 ############################## providing info on the package content ########################## 
-#################### function used to create the Info<package>.cmake  ######################### 
 ###############################################################################################
 
-function(create_Info_File)
+#################### function used to create the Info<package>.cmake  ######################### 
+function(generate_Info_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
 	set(file ${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake)
 	file(WRITE ${file} "")#resetting the file content
@@ -697,4 +754,55 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once
 	endforeach()
 endif()
 
-endfunction(create_Info_File)
+endfunction(generate_Info_File)
+
+
+############ function used to create the license.txt file of the package  ###########
+function(generate_License_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	if(	DEFINED ${PROJECT_NAME}_LICENSE 
+		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+	
+		find_file(	LICENSE   
+				"License${${PROJECT_NAME}_LICENSE}.cmake"
+				PATH "${WORKSPACE_DIR}/share/cmake/system"
+				NO_DEFAULT_PATH
+			)
+		set(LICENSE ${LICENSE} CACHE INTERNAL "")
+		
+		if(LICENSE_IN-NOTFOUND)
+			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
+		else(LICENSE_IN-NOTFOUND)
+			foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
+				generate_Full_Author_String(${author} STRING_TO_APPEND)
+				set(${PROJECT_NAME}_AUTHORS_LIST "${${PROJECT_NAME}_AUTHORS_LIST} ${STRING_TO_APPEND}")
+			endforeach()
+			include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
+			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
+			install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
+			file(WRITE ${CMAKE_BINARY_DIR}/share/file_header_comment.txt.in ${LICENSE_HEADER_FILE_DESCRIPTION})
+		endif(LICENSE_IN-NOTFOUND)
+	endif()
+endif()
+endfunction(generate_License_File)
+
+############ function used to create the  Find<package>.cmake file of the package  ###########
+function(generate_Find_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	# generating/installing the generic cmake find file for the package 
+	configure_file(${WORKSPACE_DIR}/share/cmake/patterns/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
+	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
+endif()
+endfunction(generate_Find_File)
+
+############ function used to create the Use<package>-<version>.cmake file of the package  ###########
+macro(generate_Use_File)
+create_Use_File()
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	install(	FILES ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake 
+			DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}
+	)
+endif()
+endmacro(generate_Use_File)
+
+
