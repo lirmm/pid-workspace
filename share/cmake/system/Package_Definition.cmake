@@ -128,8 +128,8 @@ endmacro(build_PID_Package)
 ### API : declare_PID_Component(NAME name 
 #				DIRECTORY dirname 
 #				<STATIC_LIB|SHARED_LIB|MODULE_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
-#				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [LINKS link ...] ] 
-#				[EXPORTED [DEFINITIONS def ...] [LINKS link ...]
+#				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [COMPILER_OPTIONS ...] [LINKS link ...] ] 
+#				[EXPORTED [DEFINITIONS def ...] [COMPILER_OPTIONS ...] [LINKS link ...] 
 #				[RUNTIME_RESOURCES <some path to files in the share/resources dir>])
 macro(declare_PID_Component)
 set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
@@ -186,13 +186,16 @@ if(DECLARE_PID_COMPONENT_INTERNAL)
 	if(DECLARE_PID_COMPONENT_INTERNAL STREQUAL "")
 		message(FATAL_ERROR "bad arguments : INTERNAL keyword must be followed by by at least one DEFINITION OR INCLUDE_DIR OR LINK")
 	endif()
-	set(internal_multiValueArgs DEFINITIONS INCLUDE_DIRS LINKS)
+	set(internal_multiValueArgs DEFINITIONS INCLUDE_DIRS LINKS COMPILER_OPTIONS)
 	cmake_parse_arguments(DECLARE_PID_COMPONENT_INTERNAL "" "" "${internal_multiValueArgs}" ${DECLARE_PID_COMPONENT_INTERNAL} )
 	if(DECLARE_PID_COMPONENT_INTERNAL_DEFINITIONS)
 		set(internal_defs ${DECLARE_PID_COMPONENT_INTERNAL_DEFINITIONS})
 	endif()
 	if(DECLARE_PID_COMPONENT_INTERNAL_INCLUDE_DIRS)
 		set(internal_inc_dirs ${DECLARE_PID_COMPONENT_INTERNAL_INCLUDE_DIRS})
+	endif()
+	if(DECLARE_PID_COMPONENT_INTERNAL_COMPILER_OPTIONS)
+		set(internal_compiler_options ${DECLARE_PID_COMPONENT_INTERNAL_COMPILER_OPTIONS})
 	endif()
 	if(DECLARE_PID_COMPONENT_INTERNAL_LINKS)
 		if(type MATCHES HEADER OR type MATCHES STATIC)
@@ -212,13 +215,16 @@ if(DECLARE_PID_COMPONENT_EXPORTED)
 	if(DECLARE_PID_COMPONENT_EXPORTED STREQUAL "")
 		message(FATAL_ERROR "bad arguments : EXPORTED keyword must be followed by by at least one DEFINITIONS OR LINKS")
 	endif()
-	set(exported_multiValueArgs DEFINITIONS LINKS)
+	set(exported_multiValueArgs DEFINITIONS LINKS COMPILER_OPTIONS)
 	cmake_parse_arguments(DECLARE_PID_COMPONENT_EXPORTED "" "" "${exported_multiValueArgs}" ${DECLARE_PID_COMPONENT_EXPORTED} )
 	if(DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS)
 		set(exported_defs ${DECLARE_PID_COMPONENT_EXPORTED_DEFINITIONS})
 	endif()
 	if(DECLARE_PID_COMPONENT_EXPORTED_LINKS)
 		set(exported_link_flags ${DECLARE_PID_COMPONENT_EXPORTED_LINKS})
+	endif()
+	if(DECLARE_PID_COMPONENT_EXPORTED_COMPILER_OPTIONS)
+		set(exported_compiler_options ${DECLARE_PID_COMPONENT_EXPORTED_COMPILER_OPTIONS})
 	endif()
 endif()
 
@@ -234,6 +240,7 @@ if(type MATCHES APP OR type MATCHES EXAMPLE OR type MATCHES TEST)
 					${type} 
 					"${internal_inc_dirs}" 
 					"${internal_defs}" 
+					"${internal_compiler_options}"
 					"${internal_link_flags}"
 					"${runtime_resources}")
 else() #it is a library
@@ -242,7 +249,9 @@ else() #it is a library
 					${type} 
 					"${internal_inc_dirs}"
 					"${internal_defs}"
+					"${internal_compiler_options}"
 					"${exported_defs}" 
+					"${exported_compiler_options}"
 					"${internal_link_flags}"
 					"${exported_link_flags}"
 					"${runtime_resources}")
@@ -471,10 +480,9 @@ if(RUN_PID_TEST_EXE)
 	add_test("${RUN_PID_TEST_NAME}" "${RUN_PID_TEST_EXE}" ${RUN_PID_TEST_ARGUMENTS})
 else()#RUN_PID_TEST_COMPONENT
 	if(RUN_PID_TEST_PACKAGE)#component coming from another PID package
-		#testing if TARGET component exist TODO
-		#TODO getting path to component
+		set(target_of_test ${RUN_PID_TEST_PACKAGE}-${RUN_PID_TEST_COMPONENT})
+		add_test(${RUN_PID_TEST_NAME} ${target_of_test} ${RUN_PID_TEST_ARGUMENTS})
 	else()#internal component
-		#testing if TARGET component exist TODO
 		
 		add_test(${RUN_PID_TEST_NAME} ${RUN_PID_TEST_COMPONENT} ${RUN_PID_TEST_ARGUMENTS})
 	endif()

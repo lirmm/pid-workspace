@@ -31,6 +31,13 @@ endif()
 
 endfunction(list_Public_Definitions)
 
+function(list_Public_Options OPTS package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
+if(${package}_${component}_OPTS${VAR_SUFFIX}) 	
+	set(${OPTS} ${${package}_${component}_OPTS${VAR_SUFFIX}} PARENT_SCOPE)
+endif()
+endfunction(list_Public_Options)
+
 function( get_Binary_Location LOCATION_RES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
 
