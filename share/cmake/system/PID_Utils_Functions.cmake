@@ -1,24 +1,13 @@
 ###
-function(get_Mode_Target_Suffix TARGET_SUFFIX mode)
-if(mode MATCHES Debug)
-	set(${TARGET_SUFFIX} "-dbg" PARENT_SCOPE)
-elseif(mode MATCHES Release)
-	set(${TARGET_SUFFIX} "" PARENT_SCOPE)
+function(get_Mode_Variables TARGET_SUFFIX VAR_SUFFIX mode)
+if(mode MATCHES Release)
+	set(${TARGET_SUFFIX} PARENT_SCOPE)
+	set(${VAR_SUFFIX} PARENT_SCOPE)
 else()
-	message(FATAL_ERROR "Only Release or Debug modes are possible within PID")
+	set(${TARGET_SUFFIX} -dbg PARENT_SCOPE)
+	set(${VAR_SUFFIX} _DEBUG PARENT_SCOPE)
 endif()
-endfunction(get_Mode_Target_Suffix)
-
-###
-function(get_Mode_Variable_Suffix VARIABLE_SUFFIX mode)
-if(mode MATCHES Debug)
-	set(${VARIABLE_SUFFIX} "_DEBUG" PARENT_SCOPE)
-elseif(mode MATCHES Release)
-	set(${VARIABLE_SUFFIX} "" PARENT_SCOPE)
-else()
-	message(FATAL_ERROR "Only Release or Debug modes are possible within PID")
-endif()
-endfunction(get_Mode_Variable_Suffix)
+endfunction(get_Mode_Variables)
 
 ###
 function(is_A_System_Reference_Path path IS_SYSTEM)
@@ -272,14 +261,14 @@ endfunction(is_Shared_Lib_With_Path)
 
 ###
 function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
-get_Mode_Variable_Suffix(mode_suffix ${mode})
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(EXT_PACKAGE-NOTFOUND PARENT_SCOPE)
 
-if(DEFINED ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${mode_suffix})
-	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/external/${ext_package}/${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${mode_suffix}} PARENT_SCOPE)
+if(DEFINED ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX})
+	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/external/${ext_package}/${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX}} PARENT_SCOPE)
 	return()
 elseif(${ref_package}_DEPENDENCIES${mode_suffix}) #the external dependency may be issued from a third party native package
-	foreach(dep_pack IN ITEMS ${${ref_package}_DEPENDENCIES${mode_suffix}})
+	foreach(dep_pack IN ITEMS ${${ref_package}_DEPENDENCIES${VAR_SUFFIX}})
 		is_External_Package_Defined(${dep_pack} ${ext_package} ${mode} PATHTO)
 		if(NOT EXT_PACKAGE-NOTFOUND)
 			set(${RES_PATH_TO_PACKAGE} ${PATHTO} PARENT_SCOPE)
@@ -401,15 +390,4 @@ endforeach()
 set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
 endfunction(resolve_External_Resources_Path)
 
-
-###
-function(get_Mode_Variables TARGET_SUFFIX VAR_SUFFIX mode)
-if(mode MATCHES Release)
-	set(${TARGET_SUFFIX} PARENT_SCOPE)
-	set(${VAR_SUFFIX} PARENT_SCOPE)
-else()
-	set(${TARGET_SUFFIX} -dbg PARENT_SCOPE)
-	set(${VAR_SUFFIX} _DEBUG PARENT_SCOPE)
-endif()
-endfunction(get_Mode_Variables)
 

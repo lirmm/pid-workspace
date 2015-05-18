@@ -1109,24 +1109,24 @@ endfunction(manage_Install_Tree_Direct_Runtime_Paths)
 
 ###
 function(manage_Build_Tree_External_Runtime_Paths c_name mode resources)
-get_Mode_Target_Suffix(mode_suffix ${mode})
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(NOT "${resources}" STREQUAL "")
 	# managing runtime resources
 	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${PROJECT_NAME} ${resources} ${mode})
 	foreach(resource IN ITEMS ${COMPLETE_RESOURCES_PATH})
-		create_Rpath_Symlink(${resource} ${CMAKE_BINARY_DIR} ${c_name}${mode_suffix})
+		create_Rpath_Symlink(${resource} ${CMAKE_BINARY_DIR} ${c_name}${TARGET_SUFFIX})
 	endforeach()
 endif()
 endfunction(manage_Build_Tree_External_Runtime_Paths)
 
 ###
 function(manage_Install_Tree_External_Runtime_Paths c_name mode resources)
-get_Mode_Target_Suffix(mode_suffix ${mode})
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(NOT "${resources}" STREQUAL "")
 	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${PROJECT_NAME} ${resources} ${mode})
 	# managing runtime resources at install time
 	foreach(resource IN ITEMS ${resources})
-		install_Rpath_Symlink(${resource} ${${PROJECT_NAME}_DEPLOY_PATH} ${c_name}${mode_suffix})
+		install_Rpath_Symlink(${resource} ${${PROJECT_NAME}_DEPLOY_PATH} ${c_name}${TARGET_SUFFIX})
 	endforeach()
 endif()
 endfunction(manage_Install_Tree_External_Runtime_Paths)
