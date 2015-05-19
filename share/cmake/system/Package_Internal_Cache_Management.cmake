@@ -194,7 +194,7 @@ endfunction(add_Category)
 #############################################################################################
 
 ### configure variables exported by component that will be used to generate the package cmake use file
-function (configure_Install_Variables component export include_dirs dep_defs exported_defs static_links shared_links runtime_resources)
+function (configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(	NOT dep_defs STREQUAL "" 
@@ -210,6 +210,13 @@ if(export) # if dependancy library is exported then we need to register its dep_
 			${include_dirs}
 			CACHE INTERNAL "")
 	endif()
+	if(NOT exported_options STREQUAL "")	
+		set(	${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX}} 
+			${exported_options}
+			CACHE INTERNAL "")
+	endif()
+	
 	# links are exported since we will need to resolve symbols in the third party components that will the use the component 	
 	if(NOT shared_links STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
@@ -281,6 +288,7 @@ set(${PROJECT_NAME}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_HEADERS CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -289,10 +297,11 @@ set(${PROJECT_NAME}_${component}_SOURCE_DIR CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
 
-function(init_Component_Cached_Variables_For_Export component exported_defs exported_links runtime_resources)
+function(init_Component_Cached_Variables_For_Export component exported_defs exported_options exported_links runtime_resources)
 set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
 set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${exported_links}" CACHE INTERNAL "") #exported links
 set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories (not useful to set it there since they will be exported "manually")
+set(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} "${exported_options}" CACHE INTERNAL "") #exported compiler options
 set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} "${runtime_resources}" CACHE INTERNAL "")#runtime resources are exported by default
 endfunction(init_Component_Cached_Variables_For_Export)
 

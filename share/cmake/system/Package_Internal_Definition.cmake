@@ -668,7 +668,7 @@ manage_Install_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "$
 manage_Build_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
 
 # registering exported flags for all kinds of libs
-init_Component_Cached_Variables_For_Export(${c_name} "${exported_defs}" "${exported_links}" "${runtime_resources}")
+init_Component_Cached_Variables_For_Export(${c_name} "${exported_defs}" "${exported_compiler_options}" "${exported_links}" "${runtime_resources}")
 
 #updating global variables of the CMake process	
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
@@ -751,7 +751,7 @@ manage_Build_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${r
 
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
 if(COMP_WILL_BE_INSTALLED)
-	init_Component_Cached_Variables_For_Export(${c_name} "" "" "${runtime_resources}")
+	init_Component_Cached_Variables_For_Export(${c_name} "" "" "" "${runtime_resources}")
 endif()
 #updating global variables of the CMake process	
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
@@ -849,7 +849,7 @@ if (IS_HF_COMP)
 	endif()	
 elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)
-		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
+		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
 		# setting compile definitions for configuring the target
 		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
@@ -859,7 +859,7 @@ elseif(IS_BUILT_COMP)
 		if(export)
 			set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		endif()
-		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "" "")
+		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "")
 
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
@@ -867,14 +867,14 @@ elseif(IS_BUILT_COMP)
 	endif()	
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	if(IS_HF_DEP)
-		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
+		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
 		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "" "${comp_exp_defs}"  "")	
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
 	else()
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
-		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "")
+		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "")
 		# setting compile definitions for configuring the "fake" target
 		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} TRUE "" "${comp_exp_defs}"  "${dep_defs}")
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
@@ -930,13 +930,13 @@ elseif(IS_BUILT_COMP)
 		# setting compile definitions for configuring the target
 		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
-		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
+		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
 
 	else()	#the dependency has a build interface			
 		if(export)#prepare the dependancy export
 			set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "")
 		endif()
-		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "" "")
+		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "")
 
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
@@ -949,12 +949,12 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
 		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "" "${comp_exp_defs}" "")#=> no build export
-		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "")
+		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
 	else()	#the dependency has a build interface			
 
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
-		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "")
+		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "")
 		# setting compile definitions for configuring the "fake" target
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 
@@ -985,8 +985,9 @@ endfunction(declare_Package_Component_Dependency)
 ### export : if true the component export the depenancy in its interface (export is always false if component is an application)
 ### inc_dirs : include directories to add to target component in order to build (these include dirs are expressed with absolute path)
 ### links : links defined by the system dependancy, will be exported in any case (except by executables components). shared or static links should always be in a default system path (e.g. /usr/lib) or retrieved by LD_LIBRARY_PATH for shared. Otherwise (not recommended) all path to libraries should be absolute.
+### compiler_options: compiler options used when compiling with system dependency. if the system dependency is exported, these options will be exported too.
 ### runtime_resources: for executable runtime resources, they should always be in the PATH environment variable. For modules libraries they should always be in a default system path (e.g. /usr/lib) or retrieved by LD_LIBRARY_PATH. Otherwise (not recommended) they should be referenced with absolute path. For file resources absolute paths must be used. 
-function(declare_System_Component_Dependency component export inc_dirs comp_defs comp_exp_defs dep_defs static_links shared_links runtime_resources)
+function(declare_System_Component_Dependency component export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links runtime_resources)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
@@ -1000,19 +1001,19 @@ set(TARGET_LINKS ${static_links} ${shared_links})
 
 if (IS_HF_COMP)
 	if(COMP_WILL_BE_INSTALLED)
-		configure_Install_Variables(${component} FALSE "" "" "" "" "" "${runtime_resources}")
+		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${runtime_resources}")
 	endif()	
 	# setting compile definitions for the target
 	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
-	configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}" "${runtime_resources}")
+	configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${runtime_resources}")
 	# setting compile definitions for the target
 	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	#prepare the dependancy export
-	configure_Install_Variables(${component} TRUE "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}" "${runtime_resources}") #export is necessarily true for a pure header library
+	configure_Install_Variables(${component} TRUE "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${runtime_resources}") #export is necessarily true for a pure header library
 	# setting compile definitions for the target
 	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 else()
@@ -1035,8 +1036,9 @@ endfunction(declare_System_Component_Dependency)
 ### export : if true the component export the external depenancy in its interface (export is always false if component is an application)
 ### inc_dirs : include directories to add to target component in order to build (these include dirs are expressed relatively) to the reference path to the external dependancy root dir
 ### links : links defined by the system dependancy, will be exported in any case (except by executables components). shared or static links must always be given relative to the dep_package root dir.
+### compiler_options: compiler options used when compiling with external dependency. if the external dependency is exported, these options will be exported too.
 ### runtime_resources: resources used at runtime (module libs, executable or files). They must always be specified according to the dep_package root dir. 
-function(declare_External_Component_Dependency component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs static_links shared_links runtime_resources)
+function(declare_External_Component_Dependency component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links runtime_resources)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
@@ -1053,18 +1055,18 @@ else()
 	set(TARGET_LINKS ${static_links} ${shared_links})
 	if (IS_HF_COMP)
 		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${runtime_resources}")
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${runtime_resources}")
 		endif()		
 		# setting compile definitions for the target		
 		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
-		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}" "${runtime_resources}")
+		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${runtime_resources}")
 		# setting compile definitions for the target
 		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#prepare the dependancy export
-		configure_Install_Variables(${component} TRUE "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${static_links}" "${shared_links}" "${runtime_resources}") #export is necessarily true for a pure header library
+		configure_Install_Variables(${component} TRUE "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${runtime_resources}") #export is necessarily true for a pure header library
 
 		# setting compile definitions for the "fake" target
 		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
