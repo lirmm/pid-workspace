@@ -400,7 +400,7 @@ endif()
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
 	will_be_Built(RES ${component})
 	if(RES)
-		resolve_Source_Component_Linktime_Dependencies(${component} ${component}_THIRD_PARTY_LINKS)
+		resolve_Source_Component_Linktime_Dependencies(${component} ${CMAKE_BUILD_TYPE} ${component}_THIRD_PARTY_LINKS)
 	endif()
 endforeach()
 
@@ -408,7 +408,7 @@ endforeach()
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	will_be_Built(RES ${component})
 	if(RES)
-		resolve_Source_Component_Runtime_Dependencies(${component} "${${component}_THIRD_PARTY_LINKS}")
+		resolve_Source_Component_Runtime_Dependencies(${component} ${CMAKE_BUILD_TYPE} "${${component}_THIRD_PARTY_LINKS}")
 	endif()
 endforeach()
 
@@ -664,8 +664,8 @@ else()#simply creating a "fake" target for header only library
 endif()
 
 install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
-manage_Install_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
-manage_Build_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
+manage_Install_Tree_Direct_Runtime_Paths("${c_name}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
+manage_Build_Tree_Direct_Runtime_Paths("${c_name}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
 
 # registering exported flags for all kinds of libs
 init_Component_Cached_Variables_For_Export(${c_name} "${exported_defs}" "${exported_compiler_options}" "${exported_links}" "${runtime_resources}")
@@ -733,7 +733,7 @@ if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")# NB : tests do not nee
 	if(EXISTS ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH})
 		install(DIRECTORY ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH} DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/resources/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain runtime resources provided (e.g. config files) by the component
 	endif()
-	manage_Install_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
+	manage_Install_Tree_Direct_Runtime_Paths("${c_name}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
 	register_Component_Binary(${c_name})# resgistering name of the executable
 else()
 	create_TestUnit_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_link_flags}")
@@ -747,7 +747,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 
 #managing runtime resource at build time
-manage_Build_Tree_Direct_Runtime_Paths("${c_name}" "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
+manage_Build_Tree_Direct_Runtime_Paths("${c_name}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
 
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
 if(COMP_WILL_BE_INSTALLED)
@@ -1075,62 +1075,11 @@ else()
 	endif()
 endif()
 
-manage_Build_Tree_External_Runtime_Paths("${component}" ${CMAKE_BUILD_TYPE} "${INSTALL_NAME_SUFFIX}" "${runtime_resources}")
+manage_Build_Tree_External_Runtime_Paths("${component}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
 
 if(COMP_WILL_BE_INSTALLED)
 	manage_Install_Tree_External_Runtime_Paths("${component}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
 endif()
 
 endfunction(declare_External_Component_Dependency)
-
-##################################################################################
-############# auxiliary package management internal functions and macros #########
-##################################################################################
-
-###
-function(manage_Build_Tree_Direct_Runtime_Paths c_name mode_suffix resources)
-if(EXISTS ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH} AND NOT "${resources}" STREQUAL "")
-	# managing runtime resources
-	foreach(resource IN ITEMS ${resources})
-		set(file_PATH ${CMAKE_SOURCE_DIR}/share/resources/${resource})#the path contained by the link
-		create_Rpath_Symlink(${file_PATH} ${CMAKE_BINARY_DIR} ${c_name}${mode_suffix})
-	endforeach()
-endif()
-endfunction(manage_Build_Tree_Direct_Runtime_Paths)
-
-###
-function(manage_Install_Tree_Direct_Runtime_Paths c_name mode_suffix resources)
-if(EXISTS ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH} AND NOT "${resources}" STREQUAL "")
-	# managing runtime resources at install time
-	foreach(resource IN ITEMS ${resources})
-		set(file_PATH ../../share/resources/${resource})#the path contained by the link
-		install_Rpath_Symlink(${file_PATH} ${${PROJECT_NAME}_DEPLOY_PATH} ${c_name}${mode_suffix})
-	endforeach()
-endif()
-endfunction(manage_Install_Tree_Direct_Runtime_Paths)
-
-###
-function(manage_Build_Tree_External_Runtime_Paths c_name mode resources)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(NOT "${resources}" STREQUAL "")
-	# managing runtime resources
-	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${PROJECT_NAME} ${resources} ${mode})
-	foreach(resource IN ITEMS ${COMPLETE_RESOURCES_PATH})
-		create_Rpath_Symlink(${resource} ${CMAKE_BINARY_DIR} ${c_name}${TARGET_SUFFIX})
-	endforeach()
-endif()
-endfunction(manage_Build_Tree_External_Runtime_Paths)
-
-###
-function(manage_Install_Tree_External_Runtime_Paths c_name mode resources)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(NOT "${resources}" STREQUAL "")
-	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${PROJECT_NAME} ${resources} ${mode})
-	# managing runtime resources at install time
-	foreach(resource IN ITEMS ${resources})
-		install_Rpath_Symlink(${resource} ${${PROJECT_NAME}_DEPLOY_PATH} ${c_name}${TARGET_SUFFIX})
-	endforeach()
-endif()
-endfunction(manage_Install_Tree_External_Runtime_Paths)
-
 

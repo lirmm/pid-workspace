@@ -257,7 +257,7 @@ else() # otherwise no need to register them since no more useful
 	endif()
 endif()
 
-if(NOT runtime_resources STREQUAL "")
+if(NOT runtime_resources STREQUAL "")#runtime resources are exported in any case
 	set(	${PROJECT_NAME}_${component}_RUNTIME_RESOURCES
 		${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES}
 		${runtime_resources}
@@ -677,6 +677,7 @@ foreach(a_component IN ITEMS ${${package}_COMPONENTS})
 	endif()
 	if(NOT IS_HF_COMP)#it is a library but not a module library
 		file(APPEND ${file} "set(${package}_${a_component}_INC_DIRS${MODE_SUFFIX} ${${package}_${a_component}_INC_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_OPTS${MODE_SUFFIX} ${${package}_${a_component}_OPTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} ${${package}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")

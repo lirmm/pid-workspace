@@ -258,7 +258,6 @@ if(LIB_TYPE)
 endif()
 endfunction(is_Shared_Lib_With_Path)
 
-
 ###
 function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
@@ -369,9 +368,12 @@ endfunction(resolve_External_Includes_Path)
 ###
 function(resolve_External_Resources_Path COMPLETE_RESOURCES_PATH package ext_resources mode)
 set(res_resources)
-foreach(resource IN ITEMS ${ext_resources})
+message("resolve resource input = ${ext_resources}")
+foreach(resource IN ITEMS "${ext_resources}")
+	message("resolve resource ${resource}")
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${resource})
-	if(NOT RES MATCHES ${resource})# a replacement has taken place => this is a relative path to a resource
+	if(NOT RES MATCHES ${resource})# a replacement has taken place => this is a relative path to an external package resource
+		message("RES= ${RES}")
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
@@ -384,6 +386,7 @@ foreach(resource IN ITEMS ${ext_resources})
 			list(APPEND res_resources ${fullpath})				
 		endif()
 	else()
+		message("APPENDING= ${resource}")
 		list(APPEND res_resources ${resource})	#for absolute path or system dependencies simply copying the path	
 	endif()
 endforeach()
