@@ -38,6 +38,7 @@ elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
 	set(${PROJECT_NAME}_ARCH 64 CACHE INTERNAL "")
 endif()
 
+set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 #################################################
 ############ Managing options ###################
 #################################################
@@ -260,20 +261,11 @@ else()	# the build must be done in the build directory
 endif(${CMAKE_BINARY_DIR} MATCHES release)
 
 #################################################
-############ Initializing variables #############
+######## Initializing cache variables ###########
 #################################################
 reset_All_Component_Cached_Variables()
 init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}")
-
-#################################################
-############ MANAGING generic paths #############
-#################################################
-set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
-set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL "")
-set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
-set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH})
-set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resources CACHE INTERNAL "")
-
+init_Standard_Path_Cache_Variables()
 endmacro(declare_Package)
 
 
@@ -281,19 +273,8 @@ endmacro(declare_Package)
 ################## setting currently developed version number ##############
 ############################################################################
 function(set_Current_Version major minor patch)
-
 	set_Version_Cache_Variables("${major}" "${minor}" "${patch}")
-	
-	#################################################
-	############ MANAGING install paths #############
-	#################################################
-	set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_RPATH_DIR ${${PROJECT_NAME}_DEPLOY_PATH}/.rpath CACHE INTERNAL "")
+	set_Install_Cache_Variables()
 endfunction(set_Current_Version)
 
 ##################################################################################
@@ -655,16 +636,17 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 		create_Static_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${exported_compiler_options}" "${internal_compiler_options}" "${exported_links}")
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
 		create_Shared_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${exported_compiler_options}" "${internal_compiler_options}" "${exported_links}" "${internal_links}")
+		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
 		create_Module_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 	endif()
 	register_Component_Binary(${c_name})
 else()#simply creating a "fake" target for header only library
 	create_Header_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endif()
 
-install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
-manage_Install_Tree_Direct_Runtime_Paths("${c_name}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
+
 manage_Build_Tree_Direct_Runtime_Paths("${c_name}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
 
 # registering exported flags for all kinds of libs
@@ -733,7 +715,6 @@ if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")# NB : tests do not nee
 	if(EXISTS ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH})
 		install(DIRECTORY ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH} DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/resources/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain runtime resources provided (e.g. config files) by the component
 	endif()
-	manage_Install_Tree_Direct_Runtime_Paths("${c_name}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
 	register_Component_Binary(${c_name})# resgistering name of the executable
 else()
 	create_TestUnit_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_link_flags}")
@@ -1021,9 +1002,6 @@ else()
 endif()
 
 manage_Build_Tree_External_Runtime_Paths("${component}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
-if(COMP_WILL_BE_INSTALLED)
-	manage_Install_Tree_External_Runtime_Paths("${component}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
-endif()
 
 endfunction(declare_System_Component_Dependency)
 
@@ -1076,10 +1054,6 @@ else()
 endif()
 
 manage_Build_Tree_External_Runtime_Paths("${component}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
-
-if(COMP_WILL_BE_INSTALLED)
-	manage_Install_Tree_External_Runtime_Paths("${component}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
-endif()
 
 endfunction(declare_External_Component_Dependency)
 

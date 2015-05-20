@@ -201,9 +201,7 @@ function(get_Bin_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCES p
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
-	message("${component} has runtime resources: ${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}")
-	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${package} ${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}} ${mode})
-	message("${component} has runtime resources with complete path : ${COMPLETE_RESOURCES_PATH}")
+	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${package} "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
 	foreach(path IN ITEMS ${COMPLETE_RESOURCES_PATH})
 		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
 			list(APPEND result ${${package}_ROOT_DIR}/share/resources/${path})#the path contained by the link
@@ -249,6 +247,7 @@ foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SU
 	endif()
 endforeach()
 
+set(${RES_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Runtime_Resources_Dependencies)
 
 
