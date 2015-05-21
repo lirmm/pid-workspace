@@ -372,9 +372,29 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmak
 	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 endif()
 
-if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/resources)
-	#installing the share/resource folder (may contain )
+if(EXISTS ${CMAKE_SOURCE_DIR}/share/resources AND ${CMAKE_BUILD_TYPE} MATCHES Release)
+	#installing the share/resource folder (may contain runtimeresources for components)
 	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/resources DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+endif()
+
+if(NOT EXISTS ${CMAKE_BINARY_DIR}/.rpath)
+	file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath)
+	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+		if(${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
+		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE" 
+		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP"
+		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"
+		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
+			will_be_Built(RES ${component})
+			if(RES)
+				if(EXISTS ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
+					file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
+				endif()
+				file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
+			endif()
+		endif()
+	endforeach()
+	
 endif()
 
 #resolving link time dependencies for executables
@@ -385,11 +405,19 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
 	endif()
 endforeach()
 
-#resolving runtime dependencies
+#resolving runtime dependencies for install tree
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	will_be_Built(RES ${component})
 	if(RES)
 		resolve_Source_Component_Runtime_Dependencies(${component} ${CMAKE_BUILD_TYPE} "${${component}_THIRD_PARTY_LINKS}")
+	endif()
+endforeach()
+
+#resolving runtime dependencies for build tree
+foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+	will_be_Built(RES ${component})
+	if(RES)
+		resolve_Source_Component_Runtime_Dependencies_Build_Tree(${component} ${CMAKE_BUILD_TYPE})
 	endif()
 endforeach()
 
@@ -646,9 +674,6 @@ else()#simply creating a "fake" target for header only library
 	create_Header_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endif()
 
-
-manage_Build_Tree_Direct_Runtime_Paths("${c_name}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
-
 # registering exported flags for all kinds of libs
 init_Component_Cached_Variables_For_Export(${c_name} "${exported_defs}" "${exported_compiler_options}" "${exported_links}" "${runtime_resources}")
 
@@ -712,9 +737,6 @@ if(NOT ${${PROJECT_NAME}_${c_name}_TYPE} STREQUAL "TEST")# NB : tests do not nee
 	create_Executable_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_link_flags}")
 
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
-	if(EXISTS ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH})
-		install(DIRECTORY ${${PROJECT_NAME}_${c_name}_RUNTIME_RESOURCE_PATH} DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/resources/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain runtime resources provided (e.g. config files) by the component
-	endif()
 	register_Component_Binary(${c_name})# resgistering name of the executable
 else()
 	create_TestUnit_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_link_flags}")
@@ -726,9 +748,6 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
 endif()
-
-#managing runtime resource at build time
-manage_Build_Tree_Direct_Runtime_Paths("${c_name}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
 
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
 if(COMP_WILL_BE_INSTALLED)
@@ -1001,8 +1020,6 @@ else()
 	message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
 endif()
 
-manage_Build_Tree_External_Runtime_Paths("${component}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
-
 endfunction(declare_System_Component_Dependency)
 
 
@@ -1052,8 +1069,6 @@ else()
 		message (FATAL_ERROR "unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component}")
 	endif()
 endif()
-
-manage_Build_Tree_External_Runtime_Paths("${component}" ${CMAKE_BUILD_TYPE} "${runtime_resources}")
 
 endfunction(declare_External_Component_Dependency)
 

@@ -63,31 +63,6 @@ endfunction(list_Private_Links)
 ###################### runtime dependencies management API #######################
 ##################################################################################
 
-###
-function(manage_Build_Tree_Direct_Runtime_Paths c_name mode resources)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(EXISTS ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH} AND NOT "${resources}" STREQUAL "")
-	# managing runtime resources
-	foreach(resource IN ITEMS ${resources})
-		set(file_PATH ${CMAKE_SOURCE_DIR}/share/resources/${resource})#the path contained by the link
-		create_Rpath_Symlink(${file_PATH} ${CMAKE_BINARY_DIR} ${c_name}${TARGET_SUFFIX})
-	endforeach()
-endif()
-endfunction(manage_Build_Tree_Direct_Runtime_Paths)
-
-###
-function(manage_Build_Tree_External_Runtime_Paths component mode resources)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(NOT "${resources}" STREQUAL "")
-	# managing runtime resources
-	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${PROJECT_NAME} ${resources} ${mode})
-	foreach(resource IN ITEMS ${COMPLETE_RESOURCES_PATH})
-		create_Rpath_Symlink(${resource} ${CMAKE_BINARY_DIR} ${component}${TARGET_SUFFIX})
-	endforeach()
-endif()
-endfunction(manage_Build_Tree_External_Runtime_Paths)
-
-
 function(find_Dependent_Private_Shared_Libraries LIST_OF_UNDIRECT_DEPS package component is_direct mode)
 set(undirect_list)
 get_Mode_Variables(mode_binary_suffix mode_var_suffix ${mode})
@@ -222,15 +197,21 @@ list(APPEND result ${DIRECT_RESOURCES})
 
 foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 	foreach(dep_comp IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX}})
-		if(${package}_${int_dep}_TYPE STREQUAL "HEADER" 
-		OR ${package}_${int_dep}_TYPE STREQUAL "STATIC"
-		OR ${package}_${int_dep}_TYPE STREQUAL "SHARED"
-		OR ${package}_${int_dep}_TYPE STREQUAL "MODULE")#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
+		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" 
+		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC"
+		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED"
+		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
 			get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
 			if(INT_DEP_RUNTIME_RESOURCES)
 				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 			endif()
 		endif()
+		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+		endif()
+		
 	endforeach()
 endforeach()
 
@@ -245,6 +226,11 @@ foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SU
 			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 		endif()
 	endif()
+	if(${package}_${int_dep}_TYPE STREQUAL "MODULE")
+		list(APPEND result ${${package}_ROOT_DIR}/lib/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+	elseif(${package}_${int_dep}_TYPE STREQUAL "APP" OR ${package}_${int_dep}_TYPE STREQUAL "EXAMPLE")
+		list(APPEND result ${${package}_ROOT_DIR}/bin/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+	endif()
 endforeach()
 
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
@@ -257,7 +243,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
 	resolve_External_Libs_Path(RES ${package} "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
-	if(RES_LINKS)
+	if(RES)
 		foreach(lib IN ITEMS ${RES_LINKS})
 			is_Shared_Lib_With_Path(IS_SHARED ${lib})
 			if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
@@ -266,7 +252,7 @@ if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
 		endforeach()
 	endif()
 endif()
-set(${RES_RESOURCES} ${result} PARENT_SCOPE)
+set(${RES_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_Links_Dependencies)
 
 
@@ -275,9 +261,9 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 
 if(${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX})#if there are private links
-	resolve_External_Libs_Path(RES_PRIVATE_LINKS ${package} "${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
-	if(RES_PRIVATE_LINKS)
-		foreach(lib IN ITEMS ${RES_PRIVATE_LINKS})
+	resolve_External_Libs_Path(RES_PRIVATE ${package} "${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+	if(RES_PRIVATE)
+		foreach(lib IN ITEMS ${RES_PRIVATE})
 			is_Shared_Lib_With_Path(IS_SHARED ${lib})
 			if(IS_SHARED)
 				list(APPEND result ${lib})
@@ -318,10 +304,6 @@ foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 					list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 				endif()
 			endif() #no need to resolve external symbols if the shared library component is not exported
-		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component, + no need to check for other runtime dependencies
-		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component, + no need to check for other runtime dependencies
 		endif()
 	endforeach()
 endforeach()
@@ -342,10 +324,6 @@ foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SU
 				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 			endif()
 		endif() #no need to resolve external symbols if the shared library component is not exported
-	elseif(${package}_${int_dep}_TYPE STREQUAL "MODULE")
-		list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component + no need to check for other runtime dependencies
-	elseif(${package}_${int_dep}_TYPE STREQUAL "APP" OR ${package}_${int_dep}_TYPE STREQUAL "EXAMPLE")
-		list(APPEND result ${${package}_ROOT_DIR}/bin/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component + no need to check for other runtime dependencies
 	endif()
 endforeach()
 
@@ -471,7 +449,7 @@ endforeach()
 endfunction(create_Bin_Component_Symlinks)
 
 ##################################################################################
-####################### source package run time dependencies #####################
+################### source package run time dependencies in install tree #########
 ##################################################################################
 
 
@@ -482,37 +460,6 @@ foreach(target IN ITEMS ${targets})
 	install_Rpath_Symlink(${target} ${${PROJECT_NAME}_DEPLOY_PATH} ${component}${TARGET_SUFFIX})
 endforeach()
 endfunction(create_Source_Component_Symlinks)
-
-
-######################################################################################
-###
-function(manage_Install_Tree_Direct_Runtime_Paths component mode resources)
-
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-
-if(EXISTS ${${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH} AND NOT "${resources}" STREQUAL "")
-	# managing runtime resources at install time
-	foreach(resource IN ITEMS ${resources})
-		set(file_PATH ../../share/resources/${resource})#the path contained by the link
-		install_Rpath_Symlink(${file_PATH} ${${PROJECT_NAME}_DEPLOY_PATH} ${component}${TARGET_SUFFIX})
-	endforeach()
-endif()
-endfunction(manage_Install_Tree_Direct_Runtime_Paths)
-
-
-###
-function(manage_Install_Tree_External_Runtime_Paths component mode resources)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(NOT "${resources}" STREQUAL "")
-	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${PROJECT_NAME} ${resources} ${mode})
-	# managing runtime resources at install time
-	foreach(resource IN ITEMS ${resources})
-		install_Rpath_Symlink(${resource} ${${PROJECT_NAME}_DEPLOY_PATH} ${component}${TARGET_SUFFIX})
-	endforeach()
-endif()
-endfunction(manage_Install_Tree_External_Runtime_Paths)
-######################################################################################
-
 
 ###
 function(resolve_Source_Component_Runtime_Dependencies component mode THIRD_PARTY_LIBS)
@@ -531,7 +478,6 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	#3) getting direct and undirect runtime resources dependencies
 	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
-	message("RUNTIME RESOURCES for ${component} = ${RES_RESOURCES}")
 	# 3) in case of an executable component add third party (undirect) links
 	if(THIRD_PARTY_LIBS)
 		list(APPEND ALL_RUNTIME_DEPS ${THIRD_PARTY_LIBS})
@@ -539,6 +485,105 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	create_Source_Component_Symlinks(${component} ${CMAKE_BUILD_TYPE} "${ALL_RUNTIME_DEPS}")
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
+
+##################################################################################
+################### source package run time dependencies in build tree ###########
+##################################################################################
+
+function(get_Source_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCES component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(result)
+if(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
+	message("get_Source_Component_Direct_Runtime_Resources_Dependencies for ${component} in ${mode} as runtimeresources : ${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}")
+	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${PROJECT_NAME} "${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
+	foreach(path IN ITEMS ${COMPLETE_RESOURCES_PATH})
+		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
+			list(APPEND result ${CMAKE_SOURCE_DIR}/share/resources/${path})#the path contained by the link
+		else() #external or absolute resource path coming from external/system dependencies
+			list(APPEND result ${path})#the direct path to the dependency (absolute initially or relative to the external package and resolved)
+		endif()
+	endforeach()
+endif()
+
+set(${RES_RESOURCES} ${result} PARENT_SCOPE)
+
+endfunction(get_Source_Component_Direct_Runtime_Resources_Dependencies)
+
+function(get_Source_Component_Runtime_Resources_Dependencies RES_RESOURCES component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(result)
+
+get_Source_Component_Direct_Runtime_Resources_Dependencies(DIRECT_RESOURCES ${component} ${mode})
+list(APPEND result ${DIRECT_RESOURCES})
+#message("${component} has runtime resources : ${result}")
+
+foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX}})
+	foreach(dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX}})
+		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" 
+		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC"
+		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED"
+		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
+			get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
+			if(INT_DEP_RUNTIME_RESOURCES)
+				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
+			endif()
+		endif()
+		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+		endif()
+		
+	endforeach()
+endforeach()
+
+# 3) adding internal components dependencies
+if(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	foreach(int_dep IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+		if(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "HEADER" 
+		OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "STATIC"
+		OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "SHARED"
+		OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "MODULE")#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
+			get_Source_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${int_dep} ${mode})
+			if(INT_DEP_RUNTIME_RESOURCES)
+				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
+			endif()
+		endif()
+		if(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "MODULE")
+			list(APPEND result ${CMAKE_BINARY_DIR}/lib/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+		elseif(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "APP" OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "EXAMPLE")
+			list(APPEND result ${CMAKE_BINARY_DIR}/bin/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+		endif()
+	endforeach()
+endif()
+set(${RES_RESOURCES} ${result} PARENT_SCOPE)
+endfunction(get_Source_Component_Runtime_Resources_Dependencies)
+
+
+### configuring source components (currntly built) runtime paths (links to libraries, executable, modules, files, etc.)
+function(create_Source_Component_Symlinks_Build_Tree component mode resources)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+if(NOT "${resources}" STREQUAL "")
+	foreach(resource IN ITEMS ${resources})
+		create_Rpath_Symlink(${resource} ${CMAKE_BINARY_DIR} ${component}${TARGET_SUFFIX})
+	endforeach()
+endif()
+endfunction(create_Source_Component_Symlinks_Build_Tree)
+
+###
+function(resolve_Source_Component_Runtime_Dependencies_Build_Tree component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
+
+	# getting direct and undirect runtime resources dependencies
+	get_Source_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${component} ${CMAKE_BUILD_TYPE})#resolving dependencies according to local links
+	create_Source_Component_Symlinks_Build_Tree(${component} ${CMAKE_BUILD_TYPE} "${RES_RESOURCES}")
+endif()
+endfunction(resolve_Source_Component_Runtime_Dependencies_Build_Tree)
 
 ###############################################################################################
 ############################## cleaning the installed tree #################################### 
