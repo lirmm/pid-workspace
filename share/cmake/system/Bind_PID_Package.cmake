@@ -75,15 +75,15 @@ set(${PACKAGE_NAME}_ROOT_DIR ${BIN_PACKAGE_PATH} CACHE INTERNAL "")
 set(${PACKAGE_NAME}_FOUND TRUE CACHE INTERNAL "")
 
 # finding all package dependencies
-message("DEBUG RESOLVE PACKAGE DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
+#message("DEBUG RESOLVE PACKAGE DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
 resolve_Package_Dependencies(${PACKAGE_NAME} Debug)
 resolve_Package_Dependencies(${PACKAGE_NAME} Release)
 
-message("DEBUG RESOLVE PACKAGE BUILD DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
-configure_Package_Build_Variables(${PACKAGE_NAME} Debug)
-configure_Package_Build_Variables(${PACKAGE_NAME} Release)
+#message("DEBUG RESOLVE PACKAGE BUILD DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
+#configure_Package_Build_Variables(${PACKAGE_NAME} Debug)
+#configure_Package_Build_Variables(${PACKAGE_NAME} Release)
 
-message("DEBUG RESOLVE PACKAGE RUNTIME DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
+#message("DEBUG RESOLVE PACKAGE RUNTIME DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
 # resolving runtime dependencies
 resolve_Package_Runtime_Dependencies(${PACKAGE_NAME} Debug)
 resolve_Package_Runtime_Dependencies(${PACKAGE_NAME} Release)

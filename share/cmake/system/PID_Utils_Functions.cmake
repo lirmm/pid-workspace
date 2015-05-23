@@ -258,7 +258,6 @@ if(LIB_TYPE)
 endif()
 endfunction(is_Shared_Lib_With_Path)
 
-
 ###
 function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
@@ -284,7 +283,7 @@ endfunction(is_External_Package_Defined)
 function(resolve_External_Libs_Path COMPLETE_LINKS_PATH package ext_links mode)
 set(res_links)
 foreach(link IN ITEMS ${ext_links})
-	string(REGEX REPLACE "^<([^>]+)>([^\\.]+\\.[a|la|so|dylib].*)" "\\1;\\2" RES ${link})
+	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${link})
 	if(NOT RES MATCHES ${link})# a replacement has taken place => this is a full path to a library
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
@@ -371,7 +370,7 @@ function(resolve_External_Resources_Path COMPLETE_RESOURCES_PATH package ext_res
 set(res_resources)
 foreach(resource IN ITEMS ${ext_resources})
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${resource})
-	if(NOT RES MATCHES ${resource})# a replacement has taken place => this is a relative path to a resource
+	if(NOT RES MATCHES ${resource})# a replacement has taken place => this is a relative path to an external package resource
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
@@ -384,7 +383,7 @@ foreach(resource IN ITEMS ${ext_resources})
 			list(APPEND res_resources ${fullpath})				
 		endif()
 	else()
-		list(APPEND res_resources ${resource})	#for absolute path or system dependencies simply copying the path	
+		list(APPEND res_resources ${resource})	#for  relative path or system dependencies (absolute path) simply copying the path	
 	endif()
 endforeach()
 set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
