@@ -14,7 +14,7 @@ function(create_Module_Lib_Target c_name sources internal_inc_dirs internal_defs
 	elseif(UNIX)
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	endif()
-	manage_Additional_Component_Internal_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_compiler_options}" "${internal_defs}" "${internal_links}")
+	manage_Additional_Component_Internal_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 endfunction(create_Module_Lib_Target)
 
 ###create a shared lib target for a newly defined library

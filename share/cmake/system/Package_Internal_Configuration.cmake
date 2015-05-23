@@ -494,7 +494,6 @@ function(get_Source_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCE
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 if(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
-	message("get_Source_Component_Direct_Runtime_Resources_Dependencies for ${component} in ${mode} as runtimeresources : ${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}")
 	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${PROJECT_NAME} "${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
 	foreach(path IN ITEMS ${COMPLETE_RESOURCES_PATH})
 		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
@@ -506,7 +505,6 @@ if(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exp
 endif()
 
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
-
 endfunction(get_Source_Component_Direct_Runtime_Resources_Dependencies)
 
 function(get_Source_Component_Runtime_Resources_Dependencies RES_RESOURCES component mode)
@@ -515,7 +513,6 @@ set(result)
 
 get_Source_Component_Direct_Runtime_Resources_Dependencies(DIRECT_RESOURCES ${component} ${mode})
 list(APPEND result ${DIRECT_RESOURCES})
-#message("${component} has runtime resources : ${result}")
 
 foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 	foreach(dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX}})
@@ -529,9 +526,9 @@ foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFI
 			endif()
 		endif()
 		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/src/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
 		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/apps/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
 		endif()
 		
 	endforeach()
@@ -550,9 +547,9 @@ if(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 			endif()
 		endif()
 		if(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "MODULE")
-			list(APPEND result ${CMAKE_BINARY_DIR}/lib/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+			list(APPEND result ${CMAKE_BINARY_DIR}/src/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
 		elseif(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "APP" OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "EXAMPLE")
-			list(APPEND result ${CMAKE_BINARY_DIR}/bin/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+			list(APPEND result ${CMAKE_BINARY_DIR}/apps/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
 		endif()
 	endforeach()
 endif()
