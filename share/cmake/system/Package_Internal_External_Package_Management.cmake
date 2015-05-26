@@ -560,7 +560,8 @@ endfunction(is_External_Package_Defined)
 function(resolve_External_Libs_Path COMPLETE_LINKS_PATH package ext_links mode)
 set(res_links)
 foreach(link IN ITEMS ${ext_links})
-	string(REGEX REPLACE "^<([^>]+)>([^\\.]+\\.[a|la|so|dylib].*)" "\\1;\\2" RES ${link})
+
+	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${link})
 	if(NOT RES MATCHES ${link})# a replacement has taken place => this is a full path to a library
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
