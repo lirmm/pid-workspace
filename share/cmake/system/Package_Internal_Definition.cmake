@@ -18,6 +18,7 @@ include(Package_Internal_Cache_Management NO_POLICY_SCOPE)
 include(Package_Internal_Documentation_Management NO_POLICY_SCOPE)
 include(Package_Internal_Targets_Management NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Git_Functions NO_POLICY_SCOPE)
 ##################################################################################
 #################### package management public functions and macros ##############
 ##################################################################################

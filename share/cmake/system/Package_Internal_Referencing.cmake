@@ -555,13 +555,8 @@ endfunction(build_And_Install_Source)
 function(deploy_Source_Package DEPLOYED package)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number 
 set(${DEPLOYED} FALSE PARENT_SCOPE)
-execute_process(
-		COMMAND git tag -l v*
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-		OUTPUT_VARIABLE res
-		)
-
-if(NOT res) #no version available => BUG
+get_Repository_Version_Tags(GIT_VERSIONS ${package})
+if(NOT GIT_VERSIONS) #no version available => BUG
 	message("Error : no version available for source package ${package}")	
 	return()
 endif()
@@ -612,21 +607,14 @@ endfunction(deploy_Source_Package)
 function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT)
 
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
-execute_process(
-		COMMAND git tag -l v*
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-		OUTPUT_VARIABLE res
-		)
-
-if(NOT res) #no version available => BUG
-	message("DEBUG : NO output var !!!!")
+get_Repository_Version_Tags(GIT_VERSIONS ${package})
+if(NOT GIT_VERSIONS) #no version available => BUG
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" REFVNUMBERS ${VERSION_MIN})
 list(GET REFVNUMBERS 0 ref_major)
 list(GET REFVNUMBERS 1 ref_minor)
-string(REPLACE "\n" ";" GIT_VERSIONS ${res})
 #message("DEBUG : available versions are : ${GIT_VERSIONS}")
 set(ALL_IS_OK FALSE)
 if(EXACT)
@@ -693,34 +681,16 @@ endfunction(deploy_Source_Package_Version)
 ###
 function(build_And_Install_Package DEPLOYED package version)
 
-# 0) memorizing the current branc the user is working with
-execute_process(COMMAND git branch
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-		OUTPUT_VARIABLE current_branches ERROR_QUIET)
-string(REPLACE "\n" ";" GIT_BRANCHES ${current_branches})
-
-foreach(branch IN ITEMS ${GIT_BRANCHES})
-	string(REGEX REPLACE "^\\* (.*)$" "\\1" A_BRANCH ${branch})
-	if(NOT "${branch}" STREQUAL "${A_BRANCH}")#i.e. match found (this is the current branch)
-		set(curr_branch ${A_BRANCH})
-		break()
-	endif()
-endforeach()
-
+# 0) memorizing the current branch the user is working with
+save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package})
 # 1) going to the adequate git tag matching the selected version
-#message("DEBUG memorizing branch : ${curr_branch} and going to tagged version : ${version}")
-execute_process(COMMAND git checkout tags/v${version}
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-		OUTPUT_QUIET ERROR_QUIET)
+go_To_Version(${package} ${version})
 # 2) building sources
 set(IS_BUILT FALSE)
-#message("DEBUG : trying to build ${package} with version ${version}")
 build_And_Install_Source(IS_BUILT ${package} ${version})
 #message("DEBUG : going back to ${curr_branch} branch")
 # 3) going back to the initial branch in use
-execute_process(COMMAND git checkout ${curr_branch}
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-		OUTPUT_QUIET ERROR_QUIET)
+restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT})
 
 if(IS_BUILT)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
@@ -864,10 +834,10 @@ endfunction(install_Required_External_Packages)
 function(deploy_External_Package_Version DEPLOYED package VERSION)
 set(INSTALLED FALSE)
 #begin
-if(UNIX AND NOT APPLE)
-	set(curr_system linux)
-elseif(APPLE)
+if(APPLE)
 	set(curr_system darwin)
+elseif(UNIX)
+	set(curr_system linux)
 else()
 	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
 	return()
