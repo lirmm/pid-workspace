@@ -340,7 +340,7 @@ if(INSTALL_REQUIRED)
 endif()
 
 if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-	# 1) resolving required packages versions (different versions can be required at the same time)
+	# 1) resolving dependencies of required packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
 		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
@@ -498,6 +498,24 @@ endif()
 ###############################################################################
 ######### creating build target for easy sequencing all make commands #########
 ###############################################################################
+#retrieving dependencies on sources packages
+if(${CMAKE_BUILD_TYPE} MATCHES Debug AND BUILD_DEPENDENT_PACKAGES)
+	set(DEPENDENT_SOURCE_PACKAGES)
+	list_All_Source_Packages_In_Workspace(RESULT_PACKAGES)
+	if(RESULT_PACKAGES)
+		foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
+			list(FIND RESULT_PACKAGES ${dep_pack} id)
+			if(NOT id LESS "0")#the package is a dependent source package
+				get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${dep_pack})
+				if(BRANCH_NAME AND NOT BRANCH_NAME STREQUAL "master")#must be on any other branch than master => any development branch 
+					list(APPEND DEPENDENT_SOURCE_PACKAGES ${dep_pack})
+				endif()
+			endif() 
+		endforeach()
+	endif()
+else()
+	set(DEPENDENT_SOURCE_PACKAGES)
+endif()
 
 #creating a global build command
 if(GENERATE_INSTALLER)
@@ -505,7 +523,7 @@ if(GENERATE_INSTALLER)
 		
 		if(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
-				add_custom_target(build 
+				add_custom_target(build
 					COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_BUILD_TOOL} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_BUILD_TOOL} doc 
@@ -540,14 +558,27 @@ if(GENERATE_INSTALLER)
 				)
 			endif(BUILD_API_DOC)
 		endif(BUILD_AND_RUN_TESTS)
-	else(CMAKE_BUILD_TYPE MATCHES Release)
-		add_custom_target(build 
-			COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-			COMMAND ${CMAKE_BUILD_TOOL} install
-			COMMAND ${CMAKE_BUILD_TOOL} package
-			COMMAND ${CMAKE_BUILD_TOOL} package_install
-		) 
-	endif(CMAKE_BUILD_TYPE MATCHES Release)
+	else()#debug
+		if(DEPENDENT_SOURCE_PACKAGES)#only necessary to do dependent build one time, so we do it in debug mode only (first mode built)
+					
+			add_custom_target(build 
+				COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} -DBUILD_TOOL=${CMAKE_BUILD_TOOL} 
+							 -DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
+							 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake		
+				COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_BUILD_TOOL} install
+				COMMAND ${CMAKE_BUILD_TOOL} package
+				COMMAND ${CMAKE_BUILD_TOOL} package_install
+			)
+		else()		
+			add_custom_target(build 
+				COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_BUILD_TOOL} install
+				COMMAND ${CMAKE_BUILD_TOOL} package
+				COMMAND ${CMAKE_BUILD_TOOL} package_install
+			) 
+		endif()
+	endif()
 
 else(GENERATE_INSTALLER)
 	if(CMAKE_BUILD_TYPE MATCHES Release)
@@ -580,12 +611,21 @@ else(GENERATE_INSTALLER)
 				)
 			endif(BUILD_API_DOC)
 		endif()
-	else(CMAKE_BUILD_TYPE MATCHES Release)#debug
+	else()#debug
+		if(DEPENDENT_SOURCE_PACKAGES)#only necessary to do dependent build one time, so we do it in debug mode only (first mode built)
+			add_custom_target(build
+				COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} -DBUILD_TOOL=${CMAKE_BUILD_TOOL} -DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
+						 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
+				COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_BUILD_TOOL} install
+			)
+		else()		
 			add_custom_target(build 
 				COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
 				COMMAND ${CMAKE_BUILD_TOOL} install
 			) 
-	endif(CMAKE_BUILD_TYPE MATCHES Release)
+		endif()
+	endif()
 endif(GENERATE_INSTALLER)
 
 #########################################################################################################################

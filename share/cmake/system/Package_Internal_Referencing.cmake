@@ -51,7 +51,6 @@ foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 endforeach()
 
 # 2) for not found package
-#message("DEBUG resolve_Package_Dependencies for ${package} ... step 2)")
 if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
 		set(INSTALLED_EXTERNAL_PACKAGES "")
