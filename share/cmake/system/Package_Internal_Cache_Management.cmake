@@ -493,24 +493,18 @@ endfunction(register_Component_Binary)
 #resolving dependencies
 function(is_Bin_Component_Exporting_Other_Components RESULT package component mode)
 set(${RESULT} FALSE PARENT_SCOPE)
-if(mode MATCHES Release)
-	set(mode_var_suffix "")
-elseif(mode MATCHES Debug)
-	set(mode_var_suffix "_DEBUG")
-else()
-	message(FATAL_ERROR "Bug : unknown mode ${mode}")
-	return()
-endif()
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+
 #scanning external dependencies
-if(${package}_${component}_LINKS${mode_var_suffix}) #only exported links here
+if(${package}_${component}_LINKS${VAR_SUFFIX}) #only exported links here
 	set(${RESULT} TRUE PARENT_SCOPE)
 	return()
 endif()
 
 # scanning internal dependencies
-if(${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
-	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
-		if(${package}_${component}_INTERNAL_EXPORT_${int_dep}${mode_var_suffix})
+if(${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+		if(${package}_${component}_INTERNAL_EXPORT_${int_dep}${VAR_SUFFIX})
 			set(${RESULT} TRUE PARENT_SCOPE)
 			return()
 		endif()
@@ -518,9 +512,9 @@ if(${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
 endif()
 
 # scanning package dependencies
-foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
-	foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${mode_var_suffix})
-		if(${package}_${component}_EXPORT_${dep_pack}_${ext_dep}${mode_var_suffix})
+foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
+		if(${package}_${component}_EXPORT_${dep_pack}_${ext_dep}${VAR_SUFFIX})
 			set(${RESULT} TRUE PARENT_SCOPE)
 			return()
 		endif()

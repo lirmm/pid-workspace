@@ -52,6 +52,16 @@ set(${AVAILABLE_VERSIONS} ${GIT_VERSIONS} PARENT_SCOPE)
 endfunction(get_Repository_Version_Tags)
 
 ###
+function(normalize_Version_Tags VERSION_NUMBERS VERSIONS_TAGS)
+foreach(tag IN ITEMS ${VERSIONS_TAGS})
+	string(REGEX REPLACE "^v(.*)$" "\\1" VNUMBERS ${tag})
+	list(APPEND result ${VNUMBERS})
+endforeach()
+set(${VERSION_NUMBERS} ${result} PARENT_SCOPE)
+endfunction(normalize_Version_Tags)
+
+
+###
 function(get_Repository_Current_Branch BRANCH_NAME repo)
 set(${BRANCH_NAME} PARENT_SCOPE)
 execute_process(COMMAND git branch

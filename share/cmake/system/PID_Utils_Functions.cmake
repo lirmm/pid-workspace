@@ -10,6 +10,20 @@ endif()
 endfunction(get_Mode_Variables)
 
 ###
+function(get_System_Variables OS_STRING PACKAGE_STRING)
+if(APPLE)
+	set(${OS_STRING} darwin PARENT_SCOPE)
+	set(${PACKAGE_STRING} Darwin PARENT_SCOPE)
+elseif(UNIX)
+	set(${OS_STRING} linux PARENT_SCOPE)
+	set(${PACKAGE_STRING} Linux PARENT_SCOPE)
+else()
+	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
+	return()
+endif()
+endfunction(get_System_Variables)
+
+###
 function(is_A_System_Reference_Path path IS_SYSTEM)
 
 if(UNIX)

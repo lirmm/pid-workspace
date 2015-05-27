@@ -143,6 +143,15 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		VERBATIM
 	)
 
+	# uninstall target (cleaning the install tree) 
+	add_custom_target(update
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-P ${WORKSPACE_DIR}/share/cmake/system/Update_PID_Package.cmake
+		COMMENT "Updating the package ..."
+		VERBATIM
+	)
+
 	if(BUILD_AND_RUN_TESTS)
 		# test target (launch test units) 
 		add_custom_target(test
@@ -164,8 +173,10 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	if(GENERATE_INSTALLER)
 		# package target (generation and install of a UNIX binary packet) 
 		add_custom_target(package
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} package
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} package_install
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package_install
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package_install			
 			COMMENT "Generating and installing system binary package ..."
 			VERBATIM
 		)
@@ -335,13 +346,8 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
 	endforeach()
 	#here every package dependency should have been resolved OR ERROR
-	
-	# 2) if all version are OK resolving all necessary variables (CFLAGS, LDFLAGS and include directories)
-	#foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
-	#	configure_Package_Build_Variables("${dep_pack}"	 "${CMAKE_BUILD_TYPE}")
-	#endforeach()
 
-	# 3) when done resolving runtime dependencies for all used package (direct or undirect)
+	# 2) when done resolving runtime dependencies for all used package (direct or undirect)
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
 		resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
 	endforeach()
@@ -442,14 +448,8 @@ if(GENERATE_INSTALLER)
 	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
 	list(APPEND CPACK_GENERATOR TGZ)
+	get_System_Variables(OS_STRING PACKAGE_SYSTEM_STRING)
 
-	if(APPLE)
-		set(PACKAGE_SYSTEM_STRING Darwin)
-	elseif(UNIX)
-		set(PACKAGE_SYSTEM_STRING Linux)
-	else()
-		set(PACKAGE_SYSTEM_STRING)
-	endif()
 	if(PACKAGE_SYSTEM_STRING)
 		add_custom_target(	package_install
 					COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${PACKAGE_SYSTEM_STRING}.tar.gz
