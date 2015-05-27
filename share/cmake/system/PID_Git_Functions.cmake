@@ -26,8 +26,8 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git checkout 
 endfunction(go_To_Workspace_Development)
 
 ###
-function(go_To_Commit package branch)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout ${branch}
+function(go_To_Commit repo branch)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${repo} git checkout ${branch}
 		OUTPUT_QUIET ERROR_QUIET)
 endfunction(go_To_Commit)
 
@@ -52,10 +52,10 @@ set(${AVAILABLE_VERSIONS} ${GIT_VERSIONS} PARENT_SCOPE)
 endfunction(get_Repository_Version_Tags)
 
 ###
-function(get_Repository_Current_Branch BRANCH_NAME package)
+function(get_Repository_Current_Branch BRANCH_NAME repo)
 set(${BRANCH_NAME} PARENT_SCOPE)
 execute_process(COMMAND git branch
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
+		WORKING_DIRECTORY ${repo}
 		OUTPUT_VARIABLE current_branches ERROR_QUIET)
 string(REPLACE "\n" ";" GIT_BRANCHES ${current_branches})
 
@@ -71,15 +71,73 @@ endfunction(get_Repository_Current_Branch)
 
 
 ###
-function(get_Repository_Current_Commit COMMIT_NAME package)
+function(get_Repository_Current_Commit COMMIT_NAME repo)
 set(${COMMIT_NAME} PARENT_SCOPE)
 execute_process(COMMAND git log -n 1
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
+		WORKING_DIRECTORY ${repo}
 		OUTPUT_VARIABLE last_log ERROR_QUIET)
 string(REPLACE "\n" ";" LINES ${last_log})
 string(REGEX REPLACE "^commit ([^;]+).*$" "\\1" SHA1_ID ${LINES})
 set(${COMMIT_NAME} ${SHA1_ID} PARENT_SCOPE)
 endfunction(get_Repository_Current_Commit)
+
+
+###
+function(save_Repository_Context INITIAL_COMMIT SAVED_CONTENT package)
+get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${package})
+if(NOT BRANCH_NAME)
+get_Repository_Current_Commit(COMMIT_NAME ${WORKSPACE_DIR}/packages/${package})
+set(CONTEXT ${COMMIT_NAME})
+else()
+set(CONTEXT ${BRANCH_NAME})
+endif()
+set(${INITIAL_COMMIT} ${CONTEXT} PARENT_SCOPE)
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash save 
+	OUTPUT_VARIABLE res)
+if(res MATCHES "No stash found")
+	set(${SAVED_CONTENT} FALSE PARENT_SCOPE)
+else()
+	set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
+endif()
+endfunction(save_Repository_Context)
+
+###
+function(restore_Repository_Context package initial_commit saved_content)
+go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${initial_commit})
+if(saved_content)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash pop)
+endif()
+endfunction(restore_Repository_Context)
+
+
+###
+function(save_Workspace_Repository_Context INITIAL_COMMIT SAVED_CONTENT)
+get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR})
+if(NOT BRANCH_NAME)
+get_Repository_Current_Commit(COMMIT_NAME ${WORKSPACE_DIR})
+set(CONTEXT ${COMMIT_NAME})
+else()
+set(CONTEXT ${BRANCH_NAME})
+endif()
+set(${INITIAL_COMMIT} ${CONTEXT} PARENT_SCOPE)
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash save 
+	OUTPUT_VARIABLE res)
+if(res MATCHES "No stash found")
+	set(${SAVED_CONTENT} FALSE PARENT_SCOPE)
+else()
+	set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
+endif()
+endfunction(save_Workspace_Repository_Context)
+
+###
+function(restore_Workspace_Repository_Context initial_commit saved_content)
+go_To_Commit(${WORKSPACE_DIR} ${initial_commit})
+if(saved_content)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash pop)
+endif()
+endfunction(restore_Workspace_Repository_Context)
 
 ######################################################################
 ############# function used to merge standard branches ###############
@@ -119,9 +177,9 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "start new version ${version_string}")
 endfunction(register_Repository_Version)
 
-######################################################################
-############# function used to publish modifications   ###############
-######################################################################
+#############################################################################
+############# function used to publish/update modifications   ###############
+#############################################################################
 
 ###
 function(publish_References_In_Workspace_Repository package)
@@ -136,16 +194,38 @@ endif()
 endfunction(publish_References_In_Workspace_Repository)
 
 ###
-function(publish_Repository_version package version_string)
+function(publish_Repository_Version package version_string)
 go_To_Master(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master)#releasing on master branch
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin v${version_string})#releasing version tag
-endfunction(publish_Repository_version)
+endfunction(publish_Repository_Version)
 
+###
+function(publish_Repository_Integration package)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration)#releasing on master branch
+endfunction(publish_Repository_Integration)
+
+
+###
+function(update_Repository_Versions package)
+go_To_Master(${package})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull origin master)#pulling master branch of origin
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull origin --tags)#getting new tags
+endfunction(update_Repository_Versions)
+
+###
+function(update_Workspace_Repository remote)
+go_To_Master(${package})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git pull ${remote} master)#pulling master branch of origin or official
+endfunction(update_Workspace_Repository)
 
 ######################################################################
 ############################ other functions #########################
 ######################################################################
+###
+function(clone_Repository package url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+endfunction(clone_Repository)
 
 ###
 function(init_Repository package)
@@ -169,39 +249,17 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 endfunction(connect_Repository)
 
 ###
-function(save_Repository_Context INITIAL_COMMIT SAVED_CONTENT package)
-get_Repository_Current_Branch(BRANCH_NAME ${package})
-if(NOT BRANCH_NAME)
-get_Repository_Current_Commit(COMMIT_NAME ${package})
-set(CONTEXT ${COMMIT_NAME})
-else()
-set(CONTEXT ${BRANCH_NAME})
+function(get_Repository_Name RES_NAME git_url)
+#testing ssh address
+string(REGEX REPLACE "^[^@]+@[^:]+:(.+)$" "\\1" REPO_PATH ${git_url})
+if(REPO_PATH STREQUAL "${git_url}")
+	#testing https address
+	string(REGEX REPLACE "^https?://(.*)$" "\\1" REPO_PATH ${git_url})
+	if(REPO_PATH STREQUAL "${git_url}")
+		return()
+	endif()
 endif()
-set(${INITIAL_COMMIT} ${CONTEXT} PARENT_SCOPE)
-
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash save 
-	OUTPUT_VARIABLE res)
-if(res MATCHES "No stash found")
-	set(${SAVED_CONTENT} FALSE PARENT_SCOPE)
-else()
-	set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
-endif()
-endfunction(save_Repository_Context)
-
-###
-function(restore_Repository_Context package initial_commit saved_content)
-go_To_Commit(${package} ${initial_commit})
-if(saved_content)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash pop)
-endif()
-endfunction(restore_Repository_Context)
-
-###
-function(update_Local_Git_Repository package)
-go_To_Integration(${package})
-commit_Current_Repository_Branch(${package} "prepare synchronization with repository")
-go_To_Master(${package})
-commit_Current_Repository_Branch(${package} "prepare synchronization with repository")
-go_To_Integration(${package})
-endfunction(update_Local_Git_Repository)
+get_filename_component(REPO_NAME ${REPO_PATH} NAME_WE)
+set(${RES_NAME} ${REPO_NAME} PARENT_SCOPE) 
+endfunction()
 

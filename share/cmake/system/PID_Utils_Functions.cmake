@@ -390,6 +390,16 @@ set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
 endfunction(resolve_External_Resources_Path)
 
 ###
+function(list_All_Source_Packages_In_Workspace PACKAGES)
+file(GLOB source_pakages RELATIVE ${WORKSPACE_DIR}/packages *)
+set(${PACKAGES} ${source_pakages} PARENT_SCOPE)
+endfunction(list_All_Source_Packages_In_Workspace)
 
-
+###
+function(list_All_Binary_Packages_In_Workspace PACKAGES)
+file(GLOB bin_pakages RELATIVE ${WORKSPACE_DIR}/install *)
+file(GLOB ext_pakages RELATIVE ${WORKSPACE_DIR}/external *)
+list(APPEND bin_pakages ${ext_pakages})
+set(${PACKAGES} ${bin_pakages} PARENT_SCOPE)
+endfunction(list_All_Binary_Packages_In_Workspace)
 

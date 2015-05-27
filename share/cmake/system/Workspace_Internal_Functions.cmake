@@ -429,7 +429,6 @@ endfunction()
 
 ###
 function(create_PID_Package package author institution license)
-#message("create_PID_Package ${package}")
 #copying the pattern folder into the package folder and renaming it
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/package ${WORKSPACE_DIR}/packages/${package})
 #setting variables
@@ -488,7 +487,6 @@ endfunction()
 
 ###
 function(resolve_PID_Package package version)
-message("resolve_PID_Package ${package} ${version}")
 set(PACKAGE_NAME ${package})
 set(PROJECT_NAME ${package})
 set(PACKAGE_VERSION ${version})
@@ -524,22 +522,6 @@ message("VERSION: ${LICENSE_VERSION}")
 message("OFFICIAL NAME: ${LICENSE_FULLNAME}")
 message("AUTHORS: ${LICENSE_AUTHORS}")
 endfunction()
-
-###
-function(get_Repository_Name RES_NAME git_url)
-#testing ssh address
-string(REGEX REPLACE "^[^@]+@[^:]+:(.+)$" "\\1" REPO_PATH ${git_url})
-if(REPO_PATH STREQUAL "${git_url}")
-	#testing https address
-	string(REGEX REPLACE "^https?://(.*)$" "\\1" REPO_PATH ${git_url})
-	if(REPO_PATH STREQUAL "${git_url}")
-		return()
-	endif()
-endif()
-get_filename_component(REPO_NAME ${REPO_PATH} NAME_WE)
-set(${RES_NAME} ${REPO_NAME} PARENT_SCOPE) 
-endfunction()
-
 
 ###
 function(set_Package_Repository_Address package git_url)
@@ -618,7 +600,6 @@ endfunction()
 
 
 ###
-
 function(get_Version_Number_And_Repo_From_Package package NUMBER STRING_NUMBER ADDRESS)
 set(${ADDRESS} PARENT_SCOPE)
 file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
@@ -651,7 +632,7 @@ endif()
 set(${NUMBER} ${VERSION_COMMAND} PARENT_SCOPE)
 endfunction(get_Version_Number_And_Repo_From_Package)
 
-
+###
 function(set_Version_Number_To_Package package major minor patch)
 
 file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
@@ -665,17 +646,17 @@ file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${TO_WRITE}) #get
 
 endfunction(set_Version_Number_To_Package)
 
+### RELEASE COMMAND IMPLEM
 function(release_PID_Package package next)
 ### registering current version
 go_To_Integration(${package})
 get_Version_Number_And_Repo_From_Package(${package} NUMBER STRING_NUMBER ADDRESS)
-#message("address is ---${ADDRESS}---")
 if(NOT NUMBER)
 	message("ERROR : problem releasing package ${package}, bad version format")
 endif()
 merge_Into_Master(${package} ${STRING_NUMBER})
 if(ADDRESS)#there is a connected repository
-	publish_Repository_version(${package} ${STRING_NUMBER})
+	publish_Repository_Version(${package} ${STRING_NUMBER})
 endif()
 merge_Into_Integration(${package})
 
@@ -699,7 +680,53 @@ endif()
 set_Version_Number_To_Package(${package} ${major} ${minor} ${patch})
 register_Repository_Version(${package} "${major}.${minor}.${patch}")
 if(ADDRESS)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration)
+	publish_Repository_Integration(${package})
 endif()
-endfunction()
+endfunction(release_PID_Package)
+
+### UPDATE COMMAND IMPLEM
+function(update_PID_Source_Package package)
+save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
+update_Repository_Versions(${package}) #1) updating the local repository to get all modifications
+set(INSTALLED FALSE)
+deploy_Source_Package(INSTALLED ${package})
+if(NOT INSTALLED)
+	message("Error : cannot build and install ${package}")
+endif()
+restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+endfunction(update_PID_Source_Package)
+
+
+function(update_PID_Binary_Package package)
+deploy_Binary_Package(DEPLOYED ${package})
+if(NOT DEPLOYED) 
+	message("Error : cannot update ${package} with its last available version ${version}")
+endif()
+endfunction(update_PID_Binary_Package)
+
+###
+function(update_PID_All_Package)
+list_All_Binary_Packages_In_Workspace(BIN_PACKAGES)
+list_All_Source_Packages_In_Workspace(SOURCE_PACKAGES)
+if(SOURCE_PACKAGES)
+	list(REMOVE_ITEM BIN_PACKAGES ${SOURCE_PACKAGES})
+	foreach(package IN ITEMS ${SOURCE_PACKAGES})
+		update_PID_Source_Package(${package})
+	endforeach()
+endif()
+if(BIN_PACKAGES)
+	foreach(package IN ITEMS ${BIN_PACKAGES})
+		update_PID_Binary_Package(${package})
+	endforeach()
+endif()
+endfunction(update_PID_All_Package)
+
+### UPGRADE COMMAND IMPLEM
+function(upgrade_Workspace remote)
+save_Workspace_Repository_Context(CURRENT_COMMIT SAVED_CONTENT)
+update_Workspace_Repository(${remote})
+restore_Workspace_Repository_Context(${CURRENT_COMMIT} ${SAVED_CONTENT})
+update_PID_All_Package()
+endfunction(upgrade_Workspace remote)
+
 

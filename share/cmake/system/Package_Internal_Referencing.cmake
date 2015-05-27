@@ -299,7 +299,7 @@ endfunction(install_Package)
 ###
 function(deploy_Package_Repository IS_DEPLOYED package)
 if(${package}_ADDRESS)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages git clone ${${package}_ADDRESS} OUTPUT_QUIET ERROR_QUIET)
+	clone_Repository(${package} ${${package}_ADDRESS})
 	if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
 		set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
 	else()
@@ -688,7 +688,6 @@ go_To_Version(${package} ${version})
 # 2) building sources
 set(IS_BUILT FALSE)
 build_And_Install_Source(IS_BUILT ${package} ${version})
-#message("DEBUG : going back to ${curr_branch} branch")
 # 3) going back to the initial branch in use
 restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT})
 
