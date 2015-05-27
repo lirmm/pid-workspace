@@ -36,13 +36,15 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "info -- getting info on a given package using name=NAME_OF_PACKAGE argument."
 	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive. Use only name=NAME_OF_PACKAGE argument to deploy source repository or use in addition version=VERSION to deploy the specific binary version."
 	COMMAND ${CMAKE_COMMAND} -E echo "resolve -- resolving runtime dependencies of an already installed package. Use name=NAME_OF_PACKAGE and version=VERSION arguments to specify the target binary package."
-	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package. Use name=NAME_OF_PACKAGE to specify the name of the new package. Other optional arguments are: author, affiliation, license."
+	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package. Use name=NAME_OF_PACKAGE to specify the name of the new package. Other optional arguments are: author, affiliation, license and url. If url is used, the connection with a remote repository is established as calling the connect command."
 	COMMAND ${CMAKE_COMMAND} -E echo "connect -- Synchronize local repository with an empty remote one. Required arguments are : name to specify the name of the package and url to specify the url of the remote repository."
 	COMMAND ${CMAKE_COMMAND} -E echo "license -- Printing information on licenses or more precise information on a given license using name=NAME_OF_LICENSE argument."
 	COMMAND ${CMAKE_COMMAND} -E echo "clear -- Clearing the whole install directory of a package using name=NAME_OF_PACKAGE, version=all or own or own-version or version arguments."
 	COMMAND ${CMAKE_COMMAND} -E echo "remove -- Removing the target package from the workspace using name=NAME_OF_PACKAGE argument."
 	COMMAND ${CMAKE_COMMAND} -E echo "register -- Registering the target package in the workspace using name=NAME_OF_PACKAGE argument. The package is published so that people with adequate rights can now deploy it adequately."
 	COMMAND ${CMAKE_COMMAND} -E echo "release -- Releasing the target package using name=NAME_OF_PACKAGE argument and nextversion=MAJOR or MINOR or PATCH to indicate how to icnrease version number. The release mainly consists in good tagging of branches and publication to the server."
+	COMMAND ${CMAKE_COMMAND} -E echo "update -- updating a source or binary package using name=NAME_OF_PACKAGE argument. The last available version is deployed in the workspace. If all is used for name, all source and binary packages will be updated."
+	COMMAND ${CMAKE_COMMAND} -E echo "upgrade -- upgrading the workspace: install the more recent version of the PID API and references to packages. You can use the optionnal remote argument to set the remote you will use to update the workspace, by default it is the origin remote. The argument update may be setON or OFF (optionnal, default to ON) to update all packages once the upgrade has been done."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -102,6 +104,7 @@ add_custom_target(create
 					-DOPTIONAL_AUTHOR="$(author)" 
 					-DOPTIONAL_INSTITUTION="$(affiliation)"
 					-DOPTIONAL_LICENSE=$(license)
+					-DOPTIONNAL_GIT_URL=$(url)
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Create_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -161,3 +164,19 @@ add_custom_target(release
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+
+## updating a package
+add_custom_target(update
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DTARGET_PACKAGE=$(name)
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Update_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+## upgrading the workspace
+add_custom_target(upgrade
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DTARGET_REMOTE_REPOSITORY=$(remote)
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Upgrade_PID_Workspace.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)

@@ -11,6 +11,7 @@ include(Package_Internal_Configuration NO_POLICY_SCOPE)
 include(Package_Internal_Referencing NO_POLICY_SCOPE)
 include(Package_Internal_Targets_Management NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Git_Functions NO_POLICY_SCOPE)
 
 ###
 function(classify_Package_Categories package)
@@ -428,10 +429,8 @@ endfunction()
 
 ###
 function(create_PID_Package package author institution license)
-message("create_PID_Package ${package}")
-#copying the pattern folder into teh package folder and renaming it
+#copying the pattern folder into the package folder and renaming it
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/package ${WORKSPACE_DIR}/packages/${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git init)
 #setting variables
 set(PACKAGE_NAME ${package})
 if(author AND NOT author STREQUAL "")
@@ -456,10 +455,7 @@ set(PACKAGE_YEARS ${date})
 # generating the root CMakeLists.txt of the package
 configure_file(${WORKSPACE_DIR}/share/patterns/CMakeLists.txt.in ../packages/${package}/CMakeLists.txt @ONLY)
 #confuguring git repository
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add --all)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "initialization of package done")
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v0.0.0 -m "creation of package")
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout -b integration master)
+init_Repository(${package})
 endfunction()
 
 
@@ -491,7 +487,6 @@ endfunction()
 
 ###
 function(resolve_PID_Package package version)
-message("resolve_PID_Package ${package} ${version}")
 set(PACKAGE_NAME ${package})
 set(PROJECT_NAME ${package})
 set(PACKAGE_VERSION ${version})
@@ -529,22 +524,6 @@ message("AUTHORS: ${LICENSE_AUTHORS}")
 endfunction()
 
 ###
-function(get_Repository_Name RES_NAME git_url)
-#testing ssh address
-string(REGEX REPLACE "^[^@]+@[^:]+:(.+)$" "\\1" REPO_PATH ${git_url})
-if(REPO_PATH STREQUAL "${git_url}")
-	#testing https address
-	string(REGEX REPLACE "^https?://(.*)$" "\\1" REPO_PATH ${git_url})
-	if(REPO_PATH STREQUAL "${git_url}")
-		return()
-	endif()
-endif()
-get_filename_component(REPO_NAME ${REPO_PATH} NAME_WE)
-set(${RES_NAME} ${REPO_NAME} PARENT_SCOPE) 
-endfunction()
-
-
-###
 function(set_Package_Repository_Address package git_url)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
 	string(REPLACE "YEAR" "ADDRESS ${git_url} YEAR" NEW_CONTENT ${CONTENT})
@@ -564,27 +543,16 @@ endfunction()
 
 ###
 function(connect_PID_Package package git_url)
-# updating local repository
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add --all)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "prepare synchronization with repository")
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout master)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add --all)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "prepare synchronization with repository")
+# saving local repository state
+save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package})
 # updating the address of the official repository in the CMakeLists.txt of the package 
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration)
 set_Package_Repository_Address(${package} ${git_url})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add CMakeLists.txt)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "adding repository address to the root CMakeLists.txt file")
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout master)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge integration)
-# synchronizing with the empty git repository
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add origin ${git_url})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch origin)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin --tags)
-endfunction()
+register_Repository_Address(${package})
+# synchronizing with the remote "origin" git repository
+connect_Repository(${package} ${url} origin)
+# restoring local repository state
+restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT})
+endfunction(connect_PID_Package)
 
 ###
 function(clear_PID_Package package version)
@@ -609,7 +577,7 @@ elseif("${version}" MATCHES "all")#all versions targetted (including own version
 else()
 	message(ERROR "invalid version string : ${version}, possible inputs are version numbers (with or without own- prefix), all and own")
 endif()
-endfunction()
+endfunction(clear_PID_Package)
 
 ###
 function(remove_PID_Package package)
@@ -624,22 +592,14 @@ endfunction()
 
 ###
 function(register_PID_Package package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git checkout master)
+go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_BUILD_TOOL} install)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_BUILD_TOOL} referencing)
-if(EXISTS ${WORKSPACE_DIR}/share/cmake/find/Find${package}.cmake AND EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/find/Find${package}.cmake)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/references/Refer${package}.cmake)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git commit -m "${package} registered")
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git push origin master)
-else()
-	message("ERROR : problem registering package ${package}, cannot generate adequate cmake files")
-endif()
+publish_References_In_Workspace_Repository(${package})
 endfunction()
 
 
 ###
-
 function(get_Version_Number_And_Repo_From_Package package NUMBER STRING_NUMBER ADDRESS)
 set(${ADDRESS} PARENT_SCOPE)
 file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
@@ -672,7 +632,7 @@ endif()
 set(${NUMBER} ${VERSION_COMMAND} PARENT_SCOPE)
 endfunction(get_Version_Number_And_Repo_From_Package)
 
-
+###
 function(set_Version_Number_To_Package package major minor patch)
 
 file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
@@ -686,23 +646,19 @@ file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${TO_WRITE}) #get
 
 endfunction(set_Version_Number_To_Package)
 
+### RELEASE COMMAND IMPLEM
 function(release_PID_Package package next)
 ### registering current version
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration) #force going to integration branch
+go_To_Integration(${package})
 get_Version_Number_And_Repo_From_Package(${package} NUMBER STRING_NUMBER ADDRESS)
-message("address is ---${ADDRESS}---")
 if(NOT NUMBER)
 	message("ERROR : problem releasing package ${package}, bad version format")
 endif()
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout master) #force going to master branch
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge integration)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v${STRING_NUMBER} -m "releasing version ${STRING_NUMBER}")
-if(ADDRESS)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master)#releasing on master branch
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin v${STRING_NUMBER})#releasing version tag
+merge_Into_Master(${package} ${STRING_NUMBER})
+if(ADDRESS)#there is a connected repository
+	publish_Repository_Version(${package} ${STRING_NUMBER})
 endif()
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge master)#just in case of...
+merge_Into_Integration(${package})
 
 ### now starting a new version
 list(GET NUMBER 0 major)
@@ -722,11 +678,55 @@ else()#default behavior
 	set(patch 0)
 endif()
 set_Version_Number_To_Package(${package} ${major} ${minor} ${patch})
-
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add CMakeLists.txt)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "start new version ${major}.${minor}.${patch}")
+register_Repository_Version(${package} "${major}.${minor}.${patch}")
 if(ADDRESS)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration)
+	publish_Repository_Integration(${package})
 endif()
-endfunction()
+endfunction(release_PID_Package)
+
+### UPDATE COMMAND IMPLEM
+function(update_PID_Source_Package package)
+save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
+update_Repository_Versions(${package}) #1) updating the local repository to get all modifications
+set(INSTALLED FALSE)
+deploy_Source_Package(INSTALLED ${package})
+if(NOT INSTALLED)
+	message("Error : cannot build and install ${package}")
+endif()
+restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+endfunction(update_PID_Source_Package)
+
+
+function(update_PID_Binary_Package package)
+deploy_Binary_Package(DEPLOYED ${package})
+if(NOT DEPLOYED) 
+	message("Error : cannot update ${package} with its last available version ${version}")
+endif()
+endfunction(update_PID_Binary_Package)
+
+###
+function(update_PID_All_Package)
+list_All_Binary_Packages_In_Workspace(BIN_PACKAGES)
+list_All_Source_Packages_In_Workspace(SOURCE_PACKAGES)
+if(SOURCE_PACKAGES)
+	list(REMOVE_ITEM BIN_PACKAGES ${SOURCE_PACKAGES})
+	foreach(package IN ITEMS ${SOURCE_PACKAGES})
+		update_PID_Source_Package(${package})
+	endforeach()
+endif()
+if(BIN_PACKAGES)
+	foreach(package IN ITEMS ${BIN_PACKAGES})
+		update_PID_Binary_Package(${package})
+	endforeach()
+endif()
+endfunction(update_PID_All_Package)
+
+### UPGRADE COMMAND IMPLEM
+function(upgrade_Workspace remote)
+save_Workspace_Repository_Context(CURRENT_COMMIT SAVED_CONTENT)
+update_Workspace_Repository(${remote})
+restore_Workspace_Repository_Context(${CURRENT_COMMIT} ${SAVED_CONTENT})
+update_PID_All_Package()
+endfunction(upgrade_Workspace remote)
+
 

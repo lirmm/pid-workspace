@@ -5,14 +5,14 @@ macro(declare_Mode_Cache_Options)
 
 include(CMakeDependentOption)
 option(BUILD_EXAMPLES "Package builds examples" OFF)
-option(BUILD_API_DOC "Package generates the HTML API documentation" ON)
+option(BUILD_API_DOC "Package generates the HTML API documentation" OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF
 		         "BUILD_API_DOC" OFF)
 option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
 option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OFF)
 option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
-
+option(BUILD_DEPENDENT_PACKAGES "the build will leads to the rebuild of its dependent package that lies in the workspace as source packages" ON)
 endmacro(declare_Mode_Cache_Options)
 
 macro(manage_Parrallel_Build_Option)
@@ -39,7 +39,10 @@ set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_LATEX_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_AND_RUN_TESTS OFF CACHE BOOL "" FORCE)
 set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)
+#default ON options
+set(ENABLE_PARALLEL_BUILD ON CACHE BOOL "" FORCE)
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
+set(BUILD_DEPENDENT_PACKAGES ON CACHE BOOL "" FORCE)
 #include the cmake script that sets the options coming from the global build configuration
 include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
 endfunction(reset_Mode_Cache_Options)
@@ -344,7 +347,6 @@ foreach(dep_package IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_S
 endforeach()
 set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
-
 # component declaration must be reinitialized otherwise some problem (redundancy of declarations) would appear
 foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	reset_Component_Cached_Variables(${a_component})
@@ -493,24 +495,18 @@ endfunction(register_Component_Binary)
 #resolving dependencies
 function(is_Bin_Component_Exporting_Other_Components RESULT package component mode)
 set(${RESULT} FALSE PARENT_SCOPE)
-if(mode MATCHES Release)
-	set(mode_var_suffix "")
-elseif(mode MATCHES Debug)
-	set(mode_var_suffix "_DEBUG")
-else()
-	message(FATAL_ERROR "Bug : unknown mode ${mode}")
-	return()
-endif()
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+
 #scanning external dependencies
-if(${package}_${component}_LINKS${mode_var_suffix}) #only exported links here
+if(${package}_${component}_LINKS${VAR_SUFFIX}) #only exported links here
 	set(${RESULT} TRUE PARENT_SCOPE)
 	return()
 endif()
 
 # scanning internal dependencies
-if(${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
-	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
-		if(${package}_${component}_INTERNAL_EXPORT_${int_dep}${mode_var_suffix})
+if(${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+		if(${package}_${component}_INTERNAL_EXPORT_${int_dep}${VAR_SUFFIX})
 			set(${RESULT} TRUE PARENT_SCOPE)
 			return()
 		endif()
@@ -518,9 +514,9 @@ if(${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
 endif()
 
 # scanning package dependencies
-foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
-	foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${mode_var_suffix})
-		if(${package}_${component}_EXPORT_${dep_pack}_${ext_dep}${mode_var_suffix})
+foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
+		if(${package}_${component}_EXPORT_${dep_pack}_${ext_dep}${VAR_SUFFIX})
 			set(${RESULT} TRUE PARENT_SCOPE)
 			return()
 		endif()
@@ -786,35 +782,6 @@ endif()
 
 endfunction(generate_Info_File)
 
-
-############ function used to create the license.txt file of the package  ###########
-function(generate_License_File)
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	if(	DEFINED ${PROJECT_NAME}_LICENSE 
-		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
-	
-		find_file(	LICENSE   
-				"License${${PROJECT_NAME}_LICENSE}.cmake"
-				PATH "${WORKSPACE_DIR}/share/cmake/system"
-				NO_DEFAULT_PATH
-			)
-		set(LICENSE ${LICENSE} CACHE INTERNAL "")
-		
-		if(LICENSE_IN-NOTFOUND)
-			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
-		else(LICENSE_IN-NOTFOUND)
-			foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
-				generate_Full_Author_String(${author} STRING_TO_APPEND)
-				set(${PROJECT_NAME}_AUTHORS_LIST "${${PROJECT_NAME}_AUTHORS_LIST} ${STRING_TO_APPEND}")
-			endforeach()
-			include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
-			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
-			install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
-			file(WRITE ${CMAKE_BINARY_DIR}/share/file_header_comment.txt.in ${LICENSE_HEADER_FILE_DESCRIPTION})
-		endif(LICENSE_IN-NOTFOUND)
-	endif()
-endif()
-endfunction(generate_License_File)
 
 ############ function used to create the  Find<package>.cmake file of the package  ###########
 function(generate_Find_File)

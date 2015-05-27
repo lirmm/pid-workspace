@@ -10,6 +10,20 @@ endif()
 endfunction(get_Mode_Variables)
 
 ###
+function(get_System_Variables OS_STRING PACKAGE_STRING)
+if(APPLE)
+	set(${OS_STRING} darwin PARENT_SCOPE)
+	set(${PACKAGE_STRING} Darwin PARENT_SCOPE)
+elseif(UNIX)
+	set(${OS_STRING} linux PARENT_SCOPE)
+	set(${PACKAGE_STRING} Linux PARENT_SCOPE)
+else()
+	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
+	return()
+endif()
+endfunction(get_System_Variables)
+
+###
 function(is_A_System_Reference_Path path IS_SYSTEM)
 
 if(UNIX)
@@ -389,4 +403,33 @@ endforeach()
 set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
 endfunction(resolve_External_Resources_Path)
 
+###
+function(list_All_Source_Packages_In_Workspace PACKAGES)
+file(GLOB source_packages RELATIVE ${WORKSPACE_DIR}/packages ${WORKSPACE_DIR}/packages/*)
+foreach(a_file IN ITEMS ${source_packages})
+	if(EXISTS ${WORKSPACE_DIR}/packages/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${a_file})
+		list(APPEND result ${a_file})
+	endif()
+endforeach()
+set(${PACKAGES} ${result} PARENT_SCOPE)
+endfunction(list_All_Source_Packages_In_Workspace)
+
+###
+function(list_All_Binary_Packages_In_Workspace PACKAGES)
+file(GLOB bin_pakages RELATIVE ${WORKSPACE_DIR}/install ${WORKSPACE_DIR}/install/*)
+foreach(a_file IN ITEMS ${bin_pakages})
+	if(EXISTS ${WORKSPACE_DIR}/install/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${a_file})
+		list(APPEND result ${a_file})
+	endif()
+endforeach()
+file(GLOB ext_pakages RELATIVE ${WORKSPACE_DIR}/external ${WORKSPACE_DIR}/external/*)
+foreach(a_file IN ITEMS ${ext_pakages})
+	if(EXISTS ${WORKSPACE_DIR}/external/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${a_file})
+		list(APPEND result ${a_file})
+	endif()
+endforeach()
+list(external result)
+
+set(${PACKAGES} ${result} PARENT_SCOPE)
+endfunction(list_All_Binary_Packages_In_Workspace)
 
