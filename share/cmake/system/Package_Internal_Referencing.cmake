@@ -520,15 +520,13 @@ function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT)
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(${package}) # updating the local repository to get all available modifications
 get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
-message("deploy_Source_Package_Version ${package} ${VERSION_MIN} exact=${EXACT} possible versions=${GIT_VERSIONS}")
 if(NOT GIT_VERSIONS) #no version available => BUG
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
 
-normalize_Version_Tags(VERSION_NUMBERS ${GIT_VERSIONS})
-set(ALL_IS_OK FALSE)
+normalize_Version_Tags(VERSION_NUMBERS "${GIT_VERSIONS}")
 
 if(EXACT)
 	select_Exact_Version(RES_VERSION ${VERSION_MIN} "${VERSION_NUMBERS}")
@@ -540,7 +538,7 @@ if(NOT RES_VERSION)
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
-message("version=${RES_VERSION}")
+set(ALL_IS_OK FALSE)
 build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
 if(ALL_IS_OK)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)

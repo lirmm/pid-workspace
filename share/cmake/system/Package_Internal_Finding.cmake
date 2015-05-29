@@ -20,7 +20,6 @@ function(select_Exact_Version RES_VERSION minimum_version available_versions)
 get_Version_Numbers(MAJOR MINOR PATCH "${minimum_version}.0")
 set(curr_max_patch_number -1)
 foreach(version IN ITEMS ${available_versions})
-	set(VNUMBERS)
 	get_Version_Numbers(COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH "${version}")
 	if(	${COMPARE_MAJOR} EQUAL ${MAJOR} 
 		AND ${COMPARE_MINOR} EQUAL ${MINOR} 
