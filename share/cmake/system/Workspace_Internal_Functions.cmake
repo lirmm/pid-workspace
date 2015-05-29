@@ -470,16 +470,16 @@ if("${version}" STREQUAL "")#deploying the source repository
 		set(INSTALLED FALSE)
 		deploy_Source_Package(INSTALLED ${package})
 		if(NOT INSTALLED)
-			message("Error : cannot install ${package} after deployment")
+			message("[ERROR] : cannot install ${package} after deployment")
 			return()
 		endif()
 	else()
-		message("Error : cannot deploy ${package} repository")
+		message("[ERROR] : cannot deploy ${package} repository")
 	endif()
 else()#deploying the target binary relocatable archive 
 	deploy_Binary_Package_Version(DEPLOYED ${package} ${version} TRUE)
 	if(NOT DEPLOYED) 
-		message("Error : cannot deploy ${package} binary archive version ${version}")
+		message("[ERROR] : cannot deploy ${package} binary archive version ${version}")
 	endif()
 endif()
 endfunction()
@@ -493,7 +493,7 @@ set(PACKAGE_VERSION ${version})
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)
 include(${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake)
 if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
-	message("ERROR : cannot configure runtime dependencies for installed version ${version} of package ${package}")
+	message("[ERROR] : cannot configure runtime dependencies for installed version ${version} of package ${package}")
 endif()
 endfunction()
 
@@ -556,26 +556,33 @@ endfunction(connect_PID_Package)
 
 ###
 function(clear_PID_Package package version)
-if("${version}" MATCHES "own-[0-9]+\\.[0-9]+\\.[0-9]+"		#specific own version targetted
-	OR "${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
+if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
 
 	if( EXISTS ${WORKSPACE_DIR}/install/${package}/${version}
 	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${package}/${version})
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${package}/${version})
 	else()
-		message(ERROR "package ${package} version ${version} does not resides in workspace install directory")
+		if( EXISTS ${WORKSPACE_DIR}/external/${package}/${version}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${package}/${version})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${package}/${version})
+		else()
+			message("[ERROR] : package ${package} version ${version} does not resides in workspace install directory")
+		endif()
 	endif()
-
-elseif("${version}" MATCHES "own")#all own version targetted
-	file(	GLOB TO_SUPPRESS
-		"${WORKSPACE_DIR}/install/${package}/own-*")
-	foreach (folder IN ITEMS ${TO_SUPPRESS})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${folder})
-	endforeach()
 elseif("${version}" MATCHES "all")#all versions targetted (including own versions and installers folder)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${package})
+	if( EXISTS ${WORKSPACE_DIR}/install/${package}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${package})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${package})
+	else()
+		if( EXISTS ${WORKSPACE_DIR}/external/${package}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${package})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${package})
+		else()
+			message("[ERROR] : package ${package} is not installed in workspace")
+		endif()
+	endif()
 else()
-	message(ERROR "invalid version string : ${version}, possible inputs are version numbers (with or without own- prefix), all and own")
+	message("[ERROR] invalid version string : ${version}, possible inputs are version numbers (with or without own- prefix), all and own")
 endif()
 endfunction(clear_PID_Package)
 
@@ -652,7 +659,7 @@ function(release_PID_Package package next)
 go_To_Integration(${package})
 get_Version_Number_And_Repo_From_Package(${package} NUMBER STRING_NUMBER ADDRESS)
 if(NOT NUMBER)
-	message("ERROR : problem releasing package ${package}, bad version format")
+	message("[ERROR] : problem releasing package ${package}, bad version format")
 endif()
 merge_Into_Master(${package} ${STRING_NUMBER})
 if(ADDRESS)#there is a connected repository
@@ -691,7 +698,7 @@ update_Repository_Versions(${package}) #1) updating the local repository to get 
 set(INSTALLED FALSE)
 deploy_Source_Package(INSTALLED ${package})
 if(NOT INSTALLED)
-	message("Error : cannot build and install ${package}")
+	message("[ERROR] : cannot build and install ${package}")
 endif()
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(update_PID_Source_Package)
@@ -700,7 +707,7 @@ endfunction(update_PID_Source_Package)
 function(update_PID_Binary_Package package)
 deploy_Binary_Package(DEPLOYED ${package})
 if(NOT DEPLOYED) 
-	message("Error : cannot update ${package} with its last available version ${version}")
+	message("[ERROR] : cannot update ${package} with its last available version ${version}")
 endif()
 endfunction(update_PID_Binary_Package)
 

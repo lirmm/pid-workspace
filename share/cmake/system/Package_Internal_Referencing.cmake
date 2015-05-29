@@ -294,13 +294,8 @@ endfunction(install_Package)
 ###
 function(deploy_Package_Repository IS_DEPLOYED package)
 if(${package}_ADDRESS)
-	clone_Repository(${package} ${${package}_ADDRESS})
-	if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
-		set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
-	else()
-		set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
-		message("[ERROR] : impossible to clone the repository of package ${package} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
-	endif()
+	clone_Repository(DEPLOYED ${package} ${${package}_ADDRESS})
+	set(${IS_DEPLOYED} ${DEPLOYED} PARENT_SCOPE)
 else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
 	message("[ERROR] : impossible to clone the repository of package ${package} (no repository address defined). This is maybe due to a malformed package, please contact the administrator of this package.")
@@ -472,7 +467,7 @@ function(build_And_Install_Source DEPLOYED package version)
 			)
 	endif()	
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON ..
+		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON  ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		)
 	execute_process(
@@ -500,8 +495,9 @@ if(NOT GIT_VERSIONS) #no version available => BUG
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
-normalize_Version_Tags(VERSION_NUMBERS ${GIT_VERSIONS}) #getting standard version number depending on value of tags
-select_Last_Version(RES_VERSION ${VERSION_NUMBERS})
+
+normalize_Version_Tags(VERSION_NUMBERS "${GIT_VERSIONS}") #getting standard version number depending on value of tags
+select_Last_Version(RES_VERSION "${VERSION_NUMBERS}")
 if(NOT RES_VERSION)
 	message("[ERROR] : no version found for package ${package} !! Maybe this is due to a malformed package. Please contact the administrator of this package.")
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
@@ -531,6 +527,7 @@ if(NOT GIT_VERSIONS) #no version available => BUG
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
+
 normalize_Version_Tags(VERSION_NUMBERS ${GIT_VERSIONS})
 set(ALL_IS_OK FALSE)
 

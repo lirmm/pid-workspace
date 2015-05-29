@@ -946,7 +946,7 @@ if(NOT COMP_WILL_BE_BUILT)
 endif()
 
 if( NOT ${dep_package}_${dep_component}_TYPE)
-	message(FATAL_ERROR "Problem : ${dep_component} in package ${dep_package} is not defined")
+	message(FATAL_ERROR "[FATAL ERROR] : ${dep_component} in package ${dep_package} is not defined")
 endif()
 
 set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} FALSE CACHE INTERNAL "")

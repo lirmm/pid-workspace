@@ -2,8 +2,6 @@
 ############# function used to navigate between branches #############
 ######################################################################
 
-
-
 ###
 function(go_To_Integration package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration
@@ -222,7 +220,7 @@ endfunction(publish_Repository_Integration)
 function(update_Repository_Versions package)
 go_To_Master(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull origin master)#pulling master branch of origin
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull origin --tags)#getting new tags
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch origin --tags)#getting new tags
 endfunction(update_Repository_Versions)
 
 ###
@@ -235,8 +233,16 @@ endfunction(update_Workspace_Repository)
 ############################ other functions #########################
 ######################################################################
 ###
-function(clone_Repository package url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+function(clone_Repository IS_DEPLOYED package url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch origin OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch origin --tags OUTPUT_QUIET ERROR_QUIET)
+else()
+	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
+	message("[ERROR] : impossible to clone the repository of package ${package} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
+endif()
 endfunction(clone_Repository)
 
 ###
