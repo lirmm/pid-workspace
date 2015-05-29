@@ -693,14 +693,11 @@ endfunction(release_PID_Package)
 
 ### UPDATE COMMAND IMPLEM
 function(update_PID_Source_Package package)
-save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
-update_Repository_Versions(${package}) #1) updating the local repository to get all modifications
 set(INSTALLED FALSE)
 deploy_Source_Package(INSTALLED ${package})
 if(NOT INSTALLED)
 	message("[ERROR] : cannot build and install ${package}")
 endif()
-restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(update_PID_Source_Package)
 
 

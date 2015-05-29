@@ -96,10 +96,10 @@ endfunction(get_Repository_Current_Commit)
 function(save_Repository_Context INITIAL_COMMIT SAVED_CONTENT package)
 get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${package})
 if(NOT BRANCH_NAME)
-get_Repository_Current_Commit(COMMIT_NAME ${WORKSPACE_DIR}/packages/${package})
-set(CONTEXT ${COMMIT_NAME})
+	get_Repository_Current_Commit(COMMIT_NAME ${WORKSPACE_DIR}/packages/${package})
+	set(CONTEXT ${COMMIT_NAME})
 else()
-set(CONTEXT ${BRANCH_NAME})
+	set(CONTEXT ${BRANCH_NAME})
 endif()
 set(${INITIAL_COMMIT} ${CONTEXT} PARENT_SCOPE)
 
@@ -114,6 +114,8 @@ endfunction(save_Repository_Context)
 
 ###
 function(restore_Repository_Context package initial_commit saved_content)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout -- license.txt)#this is a mandatory step due to the generation of a versionned license file when build takes place
+
 go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${initial_commit})
 if(saved_content)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash pop)
