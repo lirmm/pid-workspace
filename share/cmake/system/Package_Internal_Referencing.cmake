@@ -354,9 +354,9 @@ if(NOT available_versions)
 endif()
 
 if(EXACT)
-	select_Exact_Version(RES_VERSION ${VERSION_MIN} ${available_versions})
+	select_Exact_Version(RES_VERSION ${VERSION_MIN} "${available_versions}")
 else()
-	select_Best_Version(RES_VERSION ${VERSION_MIN} ${available_versions})
+	select_Best_Version(RES_VERSION ${VERSION_MIN} "${available_versions}")
 endif()
 set(INSTALLED FALSE)
 if(RES_VERSION)
@@ -457,7 +457,6 @@ endfunction(download_And_Install_Binary_Package)
 
 ### 
 function(build_And_Install_Source DEPLOYED package version)
-
 	if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/CMakeCache.txt)	
 		#first step populating the cache if needed		
 		execute_process(
@@ -474,7 +473,6 @@ function(build_And_Install_Source DEPLOYED package version)
 		COMMAND ${CMAKE_BUILD_TOOL} build
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		)
-
 	if(EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
 		set(${DEPLOYED} TRUE PARENT_SCOPE)
 	else()
@@ -505,7 +503,7 @@ if(NOT RES_VERSION)
 endif()
 
 set(ALL_IS_OK FALSE)
-build_And_Install_Package(ALL_IS_OK ${package} "${curr_max_major_number}.${curr_max_minor_number}.${curr_max_patch_number}")
+build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
 
 if(ALL_IS_OK)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
@@ -522,6 +520,7 @@ function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT)
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(${package}) # updating the local repository to get all available modifications
 get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
+message("deploy_Source_Package_Version ${package} ${VERSION_MIN} exact=${EXACT} possible versions=${GIT_VERSIONS}")
 if(NOT GIT_VERSIONS) #no version available => BUG
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
@@ -532,15 +531,16 @@ normalize_Version_Tags(VERSION_NUMBERS ${GIT_VERSIONS})
 set(ALL_IS_OK FALSE)
 
 if(EXACT)
-	select_Exact_Version(RES_VERSION ${VERSION_MIN} ${VERSION_NUMBERS})
+	select_Exact_Version(RES_VERSION ${VERSION_MIN} "${VERSION_NUMBERS}")
 else()
-	select_Best_Version(RES_VERSION ${VERSION_MIN} ${VERSION_NUMBERS})
+	select_Best_Version(RES_VERSION ${VERSION_MIN} "${VERSION_NUMBERS}")
 endif()
 if(NOT RES_VERSION)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
+message("version=${RES_VERSION}")
 build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
 if(ALL_IS_OK)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
@@ -553,15 +553,12 @@ endfunction(deploy_Source_Package_Version)
 ###
 function(build_And_Install_Package DEPLOYED package version)
 
-# 0) memorizing the current branch the user is working with
-save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package})
 # 1) going to the adequate git tag matching the selected version
 go_To_Version(${package} ${version})
 # 2) building sources
 set(IS_BUILT FALSE)
+
 build_And_Install_Source(IS_BUILT ${package} ${version})
-# 3) going back to the initial branch in use
-restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT})
 
 if(IS_BUILT)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
