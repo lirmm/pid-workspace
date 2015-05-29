@@ -428,7 +428,6 @@ foreach(a_file IN ITEMS ${ext_pakages})
 		list(APPEND result ${a_file})
 	endif()
 endforeach()
-list(external result)
 
 set(${PACKAGES} ${result} PARENT_SCOPE)
 endfunction(list_All_Binary_Packages_In_Workspace)

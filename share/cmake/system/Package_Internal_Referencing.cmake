@@ -333,10 +333,10 @@ if(NOT available_versions)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 endif()
 
-select_Last_Version(RES_VERSION ${available_versions})# taking the most up to date version
+select_Last_Version(RES_VERSION "${available_versions}")# taking the most up to date version
 
 set(INSTALLED FALSE)
-download_And_Install_Binary_Package(INSTALLED ${package} ${RES_VERSION})
+download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}")
 if(INSTALLED)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 else()
@@ -385,7 +385,8 @@ get_System_Variables(OS_STRING PACKAGE_STRING)
 #release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
-generate_Binary_Package_Name(${package} ${version_string} "Release" FILE_BINARY FOLDER_BINARY)
+message("download_And_Install_Binary_Package package=${package} version=${version_string}")
+generate_Binary_Package_Name(${package} "${version_string}" Release FILE_BINARY FOLDER_BINARY)
 set(download_url ${${package}_REFERENCE_${version_string}_${OS_STRING}})
 file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res SHOW_PROGRESS)
 list(GET res 0 numeric_error)
