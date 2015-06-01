@@ -244,7 +244,7 @@ set(result)
 if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
 	resolve_External_Libs_Path(RES ${package} "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
 	if(RES)
-		foreach(lib IN ITEMS ${RES_LINKS})
+		foreach(lib IN ITEMS ${RES})			
 			is_Shared_Lib_With_Path(IS_SHARED ${lib})
 			if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
 				list(APPEND result ${lib})
@@ -284,7 +284,7 @@ set(result "")
 # 1) adding directly used external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
 
 get_Bin_Component_Direct_Runtime_Links_Dependencies(RES_LINKS ${package} ${component} ${mode})
-
+message("Direct_Runtime_Links of ${package}-${component} = ${RES_LINKS}")
 list(APPEND result ${RES_LINKS})
 
 # 2) adding package components dependencies
@@ -429,11 +429,10 @@ if(	${package}_${component}_TYPE STREQUAL "SHARED"
 	# 2) adding direct private external dependencies
 	get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${package} ${component} ${mode})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_PRIVATE_LINKS})
-
+	
 	#3) getting direct and undirect runtime resources dependencies
 	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${package} ${component} ${mode})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
-
 	create_Bin_Component_Symlinks(${package} ${component} ${mode} "${ALL_RUNTIME_DEPS}")
 endif()
 endfunction(resolve_Bin_Component_Runtime_Dependencies)
@@ -457,6 +456,7 @@ endfunction(create_Bin_Component_Symlinks)
 function(create_Source_Component_Symlinks component mode targets)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(target IN ITEMS ${targets})
+	message("INSTALLING A SYMLINK to ${target}")
 	install_Rpath_Symlink(${target} ${${PROJECT_NAME}_DEPLOY_PATH} ${component}${TARGET_SUFFIX})
 endforeach()
 endfunction(create_Source_Component_Symlinks)
@@ -482,6 +482,7 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	if(THIRD_PARTY_LIBS)
 		list(APPEND ALL_RUNTIME_DEPS ${THIRD_PARTY_LIBS})
 	endif()
+	message("runtimedepsfor ${component} = ${ALL_RUNTIME_DEPS}")
 	create_Source_Component_Symlinks(${component} ${CMAKE_BUILD_TYPE} "${ALL_RUNTIME_DEPS}")
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
