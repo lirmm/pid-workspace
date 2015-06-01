@@ -284,6 +284,7 @@ set(result "")
 # 1) adding directly used external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
 
 get_Bin_Component_Direct_Runtime_Links_Dependencies(RES_LINKS ${package} ${component} ${mode})
+
 list(APPEND result ${RES_LINKS})
 
 # 2) adding package components dependencies
