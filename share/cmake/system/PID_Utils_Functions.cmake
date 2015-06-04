@@ -87,13 +87,12 @@ get_filename_component(A_FILE "${path_to_target}" NAME)
 set(FULL_RPATH_DIR ${path_to_rpath_folder}/.rpath/${rpath_sub_folder})
 install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
 install(CODE "
-	##create_Rpath_Symlink(${lib} ${${PROJECT_NAME}_DEPLOY_PATH} ${bin_component})
-	if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
+        if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
 				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
 	endif()
 	execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
-				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+                                WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
 	message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
 
 ")# creating links "on the fly" when installing
@@ -260,12 +259,12 @@ function(is_Shared_Lib_With_Path SHARED input_link)
 set(${SHARED} FALSE PARENT_SCOPE)
 get_filename_component(LIB_TYPE ${input_link} EXT)
 if(LIB_TYPE)
-	if(APPLE) 		
-		if(LIB_TYPE MATCHES "^\\.dylib(\\.[^\\.]+)*$")#found shared lib
+        if(APPLE)
+                if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
 			set(${SHARED} TRUE PARENT_SCOPE)
 		endif()
 	elseif(UNIX)
-		if(LIB_TYPE MATCHES "^\\.so(\\.[^\\.]+)*$")#found shared lib
+                if(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib
 			set(${SHARED} TRUE PARENT_SCOPE)
 		endif()
 	endif()

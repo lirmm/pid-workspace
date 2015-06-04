@@ -242,16 +242,18 @@ function(get_Bin_Component_Direct_Runtime_Links_Dependencies RES_LINKS package c
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
-	resolve_External_Libs_Path(RES ${package} "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
-	if(RES)
+
+        resolve_External_Libs_Path(RES ${package} "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+        if(RES)
 		foreach(lib IN ITEMS ${RES})			
-			is_Shared_Lib_With_Path(IS_SHARED ${lib})
+                        is_Shared_Lib_With_Path(IS_SHARED ${lib})
 			if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
-				list(APPEND result ${lib})
+                                list(APPEND result ${lib})
 			endif()
 		endforeach()
 	endif()
 endif()
+
 set(${RES_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_Links_Dependencies)
 
@@ -309,7 +311,7 @@ foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 endforeach()
 
 # 3) adding internal components dependencies
-foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+        foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 	if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")		
 		get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
 		if(INT_DEP_RUNTIME_RESOURCES)
@@ -478,9 +480,9 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
 	# 3) in case of an executable component add third party (undirect) links
-	if(THIRD_PARTY_LIBS)
+        if(THIRD_PARTY_LIBS)
 		list(APPEND ALL_RUNTIME_DEPS ${THIRD_PARTY_LIBS})
-	endif()
+        endif()
 	create_Source_Component_Symlinks(${component} ${CMAKE_BUILD_TYPE} "${ALL_RUNTIME_DEPS}")
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
