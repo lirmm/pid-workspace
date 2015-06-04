@@ -299,7 +299,7 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE) #do not use any link time info when installing
 
 if(APPLE)
-	set(CMAKE_MACOSX_RPATH TRUE)
+        #set(CMAKE_MACOSX_RPATH TRUE)
 	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to @loader_path to enable easy package relocation
 elseif (UNIX)
 	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
