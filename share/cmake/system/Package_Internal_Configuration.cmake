@@ -457,7 +457,6 @@ endfunction(create_Bin_Component_Symlinks)
 
 ### configuring source components (currntly built) runtime paths (links to libraries, executable, modules, files, etc.)
 function(create_Source_Component_Symlinks component mode targets)
-message("create source symlinks = ${targets}")
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(target IN ITEMS ${targets})
 	install_Rpath_Symlink(${target} ${${PROJECT_NAME}_DEPLOY_PATH} ${component}${TARGET_SUFFIX})
@@ -473,7 +472,6 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
 	# 1) getting all public runtime dependencies (including inherited ones)	
 	get_Bin_Component_Runtime_Dependencies(ALL_RUNTIME_DEPS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
-	message("runtuime deps = ${ALL_RUNTIME_DEPS}")	
 	# 2) adding direct private external dependencies
 	get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_PRIVATE_LINKS})
