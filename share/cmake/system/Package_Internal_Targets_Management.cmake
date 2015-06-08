@@ -264,6 +264,16 @@ foreach(a_dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFI
 endforeach()
 endfunction(create_All_Imported_Dependency_Targets)
 
+function (create_External_Dependency_Target ext_package link mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+get_filename_component(LIB_NAME ${link} NAME)
+if(NOT TARGET ${ext_package}-${LIB_NAME}${TARGET_SUFFIX})#target does not exist
+	add_library(${ext_package}-${LIB_NAME}${TARGET_SUFFIX} UNKNOWN IMPORTED GLOBAL)
+	set_target_properties(${ext_package}-${LIB_NAME}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${link}")
+endif()
+endfunction(create_External_Dependency_Target)
+
+
 function (create_Dependency_Target dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(NOT TARGET 	${dep_package}-${dep_component}${TARGET_SUFFIX})#target does not exist

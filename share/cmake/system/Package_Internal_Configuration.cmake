@@ -247,7 +247,6 @@ if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
         if(RES)
 		foreach(lib IN ITEMS ${RES})			
                         is_Shared_Lib_With_Path(IS_SHARED ${lib})
-			message("lib ${lib} is shared : ${IS_SHARED}")
 			if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
                                 list(APPEND result ${lib})
 			endif()
