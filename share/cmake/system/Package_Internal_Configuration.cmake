@@ -247,6 +247,7 @@ if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
         if(RES)
 		foreach(lib IN ITEMS ${RES})			
                         is_Shared_Lib_With_Path(IS_SHARED ${lib})
+			message("lib ${lib} is shared : ${IS_SHARED}")
 			if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
                                 list(APPEND result ${lib})
 			endif()
@@ -456,6 +457,7 @@ endfunction(create_Bin_Component_Symlinks)
 
 ### configuring source components (currntly built) runtime paths (links to libraries, executable, modules, files, etc.)
 function(create_Source_Component_Symlinks component mode targets)
+message("create source symlinks = ${targets}")
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(target IN ITEMS ${targets})
 	install_Rpath_Symlink(${target} ${${PROJECT_NAME}_DEPLOY_PATH} ${component}${TARGET_SUFFIX})
@@ -471,11 +473,11 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
 	# 1) getting all public runtime dependencies (including inherited ones)	
 	get_Bin_Component_Runtime_Dependencies(ALL_RUNTIME_DEPS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
-	
+	message("runtuime deps = ${ALL_RUNTIME_DEPS}")	
 	# 2) adding direct private external dependencies
 	get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_PRIVATE_LINKS})
-
+	
 	#3) getting direct and undirect runtime resources dependencies
 	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})

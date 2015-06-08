@@ -268,6 +268,11 @@ if(LIB_TYPE)
 			set(${SHARED} TRUE PARENT_SCOPE)
 		endif()
 	endif()
+else()
+	# no extenion may be possible with MACOSX frameworks
+        if(APPLE)
+		set(${SHARED} TRUE PARENT_SCOPE)
+	endif()
 endif()
 endfunction(is_Shared_Lib_With_Path)
 
