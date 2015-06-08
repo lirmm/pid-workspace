@@ -233,7 +233,6 @@ if(DECLARE_PID_COMPONENT_RUNTIME_RESOURCES)
 	set(runtime_resources ${DECLARE_PID_COMPONENT_RUNTIME_RESOURCES})
 endif()
 
-
 if(type MATCHES APP OR type MATCHES EXAMPLE OR type MATCHES TEST)
 	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME} 
 					${DECLARE_PID_COMPONENT_DIRECTORY} 
@@ -347,7 +346,7 @@ endmacro(declare_PID_Package_Dependency)
 macro(declare_PID_Component_Dependency)
 set(options EXPORT)
 set(oneValueArgs COMPONENT DEPEND NATIVE PACKAGE EXTERNAL)
-set(multiValueArgs INCLUDE_DIRS LINKS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
+set(multiValueArgs INCLUDE_DIRS LINKS COMPILER_OPTIONS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}")
@@ -393,6 +392,9 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS)
 	endif()
 endif()
 
+if(DECLARE_PID_COMPONENT_DEPENDENCY_COMPILER_OPTIONS)
+	set(compiler_options ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPILER_OPTIONS})
+endif()
 
 if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE)
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
@@ -434,6 +436,7 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 				"${comp_defs}" 
 				"${comp_exp_defs}"
 				"${dep_defs}"
+				"${compiler_options}"
 				"${static_links}"
 				"${shared_links}"
 				"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
@@ -446,6 +449,7 @@ else()#system dependency
 			"${comp_defs}" 
 			"${comp_exp_defs}"
 			"${dep_defs}"
+			"${compiler_options}"
 			"${static_links}"
 			"${shared_links}"
 			"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")

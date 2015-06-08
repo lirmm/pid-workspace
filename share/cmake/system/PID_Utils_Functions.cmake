@@ -10,6 +10,20 @@ endif()
 endfunction(get_Mode_Variables)
 
 ###
+function(get_System_Variables OS_STRING PACKAGE_STRING)
+if(APPLE)
+	set(${OS_STRING} darwin PARENT_SCOPE)
+	set(${PACKAGE_STRING} Darwin PARENT_SCOPE)
+elseif(UNIX)
+	set(${OS_STRING} linux PARENT_SCOPE)
+	set(${PACKAGE_STRING} Linux PARENT_SCOPE)
+else()
+	message(SEND_ERROR "install : unsupported system (Not UNIX or OSX) !")
+	return()
+endif()
+endfunction(get_System_Variables)
+
+###
 function(is_A_System_Reference_Path path IS_SYSTEM)
 
 if(UNIX)
@@ -73,13 +87,12 @@ get_filename_component(A_FILE "${path_to_target}" NAME)
 set(FULL_RPATH_DIR ${path_to_rpath_folder}/.rpath/${rpath_sub_folder})
 install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
 install(CODE "
-	##create_Rpath_Symlink(${lib} ${${PROJECT_NAME}_DEPLOY_PATH} ${bin_component})
-	if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
+        if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
 				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
 	endif()
 	execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
-				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+                                WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
 	message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
 
 ")# creating links "on the fly" when installing
@@ -246,18 +259,22 @@ function(is_Shared_Lib_With_Path SHARED input_link)
 set(${SHARED} FALSE PARENT_SCOPE)
 get_filename_component(LIB_TYPE ${input_link} EXT)
 if(LIB_TYPE)
-	if(APPLE) 		
-		if(LIB_TYPE MATCHES "^\\.dylib(\\.[^\\.]+)*$")#found shared lib
+        if(APPLE)
+                if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
 			set(${SHARED} TRUE PARENT_SCOPE)
 		endif()
 	elseif(UNIX)
-		if(LIB_TYPE MATCHES "^\\.so(\\.[^\\.]+)*$")#found shared lib
+                if(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib
 			set(${SHARED} TRUE PARENT_SCOPE)
 		endif()
 	endif()
+else()
+	# no extenion may be possible with MACOSX frameworks
+        if(APPLE)
+		set(${SHARED} TRUE PARENT_SCOPE)
+	endif()
 endif()
 endfunction(is_Shared_Lib_With_Path)
-
 
 ###
 function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
@@ -284,7 +301,7 @@ endfunction(is_External_Package_Defined)
 function(resolve_External_Libs_Path COMPLETE_LINKS_PATH package ext_links mode)
 set(res_links)
 foreach(link IN ITEMS ${ext_links})
-	string(REGEX REPLACE "^<([^>]+)>([^\\.]+\\.[a|la|so|dylib].*)" "\\1;\\2" RES ${link})
+	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${link})
 	if(NOT RES MATCHES ${link})# a replacement has taken place => this is a full path to a library
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
@@ -371,7 +388,7 @@ function(resolve_External_Resources_Path COMPLETE_RESOURCES_PATH package ext_res
 set(res_resources)
 foreach(resource IN ITEMS ${ext_resources})
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${resource})
-	if(NOT RES MATCHES ${resource})# a replacement has taken place => this is a relative path to a resource
+	if(NOT RES MATCHES ${resource})# a replacement has taken place => this is a relative path to an external package resource
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
@@ -384,10 +401,38 @@ foreach(resource IN ITEMS ${ext_resources})
 			list(APPEND res_resources ${fullpath})				
 		endif()
 	else()
-		list(APPEND res_resources ${resource})	#for absolute path or system dependencies simply copying the path	
+		list(APPEND res_resources ${resource})	#for  relative path or system dependencies (absolute path) simply copying the path	
 	endif()
 endforeach()
 set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
 endfunction(resolve_External_Resources_Path)
 
+###
+function(list_All_Source_Packages_In_Workspace PACKAGES)
+file(GLOB source_packages RELATIVE ${WORKSPACE_DIR}/packages ${WORKSPACE_DIR}/packages/*)
+foreach(a_file IN ITEMS ${source_packages})
+	if(EXISTS ${WORKSPACE_DIR}/packages/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${a_file})
+		list(APPEND result ${a_file})
+	endif()
+endforeach()
+set(${PACKAGES} ${result} PARENT_SCOPE)
+endfunction(list_All_Source_Packages_In_Workspace)
+
+###
+function(list_All_Binary_Packages_In_Workspace PACKAGES)
+file(GLOB bin_pakages RELATIVE ${WORKSPACE_DIR}/install ${WORKSPACE_DIR}/install/*)
+foreach(a_file IN ITEMS ${bin_pakages})
+	if(EXISTS ${WORKSPACE_DIR}/install/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${a_file})
+		list(APPEND result ${a_file})
+	endif()
+endforeach()
+file(GLOB ext_pakages RELATIVE ${WORKSPACE_DIR}/external ${WORKSPACE_DIR}/external/*)
+foreach(a_file IN ITEMS ${ext_pakages})
+	if(EXISTS ${WORKSPACE_DIR}/external/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${a_file})
+		list(APPEND result ${a_file})
+	endif()
+endforeach()
+
+set(${PACKAGES} ${result} PARENT_SCOPE)
+endfunction(list_All_Binary_Packages_In_Workspace)
 

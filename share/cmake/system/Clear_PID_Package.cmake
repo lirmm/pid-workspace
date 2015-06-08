@@ -7,11 +7,15 @@ if(TARGET_PACKAGE AND TARGET_VERSION)
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${TARGET_PACKAGE})
 		clear_PID_Package(	${TARGET_PACKAGE} 
 					${TARGET_VERSION})
+	elseif(EXISTS ${WORKSPACE_DIR}/external/${TARGET_PACKAGE}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${TARGET_PACKAGE})
+		clear_PID_Package(	${TARGET_PACKAGE} 
+					${TARGET_VERSION})
 	else()
-		message("ERROR : there is no package named ${TARGET_PACKAGE} installed")
+		message("[ERROR] : there is no package named ${TARGET_PACKAGE} installed")
 	endif()
 else()
-	message("ERROR : You must specify the name of the package to clear using name=<name of package> argument and a version using version=<type or number of the  version>")
+	message("[ERROR] : You must specify the name of the package to clear using name=<name of package> argument and a version using version=<type or number of the  version>")
 endif()
 
 

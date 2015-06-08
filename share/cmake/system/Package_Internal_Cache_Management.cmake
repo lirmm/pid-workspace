@@ -5,14 +5,14 @@ macro(declare_Mode_Cache_Options)
 
 include(CMakeDependentOption)
 option(BUILD_EXAMPLES "Package builds examples" OFF)
-option(BUILD_API_DOC "Package generates the HTML API documentation" ON)
+option(BUILD_API_DOC "Package generates the HTML API documentation" OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF
 		         "BUILD_API_DOC" OFF)
 option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
 option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OFF)
 option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
-
+option(BUILD_DEPENDENT_PACKAGES "the build will leads to the rebuild of its dependent package that lies in the workspace as source packages" ON)
 endmacro(declare_Mode_Cache_Options)
 
 macro(manage_Parrallel_Build_Option)
@@ -39,7 +39,10 @@ set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_LATEX_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_AND_RUN_TESTS OFF CACHE BOOL "" FORCE)
 set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)
+#default ON options
+set(ENABLE_PARALLEL_BUILD ON CACHE BOOL "" FORCE)
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
+set(BUILD_DEPENDENT_PACKAGES ON CACHE BOOL "" FORCE)
 #include the cmake script that sets the options coming from the global build configuration
 include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
 endfunction(reset_Mode_Cache_Options)
@@ -105,6 +108,26 @@ endif()
 reset_References_Info()
 reset_Version_Cache_Variables()
 endfunction(init_Package_Info_Cache_Variables)
+
+function(init_Standard_Path_Cache_Variables)
+set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
+set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL "")
+set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
+set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH}  CACHE INTERNAL "")
+set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resources CACHE INTERNAL "")
+endfunction(init_Standard_Path_Cache_Variables)
+
+### set cache variable for install
+function(set_Install_Cache_Variables)
+	set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_RPATH_DIR ${${PROJECT_NAME}_DEPLOY_PATH}/.rpath CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_ROOT_DIR ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} CACHE INTERNAL "")
+endfunction(set_Install_Cache_Variables)
 
 ### setting cache variable for versionning
 function(set_Version_Cache_Variables major minor patch)
@@ -194,7 +217,7 @@ endfunction(add_Category)
 #############################################################################################
 
 ### configure variables exported by component that will be used to generate the package cmake use file
-function (configure_Install_Variables component export include_dirs dep_defs exported_defs static_links shared_links runtime_resources)
+function (configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(	NOT dep_defs STREQUAL "" 
@@ -210,6 +233,13 @@ if(export) # if dependancy library is exported then we need to register its dep_
 			${include_dirs}
 			CACHE INTERNAL "")
 	endif()
+	if(NOT exported_options STREQUAL "")	
+		set(	${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX}} 
+			${exported_options}
+			CACHE INTERNAL "")
+	endif()
+	
 	# links are exported since we will need to resolve symbols in the third party components that will the use the component 	
 	if(NOT shared_links STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
@@ -250,7 +280,7 @@ else() # otherwise no need to register them since no more useful
 	endif()
 endif()
 
-if(NOT runtime_resources STREQUAL "")
+if(NOT runtime_resources STREQUAL "")#runtime resources are exported in any case
 	set(	${PROJECT_NAME}_${component}_RUNTIME_RESOURCES
 		${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES}
 		${runtime_resources}
@@ -281,6 +311,7 @@ set(${PROJECT_NAME}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_HEADERS CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -289,10 +320,11 @@ set(${PROJECT_NAME}_${component}_SOURCE_DIR CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
 
-function(init_Component_Cached_Variables_For_Export component exported_defs exported_links runtime_resources)
+function(init_Component_Cached_Variables_For_Export component exported_defs exported_options exported_links runtime_resources)
 set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
 set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${exported_links}" CACHE INTERNAL "") #exported links
 set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories (not useful to set it there since they will be exported "manually")
+set(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} "${exported_options}" CACHE INTERNAL "") #exported compiler options
 set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} "${runtime_resources}" CACHE INTERNAL "")#runtime resources are exported by default
 endfunction(init_Component_Cached_Variables_For_Export)
 
@@ -314,7 +346,6 @@ foreach(dep_package IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_S
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endforeach()
 set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
-
 
 # component declaration must be reinitialized otherwise some problem (redundancy of declarations) would appear
 foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
@@ -464,24 +495,18 @@ endfunction(register_Component_Binary)
 #resolving dependencies
 function(is_Bin_Component_Exporting_Other_Components RESULT package component mode)
 set(${RESULT} FALSE PARENT_SCOPE)
-if(mode MATCHES Release)
-	set(mode_var_suffix "")
-elseif(mode MATCHES Debug)
-	set(mode_var_suffix "_DEBUG")
-else()
-	message(FATAL_ERROR "Bug : unknown mode ${mode}")
-	return()
-endif()
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+
 #scanning external dependencies
-if(${package}_${component}_LINKS${mode_var_suffix}) #only exported links here
+if(${package}_${component}_LINKS${VAR_SUFFIX}) #only exported links here
 	set(${RESULT} TRUE PARENT_SCOPE)
 	return()
 endif()
 
 # scanning internal dependencies
-if(${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
-	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
-		if(${package}_${component}_INTERNAL_EXPORT_${int_dep}${mode_var_suffix})
+if(${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	foreach(int_dep IN ITEMS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+		if(${package}_${component}_INTERNAL_EXPORT_${int_dep}${VAR_SUFFIX})
 			set(${RESULT} TRUE PARENT_SCOPE)
 			return()
 		endif()
@@ -489,9 +514,9 @@ if(${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
 endif()
 
 # scanning package dependencies
-foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
-	foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${mode_var_suffix})
-		if(${package}_${component}_EXPORT_${dep_pack}_${ext_dep}${mode_var_suffix})
+foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(ext_dep IN ITEMS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
+		if(${package}_${component}_EXPORT_${dep_pack}_${ext_dep}${VAR_SUFFIX})
 			set(${RESULT} TRUE PARENT_SCOPE)
 			return()
 		endif()
@@ -668,6 +693,7 @@ foreach(a_component IN ITEMS ${${package}_COMPONENTS})
 	endif()
 	if(NOT IS_HF_COMP)#it is a library but not a module library
 		file(APPEND ${file} "set(${package}_${a_component}_INC_DIRS${MODE_SUFFIX} ${${package}_${a_component}_INC_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_OPTS${MODE_SUFFIX} ${${package}_${a_component}_OPTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} ${${package}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
@@ -756,35 +782,6 @@ endif()
 
 endfunction(generate_Info_File)
 
-
-############ function used to create the license.txt file of the package  ###########
-function(generate_License_File)
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	if(	DEFINED ${PROJECT_NAME}_LICENSE 
-		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
-	
-		find_file(	LICENSE   
-				"License${${PROJECT_NAME}_LICENSE}.cmake"
-				PATH "${WORKSPACE_DIR}/share/cmake/system"
-				NO_DEFAULT_PATH
-			)
-		set(LICENSE ${LICENSE} CACHE INTERNAL "")
-		
-		if(LICENSE_IN-NOTFOUND)
-			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
-		else(LICENSE_IN-NOTFOUND)
-			foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
-				generate_Full_Author_String(${author} STRING_TO_APPEND)
-				set(${PROJECT_NAME}_AUTHORS_LIST "${${PROJECT_NAME}_AUTHORS_LIST} ${STRING_TO_APPEND}")
-			endforeach()
-			include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
-			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
-			install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
-			file(WRITE ${CMAKE_BINARY_DIR}/share/file_header_comment.txt.in ${LICENSE_HEADER_FILE_DESCRIPTION})
-		endif(LICENSE_IN-NOTFOUND)
-	endif()
-endif()
-endfunction(generate_License_File)
 
 ############ function used to create the  Find<package>.cmake file of the package  ###########
 function(generate_Find_File)

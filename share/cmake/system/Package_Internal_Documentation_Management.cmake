@@ -131,4 +131,31 @@ endif()
 endif()
 endfunction(generate_API)
 
-
+############ function used to create the license.txt file of the package  ###########
+function(generate_License_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	if(	DEFINED ${PROJECT_NAME}_LICENSE 
+		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+	
+		find_file(	LICENSE   
+				"License${${PROJECT_NAME}_LICENSE}.cmake"
+				PATH "${WORKSPACE_DIR}/share/cmake/system"
+				NO_DEFAULT_PATH
+			)
+		set(LICENSE ${LICENSE} CACHE INTERNAL "")
+		
+		if(LICENSE_IN-NOTFOUND)
+			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
+		else(LICENSE_IN-NOTFOUND)
+			foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
+				generate_Full_Author_String(${author} STRING_TO_APPEND)
+				set(${PROJECT_NAME}_AUTHORS_LIST "${${PROJECT_NAME}_AUTHORS_LIST} ${STRING_TO_APPEND}")
+			endforeach()
+			include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
+			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
+			install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
+			file(WRITE ${CMAKE_BINARY_DIR}/share/file_header_comment.txt.in ${LICENSE_HEADER_FILE_DESCRIPTION})
+		endif(LICENSE_IN-NOTFOUND)
+	endif()
+endif()
+endfunction(generate_License_File)
