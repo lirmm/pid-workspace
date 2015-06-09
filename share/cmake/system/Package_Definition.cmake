@@ -116,6 +116,24 @@ endif()
 add_Category("${ARGV0}")
 endmacro(add_PID_Package_Category)
 
+### API : use_PID_Feature(Name LOG or RPATH)
+macro(use_PID_Feature)
+if(NOT ${ARGC} EQUAL 1)
+	message(FATAL_ERROR "bad arguments : the use_PID_Feature command requires one of the following feature name: LOG or RPATH")
+endif()
+
+set(options LOG RPATH)
+cmake_parse_arguments(USE_PID_PACKAGE_FEATURE "${options}" "" "" ${ARGN})
+
+if(USE_PID_PACKAGE_FEATURE_LOG)
+	use_Feature(LOG)
+elseif(USE_PID_PACKAGE_FEATURE_RPATH)
+	use_Feature(RPATH)
+else()
+	message(FATAL_ERROR "bad arguments : the use_PID_Feature command requires only one of the following feature name: LOG or RPATH")
+endif()
+
+endmacro(use_PID_Feature)
 
 ### API : build_PID_Package()
 macro(build_PID_Package)
@@ -304,10 +322,12 @@ elseif(DECLARE_PID_DEPENDENCY_NATIVE)
 		set(exact FALSE)
 		if(DECLARE_PID_DEPENDENCY_NATIVE_VERSION)
 			list(LENGTH DECLARE_PID_DEPENDENCY_NATIVE_VERSION SIZE)
-			if(SIZE EQUAL 2)
+			if(SIZE EQUAL 2)#it is a version string decomposed into a major and a minor number
 				list(GET DECLARE_PID_DEPENDENCY_NATIVE_VERSION 0 MAJOR)
 				list(GET DECLARE_PID_DEPENDENCY_NATIVE_VERSION 1 MINOR)
 				set(VERS_NUMB "${MAJOR}.${MINOR}")
+			elseif(SIZE EQUAL 1)#it is a complete version string
+				set(VERS_NUMB "${DECLARE_PID_DEPENDENCY_NATIVE_VERSION}")
 			else()
 				message(FATAL_ERROR "bad arguments : you need to input a major and a minor number")
 			endif()
