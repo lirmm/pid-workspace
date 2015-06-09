@@ -4,9 +4,9 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 #getting the file that contains the license info into C code comment
 set(CONFIG_FILE ${BINARY_DIR}/share/file_header_comment.txt.in)
 
-file(GLOB_RECURSE all_libraries_sources ${SOURCE_DIR}/src/*.c ${SOURCE_DIR}/src/*.cpp ${SOURCE_DIR}/src/*.cxx ${SOURCE_DIR}/src/*.cc)
+file(GLOB_RECURSE all_libraries_sources ${SOURCE_DIR}/src/*.c ${SOURCE_DIR}/src/*.cpp ${SOURCE_DIR}/src/*.cxx ${SOURCE_DIR}/src/*.cc ${SOURCE_DIR}/src/*.h ${SOURCE_DIR}/src/*.hh ${SOURCE_DIR}/src/*.hpp ${SOURCE_DIR}/src/*.hx)
 file(GLOB_RECURSE all_libraries_headers ${SOURCE_DIR}/include/*.h ${SOURCE_DIR}/include/*.hh ${SOURCE_DIR}/include/*.hpp ${SOURCE_DIR}/include/*.hxx)
-file(GLOB_RECURSE all_apps_sources ${SOURCE_DIR}/apps/*.c ${SOURCE_DIR}/apps/*.cc ${SOURCE_DIR}/apps/*.cpp ${SOURCE_DIR}/apps/*.cxx)
+file(GLOB_RECURSE all_apps_sources ${SOURCE_DIR}/apps/*.c ${SOURCE_DIR}/apps/*.cc ${SOURCE_DIR}/apps/*.cpp ${SOURCE_DIR}/apps/*.cxx ${SOURCE_DIR}/apps/*.h ${SOURCE_DIR}/apps/*.hh ${SOURCE_DIR}/apps/*.hpp ${SOURCE_DIR}/apps/*.hx)
 list(APPEND all_files ${all_libraries_sources} ${all_libraries_headers} ${all_apps_sources})
 
 
