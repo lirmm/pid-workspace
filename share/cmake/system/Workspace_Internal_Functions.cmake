@@ -557,7 +557,7 @@ save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package})
 set_Package_Repository_Address(${package} ${git_url})
 register_Repository_Address(${package})
 # synchronizing with the remote "origin" git repository
-connect_Repository(${package} ${url} origin)
+connect_Repository(${package} ${git_url} origin)
 # restoring local repository state
 restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT})
 endfunction(connect_PID_Package)

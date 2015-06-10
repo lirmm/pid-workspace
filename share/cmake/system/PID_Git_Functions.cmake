@@ -227,7 +227,7 @@ endfunction(update_Repository_Versions)
 
 ###
 function(update_Workspace_Repository remote)
-go_To_Master(${package})
+go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git pull ${remote} master)#pulling master branch of origin or official
 endfunction(update_Workspace_Repository)
 
