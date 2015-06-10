@@ -1,8 +1,8 @@
 #### referencing package neobotix-mpo700-knowbotics mode ####
 set(neobotix-mpo700-knowbotics_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
-set(neobotix-mpo700-knowbotics_MAIN_INSTITUTION  CACHE INTERNAL "")
-set(neobotix-mpo700-knowbotics_CONTACT_MAIL  CACHE INTERNAL "")
-set(neobotix-mpo700-knowbotics_AUTHORS_AND_INSTITUTIONS ; "_Robin_Passama()" CACHE INTERNAL "")
+set(neobotix-mpo700-knowbotics_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(neobotix-mpo700-knowbotics_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(neobotix-mpo700-knowbotics_AUTHORS_AND_INSTITUTIONS ; "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
 set(neobotix-mpo700-knowbotics_DESCRIPTION contains the basic objects to use with theneobotix mpo700 platform CACHE INTERNAL "")
 set(neobotix-mpo700-knowbotics_YEARS 2015 CACHE INTERNAL "")
 set(neobotix-mpo700-knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
