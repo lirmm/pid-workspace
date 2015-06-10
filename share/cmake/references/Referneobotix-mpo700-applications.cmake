@@ -1,0 +1,11 @@
+#### referencing package neobotix-mpo700-applications mode ####
+set(neobotix-mpo700-applications_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(neobotix-mpo700-applications_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(neobotix-mpo700-applications_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(neobotix-mpo700-applications_AUTHORS_AND_INSTITUTIONS ; "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
+set(neobotix-mpo700-applications_DESCRIPTION applications for the mpo700 robot CACHE INTERNAL "")
+set(neobotix-mpo700-applications_YEARS 2015 CACHE INTERNAL "")
+set(neobotix-mpo700-applications_LICENSE CeCILL CACHE INTERNAL "")
+set(neobotix-mpo700-applications_ADDRESS git@rob-dev.lirmm.fr:neobotix-mpo700/neobotix-mpo700-applications.git CACHE INTERNAL "")
+set(neobotix-mpo700-applications_CATEGORIES  CACHE INTERNAL "")
+set(neobotix-mpo700-applications_REFERENCES  CACHE INTERNAL "")
