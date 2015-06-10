@@ -116,24 +116,6 @@ endif()
 add_Category("${ARGV0}")
 endmacro(add_PID_Package_Category)
 
-### API : use_PID_Feature(Name LOG or RPATH)
-macro(use_PID_Feature)
-if(NOT ${ARGC} EQUAL 1)
-	message(FATAL_ERROR "bad arguments : the use_PID_Feature command requires one of the following feature name: LOG or RPATH")
-endif()
-
-set(options LOG RPATH)
-cmake_parse_arguments(USE_PID_PACKAGE_FEATURE "${options}" "" "" ${ARGN})
-
-if(USE_PID_PACKAGE_FEATURE_LOG)
-	use_Feature(LOG)
-elseif(USE_PID_PACKAGE_FEATURE_RPATH)
-	use_Feature(RPATH)
-else()
-	message(FATAL_ERROR "bad arguments : the use_PID_Feature command requires only one of the following feature name: LOG or RPATH")
-endif()
-
-endmacro(use_PID_Feature)
 
 ### API : build_PID_Package()
 macro(build_PID_Package)

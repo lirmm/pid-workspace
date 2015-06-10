@@ -290,24 +290,6 @@ function(set_Current_Version major minor patch)
 endfunction(set_Current_Version)
 
 
-##################################################################################
-################################### using specific PID features ##################
-##################################################################################
-macro(use_Feature feature_name)
-
-if("${feature_name}" STREQUAL "LOG")
-find_package (pid-log REQUIRED) #pid-log last version is required
-declare_Package_Dependency(pid-log "" FALSE "")
-set(PID_FEATURE_LOG TRUE CACHE INTERNAL "")
-option(BUILD_WITH_LOGS "Package is built with log messages" OFF)
-message("[INFO] remember to put a #include <pid/pid-log.h> directive in code using LOG API")
-elseif("${feature_name}" STREQUAL "RPATH")
-find_package (pid-rpath REQUIRED) #pid-log last version is required
-declare_Package_Dependency(pid-rpath "" FALSE "")
-set(PID_FEATURE_RPATH TRUE CACHE INTERNAL "")
-message("[INFO] remember to put a #include <pid/pid-rpath.h> directive in code using RPATH API")
-endif()
-endmacro(use_Feature)
 
 ##################################################################################
 ################################### building the package #########################
