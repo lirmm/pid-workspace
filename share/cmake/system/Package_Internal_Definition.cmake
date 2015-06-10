@@ -143,7 +143,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		VERBATIM
 	)
 
-	# uninstall target (cleaning the install tree) 
+	# update target (cleaning the install tree) 
 	add_custom_target(update
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
@@ -151,7 +151,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMENT "Updating the package ..."
 		VERBATIM
 	)
-
+	
 	if(BUILD_AND_RUN_TESTS)
 		# test target (launch test units) 
 		add_custom_target(test
@@ -562,7 +562,6 @@ if(GENERATE_INSTALLER)
 		endif(BUILD_AND_RUN_TESTS)
 	else()#debug
 		if(DEPENDENT_SOURCE_PACKAGES)#only necessary to do dependent build one time, so we do it in debug mode only (first mode built)
-					
 			add_custom_target(build 
 				COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} -DBUILD_TOOL=${CMAKE_BUILD_TOOL} 
 							 -DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
@@ -615,6 +614,7 @@ else(GENERATE_INSTALLER)
 		endif()
 	else()#debug
 		if(DEPENDENT_SOURCE_PACKAGES)#only necessary to do dependent build one time, so we do it in debug mode only (first mode built)
+
 			add_custom_target(build
 				COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} -DBUILD_TOOL=${CMAKE_BUILD_TOOL} -DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
 						 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
