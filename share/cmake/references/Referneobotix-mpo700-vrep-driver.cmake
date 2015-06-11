@@ -1,0 +1,11 @@
+#### referencing package neobotix-mpo700-vrep-driver mode ####
+set(neobotix-mpo700-vrep-driver_MAIN_AUTHOR _Mohamed_SOROUR CACHE INTERNAL "")
+set(neobotix-mpo700-vrep-driver_MAIN_INSTITUTION  CACHE INTERNAL "")
+set(neobotix-mpo700-vrep-driver_CONTACT_MAIL  CACHE INTERNAL "")
+set(neobotix-mpo700-vrep-driver_AUTHORS_AND_INSTITUTIONS ; "_Mohamed_SOROUR()" CACHE INTERNAL "")
+set(neobotix-mpo700-vrep-driver_DESCRIPTION TODO:;input;a;short;description;of;package;neobotix-mpo700-vrep-driver;utility;here CACHE INTERNAL "")
+set(neobotix-mpo700-vrep-driver_YEARS 2015 CACHE INTERNAL "")
+set(neobotix-mpo700-vrep-driver_LICENSE CeCILL CACHE INTERNAL "")
+set(neobotix-mpo700-vrep-driver_ADDRESS git@rob-dev.lirmm.fr:neobotix-mpo700/neobotix-mpo700-vrep-driver.git CACHE INTERNAL "")
+set(neobotix-mpo700-vrep-driver_CATEGORIES  CACHE INTERNAL "")
+set(neobotix-mpo700-vrep-driver_REFERENCES  CACHE INTERNAL "")
