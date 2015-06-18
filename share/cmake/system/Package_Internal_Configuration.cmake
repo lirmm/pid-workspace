@@ -286,7 +286,6 @@ set(result "")
 # 1) adding directly used external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
 
 get_Bin_Component_Direct_Runtime_Links_Dependencies(RES_LINKS ${package} ${component} ${mode})
-
 list(APPEND result ${RES_LINKS})
 
 # 2) adding package components dependencies
@@ -471,6 +470,7 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
 	# 1) getting all public runtime dependencies (including inherited ones)	
 	get_Bin_Component_Runtime_Dependencies(ALL_RUNTIME_DEPS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
+	
 	# 2) adding direct private external dependencies
 	get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_PRIVATE_LINKS})

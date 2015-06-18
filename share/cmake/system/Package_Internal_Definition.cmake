@@ -1089,9 +1089,10 @@ else()
 	is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 	set(TARGET_LINKS ${static_links} ${shared_links})
+	
 	if (IS_HF_COMP)
 		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${runtime_resources}")
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${shared_links}" "${runtime_resources}")
 		endif()		
 		# setting compile definitions for the target		
 		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")

@@ -218,6 +218,7 @@ endfunction(add_Category)
 
 ### configure variables exported by component that will be used to generate the package cmake use file
 function (configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
+
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(	NOT dep_defs STREQUAL "" 
