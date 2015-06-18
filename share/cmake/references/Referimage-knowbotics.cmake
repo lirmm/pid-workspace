@@ -1,0 +1,11 @@
+#### referencing package image-knowbotics mode ####
+set(image-knowbotics_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(image-knowbotics_MAIN_INSTITUTION  CACHE INTERNAL "")
+set(image-knowbotics_CONTACT_MAIL  CACHE INTERNAL "")
+set(image-knowbotics_AUTHORS_AND_INSTITUTIONS ; "_Robin_Passama()" CACHE INTERNAL "")
+set(image-knowbotics_DESCRIPTION contains standard APIs to deal with image and perform image processing CACHE INTERNAL "")
+set(image-knowbotics_YEARS 2015 CACHE INTERNAL "")
+set(image-knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
+set(image-knowbotics_ADDRESS git@rob-dev.lirmm.fr:knowbotics/image-knowbotics.git CACHE INTERNAL "")
+set(image-knowbotics_CATEGORIES  CACHE INTERNAL "")
+set(image-knowbotics_REFERENCES  CACHE INTERNAL "")
