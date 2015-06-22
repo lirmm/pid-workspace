@@ -1,0 +1,11 @@
+#### referencing package shadow-hand-biotac-calibration mode ####
+set(shadow-hand-biotac-calibration_MAIN_AUTHOR _Prajval_Kumar CACHE INTERNAL "")
+set(shadow-hand-biotac-calibration_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(shadow-hand-biotac-calibration_CONTACT_MAIL prajval10@gmail.com CACHE INTERNAL "")
+set(shadow-hand-biotac-calibration_AUTHORS_AND_INSTITUTIONS ; "_Prajval_Kumar(_LIRMM)"; "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
+set(shadow-hand-biotac-calibration_DESCRIPTION Calibration;procedure;for;the;Biotacs CACHE INTERNAL "")
+set(shadow-hand-biotac-calibration_YEARS 2015 CACHE INTERNAL "")
+set(shadow-hand-biotac-calibration_LICENSE CeCILL CACHE INTERNAL "")
+set(shadow-hand-biotac-calibration_ADDRESS git@rob-dev.lirmm.fr:shadow-hands/shadow-hand-biotac-calibration.git CACHE INTERNAL "")
+set(shadow-hand-biotac-calibration_CATEGORIES  CACHE INTERNAL "")
+set(shadow-hand-biotac-calibration_REFERENCES  CACHE INTERNAL "")
