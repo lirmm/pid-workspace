@@ -6,6 +6,6 @@ set(kuka-lwr-driver-fri_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM)" C
 set(kuka-lwr-driver-fri_DESCRIPTION A package to interface with a real Kuka LWR using the FRI library CACHE INTERNAL "")
 set(kuka-lwr-driver-fri_YEARS 2015 CACHE INTERNAL "")
 set(kuka-lwr-driver-fri_LICENSE CeCILL-C CACHE INTERNAL "")
-set(kuka-lwr-driver-fri_ADDRESS git@rob-dev.lirmm.fr:kuka-lwr/kuka-kwr-driver-fri.git CACHE INTERNAL "")
+set(kuka-lwr-driver-fri_ADDRESS git@rob-dev.lirmm.fr:kuka-lwr/kuka-lwr-driver-fri.git CACHE INTERNAL "")
 set(kuka-lwr-driver-fri_CATEGORIES robot/arm;driver/fri CACHE INTERNAL "")
 set(kuka-lwr-driver-fri_REFERENCES  CACHE INTERNAL "")
