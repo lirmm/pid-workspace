@@ -1,0 +1,11 @@
+#### referencing package ati-force-sensor-driver mode ####
+set(ati-force-sensor-driver_MAIN_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
+set(ati-force-sensor-driver_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(ati-force-sensor-driver_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
+set(ati-force-sensor-driver_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
+set(ati-force-sensor-driver_DESCRIPTION Knowbotics;ATI;force;sensor;driver;(;uses;Comedi;) CACHE INTERNAL "")
+set(ati-force-sensor-driver_YEARS 2015 CACHE INTERNAL "")
+set(ati-force-sensor-driver_LICENSE CeCILL-C CACHE INTERNAL "")
+set(ati-force-sensor-driver_ADDRESS git@rob-dev.lirmm.fr:force-sensors/ati-force-sensor-driver.git CACHE INTERNAL "")
+set(ati-force-sensor-driver_CATEGORIES  CACHE INTERNAL "")
+set(ati-force-sensor-driver_REFERENCES  CACHE INTERNAL "")
