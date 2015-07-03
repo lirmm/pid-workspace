@@ -114,6 +114,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	# global build target
 	add_custom_target(build
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
 		COMMENT "Building package (Debug and Release modes) ..."	
@@ -580,8 +581,10 @@ if(GENERATE_INSTALLER)
 	else()#debug
 		if(DEPENDENT_SOURCE_PACKAGES)#only necessary to do dependent build one time, so we do it in debug mode only (first mode built)
 			add_custom_target(build 
-				COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} -DBUILD_TOOL=${CMAKE_BUILD_TOOL} 
-							 -DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
+				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+								-DBUILD_TOOL=${CMAKE_BUILD_TOOL}
+								-DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
+							 	-DPACKAGE_LAUCHING_BUILD="${PROJECT_NAME}"
 							 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake		
 				COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
 				COMMAND ${CMAKE_BUILD_TOOL} install
@@ -633,8 +636,11 @@ else(GENERATE_INSTALLER)
 		if(DEPENDENT_SOURCE_PACKAGES)#only necessary to do dependent build one time, so we do it in debug mode only (first mode built)
 
 			add_custom_target(build
-				COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} -DBUILD_TOOL=${CMAKE_BUILD_TOOL} -DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
-						 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
+				COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+								-DBUILD_TOOL=${CMAKE_BUILD_TOOL}
+								-DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
+								-DPACKAGE_LAUCHING_BUILD="${PROJECT_NAME}"
+						 		-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
 				COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
 				COMMAND ${CMAKE_BUILD_TOOL} install
 			)

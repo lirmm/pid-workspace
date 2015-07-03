@@ -18,17 +18,19 @@
 #########################################################################################
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+include(PID_Utils_Functions)
 
-
-			
 if(DEPENDENT_PACKAGES)
 	SEPARATE_ARGUMENTS(DEPENDENT_PACKAGES)
 	foreach(dep_pack IN ITEMS ${DEPENDENT_PACKAGES})
-		execute_process (COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${dep_pack}/build ${BUILD_TOOL} build)
+		package_Already_Built(IS_BUILT ${dep_pack} ${PACKAGE_LAUCHING_BUILD})
+		if(NOT IS_BUILT)
+			message("Building ${dep_pack} ...")
+			execute_process (COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${dep_pack}/build ${BUILD_TOOL} build)
+		endif()
 	endforeach()
 else()
 	message("[ERROR] : no package to build !")
 endif()
-
 
 
