@@ -409,9 +409,9 @@ function(create_Imported_Module_Library_Target package component mode)
 endfunction(create_Imported_Module_Library_Target)
 
 
-function(create_Imported_Executable_Target package name mode)
+function(create_Imported_Executable_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
-	add_executable(${package}-${name}${TARGET_SUFFIX} IMPORTED GLOBAL)
+	add_executable(${package}-${component}${TARGET_SUFFIX} IMPORTED GLOBAL)
 	
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode} ${${package}_ROOT_DIR})
 	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")
