@@ -550,9 +550,9 @@ foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFI
 			endif()
 		endif()
 		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/src/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
 		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/apps/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
 		endif()
 		
 	endforeach()
