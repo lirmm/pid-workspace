@@ -121,7 +121,7 @@ foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_su
 				OR ${package}_${component}_EXPORTS_${dep_package}_${dep_component}${mode_var_suffix})
 				 #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application 
 				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} TRUE ${mode}) 
-			else()#it is a shared lib that is not exported
+			elseif(${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported
 				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application 
 				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")				
 			endif()
@@ -129,7 +129,7 @@ foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_su
 			if(	${dep_package}_${dep_component}_TYPE STREQUAL "STATIC"
 				OR ${dep_package}_${dep_component}_TYPE STREQUAL "HEADER")
 				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode})
-			else()#it is a shared lib that is exported or NOT
+			elseif(${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported
 				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode}) #the shared lib dependency is a direct dependency of the application 
 				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")				
 			endif()
@@ -149,7 +149,7 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 			OR ${package}_${dep_component}_TYPE STREQUAL "HEADER"
 			OR ${package}_${component}_INTERNAL_EXPORTS_${dep_component}${mode_var_suffix})
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} TRUE ${mode}) #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application 
-		else()#it is a shared lib that is not exported
+		elseif(${package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application
 			#adding this shared lib to the links of the application
 			if(${package} STREQUAL ${PROJECT_NAME})
@@ -165,7 +165,7 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
 			OR ${package}_${dep_component}_TYPE STREQUAL "HEADER")
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode})
-		else()#it is a shared lib that is exported or NOT
+		elseif(${package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is exported or NOT
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application in all cases
 			
 			#adding this shared lib to the links of the application
@@ -378,9 +378,12 @@ set(undirect_deps)
 foreach(dep_package IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 	foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX}})
 		set(LIST_OF_DEP_SHARED)
-		find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${dep_package} ${dep_component} TRUE ${CMAKE_BUILD_TYPE})
-		if(LIST_OF_DEP_SHARED)
-			list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
+		is_HeaderFree_Component(IS_HF ${dep_package} ${dep_component})
+		if(NOT IS_HF)
+			find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${dep_package} ${dep_component} TRUE ${CMAKE_BUILD_TYPE})
+			if(LIST_OF_DEP_SHARED)
+				list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
+			endif()
 		endif()
 	endforeach()
 endforeach()
@@ -388,9 +391,12 @@ endforeach()
 # 2) searching each direct dependency in current package (no problem with undirect internal dependencies since undirect path only target install path which is not a problem for build)
 foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 	set(LIST_OF_DEP_SHARED)
-	find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${PROJECT_NAME} ${dep_component} TRUE ${CMAKE_BUILD_TYPE})
-	if(LIST_OF_DEP_SHARED)
-		list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
+	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${dep_component})
+	if(NOT IS_HF)
+		find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${PROJECT_NAME} ${dep_component} TRUE ${CMAKE_BUILD_TYPE})
+		if(LIST_OF_DEP_SHARED)
+			list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
+		endif()
 	endif()
 endforeach()
 
@@ -493,7 +499,6 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	# 2) adding direct private external dependencies
 	get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_PRIVATE_LINKS})
-	
 	#3) getting direct and undirect runtime resources dependencies
 	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
@@ -545,9 +550,9 @@ foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFI
 			endif()
 		endif()
 		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/src/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
 		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/apps/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
 		endif()
 		
 	endforeach()

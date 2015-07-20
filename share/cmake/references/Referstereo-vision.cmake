@@ -1,0 +1,11 @@
+#### referencing package stereo-vision mode ####
+set(stereo-vision_MAIN_AUTHOR _Florian_Raffalli CACHE INTERNAL "")
+set(stereo-vision_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(stereo-vision_CONTACT_MAIL FLorian.Raffalli@lirmm.fr CACHE INTERNAL "")
+set(stereo-vision_AUTHORS_AND_INSTITUTIONS ; "_Florian_Raffalli(_LIRMM)" CACHE INTERNAL "")
+set(stereo-vision_DESCRIPTION stereo vision libs and applications CACHE INTERNAL "")
+set(stereo-vision_YEARS 2015 CACHE INTERNAL "")
+set(stereo-vision_LICENSE CeCILL CACHE INTERNAL "")
+set(stereo-vision_ADDRESS git@rob-dev.lirmm.fr:cameras/stereo-vision.git CACHE INTERNAL "")
+set(stereo-vision_CATEGORIES  CACHE INTERNAL "")
+set(stereo-vision_REFERENCES  CACHE INTERNAL "")
