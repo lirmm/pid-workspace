@@ -4,7 +4,7 @@ set(vimba_PID_Package_INSTITUTION _LIRMM: Laboratoire d'Informatique de Robotiqu
 set(vimba_PID_Package_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
 set(vimba_AUTHORS "Allied Vision Technology Gmbh, see http://www.alliedvision.com/" CACHE INTERNAL "")
 set(vimba_LICENSES "Allied Vision Technology license for Vimba" CACHE INTERNAL "")
-set(vimba_DESCRIPTION external package providing driver for AVT cameras CACHE INTERNAL "")
+set(vimba_DESCRIPTION "external package providing driver for AVT cameras" CACHE INTERNAL "")
 set(vimba_CATEGORIES camera/driver CACHE INTERNAL "")
 
 set(vimba_REFERENCES 1.3.0 CACHE INTERNAL "")
