@@ -1,0 +1,11 @@
+#### referencing package avt-camera mode ####
+set(avt-camera_MAIN_AUTHOR _Florian_Raffalli CACHE INTERNAL "")
+set(avt-camera_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(avt-camera_CONTACT_MAIL FLorian.Raffalli@lirmm.fr CACHE INTERNAL "")
+set(avt-camera_AUTHORS_AND_INSTITUTIONS ; "_Florian_Raffalli(_LIRMM)" CACHE INTERNAL "")
+set(avt-camera_DESCRIPTION genicam camera driver CACHE INTERNAL "")
+set(avt-camera_YEARS 2015 CACHE INTERNAL "")
+set(avt-camera_LICENSE CeCILL CACHE INTERNAL "")
+set(avt-camera_ADDRESS git@rob-dev.lirmm.fr:cameras/avt-camera.git CACHE INTERNAL "")
+set(avt-camera_CATEGORIES  CACHE INTERNAL "")
+set(avt-camera_REFERENCES  CACHE INTERNAL "")
