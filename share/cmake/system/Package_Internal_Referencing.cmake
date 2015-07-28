@@ -52,7 +52,6 @@ endfunction(generate_Reference_File)
 
 ###
 function(resolve_Package_Dependencies package mode)
-#message("DEBUG resolve_Package_Dependencies package=${package} mode=${mode}")
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 ################## external packages ##################
