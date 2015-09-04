@@ -2,7 +2,7 @@
 set(pid-config_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
 set(pid-config_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
 set(pid-config_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
-set(pid-config_AUTHORS_AND_INSTITUTIONS ; "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
+set(pid-config_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
 set(pid-config_DESCRIPTION set of libraries and tools used to manage configuration of programs and libraries using configuration files CACHE INTERNAL "")
 set(pid-config_YEARS 2014 CACHE INTERNAL "")
 set(pid-config_LICENSE CeCILL-C CACHE INTERNAL "")

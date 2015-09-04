@@ -2,7 +2,7 @@
 set(api-wrapper-nidaqmx_MAIN_AUTHOR _Xavier_Gorron CACHE INTERNAL "")
 set(api-wrapper-nidaqmx_MAIN_INSTITUTION  CACHE INTERNAL "")
 set(api-wrapper-nidaqmx_CONTACT_MAIL  CACHE INTERNAL "")
-set(api-wrapper-nidaqmx_AUTHORS_AND_INSTITUTIONS ; "_Xavier_Gorron()"; "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
+set(api-wrapper-nidaqmx_AUTHORS_AND_INSTITUTIONS "_Xavier_Gorron()" "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
 set(api-wrapper-nidaqmx_DESCRIPTION Knowbotics;wrapper;for;the;NIDAQmx;Base;acquisition;tools CACHE INTERNAL "")
 set(api-wrapper-nidaqmx_YEARS 2015 CACHE INTERNAL "")
 set(api-wrapper-nidaqmx_LICENSE CeCILL CACHE INTERNAL "")
