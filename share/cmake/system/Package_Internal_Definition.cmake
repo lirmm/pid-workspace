@@ -404,25 +404,25 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/share/resources AND ${CMAKE_BUILD_TYPE} MATCHES Re
 	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/resources DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 endif()
 
+#creating specific .rpath folders if build tree
 if(NOT EXISTS ${CMAKE_BINARY_DIR}/.rpath)
 	file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath)
-	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-		if(${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
-		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE" 
-		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP"
-		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"
-		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
-			will_be_Built(RES ${component})
-			if(RES)
-				if(EXISTS ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
-					file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
-				endif()
-				file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
-			endif()
-		endif()
-	endforeach()
-	
 endif()
+foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP"
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
+		will_be_Built(RES ${component})
+		if(RES)
+			if(EXISTS ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
+				file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
+			endif()
+			file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
+		endif()
+	endif()
+endforeach()
 
 #resolving link time dependencies for executables
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
@@ -814,9 +814,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
-if(COMP_WILL_BE_INSTALLED)
-	init_Component_Cached_Variables_For_Export(${c_name} "" "" "" "${runtime_resources}")
-endif()
+init_Component_Cached_Variables_For_Export(${c_name} "" "" "" "${runtime_resources}")
+
 #updating global variables of the CMake process	
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name}" CACHE INTERNAL "")

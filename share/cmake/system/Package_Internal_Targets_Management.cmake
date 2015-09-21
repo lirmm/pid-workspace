@@ -96,6 +96,7 @@ endfunction(create_Executable_Target)
 function(create_TestUnit_Target c_name sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
 	manage_Additional_Component_Internal_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+	
 endfunction(create_TestUnit_Target)
 
 ### configure the target with exported flags (cflags and ldflags)
