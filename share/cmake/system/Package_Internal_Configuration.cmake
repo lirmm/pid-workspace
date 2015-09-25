@@ -468,7 +468,7 @@ function(create_Bin_Component_Symlinks bin_package bin_component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #creatings symbolic links
 foreach(resource IN ITEMS ${resources})
-	create_Rpath_Symlink(${resource} ${${bin_package}_ROOT_DIR} ${bin_component}${TARGET_SUFFIX})
+	create_Rpath_Symlink("${resource}" "${${bin_package}_ROOT_DIR}" ${bin_component}${TARGET_SUFFIX})
 endforeach()
 endfunction(create_Bin_Component_Symlinks)
 
