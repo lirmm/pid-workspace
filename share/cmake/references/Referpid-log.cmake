@@ -2,7 +2,7 @@
 set(pid-log_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
 set(pid-log_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
 set(pid-log_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
-set(pid-log_AUTHORS_AND_INSTITUTIONS ; "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
+set(pid-log_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
 set(pid-log_DESCRIPTION A package that defines libraries to easily manage logging CACHE INTERNAL "")
 set(pid-log_YEARS 2014 CACHE INTERNAL "")
 set(pid-log_LICENSE CeCILL-C CACHE INTERNAL "")
