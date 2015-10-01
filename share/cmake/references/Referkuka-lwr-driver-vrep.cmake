@@ -2,7 +2,7 @@
 set(kuka-lwr-driver-vrep_MAIN_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
 set(kuka-lwr-driver-vrep_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
 set(kuka-lwr-driver-vrep_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
-set(kuka-lwr-driver-vrep_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
+set(kuka-lwr-driver-vrep_AUTHORS_AND_INSTITUTIONS "_Benjamin_Navarro(_LIRMM)";"_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
 set(kuka-lwr-driver-vrep_DESCRIPTION A package to interface with a simulated Kuka LWR on V-REP CACHE INTERNAL "")
 set(kuka-lwr-driver-vrep_YEARS 2015 CACHE INTERNAL "")
 set(kuka-lwr-driver-vrep_LICENSE CeCILL-C CACHE INTERNAL "")
