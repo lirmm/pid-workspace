@@ -2,7 +2,7 @@
 set(api-driver-fri_MAIN_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
 set(api-driver-fri_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
 set(api-driver-fri_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
-set(api-driver-fri_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
+set(api-driver-fri_AUTHORS_AND_INSTITUTIONS "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
 set(api-driver-fri_DESCRIPTION Wrapper for the FRI library CACHE INTERNAL "")
 set(api-driver-fri_YEARS 2015 CACHE INTERNAL "")
 set(api-driver-fri_LICENSE CeCILL-C CACHE INTERNAL "")
