@@ -2,7 +2,7 @@
 set(api-ati-daq_MAIN_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
 set(api-ati-daq_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
 set(api-ati-daq_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
-set(api-ati-daq_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
+set(api-ati-daq_AUTHORS_AND_INSTITUTIONS "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
 set(api-ati-daq_DESCRIPTION Wrapper;for;the;ATI;DAQ;Library CACHE INTERNAL "")
 set(api-ati-daq_YEARS 2015 CACHE INTERNAL "")
 set(api-ati-daq_LICENSE CeCILL-C CACHE INTERNAL "")
