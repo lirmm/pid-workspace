@@ -137,6 +137,20 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMENT "Cleaning package (Debug and Release modes) ..."	
 		VERBATIM
 	)
+
+	#building specific build commands
+	add_custom_target(release
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
+		COMMENT "Release build..."
+		VERBATIM
+	)
+
+	add_custom_target(debug
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
+		COMMENT "Debug build..."
+		VERBATIM
+	)
+
 	# reference file generation target
 	add_custom_target(referencing
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} referencing
