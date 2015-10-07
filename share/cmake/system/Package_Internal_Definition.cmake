@@ -113,11 +113,32 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	add_dependencies(reconfigure checksources)
 
 	# global build target
-	add_custom_target(build
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
+	if(BUILD_RELEASE_ONLY)
+		add_custom_target(build
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
+			COMMENT "Building package (Debug and Release modes) ..."
+			VERBATIM
+		)
+	else()
+		add_custom_target(build
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
+			COMMENT "Building package (Debug and Release modes) ..."
+			VERBATIM
+		)
+	endif()
+	#mode specific build commands
+	add_custom_target(release
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
-		COMMENT "Building package (Debug and Release modes) ..."	
+		COMMENT "Release build..."
+		VERBATIM
+	)
+
+	add_custom_target(debug
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
+		COMMENT "Debug build..."
 		VERBATIM
 	)
 
@@ -135,19 +156,6 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
 		COMMENT "Cleaning package (Debug and Release modes) ..."	
-		VERBATIM
-	)
-
-	#building specific build commands
-	add_custom_target(release
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
-		COMMENT "Release build..."
-		VERBATIM
-	)
-
-	add_custom_target(debug
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
-		COMMENT "Debug build..."
 		VERBATIM
 	)
 
