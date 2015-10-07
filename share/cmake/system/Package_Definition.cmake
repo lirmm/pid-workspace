@@ -515,7 +515,7 @@ endif()
 endmacro(run_PID_Test)
 
 
-### API : external_Package_Path (NAME external_package PATH result)
+### API : external_PID_Package_Path (NAME external_package PATH result)
 macro(external_PID_Package_Path)
 set(oneValueArgs NAME PATH)
 cmake_parse_arguments(EXT_PACKAGE_PATH "" "${oneValueArgs}" "" ${ARGN} )
@@ -528,12 +528,12 @@ is_External_Package_Defined(${PROJECT_NAME} "${EXT_PACKAGE_PATH_NAME}" ${CMAKE_B
 endmacro(external_PID_Package_Path)
 
 
-### API : create_Install_Symlink (PATH where_to_create NAME symlink_name TARGET target_of_symlink)
+### API : create_PID_Install_Symlink (PATH where_to_create NAME symlink_name TARGET target_of_symlink)
 macro(create_PID_Install_Symlink)
 set(oneValueArgs NAME PATH TARGET)
 cmake_parse_arguments(CREATE_INSTALL_SYMLINK "" "${oneValueArgs}" "" ${ARGN} )
 if(NOT CREATE_INSTALL_SYMLINK_NAME OR NOT CREATE_INSTALL_SYMLINK_PATH OR NOT CREATE_INSTALL_SYMLINK_TARGET)
-	message(FATAL_ERROR "bad arguments : a name for teh new symlink created must be provided with name, the PATH relative to its install location must be provided with PATH and the target of the symlink must be provided with TARGET")
+	message(FATAL_ERROR "bad arguments : a name for the new symlink created must be provided with name, the PATH relative to its install location must be provided with PATH and the target of the symlink must be provided with TARGET")
 endif()
 set(FULL_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_DEPLOY_PATH}/${CREATE_INSTALL_SYMLINK_PATH})
 set( link   ${CREATE_INSTALL_SYMLINK_NAME})
