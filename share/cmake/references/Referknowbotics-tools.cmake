@@ -2,7 +2,7 @@
 set(knowbotics-tools_MAIN_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
 set(knowbotics-tools_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
 set(knowbotics-tools_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
-set(knowbotics-tools_AUTHORS_AND_INSTITUTIONS ; "_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
+set(knowbotics-tools_AUTHORS_AND_INSTITUTIONS "_Benjamin_Navarro(_LIRMM)";"_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
 set(knowbotics-tools_DESCRIPTION Set;of;tools;based;on;Knowbotics CACHE INTERNAL "")
 set(knowbotics-tools_YEARS 2015 CACHE INTERNAL "")
 set(knowbotics-tools_LICENSE CeCILL-C CACHE INTERNAL "")
