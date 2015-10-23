@@ -800,8 +800,9 @@ else() #a simple application by default
 endif()	
 # specifically managing examples 	
 if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE") 
+	build_Option_For_Example(${c_name})
 	add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced		
-	if(NOT ${BUILD_EXAMPLES}) #examples are not built / installed / exported so no need to continue
+	if(NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${c_name}) #examples are not built / installed / exported so no need to continue => can be specific to a given 
 		mark_As_Declared(${c_name})		
 		return()
 	endif()
