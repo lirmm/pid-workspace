@@ -17,21 +17,11 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-########################################################################
-##################### definition of CMake policies #####################
-########################################################################
-cmake_policy(SET CMP0026 OLD) #disable warning when reading LOCATION property
-cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
-cmake_policy(SET CMP0037 OLD) #allow to redefine standard target such as clean
-cmake_policy(SET CMP0045 OLD) #allow to test if a target exist without a warning
-
-if(POLICY CMP0054)
-cmake_policy(SET CMP0054 NEW) #only KEYWORDS (without "") are considered as KEYWORDS
-endif()
 
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
+include(Package_Internal_Policies NO_POLICY_SCOPE)
 include(Package_Internal_Finding NO_POLICY_SCOPE)
 include(Package_Internal_Configuration NO_POLICY_SCOPE)
 include(Package_Internal_Referencing NO_POLICY_SCOPE)
