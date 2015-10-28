@@ -32,8 +32,10 @@ if(NOT BUILD_API_DOC)
 	return()
 endif()
 
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/share/doxygen/img/ DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/doc/)
-file(COPY ${PROJECT_SOURCE_DIR}/share/doxygen/img/ DESTINATION ${PROJECT_BINARY_DIR}/share/doc/)
+if(EXISTS ${PROJECT_SOURCE_DIR}/share/doxygen/img/)
+	install(DIRECTORY ${PROJECT_SOURCE_DIR}/share/doxygen/img/ DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/doc/)
+	file(COPY ${PROJECT_SOURCE_DIR}/share/doxygen/img/ DESTINATION ${PROJECT_BINARY_DIR}/share/doc/)
+endif()
 
 #finding doxygen tool and doxygen configuration file 
 find_package(Doxygen)
