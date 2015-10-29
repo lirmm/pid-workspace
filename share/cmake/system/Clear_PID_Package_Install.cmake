@@ -81,7 +81,7 @@ foreach(component IN ITEMS ${all_components_to_check}) #for each remaining exist
 			endforeach()
 
 		else()#new folder for this library
-			if(${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE} EQUAL 1)
+			if("${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}" EQUAL 1)
 				file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME})#removing old header include folder
 				math(EXPR ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0)
 			else()
