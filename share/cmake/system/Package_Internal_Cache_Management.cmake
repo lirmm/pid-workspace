@@ -70,9 +70,10 @@ macro(set_Global_Options_From_Mode_Specific)
 	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
 	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
 	# copying new cache entries in the global build cache
+	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES_GLOBAL)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
-	# searching new cache entries in release mode cache	
+	# searching new cache entries in release mode cache
 	foreach(line IN ITEMS ${LINES_RELEASE})
 		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")#this line may contain option info
 			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
@@ -110,8 +111,22 @@ macro(set_Global_Options_From_Mode_Specific)
 			endif()
 		endif()
 	endforeach()
-	
-	
+	# searching removed cache entries in release and debug mode caches => then remove them from global cache
+	foreach(line IN ITEMS ${LINES_GLOBAL})
+		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")#this line may contain option info
+			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
+			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
+				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
+				list(GET AN_OPTION 0 var_name)
+				string(FIND "${LINES_DEBUG}" "${var_name}" POS_DEB)
+				string(FIND "${LINES_RELEASE}" "${var_name}" POS_REL)
+				if(POS_DEB EQUAL -1 AND POS_REL EQUAL -1)#not found in any mode specific cache
+					unset(${var_name} CACHE)
+				endif()
+			endif()
+		endif()
+	endforeach()
+
 	#removing temporary files containing cache entries
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
