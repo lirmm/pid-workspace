@@ -177,7 +177,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		VERBATIM
 	)
 
-	# update target (cleaning the install tree) 
+	# update target (update the package from upstream git repository) 
 	add_custom_target(update
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
