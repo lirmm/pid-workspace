@@ -51,6 +51,73 @@ endif()
 
 endmacro(manage_Parrallel_Build_Option)
 
+macro(set_Mode_Specific_Options_From_Global)
+	execute_process(COMMAND ${CMAKE_COMMAND} -L -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR} OUTPUT_FILE ${CMAKE_BINARY_DIR}/options.txt)
+	#parsing option file and generating a load cache cmake script	
+	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES)
+	set(OPTIONS_FILE ${CMAKE_BINARY_DIR}/share/cacheConfig.cmake) 
+	file(WRITE ${OPTIONS_FILE} "")
+	foreach(line IN ITEMS ${LINES})
+		if(NOT ${line} STREQUAL "-- Cache values")
+			string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "set( \\1 \\3\ CACHE \\2 \"\" FORCE)\n" AN_OPTION "${line}")
+			file(APPEND ${OPTIONS_FILE} ${AN_OPTION})
+		endif()
+	endforeach()
+endmacro(set_Mode_Specific_Options_From_Global)
+
+macro(set_Global_Options_From_Mode_Specific)
+
+	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+	# copying new cache entries in the global build cache
+	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
+	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
+	# searching new cache entries in release mode cache	
+	foreach(line IN ITEMS ${LINES_RELEASE})
+		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")#this line may contain option info
+			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
+			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
+				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
+				list(GET AN_OPTION 0 var_name)
+				string(FIND "${LINES}" "${var_name}" POS)	
+				if(POS EQUAL -1)#not found, this a new cache entry
+					list(GET AN_OPTION 1 var_value)
+					list(GET AN_OPTION 2 var_type)
+					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
+				endif()
+			else()#match is OK this is a comment line
+				set(last_comment "${COMMENT}")
+			endif()
+		endif()
+	endforeach()
+
+	# searching new cache entries in debug mode cache	
+	foreach(line IN ITEMS ${LINES_DEBUG})
+		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
+			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
+			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
+				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
+				list(GET AN_OPTION 0 var_name)
+				string(FIND "${LINES}" "${var_name}" POS)
+				string(FIND "${LINES_RELEASE}" "${var_name}" POS_REL)
+				if(POS EQUAL -1 AND POS_REL EQUAL -1)#not found
+					list(GET AN_OPTION 1 var_value)
+					list(GET AN_OPTION 2 var_type)				
+					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
+				endif()
+			else()#match is OK this is a comment line
+				set(last_comment "${COMMENT}")
+			endif()
+		endif()
+	endforeach()
+	
+	
+	#removing temporary files containing cache entries
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+	
+endmacro(set_Global_Options_From_Mode_Specific)
 
 function(reset_Mode_Cache_Options)
 #unset all global options
@@ -489,6 +556,23 @@ endfunction(is_Built_Component)
 function(build_Option_For_Example example_comp)
 CMAKE_DEPENDENT_OPTION(BUILD_EXAMPLE_${example_comp} "Package build the example application ${example_comp}" ON "BUILD_EXAMPLES" OFF)
 endfunction(build_Option_For_Example)
+
+function(reset_Removed_Examples_Build_Option)
+get_cmake_property(ALL_CACHED_VARIABLES CACHE_VARIABLES) #getting all cache variables
+foreach(a_cache_var ${ALL_CACHED_VARIABLES})
+	string(REGEX REPLACE "^BUILD_EXAMPLE_(.*)$" "\\1" EXAMPLE_NAME ${a_cache_var})
+
+	if(NOT EXAMPLE_NAME STREQUAL "${a_cache_var}")#match => this is an option related to an example !!
+		set(DECLARED FALSE)
+		is_Declared(${EXAMPLE_NAME} DECLARED)
+		if(NOT DECLARED)# corresponding example component has not been declared
+			unset(${a_cache_var} CACHE)#remove option from cache
+		endif()
+	endif()
+endforeach()
+
+
+endfunction(reset_Removed_Examples_Build_Option)
 
 ### 
 function(will_be_Built result component)
