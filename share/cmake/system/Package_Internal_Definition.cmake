@@ -111,7 +111,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		add_custom_target(build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
-			COMMENT "Building package (Debug and Release modes) ..."
+			COMMENT "Building package (Release mode only) ..."
 			VERBATIM
 		)
 	else()

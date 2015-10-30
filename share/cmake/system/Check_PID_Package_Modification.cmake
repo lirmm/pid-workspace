@@ -49,7 +49,7 @@ endfunction(Find_Unique_Elements)
 #################################################################################################
 
 if(EXISTS ${SOURCE_PACKAGE_CONTENT}) #the package has already been configured
-	include(${SOURCE_PACKAGE_CONTENT}) #import source code meta-information (which file for each component) 
+	include(${SOURCE_PACKAGE_CONTENT}) #import source code meta-information (which files for each component) 
 else()
 	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/rebuilt "")
@@ -114,8 +114,15 @@ foreach(component IN ITEMS ${${PACKAGE_NAME}_COMPONENTS})
 		list(APPEND REMOVED_FILES ${TO_REMOVE})
 		list(APPEND ADDED_FILES ${TO_ADD})
 
-	elseif(${PACKAGE_NAME}_${component}_SOURCE_DIR) # this component is an application
-		set(current_dir ${path_to_package}/apps/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
+	elseif(${PACKAGE_NAME}_${component}_SOURCE_DIR) # this component is an application or module
+		if(${PACKAGE_NAME}_${component}_TYPE STREQUAL "MODULE")
+			set(current_dir ${path_to_package}/src/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
+		elseif(${PACKAGE_NAME}_${component}_TYPE STREQUAL "TEST")
+			set(current_dir ${path_to_package}/test/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
+		else() #otherwise this is an example or standard application
+			set(current_dir ${path_to_package}/apps/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
+		endif()
+		
 		file(	GLOB_RECURSE FILE_PACKAGE_SOURCES 
 			RELATIVE ${current_dir} 
 			"${current_dir}/*.h"
