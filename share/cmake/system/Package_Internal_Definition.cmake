@@ -477,7 +477,9 @@ endif()
 ######### creating build target for easy sequencing all make commands #########
 ###############################################################################
 #retrieving dependencies on sources packages
-if(${CMAKE_BUILD_TYPE} MATCHES Debug AND BUILD_DEPENDENT_PACKAGES)
+if(	BUILD_DEPENDENT_PACKAGES 
+	AND 	(${CMAKE_BUILD_TYPE} MATCHES Debug 
+		OR (${CMAKE_BUILD_TYPE} MATCHES Release AND BUILD_RELEASE_ONLY)))
 	set(DEPENDENT_SOURCE_PACKAGES)
 	list_All_Source_Packages_In_Workspace(RESULT_PACKAGES)
 	if(RESULT_PACKAGES)
