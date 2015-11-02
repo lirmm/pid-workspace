@@ -46,9 +46,9 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 ########################################################################
 ############ default value for PID cache variables #####################
 ########################################################################
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "")#do not manage automatic install since outside from a PID workspace
-set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")#install dir for native packages
-set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL "")#install dir for external packages
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "") #do not manage automatic install since outside from a PID workspace
+set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "") #install dir for native packages
+set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL "")# install dir for external packages
 endmacro(import_PID_Workspace)
 
 ### 
@@ -70,7 +70,7 @@ endif()
 if(NOT ${package}_FOUND)
 	message(FATAL_ERROR "the package ${IMPORT_PID_PACKAGE_NAME} cannot be found (any version or required version not found)")
 endif()
-
+set(${IMPORT_PID_PACKAGE_NAME}_RPATH ${${IMPORT_PID_PACKAGE_NAME}_ROOT_DIR}/.rpath CACHE INTERNAL "")
 endmacro(import_PID_Package)
 
 ### 
@@ -78,32 +78,34 @@ macro(link_PID_Components)
 
 set(oneValueArgs PACKAGE NAME)
 set(multiValueArgs COMPONENTS)
-cmake_parse_arguments(IMPORT_PID_COMPONENTS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-if(NOT IMPORT_PID_COMPONENTS_NAME)
+cmake_parse_arguments(LINK_PID_COMPONENTS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+if(NOT LINK_PID_COMPONENTS_NAME)
 	message(FATAL_ERROR "bad arguments : name of the target must be given")
 endif()
-if(NOT IMPORT_PID_COMPONENTS_PACKAGE)
+if(NOT LINK_PID_COMPONENTS_PACKAGE)
 	message(FATAL_ERROR "bad arguments : a package name must be given")
 endif()
-if(NOT IMPORT_PID_COMPONENTS_COMPONENTS)
+if(NOT LINK_PID_COMPONENTS_COMPONENTS)
 	message(FATAL_ERROR "bad arguments : at least one component name must be given")
 endif()
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX  ${CMAKE_BUILD_TYPE})
 #create the imported targets
-foreach (component IN ITEMS  ${IMPORT_PID_COMPONENTS_COMPONENTS})
-	create_Dependency_Target(${IMPORT_PID_COMPONENTS_PACKAGE} ${component} ${CMAKE_BUILD_TYPE})
-	is_HeaderFree_Component(DEP_IS_HF ${IMPORT_PID_COMPONENTS_PACKAGE} ${component})
+foreach (component IN ITEMS  ${LINK_PID_COMPONENTS_COMPONENTS})
+	create_Dependency_Target(${LINK_PID_COMPONENTS_PACKAGE} ${component} ${CMAKE_BUILD_TYPE})
+	is_HeaderFree_Component(DEP_IS_HF ${LINK_PID_COMPONENTS_PACKAGE} ${component})
 	if(NOT DEP_IS_HF)
-		target_link_libraries(${IMPORT_PID_COMPONENTS_NAME} PUBLIC ${IMPORT_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX})
-		target_include_directories(${IMPORT_PID_COMPONENTS_NAME} PUBLIC 
-			$<TARGET_PROPERTY:${IMPORT_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+		target_link_libraries(${LINK_PID_COMPONENTS_NAME} PUBLIC ${LINK_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX})
+		target_include_directories(${LINK_PID_COMPONENTS_NAME} PUBLIC 
+			$<TARGET_PROPERTY:${LINK_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
 
-		target_compile_definitions(${IMPORT_PID_COMPONENTS_NAME} PUBLIC 
-			$<TARGET_PROPERTY:${IMPORT_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+		target_compile_definitions(${LINK_PID_COMPONENTS_NAME} PUBLIC 
+			$<TARGET_PROPERTY:${LINK_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
-		target_compile_options(${IMPORT_PID_COMPONENTS_NAME} PUBLIC
-			$<TARGET_PROPERTY:${IMPORT_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
+		target_compile_options(${LINK_PID_COMPONENTS_NAME} PUBLIC
+			$<TARGET_PROPERTY:${LINK_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
 	endif()
+	set(${LINK_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES ${${LINK_PID_COMPONENTS_PACKAGE}_RPATH}/${component}${TARGET_SUFFIX} CACHE INTERNAL "")
+	
 endforeach()
 macro(link_PID_Components)
 
@@ -113,17 +115,41 @@ macro(targets_For_PID_Components)
 
 set(oneValueArgs PACKAGE)
 set(multiValueArgs COMPONENTS)
-cmake_parse_arguments(GET_PID_COMPONENTS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-if(NOT GET_PID_COMPONENTS_PACKAGE)
+cmake_parse_arguments(TARGETS_PID_COMPONENTS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+if(NOT TARGETS_PID_COMPONENTS_PACKAGE)
 	message(FATAL_ERROR "bad arguments : a package name must be given")
 endif()
-if(NOT GET_PID_COMPONENTS_COMPONENTS)
+if(NOT TARGETS_PID_COMPONENTS_COMPONENTS)
 	message(FATAL_ERROR "bad arguments : at least one component name must be given")
 endif()
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX  ${CMAKE_BUILD_TYPE})
 #create the imported targets
-foreach (component IN ITEMS  ${GET_PID_COMPONENTS_COMPONENTS})
-	create_Dependency_Target(${GET_PID_COMPONENTS_PACKAGE} ${component} ${CMAKE_BUILD_TYPE})
+foreach (component IN ITEMS  ${TARGETS_PID_COMPONENTS_COMPONENTS})
+	create_Dependency_Target(${TARGETS_PID_COMPONENTS_PACKAGE} ${component} ${CMAKE_BUILD_TYPE})
+	set(${TARGETS_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES ${${TARGETS_PID_PACKAGE}_RPATH}/${component}${TARGET_SUFFIX} CACHE INTERNAL "")
 endforeach()
 endmacro(targets_For_PID_Components)
+
+
+
+###
+macro(path_To_PID_Component_Resources)
+
+set(oneValueArgs PACKAGE COMPONENT RESOURCES)
+cmake_parse_arguments(PATH_PID_RESOURCES "" "${oneValueArgs}" "" ${ARGN})
+if(NOT PATH_PID_RESOURCES_PACKAGE OR NOT PATH_PID_RESOURCES_COMPONENT)
+	message(FATAL_ERROR "bad arguments : a package name and a component name must be given. Use keywords PACKAGE and COMPONENT to do so.")
+endif()
+if(NOT PATH_PID_RESOURCES_RESOURCES)
+	message(FATAL_ERROR "bad arguments : a return variable containing returned path to resources must be given. Use keyword RESOURCES.")
+endif()
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX  ${CMAKE_BUILD_TYPE})
+if (NOT TARGET ${PATH_PID_RESOURCES_PACKAGE}-${PATH_PID_RESOURCES_COMPONENT}${TARGET_SUFFIX})
+	message(FATAL_ERROR "bad arguments : the target corresponding to the required component does not exist. Use targets_For_PID_Components() macro to do so.")
+endif()
+
+file(GLOB RESULT ${${TARGETS_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES}/*)
+set(${PATH_PID_RESOURCES_RESOURCES} ${RESULT} PARENT_SCOPE)
+endmacro(path_To_PID_Component_Resources)
+
 
