@@ -21,12 +21,12 @@ include(CMakeParseArguments)
 
 ### 
 macro(import_PID_Workspace path)
-
-if(path STREQUAL "")
+if(${path} STREQUAL "")
 	message(FATAL_ERROR "bad arguments : a path must be given")
 endif()
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
 set(WORKSPACE_DIR ${path} CACHE INTERNAL "")
+
 ########################################################################
 ############ all PID system path are put into the cmake path ###########
 ########################################################################
@@ -38,6 +38,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find)
 ############ inclusion of required macros and functions ################
 ########################################################################
 include(Package_Internal_Policies NO_POLICY_SCOPE)
+include(Package_Internal_Cache_Management NO_POLICY_SCOPE)
 include(Package_Internal_Finding NO_POLICY_SCOPE)
 include(Package_Internal_Configuration NO_POLICY_SCOPE)
 include(Package_Internal_Referencing NO_POLICY_SCOPE)
@@ -53,7 +54,6 @@ endmacro(import_PID_Workspace)
 
 ### 
 macro(import_PID_Package)
-
 set(oneValueArgs NAME VERSION)
 set(multiValueArgs)
 cmake_parse_arguments(IMPORT_PID_PACKAGE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -61,13 +61,13 @@ if(NOT IMPORT_PID_PACKAGE_NAME)
 	message(FATAL_ERROR "bad arguments : a package name must be given")
 endif()
 if(NOT IMPORT_PID_PACKAGE_VERSION)
-	message(WARNING "no version given, last available version of ${IMPORT_PID_PACKAGE_PACKAGE} will be used")
+	message(WARNING "No version given, last available version of ${IMPORT_PID_PACKAGE_PACKAGE} will be used")
 	find_package(${IMPORT_PID_PACKAGE_NAME} REQUIRED)
 else()
 	find_package(${IMPORT_PID_PACKAGE_NAME} ${IMPORT_PID_PACKAGE_VERSION} EXACT REQUIRED)
 endif()
 
-if(NOT ${package}_FOUND)
+if(NOT ${IMPORT_PID_PACKAGE_NAME}_FOUND)
 	message(FATAL_ERROR "the package ${IMPORT_PID_PACKAGE_NAME} cannot be found (any version or required version not found)")
 endif()
 set(${IMPORT_PID_PACKAGE_NAME}_RPATH ${${IMPORT_PID_PACKAGE_NAME}_ROOT_DIR}/.rpath CACHE INTERNAL "")
@@ -107,7 +107,7 @@ foreach (component IN ITEMS  ${LINK_PID_COMPONENTS_COMPONENTS})
 	set(${LINK_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES ${${LINK_PID_COMPONENTS_PACKAGE}_RPATH}/${component}${TARGET_SUFFIX} CACHE INTERNAL "")
 	
 endforeach()
-macro(link_PID_Components)
+endmacro(link_PID_Components)
 
 
 ###
