@@ -673,7 +673,7 @@ if(NOT IS_EXISTING)
 endif()
 include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
 if(${refer_path} STREQUAL NOTFOUND)
-	message("[ERROR] : Reference file not found for package ${package}!! This is certainly due to a bad released package. please ocntact the administrator or that package !!!")
+	message("[ERROR] : Reference file not found for package ${package}!! This is certainly due to a bad released package. Please contact the administrator or that package !!!")
 	return()
 endif()
 

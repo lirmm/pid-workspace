@@ -329,7 +329,7 @@ endif()
 endfunction()
 
 ###
-function(generate_Binary_Package_Name package version system mode RES_FILE RES_FOLDER)
+function(generate_Binary_Package_Archive_Name package version system mode RES_FILE RES_FOLDER)
 if(system STREQUAL "linux")
 	set(system_string Linux)
 elseif(system STREQUAL "darwin")
@@ -343,7 +343,7 @@ endif()
 
 set(${RES_FILE} "${package}-${version}${mode_string}-${system_string}.tar.gz" PARENT_SCOPE)
 set(${RES_FOLDER} "${package}-${version}${mode_string}-${system_string}" PARENT_SCOPE)
-endfunction(generate_Binary_Package_Name)
+endfunction(generate_Binary_Package_Archive_Name)
 
 ###
 function(test_binary_download package version system RESULT)
@@ -352,7 +352,7 @@ function(test_binary_download package version system RESULT)
 set(download_url ${${package}_REFERENCE_${version}_${system}_url})
 set(FOLDER_BINARY ${${package}_REFERENCE_${version}_${system}_folder})
 
-generate_Binary_Package_Name(${package} ${version} ${system} Release RES_FILE RES_FOLDER)
+generate_Binary_Package_Archive_Name(${package} ${version} ${system} Release RES_FILE RES_FOLDER)
 set(destination ${CMAKE_BINARY_DIR}/share/${RES_FILE})
 set(res "")
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory share
@@ -384,7 +384,7 @@ endif()
 if(EXISTS ${package}_REFERENCE_${version}_${system}_url_DEBUG)
 	set(download_url_dbg ${${package}_REFERENCE_${version}_${system}_url_DEBUG})
 	set(FOLDER_BINARY_dbg ${${package}_REFERENCE_${version}_${system}_folder_DEBUG})
-	generate_Binary_Package_Name(${package} ${version} ${system} Debug RES_FILE RES_FOLDER)
+	generate_Binary_Package_Archive_Name(${package} ${version} ${system} Debug RES_FILE RES_FOLDER)
 	set(destination_dbg ${CMAKE_BINARY_DIR}/share/${RES_FILE})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory share
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -505,8 +505,36 @@ else()#deploying the target binary relocatable archive
 		message("[ERROR] : cannot deploy ${package} binary archive version ${version}")
 	endif()
 endif()
-endfunction()
+endfunction(deploy_PID_Package)
 
+###
+function(deploy_External_Package package version)
+get_System_Variables(OS_STRING PACKAGE_STRING)
+set(MAX_CURR_VERSION 0.0.0)
+if("${version}" STREQUAL "")#deploying the latest version of the repository
+	foreach(version_i IN ITEMS ${${package}_REFERENCES})
+		list(FIND ${package}_REFERENCE_${version_i} ${OS_STRING} INDEX)
+		if(	NOT index EQUAL -1 #a reference for this OS is known 
+			AND ${version_i} VERSION_GREATER ${MAX_CURR_VERSION})
+				set(MAX_CURR_VERSION ${version_i})
+		endif()
+	endforeach()
+	if(NOT ${MAX_CURR_VERSION} STREQUAL 0.0.0)
+		deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION})
+		if(NOT DEPLOYED) 
+			message("[ERROR] : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive. Please contact the administrator of the package ${package}.")
+		endif()
+	else()
+		message("[ERROR] : no known version to external package ${package} for OS ${OS_STRING}")
+	endif()
+
+else()#deploying the target binary relocatable archive 
+	deploy_External_Package_Version(DEPLOYED ${package} ${version})
+	if(NOT DEPLOYED) 
+		message("[ERROR] : cannot deploy ${package} binary archive version ${version}")
+	endif()
+endif()
+endfunction(deploy_External_Package)
 
 ###
 function(resolve_PID_Package package version)
