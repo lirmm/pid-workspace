@@ -6,6 +6,6 @@ set(api-ati-daq_AUTHORS_AND_INSTITUTIONS "_Benjamin_Navarro(_LIRMM)" CACHE INTER
 set(api-ati-daq_DESCRIPTION Wrapper;for;the;ATI;DAQ;Library CACHE INTERNAL "")
 set(api-ati-daq_YEARS 2015 CACHE INTERNAL "")
 set(api-ati-daq_LICENSE CeCILL-C CACHE INTERNAL "")
-set(api-ati-daq_ADDRESS git@rob-dev.lirmm.fr:force-sensors/api-ati-daq.git CACHE INTERNAL "")
-set(api-ati-daq_CATEGORIES  CACHE INTERNAL "")
+set(api-ati-daq_ADDRESS git@gite.lirmm.fr:rob-force-sensors/api-ati-daq.git CACHE INTERNAL "")
+set(api-ati-daq_CATEGORIES force-sensor/driver CACHE INTERNAL "")
 set(api-ati-daq_REFERENCES  CACHE INTERNAL "")
