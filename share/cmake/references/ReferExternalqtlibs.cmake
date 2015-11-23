@@ -10,9 +10,9 @@ set(qtlibs_CATEGORIES system/threading;system/io;system/timing;language/containe
 set(qtlibs_REFERENCES 5.4.1 CACHE INTERNAL "")
 set(qtlibs_REFERENCE_5.4.1 linux darwin CACHE INTERNAL "")
 
-set(qtlibs_REFERENCE_5.4.1_linux_url https://rob-dev.lirmm.fr/pid_external_deps/ext-qtlibs/repository/archive.tar.gz?ref=linux-32-64b-5.4.1 CACHE INTERNAL "")
-set(qtlibs_REFERENCE_5.4.1_linux_folder ext-qtlibs.git CACHE INTERNAL "")
+set(qtlibs_REFERENCE_5.4.1_linux_url https://gite.lirmm.fr/pid_external_deps/ext-qtlibs/repository/archive.tar.gz?ref=linux-32-64b-5.4.1 CACHE INTERNAL "")
+set(qtlibs_REFERENCE_5.4.1_linux_folder ext-qtlibs-linux-32-64b-5.4.1-434efa85764c2c4941c35ea8a942a531f5dd1cc1 CACHE INTERNAL "")
 
-set(qtlibs_REFERENCE_5.4.1_darwin_url https://rob-dev.lirmm.fr/pid_external_deps/ext-qtlibs/repository/archive.tar.gz?ref=macosx-5.4.1 CACHE INTERNAL "")
-set(qtlibs_REFERENCE_5.4.1_darwin_folder ext-qtlibs.git CACHE INTERNAL "")
+set(qtlibs_REFERENCE_5.4.1_darwin_url https://gite.lirmm.fr/pid_external_deps/ext-qtlibs/repository/archive.tar.gz?ref=macosx-5.4.1 CACHE INTERNAL "")
+set(qtlibs_REFERENCE_5.4.1_darwin_folder ext-qtlibs-macosx-5.4.1-ef3b4fb81f28c51e02a6668f5ecc79f5b2585000 CACHE INTERNAL "")
 
