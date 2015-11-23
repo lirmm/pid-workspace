@@ -1,5 +1,5 @@
 ##################################################################
-######## CMake License file description : Modified BSD ###########
+######## CMake License file description : ModifiedBSD ############
 ##################################################################
 
 set(LICENSE_NAME "ModifiedBSD")
