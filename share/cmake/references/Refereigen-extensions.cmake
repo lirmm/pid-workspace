@@ -7,5 +7,5 @@ set(eigen-extensions_DESCRIPTION Declare several extensions for the Eigen librar
 set(eigen-extensions_YEARS 2015 CACHE INTERNAL "")
 set(eigen-extensions_LICENSE CeCILL-C CACHE INTERNAL "")
 set(eigen-extensions_ADDRESS git@gite.lirmm.fr:pid_external_deps/eigen-extensions.git CACHE INTERNAL "")
-set(eigen-extensions_CATEGORIES  CACHE INTERNAL "")
+set(eigen-extensions_CATEGORIES "math/linear_algebra" CACHE INTERNAL "")
 set(eigen-extensions_REFERENCES  CACHE INTERNAL "")
