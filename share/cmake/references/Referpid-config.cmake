@@ -6,6 +6,6 @@ set(pid-config_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM)" CACHE INTERNAL 
 set(pid-config_DESCRIPTION set of libraries and tools used to manage configuration of programs and libraries using configuration files CACHE INTERNAL "")
 set(pid-config_YEARS 2014 CACHE INTERNAL "")
 set(pid-config_LICENSE CeCILL-C CACHE INTERNAL "")
-set(pid-config_ADDRESS git@rob-dev.lirmm.fr:pid/pid-config.git CACHE INTERNAL "")
-set(pid-config_CATEGORIES development CACHE INTERNAL "")
+set(pid-config_ADDRESS git@gite.lirmm.fr:pid/pid-config.git CACHE INTERNAL "")
+set(pid-config_CATEGORIES programming/configuration CACHE INTERNAL "")
 set(pid-config_REFERENCES  CACHE INTERNAL "")
