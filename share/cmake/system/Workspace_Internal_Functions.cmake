@@ -85,7 +85,7 @@ function(write_Categories_File)
 set(file ${CMAKE_BINARY_DIR}/CategoriesInfo.cmake)
 file(WRITE ${file} "")
 file(APPEND ${file} "######### declaration of workspace categories ########\n")
-file(APPEND ${file} "set(ROOT_CATEGORIES ${ROOT_CATEGORIES} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(ROOT_CATEGORIES \"${ROOT_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
 	write_Category_In_File(${root_cat} ${file})
 endforeach()
@@ -93,9 +93,9 @@ endfunction()
 
 ###
 function(write_Category_In_File category thefile)
-file(APPEND ${thefile} "set(${category}_CATEGORY_CONTENT ${${category}_CATEGORY_CONTENT} CACHE INTERNAL \"\")\n")
+file(APPEND ${thefile} "set(${category}_CATEGORY_CONTENT \"${${category}_CATEGORY_CONTENT}\" CACHE INTERNAL \"\")\n")
 if(${category}_CATEGORIES)
-	file(APPEND ${thefile} "set(${category}_CATEGORIES ${${category}_CATEGORIES} CACHE INTERNAL \"\")\n")
+	file(APPEND ${thefile} "set(${category}_CATEGORIES \"${${category}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 	foreach(cat IN ITEMS ${${category}_CATEGORIES})
 		write_Category_In_File(${cat} ${thefile})
 	endforeach()
@@ -103,13 +103,13 @@ endif()
 endfunction()
 
 ###
-function(find_category containing_category searched_category RESULT CAT_TO_CALL)
+function(find_Category containing_category searched_category RESULT CAT_TO_CALL)
 string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${searched_category})
 if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => searching category into a specific "category path"
 	list(GET CATEGORY_STRING_CONTENT 0 ROOT_OF_CATEGORY)
 	list(GET CATEGORY_STRING_CONTENT 1 REMAINING_OF_CATEGORY)
 
-	if(containing_category)#if the searched category must be found into a super category
+	if(NOT containing_category STREQUAL "")#if the searched category must be found into a super category
 		list(FIND containing_category ${ROOT_OF_CATEGORY} INDEX)
 		if(INDEX EQUAL -1)
 			message("${ROOT_OF_CATEGORY} cannot be found in ${containing_category}	")
@@ -123,7 +123,7 @@ if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => sea
 	endif()
 	set(SUB_RESULT FALSE)
 	set(SUB_CAT_TO_CALL "")
-	find_category("${${ROOT_OF_CATEGORY}_CATEGORIES}" "${REMAINING_OF_CATEGORY}" SUB_RESULT SUB_CAT_TO_CALL)
+	find_Category("${${ROOT_OF_CATEGORY}_CATEGORIES}" "${REMAINING_OF_CATEGORY}" SUB_RESULT SUB_CAT_TO_CALL)
 	if(SUB_RESULT)
 		set(${RESULT} TRUE PARENT_SCOPE)
 		set(${CAT_TO_CALL} ${SUB_CAT_TO_CALL} PARENT_SCOPE)
@@ -148,7 +148,7 @@ else()#this is a simple category name, just testing of this category exists
 	endif()
 endif()
 
-endfunction()
+endfunction(find_Category)
 
 ###
 function(print_Author author)

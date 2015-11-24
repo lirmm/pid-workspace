@@ -42,7 +42,6 @@ endforeach()
 reset_All_Categories()
 # 4) extracting all available categories and classifying all packages in these categories
 foreach(a_package IN ITEMS ${ALL_AVAILABLE_PACKAGES})
-	message("categorizing package ${a_package}")	
 	classify_Package_Categories(${a_package})
 endforeach()
 #5) registering categories

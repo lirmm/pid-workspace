@@ -27,7 +27,7 @@ include(Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 if(REQUIRED_CATEGORY)
 	set(RESULT FALSE)
-	find_category("" ${REQUIRED_CATEGORY} RESULT CATEGORY_TO_CALL)	
+	find_Category("" ${REQUIRED_CATEGORY} RESULT CATEGORY_TO_CALL)	
 	if(RESULT)
 		print_Category(${CATEGORY_TO_CALL} 0)		
 	else()

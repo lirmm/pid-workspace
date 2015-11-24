@@ -7,5 +7,5 @@ set(kuka-lwr-applications_DESCRIPTION A package that contains several applicatio
 set(kuka-lwr-applications_YEARS 2015 CACHE INTERNAL "")
 set(kuka-lwr-applications_LICENSE CeCILL-C CACHE INTERNAL "")
 set(kuka-lwr-applications_ADDRESS git@gite.lirmm.fr:kuka-lwr/kuka-lwr-applications.git CACHE INTERNAL "")
-set(kuka-lwr-applications_CATEGORIES "robot/arm" CACHE INTERNAL "")
+set(kuka-lwr-applications_CATEGORIES "arm/kuka-lwr" CACHE INTERNAL "")
 set(kuka-lwr-applications_REFERENCES  CACHE INTERNAL "")
