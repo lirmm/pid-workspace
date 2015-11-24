@@ -6,6 +6,6 @@ set(neobotix-mpo700-udp-interface_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRM
 set(neobotix-mpo700-udp-interface_DESCRIPTION project providings libraries to enable udp communication between a PC and the neobotix MPO700 platform CACHE INTERNAL "")
 set(neobotix-mpo700-udp-interface_YEARS 2015 CACHE INTERNAL "")
 set(neobotix-mpo700-udp-interface_LICENSE CeCILL-C CACHE INTERNAL "")
-set(neobotix-mpo700-udp-interface_ADDRESS git@rob-dev.lirmm.fr:neobotix-mpo700/neobotix-mpo700-udp-interface.git CACHE INTERNAL "")
-set(neobotix-mpo700-udp-interface_CATEGORIES robots/vehicle/ground;drivers/vehicle/neobotix-mpo700 CACHE INTERNAL "")
+set(neobotix-mpo700-udp-interface_ADDRESS git@gite.lirmm.fr:neobotix-mpo700/neobotix-mpo700-udp-interface.git CACHE INTERNAL "")
+set(neobotix-mpo700-udp-interface_CATEGORIES "mobile-robot/mpo700" CACHE INTERNAL "")
 set(neobotix-mpo700-udp-interface_REFERENCES  CACHE INTERNAL "")

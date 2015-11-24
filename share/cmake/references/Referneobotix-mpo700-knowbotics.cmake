@@ -6,6 +6,6 @@ set(neobotix-mpo700-knowbotics_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM)"
 set(neobotix-mpo700-knowbotics_DESCRIPTION contains the basic objects to use with theneobotix mpo700 platform CACHE INTERNAL "")
 set(neobotix-mpo700-knowbotics_YEARS 2015 CACHE INTERNAL "")
 set(neobotix-mpo700-knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
-set(neobotix-mpo700-knowbotics_ADDRESS git@rob-dev.lirmm.fr:neobotix-mpo700/neobotix-mpo700-knowbotics.git CACHE INTERNAL "")
-set(neobotix-mpo700-knowbotics_CATEGORIES robot/vehicle/ground;driver/neobotix-mpo700 CACHE INTERNAL "")
+set(neobotix-mpo700-knowbotics_ADDRESS git@gite.lirmm.fr:neobotix-mpo700/neobotix-mpo700-knowbotics.git CACHE INTERNAL "")
+set(neobotix-mpo700-knowbotics_CATEGORIES "mobile-robot/mpo700;knowbotics/mobile-robot" CACHE INTERNAL "")
 set(neobotix-mpo700-knowbotics_REFERENCES  CACHE INTERNAL "")
