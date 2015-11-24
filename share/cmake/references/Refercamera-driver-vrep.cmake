@@ -7,5 +7,5 @@ set(camera-driver-vrep_DESCRIPTION A generic driver for v-rep cameras CACHE INTE
 set(camera-driver-vrep_YEARS 2015 CACHE INTERNAL "")
 set(camera-driver-vrep_LICENSE CeCILL-C CACHE INTERNAL "")
 set(camera-driver-vrep_ADDRESS git@gite.lirmm.fr:rob-vision-devices/camera-driver-vrep.git CACHE INTERNAL "")
-set(camera-driver-vrep_CATEGORIES sensor/camera;driver/vrep CACHE INTERNAL "")
+set(camera-driver-vrep_CATEGORIES "camera/simulated;simulator/vrep" CACHE INTERNAL "")
 set(camera-driver-vrep_REFERENCES  CACHE INTERNAL "")

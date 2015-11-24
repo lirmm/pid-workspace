@@ -7,5 +7,5 @@ set(robotics-library_DESCRIPTION PID wrapper for Robotics Library CACHE INTERNAL
 set(robotics-library_YEARS 2015 CACHE INTERNAL "")
 set(robotics-library_LICENSE CeCILL-C CACHE INTERNAL "")
 set(robotics-library_ADDRESS git@gite.lirmm.fr:pid_external_deps/robotics-library.git CACHE INTERNAL "")
-set(robotics-library_CATEGORIES motion/trajectory CACHE INTERNAL "")
+set(robotics-library_CATEGORIES "motion/trajectory" CACHE INTERNAL "")
 set(robotics-library_REFERENCES  CACHE INTERNAL "")
