@@ -7,5 +7,5 @@ set(stereo-vision_DESCRIPTION stereo vision libs and applications CACHE INTERNAL
 set(stereo-vision_YEARS 2015 CACHE INTERNAL "")
 set(stereo-vision_LICENSE CeCILL-C CACHE INTERNAL "")
 set(stereo-vision_ADDRESS git@gite.lirmm.fr:rob-vision-devices/stereo-vision.git CACHE INTERNAL "")
-set(stereo-vision_CATEGORIES "vision/stereo" CACHE INTERNAL "")
+set(stereo-vision_CATEGORIES "vision" CACHE INTERNAL "")
 set(stereo-vision_REFERENCES  CACHE INTERNAL "")
