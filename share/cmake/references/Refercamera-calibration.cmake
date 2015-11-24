@@ -7,5 +7,5 @@ set(camera-calibration_DESCRIPTION some code used to calibrate camera based on o
 set(camera-calibration_YEARS 2015 CACHE INTERNAL "")
 set(camera-calibration_LICENSE CeCILL-C CACHE INTERNAL "")
 set(camera-calibration_ADDRESS git@gite.lirmm.fr:rob-vision-devices/camera-calibration.git CACHE INTERNAL "")
-set(camera-calibration_CATEGORIES  CACHE INTERNAL "")
+set(camera-calibration_CATEGORIES "camera/generic" CACHE INTERNAL "")
 set(camera-calibration_REFERENCES  CACHE INTERNAL "")
