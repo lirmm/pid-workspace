@@ -7,5 +7,5 @@ set(reflexxes_DESCRIPTION PID Wrapper for the Reflexxes Type-II library CACHE IN
 set(reflexxes_YEARS 2015 CACHE INTERNAL "")
 set(reflexxes_LICENSE CeCILL-C CACHE INTERNAL "")
 set(reflexxes_ADDRESS git@gite.lirmm.fr:pid_external_deps/reflexxes.git CACHE INTERNAL "")
-set(reflexxes_CATEGORIES  CACHE INTERNAL "")
+set(reflexxes_CATEGORIES motion/trajectory CACHE INTERNAL "")
 set(reflexxes_REFERENCES  CACHE INTERNAL "")
