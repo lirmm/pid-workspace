@@ -7,5 +7,5 @@ set(knowbotics_DESCRIPTION an API to ease integration of various robotics code C
 set(knowbotics_YEARS 2014 CACHE INTERNAL "")
 set(knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
 set(knowbotics_ADDRESS git@gite.lirmm.fr:knowbotics/knowbotics.git CACHE INTERNAL "")
-set(knowbotics_CATEGORIES knowbotics/generic CACHE INTERNAL "")
+set(knowbotics_CATEGORIES "knowbotics/generic" CACHE INTERNAL "")
 set(knowbotics_REFERENCES  CACHE INTERNAL "")

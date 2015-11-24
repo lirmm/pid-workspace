@@ -7,5 +7,5 @@ set(api-ati-daq_DESCRIPTION PID Wrapper for the ATI DAQ Library CACHE INTERNAL "
 set(api-ati-daq_YEARS 2015 CACHE INTERNAL "")
 set(api-ati-daq_LICENSE MIT CACHE INTERNAL "")
 set(api-ati-daq_ADDRESS git@gite.lirmm.fr:rob-force-sensors/api-ati-daq.git CACHE INTERNAL "")
-set(api-ati-daq_CATEGORIES force-sensor/ati CACHE INTERNAL "")
+set(api-ati-daq_CATEGORIES "force-sensor/ati" CACHE INTERNAL "")
 set(api-ati-daq_REFERENCES  CACHE INTERNAL "")

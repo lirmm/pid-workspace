@@ -7,5 +7,5 @@ set(arm-controllers-knowbotics_DESCRIPTION A set of different controllers for ro
 set(arm-controllers-knowbotics_YEARS 2015 CACHE INTERNAL "")
 set(arm-controllers-knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
 set(arm-controllers-knowbotics_ADDRESS git@gite.lirmm.fr:knowbotics/arm-controllers-knowbotics.git CACHE INTERNAL "")
-set(arm-controllers-knowbotics_CATEGORIES knowbotics/arm CACHE INTERNAL "")
+set(arm-controllers-knowbotics_CATEGORIES "knowbotics/arm" CACHE INTERNAL "")
 set(arm-controllers-knowbotics_REFERENCES  CACHE INTERNAL "")

@@ -7,5 +7,5 @@ set(api-driver-vrep_DESCRIPTION Wrapper for the V-REP C/C++ remote API CACHE INT
 set(api-driver-vrep_YEARS 2015 CACHE INTERNAL "")
 set(api-driver-vrep_LICENSE CeCILL-C CACHE INTERNAL "")
 set(api-driver-vrep_ADDRESS git@gite.lirmm.fr:pid_external_deps/api-driver-vrep.git CACHE INTERNAL "")
-set(api-driver-vrep_CATEGORIES simulator/vrep CACHE INTERNAL "")
+set(api-driver-vrep_CATEGORIES "simulator/vrep" CACHE INTERNAL "")
 set(api-driver-vrep_REFERENCES  CACHE INTERNAL "")

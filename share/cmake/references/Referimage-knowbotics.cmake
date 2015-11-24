@@ -7,5 +7,5 @@ set(image-knowbotics_DESCRIPTION contains standard APIs to deal with image and p
 set(image-knowbotics_YEARS 2015 CACHE INTERNAL "")
 set(image-knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
 set(image-knowbotics_ADDRESS git@gite.lirmm.fr:knowbotics/image-knowbotics.git CACHE INTERNAL "")
-set(image-knowbotics_CATEGORIES image;vision;knowbotics/vision CACHE INTERNAL "")
+set(image-knowbotics_CATEGORIES "image;vision;knowbotics/vision" CACHE INTERNAL "")
 set(image-knowbotics_REFERENCES  CACHE INTERNAL "")

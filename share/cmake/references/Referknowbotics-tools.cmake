@@ -7,5 +7,5 @@ set(knowbotics-tools_DESCRIPTION Set;of;tools;based;on;Knowbotics CACHE INTERNAL
 set(knowbotics-tools_YEARS 2015 CACHE INTERNAL "")
 set(knowbotics-tools_LICENSE CeCILL-C CACHE INTERNAL "")
 set(knowbotics-tools_ADDRESS git@gite.lirmm.fr:knowbotics/knowbotics-tools.git CACHE INTERNAL "")
-set(knowbotics-tools_CATEGORIES programming/plot;knowbotics/plot CACHE INTERNAL "")
+set(knowbotics-tools_CATEGORIES "programming/plot;knowbotics/plot" CACHE INTERNAL "")
 set(knowbotics-tools_REFERENCES  CACHE INTERNAL "")

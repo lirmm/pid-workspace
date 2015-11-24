@@ -7,5 +7,5 @@ set(pid-rpath_DESCRIPTION Default package of PID, used to manage runtime path of
 set(pid-rpath_YEARS 2015 CACHE INTERNAL "")
 set(pid-rpath_LICENSE CeCILL-C CACHE INTERNAL "")
 set(pid-rpath_ADDRESS git@gite.lirmm.fr:pid/pid-rpath.git CACHE INTERNAL "")
-set(pid-rpath_CATEGORIES programming/resources_management CACHE INTERNAL "")
+set(pid-rpath_CATEGORIES "programming/resources_management" CACHE INTERNAL "")
 set(pid-rpath_REFERENCES  CACHE INTERNAL "")

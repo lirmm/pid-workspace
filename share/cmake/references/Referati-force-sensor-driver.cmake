@@ -7,5 +7,5 @@ set(ati-force-sensor-driver_DESCRIPTION Knowbotics ATI force sensor driver (uses
 set(ati-force-sensor-driver_YEARS 2015 CACHE INTERNAL "")
 set(ati-force-sensor-driver_LICENSE CeCILL-C CACHE INTERNAL "")
 set(ati-force-sensor-driver_ADDRESS git@gite.lirmm.fr:rob-force-sensors/ati-force-sensor-driver.git CACHE INTERNAL "")
-set(ati-force-sensor-driver_CATEGORIES force-sensor/ati;knowbotics/force-sensor CACHE INTERNAL "")
+set(ati-force-sensor-driver_CATEGORIES "" CACHE INTERNAL "")
 set(ati-force-sensor-driver_REFERENCES  CACHE INTERNAL "")

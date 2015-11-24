@@ -7,5 +7,5 @@ set(api-wrapper-nidaqmx_DESCRIPTION Knowbotics wrapper for the NIDAQmx Base acqu
 set(api-wrapper-nidaqmx_YEARS 2015 CACHE INTERNAL "")
 set(api-wrapper-nidaqmx_LICENSE CeCILL-C CACHE INTERNAL "")
 set(api-wrapper-nidaqmx_ADDRESS git@gite.lirmm.fr:pid_external_deps/api-wrapper-nidaqmx.git CACHE INTERNAL "")
-set(api-wrapper-nidaqmx_CATEGORIES  CACHE INTERNAL "")
+set(api-wrapper-nidaqmx_CATEGORIES "" CACHE INTERNAL "")
 set(api-wrapper-nidaqmx_REFERENCES  CACHE INTERNAL "")
