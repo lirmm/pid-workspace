@@ -29,56 +29,100 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 
 ###
-function(classify_Package_Categories package)
-foreach(a_category IN ITEMS ${${package}_CATEGORIES})
-	classify_Category(${a_category} ${package} ROOT_CATEGORIES)	
+function(classify_Package_Categories all_packages)
+foreach(a_cat IN ITEMS ${ROOT_CATEGORIES})
+	classify_Root_Category(${a_cat} "${all_packages}")
 endforeach()
-endfunction()
+endfunction(classify_Package_Categories)
+
+###
+function(classify_Root_Category root_category all_packages)
+foreach(package IN ITEMS ${all_packages})
+	foreach(a_category IN ITEMS ${${package}_CATEGORIES})
+		classify_Category(${a_category} ${root_category} ${package})	
+	endforeach()
+endforeach()
+endfunction(classify_Root_Category)
 
 ###
 function(reset_All_Categories)
 foreach(a_category IN ITEMS ${ROOT_CATEGORIES})
 	reset_Category(${a_category})
 endforeach()
-set(ROOT_CATEGORIES "" CACHE INTERNAL "")
+set(ROOT_CATEGORIES CACHE INTERNAL "")
 endfunction()
 
 ###
 function(reset_Category category)
-if(${category}_CATEGORIES)
-	foreach(a_category IN ITEMS ${${category}_CATEGORIES})
+if(CAT_${category}_CATEGORIES)
+	foreach(a_category IN ITEMS ${CAT_${category}_CATEGORIES})
 		reset_Category(${a_category})#recursive call
 	endforeach()
 endif()
-if(${category}_CATEGORY_CONTENT)
-	set(${category}_CATEGORY_CONTENT CACHE INTERNAL "")
+if(CAT_${category}_CATEGORY_CONTENT)
+	set(CAT_${category}_CATEGORY_CONTENT CACHE INTERNAL "")
 endif()
-set(${category}_CATEGORIES CACHE INTERNAL "")
+set(CAT_${category}_CATEGORIES CACHE INTERNAL "")
 endfunction()
 
 ###
-function(classify_Category category_full_string package container_variable)
-string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${category_full_string})
-if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthes => there are subcategories
-	list(GET CATEGORY_STRING_CONTENT 0 ROOT_OF_CATEGORY)
-	list(GET CATEGORY_STRING_CONTENT 1 REMAINING_OF_CATEGORY)
-	# adding the current category to its containing category	
-	set(temp_container ${${container_variable}} ${ROOT_OF_CATEGORY})
-	list(REMOVE_DUPLICATES temp_container)
-	set(${container_variable} ${temp_container} CACHE INTERNAL "")
-	#classifying subcategories by recursion
-	classify_Category(${REMAINING_OF_CATEGORY} ${package} ${ROOT_OF_CATEGORY}_CATEGORIES)
-else()#there is no sub categories
-	# adding the current category to its containing category	
-	set(temp_container ${${container_variable}} ${category_full_string})
-	list(REMOVE_DUPLICATES temp_container)
-	set(${container_variable} ${temp_container} CACHE INTERNAL "")
-	# adding the package to the current category 
-	set(temp_cat_content ${${category_full_string}_CATEGORY_CONTENT} ${package})
-	list(REMOVE_DUPLICATES temp_cat_content)
-	set(${category_full_string}_CATEGORY_CONTENT ${temp_cat_content} CACHE INTERNAL "")
+function(get_Root_Categories package RETURNED_ROOTS)
+	set(ROOTS_FOUND)
+	foreach(a_category IN ITEMS ${${package}_CATEGORIES})
+		string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${a_category})
+		if(NOT CATEGORY_STRING_CONTENT STREQUAL ${a_category})# it macthes => there are subcategories
+			list(GET CATEGORY_STRING_CONTENT 0 ROOT_OF_CATEGORY)
+			list(APPEND ROOTS_FOUND ${ROOT_OF_CATEGORY})
+		else()
+			list(APPEND ROOTS_FOUND ${a_category})
+		endif()
+	endforeach()
+	if(ROOTS_FOUND)
+		list(REMOVE_DUPLICATES ROOTS_FOUND)
+	endif()
+	set(${RETURNED_ROOTS} ${ROOTS_FOUND} PARENT_SCOPE)
+endfunction(get_Root_Categories)
+
+###
+function(extract_Root_Categories all_packages)
+set(ALL_ROOTS CACHE INTERNAL "")
+foreach(a_package IN ITEMS ${all_packages})
+	get_Root_Categories(${a_package} ${a_package}_ROOTS)
+	if(${a_package}_ROOTS)
+		list(APPEND ALL_ROOTS ${${a_package}_ROOTS})
+	endif()
+endforeach()
+if(ALL_ROOTS)
+	list(REMOVE_DUPLICATES ALL_ROOTS)
+	set(ROOT_CATEGORIES ${ALL_ROOTS} CACHE INTERNAL "")
+else()
+	set(ROOT_CATEGORIES CACHE INTERNAL "")
 endif()
-endfunction()
+endfunction(extract_Root_Categories)
+
+###
+function(classify_Category category_full_string root_category target_package)
+message("[DEBUG] classify_Category category_full_string=${category_full_string} root_category=${root_category} target_package=${target_package}")
+if(category_full_string STREQUAL "${root_category}")#OK, so the package directly belongs to this category
+	set(CAT_${category_full_string}_CATEGORY_CONTENT ${CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
+else()#not OK we need to know if this is a subcategory or not
+	string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
+	if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthes => there are subcategories with root category as root
+		set(AFTER_ROOT)
+		string(REGEX REPLACE "^([^/]+)/.+$" "\\1" SUBCATEGORY_STRING_CONTENT ${CATEGORY_STRING_CONTENT})
+		if(NOT SUBCATEGORY_STRING_CONTENT STREQUAL "${CATEGORY_STRING_CONTENT}")# there are some subcategories
+			set(AFTER_ROOT ${SUBCATEGORY_STRING_CONTENT} )
+		else()
+			set(AFTER_ROOT ${CATEGORY_STRING_CONTENT})
+		endif()	
+		set(CAT_${root_category}_CATEGORIES ${CAT_${root_category}_CATEGORIES} ${AFTER_ROOT} CACHE INTERNAL "")	
+		classify_Category(${category_full_string} ${root_category}/${AFTER_ROOT} ${target_package})
+
+	#else, this is not the same as root_category (otherwise first test would have succeeded => end of recursion 
+	endif()
+
+endif()
+endfunction(classify_Category)
 
 ###
 function(write_Categories_File)
@@ -93,11 +137,11 @@ endfunction()
 
 ###
 function(write_Category_In_File category thefile)
-file(APPEND ${thefile} "set(${category}_CATEGORY_CONTENT \"${${category}_CATEGORY_CONTENT}\" CACHE INTERNAL \"\")\n")
-if(${category}_CATEGORIES)
-	file(APPEND ${thefile} "set(${category}_CATEGORIES \"${${category}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
-	foreach(cat IN ITEMS ${${category}_CATEGORIES})
-		write_Category_In_File(${cat} ${thefile})
+file(APPEND ${thefile} "set(CAT_${category}_CATEGORY_CONTENT \"${CAT_${category}_CATEGORY_CONTENT}\" CACHE INTERNAL \"\")\n")
+if(CAT_${category}_CATEGORIES)
+	file(APPEND ${thefile} "set(CAT_${category}_CATEGORIES \"${CAT_${category}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
+	foreach(cat IN ITEMS ${CAT_${category}_CATEGORIES})
+		write_Category_In_File("${category}/${cat}" ${thefile})
 	endforeach()
 endif()
 endfunction()
@@ -117,13 +161,13 @@ if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => sea
 			return()
 		endif()
 	endif()
-	if(NOT ${ROOT_OF_CATEGORY}_CATEGORIES)#if the root category has no subcategories no need to continue
+	if(NOT CAT_${ROOT_OF_CATEGORY}_CATEGORIES)#if the root category has no subcategories no need to continue
 		set(${RESULT} FALSE PARENT_SCOPE)
 		return()
 	endif()
 	set(SUB_RESULT FALSE)
 	set(SUB_CAT_TO_CALL "")
-	find_Category("${${ROOT_OF_CATEGORY}_CATEGORIES}" "${REMAINING_OF_CATEGORY}" SUB_RESULT SUB_CAT_TO_CALL)
+	find_Category("${CAT_${ROOT_OF_CATEGORY}_CATEGORIES}" "${REMAINING_OF_CATEGORY}" SUB_RESULT SUB_CAT_TO_CALL)
 	if(SUB_RESULT)
 		set(${RESULT} TRUE PARENT_SCOPE)
 		set(${CAT_TO_CALL} ${SUB_CAT_TO_CALL} PARENT_SCOPE)
@@ -140,7 +184,7 @@ else()#this is a simple category name, just testing of this category exists
 		endif()
 	endif()
 
-	if(${searched_category}_CATEGORIES OR ${searched_category}_CATEGORY_CONTENT)
+	if(CAT_${searched_category}_CATEGORIES OR CAT_${searched_category}_CATEGORY_CONTENT)
 		set(${RESULT} TRUE PARENT_SCOPE)
 		set(${CAT_TO_CALL} ${searched_category} PARENT_SCOPE)
 	else()
@@ -183,9 +227,9 @@ while(index GREATER 0)
 	set(RESULT_STRING "${RESULT_STRING}	")
 	math(EXPR index '${index}-1')
 endwhile()
-if(${category}_CATEGORY_CONTENT)
+if(CAT_${category}_CATEGORY_CONTENT)
 	set(PRINTED_VALUE "${RESULT_STRING}${category}:")
-	foreach(pack IN ITEMS ${${category}_CATEGORY_CONTENT})
+	foreach(pack IN ITEMS ${CAT_${category}_CATEGORY_CONTENT})
 		set(PRINTED_VALUE "${PRINTED_VALUE} ${pack}")
 	endforeach()
 	message("${PRINTED_VALUE}")
@@ -193,9 +237,9 @@ else()
 	set(PRINTED_VALUE "${RESULT_STRING}${category}")
 	message("${PRINTED_VALUE}")	
 endif()
-if(${category}_CATEGORIES)
+if(CAT_${category}_CATEGORIES)
 	math(EXPR sub_cat_nb_tabs '${number_of_tabs}+1')
-	foreach(sub_cat IN ITEMS ${${category}_CATEGORIES})
+	foreach(sub_cat IN ITEMS ${CAT_${category}_CATEGORIES})
 		print_Category(${sub_cat} ${sub_cat_nb_tabs})
 	endforeach()
 endif()

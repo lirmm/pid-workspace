@@ -41,9 +41,9 @@ endforeach()
 # 3) resetting categories
 reset_All_Categories()
 # 4) extracting all available categories and classifying all packages in these categories
-foreach(a_package IN ITEMS ${ALL_AVAILABLE_PACKAGES})
-	classify_Package_Categories(${a_package})
-endforeach()
+extract_Root_Categories("${ALL_AVAILABLE_PACKAGES}") #getting the root categories
+classify_Package_Categories("${ALL_AVAILABLE_PACKAGES}")
+
 #5) registering categories
 write_Categories_File()
 
