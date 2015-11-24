@@ -5,7 +5,7 @@ set(qtlibs_PID_Package_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
 set(qtlibs_AUTHORS "qt.io authors, see http://www.qt.io/" CACHE INTERNAL "")
 set(qtlibs_LICENSES "qtlibs license" CACHE INTERNAL "")
 set(qtlibs_DESCRIPTION external package providing the Qt libraries libraries, repackaged for PID CACHE INTERNAL "")
-set(qtlibs_CATEGORIES system/threading;system/io;system/timing;language/container;language/meta CACHE INTERNAL "")
+set(qtlibs_CATEGORIES programming/threading programming/io programming/timing programming/windows CACHE INTERNAL "")
 
 set(qtlibs_REFERENCES 5.4.1 CACHE INTERNAL "")
 set(qtlibs_REFERENCE_5.4.1 linux darwin CACHE INTERNAL "")
