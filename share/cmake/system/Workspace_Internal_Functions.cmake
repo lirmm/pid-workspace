@@ -102,7 +102,6 @@ endfunction(extract_Root_Categories)
 
 ###
 function(classify_Category category_full_string root_category target_package)
-message("[DEBUG] classify_Category category_full_string=${category_full_string} root_category=${root_category} target_package=${target_package}")
 if("${category_full_string}" STREQUAL "${root_category}")#OK, so the package directly belongs to this category
 	set(CAT_${category_full_string}_CATEGORY_CONTENT ${CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
 	list(REMOVE_DUPLICATES CAT_${category_full_string}_CATEGORY_CONTENT)
@@ -224,7 +223,26 @@ endif()
 endfunction()
 
 ###
-function(print_Category category number_of_tabs)
+function(get_Category_Names root_category category_full_string RESULTING_SHORT_NAME RESULTING_LONG_NAME)
+
+if("${root_category}" STREQUAL "")
+	set(${RESULTING_SHORT_NAME} ${category_full_string} PARENT_SCOPE)
+	set(${RESULTING_LONG_NAME} ${category_full_string} PARENT_SCOPE)
+	return()
+endif()
+
+string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
+if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthed
+	set(${RESULTING_SHORT_NAME} ${CATEGORY_STRING_CONTENT} PARENT_SCOPE)
+	set(${RESULTING_LONG_NAME} "${root_category}/${CATEGORY_STRING_CONTENT}" PARENT_SCOPE)
+else()
+	message("[ERROR] Internal BUG")
+endif()
+
+endfunction(get_Category_Names)
+
+###
+function(print_Category root_category category number_of_tabs)
 set(PRINTED_VALUE "")
 set(RESULT_STRING "")
 set(index ${number_of_tabs})
@@ -232,20 +250,23 @@ while(index GREATER 0)
 	set(RESULT_STRING "${RESULT_STRING}	")
 	math(EXPR index '${index}-1')
 endwhile()
+
+get_Category_Names("${root_category}" ${category} short_name long_name)
+
 if(CAT_${category}_CATEGORY_CONTENT)
-	set(PRINTED_VALUE "${RESULT_STRING}${category}:")
+	set(PRINTED_VALUE "${RESULT_STRING}${short_name}:")
 	foreach(pack IN ITEMS ${CAT_${category}_CATEGORY_CONTENT})
 		set(PRINTED_VALUE "${PRINTED_VALUE} ${pack}")
 	endforeach()
 	message("${PRINTED_VALUE}")
 else()
-	set(PRINTED_VALUE "${RESULT_STRING}${category}")
+	set(PRINTED_VALUE "${RESULT_STRING}${short_name}")
 	message("${PRINTED_VALUE}")	
 endif()
 if(CAT_${category}_CATEGORIES)
 	math(EXPR sub_cat_nb_tabs '${number_of_tabs}+1')
 	foreach(sub_cat IN ITEMS ${CAT_${category}_CATEGORIES})
-		print_Category(${sub_cat} ${sub_cat_nb_tabs})
+		print_Category("${long_name}" "${category}/${sub_cat}" ${sub_cat_nb_tabs})
 	endforeach()
 endif()
 endfunction()
