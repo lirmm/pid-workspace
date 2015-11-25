@@ -151,51 +151,44 @@ endif()
 endfunction()
 
 ###
-function(find_Category containing_category searched_category RESULT CAT_TO_CALL)
+function(find_In_Categories searched_category_term)
+foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
+	find_Category("" ${root_cat} ${searched_category_term})	
+endforeach()
+message("---------------")
+endfunction(find_In_Categories)
+
+###
+function(find_Category root_category current_category_full_path searched_category)
 string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${searched_category})
 if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => searching category into a specific "category path"
+	get_Category_Names("${root_category}" ${current_category_full_path} SHORT_NAME LONG_NAME)
 	list(GET CATEGORY_STRING_CONTENT 0 ROOT_OF_CATEGORY)
 	list(GET CATEGORY_STRING_CONTENT 1 REMAINING_OF_CATEGORY)
-
-	if(NOT containing_category STREQUAL "")#if the searched category must be found into a super category
-		list(FIND containing_category ${ROOT_OF_CATEGORY} INDEX)
-		if(INDEX EQUAL -1)
-			message("${ROOT_OF_CATEGORY} cannot be found in ${containing_category}	")
-			set(${RESULT} FALSE PARENT_SCOPE)
-			return()
-		endif()
+	if("${ROOT_OF_CATEGORY}" STREQUAL ${SHORT_NAME})#treating case of root categories
+		find_Category("${root_category}" "${current_category_full_path}" ${REMAINING_OF_CATEGORY}) #search for a possible match
 	endif()
-	if(NOT CAT_${ROOT_OF_CATEGORY}_CATEGORIES)#if the root category has no subcategories no need to continue
-		set(${RESULT} FALSE PARENT_SCOPE)
-		return()
-	endif()
-	set(SUB_RESULT FALSE)
-	set(SUB_CAT_TO_CALL "")
-	find_Category("${CAT_${ROOT_OF_CATEGORY}_CATEGORIES}" "${REMAINING_OF_CATEGORY}" SUB_RESULT SUB_CAT_TO_CALL)
-	if(SUB_RESULT)
-		set(${RESULT} TRUE PARENT_SCOPE)
-		set(${CAT_TO_CALL} ${SUB_CAT_TO_CALL} PARENT_SCOPE)
-	else()
-		set(${RESULT} FALSE PARENT_SCOPE)
-	endif()
+	if(CAT_${current_category_full_path}_CATEGORIES)
+		#now recursion to search inside subcategories	
+		foreach(root_cat IN ITEMS ${CAT_${current_category_full_path}_CATEGORIES})
+			find_Category("${current_category_full_path}" "${current_category_full_path}/${root_cat}" ${searched_category})	
+		endforeach()
+	endif()	
+else()#this is a simple category name (end of recursion on path), just testing if this category exists
+	get_Category_Names("${root_category}" ${current_category_full_path} SHORT_NAME LONG_NAME)
 	
-else()#this is a simple category name, just testing of this category exists
-	if(containing_category)
-		list(FIND containing_category ${searched_category} INDEX)
-		if(INDEX EQUAL -1)
-			set(${RESULT} FALSE PARENT_SCOPE)
-			return()
+	if(SHORT_NAME STREQUAL "${searched_category}")# same name -> end of recursion a match has been found
+		message("---------------")	
+		print_Category("" ${current_category_full_path} 0)
+	else()#recursion
+		if(CAT_${current_category_full_path}_CATEGORIES)
+			#now recursion to search inside subcategories	
+			foreach(root_cat IN ITEMS ${CAT_${current_category_full_path}_CATEGORIES})
+				find_Category("${current_category_full_path}" "${current_category_full_path}/${root_cat}" ${searched_category})
+			endforeach()
 		endif()
-	endif()
-
-	if(CAT_${searched_category}_CATEGORIES OR CAT_${searched_category}_CATEGORY_CONTENT)
-		set(${RESULT} TRUE PARENT_SCOPE)
-		set(${CAT_TO_CALL} ${searched_category} PARENT_SCOPE)
-	else()
-		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 endif()
-
 endfunction(find_Category)
 
 ###
