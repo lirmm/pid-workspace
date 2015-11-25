@@ -55,8 +55,8 @@ endfunction()
 ###
 function(reset_Category category)
 if(CAT_${category}_CATEGORIES)
-	foreach(a_category IN ITEMS ${CAT_${category}_CATEGORIES})
-		reset_Category(${a_category})#recursive call
+	foreach(a_sub_category IN ITEMS ${CAT_${category}_CATEGORIES})
+		reset_Category("${category}/${a_sub_category}")#recursive call
 	endforeach()
 endif()
 if(CAT_${category}_CATEGORY_CONTENT)
@@ -103,8 +103,10 @@ endfunction(extract_Root_Categories)
 ###
 function(classify_Category category_full_string root_category target_package)
 message("[DEBUG] classify_Category category_full_string=${category_full_string} root_category=${root_category} target_package=${target_package}")
-if(category_full_string STREQUAL "${root_category}")#OK, so the package directly belongs to this category
+if("${category_full_string}" STREQUAL "${root_category}")#OK, so the package directly belongs to this category
 	set(CAT_${category_full_string}_CATEGORY_CONTENT ${CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
+	list(REMOVE_DUPLICATES CAT_${category_full_string}_CATEGORY_CONTENT)
+	set(CAT_${category_full_string}_CATEGORY_CONTENT ${CAT_${category_full_string}_CATEGORY_CONTENT} CACHE INTERNAL "")
 else()#not OK we need to know if this is a subcategory or not
 	string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
 	if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthes => there are subcategories with root category as root
@@ -114,10 +116,13 @@ else()#not OK we need to know if this is a subcategory or not
 			set(AFTER_ROOT ${SUBCATEGORY_STRING_CONTENT} )
 		else()
 			set(AFTER_ROOT ${CATEGORY_STRING_CONTENT})
-		endif()	
-		set(CAT_${root_category}_CATEGORIES ${CAT_${root_category}_CATEGORIES} ${AFTER_ROOT} CACHE INTERNAL "")	
-		classify_Category(${category_full_string} ${root_category}/${AFTER_ROOT} ${target_package})
+		endif()
+		set(CAT_${root_category}_CATEGORIES ${CAT_${root_category}_CATEGORIES} ${AFTER_ROOT} CACHE INTERNAL "")
+		classify_Category(${category_full_string} "${root_category}/${AFTER_ROOT}" ${target_package})
+		list(REMOVE_DUPLICATES CAT_${root_category}_CATEGORIES)
+		set(CAT_${root_category}_CATEGORIES ${CAT_${root_category}_CATEGORIES} CACHE INTERNAL "")
 
+		
 	#else, this is not the same as root_category (otherwise first test would have succeeded => end of recursion 
 	endif()
 
