@@ -1,0 +1,11 @@
+#### referencing package hokuyo-laser-scanner-knowbotics mode ####
+set(hokuyo-laser-scanner-knowbotics_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(hokuyo-laser-scanner-knowbotics_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(hokuyo-laser-scanner-knowbotics_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(hokuyo-laser-scanner-knowbotics_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
+set(hokuyo-laser-scanner-knowbotics_DESCRIPTION knowbotics code to manage hokuyo drivers CACHE INTERNAL "")
+set(hokuyo-laser-scanner-knowbotics_YEARS 2015 CACHE INTERNAL "")
+set(hokuyo-laser-scanner-knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
+set(hokuyo-laser-scanner-knowbotics_ADDRESS git@gite.lirmm.fr:rob-vision-devices/hokuyo-laser-scanner-knowbotics.git CACHE INTERNAL "")
+set(hokuyo-laser-scanner-knowbotics_CATEGORIES CACHE INTERNAL "")
+set(hokuyo-laser-scanner-knowbotics_REFERENCES  CACHE INTERNAL "")
