@@ -7,5 +7,5 @@ set(hokuyo-laser-scanner-knowbotics_DESCRIPTION knowbotics code to manage hokuyo
 set(hokuyo-laser-scanner-knowbotics_YEARS 2015 CACHE INTERNAL "")
 set(hokuyo-laser-scanner-knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
 set(hokuyo-laser-scanner-knowbotics_ADDRESS git@gite.lirmm.fr:rob-vision-devices/hokuyo-laser-scanner-knowbotics.git CACHE INTERNAL "")
-set(hokuyo-laser-scanner-knowbotics_CATEGORIES CACHE INTERNAL "")
+set(hokuyo-laser-scanner-knowbotics_CATEGORIES "knowbotics/laser-scanner;laser-scanner/hokuyo" CACHE INTERNAL "")
 set(hokuyo-laser-scanner-knowbotics_REFERENCES  CACHE INTERNAL "")
