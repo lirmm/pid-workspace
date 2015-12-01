@@ -76,6 +76,10 @@ endmacro(import_PID_Package)
 ### 
 macro(link_PID_Components)
 
+if(CMAKE_BUILD_TYPE STREQUAL "")
+	message("[WARNING] no known build type defined (Release or Debug) : the Release build is selected by default")
+	set(CMAKE_BUILD_TYPE Release)
+endif()
 set(oneValueArgs PACKAGE NAME)
 set(multiValueArgs COMPONENTS)
 cmake_parse_arguments(LINK_PID_COMPONENTS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
