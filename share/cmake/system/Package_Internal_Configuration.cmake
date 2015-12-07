@@ -77,7 +77,6 @@ set(${PRIVATE_LINKS} "${RES_LINKS}" PARENT_SCOPE)
 endif()
 endfunction(list_Private_Links)
 
-
 ##################################################################################
 ###################### runtime dependencies management API #######################
 ##################################################################################
@@ -216,14 +215,11 @@ list(APPEND result ${DIRECT_RESOURCES})
 
 foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 	foreach(dep_comp IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX}})
-		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" 
-		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC"
-		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED"
-		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
-			get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
-			if(INT_DEP_RUNTIME_RESOURCES)
-				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
-			endif()
+		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
+		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
+		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
+		if(INT_DEP_RUNTIME_RESOURCES)
+			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 		endif()
 		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
 			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
@@ -236,14 +232,11 @@ endforeach()
 
 # 3) adding internal components dependencies
 foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-	if(${package}_${int_dep}_TYPE STREQUAL "HEADER" 
-	OR ${package}_${int_dep}_TYPE STREQUAL "STATIC"
-	OR ${package}_${int_dep}_TYPE STREQUAL "SHARED"
-	OR ${package}_${int_dep}_TYPE STREQUAL "MODULE")#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location	
-		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode})
-		if(INT_DEP_RUNTIME_RESOURCES)
-			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
-		endif()
+	#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
+	#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
+	get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode})
+	if(INT_DEP_RUNTIME_RESOURCES)
+		list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 	endif()
 	if(${package}_${int_dep}_TYPE STREQUAL "MODULE")
 		list(APPEND result ${${package}_ROOT_DIR}/lib/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
@@ -469,7 +462,7 @@ function(create_Bin_Component_Symlinks bin_package bin_component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #creatings symbolic links
 foreach(resource IN ITEMS ${resources})
-	create_Rpath_Symlink(${resource} ${${bin_package}_ROOT_DIR} ${bin_component}${TARGET_SUFFIX})
+	create_Rpath_Symlink("${resource}" "${${bin_package}_ROOT_DIR}" ${bin_component}${TARGET_SUFFIX})
 endforeach()
 endfunction(create_Bin_Component_Symlinks)
 
@@ -540,14 +533,11 @@ list(APPEND result ${DIRECT_RESOURCES})
 
 foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 	foreach(dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX}})
-		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" 
-		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC"
-		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED"
-		OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
-			get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
-			if(INT_DEP_RUNTIME_RESOURCES)
-				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
-			endif()
+		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location)
+		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
+		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
+		if(INT_DEP_RUNTIME_RESOURCES)
+			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 		endif()
 		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
 			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
@@ -561,14 +551,11 @@ endforeach()
 # 3) adding internal components dependencies
 if(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	foreach(int_dep IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-		if(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "HEADER" 
-		OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "STATIC"
-		OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "SHARED"
-		OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "MODULE")#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
-			get_Source_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${int_dep} ${mode})
-			if(INT_DEP_RUNTIME_RESOURCES)
-				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
-			endif()
+		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
+		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
+		get_Source_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${int_dep} ${mode})
+		if(INT_DEP_RUNTIME_RESOURCES)
+			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 		endif()
 		if(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "MODULE")
 			list(APPEND result ${CMAKE_BINARY_DIR}/src/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component

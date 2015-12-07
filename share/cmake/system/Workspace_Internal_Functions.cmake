@@ -20,11 +20,7 @@
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-cmake_policy(SET CMP0026 OLD) #disable warning when reading LOCATION property
-cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
-cmake_policy(SET CMP0037 OLD) #allow to redefine standard target such as clean
-cmake_policy(SET CMP0045 OLD) #allow to test if a target exist without a warning
-
+include(Package_Internal_Policies NO_POLICY_SCOPE)
 include(Package_Internal_Finding NO_POLICY_SCOPE)
 include(Package_Internal_Configuration NO_POLICY_SCOPE)
 include(Package_Internal_Referencing NO_POLICY_SCOPE)
@@ -33,63 +29,111 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 
 ###
-function(classify_Package_Categories package)
-foreach(a_category IN ITEMS ${${package}_CATEGORIES})
-	classify_Category(${a_category} ${package} ROOT_CATEGORIES)	
+function(classify_Package_Categories all_packages)
+foreach(a_cat IN ITEMS ${ROOT_CATEGORIES})
+	classify_Root_Category(${a_cat} "${all_packages}")
 endforeach()
-endfunction()
+endfunction(classify_Package_Categories)
+
+###
+function(classify_Root_Category root_category all_packages)
+foreach(package IN ITEMS ${all_packages})
+	foreach(a_category IN ITEMS ${${package}_CATEGORIES})
+		classify_Category(${a_category} ${root_category} ${package})	
+	endforeach()
+endforeach()
+endfunction(classify_Root_Category)
 
 ###
 function(reset_All_Categories)
 foreach(a_category IN ITEMS ${ROOT_CATEGORIES})
 	reset_Category(${a_category})
 endforeach()
-set(ROOT_CATEGORIES "" CACHE INTERNAL "")
+set(ROOT_CATEGORIES CACHE INTERNAL "")
 endfunction()
 
 ###
 function(reset_Category category)
-if(${category}_CATEGORIES)
-	foreach(a_category IN ITEMS ${${category}_CATEGORIES})
-		reset_Category(${a_category})#recursive call
+if(CAT_${category}_CATEGORIES)
+	foreach(a_sub_category IN ITEMS ${CAT_${category}_CATEGORIES})
+		reset_Category("${category}/${a_sub_category}")#recursive call
 	endforeach()
 endif()
-if(${category}_CATEGORY_CONTENT)
-	set(${category}_CATEGORY_CONTENT CACHE INTERNAL "")
+if(CAT_${category}_CATEGORY_CONTENT)
+	set(CAT_${category}_CATEGORY_CONTENT CACHE INTERNAL "")
 endif()
-set(${category}_CATEGORIES CACHE INTERNAL "")
+set(CAT_${category}_CATEGORIES CACHE INTERNAL "")
 endfunction()
 
 ###
-function(classify_Category category_full_string package container_variable)
-string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${category_full_string})
-if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthes => there are subcategories
-	list(GET CATEGORY_STRING_CONTENT 0 ROOT_OF_CATEGORY)
-	list(GET CATEGORY_STRING_CONTENT 1 REMAINING_OF_CATEGORY)
-	# adding the current category to its containing category	
-	set(temp_container ${${container_variable}} ${ROOT_OF_CATEGORY})
-	list(REMOVE_DUPLICATES temp_container)
-	set(${container_variable} ${temp_container} CACHE INTERNAL "")
-	#classifying subcategories by recursion
-	classify_Category(${REMAINING_OF_CATEGORY} ${package} ${ROOT_OF_CATEGORY}_CATEGORIES)
-else()#there is no sub categories
-	# adding the current category to its containing category	
-	set(temp_container ${${container_variable}} ${category_full_string})
-	list(REMOVE_DUPLICATES temp_container)
-	set(${container_variable} ${temp_container} CACHE INTERNAL "")
-	# adding the package to the current category 
-	set(temp_cat_content ${${category_full_string}_CATEGORY_CONTENT} ${package})
-	list(REMOVE_DUPLICATES temp_cat_content)
-	set(${category_full_string}_CATEGORY_CONTENT ${temp_cat_content} CACHE INTERNAL "")
+function(get_Root_Categories package RETURNED_ROOTS)
+	set(ROOTS_FOUND)
+	foreach(a_category IN ITEMS ${${package}_CATEGORIES})
+		string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${a_category})
+		if(NOT CATEGORY_STRING_CONTENT STREQUAL ${a_category})# it macthes => there are subcategories
+			list(GET CATEGORY_STRING_CONTENT 0 ROOT_OF_CATEGORY)
+			list(APPEND ROOTS_FOUND ${ROOT_OF_CATEGORY})
+		else()
+			list(APPEND ROOTS_FOUND ${a_category})
+		endif()
+	endforeach()
+	if(ROOTS_FOUND)
+		list(REMOVE_DUPLICATES ROOTS_FOUND)
+	endif()
+	set(${RETURNED_ROOTS} ${ROOTS_FOUND} PARENT_SCOPE)
+endfunction(get_Root_Categories)
+
+###
+function(extract_Root_Categories all_packages)
+set(ALL_ROOTS CACHE INTERNAL "")
+foreach(a_package IN ITEMS ${all_packages})
+	get_Root_Categories(${a_package} ${a_package}_ROOTS)
+	if(${a_package}_ROOTS)
+		list(APPEND ALL_ROOTS ${${a_package}_ROOTS})
+	endif()
+endforeach()
+if(ALL_ROOTS)
+	list(REMOVE_DUPLICATES ALL_ROOTS)
+	set(ROOT_CATEGORIES ${ALL_ROOTS} CACHE INTERNAL "")
+else()
+	set(ROOT_CATEGORIES CACHE INTERNAL "")
 endif()
-endfunction()
+endfunction(extract_Root_Categories)
+
+###
+function(classify_Category category_full_string root_category target_package)
+if("${category_full_string}" STREQUAL "${root_category}")#OK, so the package directly belongs to this category
+	set(CAT_${category_full_string}_CATEGORY_CONTENT ${CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
+	list(REMOVE_DUPLICATES CAT_${category_full_string}_CATEGORY_CONTENT)
+	set(CAT_${category_full_string}_CATEGORY_CONTENT ${CAT_${category_full_string}_CATEGORY_CONTENT} CACHE INTERNAL "")
+else()#not OK we need to know if this is a subcategory or not
+	string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
+	if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthes => there are subcategories with root category as root
+		set(AFTER_ROOT)
+		string(REGEX REPLACE "^([^/]+)/.+$" "\\1" SUBCATEGORY_STRING_CONTENT ${CATEGORY_STRING_CONTENT})
+		if(NOT SUBCATEGORY_STRING_CONTENT STREQUAL "${CATEGORY_STRING_CONTENT}")# there are some subcategories
+			set(AFTER_ROOT ${SUBCATEGORY_STRING_CONTENT} )
+		else()
+			set(AFTER_ROOT ${CATEGORY_STRING_CONTENT})
+		endif()
+		set(CAT_${root_category}_CATEGORIES ${CAT_${root_category}_CATEGORIES} ${AFTER_ROOT} CACHE INTERNAL "")
+		classify_Category(${category_full_string} "${root_category}/${AFTER_ROOT}" ${target_package})
+		list(REMOVE_DUPLICATES CAT_${root_category}_CATEGORIES)
+		set(CAT_${root_category}_CATEGORIES ${CAT_${root_category}_CATEGORIES} CACHE INTERNAL "")
+
+		
+	#else, this is not the same as root_category (otherwise first test would have succeeded => end of recursion 
+	endif()
+
+endif()
+endfunction(classify_Category)
 
 ###
 function(write_Categories_File)
 set(file ${CMAKE_BINARY_DIR}/CategoriesInfo.cmake)
 file(WRITE ${file} "")
 file(APPEND ${file} "######### declaration of workspace categories ########\n")
-file(APPEND ${file} "set(ROOT_CATEGORIES ${ROOT_CATEGORIES} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(ROOT_CATEGORIES \"${ROOT_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
 	write_Category_In_File(${root_cat} ${file})
 endforeach()
@@ -97,62 +141,55 @@ endfunction()
 
 ###
 function(write_Category_In_File category thefile)
-file(APPEND ${thefile} "set(${category}_CATEGORY_CONTENT ${${category}_CATEGORY_CONTENT} CACHE INTERNAL \"\")\n")
-if(${category}_CATEGORIES)
-	file(APPEND ${thefile} "set(${category}_CATEGORIES ${${category}_CATEGORIES} CACHE INTERNAL \"\")\n")
-	foreach(cat IN ITEMS ${${category}_CATEGORIES})
-		write_Category_In_File(${cat} ${thefile})
+file(APPEND ${thefile} "set(CAT_${category}_CATEGORY_CONTENT \"${CAT_${category}_CATEGORY_CONTENT}\" CACHE INTERNAL \"\")\n")
+if(CAT_${category}_CATEGORIES)
+	file(APPEND ${thefile} "set(CAT_${category}_CATEGORIES \"${CAT_${category}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
+	foreach(cat IN ITEMS ${CAT_${category}_CATEGORIES})
+		write_Category_In_File("${category}/${cat}" ${thefile})
 	endforeach()
 endif()
 endfunction()
 
 ###
-function(find_category containing_category searched_category RESULT CAT_TO_CALL)
+function(find_In_Categories searched_category_term)
+foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
+	find_Category("" ${root_cat} ${searched_category_term})	
+endforeach()
+message("---------------")
+endfunction(find_In_Categories)
+
+###
+function(find_Category root_category current_category_full_path searched_category)
 string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${searched_category})
 if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => searching category into a specific "category path"
+	get_Category_Names("${root_category}" ${current_category_full_path} SHORT_NAME LONG_NAME)
 	list(GET CATEGORY_STRING_CONTENT 0 ROOT_OF_CATEGORY)
 	list(GET CATEGORY_STRING_CONTENT 1 REMAINING_OF_CATEGORY)
-
-	if(containing_category)#if the searched category must be found into a super category
-		list(FIND containing_category ${ROOT_OF_CATEGORY} INDEX)
-		if(INDEX EQUAL -1)
-			message("${ROOT_OF_CATEGORY} cannot be found in ${containing_category}	")
-			set(${RESULT} FALSE PARENT_SCOPE)
-			return()
-		endif()
+	if("${ROOT_OF_CATEGORY}" STREQUAL ${SHORT_NAME})#treating case of root categories
+		find_Category("${root_category}" "${current_category_full_path}" ${REMAINING_OF_CATEGORY}) #search for a possible match
 	endif()
-	if(NOT ${ROOT_OF_CATEGORY}_CATEGORIES)#if the root category has no subcategories no need to continue
-		set(${RESULT} FALSE PARENT_SCOPE)
-		return()
-	endif()
-	set(SUB_RESULT FALSE)
-	set(SUB_CAT_TO_CALL "")
-	find_category("${${ROOT_OF_CATEGORY}_CATEGORIES}" "${REMAINING_OF_CATEGORY}" SUB_RESULT SUB_CAT_TO_CALL)
-	if(SUB_RESULT)
-		set(${RESULT} TRUE PARENT_SCOPE)
-		set(${CAT_TO_CALL} ${SUB_CAT_TO_CALL} PARENT_SCOPE)
-	else()
-		set(${RESULT} FALSE PARENT_SCOPE)
-	endif()
+	if(CAT_${current_category_full_path}_CATEGORIES)
+		#now recursion to search inside subcategories	
+		foreach(root_cat IN ITEMS ${CAT_${current_category_full_path}_CATEGORIES})
+			find_Category("${current_category_full_path}" "${current_category_full_path}/${root_cat}" ${searched_category})	
+		endforeach()
+	endif()	
+else()#this is a simple category name (end of recursion on path), just testing if this category exists
+	get_Category_Names("${root_category}" ${current_category_full_path} SHORT_NAME LONG_NAME)
 	
-else()#this is a simple category name, just testing of this category exists
-	if(containing_category)
-		list(FIND containing_category ${searched_category} INDEX)
-		if(INDEX EQUAL -1)
-			set(${RESULT} FALSE PARENT_SCOPE)
-			return()
+	if(SHORT_NAME STREQUAL "${searched_category}")# same name -> end of recursion a match has been found
+		message("---------------")	
+		print_Category("" ${current_category_full_path} 0)
+	else()#recursion
+		if(CAT_${current_category_full_path}_CATEGORIES)
+			#now recursion to search inside subcategories	
+			foreach(root_cat IN ITEMS ${CAT_${current_category_full_path}_CATEGORIES})
+				find_Category("${current_category_full_path}" "${current_category_full_path}/${root_cat}" ${searched_category})
+			endforeach()
 		endif()
-	endif()
-
-	if(${searched_category}_CATEGORIES OR ${searched_category}_CATEGORY_CONTENT)
-		set(${RESULT} TRUE PARENT_SCOPE)
-		set(${CAT_TO_CALL} ${searched_category} PARENT_SCOPE)
-	else()
-		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 endif()
-
-endfunction()
+endfunction(find_Category)
 
 ###
 function(print_Author author)
@@ -179,7 +216,26 @@ endif()
 endfunction()
 
 ###
-function(print_Category category number_of_tabs)
+function(get_Category_Names root_category category_full_string RESULTING_SHORT_NAME RESULTING_LONG_NAME)
+
+if("${root_category}" STREQUAL "")
+	set(${RESULTING_SHORT_NAME} ${category_full_string} PARENT_SCOPE)
+	set(${RESULTING_LONG_NAME} ${category_full_string} PARENT_SCOPE)
+	return()
+endif()
+
+string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
+if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthed
+	set(${RESULTING_SHORT_NAME} ${CATEGORY_STRING_CONTENT} PARENT_SCOPE)
+	set(${RESULTING_LONG_NAME} "${root_category}/${CATEGORY_STRING_CONTENT}" PARENT_SCOPE)
+else()
+	message("[ERROR] Internal BUG")
+endif()
+
+endfunction(get_Category_Names)
+
+###
+function(print_Category root_category category number_of_tabs)
 set(PRINTED_VALUE "")
 set(RESULT_STRING "")
 set(index ${number_of_tabs})
@@ -187,20 +243,23 @@ while(index GREATER 0)
 	set(RESULT_STRING "${RESULT_STRING}	")
 	math(EXPR index '${index}-1')
 endwhile()
-if(${category}_CATEGORY_CONTENT)
-	set(PRINTED_VALUE "${RESULT_STRING}${category}:")
-	foreach(pack IN ITEMS ${${category}_CATEGORY_CONTENT})
+
+get_Category_Names("${root_category}" ${category} short_name long_name)
+
+if(CAT_${category}_CATEGORY_CONTENT)
+	set(PRINTED_VALUE "${RESULT_STRING}${short_name}:")
+	foreach(pack IN ITEMS ${CAT_${category}_CATEGORY_CONTENT})
 		set(PRINTED_VALUE "${PRINTED_VALUE} ${pack}")
 	endforeach()
 	message("${PRINTED_VALUE}")
 else()
-	set(PRINTED_VALUE "${RESULT_STRING}${category}")
+	set(PRINTED_VALUE "${RESULT_STRING}${short_name}")
 	message("${PRINTED_VALUE}")	
 endif()
-if(${category}_CATEGORIES)
+if(CAT_${category}_CATEGORIES)
 	math(EXPR sub_cat_nb_tabs '${number_of_tabs}+1')
-	foreach(sub_cat IN ITEMS ${${category}_CATEGORIES})
-		print_Category(${sub_cat} ${sub_cat_nb_tabs})
+	foreach(sub_cat IN ITEMS ${CAT_${category}_CATEGORIES})
+		print_Category("${long_name}" "${category}/${sub_cat}" ${sub_cat_nb_tabs})
 	endforeach()
 endif()
 endfunction()
@@ -309,8 +368,10 @@ function(test_Package_Binary_Against_Platform package version IS_COMPATIBLE)
 foreach(system IN ITEMS ${${package}_REFERENCE_${version}})
 	if(system STREQUAL "linux" AND UNIX AND NOT APPLE)
 		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
+		return()
 	elseif(system STREQUAL "darwin" AND APPLE)
 		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
+		return()
 	endif()
 endforeach()
 set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
@@ -333,7 +394,7 @@ endif()
 endfunction()
 
 ###
-function(generate_Binary_Package_Name package version system mode RES_FILE RES_FOLDER)
+function(generate_Binary_Package_Archive_Name package version system mode RES_FILE RES_FOLDER)
 if(system STREQUAL "linux")
 	set(system_string Linux)
 elseif(system STREQUAL "darwin")
@@ -347,7 +408,7 @@ endif()
 
 set(${RES_FILE} "${package}-${version}${mode_string}-${system_string}.tar.gz" PARENT_SCOPE)
 set(${RES_FOLDER} "${package}-${version}${mode_string}-${system_string}" PARENT_SCOPE)
-endfunction(generate_Binary_Package_Name)
+endfunction(generate_Binary_Package_Archive_Name)
 
 ###
 function(test_binary_download package version system RESULT)
@@ -356,7 +417,7 @@ function(test_binary_download package version system RESULT)
 set(download_url ${${package}_REFERENCE_${version}_${system}_url})
 set(FOLDER_BINARY ${${package}_REFERENCE_${version}_${system}_folder})
 
-generate_Binary_Package_Name(${package} ${version} ${system} Release RES_FILE RES_FOLDER)
+generate_Binary_Package_Archive_Name(${package} ${version} ${system} Release RES_FILE RES_FOLDER)
 set(destination ${CMAKE_BINARY_DIR}/share/${RES_FILE})
 set(res "")
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory share
@@ -388,7 +449,7 @@ endif()
 if(EXISTS ${package}_REFERENCE_${version}_${system}_url_DEBUG)
 	set(download_url_dbg ${${package}_REFERENCE_${version}_${system}_url_DEBUG})
 	set(FOLDER_BINARY_dbg ${${package}_REFERENCE_${version}_${system}_folder_DEBUG})
-	generate_Binary_Package_Name(${package} ${version} ${system} Debug RES_FILE RES_FOLDER)
+	generate_Binary_Package_Archive_Name(${package} ${version} ${system} Debug RES_FILE RES_FOLDER)
 	set(destination_dbg ${CMAKE_BINARY_DIR}/share/${RES_FILE})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory share
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -509,8 +570,36 @@ else()#deploying the target binary relocatable archive
 		message("[ERROR] : cannot deploy ${package} binary archive version ${version}")
 	endif()
 endif()
-endfunction()
+endfunction(deploy_PID_Package)
 
+###
+function(deploy_External_Package package version)
+get_System_Variables(OS_STRING PACKAGE_STRING)
+set(MAX_CURR_VERSION 0.0.0)
+if("${version}" STREQUAL "")#deploying the latest version of the repository
+	foreach(version_i IN ITEMS ${${package}_REFERENCES})
+		list(FIND ${package}_REFERENCE_${version_i} ${OS_STRING} INDEX)
+		if(	NOT index EQUAL -1 #a reference for this OS is known 
+			AND ${version_i} VERSION_GREATER ${MAX_CURR_VERSION})
+				set(MAX_CURR_VERSION ${version_i})
+		endif()
+	endforeach()
+	if(NOT ${MAX_CURR_VERSION} STREQUAL 0.0.0)
+		deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION})
+		if(NOT DEPLOYED) 
+			message("[ERROR] : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive. Please contact the administrator of the package ${package}.")
+		endif()
+	else()
+		message("[ERROR] : no known version to external package ${package} for OS ${OS_STRING}")
+	endif()
+
+else()#deploying the target binary relocatable archive 
+	deploy_External_Package_Version(DEPLOYED ${package} ${version})
+	if(NOT DEPLOYED) 
+		message("[ERROR] : cannot deploy ${package} binary archive version ${version}")
+	endif()
+endif()
+endfunction(deploy_External_Package)
 
 ###
 function(resolve_PID_Package package version)
@@ -627,8 +716,8 @@ endfunction()
 ###
 function(register_PID_Package package)
 go_To_Workspace_Master()
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_BUILD_TOOL} install)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_BUILD_TOOL} referencing)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} install)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} referencing)
 publish_References_In_Workspace_Repository(${package})
 endfunction()
 

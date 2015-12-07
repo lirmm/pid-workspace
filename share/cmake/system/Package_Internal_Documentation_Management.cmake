@@ -19,8 +19,8 @@
 
 ### adding source code of the example components to the API doc
 function(add_Example_To_Doc c_name)
-	file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/share/examples/)
-	file(COPY ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR} DESTINATION ${PROJECT_BINARY_DIR}/share/examples/)
+	file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/share/doc/examples/)
+	file(COPY ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR} DESTINATION ${PROJECT_BINARY_DIR}/share/doc/examples/)
 endfunction(add_Example_To_Doc c_name)
 
 ### generating API documentation for the package
@@ -30,6 +30,11 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
 
 if(NOT BUILD_API_DOC)
 	return()
+endif()
+
+if(EXISTS ${PROJECT_SOURCE_DIR}/share/doxygen/img/)
+	install(DIRECTORY ${PROJECT_SOURCE_DIR}/share/doxygen/img/ DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/doc/)
+	file(COPY ${PROJECT_SOURCE_DIR}/share/doxygen/img/ DESTINATION ${PROJECT_BINARY_DIR}/share/doc/)
 endif()
 
 #finding doxygen tool and doxygen configuration file 
@@ -61,6 +66,7 @@ endif(DOXYFILE_IN-NOTFOUND)
 if(DOXYGEN_FOUND AND (NOT DOXYFILE_IN-NOTFOUND OR NOT GENERIC_DOXYFILE_IN-NOTFOUND)) #we are able to generate the doc
 	# general variables
 	set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
+	set(DOXYFILE_MAIN_PAGE "${CMAKE_SOURCE_DIR}/README.md")
 	set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
 	set(DOXYFILE_PROJECT_VERSION ${${PROJECT_NAME}_VERSION})
 	set(DOXYFILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/doc)

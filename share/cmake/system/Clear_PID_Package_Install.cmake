@@ -18,6 +18,7 @@
 #########################################################################################
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+include(Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 function(remove_Installed_Component component package install_version workspace)
 	set(PATH_TO_INSTALL_DIR ${workspace}/install/${package}/${install_version})
@@ -80,7 +81,7 @@ foreach(component IN ITEMS ${all_components_to_check}) #for each remaining exist
 			endforeach()
 
 		else()#new folder for this library
-			if(${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE} EQUAL 1)
+			if("${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}" EQUAL 1)
 				file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME})#removing old header include folder
 				math(EXPR ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0)
 			else()

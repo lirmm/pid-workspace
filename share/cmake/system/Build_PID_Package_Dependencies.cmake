@@ -18,7 +18,8 @@
 #########################################################################################
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
-include(PID_Utils_Functions)
+include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 if(DEPENDENT_PACKAGES)
 	SEPARATE_ARGUMENTS(DEPENDENT_PACKAGES)

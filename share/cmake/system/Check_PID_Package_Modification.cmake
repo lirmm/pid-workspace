@@ -46,10 +46,11 @@ endfunction(Find_Unique_Elements)
 ########### SOURCE_PACKAGE_CONTENT : the cmake file describing the whole package content
 ########### PACKAGE_NAME : name of the package to check
 ########### WORKSPACE_DIR : path to the root of the workspace
+########### USE_MAKE_TOOL : name or path of the make tool
 #################################################################################################
-
+include(${WORKSPACE_DIR}/share/cmake/system/PID_Utils_Functions.cmake)
 if(EXISTS ${SOURCE_PACKAGE_CONTENT}) #the package has already been configured
-	include(${SOURCE_PACKAGE_CONTENT}) #import source code meta-information (which file for each component) 
+	include(${SOURCE_PACKAGE_CONTENT}) #import source code meta-information (which files for each component) 
 else()
 	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/rebuilt "")
@@ -60,6 +61,14 @@ set(REMOVED_FILES)
 set(ADDED_FILES)
 set(path_to_package ${WORKSPACE_DIR}/packages/${PACKAGE_NAME})
 
+#testing if some of the included CMakeLists.txt files have been modified
+test_Modified_Components(${PACKAGE_NAME} ${USE_MAKE_TOOL} MODIFIED)
+if(MODIFIED)
+	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/checksources "")
+	return()
+endif()
+
+#testing if source code build tree has been modified (files added/removed)
 foreach(component IN ITEMS ${${PACKAGE_NAME}_COMPONENTS})
 	if(${PACKAGE_NAME}_${component}_HEADER_DIR_NAME AND ${PACKAGE_NAME}_${component}_SOURCE_DIR) # this component is a binary library
 		set(current_dir ${path_to_package}/include/${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
@@ -114,8 +123,15 @@ foreach(component IN ITEMS ${${PACKAGE_NAME}_COMPONENTS})
 		list(APPEND REMOVED_FILES ${TO_REMOVE})
 		list(APPEND ADDED_FILES ${TO_ADD})
 
-	elseif(${PACKAGE_NAME}_${component}_SOURCE_DIR) # this component is an application
-		set(current_dir ${path_to_package}/apps/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
+	elseif(${PACKAGE_NAME}_${component}_SOURCE_DIR) # this component is an application or module
+		if(${PACKAGE_NAME}_${component}_TYPE STREQUAL "MODULE")
+			set(current_dir ${path_to_package}/src/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
+		elseif(${PACKAGE_NAME}_${component}_TYPE STREQUAL "TEST")
+			set(current_dir ${path_to_package}/test/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
+		else() #otherwise this is an example or standard application
+			set(current_dir ${path_to_package}/apps/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
+		endif()
+		
 		file(	GLOB_RECURSE FILE_PACKAGE_SOURCES 
 			RELATIVE ${current_dir} 
 			"${current_dir}/*.h"

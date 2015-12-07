@@ -17,6 +17,13 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
+#################################################################################################
+########### this is the script file to update a package #########################################
+########### parameters :
+########### TARGET_PACKAGE : name of the package to check
+########### WORKSPACE_DIR : path to the root of the workspace
+#################################################################################################
+
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 include(Workspace_Internal_Functions NO_POLICY_SCOPE)
 

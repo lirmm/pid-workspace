@@ -28,6 +28,7 @@ option(BUILD_API_DOC "Package generates the HTML API documentation" OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF
 		         "BUILD_API_DOC" OFF)
 option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
+option(BUILD_RELEASE_ONLY "Package only build release version" OFF)
 option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OFF)
 option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
@@ -50,6 +51,88 @@ endif()
 
 endmacro(manage_Parrallel_Build_Option)
 
+macro(set_Mode_Specific_Options_From_Global)
+	execute_process(COMMAND ${CMAKE_COMMAND} -L -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR} OUTPUT_FILE ${CMAKE_BINARY_DIR}/options.txt)
+	#parsing option file and generating a load cache cmake script	
+	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES)
+	set(OPTIONS_FILE ${CMAKE_BINARY_DIR}/share/cacheConfig.cmake) 
+	file(WRITE ${OPTIONS_FILE} "")
+	foreach(line IN ITEMS ${LINES})
+		if(NOT ${line} STREQUAL "-- Cache values")
+			string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "set( \\1 \\3\ CACHE \\2 \"\" FORCE)\n" AN_OPTION "${line}")
+			file(APPEND ${OPTIONS_FILE} ${AN_OPTION})
+		endif()
+	endforeach()
+endmacro(set_Mode_Specific_Options_From_Global)
+
+macro(set_Global_Options_From_Mode_Specific)
+
+	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+	# copying new cache entries in the global build cache
+	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES_GLOBAL)
+	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
+	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
+	# searching new cache entries in release mode cache
+	foreach(line IN ITEMS ${LINES_RELEASE})
+		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")#this line may contain option info
+			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
+			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
+				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
+				list(GET AN_OPTION 0 var_name)
+				string(FIND "${LINES}" "${var_name}" POS)	
+				if(POS EQUAL -1)#not found, this a new cache entry
+					list(GET AN_OPTION 1 var_value)
+					list(GET AN_OPTION 2 var_type)
+					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
+				endif()
+			else()#match is OK this is a comment line
+				set(last_comment "${COMMENT}")
+			endif()
+		endif()
+	endforeach()
+
+	# searching new cache entries in debug mode cache	
+	foreach(line IN ITEMS ${LINES_DEBUG})
+		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
+			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
+			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
+				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
+				list(GET AN_OPTION 0 var_name)
+				string(FIND "${LINES}" "${var_name}" POS)
+				string(FIND "${LINES_RELEASE}" "${var_name}" POS_REL)
+				if(POS EQUAL -1 AND POS_REL EQUAL -1)#not found
+					list(GET AN_OPTION 1 var_value)
+					list(GET AN_OPTION 2 var_type)				
+					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
+				endif()
+			else()#match is OK this is a comment line
+				set(last_comment "${COMMENT}")
+			endif()
+		endif()
+	endforeach()
+	# searching removed cache entries in release and debug mode caches => then remove them from global cache
+	foreach(line IN ITEMS ${LINES_GLOBAL})
+		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")#this line may contain option info
+			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
+			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
+				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
+				list(GET AN_OPTION 0 var_name)
+				string(FIND "${LINES_DEBUG}" "${var_name}" POS_DEB)
+				string(FIND "${LINES_RELEASE}" "${var_name}" POS_REL)
+				if(POS_DEB EQUAL -1 AND POS_REL EQUAL -1)#not found in any mode specific cache
+					unset(${var_name} CACHE)
+				endif()
+			endif()
+		endif()
+	endforeach()
+
+	#removing temporary files containing cache entries
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+	
+endmacro(set_Global_Options_From_Mode_Specific)
 
 function(reset_Mode_Cache_Options)
 #unset all global options
@@ -57,6 +140,7 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_LATEX_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_AND_RUN_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_RELEASE_ONLY OFF CACHE BOOL "" FORCE)
 set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
 #default ON options
 set(ENABLE_PARALLEL_BUILD ON CACHE BOOL "" FORCE)
@@ -484,10 +568,31 @@ else()
 endif()
 endfunction(is_Built_Component)
 
+function(build_Option_For_Example example_comp)
+CMAKE_DEPENDENT_OPTION(BUILD_EXAMPLE_${example_comp} "Package build the example application ${example_comp}" ON "BUILD_EXAMPLES" OFF)
+endfunction(build_Option_For_Example)
+
+function(reset_Removed_Examples_Build_Option)
+get_cmake_property(ALL_CACHED_VARIABLES CACHE_VARIABLES) #getting all cache variables
+foreach(a_cache_var ${ALL_CACHED_VARIABLES})
+	string(REGEX REPLACE "^BUILD_EXAMPLE_(.*)$" "\\1" EXAMPLE_NAME ${a_cache_var})
+
+	if(NOT EXAMPLE_NAME STREQUAL "${a_cache_var}")#match => this is an option related to an example !!
+		set(DECLARED FALSE)
+		is_Declared(${EXAMPLE_NAME} DECLARED)
+		if(NOT DECLARED)# corresponding example component has not been declared
+			unset(${a_cache_var} CACHE)#remove option from cache
+		endif()
+	endif()
+endforeach()
+
+
+endfunction(reset_Removed_Examples_Build_Option)
+
 ### 
 function(will_be_Built result component)
 if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
-	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND NOT BUILD_EXAMPLES))
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
 	set(${result} FALSE PARENT_SCOPE)
 else()
 	set(${result} TRUE PARENT_SCOPE)
@@ -497,7 +602,7 @@ endfunction(will_be_Built)
 ### 
 function(will_be_Installed result component)
 if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
-	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND NOT BUILD_EXAMPLES))
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
 	set(${result} FALSE PARENT_SCOPE)
 else()
 	set(${result} TRUE PARENT_SCOPE)
@@ -786,16 +891,16 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${PROJECT_NAME}_COMPONENTS ${${PROJECT_NAME}_COMPONENTS} CACHE INTERNAL \"\")\n")
 	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})		
-		if(NOT ${${PROJECT_NAME}_${a_component}_TYPE} STREQUAL "TEST")
-			if(${PROJECT_NAME}_${a_component}_SOURCE_DIR)
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_DIR ${${PROJECT_NAME}_${a_component}_SOURCE_DIR} CACHE INTERNAL \"\")\n")
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_CODE ${${PROJECT_NAME}_${a_component}_SOURCE_CODE} CACHE INTERNAL \"\")\n")
-			endif()
-			if(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME)	
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME ${${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
-				file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADERS ${${PROJECT_NAME}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "######### content of package component ${a_component} ########\n")
+		file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_TYPE ${${PROJECT_NAME}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
+		if(${PROJECT_NAME}_${a_component}_SOURCE_DIR)
+			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_DIR ${${PROJECT_NAME}_${a_component}_SOURCE_DIR} CACHE INTERNAL \"\")\n")
+			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_CODE ${${PROJECT_NAME}_${a_component}_SOURCE_CODE} CACHE INTERNAL \"\")\n")
+		endif()
+		if(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME)	
+			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME ${${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
+			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADERS ${${PROJECT_NAME}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
 
-			endif()
 		endif()
 	endforeach()
 endif()

@@ -1,0 +1,11 @@
+#### referencing package avt-camera-knowbotics mode ####
+set(avt-camera-knowbotics_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(avt-camera-knowbotics_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(avt-camera-knowbotics_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(avt-camera-knowbotics_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
+set(avt-camera-knowbotics_DESCRIPTION Knowbotics code used to manage avt-camera CACHE INTERNAL "")
+set(avt-camera-knowbotics_YEARS 2015 CACHE INTERNAL "")
+set(avt-camera-knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
+set(avt-camera-knowbotics_ADDRESS git@gite.lirmm.fr:rob-vision-devices/avt-camera-knowbotics.git CACHE INTERNAL "")
+set(avt-camera-knowbotics_CATEGORIES "knowbotics/camera;camera/avt" CACHE INTERNAL "")
+set(avt-camera-knowbotics_REFERENCES  CACHE INTERNAL "")

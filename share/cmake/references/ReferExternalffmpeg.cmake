@@ -5,11 +5,17 @@ set(ffmpeg_PID_Package_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
 set(ffmpeg_AUTHORS "FFMPEG.org authors, see http://www.ffmpeg.org/" CACHE INTERNAL "")
 set(ffmpeg_LICENSES "LGPL v2.1 license" CACHE INTERNAL "")
 set(ffmpeg_DESCRIPTION external package providing C++ libraries to manage video streams, repackaged for PID CACHE INTERNAL "")
-set(ffmpeg_CATEGORIES system/video CACHE INTERNAL "")
+set(ffmpeg_CATEGORIES programming/video CACHE INTERNAL "")
 
-set(ffmpeg_REFERENCES 2.7.1 CACHE INTERNAL "")
+set(ffmpeg_REFERENCES 2.7.1 2.8.2 CACHE INTERNAL "")
 set(ffmpeg_REFERENCE_2.7.1 linux CACHE INTERNAL "")
 
-set(ffmpeg_REFERENCE_2.7.1_linux_url https://rob-dev.lirmm.fr/pid_external_deps/ext-ffmpeg/repository/archive.tar.gz?ref=linux-32-64b-2.7.1 CACHE INTERNAL "")
-set(ffmpeg_REFERENCE_2.7.1_linux_folder ext-ffmpeg.git CACHE INTERNAL "")
+set(ffmpeg_REFERENCE_2.7.1_linux_url https://gite.lirmm.fr/pid_external_deps/ext-ffmpeg/repository/archive.tar.gz?ref=linux-32-64b-2.7.1 CACHE INTERNAL "")
+set(ffmpeg_REFERENCE_2.7.1_linux_folder ext-ffmpeg-linux-32-64b-2.7.1-30af68120216525ab579c466635fb343b6dee452 CACHE INTERNAL "")
+
+set(ffmpeg_REFERENCE_2.8.2 linux CACHE INTERNAL "")
+
+set(ffmpeg_REFERENCE_2.8.2_linux_url https://gite.lirmm.fr/pid_external_deps/ext-ffmpeg/repository/archive.tar.gz?ref=linux-32-64b-2.8.2 CACHE INTERNAL "")
+set(ffmpeg_REFERENCE_2.8.2_linux_folder ext-ffmpeg-linux-32-64b-2.8.2-c9731ee1f2f21c8b906e89d7f152b5637d6923ec CACHE INTERNAL "")
+
 

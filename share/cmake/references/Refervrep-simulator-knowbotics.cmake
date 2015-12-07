@@ -1,0 +1,11 @@
+#### referencing package vrep-simulator-knowbotics mode ####
+set(vrep-simulator-knowbotics_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(vrep-simulator-knowbotics_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(vrep-simulator-knowbotics_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(vrep-simulator-knowbotics_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM);_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
+set(vrep-simulator-knowbotics_DESCRIPTION A kbot API used to interface VREP within knowbotics applications CACHE INTERNAL "")
+set(vrep-simulator-knowbotics_YEARS 2015 CACHE INTERNAL "")
+set(vrep-simulator-knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
+set(vrep-simulator-knowbotics_ADDRESS git@gite.lirmm.fr:knowbotics/vrep-simulator-knowbotics.git CACHE INTERNAL "")
+set(vrep-simulator-knowbotics_CATEGORIES simulator/vrep;force-sensor/simulated;laser-scanner/simulated;knowbotics/generic;knowbotics/force-sensor;knowbotics/laser-scanner CACHE INTERNAL "")
+set(vrep-simulator-knowbotics_REFERENCES  CACHE INTERNAL "")

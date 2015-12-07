@@ -17,17 +17,11 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-########################################################################
-##################### definition of CMake policies #####################
-########################################################################
-cmake_policy(SET CMP0026 OLD) #disable warning when reading LOCATION property
-cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
-cmake_policy(SET CMP0037 OLD) #allow to redefine standard target such as clean
-cmake_policy(SET CMP0045 OLD) #allow to test if a target exist without a warning
 
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
+include(Package_Internal_Policies NO_POLICY_SCOPE)
 include(Package_Internal_Finding NO_POLICY_SCOPE)
 include(Package_Internal_Configuration NO_POLICY_SCOPE)
 include(Package_Internal_Referencing NO_POLICY_SCOPE)
@@ -95,13 +89,14 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						 -DPACKAGE_NAME=${PROJECT_NAME}
 						 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/release/share/Info${PROJECT_NAME}.cmake
+						 -DUSE_MAKE_TOOL=${CMAKE_MAKE_PROGRAM}
 						 -P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Modification.cmake		
 			COMMENT "Checking for modified source tree ..."
     	)
 
 	# target to reconfigure the project
 	add_custom_command(OUTPUT ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
-			COMMAND ${CMAKE_BUILD_TOOL} rebuild_cache
+			COMMAND ${CMAKE_MAKE_PROGRAM} rebuild_cache
 			COMMAND ${CMAKE_COMMAND} -E touch ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
 			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources
 			COMMENT "Reconfiguring the package ..."
@@ -113,33 +108,55 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	add_dependencies(reconfigure checksources)
 
 	# global build target
-	add_custom_target(build
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} build
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} build
-		COMMENT "Building package (Debug and Release modes) ..."	
+	if(BUILD_RELEASE_ONLY)
+		add_custom_target(build
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
+			COMMENT "Building package (Release mode only) ..."
+			VERBATIM
+		)
+	else()
+		add_custom_target(build
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
+			COMMENT "Building package (Debug and Release modes) ..."
+			VERBATIM
+		)
+	endif()
+	#mode specific build commands
+	add_custom_target(release
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
+		COMMENT "Release build..."
+		VERBATIM
+	)
+
+	add_custom_target(debug
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
+		COMMENT "Debug build..."
 		VERBATIM
 	)
 
 	add_dependencies(build reconfigure)
 
 	add_custom_target(global_main ALL
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 		COMMENT "Compiling and linking package (Debug and Release modes) ..."	
 		VERBATIM
 	)
 
 	# redefinition of clean target (cleaning the build tree)
 	add_custom_target(clean
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} clean
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} clean
-		COMMENT "Cleaning package (Debug and Release modes) ..."	
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} clean
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
+		COMMENT "Cleaning package (Debug and Release modes) ..."
 		VERBATIM
 	)
+
 	# reference file generation target
 	add_custom_target(referencing
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} referencing
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} referencing
 		COMMENT "Generating and installing reference to the package ..."
 		VERBATIM
 	)
@@ -147,21 +164,21 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	# redefinition of install target
 	add_custom_target(install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Debug artefacts
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} install
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} install
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} install
 		COMMENT "Installing the package ..."
 		VERBATIM
 	)
 	
 	# uninstall target (cleaning the install tree) 
 	add_custom_target(uninstall
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} uninstall
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} uninstall
 		COMMENT "Uninstalling the package ..."
 		VERBATIM
 	)
 
-	# update target (cleaning the install tree) 
+	# update target (update the package from upstream git repository) 
 	add_custom_target(update
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
@@ -173,7 +190,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	if(BUILD_AND_RUN_TESTS)
 		# test target (launch test units) 
 		add_custom_target(test
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} test
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} test
 			COMMENT "Launching tests ..."
 			VERBATIM
 		)
@@ -182,7 +199,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	if(BUILD_API_DOC)
 		# doc target (generation of API documentation) 
 		add_custom_target(doc
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} doc
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} doc
 			COMMENT "Generating API documentation ..."
 			VERBATIM
 		)
@@ -191,10 +208,10 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	if(GENERATE_INSTALLER)
 		# package target (generation and install of a UNIX binary packet) 
 		add_custom_target(package
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} package
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_BUILD_TOOL} package_install
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} package_install			
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package_install
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package_install			
 			COMMENT "Generating and installing system binary package ..."
 			VERBATIM
 		)
@@ -203,7 +220,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	if(NOT "${license}" STREQUAL "")
 		# target to add licensing information to all source files
 		add_custom_target(licensing
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_BUILD_TOOL} licensing
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} licensing
 			COMMENT "Applying license to sources ..."
 			VERBATIM
 		)
@@ -216,75 +233,17 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory release WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 	endif()
 	
-	#getting options
-	execute_process(COMMAND ${CMAKE_COMMAND} -L -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR} OUTPUT_FILE ${CMAKE_BINARY_DIR}/options.txt)
-	#parsing option file and generating a load cache cmake script	
-	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES)
-	set(OPTIONS_FILE ${CMAKE_BINARY_DIR}/share/cacheConfig.cmake) 
-	file(WRITE ${OPTIONS_FILE} "")
-	foreach(line IN ITEMS ${LINES})
-		if(NOT ${line} STREQUAL "-- Cache values")
-			string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "set( \\1 \\3\ CACHE \\2 \"\" FORCE)\n" AN_OPTION "${line}")
-			file(APPEND ${OPTIONS_FILE} ${AN_OPTION})
-		endif()
-	endforeach()
+	#getting global options (those set by the user)
+	set_Mode_Specific_Options_From_Global()
 	
-	#calling cmake for each mode 
+	#calling cmake for each build mode 
 	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
 	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
 
 	#now getting options specific to debug and release modes
-	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
-	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
-	# copying new cache entries in the global build cache
-	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
-	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
-	# searching new cache entries in release mode cache	
-	foreach(line IN ITEMS ${LINES_RELEASE})
-		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
-			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
-			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
-				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
-				list(GET AN_OPTION 0 var_name)
-				string(FIND "${LINES}" "${var_name}" POS)	
-				if(POS EQUAL -1)#not found, this a new cache entry
-					list(GET AN_OPTION 1 var_value)
-					list(GET AN_OPTION 2 var_type)
-					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
-				endif()
-			else()#match is OK
-				set(last_comment "${COMMENT}")
-			endif()
-		endif()
-	endforeach()
+	set_Global_Options_From_Mode_Specific()
 
-	# searching new cache entries in debug mode cache	
-	foreach(line IN ITEMS ${LINES_DEBUG})
-		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
-			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
-			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
-				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
-				list(GET AN_OPTION 0 var_name)
-				string(FIND "${LINES}" "${var_name}" POS)
-				string(FIND "${LINES_RELEASE}" "${var_name}" POS_REL)
-				if(POS EQUAL -1 AND POS_REL EQUAL -1)#not found
-					list(GET AN_OPTION 1 var_value)
-					list(GET AN_OPTION 2 var_type)				
-					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
-				endif()
-			else()#match is OK this is a comment line
-				set(last_comment "${COMMENT}")
-			endif()
-		endif()
-	endforeach()
-	
-	
-	#removing temporary files containing cache entries
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
-	
-	return()
+	return()# execution of the root CMakeLists.txt ends for geenral build, it will continue only for Release and Debug Modes 
 else()	# the build must be done in the build directory
 	message(WARNING "Please run cmake in the build folder of the package ${PROJECT_NAME}")
 	return()
@@ -400,29 +359,29 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmak
 endif()
 
 if(EXISTS ${CMAKE_SOURCE_DIR}/share/resources AND ${CMAKE_BUILD_TYPE} MATCHES Release)
-	#installing the share/resource folder (may contain runtimeresources for components)
+	#installing the share/resource folder (may contain runtime resources for components)
 	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/resources DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 endif()
 
+#creating specific .rpath folders if build tree
 if(NOT EXISTS ${CMAKE_BINARY_DIR}/.rpath)
 	file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath)
-	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-		if(${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
-		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE" 
-		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP"
-		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"
-		OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
-			will_be_Built(RES ${component})
-			if(RES)
-				if(EXISTS ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
-					file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
-				endif()
-				file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
-			endif()
-		endif()
-	endforeach()
-	
 endif()
+foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE" 
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP"
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
+		will_be_Built(RES ${component})
+		if(RES)
+			if(EXISTS ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
+				file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
+			endif()
+			file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
+		endif()
+	endif()
+endforeach()
 
 #resolving link time dependencies for executables
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
@@ -519,7 +478,9 @@ endif()
 ######### creating build target for easy sequencing all make commands #########
 ###############################################################################
 #retrieving dependencies on sources packages
-if(${CMAKE_BUILD_TYPE} MATCHES Debug AND BUILD_DEPENDENT_PACKAGES)
+if(	BUILD_DEPENDENT_PACKAGES 
+	AND 	(${CMAKE_BUILD_TYPE} MATCHES Debug 
+		OR (${CMAKE_BUILD_TYPE} MATCHES Release AND BUILD_RELEASE_ONLY)))
 	set(DEPENDENT_SOURCE_PACKAGES)
 	list_All_Source_Packages_In_Workspace(RESULT_PACKAGES)
 	if(RESULT_PACKAGES)
@@ -544,37 +505,37 @@ if(GENERATE_INSTALLER)
 		if(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build
-					COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			else(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			endif(BUILD_API_DOC) 
 		else(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			else(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} install
-					COMMAND ${CMAKE_BUILD_TOOL} package
-					COMMAND ${CMAKE_BUILD_TOOL} package_install
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			endif(BUILD_API_DOC)
 		endif(BUILD_AND_RUN_TESTS)
@@ -582,21 +543,21 @@ if(GENERATE_INSTALLER)
 		if(DEPENDENT_SOURCE_PACKAGES)#only necessary to do dependent build one time, so we do it in debug mode only (first mode built)
 			add_custom_target(build 
 				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-								-DBUILD_TOOL=${CMAKE_BUILD_TOOL}
+								-DBUILD_TOOL=${CMAKE_MAKE_PROGRAM}
 								-DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
 							 	-DPACKAGE_LAUCHING_BUILD="${PROJECT_NAME}"
 							 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake		
-				COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_BUILD_TOOL} install
-				COMMAND ${CMAKE_BUILD_TOOL} package
-				COMMAND ${CMAKE_BUILD_TOOL} package_install
+				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_MAKE_PROGRAM} install
+				COMMAND ${CMAKE_MAKE_PROGRAM} package
+				COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 			)
 		else()		
 			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_BUILD_TOOL} install
-				COMMAND ${CMAKE_BUILD_TOOL} package
-				COMMAND ${CMAKE_BUILD_TOOL} package_install
+				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_MAKE_PROGRAM} install
+				COMMAND ${CMAKE_MAKE_PROGRAM} package
+				COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 			) 
 		endif()
 	endif()
@@ -606,29 +567,29 @@ else(GENERATE_INSTALLER)
 		if(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			else(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			endif(BUILD_API_DOC) 
 		else(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} doc 
-					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			else(BUILD_API_DOC) 
 				add_custom_target(build 
-					COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_BUILD_TOOL} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			endif(BUILD_API_DOC)
 		endif()
@@ -637,17 +598,17 @@ else(GENERATE_INSTALLER)
 
 			add_custom_target(build
 				COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-								-DBUILD_TOOL=${CMAKE_BUILD_TOOL}
+								-DBUILD_TOOL=${CMAKE_MAKE_PROGRAM}
 								-DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
 								-DPACKAGE_LAUCHING_BUILD="${PROJECT_NAME}"
 						 		-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
-				COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_BUILD_TOOL} install
+				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_MAKE_PROGRAM} install
 			)
 		else()		
 			add_custom_target(build 
-				COMMAND ${CMAKE_BUILD_TOOL} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_BUILD_TOOL} install
+				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_MAKE_PROGRAM} install
 			) 
 		endif()
 	endif()
@@ -662,6 +623,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	endif()
 endif()
 #print_Component_Variables()
+reset_Removed_Examples_Build_Option()
 endmacro(build_Package)
 
 ##################################################################################
@@ -774,8 +736,9 @@ else() #a simple application by default
 endif()	
 # specifically managing examples 	
 if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE") 
+	build_Option_For_Example(${c_name})
 	add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced		
-	if(NOT ${BUILD_EXAMPLES}) #examples are not built / installed / exported so no need to continue
+	if(NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${c_name}) #examples are not built / installed / exported so no need to continue => can be specific to a given 
 		mark_As_Declared(${c_name})		
 		return()
 	endif()
@@ -814,9 +777,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
-if(COMP_WILL_BE_INSTALLED)
-	init_Component_Cached_Variables_For_Export(${c_name} "" "" "" "${runtime_resources}")
-endif()
+init_Component_Cached_Variables_For_Export(${c_name} "" "" "" "${runtime_resources}")
+
 #updating global variables of the CMake process	
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name}" CACHE INTERNAL "")
