@@ -1,0 +1,11 @@
+#### referencing package ptz-dlink-knowbotics mode ####
+set(ptz-dlink-knowbotics_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(ptz-dlink-knowbotics_MAIN_INSTITUTION  CACHE INTERNAL "")
+set(ptz-dlink-knowbotics_CONTACT_MAIL  CACHE INTERNAL "")
+set(ptz-dlink-knowbotics_AUTHORS_AND_INSTITUTIONS "_Robin_Passama()" CACHE INTERNAL "")
+set(ptz-dlink-knowbotics_DESCRIPTION Knowbotics code used to manage the DLINK PTZ camera CACHE INTERNAL "")
+set(ptz-dlink-knowbotics_YEARS 2015 CACHE INTERNAL "")
+set(ptz-dlink-knowbotics_LICENSE CeCILL-C CACHE INTERNAL "")
+set(ptz-dlink-knowbotics_ADDRESS git@gite.lirmm.fr:rob-vision-devices/ptz-dlink-knowbotics.git CACHE INTERNAL "")
+set(ptz-dlink-knowbotics_CATEGORIES "knowbotics/camera;knowbotics/ptz-unit;camera/ptz-dlink-dcs" CACHE INTERNAL "")
+set(ptz-dlink-knowbotics_REFERENCES  CACHE INTERNAL "")
