@@ -48,7 +48,9 @@ endfunction(Find_Unique_Elements)
 ########### WORKSPACE_DIR : path to the root of the workspace
 ########### USE_MAKE_TOOL : name or path of the make tool
 #################################################################################################
-include(${WORKSPACE_DIR}/share/cmake/system/PID_Utils_Functions.cmake)
+include(${WORKSPACE_DIR}/share/cmake/system/PID_Utils_Functions.cmake NO_POLICY_SCOPE)
+include(${WORKSPACE_DIR}/share/cmake/system/Package_Internal_Policies.cmake NO_POLICY_SCOPE)
+
 if(EXISTS ${SOURCE_PACKAGE_CONTENT}) #the package has already been configured
 	include(${SOURCE_PACKAGE_CONTENT}) #import source code meta-information (which files for each component) 
 else()
