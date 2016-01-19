@@ -13,9 +13,10 @@
 #	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
 #	CeCILL-C License for more details.						#
 #											#
-#	You can be find the complete license description on the official website 	#
+#	You can find the complete license description on the official website 		#
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
+
 
 function(Find_Unique_Elements first_list second_list unique_in_first unique_in_second prefix_for_elements)
 

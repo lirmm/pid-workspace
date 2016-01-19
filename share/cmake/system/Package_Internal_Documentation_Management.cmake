@@ -13,9 +13,10 @@
 #	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
 #	CeCILL-C License for more details.						#
 #											#
-#	You can be find the complete license description on the official website 	#
+#	You can find the complete license description on the official website 		#
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
+
 
 ### adding source code of the example components to the API doc
 function(add_Example_To_Doc c_name)
