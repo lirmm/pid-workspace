@@ -1,3 +1,4 @@
+
 #########################################################################################
 #	This file is part of the program PID						#
 #  	Program description : build system supportting the PID methodology  		#
@@ -17,20 +18,7 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-include(${WORKSPACE_DIR}/pid/CategoriesInfo.cmake)
+include(${WORKSPACE_DIR}/pid/PID_version.cmake)
 
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
-
-include(Workspace_Internal_Functions NO_POLICY_SCOPE)
-
-if(REQUIRED_CATEGORY)
-	find_In_Categories(${REQUIRED_CATEGORY})
-else()
-	message("CATEGORIES:")
-	foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
-		print_Category("" ${root_cat} 0)
-	endforeach()
-endif()
+message("Current workspace version: ${PID_WORKSPACE_VERSION}")
 

@@ -56,6 +56,8 @@ write_Categories_File()
 #adding targets
 add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "Available PID commands:"
+	COMMAND ${CMAKE_COMMAND} -E echo "help -- This help message."
+	COMMAND ${CMAKE_COMMAND} -E echo "version -- getting version of the workspace."
 	COMMAND ${CMAKE_COMMAND} -E echo "list -- listing all packages ordered by categories OR listing the content of a given category using name=NAME_OF_CATEGORY argument."
 	COMMAND ${CMAKE_COMMAND} -E echo "info -- getting info on a given package using name=NAME_OF_PACKAGE argument."
 	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive. Use only name=NAME_OF_PACKAGE argument to deploy source repository or use in addition version=VERSION to deploy the specific binary version. If you want to deploy an external package use extern=true argument."
@@ -69,6 +71,13 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "release -- Releasing the target package using name=NAME_OF_PACKAGE argument and nextversion=MAJOR or MINOR or PATCH to indicate how to icnrease version number. The release mainly consists in good tagging of branches and publication to the server."
 	COMMAND ${CMAKE_COMMAND} -E echo "update -- updating a source or binary package using name=NAME_OF_PACKAGE argument. The last available version is deployed in the workspace. If all is used for name, all source and binary packages will be updated."
 	COMMAND ${CMAKE_COMMAND} -E echo "upgrade -- upgrading the workspace: install the more recent version of the PID API and references to packages. You can use the optionnal remote argument to set the remote you will use to update the workspace, by default it is the origin remote. The argument update may be set ON or OFF -optionnal, default to ON- to update all packages once the upgrade has been done."
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+## listing all packages ordered by categories OR listing the content of a given category
+add_custom_target(version
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Workspace_Version.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
