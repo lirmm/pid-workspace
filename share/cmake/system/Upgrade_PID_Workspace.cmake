@@ -20,11 +20,16 @@
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+if(UPDATE_ALL_PACKAGES STREQUAL true)
+	set(UPDATE_PACKS TRUE)
+else()
+	set(UPDATE_PACKS FALSE)
+endif()
 
 if(TARGET_REMOTE_REPOSITORY)
-	upgrade_Workspace(${TARGET_REMOTE_REPOSITORY})
+	upgrade_Workspace(${TARGET_REMOTE_REPOSITORY} ${UPDATE_PACKS})
 else()
-	#by default using origin
-	upgrade_Workspace(origin)
+	#by default using official (where all official references are from)
+	upgrade_Workspace(official ${UPDATE_PACKS})
 endif()
 

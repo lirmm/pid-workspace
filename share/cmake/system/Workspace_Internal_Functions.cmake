@@ -843,11 +843,13 @@ endif()
 endfunction(update_PID_All_Package)
 
 ### UPGRADE COMMAND IMPLEM
-function(upgrade_Workspace remote)
+function(upgrade_Workspace remote update)
 save_Workspace_Repository_Context(CURRENT_COMMIT SAVED_CONTENT)
 update_Workspace_Repository(${remote})
 restore_Workspace_Repository_Context(${CURRENT_COMMIT} ${SAVED_CONTENT})
-update_PID_All_Package()
-endfunction(upgrade_Workspace remote)
+if(update)
+	update_PID_All_Package()
+endif()
+endfunction(upgrade_Workspace)
 
 

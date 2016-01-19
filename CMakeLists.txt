@@ -26,6 +26,27 @@ include(Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 PROJECT(pid-workspace)
 
+###### automatically managing reference to official remote repository #####
+set(PID_OFFICIAL_REMOTE_ADDRESS "git@gite.lirmm.fr:pid/pid-workspace.git" CACHE STRING "address of the official PID repository") #this is the "central" repo for PID system
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote -v OUTPUT_VARIABLE res)
+string(REPLACE "\n" ";" GIT_REMOTES ${res})
+set(OFFICIAL_EXISTS)
+if(GIT_REMOTES) #there are remotes defined
+	foreach(remote IN ITEMS ${GIT_REMOTES})
+		string(REGEX REPLACE "^[ \t]*official[ \t]+([^ \t]+)[ \t]*\\(fetch\\)(.*)$" "\\1" OFFICIAL_ADDR ${remote})
+		if(NOT "${remote}" STREQUAL "${OFFICIAL_ADDR}")#i.e. match => official already exists
+			set(OFFICIAL_EXISTS ${OFFICIAL_ADDR})
+			break()
+		endif()
+	endforeach()
+endif()
+if(NOT OFFICIAL_EXISTS)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add official ${PID_OFFICIAL_REMOTE_ADDRESS})
+elseif(NOT OFFICIAL_EXISTS STREQUAL PID_OFFICIAL_REMOTE_ADDRESS)#strange thing remote may have changed
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote set-url official ${PID_OFFICIAL_REMOTE_ADDRESS})
+endif()
+
+
 ##### management of PID version #####
 # set the current PID version to memorize when updating the workspace.
 set(PID_SYSTEM_VERSION 0 CACHE INTERNAL "")
@@ -70,7 +91,7 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "register -- Registering the target package in the workspace using name=NAME_OF_PACKAGE argument. The package is published so that people with adequate rights can now deploy it adequately."
 	COMMAND ${CMAKE_COMMAND} -E echo "release -- Releasing the target package using name=NAME_OF_PACKAGE argument and nextversion=MAJOR or MINOR or PATCH to indicate how to icnrease version number. The release mainly consists in good tagging of branches and publication to the server."
 	COMMAND ${CMAKE_COMMAND} -E echo "update -- updating a source or binary package using name=NAME_OF_PACKAGE argument. The last available version is deployed in the workspace. If all is used for name, all source and binary packages will be updated."
-	COMMAND ${CMAKE_COMMAND} -E echo "upgrade -- upgrading the workspace: install the more recent version of the PID API and references to packages. You can use the optionnal remote argument to set the remote you will use to update the workspace, by default it is the origin remote. The argument update may be set ON or OFF -optionnal, default to ON- to update all packages once the upgrade has been done."
+	COMMAND ${CMAKE_COMMAND} -E echo "upgrade -- upgrading the workspace: install the more recent version of the PID API and references to packages. You can use the optionnal remote argument to set the remote you will use to update the workspace, by default it is the official remote. The argument update may be set ON or OFF -optionnal, default to ON- to update all packages once the upgrade has been done."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -211,6 +232,7 @@ add_custom_target(update
 add_custom_target(upgrade
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-DTARGET_REMOTE_REPOSITORY=$(remote)
+					-DUPDATE_ALL_PACKAGES=$(update)
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Upgrade_PID_Workspace.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
