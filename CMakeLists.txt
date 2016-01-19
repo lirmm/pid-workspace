@@ -26,6 +26,12 @@ include(Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 PROJECT(pid-workspace)
 
+##### management of PID version #####
+# set the current PID version to memorize when updating the workspace.
+set(PID_SYSTEM_VERSION 0 CACHE INTERNAL "")
+configure_file(${CMAKE_SOURCE_DIR}/share/patterns/PID_version.cmake.in ${CMAKE_BINARY_DIR}/PID_version.cmake @ONLY) #put it into a file to allow package to easily retrieve PID version information
+
+
 set(ALL_AVAILABLE_PACKAGES "")
 # 1) searching for all reference files. 
 file(GLOB reference_files ${CMAKE_SOURCE_DIR}/share/cmake/references/Refer*.cmake)
