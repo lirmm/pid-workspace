@@ -82,9 +82,11 @@ elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt "")
+		
 	################################################################################################
-	############ creating custom targets to delegate calls to mode specific targets ################
+	################################ General purpose targets #######################################
 	################################################################################################
+
 	# target to check if source tree need to be rebuilt
 	add_custom_target(checksources
 			COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
@@ -107,7 +109,21 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
     	)
 	
 	add_dependencies(reconfigure checksources)
-
+	
+	
+	# update target (update the package from upstream git repository) 
+	add_custom_target(update
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-P ${WORKSPACE_DIR}/share/cmake/system/Update_PID_Package.cmake
+		COMMENT "Updating the package ..."
+		VERBATIM
+	)
+	
+	################################################################################################
+	############ creating custom targets to delegate calls to mode specific targets ################
+	################################################################################################
+	
 	# global build target
 	if(BUILD_RELEASE_ONLY)
 		add_custom_target(build
@@ -179,15 +195,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		VERBATIM
 	)
 
-	# update target (update the package from upstream git repository) 
-	add_custom_target(update
-		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-P ${WORKSPACE_DIR}/share/cmake/system/Update_PID_Package.cmake
-		COMMENT "Updating the package ..."
-		VERBATIM
-	)
-	
+
 	if(BUILD_AND_RUN_TESTS)
 		# test target (launch test units) 
 		add_custom_target(test
@@ -237,14 +245,14 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	#getting global options (those set by the user)
 	set_Mode_Specific_Options_From_Global()
 	
-	#calling cmake for each build mode 
+	#calling cmake for each build mode (continue package configuration for Release and Debug Modes 
 	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
 	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
 
 	#now getting options specific to debug and release modes
 	set_Global_Options_From_Mode_Specific()
 
-	return()# execution of the root CMakeLists.txt ends for geenral build, it will continue only for Release and Debug Modes 
+	return()# execution of the root CMakeLists.txt ends for general build
 else()	# the build must be done in the build directory
 	message(WARNING "Please run cmake in the build folder of the package ${PROJECT_NAME}")
 	return()
@@ -254,6 +262,7 @@ endif(${CMAKE_BINARY_DIR} MATCHES release)
 ######## Initializing cache variables ###########
 #################################################
 reset_All_Component_Cached_Variables()
+init_PID_Version_Variable()
 init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}")
 init_Standard_Path_Cache_Variables()
 endmacro(declare_Package)
