@@ -120,6 +120,13 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		VERBATIM
 	)
 	
+	add_custom_target(sync-version
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-P ${WORKSPACE_DIR}/share/cmake/system/Synchronize_PID_Package_Version.cmake
+		COMMENT "Synchronizing the package version with workspace current version"
+		VERBATIM
+	)
 	################################################################################################
 	############ creating custom targets to delegate calls to mode specific targets ################
 	################################################################################################

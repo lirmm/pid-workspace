@@ -171,7 +171,7 @@ if(	EXISTS ${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake)# g
 			set(${PROJECT_NAME}_PID_VERSION ${PID_WORKSPACE_VERSION} CACHE INTERNAL "")
 			file(WRITE ${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake "set(${PROJECT_NAME}_PID_VERSION ${${PROJECT_NAME}_PID_VERSION} CACHE INTERNAL \"\")")#save the PID version with which the package has been built
 		endif()
-	#else if > the workspace version of scripts shoulmd be able to manage difference between versions by using the ${PROJECT_NAME}_PID_VERSION variable
+	#else if > the workspace version of scripts should be able to manage difference between versions by using the ${PROJECT_NAME}_PID_VERSION variable (inside package) or ${package_name}_PID_VERSION (outside package)
 	endif()
 else()
 	set(${PROJECT_NAME}_PID_VERSION ${PID_WORKSPACE_VERSION})#if no version defined yet then set it to the current workspace one
@@ -788,7 +788,7 @@ endfunction(need_Install_External_Packages)
 ##################################################################################
 function(write_Use_File file package build_mode)
 set(MODE_SUFFIX "")
-if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode 
+if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
