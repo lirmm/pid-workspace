@@ -808,7 +808,7 @@ if(ADDRESS)
 endif()
 endfunction(release_PID_Package)
 
-### UPDATE COMMAND IMPLEM
+### UPDATE COMMAND IMPLEMENTATION
 function(update_PID_Source_Package package)
 set(INSTALLED FALSE)
 deploy_Source_Package(INSTALLED ${package})
@@ -842,11 +842,12 @@ if(BIN_PACKAGES)
 endif()
 endfunction(update_PID_All_Package)
 
-### UPGRADE COMMAND IMPLEM
+### UPGRADE COMMAND IMPLEMENTATION
 function(upgrade_Workspace remote update)
 save_Workspace_Repository_Context(CURRENT_COMMIT SAVED_CONTENT)
 update_Workspace_Repository(${remote})
 restore_Workspace_Repository_Context(${CURRENT_COMMIT} ${SAVED_CONTENT})
+message("ATTENTION: You may have to resolve some conflicts !")
 if(update)
 	update_PID_All_Package()
 endif()
