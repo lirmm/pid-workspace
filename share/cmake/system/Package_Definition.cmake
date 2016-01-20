@@ -162,11 +162,13 @@ endmacro(build_PID_Package)
 #				<STATIC_LIB|SHARED_LIB|MODULE_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
 #				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [COMPILER_OPTIONS ...] [LINKS link ...] ] 
 #				[EXPORTED [DEFINITIONS def ...] [COMPILER_OPTIONS ...] [LINKS link ...] 
-#				[RUNTIME_RESOURCES <some path to files in the share/resources dir>])
+#				[RUNTIME_RESOURCES <some path to files in the share/resources dir>]
+#				[DESCRIPTION short description of the utility of this component]
+#				[USAGE includes...])
 macro(declare_PID_Component)
 set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
 set(oneValueArgs NAME DIRECTORY)
-set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES)
+set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "bad arguments : unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}")
@@ -287,7 +289,9 @@ else() #it is a library
 					"${exported_link_flags}"
 					"${runtime_resources}")
 endif()
-
+if(NOT "${DECLARE_PID_COMPONENT_DESCRIPTION}" STREQUAL "")
+	init_Component_Description(${DECLARE_PID_COMPONENT_NAME} "${DECLARE_PID_COMPONENT_DESCRIPTION}" "${DECLARE_PID_COMPONENT_USAGE}")
+endif()
 endmacro(declare_PID_Component)
 
 ### API : declare_PID_Package_Dependency (	PACKAGE name 

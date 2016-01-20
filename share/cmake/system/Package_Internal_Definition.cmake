@@ -295,6 +295,7 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release # the wiki can be build is release mode 
 	add_custom_target(wiki
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DREMOVED_CONTENT="${wiki_content_file}"
 						-DWIKI_ADDRESS="${wiki_repo_addr}"
 			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Wiki.cmake
 	)

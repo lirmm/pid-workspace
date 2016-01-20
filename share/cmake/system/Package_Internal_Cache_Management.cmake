@@ -474,6 +474,8 @@ set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_SOURCE_CODE CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_SOURCE_DIR CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_DESCRIPTION CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_USAGE_INCLUDES CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
 
 function(init_Component_Cached_Variables_For_Export component exported_defs exported_options exported_links runtime_resources)
@@ -533,7 +535,11 @@ reset_To_Install_External_Packages()
 reset_Wiki_Info()
 endfunction(reset_All_Component_Cached_Variables)
 
-
+function(init_Component_Description component description usage)
+generate_Formatted_String("${description}" RES_STRING)
+set(${PROJECT_NAME}_${component}_DESCRIPTION "${RES_STRING}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_USAGE_INCLUDES "${usage}" CACHE INTERNAL "")
+endfunction(init_Component_Description)
 ###
 function(mark_As_Declared component)
 set(${PROJECT_NAME}_DECLARED_COMPS ${${PROJECT_NAME}_DECLARED_COMPS} ${component} CACHE INTERNAL "")
@@ -661,6 +667,17 @@ else()
 	set(${result} TRUE PARENT_SCOPE)
 endif()
 endfunction(will_be_Installed)
+
+### 
+function(is_Externally_Usable result component)
+if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"))
+	set(${result} FALSE PARENT_SCOPE)
+else()
+	set(${result} TRUE PARENT_SCOPE)
+endif()
+endfunction(is_Externally_Usable)
+
 
 ### registering the binary name of a component
 function(register_Component_Binary c_name)

@@ -277,15 +277,191 @@ else() #folder exists
 endif()
 
 # package dependencies
+set(EXTERNAL_WIKI_SECTION "## External\n")
+set(NATIVE_WIKI_SECTION "## Native\n")
+set(PACKAGE_DEPENDENCIES_DESCRIPTION "")
 
+if(NOT ${PROJECT_NAME}_DEPENDENCIES)
+	if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES)
+		set(PACKAGE_DEPENDENCIES_DESCRIPTION "This package has no dependency.\n")
+		set(EXTERNAL_WIKI_SECTION "")
+	endif()
+	set(NATIVE_WIKI_SECTION "")
+else()
+	if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES)
+		set(EXTERNAL_WIKI_SECTION "")
+	endif()
+endif()
+
+if("${PACKAGE_DEPENDENCIES_DESCRIPTION}" STREQUAL "")
+	foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES})# we take nly dependencies of the release version
+		generate_Dependency_Wiki(${dep_package} RES_CONTENT_NATIVE)
+		set(NATIVE_WIKI_SECTION "${NATIVE_WIKI_SECTION}\n${RES_CONTENT_NATIVE}")
+	endforeach()
+
+	foreach(dep_package IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES})# we take nly dependencies of the release version
+		generate_External_Dependency_Wiki(${dep_package} RES_CONTENT_EXTERNAL)
+		set(EXTERNAL_WIKI_SECTION "${EXTERNAL_WIKI_SECTION}\n${RES_CONTENT_EXTERNAL}")
+	endforeach()
+
+	set(PACKAGE_DEPENDENCIES_DESCRIPTION "${EXTERNAL_WIKI_SECTION}\n\n${NATIVE_WIKI_SECTION}")
+endif()
 
 # package components
-
+set(PACKAGE_COMPONENTS_DESCRIPTION "")
+if(${PROJECT_NAME}_COMPONENTS) #if there are components
+foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+	generate_Component_Wiki(${component} RES_CONTENT_COMP)
+	set(PACKAGE_COMPONENTS_DESCRIPTION "${PACKAGE_COMPONENTS_DESCRIPTION}\n\n${RES_CONTENT_COMP}")
+endforeach()
+endif()
 
 ### now configure the home page of the wiki ###
 set(PATH_TO_HOMEPAGE_PATTERN ${WORKSPACE_DIR}/share/patterns/home.markdown.in)
 configure_file(${PATH_TO_HOMEPAGE_PATTERN} ${CMAKE_BINARY_DIR}/home.markdown @ONLY)#put it in the binary dir for now
 
-endfunction()
+endfunction(configure_Wiki_Pages)
 
+function(generate_Dependency_Wiki dependency RES_CONTENT)
+
+if(${dependency}_WIKI_HOME)
+	set(RES "+ [${dependency}](${${dependency}_WIKI_HOME})") #creating a link to the package wiki
+else()
+	set(RES "+ ${dependency}")
+endif()
+if(${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION)
+	if(${PROJECT_NAME}_DEPENDENCY_${dependency}_${${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION}_EXACT)
+		set(RES "${RES}: exact version ${${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION} required.")
+	else()
+		set(RES "${RES}: version ${${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION} or compatible.")
+	endif()
+else()
+	set(RES "${RES}: last version available.")
+endif()
+set(${RES_CONTENT} ${RES} PARENT_SCOPE)
+endfunction(generate_Dependency_Wiki)
+
+
+function(generate_External_Dependency_Wiki dependency RES_CONTENT)
+set(RES "+ ${dependency}")
+if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION)
+	if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION}_EXACT)
+		set(RES "${RES}: exact version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION} required.")
+	else()
+		set(RES "${RES}: version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION} or compatible.")
+	endif()
+else()
+	set(RES "${RES}: any version available (dangerous).")
+endif()
+set(${RES_CONTENT} ${RES} PARENT_SCOPE)
+endfunction(generate_External_Dependency_Wiki)
+
+
+function(generate_Component_Wiki component RES_CONTENT)
+is_Externally_Usable(IS_EXT_USABLE ${component})
+if(NOT IS_EXT_USABLE)#component cannot be used from outside package => no need to document it
+	set(${RES_CONTENT} "" PARENT_SCOPE)
+	return()
+endif()
+
+
+set(RES "## ${component}\n") # adding a section fo this component
+
+#adding a first line for explaining the type of the component
+if(${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
+	set(RES "${RES}This is a **pure header library** (no binary).\n")
+elseif(${${PROJECT_NAME}_${component}_TYPE} STREQUAL "STATIC")
+	set(RES "${RES}This is a **static library** (set of header files and an archive of binary objects).\n")
+elseif(${${PROJECT_NAME}_${component}_TYPE} STREQUAL "SHARED")
+	set(RES "${RES}This is a **shared library** (set of header files and a shared binary object).\n")
+elseif(${${PROJECT_NAME}_${component}_TYPE} STREQUAL "MODULE")
+	set(RES "${RES}This is a **module library** (no header files but a shared binary object). Designed to be dynamically loaded by an application or library.\n")
+elseif(${${PROJECT_NAME}_${component}_TYPE} STREQUAL "APP")
+	set(RES "${RES}This is an **application** (just a binary executable). Potentially designed to be called by an application or library.\n")
+endif()
+
+if(${PROJECT_NAME}_${component}_DESCRIPTION)#adding description of component utility if it has been defined
+	set(RES "${RES}\n${${PROJECT_NAME}_${component}_DESCRIPTION}\n")
+endif()
+
+set(RES "${RES}\n")
+
+is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})
+if(NOT IS_HF)
+	#export possible only for libraries with headers 
+	set(EXPORTS_SOMETHING FALSE)
+	set(EXPORTED_DEPS)
+	set(INT_EXPORTED_DEPS)
+	if(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES) # the component has internal dependencies
+		foreach(a_int_dep IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES})
+			if(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${a_int_dep})
+				set(EXPORTS_SOMETHING TRUE)
+				list(APPEND INT_EXPORTED_DEPS ${a_int_dep})
+			endif()
+		endforeach()
+	endif()
+	if(${PROJECT_NAME}_${component}_DEPENDENCIES) # the component has internal dependencies
+		foreach(a_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES})
+			set(${a_pack}_EXPORTED FALSE)
+			foreach(a_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${a_pack}_COMPONENTS})
+				if(${PROJECT_NAME}_${component}_EXPORT_${a_pack}_${a_comp})
+					set(EXPORTS_SOMETHING TRUE)
+					if(NOT ${a_pack}_EXPORTED)
+						set(${a_pack}_EXPORTED TRUE)
+						list(APPEND EXPORTED_DEPS ${a_pack})
+					endif()
+					list(APPEND EXPORTED_DEP_${a_pack} ${a_comp})
+				endif()
+			endforeach()
+		endforeach()
+	endif()
+
+	if(EXPORTS_SOMETHING) #defines those dependencies taht are exported
+		set(RES "${RES}\n### exported dependencies:\n")
+		if(INT_EXPORTED_DEPS)
+			set(RES "${RES}from this package:\n")
+			foreach(a_dep IN ITEMS ${INT_EXPORTED_DEPS})
+				set(RES "${RES}+ [${a_dep}](#${a_dep})\n")
+			endforeach()
+			set(RES "${RES}\n")
+		endif()
+		if(EXPORTED_DEPS)
+			foreach(a_pack IN ITEMS ${EXPORTED_DEPS})
+				set(RES "${RES}from package ${a_pack}:\n")
+				foreach(a_dep IN ITEMS ${EXPORTED_DEP_${a_pack}})
+					if(${a_pack}_WIKI_HOME)
+						set(RES "${RES}+ [${a_dep}](${${a_pack}_WIKI_HOME}#${a_dep})\n")
+					else()
+						set(RES "${RES}+ ${a_dep}\n")
+					endif()
+				endforeach()
+				set(RES "${RES}\n")
+			endforeach()
+
+		endif()
+	endif()
+
+	set(RES "${RES}### include directive :\n")
+	if(${PROJECT_NAME}_${component}_USAGE_INCLUDES)
+		set(RES "${RES}In your code using the library:\n")
+		set(RES "${RES}```\n")
+		foreach(include_file IN ITEMS ${${PROJECT_NAME}_${component}_USAGE_INCLUDES})
+			set(RES "${RES}#include <${include_file}>\n")
+		endforeach()
+		set(RES "${RES}```\n")
+	else()
+		set(RES "${RES}Not specified (dangerous). You can try including any or all of these headers:\n")
+		set(RES "${RES}```\n")
+		foreach(include_file IN ITEMS ${${PROJECT_NAME}_${component}_HEADERS})
+			set(RES "${RES}#include <${include_file}>\n")
+		endforeach()
+		set(RES "${RES}```\n")
+	endif()
+endif()
+
+# for any kind of usable component
+set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applications, libraries or tests:\n```\ndeclare_PID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tNATIVE\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n```\n")
+
+set(${RES_CONTENT} ${RES} PARENT_SCOPE)
+endfunction(generate_Component_Wiki)
 
