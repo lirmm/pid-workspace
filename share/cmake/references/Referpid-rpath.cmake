@@ -1,8 +1,8 @@
 #### referencing package pid-rpath mode ####
 set(pid-rpath_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
-set(pid-rpath_MAIN_INSTITUTION _LIRMM_EMAIL_passama@lirmm.fr CACHE INTERNAL "")
-set(pid-rpath_CONTACT_MAIL  CACHE INTERNAL "")
-set(pid-rpath_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM_EMAIL_passama@lirmm.fr)" CACHE INTERNAL "")
+set(pid-rpath_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(pid-rpath_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(pid-rpath_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
 set(pid-rpath_DESCRIPTION Default package of PID, used to manage runtime path of executables CACHE INTERNAL "")
 set(pid-rpath_YEARS 2015 CACHE INTERNAL "")
 set(pid-rpath_LICENSE CeCILL-C CACHE INTERNAL "")
