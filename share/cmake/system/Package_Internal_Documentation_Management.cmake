@@ -186,7 +186,7 @@ endfunction(generate_License_File)
 ############ functions for the management of wikis of packages  ###########
 function(wiki_Project_Exists WIKI_EXISTS PATH_TO_WIKI package)
 set(SEARCH_PATH ${WORKSPACE_DIR}/wikis/${package}.wiki)
-if(EXISTS ${SEARCH_PATH} AND IS_DIRECTORY ${PATH_TO_WIKI})
+if(EXISTS ${SEARCH_PATH} AND IS_DIRECTORY ${SEARCH_PATH})
 	set(${WIKI_EXISTS} TRUE PARENT_SCOPE)
 else()
 	set(${WIKI_EXISTS} FALSE PARENT_SCOPE)
@@ -194,18 +194,32 @@ endif()
 set(${PATH_TO_WIKI} ${SEARCH_PATH} PARENT_SCOPE)
 endfunction()
 
-function(configure_Wiki_Pages wiki_parent_page wiki_content_file description)
-if(NOT description OR description STREQUAL "")
-	set(WIKI_INTRODUCTION ${${PROJECT_NAME}_DESCRIPTION}) #if no detailed description provided use the short one
+function(configure_Wiki_Pages)
+## introduction (more detailed description, if any)
+generate_Formatted_String("${${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION}" RES_INTRO)
+if("${RES_INTRO}" STREQUAL "")
+	set(WIKI_INTRODUCTION "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided use the short one
 else()
-	set(WIKI_INTRODUCTION ${description}) #otherwise use detailed one
+	set(WIKI_INTRODUCTION "${RES_INTRO}") #otherwise use detailed one specific for wiki
 endif()
 
-if(NOT wiki_parent_page OR wiki_parent_page STREQUAL "")
+## navigation links
+if("${${PROJECT_NAME}_WIKI_PARENT_PAGE}" STREQUAL "")
 	set(LINK_TO_PARENT_WIKI "")
 else()
-	set(LINK_TO_PARENT_WIKI "[Back to parent wiki](${wiki_parent_page})")
+	set(LINK_TO_PARENT_WIKI "[Back to parent wiki](${${PROJECT_NAME}_WIKI_PARENT_PAGE})")
 endif()
+
+# authors
+get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
+set(PACKAGE_CONTACT "${RES_STRING}")
+set(PACKAGE_ALL_AUTHORS "") 
+foreach(author IN ITEMS "${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
+	get_Formatted_Author_String(${author} RES_STRING)
+	set(PACKAGE_ALL_AUTHORS "${PACKAGE_ALL_AUTHORS}\n* ${RES_STRING}")
+endforeach()
+
+# last version
 get_Repository_Version_Tags(AVAILABLE_VERSION_TAGS ${PROJECT_NAME})
 
 if(NOT AVAILABLE_VERSION_TAGS)
@@ -227,6 +241,18 @@ else()
 	set(PACKAGE_LICENSE_FOR_WIKI "No license Defined")
 endif()
 
+# categories
+if (NOT ${PROJECT_NAME}_CATEGORIES)
+	set(PACKAGE_CATEGORIES_LIST "This package belongs to no category.")
+else()
+	set(PACKAGE_CATEGORIES_LIST "This package belongs to following categories defined in PID workspace:")
+	foreach(category IN ITEMS ${${PROJECT_NAME}_CATEGORIES})
+		set(PACKAGE_CATEGORIES_LIST "${PACKAGE_CATEGORIES_LIST}\n* ${category}")
+
+	endforeach()
+endif()
+
+
 # additional content
 set(PATH_TO_WIKI_ADDITIONAL_CONTENT ${CMAKE_SOURCE_DIR}/share/wiki)
 if(NOT EXISTS ${PATH_TO_WIKI_ADDITIONAL_CONTENT}) #if folder does not exist (old package style)
@@ -234,13 +260,13 @@ if(NOT EXISTS ${PATH_TO_WIKI_ADDITIONAL_CONTENT}) #if folder does not exist (old
 	set(PACKAGE_ADDITIONAL_CONTENT "")
 	message(WARNING "[PID system notification] creating missing folder wiki in ${PROJECT_NAME} share folder")
 	if(wiki_content_file)#a content file is targetted but cannot exists in the non-existing folder
-		message(WARNING "[PID system notification] creating missing wiki content file ${wiki_content_file} in ${PROJECT_NAME} share/wiki folder. Remember to commit modifications.")
-		file(WRITE ${CMAKE_SOURCE_DIR}/share/wiki/${wiki_content_file} "\n")
+		message(WARNING "[PID system notification] creating missing wiki content file ${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} in ${PROJECT_NAME} share/wiki folder. Remember to commit modifications.")
+		file(WRITE ${CMAKE_SOURCE_DIR}/share/wiki/${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} "\n")
 	endif()
 else() #folder exists 
-	set(PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE ${PATH_TO_WIKI_ADDITIONAL_CONTENT}/${wiki_content_file})
-	if(NOT EXISTS ${PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE})
-		message(WARNING "[PID system notification] missing wiki content file ${wiki_content_file} in ${PROJECT_NAME} share/wiki folder. File created automatically. Please input some text in it or remove this file and reference to this file in your call to declare_PID_Wiki.  Remember to commit modifications.")
+	set(PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE ${PATH_TO_WIKI_ADDITIONAL_CONTENT}/${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT})
+	if(NOT EXISTS ${PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE})#no file with target name => create an empty one
+		message(WARNING "[PID system notification] missing wiki content file ${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} in ${PROJECT_NAME} share/wiki folder. File created automatically. Please input some text in it or remove this file and reference to this file in your call to declare_PID_Wiki.  Remember to commit modifications.")
 		file(WRITE ${PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE} "\n")
 		set(PACKAGE_ADDITIONAL_CONTENT "")
 	else()#Here everything is OK

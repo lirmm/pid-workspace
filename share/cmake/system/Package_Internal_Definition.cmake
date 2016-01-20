@@ -288,15 +288,14 @@ endmacro(declare_Package)
 ################## setting info on Wiki ####################################
 ############################################################################
 macro(define_Wiki wiki_repo_addr wiki_home_page wiki_parent_page wiki_content_file description)
-init_Wiki_Info_Cache_Variables("${wiki_repo_addr}" "${wiki_home_page}" "${wiki_parent_page}" "${wiki_content_file}")
+init_Wiki_Info_Cache_Variables("${wiki_repo_addr}" "${wiki_home_page}" "${wiki_parent_page}" "${wiki_content_file}" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release # the wiki can be build is release mode only
 	AND BUILD_PACKAGE_WIKI) # the option must have been defined first 
 	
-	configure_Wiki_Pages("${wiki_parent_page}" "${wiki_content_file}" "${description}")
 	add_custom_target(wiki
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DWIKI_ADDRESS="${${PROJECT_NAME}_WIKI_ADDRESS}"
+						-DWIKI_ADDRESS="${wiki_repo_addr}"
 			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Wiki.cmake
 	)
 endif()
@@ -392,6 +391,7 @@ add_subdirectory(share)
 generate_License_File() # generating/installing the file containing license info about the package
 generate_Find_File() # generating/installing the generic cmake find file for the package
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
+configure_Wiki_Pages() # generating the home page markdown file for the project wiki
 generate_API() #generating the API documentation configuration file and the rule to launche doxygen and install the doc
 clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
 generate_Info_File() #generating a cmake "info" file containing info about source code of components 

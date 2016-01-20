@@ -28,7 +28,7 @@ option(BUILD_EXAMPLES "Package builds examples" OFF)
 option(BUILD_API_DOC "Package generates the HTML API documentation" OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF
 		         "BUILD_API_DOC" OFF)
-CMAKE_DEPENDENT_OPTION(BUILD_PACKAGE_WIKI "Package allow to generate a wiki to document its API" OFF
+CMAKE_DEPENDENT_OPTION(BUILD_PACKAGE_WIKI "Package allow to generate a wiki to document its API" ON
 		         "BUILD_API_DOC" OFF)
 
 option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
@@ -143,6 +143,7 @@ function(reset_Mode_Cache_Options)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_LATEX_API_DOC OFF CACHE BOOL "" FORCE)
+set(BUILD_PACKAGE_WIKI OFF CACHE BOOL "" FORCE)
 set(BUILD_AND_RUN_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_RELEASE_ONLY OFF CACHE BOOL "" FORCE)
 set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
@@ -254,14 +255,20 @@ set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resource
 endfunction(init_Standard_Path_Cache_Variables)
 
 ### wiki related cache variables management
-function(init_Wiki_Info_Cache_Variables repo home_page)
-set(${PROJECT_NAME}_WIKI_ADDRESS ${repo} CACHE INTERNAL "")
-set(${PROJECT_NAME}_WIKI_ROOT_PAGE ${home_page} CACHE INTERNAL "")
+function(init_Wiki_Info_Cache_Variables repo home_page parent_page content_file introduction)
+set(${PROJECT_NAME}_WIKI_ADDRESS "${repo}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_WIKI_ROOT_PAGE "${home_page}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_WIKI_PARENT_PAGE "${parent_page}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT "${content_file}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION "${introduction}" CACHE INTERNAL "")
 endfunction(init_Wiki_Info_Cache_Variables)
 
 function(reset_Wiki_Info)
 set(${PROJECT_NAME}_WIKI_ADDRESS CACHE INTERNAL "")
 set(${PROJECT_NAME}_WIKI_ROOT_PAGE CACHE INTERNAL "")
+set(${PROJECT_NAME}_WIKI_PARENT_PAGE CACHE INTERNAL "")
+set(${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT CACHE INTERNAL "")
+set(${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION CACHE INTERNAL "")
 endfunction(reset_Wiki_Info)
 
 
@@ -805,6 +812,8 @@ endfunction(need_Install_External_Packages)
 function(write_Use_File file package build_mode)
 set(MODE_SUFFIX "")
 if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode
+	file(APPEND ${file} "######### declaration of package wiki info ########\n")
+	file(APPEND ${file} "set(${package}_WIKI_HOME ${${package}_WIKI_ROOT_PAGE} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")

@@ -146,7 +146,7 @@ endif()
 if(NOT DECLARE_PID_WIKI_HOME_PAGE)
 	message(FATAL_ERROR "bad arguments : you need to set the http address of the home page of this wiki")
 endif()
-define_Wiki("${DECLARE_PID_WIKI_GIT_ADDRESS}" "${DECLARE_PID_WIKI_HOME_PAGE}" "${DECLARE_PID_WIKI_PARENT_PAGE}" "${DECLARE_PID_WIKI_SPECIFIC_CONTENT}" "${DESCRIPTION}")
+define_Wiki("${DECLARE_PID_WIKI_GIT_ADDRESS}" "${DECLARE_PID_WIKI_HOME_PAGE}" "${DECLARE_PID_WIKI_PARENT_PAGE}" "${DECLARE_PID_WIKI_SPECIFIC_CONTENT}" "${DECLARE_PID_WIKI_DESCRIPTION}")
 endmacro(declare_PID_Wiki)
 
 ### API : build_PID_Package()
