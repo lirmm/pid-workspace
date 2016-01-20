@@ -17,6 +17,9 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
+#############################################################
+########### general utilities for build management ##########
+#############################################################
 
 ###
 function(get_Mode_Variables TARGET_SUFFIX VAR_SUFFIX mode)
@@ -62,6 +65,10 @@ endif()
 
 endfunction(is_A_System_Reference_Path)
 
+#############################################################
+################ string handling utilities ##################
+#############################################################
+
 ###
 function(extract_All_Words name_with_underscores all_words_in_list)
 set(res "")
@@ -78,6 +85,10 @@ endforeach()
 string(STRIP "${res}" res_finished)
 set(${res_string} ${res_finished} PARENT_SCOPE)
 endfunction()
+
+#############################################################
+################ filesystem management utilities ############
+#############################################################
 
 ###
 function(create_Symlink path_to_old path_to_new)
@@ -130,6 +141,11 @@ endif()
 set(${is_existing} FALSE PARENT_SCOPE)
 endfunction(check_Directory_Exists)
 
+
+#############################################################
+################ Management of version information ##########
+#############################################################
+
 ###
 function (document_Version_Strings package_name major minor patch)
 	set(${package_name}_VERSION_MAJOR ${major} CACHE INTERNAL "")
@@ -179,6 +195,9 @@ endif()
 set(${is_compatible} TRUE PARENT_SCOPE)
 endfunction(is_Compatible_Version)
 
+#############################################################
+################ Information about authors ##################
+#############################################################
 
 ###
 function(generate_Full_Author_String author RES_STRING)
@@ -208,11 +227,60 @@ endif()
 endfunction()
 
 ###
-function(generate_Institution_String institution RES_STRING)
-extract_All_Words("${institution}" INSTITUTION_ALL_WORDS)
+function(generate_Formatted_String input RES_STRING)
+extract_All_Words("${input}" INPUT_ALL_WORDS)
+fill_List_Into_String("${INPUT_ALL_WORDS}" INPUT_STRING)
+set(${RES_STRING} "${INPUT_STRING}" PARENT_SCOPE)
+endfunction(generate_Formatted_String)
+
+###
+function(get_Formatted_Author_String author RES_STRING)
+string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
+list(LENGTH author_institution SIZE)
+if(${SIZE} EQUAL 2)
+list(GET author_institution 0 AUTHOR_NAME)
+list(GET author_institution 1 INSTITUTION_NAME)
+extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
+extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
+fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
-set(${RES_STRING} "${INSTITUTION_STRING}" PARENT_SCOPE)
-endfunction()
+elseif(${SIZE} EQUAL 1)
+list(GET author_institution 0 AUTHOR_NAME)
+extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
+fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+set(INSTITUTION_STRING "")
+endif()
+if(NOT INSTITUTION_STRING STREQUAL "")
+	set(${RES_STRING} "${AUTHOR_STRING} - ${INSTITUTION_STRING}" PARENT_SCOPE)
+else()
+	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+endif()
+endfunction(get_Formatted_Author_String)
+
+###
+function(get_Formatted_Package_Contact_String package RES_STRING)
+extract_All_Words("${${package}_MAIN_AUTHOR}" AUTHOR_ALL_WORDS)
+extract_All_Words("${${package}_MAIN_INSTITUTION}" INSTITUTION_ALL_WORDS)
+fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+if(NOT INSTITUTION_STRING STREQUAL "")
+	if(${package}_CONTACT_MAIL)
+		set(${RES_STRING} "${AUTHOR_STRING} (${${package}_CONTACT_MAIL}) - ${INSTITUTION_STRING}" PARENT_SCOPE)
+	else()
+		set(${RES_STRING} "${AUTHOR_STRING} - ${INSTITUTION_STRING}" PARENT_SCOPE)
+	endif()
+else()
+	if(${package}_CONTACT_MAIL)
+		set(${RES_STRING} "${AUTHOR_STRING} (${${package}_CONTACT_MAIL})" PARENT_SCOPE)
+	else()
+		set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+	endif()
+endif()
+endfunction(get_Formatted_Package_Contact_String)
+
+#############################################################
+################ Source file management #####################
+#############################################################
 
 ###
 function(get_All_Sources_Relative RESULT dir)
@@ -426,6 +494,11 @@ foreach(resource IN ITEMS ${ext_resources})
 endforeach()
 set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
 endfunction(resolve_External_Resources_Path)
+
+
+#############################################################
+################ Package Life cycle management ##############
+#############################################################
 
 ###
 function(list_All_Source_Packages_In_Workspace PACKAGES)

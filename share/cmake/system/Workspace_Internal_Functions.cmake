@@ -192,29 +192,6 @@ else()#this is a simple category name (end of recursion on path), just testing i
 endif()
 endfunction(find_Category)
 
-###
-function(print_Author author)
-string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
-list(LENGTH author_institution SIZE)
-if(${SIZE} EQUAL 2)
-list(GET author_institution 0 AUTHOR_NAME)
-list(GET author_institution 1 INSTITUTION_NAME)
-extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
-extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
-elseif(${SIZE} EQUAL 1)
-list(GET author_institution 0 AUTHOR_NAME)
-extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-set(INSTITUTION_STRING "")
-endif()
-if(NOT INSTITUTION_STRING STREQUAL "")
-	message("	${AUTHOR_STRING} - ${INSTITUTION_STRING}")
-else()
-	message("	${AUTHOR_STRING}")
-endif()
-endfunction()
 
 ###
 function(get_Category_Names root_category category_full_string RESULTING_SHORT_NAME RESULTING_LONG_NAME)
@@ -265,6 +242,17 @@ if(CAT_${category}_CATEGORIES)
 endif()
 endfunction()
 
+###
+function(print_Author author)
+get_Formatted_Author_String("${author}" RES_STRING)
+message("	${RES_STRING}")
+endfunction()
+
+###
+function(print_Package_Contact package)
+get_Formatted_Package_Contact_String(${package} RES_STRING)
+message("CONTACT: ${RES_STRING}")
+endfunction(print_Package_Contact)
 
 ###
 function(print_Package_Info package)
@@ -330,27 +318,6 @@ else()
 endif()
 endfunction()
 
-
-###
-function(print_Package_Contact package)
-extract_All_Words("${${package}_MAIN_AUTHOR}" AUTHOR_ALL_WORDS)
-extract_All_Words("${${package}_MAIN_INSTITUTION}" INSTITUTION_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
-if(NOT INSTITUTION_STRING STREQUAL "")
-	if(${package}_CONTACT_MAIL)
-		message("CONTACT: ${AUTHOR_STRING} (${${package}_CONTACT_MAIL}) - ${INSTITUTION_STRING}")
-	else()
-		message("CONTACT: ${AUTHOR_STRING} - ${INSTITUTION_STRING}")
-	endif()
-else()
-	if(${package}_CONTACT_MAIL)
-		message("CONTACT: ${AUTHOR_STRING} (${${package}_CONTACT_MAIL})")
-	else()
-		message("CONTACT: ${AUTHOR_STRING}")
-	endif()
-endif()
-endfunction()
 
 
 ###
