@@ -219,6 +219,15 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			COMMENT "Generating API documentation ..."
 			VERBATIM
 		)
+		if(BUILD_PACKAGE_WIKI)
+			# wiki target (generation of a wiki documenting the project) 
+			add_custom_target(wiki
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} wiki
+				COMMENT "Creating/Updating wiki of the project ..."
+				VERBATIM
+			)
+			add_dependencies(wiki doc)
+		endif()
 	endif()
 
 	if(GENERATE_INSTALLER)
@@ -274,6 +283,24 @@ init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${desc
 init_Standard_Path_Cache_Variables()
 endmacro(declare_Package)
 
+
+############################################################################
+################## setting info on Wiki ####################################
+############################################################################
+macro(define_Wiki wiki_repo_addr wiki_home_page wiki_parent_page wiki_content_file description)
+init_Wiki_Info_Cache_Variables("${wiki_repo_addr}" "${wiki_home_page}" "${wiki_parent_page}" "${wiki_content_file}")
+if(	${CMAKE_BUILD_TYPE} MATCHES Release # the wiki can be build is release mode only
+	AND BUILD_PACKAGE_WIKI) # the option must have been defined first 
+	
+	configure_Wiki_Pages("${wiki_parent_page}" "${wiki_content_file}" "${description}")
+	add_custom_target(wiki
+		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DWIKI_ADDRESS="${${PROJECT_NAME}_WIKI_ADDRESS}"
+			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Wiki.cmake
+	)
+endif()
+endmacro(define_Wiki)
 
 ############################################################################
 ################## setting currently developed version number ##############

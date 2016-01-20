@@ -1,0 +1,71 @@
+
+@LINK_TO_PARENT_WIKI@
+
+# Introduction
+
+@WIKI_INTRODUCTION@
+
+# Version
+
+Last released version (more recent version tag on master branch) : @PACKAGE_LAST_VERSION_FOR_WIKI@.
+
+# License
+
+The license of the current release version of knowbotics package is : @PACKAGE_LICENSE_FOR_WIKI@.
+It applies to the whole package content.
+For more details see [license file](license.txt).
+
+# Install
+
+@PROJECT_NAME@ can be deployed as any other native PID package. It will be installed automatically if it is a direct or undirect dependency of one of your package.
+
+
+Nevertheless, you can install it by hand using PID workspace command:
+
+```
+cd <pid-workspace>/pid
+make deploy name=@PROJECT_NAME@
+```
+
+Or if you want to install a specific binary version of this package, for instance for the last version:
+
+```
+cd <pid-workspace>/pid
+make deploy name=@PROJECT_NAME@ version=@PACKAGE_LAST_VERSION_WITH_PATCH@
+```
+
+# Dependencies
+
+@PACKAGE_DEPENDENCIES_DESCRIPTION@
+
+# Import
+
+You can import @PROJECT_NAME@ as usual with PID. In the root CMakelists.txt file of your package, after the package delcaration you have to put something like:
+
+```
+find_package (@PROJECT_NAME@ REQUIRED)
+declare_PID_Package_Dependency(PACKAGE @PROJECT_NAME@ NATIVE)
+```
+It will try to install last version of the package.
+
+If you want a specific version (recommended), for instance the currenlty last released version:
+
+```
+find_package (@PROJECT_NAME@ @PACKAGE_LAST_VERSION_WITH_PATCH@ REQUIRED)
+declare_PID_Package_Dependency(PACKAGE @PROJECT_NAME@ NATIVE VERSION @PACKAGE_LAST_VERSION_WITHOUT_PATCH@)
+```
+
+Notice that PID will automatically install the last available patch version of the package.
+
+# Components
+
+@PACKAGE_COMPONENTS_DESCRIPTION@
+
+
+@PACKAGE_ADDITIONAL_CONTENT@
+
+# API
+
+The API doxygen documentation of the package can be found [here](api-doc/html/index.html).
+
+@LINK_TO_PARENT_WIKI@

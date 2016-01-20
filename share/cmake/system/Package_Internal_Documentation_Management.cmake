@@ -147,7 +147,6 @@ if(DOXYGEN_FOUND AND (NOT DOXYFILE_IN-NOTFOUND OR NOT GENERIC_DOXYFILE_IN-NOTFOU
 
 	### installing documentation ###
 	install(DIRECTORY ${CMAKE_BINARY_DIR}/share/doc DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
-
 	### end installing documentation ###
 
 endif()
@@ -183,3 +182,84 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	endif()
 endif()
 endfunction(generate_License_File)
+
+############ functions for the management of wikis of packages  ###########
+function(wiki_Project_Exists WIKI_EXISTS PATH_TO_WIKI package)
+set(SEARCH_PATH ${WORKSPACE_DIR}/wikis/${package}.wiki)
+if(EXISTS ${SEARCH_PATH} AND IS_DIRECTORY ${PATH_TO_WIKI})
+	set(${WIKI_EXISTS} TRUE PARENT_SCOPE)
+else()
+	set(${WIKI_EXISTS} FALSE PARENT_SCOPE)
+endif()
+set(${PATH_TO_WIKI} ${SEARCH_PATH} PARENT_SCOPE)
+endfunction()
+
+function(configure_Wiki_Pages wiki_parent_page wiki_content_file description)
+if(NOT description OR description STREQUAL "")
+	set(WIKI_INTRODUCTION ${${PROJECT_NAME}_DESCRIPTION}) #if no detailed description provided use the short one
+else()
+	set(WIKI_INTRODUCTION ${description}) #otherwise use detailed one
+endif()
+
+if(NOT wiki_parent_page OR wiki_parent_page STREQUAL "")
+	set(LINK_TO_PARENT_WIKI "")
+else()
+	set(LINK_TO_PARENT_WIKI "[Back to parent wiki](${wiki_parent_page})")
+endif()
+get_Repository_Version_Tags(AVAILABLE_VERSION_TAGS ${PROJECT_NAME})
+
+if(NOT AVAILABLE_VERSION_TAGS)
+	set(PACKAGE_LAST_VERSION_FOR_WIKI "no version released yet")
+	set(PACKAGE_LAST_VERSION_WITH_PATCH "1.2.0")
+	set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "1.2")
+else()
+	normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSION_TAGS}")
+	select_Last_Version(RES_VERSION "${VERSION_NUMBERS}")
+	set(PACKAGE_LAST_VERSION_FOR_WIKI "${RES_VERSION}")
+	set(PACKAGE_LAST_VERSION_WITH_PATCH "${RES_VERSION}")
+	get_Version_String_Numbers(${RES_VERSION} major minor patch)
+	set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
+endif()
+if(${PROJECT_NAME}_LICENSE)
+
+	set(PACKAGE_LICENSE_FOR_WIKI ${${PROJECT_NAME}_LICENSE})
+else()
+	set(PACKAGE_LICENSE_FOR_WIKI "No license Defined")
+endif()
+
+# additional content
+set(PATH_TO_WIKI_ADDITIONAL_CONTENT ${CMAKE_SOURCE_DIR}/share/wiki)
+if(NOT EXISTS ${PATH_TO_WIKI_ADDITIONAL_CONTENT}) #if folder does not exist (old package style)
+	file(COPY ${WORKSPACE_DIR}/share/patterns/package/share/wiki DESTINATION ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/share)#create the folder
+	set(PACKAGE_ADDITIONAL_CONTENT "")
+	message(WARNING "[PID system notification] creating missing folder wiki in ${PROJECT_NAME} share folder")
+	if(wiki_content_file)#a content file is targetted but cannot exists in the non-existing folder
+		message(WARNING "[PID system notification] creating missing wiki content file ${wiki_content_file} in ${PROJECT_NAME} share/wiki folder. Remember to commit modifications.")
+		file(WRITE ${CMAKE_SOURCE_DIR}/share/wiki/${wiki_content_file} "\n")
+	endif()
+else() #folder exists 
+	set(PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE ${PATH_TO_WIKI_ADDITIONAL_CONTENT}/${wiki_content_file})
+	if(NOT EXISTS ${PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE})
+		message(WARNING "[PID system notification] missing wiki content file ${wiki_content_file} in ${PROJECT_NAME} share/wiki folder. File created automatically. Please input some text in it or remove this file and reference to this file in your call to declare_PID_Wiki.  Remember to commit modifications.")
+		file(WRITE ${PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE} "\n")
+		set(PACKAGE_ADDITIONAL_CONTENT "")
+	else()#Here everything is OK
+		file(READ ${PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE} FILE_CONTENT)
+		set(PACKAGE_ADDITIONAL_CONTENT "${FILE_CONTENT}")
+	endif()
+
+endif()
+
+# package dependencies
+
+
+# package components
+
+
+### now configure the home page of the wiki ###
+set(PATH_TO_HOMEPAGE_PATTERN ${WORKSPACE_DIR}/share/patterns/home.markdown.in)
+configure_file(${PATH_TO_HOMEPAGE_PATTERN} ${CMAKE_BINARY_DIR}/home.markdown @ONLY)#put it in the binary dir for now
+
+endfunction()
+
+

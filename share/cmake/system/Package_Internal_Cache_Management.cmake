@@ -28,6 +28,9 @@ option(BUILD_EXAMPLES "Package builds examples" OFF)
 option(BUILD_API_DOC "Package generates the HTML API documentation" OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF
 		         "BUILD_API_DOC" OFF)
+CMAKE_DEPENDENT_OPTION(BUILD_PACKAGE_WIKI "Package allow to generate a wiki to document its API" OFF
+		         "BUILD_API_DOC" OFF)
+
 option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
 option(BUILD_RELEASE_ONLY "Package only build release version" OFF)
 option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OFF)
@@ -249,6 +252,18 @@ set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} C
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH}  CACHE INTERNAL "")
 set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resources CACHE INTERNAL "")
 endfunction(init_Standard_Path_Cache_Variables)
+
+### wiki related cache variables management
+function(init_Wiki_Info_Cache_Variables repo home_page)
+set(${PROJECT_NAME}_WIKI_ADDRESS ${repo} CACHE INTERNAL "")
+set(${PROJECT_NAME}_WIKI_ROOT_PAGE ${home_page} CACHE INTERNAL "")
+endfunction(init_Wiki_Info_Cache_Variables)
+
+function(reset_Wiki_Info)
+set(${PROJECT_NAME}_WIKI_ADDRESS CACHE INTERNAL "")
+set(${PROJECT_NAME}_WIKI_ROOT_PAGE CACHE INTERNAL "")
+endfunction(reset_Wiki_Info)
+
 
 ### set cache variable for install
 function(set_Install_Cache_Variables)
@@ -508,6 +523,7 @@ set(${PROJECT_NAME}_ALL_USED_PACKAGES CACHE INTERNAL "")
 set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES CACHE INTERNAL "")
 reset_To_Install_Packages()
 reset_To_Install_External_Packages()
+reset_Wiki_Info()
 endfunction(reset_All_Component_Cached_Variables)
 
 
