@@ -25,6 +25,11 @@ include(PID_Utils_Functions)
 set(package ${TARGET_PACKAGE})
 set(content_file_to_remove ${REMOVED_CONTENT})
 set(repo_addr ${WIKI_ADDRESS})
+if(DEFINED SYNCHRO_WIKI AND (NOT SYNCHRO_WIKI OR SYNCHRO_WIKI STREQUAL "false"))
+	set(push_wiki FALSE)
+else()
+	set(push_wiki TRUE)
+endif()
 
 wiki_Project_Exists(WIKI_EXISTS PATH_TO_WIKI ${package})
 
@@ -45,7 +50,8 @@ endif()
 update_Wiki_Repository(${package}) # update wiki repository
 clean_Local_Wiki(${package}) # clean the folder content (api-doc content)
 copy_Wiki_Content(${package} ${content_file_to_remove}) # copy everything needed (api-doc content, share/wiki except content_file_to_remove
-publish_Wiki_Repository(${package})
-
+if(push_wiki)
+	publish_Wiki_Repository(${package})
+endif()
 message("[PID system notification] Wiki of ${package} has been updated.")
 
