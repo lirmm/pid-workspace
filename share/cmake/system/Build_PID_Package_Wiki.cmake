@@ -17,24 +17,35 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 include(Package_Internal_Documentation_Management)
 include(PID_Git_Functions)
+include(PID_Utils_Functions)
 
-wiki_Project_Exists WIKI_EXISTS PATH_TO_WIKI ${TARGET_PACKAGE})
+set(package ${TARGET_PACKAGE})
+set(content_file_to_remove ${REMOVED_CONTENT})
+set(repo_addr ${WIKI_ADDRESS})
+
+wiki_Project_Exists(WIKI_EXISTS PATH_TO_WIKI ${package})
 
 if(NOT WIKI_EXISTS)
 
-#create the folder
+	if(NOT repo_addr OR "${repo_addr}" STREQUAL "")
+		message("[PID system notification] Problem you need to set the wiki repository address.")
+		return()
+	endif()
 
-else()
+	#create the wiki repository in the workspace
+	create_Local_Wiki_Project(SUCCEEDED ${package} ${repo_addr})
+	if(NOT SUCCEEDED)
+		message("[PID system notification] Impossible to connect to the wiki repository. You are probably not a developer of the package ${package} which explains why you cannot publish the wiki.")
+		return()
+	endif()
+endif()
+update_Wiki_Repository(${package}) # update wiki repository
+clean_Local_Wiki(${package}) # clean the folder content (api-doc content)
+copy_Wiki_Content(${package} ${content_file_to_remove}) # copy everything needed (api-doc content, share/wiki except content_file_to_remove
+publish_Wiki_Repository(${package})
 
-#clean the folder content
-
-endif
-
-# copy everything
-
-# update wiki repository
+message("[PID system notification] Wiki of ${package} has been updated.")
 

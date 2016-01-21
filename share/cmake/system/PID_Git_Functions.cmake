@@ -271,7 +271,7 @@ endfunction(clone_Repository)
 ###
 function(init_Repository package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git init)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add --all)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add -A)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "initialization of package done")
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v0.0.0 -m "creation of package")
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout -b integration master)
@@ -304,6 +304,51 @@ get_filename_component(REPO_NAME ${REPO_PATH} NAME_WE)
 set(${RES_NAME} ${REPO_NAME} PARENT_SCOPE) 
 endfunction()
 
+######################################################################
+############## wiki repository related functions #####################
+######################################################################
 
+###
+function(clone_Wiki_Repository IS_DEPLOYED package url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+if(EXISTS ${WORKSPACE_DIR}/wikis/${package}.wiki AND IS_DIRECTORY ${WORKSPACE_DIR}/wikis/${package}.wiki)
+	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
+else()
+	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
+	message("[PID ERROR] : impossible to clone the repository of package ${package} wiki (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
+endif()
+endfunction(clone_Wiki_Repository)
 
+###
+function(init_Wiki_Repository CONNECTED package wiki_git_url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git init OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git remote add origin ${wiki_git_url} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git add -A OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git commit -m "initialization of wiki" OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git push origin master OUTPUT_QUIET ERROR_QUIET)
+#now testing if everything is OK using the git log command
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
+if (NOT "${res}" STREQUAL "")
+	string(FIND "${res}" "master" INDEX_LOCAL)
+	string(FIND "${res}" "origin/master" INDEX_REMOTE)
+	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch  
+		set(${CONNECTED} TRUE PARENT_SCOPE)
+		return()
+	endif()
+endif()
+set(${CONNECTED} FALSE PARENT_SCOPE)
+endfunction(init_Wiki_Repository)
+
+###
+function(update_Wiki_Repository package)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
+endfunction(update_Wiki_Repository)
+
+###
+function(publish_Wiki_Repository package)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git add -A OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git commit -m "initialization of wiki" OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git push origin master)#pushing to master branch of origin
+endfunction(publish_Wiki_Repository package)
 
