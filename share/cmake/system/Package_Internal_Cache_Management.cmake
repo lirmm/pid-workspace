@@ -980,7 +980,7 @@ endfunction(generate_Info_File)
 function(generate_Find_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	# generating/installing the generic cmake find file for the package 
-	configure_file(${WORKSPACE_DIR}/share/cmake/patterns/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
+	configure_file(${WORKSPACE_DIR}/share/patterns/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
 	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
 endif()
 endfunction(generate_Find_File)

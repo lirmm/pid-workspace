@@ -392,7 +392,7 @@ generate_License_File() # generating and putting into source directory the file 
 generate_Find_File() # generating/installing the generic cmake find file for the package
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
 configure_Wiki_Pages() # generating the home page markdown file for the project wiki
-generate_API() #generating the API documentation configuration file and the rule to launche doxygen and install the doc
+generate_API() #generating the API documentation configuration file and the rule to launch doxygen and install the doc
 clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
 generate_Info_File() #generating a cmake "info" file containing info about source code of components 
 

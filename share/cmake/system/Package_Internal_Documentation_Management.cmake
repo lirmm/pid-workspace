@@ -48,7 +48,8 @@ find_file(DOXYFILE_IN   "Doxyfile.in"
 			PATHS "${CMAKE_SOURCE_DIR}/share/doxygen"
 			NO_DEFAULT_PATH
 	)
-set(DOXYFILE_PATH CACHE INTERNAL "")
+
+set(DOXYFILE_PATH)
 if(DOXYFILE_IN MATCHES DOXYFILE_IN-NOTFOUND)
 	find_file(GENERIC_DOXYFILE_IN   "Doxyfile.in"
 					PATHS "${WORKSPACE_DIR}/share/patterns"
@@ -57,10 +58,10 @@ if(DOXYFILE_IN MATCHES DOXYFILE_IN-NOTFOUND)
 	if(GENERIC_DOXYFILE_IN MATCHES GENERIC_DOXYFILE_IN-NOTFOUND)
 		message("[PID system notification] No doxygen template file found ... skipping documentation generation !!")
 	else()
-		set(DOXYFILE_PATH ${GENERIC_DOXYFILE_IN} CACHE INTERNAL "")
+		set(DOXYFILE_PATH ${GENERIC_DOXYFILE_IN})
 	endif()
 else()
-	set(DOXYFILE_PATH ${DOXYFILE_IN} CACHE INTERNAL "")
+	set(DOXYFILE_PATH ${DOXYFILE_IN})
 endif()
 
 if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
@@ -136,9 +137,9 @@ if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
 			set(DOXYGEN_LATEX "NO")
 		endif(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
 
-	else(BUILD_LATEX_API_DOC)
+	else()
 		set(DOXYFILE_GENERATE_LATEX "NO")
-	endif(BUILD_LATEX_API_DOC)
+	endif()
 
 	#configuring the Doxyfile.in file to generate a doxygen configuration file
 	configure_file(${DOXYFILE_PATH} ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
