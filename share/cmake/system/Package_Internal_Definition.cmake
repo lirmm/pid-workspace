@@ -285,8 +285,8 @@ endmacro(declare_Package)
 ############################################################################
 ################## setting info on Wiki ####################################
 ############################################################################
-macro(define_Wiki wiki_repo_addr wiki_home_page wiki_parent_page wiki_content_file description)
-init_Wiki_Info_Cache_Variables("${wiki_repo_addr}" "${wiki_home_page}" "${wiki_parent_page}" "${wiki_content_file}" "${description}")
+macro(define_Wiki wiki_repo_addr wiki_home_page package_framework wiki_parent_page wiki_content_file description)
+init_Wiki_Info_Cache_Variables("${wiki_repo_addr}" "${wiki_home_page}" "${package_framework}" "${wiki_parent_page}" "${wiki_content_file}" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the wiki can be build is release mode only
 	
 	add_custom_target(wiki

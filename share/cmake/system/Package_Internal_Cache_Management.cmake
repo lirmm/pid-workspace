@@ -251,9 +251,10 @@ set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resource
 endfunction(init_Standard_Path_Cache_Variables)
 
 ### wiki related cache variables management
-function(init_Wiki_Info_Cache_Variables repo home_page parent_page content_file introduction)
+function(init_Wiki_Info_Cache_Variables repo home_page framework parent_page content_file introduction)
 set(${PROJECT_NAME}_WIKI_ADDRESS "${repo}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_WIKI_ROOT_PAGE "${home_page}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_WIKI_FRAMEWORK "${framework}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_WIKI_PARENT_PAGE "${parent_page}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT "${content_file}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION "${introduction}" CACHE INTERNAL "")
@@ -263,6 +264,7 @@ function(reset_Wiki_Info)
 set(${PROJECT_NAME}_WIKI_ADDRESS CACHE INTERNAL "")
 set(${PROJECT_NAME}_WIKI_ROOT_PAGE CACHE INTERNAL "")
 set(${PROJECT_NAME}_WIKI_PARENT_PAGE CACHE INTERNAL "")
+set(${PROJECT_NAME}_WIKI_FRAMEWORK CACHE INTERNAL "")
 set(${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT CACHE INTERNAL "")
 set(${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION CACHE INTERNAL "")
 endfunction(reset_Wiki_Info)
@@ -624,7 +626,7 @@ endif()
 endfunction(is_Built_Component)
 
 function(build_Option_For_Example example_comp)
-CMAKE_DEPENDENT_OPTION(BUILD_EXAMPLE_${example_comp} "Package build the example application ${example_comp}" ON "BUILD_EXAMPLES" OFF)
+CMAKE_DEPENDENT_OPTION(BUILD_EXAMPLE_${example_comp} "Package build the example application ${example_comp}" ON "BUILD_EXAMPLES" ON)
 endfunction(build_Option_For_Example)
 
 function(reset_Removed_Examples_Build_Option)
@@ -640,8 +642,6 @@ foreach(a_cache_var ${ALL_CACHED_VARIABLES})
 		endif()
 	endif()
 endforeach()
-
-
 endfunction(reset_Removed_Examples_Build_Option)
 
 ### 

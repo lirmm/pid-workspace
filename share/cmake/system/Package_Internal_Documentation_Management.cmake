@@ -48,23 +48,22 @@ find_file(DOXYFILE_IN   "Doxyfile.in"
 			PATHS "${CMAKE_SOURCE_DIR}/share/doxygen"
 			NO_DEFAULT_PATH
 	)
-set(DOXYFILE_IN ${DOXYFILE_IN} CACHE INTERNAL "")
-if(DOXYFILE_IN-NOTFOUND)
-	message(WARNING "Doxyfile not found in the share folder of your package !! Getting the standard doxygen template file from workspace ... ")
+set(DOXYFILE_PATH CACHE INTERNAL "")
+if(DOXYFILE_IN MATCHES DOXYFILE_IN-NOTFOUND)
 	find_file(GENERIC_DOXYFILE_IN   "Doxyfile.in"
-					PATHS "${WORKSPACE_DIR}/share/cmake/patterns"
+					PATHS "${WORKSPACE_DIR}/share/patterns"
 					NO_DEFAULT_PATH
 		)
-	set(GENERIC_DOXYFILE_IN ${GENERIC_DOXYFILE_IN} CACHE INTERNAL "")
-	if(GENERIC_DOXYFILE_IN-NOTFOUND)
-		message(WARNING "No Template file found in ${WORKSPACE_DIR}/share/cmake/patterns/, skipping documentation generation !!")		
-	else(GENERIC_DOXYFILE_IN-NOTFOUND)
-		file(COPY ${WORKSPACE_DIR}/share/cmake/patterns/Doxyfile.in ${CMAKE_SOURCE_DIR}/share/doxygen)
-		message(STATUS "Template file found in ${WORKSPACE_DIR}/share/cmake/patterns/ and copied to your package, you can now modify it")		
-	endif(GENERIC_DOXYFILE_IN-NOTFOUND)
-endif(DOXYFILE_IN-NOTFOUND)
+	if(GENERIC_DOXYFILE_IN MATCHES GENERIC_DOXYFILE_IN-NOTFOUND)
+		message("[PID system notification] No doxygen template file found ... skipping documentation generation !!")
+	else()
+		set(DOXYFILE_PATH ${GENERIC_DOXYFILE_IN} CACHE INTERNAL "")
+	endif()
+else()
+	set(DOXYFILE_PATH ${DOXYFILE_IN} CACHE INTERNAL "")
+endif()
 
-if(DOXYGEN_FOUND AND (NOT DOXYFILE_IN-NOTFOUND OR NOT GENERIC_DOXYFILE_IN-NOTFOUND)) #we are able to generate the doc
+if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
 	# general variables
 	set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
 	set(DOXYFILE_MAIN_PAGE "${CMAKE_SOURCE_DIR}/README.md")
@@ -142,7 +141,7 @@ if(DOXYGEN_FOUND AND (NOT DOXYFILE_IN-NOTFOUND OR NOT GENERIC_DOXYFILE_IN-NOTFOU
 	endif(BUILD_LATEX_API_DOC)
 
 	#configuring the Doxyfile.in file to generate a doxygen configuration file
-	configure_file(${CMAKE_SOURCE_DIR}/share/doxygen/Doxyfile.in ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
+	configure_file(${DOXYFILE_PATH} ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
 	### end doxyfile configuration ###
 
 	### installing documentation ###
@@ -189,7 +188,7 @@ function(generate_Readme_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/README.md.in)
 	## introduction (more detailed description, if any)
-	if(NOT ${PROJECT_NAME}_WIKI_ADDRESS)
+	if(NOT ${PROJECT_NAME}_WIKI_ADDRESS)#no wiki description has been provided
 		# intro		
 		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by wiki use the short one
 		# no reference to wiki page
@@ -216,8 +215,12 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(PACKAGE_WIKI_REF_IN_README "[package_wiki]: ${${PROJECT_NAME}_WIKI_ROOT_PAGE} \"${PROJECT_NAME} package\"
 ")
 		# framework parent page
-		if(${PROJECT_NAME}_WIKI_PARENT_PAGE)
-			set(PACKAGE_FRAMEWORK_IN_README "${PROJECT_NAME} package is part of a more global framework. Please have a look at [this page](${${PROJECT_NAME}_WIKI_PARENT_PAGE}) to get information about this framework.")
+		if(${PROJECT_NAME}_WIKI_FRAMEWORK)
+			if(${PROJECT_NAME}_WIKI_PARENT_PAGE)
+				set(PACKAGE_FRAMEWORK_IN_README "${PROJECT_NAME} package is part of a more global framework called ${${PROJECT_NAME}_WIKI_FRAMEWORK}. Please have a look at [${${PROJECT_NAME}_WIKI_FRAMEWORK} wiki](${${PROJECT_NAME}_WIKI_PARENT_PAGE}) to get more information.")
+			else()
+				set(PACKAGE_FRAMEWORK_IN_README "${PROJECT_NAME} package is part of a more global framework called ${${PROJECT_NAME}_WIKI_FRAMEWORK}. No information where to find information about the ${${PROJECT_NAME}_WIKI_FRAMEWORK} framework is given by the project.")
+			endif()
 		else()
 			set(PACKAGE_FRAMEWORK_IN_README "")
 		endif()
@@ -266,7 +269,11 @@ endif()
 if("${${PROJECT_NAME}_WIKI_PARENT_PAGE}" STREQUAL "")
 	set(LINK_TO_PARENT_WIKI "")
 else()
-	set(LINK_TO_PARENT_WIKI "[Back to parent wiki](${${PROJECT_NAME}_WIKI_PARENT_PAGE})")
+	if(${PROJECT_NAME}_WIKI_FRAMEWORK)
+		set(LINK_TO_PARENT_WIKI "[Back to ${${PROJECT_NAME}_WIKI_FRAMEWORK} wiki](${${PROJECT_NAME}_WIKI_PARENT_PAGE})")
+	else()	
+		set(LINK_TO_PARENT_WIKI "[Back to parent wiki](${${PROJECT_NAME}_WIKI_PARENT_PAGE})")
+	endif()
 endif()
 
 # authors
