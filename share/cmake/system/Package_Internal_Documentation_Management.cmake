@@ -183,9 +183,77 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 endfunction(generate_License_File)
 
+
+############ function used to create the README.md file of the package  ###########
+function(generate_Readme_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/README.md.in)
+	## introduction (more detailed description, if any)
+	if(NOT ${PROJECT_NAME}_WIKI_ADDRESS)
+		# intro		
+		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by wiki use the short one
+		# no reference to wiki page
+		set(PACKAGE_WIKI_REF_IN_README "")
+
+		# no parent framework
+		set(PACKAGE_FRAMEWORK_IN_README "")
+
+		# simplified install section
+		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is based on the [PID](https://gite.lirmm.fr/pid/pid-workspace/wikis/home) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+	else()	
+		# intro
+		generate_Formatted_String("${${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION}" RES_INTRO)
+		if("${RES_INTRO}" STREQUAL "")
+			set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by wiki description use the short one
+		else()
+			set(README_OVERVIEW "${RES_INTRO}") #otherwise use detailed one specific for wiki
+		endif()
+		
+		# install procedure
+		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [wiki][package_wiki]. It is based on a CMake based build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+
+		# reference to wiki page
+		set(PACKAGE_WIKI_REF_IN_README "[package_wiki]: ${${PROJECT_NAME}_WIKI_ROOT_PAGE} \"${PROJECT_NAME} package\"
+")
+		# framework parent page
+		if(${PROJECT_NAME}_WIKI_PARENT_PAGE)
+			set(PACKAGE_FRAMEWORK_IN_README "${PROJECT_NAME} package is part of a more global framework. Please have a look at [this page](${${PROJECT_NAME}_WIKI_PARENT_PAGE}) to get information about this framework.")
+		else()
+			set(PACKAGE_FRAMEWORK_IN_README "")
+		endif()
+	endif()
+	
+	if(${PROJECT_NAME}_LICENSE)
+		set(PACKAGE_LICENSE_FOR_README "The license that appies to the whole package content is **${${PROJECT_NAME}_LICENSE}**. For more information about license please read the [wiki][package_wiki] of this package.")
+	else()
+		set(PACKAGE_LICENSE_FOR_README "The package has no license defined yet.")
+	endif()
+
+	
+	set(README_AUTHORS_LIST "")	
+	foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
+		generate_Full_Author_String(${author} STRING_TO_APPEND)
+		set(README_AUTHORS_LIST "${README_AUTHORS_LIST}\n+ ${STRING_TO_APPEND}")
+	endforeach()
+	
+	get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
+	set(README_CONTACT_AUTHOR "${RES_STRING}")
+	if(NOT ${PROJECT_NAME}_WIKI_ADDRESS)
+		
+	else()
+		set(PACKAGE_WIKI_REF )
+	endif()
+	configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put it in the source dir
+endif()
+endfunction(generate_Readme_File)
+
+
 ############ functions for the management of wikis of packages  ###########
 
 function(configure_Wiki_Pages)
+if(NOT ${PROJECT_NAME}_WIKI_ADDRESS) #no wiki definition simply exit
+	return()
+endif()
 ## introduction (more detailed description, if any)
 generate_Formatted_String("${${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION}" RES_INTRO)
 if("${RES_INTRO}" STREQUAL "")

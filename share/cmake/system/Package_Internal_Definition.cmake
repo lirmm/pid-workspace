@@ -390,7 +390,8 @@ add_subdirectory(share)
 ##########################################################
 ############ MANAGING non source files ###################
 ##########################################################
-generate_License_File() # generating/installing the file containing license info about the package
+generate_Readme_File() # generating and putting into source directory the readme file used by gitlab
+generate_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Find_File() # generating/installing the generic cmake find file for the package
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
 configure_Wiki_Pages() # generating the home page markdown file for the project wiki
