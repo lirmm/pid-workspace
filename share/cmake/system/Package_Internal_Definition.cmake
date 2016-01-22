@@ -219,15 +219,13 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			COMMENT "Generating API documentation ..."
 			VERBATIM
 		)
-		if(BUILD_PACKAGE_WIKI)
-			# wiki target (generation of a wiki documenting the project) 
-			add_custom_target(wiki
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} wiki
-				COMMENT "Creating/Updating wiki of the project ..."
-				VERBATIM
-			)
-			add_dependencies(wiki doc)
-		endif()
+		# wiki target (generation of a wiki documenting the project) 
+		add_custom_target(wiki
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} wiki
+			COMMENT "Creating/Updating wiki of the project ..."
+			VERBATIM
+		)
+		add_dependencies(wiki doc)
 	endif()
 
 	if(GENERATE_INSTALLER)
@@ -289,8 +287,7 @@ endmacro(declare_Package)
 ############################################################################
 macro(define_Wiki wiki_repo_addr wiki_home_page wiki_parent_page wiki_content_file description)
 init_Wiki_Info_Cache_Variables("${wiki_repo_addr}" "${wiki_home_page}" "${wiki_parent_page}" "${wiki_content_file}" "${description}")
-if(	${CMAKE_BUILD_TYPE} MATCHES Release # the wiki can be build is release mode only
-	AND BUILD_PACKAGE_WIKI) # the option must have been defined first 
+if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the wiki can be build is release mode only
 	
 	add_custom_target(wiki
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
