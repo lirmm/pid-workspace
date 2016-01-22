@@ -779,6 +779,15 @@ else() #a simple application by default
 	message(FATAL_ERROR "you have to set a type name (TEST, APP, EXAMPLE) for the application component ${c_name}")
 	return()
 endif()	
+
+#managing sources for the application
+if(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP"
+	OR ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")	
+	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/apps/${dirname} CACHE INTERNAL "")
+elseif(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
+	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/test/${dirname} CACHE INTERNAL "")
+endif()
+
 # specifically managing examples 	
 if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE") 
 	build_Option_For_Example(${c_name})
@@ -794,13 +803,6 @@ elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
 	endif()
 endif()
 will_be_Installed(COMP_WILL_BE_INSTALLED ${c_name})
-#managing sources for the application
-if(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP"
-	OR ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")	
-	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/apps/${dirname} CACHE INTERNAL "")
-elseif(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
-	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/test/${dirname} CACHE INTERNAL "")
-endif()
 
 get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 #defining the target to build the application
