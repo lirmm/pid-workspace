@@ -44,6 +44,7 @@ if(NOT DOXYGEN_FOUND)
 	message(WARNING "Doxygen not found please install it to generate the API documentation")
 	return()
 endif(NOT DOXYGEN_FOUND)
+
 find_file(DOXYFILE_IN   "Doxyfile.in"
 			PATHS "${CMAKE_SOURCE_DIR}/share/doxygen"
 			NO_DEFAULT_PATH
@@ -60,9 +61,11 @@ if(DOXYFILE_IN MATCHES DOXYFILE_IN-NOTFOUND)
 	else()
 		set(DOXYFILE_PATH ${GENERIC_DOXYFILE_IN})
 	endif()
+	unset(GENERIC_DOXYFILE_IN CACHE)
 else()
 	set(DOXYFILE_PATH ${DOXYFILE_IN})
 endif()
+unset(DOXYFILE_IN CACHE)
 
 if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
 	# general variables
