@@ -16,8 +16,8 @@ Authors of this package:
 
 ## License
 
-The license of the current release version of knowbotics package is : @PACKAGE_LICENSE_FOR_WIKI@.
-It applies to the whole package content.
+The license of the current release version of knowbotics package is : **@PACKAGE_LICENSE_FOR_WIKI@**. It applies to the whole package content.
+
 For more details see [license file](license.txt).
 
 ## Version
@@ -30,10 +30,17 @@ Last released version (more recent version tag on master branch) : @PACKAGE_LAST
 
 # Install
 
-@PROJECT_NAME@ can be deployed as any other native PID package. It will be installed automatically if it is a direct or undirect dependency of one of your package.
+@PROJECT_NAME@ can be deployed as any other native PID package. To know more about PID methodology simply follow [this link](https://gite.lirmm.fr/pid/pid-workspace/wikis/home).
 
+PID provides different alternatives to install a package:
 
-Nevertheless, you can install it by hand using PID workspace command:
+## Automatic install by dependencies declaration
+
+The package @PROJECT_NAME@ will be installed automatically if it is a direct or undirect dependency of one of the packages you are developing. See [import section](#import).
+
+## Manual install using PID command
+
+The package @PROJECT_NAME@ can be installed "by hand" using command provided by the PID workspace:
 
 ```
 cd <pid-workspace>/pid
@@ -46,6 +53,30 @@ Or if you want to install a specific binary version of this package, for instanc
 cd <pid-workspace>/pid
 make deploy name=@PROJECT_NAME@ version=@PACKAGE_LAST_VERSION_WITH_PATCH@
 ```
+
+## Manual Installation 
+
+The last possible action is to install it by hand without using PID commands. This is **not recommended** but could be **helpfull to install another repository of this package (not the official package repository)**. For instance if you fork the official repository to work isolated from official developers you may need this alternative.  
+
+1. Cloning the repository with git
+
+	```
+	cd <pid-workspace>/packages/ && git clone git@gite.lirmm.fr:knowbotics/knowbotics.git
+	```
+
+	or if your are involved in knowbotics development and forked the knowbotics respository using gitlab, you can prefer doing:
+
+	```
+	cd <pid-workspace>/packages/ && git clone git@gite.lirmm.fr:<your account>/knowbotics.git
+	```
+
+2. Building the repository
+
+	```
+	cd <pid-workspace>/packages/knowbotics/build
+	cmake .. && make build
+	```
+
 
 # Dependencies
 
@@ -68,7 +99,7 @@ find_package (@PROJECT_NAME@ @PACKAGE_LAST_VERSION_WITH_PATCH@ REQUIRED)
 declare_PID_Package_Dependency(PACKAGE @PROJECT_NAME@ NATIVE VERSION @PACKAGE_LAST_VERSION_WITHOUT_PATCH@)
 ```
 
-Notice that PID will automatically install the last available patch version of the package.
+Notice that PID will automatically install the last available patch version of the package when configuring the project with the option `REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD` to **ON** (default value).
 
 # Components
 @PACKAGE_COMPONENTS_DESCRIPTION@
