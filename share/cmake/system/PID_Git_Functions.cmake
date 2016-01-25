@@ -254,7 +254,18 @@ endfunction(update_Workspace_Repository)
 ######################################################################
 ############################ other functions #########################
 ######################################################################
-###
+
+### to know whether a package as a remote or not
+function(is_Package_Connected CONNECTED package branch)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote show ${branch} OUTPUT_QUIET ERROR_VARIABLE res)
+	if(NOT res OR res STREQUAL "")
+		set(${CONNECTED} TRUE PARENT_SCOPE)
+	else()
+		set(${CONNECTED} FALSE PARENT_SCOPE)
+	endif()
+endfunction()
+
+### function called when deploying a package from reference files
 function(clone_Repository IS_DEPLOYED package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages git clone ${url} OUTPUT_QUIET ERROR_QUIET)
 if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
@@ -262,13 +273,17 @@ if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch origin OUTPUT_QUIET ERROR_QUIET)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration OUTPUT_QUIET ERROR_QUIET)#go to integration to create the local branch
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout master OUTPUT_QUIET ERROR_QUIET)#go back to master by default
+
+	# now adding reference to official remote with official == origin (default case)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${url})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official OUTPUT_QUIET ERROR_QUIET) #updating remote branches for official remote
 else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
 	message("[ERROR] : impossible to clone the repository of package ${package} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
 endif()
 endfunction(clone_Repository)
 
-###
+### create a repository with no official remote specified (for now)
 function(init_Repository package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git init)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add -A)
@@ -277,19 +292,45 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout -b integration master)
 endfunction(init_Repository)
 
-###
-function(connect_Repository package url remote_name)
-go_To_Integration(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add ${remote_name} ${git_url})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch ${remote_name})
+### first time the package is connected after its creation
+function(connect_Repository package url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add origin ${url})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${url})
 go_To_Master(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin --tags)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master)
 go_To_Integration(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration)
+#updating official (just to synchronize adequately remote tracking branches)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official)
 endfunction(connect_Repository)
 
+### rare use function: when official repository has moved
+function(reconnect_Repository package url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${url})
+go_To_Master(${package})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull official master)#updating master
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags)
+go_To_Integration(${package})
+endfunction(reconnect_Repository)
+
 ###
+function(change_Origin_Repository package url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url origin ${url} OUTPUT_QUIET ERROR_QUIET)
+go_To_Integration(${package})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull origin integration OUTPUT_QUIET ERROR_VARIABLE res)
+if(NOT res STREQUAL "")
+	message("[PID notification] WARNING: there is a problem merging origin commits with local commits.")
+	return()
+else()
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration OUTPUT_QUIET ERROR_QUIET)
+endif()
+message("[PID notification] INFO: Origin remote has been changed to ${url}.")
+endfunction(change_Origin_Repository)
+
+
+
+### getting the package name given a repository address
 function(get_Repository_Name RES_NAME git_url)
 #testing ssh address
 string(REGEX REPLACE "^[^@]+@[^:]+:(.+)$" "\\1" REPO_PATH ${git_url})
@@ -302,7 +343,7 @@ if(REPO_PATH STREQUAL "${git_url}")
 endif()
 get_filename_component(REPO_NAME ${REPO_PATH} NAME_WE)
 set(${RES_NAME} ${REPO_NAME} PARENT_SCOPE) 
-endfunction()
+endfunction(get_Repository_Name)
 
 ######################################################################
 ############## wiki repository related functions #####################

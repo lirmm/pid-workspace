@@ -168,7 +168,9 @@ add_custom_target(create
 add_custom_target(connect
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-DREQUIRED_PACKAGE=$(name) 
-					-DREQUIRED_GIT_URL=$(url) 
+					-DOFFICIAL_GIT_URL=$(official)
+					-DORIGIN_GIT_URL=$(origin)
+					-DFORCED_RECONNECTION=$(force)
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Connect_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

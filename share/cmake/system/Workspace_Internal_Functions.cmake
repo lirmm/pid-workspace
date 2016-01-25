@@ -610,33 +610,45 @@ endfunction()
 ###
 function(set_Package_Repository_Address package git_url)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REPLACE "YEAR" "ADDRESS ${git_url} YEAR" NEW_CONTENT ${CONTENT})
+	string(REPLACE "YEAR" "ADDRESS ${git_url}\n YEAR" NEW_CONTENT ${CONTENT})
 	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
-endfunction()
+endfunction(set_Package_Repository_Address)
 
 ###
-function(is_Package_Connected CONNECTED package)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote show origin OUTPUT_QUIET ERROR_VARIABLE res)
-	if(NOT res OR res STREQUAL "")
-		set(${CONNECTED} TRUE PARENT_SCOPE)
-	else()
-		set(${CONNECTED} FALSE PARENT_SCOPE)
-	endif()
-endfunction()
+function(reset_Package_Repository_Address package new_git_url)
+	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
+	string(REPLACE_REPLACE "ADDRESS[ \t\n]+([^ \t\n])+[ \t\n]+" "ADDRESS ${new_git_url} " NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(reset_Package_Repository_Address)
 
 
 ###
-function(connect_PID_Package package git_url)
-# saving local repository state
-save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package})
-# updating the address of the official repository in the CMakeLists.txt of the package 
-set_Package_Repository_Address(${package} ${git_url})
-register_Repository_Address(${package})
-# synchronizing with the remote "origin" git repository
-connect_Repository(${package} ${git_url} origin)
-# restoring local repository state
-restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT})
+function(connect_PID_Package package git_url first_time)
+save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package}) # saving local repository state
+
+if(first_time)
+	# set the address of the official repository in the CMakeLists.txt of the package 
+	set_Package_Repository_Address(${package} ${git_url})
+	register_Repository_Address(${package})
+	# synchronizing with the new "official" remote git repository
+	connect_Repository(${package} ${git_url})
+else() #forced reconnection
+	# updating the address of the official repository in the CMakeLists.txt of the package 
+	reset_Package_Repository_Address(${package} ${git_url})
+	register_Repository_Address(${package})
+	# synchronizing with the new "official" remote git repository
+	reconnect_Repository(${package} ${git_url})
+endif()
+restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT}) # restoring local repository state
 endfunction(connect_PID_Package)
+
+### reconnecting the origin BUT letting the official remote unchanged
+function(add_Connection_To_PID_Package package git_url)
+save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package}) # saving local repository state
+change_Origin_Repository(${package} ${git_url} origin) # synchronizing with the remote "origin" git repository
+restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT})# restoring local repository state
+endfunction(add_Connection_To_PID_Package)
+
 
 ###
 function(clear_PID_Package package version)
