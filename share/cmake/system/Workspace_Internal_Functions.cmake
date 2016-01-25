@@ -486,7 +486,8 @@ endfunction()
 ###
 function(create_PID_Package package author institution license)
 #copying the pattern folder into the package folder and renaming it
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/package ${WORKSPACE_DIR}/packages/${package})
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/package ${WORKSPACE_DIR}/packages/${package} OUTPUT_QUIET ERROR_QUIET)
+
 #setting variables
 set(PACKAGE_NAME ${package})
 if(author AND NOT author STREQUAL "")
@@ -502,7 +503,7 @@ endif()
 if(license AND NOT license STREQUAL "")
 	set(PACKAGE_LICENSE "${license}")
 else()
-	message("WARNING: no license defined so using the default CeCILL license")
+	message("[PID notification] WARNING: no license defined so using the default CeCILL license.")
 	set(PACKAGE_LICENSE "CeCILL")#default license is CeCILL
 endif()
 set(PACKAGE_DESCRIPTION "TODO: input a short description of package ${package} utility here")
@@ -512,7 +513,7 @@ set(PACKAGE_YEARS ${date})
 configure_file(${WORKSPACE_DIR}/share/patterns/CMakeLists.txt.in ../packages/${package}/CMakeLists.txt @ONLY)
 #confuguring git repository
 init_Repository(${package})
-endfunction()
+endfunction(create_PID_Package)
 
 
 ###
@@ -617,7 +618,7 @@ endfunction(set_Package_Repository_Address)
 ###
 function(reset_Package_Repository_Address package new_git_url)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REPLACE_REPLACE "ADDRESS[ \t\n]+([^ \t\n])+[ \t\n]+" "ADDRESS ${new_git_url} " NEW_CONTENT ${CONTENT})
+	string(REGEX REPLACE "ADDRESS[ \t\n]+([^ \t\n])+[ \t\n]+" "ADDRESS ${new_git_url} " NEW_CONTENT ${CONTENT})
 	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
 endfunction(reset_Package_Repository_Address)
 

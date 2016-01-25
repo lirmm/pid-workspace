@@ -123,23 +123,16 @@ else()
 endif()
 set(${INITIAL_COMMIT} ${CONTEXT} PARENT_SCOPE)
 
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash save 
-	OUTPUT_VARIABLE res)
-if(res MATCHES "No stash found")
-	set(${SAVED_CONTENT} FALSE PARENT_SCOPE)
-else()
-	set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
-endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash save OUTPUT_QUIET ERROR_QUIET)
+set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
 endfunction(save_Repository_Context)
 
 ###
 function(restore_Repository_Context package initial_commit saved_content)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout -- license.txt)#this is a mandatory step due to the generation of a versionned license file when build takes place
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout -- license.txt OUTPUT_QUIET ERROR_QUIET)#this is a mandatory step due to the generation of a versionned license file when build takes place
 
 go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${initial_commit})
-if(saved_content)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash pop)
-endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash pop OUTPUT_QUIET ERROR_QUIET)
 endfunction(restore_Repository_Context)
 
 
@@ -154,21 +147,14 @@ set(CONTEXT ${BRANCH_NAME})
 endif()
 set(${INITIAL_COMMIT} ${CONTEXT} PARENT_SCOPE)
 
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash save 
-	OUTPUT_VARIABLE res)
-if(res MATCHES "No stash found")
-	set(${SAVED_CONTENT} FALSE PARENT_SCOPE)
-else()
-	set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
-endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash save OUTPUT_QUIET ERROR_QUIET)
+set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
 endfunction(save_Workspace_Repository_Context)
 
 ###
 function(restore_Workspace_Repository_Context initial_commit saved_content)
 go_To_Commit(${WORKSPACE_DIR} ${initial_commit})
-if(saved_content)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash pop)
-endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash pop OUTPUT_QUIET ERROR_QUIET)
 endfunction(restore_Workspace_Repository_Context)
 
 ######################################################################
@@ -279,30 +265,43 @@ if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official OUTPUT_QUIET ERROR_QUIET) #updating remote branches for official remote
 else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
-	message("[ERROR] : impossible to clone the repository of package ${package} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
+	message("[PID notification] ERROR: impossible to clone the repository of package ${package} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
 endif()
 endfunction(clone_Repository)
 
+function(test_Remote_Initialized package url INITIALIZED)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid/${package} git branch -a OUTPUT_VARIABLE res ERROR_QUIET)
+if (res MATCHES "origin/integration") #repository is initialized if there is a
+	set(${INITIALIZED} TRUE PARENT_SCOPE)
+else()
+	set(${INITIALIZED} FALSE PARENT_SCOPE)
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${package} OUTPUT_QUIET ERROR_QUIET)
+endfunction(test_Remote_Initialized)
+
 ### create a repository with no official remote specified (for now)
 function(init_Repository package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git init)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add -A)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "initialization of package done")
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v0.0.0 -m "creation of package")
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout -b integration master)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git init OUTPUT_QUIET ERROR_QUIET)
+#otherwise we need to initialize the system
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add -A  OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "initialization of package done" OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v0.0.0 -m "creation of package" OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout -b integration master  OUTPUT_QUIET ERROR_QUIET)
 endfunction(init_Repository)
 
 ### first time the package is connected after its creation
 function(connect_Repository package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add origin ${url})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${url})
-go_To_Master(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin --tags)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master)
-go_To_Integration(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration)
-#updating official (just to synchronize adequately remote tracking branches)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official)
+go_To_Master(${package}) #updating official (theorically just to synchronize adequately remote tracking branches)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull official master)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin --tags OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master  OUTPUT_QUIET ERROR_QUIET)
+go_To_Integration(${package}) #updating origin (theorically just to synchronize adequately remote tracking branches)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull origin integration)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration  OUTPUT_QUIET ERROR_QUIET)
 endfunction(connect_Repository)
 
 ### rare use function: when official repository has moved
@@ -310,7 +309,7 @@ function(reconnect_Repository package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${url})
 go_To_Master(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull official master)#updating master
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags  OUTPUT_QUIET ERROR_QUIET)
 go_To_Integration(${package})
 endfunction(reconnect_Repository)
 
@@ -318,13 +317,8 @@ endfunction(reconnect_Repository)
 function(change_Origin_Repository package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url origin ${url} OUTPUT_QUIET ERROR_QUIET)
 go_To_Integration(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull origin integration OUTPUT_QUIET ERROR_VARIABLE res)
-if(NOT res STREQUAL "")
-	message("[PID notification] WARNING: there is a problem merging origin commits with local commits.")
-	return()
-else()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration OUTPUT_QUIET ERROR_QUIET)
-endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull origin integration OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration OUTPUT_QUIET ERROR_QUIET)
 message("[PID notification] INFO: Origin remote has been changed to ${url}.")
 endfunction(change_Origin_Repository)
 
