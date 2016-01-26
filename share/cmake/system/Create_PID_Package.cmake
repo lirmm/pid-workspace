@@ -51,17 +51,18 @@ if(REQUIRED_PACKAGE)
 
 	# from here we are sure the request is well formed
 	if(OPTIONNAL_GIT_URL)
-		test_Remote_Initialized(${REQUIRED_PACKAGE} ${OPTIONNAL_GIT_URL} IS_INITIAZED)
+		test_Remote_Initialized(${REQUIRED_PACKAGE} ${OPTIONNAL_GIT_URL} IS_INITIALIZED)
 		if(IS_INITIALIZED)#simply clone
 			clone_Repository(IS_DEPLOYED ${REQUIRED_PACKAGE} ${OPTIONNAL_GIT_URL})
+			go_To_Integration(${REQUIRED_PACKAGE})
 		else()#we need to synchronize normally with an empty repository
 			create_PID_Package(${REQUIRED_PACKAGE} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}")
 			connect_PID_Package(${REQUIRED_PACKAGE} ${OPTIONNAL_GIT_URL} TRUE)
 		endif()
-		message("[PID notification] Info : package ${REQUIRED_PACKAGE} has just been created and connected to official remote ${OPTIONNAL_GIT_URL}.") 
+		message("[PID notification] Info : new package ${REQUIRED_PACKAGE} has just been cloned from official remote ${OPTIONNAL_GIT_URL}.")
 	else() #simply create the package locally
 		create_PID_Package(${REQUIRED_PACKAGE} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}")
-		message("[PID notification] Info : package ${REQUIRED_PACKAGE} has just been created locally.") 
+		message("[PID notification] Info : new package ${REQUIRED_PACKAGE} has just been created locally.") 
 	endif()
 	
 else()

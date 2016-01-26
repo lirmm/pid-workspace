@@ -626,12 +626,12 @@ endfunction(reset_Package_Repository_Address)
 ###
 function(connect_PID_Package package git_url first_time)
 save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package}) # saving local repository state
-
+go_To_Integration(${package})
 if(first_time)
 	# set the address of the official repository in the CMakeLists.txt of the package 
 	set_Package_Repository_Address(${package} ${git_url})
 	register_Repository_Address(${package})
-	# synchronizing with the new "official" remote git repository
+	# synchronizing with the "official" remote git repository
 	connect_Repository(${package} ${git_url})
 else() #forced reconnection
 	# updating the address of the official repository in the CMakeLists.txt of the package 

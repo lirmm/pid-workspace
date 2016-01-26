@@ -271,13 +271,21 @@ endfunction(clone_Repository)
 
 function(test_Remote_Initialized package url INITIALIZED)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid git clone ${url} OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid/${package} git branch -a OUTPUT_VARIABLE res ERROR_QUIET)
-if (res MATCHES "origin/integration") #repository is initialized if there is a
-	set(${INITIALIZED} TRUE PARENT_SCOPE)
-else()
-	set(${INITIALIZED} FALSE PARENT_SCOPE)
-endif()
+
+execute_process(COMMAND git branch -a
+		WORKING_DIRECTORY ${WORKSPACE_DIR}/pid/${package}
+		OUTPUT_VARIABLE all_branches ERROR_QUIET)
+string(REPLACE "\n" ";" GIT_BRANCHES ${all_branches})
+set(INTEGRATION_FOUND FALSE)
+foreach(branch IN ITEMS ${GIT_BRANCHES})#checking that the origin/integration branch exists
+	string(REGEX REPLACE "^[ \t]*remotes/(origin/integration)[ \t]*$" "\\1" A_BRANCH ${branch})
+	if(NOT "${branch}" STREQUAL "${A_BRANCH}")#i.e. match found (this is the origin integration branch)
+		set(INTEGRATION_FOUND TRUE)
+		break()
+	endif()
+endforeach()
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${package} OUTPUT_QUIET ERROR_QUIET)
+set(${INITIALIZED} ${INTEGRATION_FOUND} PARENT_SCOPE)
 endfunction(test_Remote_Initialized)
 
 ### create a repository with no official remote specified (for now)
@@ -294,14 +302,15 @@ endfunction(init_Repository)
 function(connect_Repository package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add origin ${url})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${url})
-go_To_Master(${package}) #updating official (theorically just to synchronize adequately remote tracking branches)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull official master)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin --tags OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master  OUTPUT_QUIET ERROR_QUIET)
-go_To_Integration(${package}) #updating origin (theorically just to synchronize adequately remote tracking branches)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull origin integration)
+
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration  OUTPUT_QUIET ERROR_QUIET)
+
+go_To_Master(${package})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master  OUTPUT_QUIET ERROR_QUIET)
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin --tags OUTPUT_QUIET ERROR_QUIET)
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official)
 endfunction(connect_Repository)
 
 ### rare use function: when official repository has moved
