@@ -741,30 +741,59 @@ endfunction(set_Version_Number_To_Package)
 ### releasing the package version => registering the current version with a git tag
 function(release_PID_Package RESULT package next)
 set(${RESULT} FALSE PARENT_SCOPE)
-### udpate the master branch from official remote repository
+# check that current branc of package is integration
+get_Repository_Current_Branch(CURRENT_BRANCH ${WORKSPACE_DIR}/packages/${package})
+if(NOT CURRENT_BRANCH STREQUAL "integration")
+	message("[PID notification] ERROR : impossible to release package ${TARGET_PACKAGE} because it is not currently on integration branch.")
+	return()
+endif()
 
+# check for modifications
+has_Modifications(HAS_MODIFS ${package})
+if(HAS_MODIFS)
+	message("[PID notification] ERROR : impossible to release package ${TARGET_PACKAGE} because there are modifications to commit or stash.")
+	return()
+endif() # from here we can navigate between branches freely
 
-### check that integration is a fast forward of master
-go_To_Integration(${package})
+# udpate the master branch from official remote repository
+update_Repository_Versions(UPDATE_OK ${package})
+if(NOT UPDATE_OK)
+	message("[PID notification] ERROR : impossible to release package ${TARGET_PACKAGE} because its master branch cannot be updated from official one.")
+	return()
+endif() #from here graph of commits and version tags are OK
 
-
-### registering current version
-
+# registering current version
+go_To_Integration(${package}) #always release from integration branch
 get_Version_Number_And_Repo_From_Package(${package} NUMBER STRING_NUMBER ADDRESS)
-### performing basic checks
+# performing basic checks
 if(NOT NUMBER)#version number is not well defined
-	message("[PID notification] ERROR : problem releasing package ${package}, bad version format.")
+	message("[PID notification] ERROR : problem releasing package ${package}, bad version format in its root CMakeLists.txt.")
 	return()
 elseif(NOT ADDRESS)#there is no connected repository ?
 	message("[PID notification] ERROR : problem releasing package ${package}, no address for official remote repository found in your package description.")
 	return()
 endif()
 
-### check that version is not already released on official/master branch
+# check that version is not already released on official/master branch
+get_Repository_Version_Tags(AVAILABLE_VERSION_TAGS ${package})
+normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSION_TAGS}")
+if(NOT VERSION_NUMBERS)
+	message("[PID notification] ERROR : malformed package ${package}, no version specified !")
+	return()
+endif()
+foreach(version IN ITEMS ${VERSION_NUMBERS})
+	if(version STREQUAL "${STRING_NUMBER}")
+		message("[PID notification] ERROR : cannot release version ${STRING_NUMBER} for package ${package}, because this version already exists.")
+		return()
+	endif()
+endforeach()
 
-
-
-merge_Into_Master(${package} ${STRING_NUMBER})
+# check that integration is a fast forward of master
+merge_Into_Master(MERGE_OK ${package} ${STRING_NUMBER})
+if(NOT MERGE_OK)
+	message("[PID notification] ERROR : cannot release package ${package}, because there are potential merge conflicts between master and integration branches. Please update ${package} integration branch first then launch again the release process.")
+	return()
+endif()
 publish_Repository_Version(${package} ${STRING_NUMBER})
 merge_Into_Integration(${package})
 
@@ -785,6 +814,7 @@ else()#default behavior
 	math(EXPR minor "${minor}+1")
 	set(patch 0)
 endif()
+# still on integration branch
 set_Version_Number_To_Package(${package} ${major} ${minor} ${patch})
 register_Repository_Version(${package} "${major}.${minor}.${patch}")
 publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand

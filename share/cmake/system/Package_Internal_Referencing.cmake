@@ -512,7 +512,11 @@ function(deploy_Source_Package DEPLOYED package)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number 
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
-update_Repository_Versions(${package}) # updating the local repository to get all available released modifications
+update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available released modifications
+if(NOT UPDATE_OK)
+	message("[PID notification] :  ERROR, source package ${package} master branch cannot be updated from its official repository.  Try to solve the problem by hand.")
+	return()
+endif()
 get_Repository_Version_Tags(GIT_VERSIONS ${package})
 if(NOT GIT_VERSIONS) #no version available => BUG
 	message("[PID notification] :  ERROR, no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
@@ -544,7 +548,12 @@ function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT)
 
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
-update_Repository_Versions(${package}) # updating the local repository to get all available modifications
+update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
+if(NOT UPDATE_OK)
+	message("[PID notification] :  ERROR, source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand.")
+	return()
+endif()
+
 get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
 if(NOT GIT_VERSIONS) #no version available => BUG
 	set(${DEPLOYED} FALSE PARENT_SCOPE)

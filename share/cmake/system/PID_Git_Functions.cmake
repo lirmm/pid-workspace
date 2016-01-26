@@ -96,7 +96,6 @@ foreach(branch IN ITEMS ${GIT_BRANCHES})
 		break()
 	endif()
 endforeach()
-return()
 endfunction(get_Repository_Current_Branch)
 
 
@@ -162,16 +161,21 @@ endfunction(restore_Workspace_Repository_Context)
 ######################################################################
 
 ###
-function(merge_Into_Master package version_string)
+function(merge_Into_Master RESULT package version_string)
 go_To_Master(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge integration)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge --ff-only integration RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)
+if(NOT res EQUAL 0)
+	set(${RESULT} FALSE PARENT_SCOPE)
+	return()	
+endif()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v${version_string} -m "releasing version ${version_string}")
+set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(merge_Into_Master)
 
 ###
 function(merge_Into_Integration package)
 go_To_Integration(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge master)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge --ff-only master)
 endfunction(merge_Into_Integration)
 
 ###
@@ -220,7 +224,20 @@ endfunction(update_Workspace_Repository)
 
 ###
 function(publish_Repository_Integration package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration)#releasing on master branch
+go_To_Integration(${package})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration)#try pushinh on integration branch
+
+#now testing if everything is OK using the git log command
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
+if (NOT "${res}" STREQUAL "")
+	string(FIND "${res}" "integration" INDEX_LOCAL)
+	string(FIND "${res}" "origin/integration" INDEX_REMOTE)
+	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on integration branch is tracked by local and remote integration branches  
+		return()
+	else()
+		message("[PID notification] WARNING: problem updating package ${package} integration branch on its origin remote. Maybe due to a conflict between local and origin integration branches.")
+	endif()
+endif()
 endfunction(publish_Repository_Integration)
 
 
@@ -246,11 +263,15 @@ endif()
 endfunction(publish_Repository_Version)
 
 ###
-function(update_Repository_Versions package)
+function(update_Repository_Versions RESULT package)
 go_To_Master(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull official master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of official
-
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull --ff-only official master RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)#pulling master branch of official
+if(NOT res EQUAL 0)#not a fast forward !! => there is a problem
+	set(${RESULT} FALSE PARENT_SCOPE) 
+	return()
+endif()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags  OUTPUT_QUIET ERROR_QUIET)#getting new tags
+set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(update_Repository_Versions)
 
 
@@ -261,10 +282,12 @@ endfunction(update_Repository_Versions)
 ### to know wether a package has modifications on its current branch
 function(has_Modifications RESULT package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git status --porcelain OUTPUT_VARIABLE res_out ERROR_QUIET)
-
-
-
-endfunction(has_Modifications RESULT package)
+if(NOT res_out)# no modification to stage or commit
+	set(${RESULT} FALSE PARENT_SCOPE)
+else()
+	set(${RESULT} TRUE PARENT_SCOPE)
+endif()
+endfunction(has_Modifications)
 
 ### to know whether a package as a remote or not
 function(is_Package_Connected CONNECTED package branch)
