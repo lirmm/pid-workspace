@@ -274,6 +274,11 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(update_Repository_Versions)
 
+###
+function(update_Remotes package)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official OUTPUT_QUIET ERROR_QUIET)#fetching official
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch origin OUTPUT_QUIET ERROR_QUIET)#fetching origin
+endfunction(update_Remotes package)
 
 ######################################################################
 ############################ other functions #########################
@@ -288,6 +293,19 @@ else()
 	set(${RESULT} TRUE PARENT_SCOPE)
 endif()
 endfunction(has_Modifications)
+
+function(check_For_New_Commits_To_Release RESULT package)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
+if (NOT "${res}" STREQUAL "")
+	string(FIND "${res}" "integration" INDEX_LOCAL)
+	string(FIND "${res}" "master" INDEX_REMOTE)
+	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch  
+		set(${RESULT} FALSE PARENT_SCOPE)
+		return()
+	endif()
+endif()
+set(${RESULT} TRUE PARENT_SCOPE)
+endfunction(check_For_New_Commits_To_Release)
 
 ### to know whether a package as a remote or not
 function(is_Package_Connected CONNECTED package branch)
@@ -323,17 +341,21 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid git clone
 execute_process(COMMAND git branch -a
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/pid/${package}
 		OUTPUT_VARIABLE all_branches ERROR_QUIET)
-string(REPLACE "\n" ";" GIT_BRANCHES ${all_branches})
-set(INTEGRATION_FOUND FALSE)
-foreach(branch IN ITEMS ${GIT_BRANCHES})#checking that the origin/integration branch exists
-	string(REGEX REPLACE "^[ \t]*remotes/(origin/integration)[ \t]*$" "\\1" A_BRANCH ${branch})
-	if(NOT "${branch}" STREQUAL "${A_BRANCH}")#i.e. match found (this is the origin integration branch)
-		set(INTEGRATION_FOUND TRUE)
-		break()
-	endif()
-endforeach()
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${package} OUTPUT_QUIET ERROR_QUIET)
-set(${INITIALIZED} ${INTEGRATION_FOUND} PARENT_SCOPE)
+if(all_branches AND NOT all_branches STREQUAL "")
+	string(REPLACE "\n" ";" GIT_BRANCHES ${all_branches})
+	set(INTEGRATION_FOUND FALSE)
+	foreach(branch IN ITEMS ${GIT_BRANCHES})#checking that the origin/integration branch exists
+		string(REGEX REPLACE "^[ \t]*remotes/(origin/integration)[ \t]*$" "\\1" A_BRANCH ${branch})
+		if(NOT "${branch}" STREQUAL "${A_BRANCH}")#i.e. match found (this is the origin integration branch)
+			set(INTEGRATION_FOUND TRUE)
+			break()
+		endif()
+	endforeach()
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${package} OUTPUT_QUIET ERROR_QUIET)
+	set(${INITIALIZED} ${INTEGRATION_FOUND} PARENT_SCOPE)
+else()
+	set(${INITIALIZED} FALSE PARENT_SCOPE)
+endif()
 endfunction(test_Remote_Initialized)
 
 ### create a repository with no official remote specified (for now)

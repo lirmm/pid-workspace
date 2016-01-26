@@ -819,6 +819,7 @@ set_Version_Number_To_Package(${package} ${major} ${minor} ${patch})
 register_Repository_Version(${package} "${major}.${minor}.${patch}")
 publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand
 set(${RESULT} ${STRING_NUMBER} PARENT_SCOPE)
+update_Remotes(${package})
 endfunction(release_PID_Package)
 
 
