@@ -60,7 +60,6 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using common find modules of the workspace
 declare_Mode_Cache_Options()
 manage_Parrallel_Build_Option()
-
 #################################################
 ############ MANAGING build mode ################
 #################################################
@@ -278,6 +277,7 @@ endif(${CMAKE_BINARY_DIR} MATCHES release)
 reset_All_Component_Cached_Variables()
 init_PID_Version_Variable()
 init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}")
+check_For_Remote_Respositories("${address}")
 init_Standard_Path_Cache_Variables()
 endmacro(declare_Package)
 

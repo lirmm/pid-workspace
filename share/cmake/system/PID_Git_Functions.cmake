@@ -202,21 +202,21 @@ endfunction(register_Repository_Version)
 ###
 function(publish_References_In_Workspace_Repository package)
 if(EXISTS ${WORKSPACE_DIR}/share/cmake/find/Find${package}.cmake AND EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/find/Find${package}.cmake)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/references/Refer${package}.cmake)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git commit -m "${package} registered")
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git push origin master)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/find/Find${package}.cmake OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/references/Refer${package}.cmake OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git commit -m "${package} registered" OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git push origin master OUTPUT_QUIET ERROR_QUIET)
 else()
-	message("ERROR : problem registering package ${package}, cannot generate adequate cmake files")
+	message("[PID notification] ERROR: problem registering package ${package}, cannot find adequate cmake files in workspace.")
 endif()
 endfunction(publish_References_In_Workspace_Repository)
 
 ###
-function(publish_Repository_Version package version_string)
-go_To_Master(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master)#releasing on master branch
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin v${version_string})#releasing version tag
-endfunction(publish_Repository_Version)
+function(update_Workspace_Repository remote)
+go_To_Workspace_Master()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git pull ${remote} master)#pulling master branch of origin or official
+endfunction(update_Workspace_Repository)
+
 
 ###
 function(publish_Repository_Integration package)
@@ -225,21 +225,46 @@ endfunction(publish_Repository_Integration)
 
 
 ###
-function(update_Repository_Versions package)
+function(publish_Repository_Version package version_string)
 go_To_Master(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull origin master)#pulling master branch of origin
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch origin --tags)#getting new tags
-endfunction(update_Repository_Versions)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push official master OUTPUT_QUIET ERROR_QUIET)#releasing on master branch of official
+
+#now testing if everything is OK using the git log command
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
+if (NOT "${res}" STREQUAL "")
+	string(FIND "${res}" "master" INDEX_LOCAL)
+	string(FIND "${res}" "official/master" INDEX_REMOTE)
+	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch  
+		set(OFFICIAL_SYNCHRO TRUE)
+	else()
+		set(OFFICIAL_SYNCHRO FALSE)
+	endif()
+endif()
+if(OFFICIAL_SYNCHRO)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push official v${version_string} OUTPUT_QUIET ERROR_QUIET)#releasing version tag
+endif()
+endfunction(publish_Repository_Version)
 
 ###
-function(update_Workspace_Repository remote)
-go_To_Workspace_Master()
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git pull ${remote} master)#pulling master branch of origin or official
-endfunction(update_Workspace_Repository)
+function(update_Repository_Versions package)
+go_To_Master(${package})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull official master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of official
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags  OUTPUT_QUIET ERROR_QUIET)#getting new tags
+endfunction(update_Repository_Versions)
+
 
 ######################################################################
 ############################ other functions #########################
 ######################################################################
+
+### to know wether a package has modifications on its current branch
+function(has_Modifications RESULT package)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git status --porcelain OUTPUT_VARIABLE res_out ERROR_QUIET)
+
+
+
+endfunction(has_Modifications RESULT package)
 
 ### to know whether a package as a remote or not
 function(is_Package_Connected CONNECTED package branch)
@@ -347,6 +372,21 @@ endif()
 get_filename_component(REPO_NAME ${REPO_PATH} NAME_WE)
 set(${RES_NAME} ${REPO_NAME} PARENT_SCOPE) 
 endfunction(get_Repository_Name)
+
+### checking if package has official and origin remote repositories
+function(check_For_Remote_Respositories git_url)
+if(git_url STREQUAL "") #no official repository => do nothing
+	return()
+endif()
+is_Package_Connected(CONNECTED ${PROJECT_NAME} official)
+if(CONNECTED) #the package has an official remote 
+	return()
+endif()
+# not connected to an official remote while it should => problem => corrective action
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add official ${git_url} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official --tags OUTPUT_QUIET ERROR_QUIET)
+endfunction(check_For_Remote_Respositories)
 
 ######################################################################
 ############## wiki repository related functions #####################

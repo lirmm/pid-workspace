@@ -29,6 +29,10 @@ include(Package_Internal_Targets_Management NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 
+########################################################################
+########## Categories (classification of packages) management ##########
+########################################################################
+
 ###
 function(classify_Package_Categories all_packages)
 foreach(a_cat IN ITEMS ${ROOT_CATEGORIES})
@@ -240,13 +244,17 @@ if(CAT_${category}_CATEGORIES)
 		print_Category("${long_name}" "${category}/${sub_cat}" ${sub_cat_nb_tabs})
 	endforeach()
 endif()
-endfunction()
+endfunction(print_Category)
+
+########################################################################
+##################### Packages info management #########################
+########################################################################
 
 ###
 function(print_Author author)
 get_Formatted_Author_String("${author}" RES_STRING)
 message("	${RES_STRING}")
-endfunction()
+endfunction(print_Author)
 
 ###
 function(print_Package_Contact package)
@@ -277,7 +285,7 @@ if(${package}_REFERENCES)
 	message("BINARY VERSIONS:")
 	print_Package_Binaries(${package})
 endif()
-endfunction()
+endfunction(print_Package_Info)
 
 ###
 function(print_External_Package_Info package)
@@ -297,7 +305,7 @@ if(${package}_REFERENCES)
 	message("BINARY VERSIONS:")
 	print_Package_Binaries(${package})
 endif()
-endfunction()
+endfunction(print_External_Package_Info)
 
 ###
 function(print_External_Package_Contact package)
@@ -316,7 +324,7 @@ else()
 		message("PID PACKAGE CONTACT: ${AUTHOR_STRING}")
 	endif()
 endif()
-endfunction()
+endfunction(print_External_Package_Contact)
 
 
 
@@ -328,7 +336,7 @@ foreach(version IN ITEMS ${${package}_REFERENCES})
 		print_Accessible_Binary(${package} ${version} ${system})
 	endforeach()
 endforeach()
-endfunction()
+endfunction(print_Package_Binaries)
 
 
 ###
@@ -343,7 +351,7 @@ foreach(system IN ITEMS ${${package}_REFERENCE_${version}})
 	endif()
 endforeach()
 set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
-endfunction()
+endfunction(test_Package_Binary_Against_Platform)
 
 ###
 function(exact_Version_Exists package version RESULT)
@@ -359,7 +367,7 @@ else()
 		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 endif()
-endfunction()
+endfunction(exact_Version_Exists)
 
 ###
 function(generate_Binary_Package_Archive_Name package version system mode RES_FILE RES_FOLDER)
@@ -446,7 +454,7 @@ endif()
 
 #release and debug versions are accessible => OK
 set(${RESULT} TRUE PARENT_SCOPE)
-endfunction()
+endfunction(test_binary_download)
 
 
 ###
@@ -481,7 +489,11 @@ else()
 	set(printed_string "${printed_string} CANNOT BE INSTALLED")
 endif()
 message("${printed_string}")
-endfunction()
+endfunction(print_Accessible_Binary)
+
+########################################################################
+#################### Packages lifecycle management #####################
+########################################################################
 
 ###
 function(create_PID_Package package author institution license)
@@ -580,33 +592,8 @@ include(${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake)
 if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
 	message("[ERROR] : cannot configure runtime dependencies for installed version ${version} of package ${package}")
 endif()
-endfunction()
+endfunction(resolve_PID_Package)
 
-###
-function(print_Available_Licenses)
-file(GLOB ALL_AVAILABLE_LICENSES ${WORKSPACE_DIR}/share/cmake/licenses/*.cmake)
-list(REMOVE_DUPLICATES ALL_AVAILABLE_LICENSES)
-set(licenses "")
-foreach(licensefile IN ITEMS ${ALL_AVAILABLE_LICENSES})
-	get_filename_component(licensefilename ${licensefile} NAME)
-	string(REGEX REPLACE "^License([^\\.]+)\\.cmake$" "\\1" a_license "${licensefilename}")
-	if(NOT "${a_license}" STREQUAL "${licensefilename}")#it matches
-		list(APPEND licenses ${a_license})
-	endif()
-endforeach()
-set(res_licenses_string "")
-fill_List_Into_String("${licenses}" res_licenses_string)
-message("AVAILABLE LICENSES: ${res_licenses_string}")
-endfunction()
-
-
-###
-function(print_License_Info license)
-message("LICENSE: ${LICENSE_NAME}")
-message("VERSION: ${LICENSE_VERSION}")
-message("OFFICIAL NAME: ${LICENSE_FULLNAME}")
-message("AUTHORS: ${LICENSE_AUTHORS}")
-endfunction()
 
 ###
 function(set_Package_Repository_Address package git_url)
@@ -700,7 +687,7 @@ go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} install)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} referencing)
 publish_References_In_Workspace_Repository(${package})
-endfunction()
+endfunction(register_PID_Package)
 
 
 ###
@@ -750,18 +737,35 @@ file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${TO_WRITE}) #get
 
 endfunction(set_Version_Number_To_Package)
 
-### RELEASE COMMAND IMPLEM
-function(release_PID_Package package next)
-### registering current version
+
+### releasing the package version => registering the current version with a git tag
+function(release_PID_Package RESULT package next)
+set(${RESULT} FALSE PARENT_SCOPE)
+### udpate the master branch from official remote repository
+
+
+### check that integration is a fast forward of master
 go_To_Integration(${package})
+
+
+### registering current version
+
 get_Version_Number_And_Repo_From_Package(${package} NUMBER STRING_NUMBER ADDRESS)
-if(NOT NUMBER)
-	message("[ERROR] : problem releasing package ${package}, bad version format")
+### performing basic checks
+if(NOT NUMBER)#version number is not well defined
+	message("[PID notification] ERROR : problem releasing package ${package}, bad version format.")
+	return()
+elseif(NOT ADDRESS)#there is no connected repository ?
+	message("[PID notification] ERROR : problem releasing package ${package}, no address for official remote repository found in your package description.")
+	return()
 endif()
+
+### check that version is not already released on official/master branch
+
+
+
 merge_Into_Master(${package} ${STRING_NUMBER})
-if(ADDRESS)#there is a connected repository
-	publish_Repository_Version(${package} ${STRING_NUMBER})
-endif()
+publish_Repository_Version(${package} ${STRING_NUMBER})
 merge_Into_Integration(${package})
 
 ### now starting a new version
@@ -783,17 +787,17 @@ else()#default behavior
 endif()
 set_Version_Number_To_Package(${package} ${major} ${minor} ${patch})
 register_Repository_Version(${package} "${major}.${minor}.${patch}")
-if(ADDRESS)
-	publish_Repository_Integration(${package})
-endif()
+publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand
+set(${RESULT} ${STRING_NUMBER} PARENT_SCOPE)
 endfunction(release_PID_Package)
+
 
 ### UPDATE COMMAND IMPLEMENTATION
 function(update_PID_Source_Package package)
 set(INSTALLED FALSE)
 deploy_Source_Package(INSTALLED ${package})
 if(NOT INSTALLED)
-	message("[ERROR] : cannot build and install ${package}")
+	message("[PID notification] ERROR : cannot update ${package}.")
 endif()
 endfunction(update_PID_Source_Package)
 
@@ -801,7 +805,7 @@ endfunction(update_PID_Source_Package)
 function(update_PID_Binary_Package package)
 deploy_Binary_Package(DEPLOYED ${package})
 if(NOT DEPLOYED) 
-	message("[ERROR] : cannot update ${package} with its last available version ${version}")
+	message("[PID notification] ERROR : cannot update ${package} with its last available version ${version}.")
 endif()
 endfunction(update_PID_Binary_Package)
 
@@ -832,5 +836,36 @@ if(update)
 	update_PID_All_Package()
 endif()
 endfunction(upgrade_Workspace)
+
+
+########################################################################
+######################## Licenses management ###########################
+########################################################################
+
+###
+function(print_Available_Licenses)
+file(GLOB ALL_AVAILABLE_LICENSES ${WORKSPACE_DIR}/share/cmake/licenses/*.cmake)
+list(REMOVE_DUPLICATES ALL_AVAILABLE_LICENSES)
+set(licenses "")
+foreach(licensefile IN ITEMS ${ALL_AVAILABLE_LICENSES})
+	get_filename_component(licensefilename ${licensefile} NAME)
+	string(REGEX REPLACE "^License([^\\.]+)\\.cmake$" "\\1" a_license "${licensefilename}")
+	if(NOT "${a_license}" STREQUAL "${licensefilename}")#it matches
+		list(APPEND licenses ${a_license})
+	endif()
+endforeach()
+set(res_licenses_string "")
+fill_List_Into_String("${licenses}" res_licenses_string)
+message("AVAILABLE LICENSES: ${res_licenses_string}")
+endfunction()
+
+
+###
+function(print_License_Info license)
+message("LICENSE: ${LICENSE_NAME}")
+message("VERSION: ${LICENSE_VERSION}")
+message("OFFICIAL NAME: ${LICENSE_FULLNAME}")
+message("AUTHORS: ${LICENSE_AUTHORS}")
+endfunction()
 
 
