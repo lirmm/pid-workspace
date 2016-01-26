@@ -295,16 +295,24 @@ endif()
 endfunction(has_Modifications)
 
 function(check_For_New_Commits_To_Release RESULT package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
+go_To_Integration(${package})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=2 OUTPUT_VARIABLE res ERROR_QUIET)
 if (NOT "${res}" STREQUAL "")
-	string(FIND "${res}" "integration" INDEX_LOCAL)
-	string(FIND "${res}" "master" INDEX_REMOTE)
-	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch  
-		set(${RESULT} FALSE PARENT_SCOPE)
-		return()
+	string(REPLACE " " "%" GIT_LOGS ${res})
+	string(REPLACE "\t" "%" GIT_LOGS ${GIT_LOGS})
+	string(REPLACE "\n" ";" GIT_LOGS ${GIT_LOGS})
+	string(REGEX REPLACE "^(.+);$" "\\1" GIT_LOGS ${GIT_LOGS})
+	list(LENGTH GIT_LOGS SIZE)
+	if(SIZE GREATER 1)
+		list(GET GIT_LOGS 1 LINE2)
+		string(FIND "${LINE2}" "%master" INDEX_MAS)
+		if(INDEX_MAS LESS 0)# master not found in two last lines starting from integration
+			set(${RESULT} TRUE PARENT_SCOPE) #master is more than 1 commit away from integration
+			return()
+		endif()
 	endif()
 endif()
-set(${RESULT} TRUE PARENT_SCOPE)
+set(${RESULT} FALSE PARENT_SCOPE)
 endfunction(check_For_New_Commits_To_Release)
 
 ### to know whether a package as a remote or not

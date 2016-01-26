@@ -638,6 +638,10 @@ restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT})# resto
 endfunction(add_Connection_To_PID_Package)
 
 
+##########################################
+###### clearing/removing packages ########
+##########################################
+
 ###
 function(clear_PID_Package package version)
 if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
@@ -678,7 +682,11 @@ if(	EXISTS ${WORKSPACE_DIR}/install/${package})
 endif()
 
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/packages/${package})
-endfunction()
+endfunction(remove_PID_Package package)
+
+##########################################
+############ registering packages ########
+##########################################
 
 
 ###
@@ -689,6 +697,10 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 publish_References_In_Workspace_Repository(${package})
 endfunction(register_PID_Package)
 
+
+##########################################
+############ releasing packages ##########
+##########################################
 
 ###
 function(get_Version_Number_And_Repo_From_Package package NUMBER STRING_NUMBER ADDRESS)
@@ -758,7 +770,7 @@ endif() # from here we can navigate between branches freely
 # udpate the master branch from official remote repository
 update_Repository_Versions(UPDATE_OK ${package})
 if(NOT UPDATE_OK)
-	message("[PID notification] ERROR : impossible to release package ${TARGET_PACKAGE} because its master branch cannot be updated from official one.")
+	message("[PID notification] ERROR : impossible to release package ${TARGET_PACKAGE} because its master branch cannot be updated from official one. Maybe you have no clone rights from official or local master branch of package ${package} is not synchronizable with official master branch.")
 	return()
 endif() #from here graph of commits and version tags are OK
 
@@ -787,6 +799,13 @@ foreach(version IN ITEMS ${VERSION_NUMBERS})
 		return()
 	endif()
 endforeach()
+
+# check that there are things to commit to master
+check_For_New_Commits_To_Release(COMMITS_AVAILABLE ${package})
+if(NOT COMMITS_AVAILABLE)
+	message("[PID notification] ERROR : cannot release package ${package} because integration branch has no commits to contribute to new version.")
+	return()
+endif()
 
 # check that integration is a fast forward of master
 merge_Into_Master(MERGE_OK ${package} ${STRING_NUMBER})
@@ -822,8 +841,11 @@ set(${RESULT} ${STRING_NUMBER} PARENT_SCOPE)
 update_Remotes(${package})
 endfunction(release_PID_Package)
 
+##########################################
+############ updating packages ###########
+##########################################
 
-### UPDATE COMMAND IMPLEMENTATION
+###
 function(update_PID_Source_Package package)
 set(INSTALLED FALSE)
 deploy_Source_Package(INSTALLED ${package})
@@ -832,7 +854,7 @@ if(NOT INSTALLED)
 endif()
 endfunction(update_PID_Source_Package)
 
-
+###
 function(update_PID_Binary_Package package)
 deploy_Binary_Package(DEPLOYED ${package})
 if(NOT DEPLOYED) 
@@ -862,7 +884,7 @@ function(upgrade_Workspace remote update)
 save_Workspace_Repository_Context(CURRENT_COMMIT SAVED_CONTENT)
 update_Workspace_Repository(${remote})
 restore_Workspace_Repository_Context(${CURRENT_COMMIT} ${SAVED_CONTENT})
-message("ATTENTION: You may have to resolve some conflicts !")
+message("[PID notification] WARNING: You may have to resolve some conflicts in your source packages !")
 if(update)
 	update_PID_All_Package()
 endif()
