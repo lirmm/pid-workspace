@@ -133,7 +133,7 @@ endfunction(save_Repository_Context)
 ###
 function(restore_Repository_Context package initial_commit saved_content)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git reset --hard
-		COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git clean -ff
+		COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git clean -ff -d
 		OUTPUT_QUIET ERROR_QUIET)#this is a mandatory step due to the generation of versionned files in source dir when build takes place (this should let the repository in same state as initially)
 
 go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${initial_commit})
@@ -147,21 +147,27 @@ endfunction(restore_Repository_Context)
 function(save_Workspace_Repository_Context INITIAL_COMMIT SAVED_CONTENT)
 get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR})
 if(NOT BRANCH_NAME)
-get_Repository_Current_Commit(COMMIT_NAME ${WORKSPACE_DIR})
-set(CONTEXT ${COMMIT_NAME})
+	get_Repository_Current_Commit(COMMIT_NAME ${WORKSPACE_DIR})
+	set(CONTEXT ${COMMIT_NAME})
 else()
-set(CONTEXT ${BRANCH_NAME})
+	set(CONTEXT ${BRANCH_NAME})
 endif()
 set(${INITIAL_COMMIT} ${CONTEXT} PARENT_SCOPE)
-
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash save OUTPUT_QUIET ERROR_QUIET)
-set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git status --porcelain OUTPUT_VARIABLE res_out ERROR_QUIET)
+if(NOT res_out)# no modification to stage or commit
+	set(${SAVED_CONTENT} FALSE PARENT_SCOPE)
+else()
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash save OUTPUT_QUIET ERROR_QUIET)	
+	set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
+endif()
 endfunction(save_Workspace_Repository_Context)
 
 ###
 function(restore_Workspace_Repository_Context initial_commit saved_content)
 go_To_Commit(${WORKSPACE_DIR} ${initial_commit})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash pop OUTPUT_QUIET ERROR_QUIET)
+if(saved_content)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash pop OUTPUT_QUIET ERROR_QUIET)
+endif()
 endfunction(restore_Workspace_Repository_Context)
 
 ######################################################################
