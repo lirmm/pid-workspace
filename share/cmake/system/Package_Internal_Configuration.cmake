@@ -207,7 +207,7 @@ endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_Resources_Dependencies)
 
-
+###
 function(get_Bin_Component_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
@@ -250,7 +250,7 @@ set(${RES_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Runtime_Resources_Dependencies)
 
 
-
+###
 function(get_Bin_Component_Direct_Runtime_Links_Dependencies RES_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
@@ -270,7 +270,7 @@ endif()
 set(${RES_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_Links_Dependencies)
 
-
+###
 function(get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies RES_PRIVATE_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
