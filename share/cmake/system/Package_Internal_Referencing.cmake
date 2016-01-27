@@ -252,7 +252,7 @@ if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	set(EXACT FALSE)
 	resolve_Required_Package_Version(POSSIBLE VERSION_MIN EXACT ${package})
 	if(NOT POSSIBLE)
-		message("[PID notification] :  ERROR, impossible to find an adequate version for package ${package}")
+		message("[PID notification] :  ERROR, impossible to find an adequate version for package ${package}.")
 		set(${INSTALL_OK} FALSE PARENT_SCOPE)
 		return()
 	endif()
@@ -270,7 +270,7 @@ if(USE_SOURCES) #package sources reside in the workspace
 		deploy_Source_Package(SOURCE_DEPLOYED ${package}) # case when the sources exist but haven't been installed yet (should never happen)
 	endif()
 	if(NOT SOURCE_DEPLOYED)
-		message("[PID notification] :  ERROR, impossible to build the sources of package ${package}. Try \"by hand\".")
+		message("[PID notification] :  ERROR, impossible to deploy sources package ${package}. Try \"by hand\".")
 	else()
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 	endif()
@@ -308,7 +308,7 @@ else()#using references
 			set(${INSTALL_OK} TRUE PARENT_SCOPE)
 		else()
 			set(${INSTALL_OK} FALSE PARENT_SCOPE)
-			message("[PID notification] :  ERROR, impossible to locate source repository of package ${package}")			
+			message("[PID notification] :  ERROR, impossible to locate source repository of package ${package}.")			
 			return()
 		endif()
 	endif()
@@ -492,17 +492,22 @@ function(build_And_Install_Source DEPLOYED package version)
 			)
 	endif()	
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON  ..
+		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON  ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+		ERROR_QUIET OUTPUT_QUIET
 		)
+	message("[PID notification] INFO : building version ${version} of package ${package} ...")
 	execute_process(
 		COMMAND ${CMAKE_BUILD_TOOL} build
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+		ERROR_QUIET OUTPUT_QUIET
 		)
 	if(EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
 		set(${DEPLOYED} TRUE PARENT_SCOPE)
+		message("[PID notification] INFO : ... package ${package} version ${version} built !")
 	else()
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
+		message("[PID notification] ERROR : ... build of package ${package} version ${version} has failed !")
 	endif()
 
 endfunction(build_And_Install_Source)
@@ -514,12 +519,12 @@ set(${DEPLOYED} FALSE PARENT_SCOPE)
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available released modifications
 if(NOT UPDATE_OK)
-	message("[PID notification] :  ERROR, source package ${package} master branch cannot be updated from its official repository.  Try to solve the problem by hand.")
+	message("[PID notification] :  ERROR, source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand or contact the administrator of the official package.")
 	return()
 endif()
 get_Repository_Version_Tags(GIT_VERSIONS ${package})
 if(NOT GIT_VERSIONS) #no version available => BUG
-	message("[PID notification] :  ERROR, no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
+	message("[PID notification] : CRITICAL ERROR, no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
@@ -550,8 +555,7 @@ function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT)
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
 if(NOT UPDATE_OK)
-	message("[PID notification] :  ERROR, source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand.")
-	return()
+	message("[PID notification] :  WARNING, source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand.")
 endif()
 
 get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
