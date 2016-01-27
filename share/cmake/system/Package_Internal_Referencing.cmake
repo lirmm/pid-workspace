@@ -498,7 +498,7 @@ function(build_And_Install_Source DEPLOYED package version)
 		)
 	message("[PID notification] INFO : building version ${version} of package ${package} ...")
 	execute_process(
-		COMMAND ${CMAKE_BUILD_TOOL} build
+		COMMAND ${CMAKE_BUILD_TOOL} build force=true
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		ERROR_QUIET OUTPUT_QUIET
 		)
