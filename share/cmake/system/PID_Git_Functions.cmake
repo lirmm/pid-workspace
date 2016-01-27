@@ -121,17 +121,25 @@ else()
 	set(CONTEXT ${BRANCH_NAME})
 endif()
 set(${INITIAL_COMMIT} ${CONTEXT} PARENT_SCOPE)
-
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash save OUTPUT_QUIET ERROR_QUIET)
-set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
+has_Modifications(RESULT ${package})
+if(RESULT)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash save OUTPUT_QUIET ERROR_QUIET)
+	set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
+else()
+	set(${SAVED_CONTENT} FALSE PARENT_SCOPE)
+endif()
 endfunction(save_Repository_Context)
 
 ###
 function(restore_Repository_Context package initial_commit saved_content)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout -- license.txt OUTPUT_QUIET ERROR_QUIET)#this is a mandatory step due to the generation of a versionned license file when build takes place
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git reset --hard
+		COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git clean -ff
+		OUTPUT_QUIET ERROR_QUIET)#this is a mandatory step due to the generation of versionned files in source dir when build takes place (this should let the repository in same state as initially)
 
 go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${initial_commit})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash pop OUTPUT_QUIET ERROR_QUIET)
+if(saved_content)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash pop OUTPUT_QUIET ERROR_QUIET)
+endif()
 endfunction(restore_Repository_Context)
 
 
@@ -294,6 +302,7 @@ else()
 endif()
 endfunction(has_Modifications)
 
+### to know wether a package has interesting commits that may be part of a release
 function(check_For_New_Commits_To_Release RESULT package)
 go_To_Integration(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=2 OUTPUT_VARIABLE res ERROR_QUIET)

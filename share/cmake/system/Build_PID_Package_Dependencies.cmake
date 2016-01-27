@@ -26,7 +26,6 @@ if(DEPENDENT_PACKAGES)
 	SEPARATE_ARGUMENTS(DEPENDENT_PACKAGES)
 	foreach(dep_pack IN ITEMS ${DEPENDENT_PACKAGES})
 		package_Already_Built(IS_BUILT ${dep_pack} ${PACKAGE_LAUCHING_BUILD})
-		message("IS BUILT ? -${IS_BUILT}-")
 		if(NOT IS_BUILT)# if not built modifications
 			get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${dep_pack})
 			if(BRANCH_NAME AND NOT BRANCH_NAME STREQUAL "master") 

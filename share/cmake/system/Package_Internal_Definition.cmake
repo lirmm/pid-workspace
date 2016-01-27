@@ -140,16 +140,16 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	# global build target
 	if(BUILD_RELEASE_ONLY)
 		add_custom_target(build
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
 			COMMENT "[PID build] Building package (Release mode only) ..."
 			VERBATIM
 		)
 	else()
 		add_custom_target(build
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
 			COMMENT "[PID build] Building package (Debug and Release modes) ..."
 			VERBATIM
 		)
@@ -644,7 +644,7 @@ if(	BUILD_DEPENDENT_PACKAGES
 				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 								-DBUILD_TOOL=${CMAKE_MAKE_PROGRAM}
 								-DDEPENDENT_PACKAGES=${DEPENDENT_SOURCE_PACKAGES}
-								-DPACKAGE_LAUCHING_BUILD="${PROJECT_NAME}"
+								-DPACKAGE_LAUCHING_BUILD=${PROJECT_NAME}
 								-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
 					COMMENT "[PID build] building dependencies of ${PROJECT_NAME} ..."
 					VERBATIM
@@ -654,14 +654,14 @@ if(	BUILD_DEPENDENT_PACKAGES
 				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 								-DBUILD_TOOL=${CMAKE_MAKE_PROGRAM}
 								-DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
-								-DPACKAGE_LAUCHING_BUILD="${PROJECT_NAME}"
+								-DPACKAGE_LAUCHING_BUILD=${PROJECT_NAME}
 								-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
 					COMMENT "[PID build] building dependencies of ${PROJECT_NAME} ..."
 					VERBATIM
 			)
 
 		endif()
-		add_dependencies(build build-dependencies)# first building dependencies
+		add_dependencies(build build-dependencies)# first building dependencies if necessary
 	endif()
 else()
 	set(DEPENDENT_SOURCE_PACKAGES)

@@ -520,6 +520,7 @@ save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available released modifications
 if(NOT UPDATE_OK)
 	message("[PID] ERROR : source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand or contact the administrator of the official package.")
+	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
 get_Repository_Version_Tags(GIT_VERSIONS ${package})
@@ -556,6 +557,8 @@ save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
 if(NOT UPDATE_OK)
 	message("[PID] WARNING : source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand.")
+	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+	return()
 endif()
 
 get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
