@@ -27,6 +27,6 @@ if(TARGET_PACKAGE)
 		register_PID_Package(${TARGET_PACKAGE})
 	endif()
 else()
-	message("ERROR : You must specify the name of the package to remove using name=<name of package> argument")
+	message("[PID] ERROR : you must specify the name of the package to remove using name=<name of package> argument")
 endif()
 

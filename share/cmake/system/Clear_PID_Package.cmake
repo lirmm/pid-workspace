@@ -31,10 +31,10 @@ if(TARGET_PACKAGE AND TARGET_VERSION)
 		clear_PID_Package(	${TARGET_PACKAGE} 
 					${TARGET_VERSION})
 	else()
-		message("[ERROR] : there is no package named ${TARGET_PACKAGE} installed")
+		message("[PID] ERROR : there is no package named ${TARGET_PACKAGE} installed.")
 	endif()
 else()
-	message("[ERROR] : You must specify the name of the package to clear using name=<name of package> argument and a version using version=<type or number of the  version>")
+	message("[PID] ERROR : you must specify the name of the package to clear using name=<name of package> argument and a version using version=<type or number of the  version>")
 endif()
 
 

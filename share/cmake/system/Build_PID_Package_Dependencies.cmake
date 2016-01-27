@@ -30,13 +30,13 @@ if(DEPENDENT_PACKAGES)
 			get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${dep_pack})
 			if(BRANCH_NAME AND NOT BRANCH_NAME STREQUAL "master") 
 				#if on integration branch or another feature specific branch
-				message("[PID build] Building ${dep_pack} ...")	
+				message("[PID] Building ${dep_pack} ...")	
 				execute_process (COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${dep_pack}/build ${BUILD_TOOL} build)				
 			endif()
 		endif()
 	endforeach()
 else()
-	message("[PID build] ERROR : no package to build !")
+	message("[PID] ERROR : no package to build !")
 endif()
 
 

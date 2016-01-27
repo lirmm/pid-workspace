@@ -211,7 +211,7 @@ if(EXISTS ${WORKSPACE_DIR}/share/cmake/find/Find${package}.cmake AND EXISTS ${WO
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git commit -m "${package} registered" OUTPUT_QUIET ERROR_QUIET)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git push origin master OUTPUT_QUIET ERROR_QUIET)
 else()
-	message("[PID notification] ERROR: problem registering package ${package}, cannot find adequate cmake files in workspace.")
+	message("[PID] ERROR : problem registering package ${package}, cannot find adequate cmake files in workspace.")
 endif()
 endfunction(publish_References_In_Workspace_Repository)
 
@@ -235,7 +235,7 @@ if (NOT "${res}" STREQUAL "")
 	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on integration branch is tracked by local and remote integration branches  
 		return()
 	else()
-		message("[PID notification] WARNING: problem updating package ${package} integration branch on its origin remote. Maybe due to a conflict between local and origin integration branches.")
+		message("[PID] WARNING : problem updating package ${package} integration branch on its origin remote. Maybe due to a conflict between local and origin integration branches.")
 	endif()
 endif()
 endfunction(publish_Repository_Integration)
@@ -339,7 +339,7 @@ if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official OUTPUT_QUIET ERROR_QUIET) #updating remote branches for official remote
 else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
-	message("[PID notification] ERROR: impossible to clone the repository of package ${package} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
+	message("[PID] ERROR : impossible to clone the repository of package ${package} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
 endif()
 endfunction(clone_Repository)
 
@@ -406,7 +406,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 go_To_Integration(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull origin integration OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration OUTPUT_QUIET ERROR_QUIET)
-message("[PID notification] INFO: Origin remote has been changed to ${url}.")
+message("[PID] INFO: Origin remote has been changed to ${url}.")
 endfunction(change_Origin_Repository)
 
 
@@ -453,7 +453,7 @@ if(EXISTS ${WORKSPACE_DIR}/wikis/${package}.wiki AND IS_DIRECTORY ${WORKSPACE_DI
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
 else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
-	message("[PID ERROR] : impossible to clone the repository of package ${package} wiki (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
+	message("[PID] ERROR : impossible to clone the repository of package ${package} wiki (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
 endif()
 endfunction(clone_Wiki_Repository)
 

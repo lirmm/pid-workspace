@@ -59,10 +59,10 @@ foreach(a_file IN ITEMS ${all_files})
 		# now adding the newly created header to the file
 		set(RES "${configured_header}")
 		set(RES "${RES}${full_content}")
-		message("new content for ${a_file} :\n${RES}")	
 		file(WRITE ${a_file} "${RES}")
+		message("[PID] INFO : license header added to file ${a_file}.")
 	else()
-		message("file ${a_file} ALREADY contains a license header")	
+		message("[PID] INFO : file ${a_file} ALREADY contains a license header.")	
 	endif()
 		
 endforeach()

@@ -30,7 +30,7 @@ if(REQUIRED_PACKAGE)
 		
 		include(ReferExternal${REQUIRED_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 		if(REQUIRED_STATUS STREQUAL NOTFOUND)
-			message("ERROR : Package name ${REQUIRED_PACKAGE} does not refer to any known package in the workspace")
+			message("[PID] ERROR : Package name ${REQUIRED_PACKAGE} does not refer to any known package in the workspace")
 			return()
 		endif()
 		print_External_Package_Info(${REQUIRED_PACKAGE})
@@ -39,7 +39,7 @@ if(REQUIRED_PACKAGE)
 	print_Package_Info(${REQUIRED_PACKAGE})
 
 else()
-	message("ERROR : You must specify a package using name=<name of package> argument")
+	message("[PID] ERROR : you must specify a package using name=<name of package> argument.")
 endif()
 
 

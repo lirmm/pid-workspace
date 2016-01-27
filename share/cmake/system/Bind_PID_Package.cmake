@@ -27,7 +27,7 @@ include(${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_VERSION}/share/Use${P
 #using the generated Use<package>-<version>.cmake file to get adequate version information about components
 if(	${res} STREQUAL NOTFOUND
 	OR NOT DEFINED ${PACKAGE_NAME}_COMPONENTS) #if there is no component defined for the package there is an error
-	message("ERROR : The binary package ${PACKAGE_NAME} (version ${PACKAGE_VERSION}) whose runtime dependencies must be (re)bound cannot be found from the workspace path : ${WORKSPACE_DIR}")
+	message("[PID] ERROR : The binary package ${PACKAGE_NAME} (version ${PACKAGE_VERSION}) whose runtime dependencies must be (re)bound cannot be found from the workspace path : ${WORKSPACE_DIR}")
 	return()
 endif()
 set(BIN_PACKAGE_PATH ${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_VERSION})
@@ -74,12 +74,12 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS})
 	endif() 
 endforeach()
 if(NOT_DEFINED_EXT_DEPS OR NOT_DEFINED_EXT_DEPS_DEBUG)
-	message(WARNING "Following external packages path has been automatically set. To resolve their path by hand use -DCONFIG_<package>=<path> option when calling this script")
+	message(WARNING "[PID] WARNING : Following external packages path has been automatically set. To resolve their path by hand use -DCONFIG_<package>=<path> option when calling this script")
 	foreach(ext_dep IN ITEMS ${NOT_DEFINED_EXT_DEPS_DEBUG})
-		message("DEBUG mode : ${ext_dep} with path = ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG}")
+		message("[PID] DEBUG mode : ${ext_dep} with path = ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG}")
 	endforeach()
 	foreach(ext_dep IN ITEMS ${NOT_DEFINED_EXT_DEPS})
-		message("RELEASE mode : ${ext_dep} with path = ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH}")
+		message("[PID] RELEASE mode : ${ext_dep} with path = ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH}")
 	endforeach()
 endif()
 

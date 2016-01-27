@@ -41,7 +41,7 @@ endif()
 #finding doxygen tool and doxygen configuration file 
 find_package(Doxygen)
 if(NOT DOXYGEN_FOUND)
-	message(WARNING "Doxygen not found please install it to generate the API documentation")
+	message("[PID] WARNING : Doxygen not found please install it to generate the API documentation")
 	return()
 endif(NOT DOXYGEN_FOUND)
 
@@ -57,7 +57,7 @@ if(DOXYFILE_IN MATCHES DOXYFILE_IN-NOTFOUND)
 					NO_DEFAULT_PATH
 		)
 	if(GENERIC_DOXYFILE_IN MATCHES GENERIC_DOXYFILE_IN-NOTFOUND)
-		message("[PID system notification] No doxygen template file found ... skipping documentation generation !!")
+		message("[PID] INFO : no doxygen template file found ... skipping documentation generation !!")
 	else()
 		set(DOXYFILE_PATH ${GENERIC_DOXYFILE_IN})
 	endif()
@@ -171,7 +171,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(LICENSE ${LICENSE} CACHE INTERNAL "")
 		
 		if(LICENSE_IN-NOTFOUND)
-			message(WARNING "license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
+			message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
 		else(LICENSE_IN-NOTFOUND)
 			foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
 				generate_Full_Author_String(${author} STRING_TO_APPEND)
@@ -328,15 +328,15 @@ set(PATH_TO_WIKI_ADDITIONAL_CONTENT ${CMAKE_SOURCE_DIR}/share/wiki)
 if(NOT EXISTS ${PATH_TO_WIKI_ADDITIONAL_CONTENT}) #if folder does not exist (old package style)
 	file(COPY ${WORKSPACE_DIR}/share/patterns/package/share/wiki DESTINATION ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/share)#create the folder
 	set(PACKAGE_ADDITIONAL_CONTENT "")
-	message(WARNING "[PID system notification] creating missing folder wiki in ${PROJECT_NAME} share folder")
+	message("[PID] WARNING : creating missing folder wiki in ${PROJECT_NAME} share folder")
 	if(wiki_content_file)#a content file is targetted but cannot exists in the non-existing folder
-		message(WARNING "[PID system notification] creating missing wiki content file ${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} in ${PROJECT_NAME} share/wiki folder. Remember to commit modifications.")
+		message("[PID] WARNING : creating missing wiki content file ${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} in ${PROJECT_NAME} share/wiki folder. Remember to commit modifications.")
 		file(WRITE ${CMAKE_SOURCE_DIR}/share/wiki/${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} "\n")
 	endif()
 else() #folder exists 
 	set(PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE ${PATH_TO_WIKI_ADDITIONAL_CONTENT}/${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT})
 	if(NOT EXISTS ${PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE})#no file with target name => create an empty one
-		message(WARNING "[PID system notification] missing wiki content file ${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} in ${PROJECT_NAME} share/wiki folder. File created automatically. Please input some text in it or remove this file and reference to this file in your call to declare_PID_Wiki.  Remember to commit modifications.")
+		message("[PID] WARNING  : missing wiki content file ${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} in ${PROJECT_NAME} share/wiki folder. File created automatically. Please input some text in it or remove this file and reference to this file in your call to declare_PID_Wiki.  Remember to commit modifications.")
 		file(WRITE ${PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE} "\n")
 		set(PACKAGE_ADDITIONAL_CONTENT "")
 	else()#Here everything is OK
@@ -565,7 +565,7 @@ if(NOT IS_DEPLOYED)#repository must be initialized first
 	set(${SUCCESS} ${CONNECTED} PARENT_SCOPE) 
 else()
 	set(${SUCCESS} TRUE PARENT_SCOPE)
-	message("[PID system notification] wiki has been installed.")
+	message("[PID] INFO : wiki has been installed.")
 endif()#else the repo has been created
 
 endfunction(create_Local_Wiki_Project)

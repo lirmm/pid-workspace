@@ -40,6 +40,6 @@ if(TARGET_PACKAGE)
 		endif()
 	endif()
 else()
-	message("[PID notification] ERROR : You must specify the name of the package to update using name= argument. If you use all as name, all packages will be updated, either they are binary or source.")
+	message("[PID] ERROR : You must specify the name of the package to update using name= argument. If you use all as name, all packages will be updated, either they are binary or source.")
 endif()
 

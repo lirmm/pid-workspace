@@ -20,5 +20,5 @@
 
 include(${WORKSPACE_DIR}/pid/PID_version.cmake)
 
-message("Current workspace version: ${PID_WORKSPACE_VERSION}")
+message("[PID] INFO : current workspace version is ${PID_WORKSPACE_VERSION}.")
 

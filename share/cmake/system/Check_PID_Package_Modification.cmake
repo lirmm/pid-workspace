@@ -159,11 +159,11 @@ endforeach()
 if(REMOVED_FILES OR ADDED_FILES)#try make rebuild_cache
 	if(REMOVED_FILES)
 		list(REMOVE_DUPLICATES REMOVED_FILES)
-		message("ERROR : There are files that have been removed from source tree : ${REMOVED_FILES}")
+		message("[PID] INFO : there are files that have been removed from source tree : ${REMOVED_FILES}")
 	endif()
 	if(ADDED_FILES)
 		list(REMOVE_DUPLICATES ADDED_FILES)
-		message("ERROR : There are files that have been added to source tree : ${ADDED_FILES}")
+		message("[PID] INFO : there are files that have been added to source tree : ${ADDED_FILES}")
 	endif()	
 	
 	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/checksources "")

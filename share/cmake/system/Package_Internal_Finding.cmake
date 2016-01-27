@@ -382,7 +382,6 @@ endif()
 #no exact version required	
 get_Version_String_Numbers("${version_string}.0" exact_major exact_minor exact_patch)
 foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
-#	message("version required=${version_required}, exact_major=${exact_major}, exact_minor=${exact_minor}")
 	unset(COMPATIBLE_VERSION)
 	is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_required})
 	if(NOT COMPATIBLE_VERSION)
@@ -553,7 +552,7 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 				endif()
 				return()				
 			else() #not compatible
-				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}.")
 				return()
 			endif()
 		else()#not an exact version required
@@ -573,7 +572,7 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 					return() # nothing to do more, the current used version is compatible with everything 	
 				endif()
 			else()
-				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}.")
 				return()
 			endif()
 		endif()
@@ -643,7 +642,7 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
 				endif()
 				return()				
 			else() #not compatible
-				message(FATAL_ERROR "impossible to find compatible versions of dependent external package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}.")
 				return()
 			endif()
 		else()#not an exact version required
@@ -663,7 +662,7 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
 					return() # nothing to do more, the current used version is compatible with everything 	
 				endif()
 			else()
-				message(FATAL_ERROR "impossible to find compatible versions of dependent package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}.")
 				return()
 			endif()
 		endif()
@@ -756,11 +755,11 @@ if(EXIST)
 				
 			select_Components(${package} ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} "${${package}_FIND_COMPONENTS}")
 			if(USE_FILE_NOTFOUND)
-				exitFindScript("The selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted")
+				exitFindScript("[PID] CRITICAL ERROR : the selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted")
 			endif()
 
 			if(NOT ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND)
-				exitFindScript("Some of the requested components of the package ${package} are missing (version chosen is ${${package}_VERSION_STRING}, requested is ${${package}_FIND_VERSION}),either bad names specified or broken package versionning")
+				exitFindScript("[PID] CRITICAL ERROR : some of the requested components of the package ${package} are missing (version chosen is ${${package}_VERSION_STRING}, requested is ${${package}_FIND_VERSION}),either bad names specified or broken package versionning")
 			endif()	
 		
 		else()#no component check, register all of them
@@ -803,7 +802,7 @@ if(EXIST)
 				endif()
 			endif()
 		else()
-			exitFindScript("The package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace")
+			exitFindScript("[PID] ERROR : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
 		endif()
 	endif()
 else() #if the directory does not exist it means the package cannot be found
@@ -816,7 +815,7 @@ else() #if the directory does not exist it means the package cannot be found
 			endif()
 		endif()
 	else()
-		exitFindScript("The required package ${package} cannot be found in the workspace")
+		exitFindScript("[PID] ERROR : the required package ${package} cannot be found in the workspace.")
 	endif()
 
 endif()

@@ -345,7 +345,6 @@ endforeach()
 list(REVERSE result)
 list(REMOVE_DUPLICATES result)
 list(REVERSE result)
-#message("DEBUG : runtime deps for component ${component}, AFTER RETURNING => ${result} ")
 set(${ALL_RUNTIME_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Runtime_Dependencies)
 
@@ -414,7 +413,7 @@ if(${package}_PREPARE_RUNTIME)#this is a guard to limit recursion -> the runtime
 endif()
 
 if(${package}_DURING_PREPARE_RUNTIME)
-	message(FATAL_ERROR "Alert : cyclic dependencies between packages found : Package ${package} is undirectly requiring itself !")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : cyclic dependencies between packages found : Package ${package} is undirectly requiring itself !")
 	return()
 endif()
 set(${package}_DURING_PREPARE_RUNTIME TRUE)

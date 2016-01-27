@@ -36,14 +36,14 @@ wiki_Project_Exists(WIKI_EXISTS PATH_TO_WIKI ${package})
 if(NOT WIKI_EXISTS)
 
 	if(NOT repo_addr OR "${repo_addr}" STREQUAL "")
-		message("[PID system notification] Problem you need to set the wiki repository address.")
+		message("[PID] ERROR : you need to set the wiki repository address.")
 		return()
 	endif()
 
 	#create the wiki repository in the workspace
 	create_Local_Wiki_Project(SUCCEEDED ${package} ${repo_addr})
 	if(NOT SUCCEEDED)
-		message("[PID system notification] Impossible to connect to the wiki repository. You are probably not a developer of the package ${package} which explains why you cannot publish the wiki.")
+		message("[PID] ERROR : impossible to connect to the wiki repository. You are probably not a developer of the package ${package} which explains why you cannot publish the wiki.")
 		return()
 	endif()
 endif()
@@ -51,10 +51,10 @@ update_Wiki_Repository(${package}) # update wiki repository
 clean_Local_Wiki(${package}) # clean the folder content (api-doc content)
 copy_Wiki_Content(${package} ${content_file_to_remove}) # copy everything needed (api-doc content, share/wiki except content_file_to_remove
 if(push_wiki)
-	message("[PID system notification] Wiki of ${package} has been updated on server.")
+	message("[PID] INFO : wiki of ${package} has been updated on server.")
 	publish_Wiki_Repository(${package})
 else()
-	message("[PID system notification] Wiki of ${package} has been updated locally.")
+	message("[PID] INFO : wiki of ${package} has been updated locally.")
 endif()
 
 

@@ -173,7 +173,6 @@ set(TO_CHECK_COMPONENTS ${INSTALLED_COMPONENTS})
 foreach(component IN ITEMS ${INSTALLED_COMPONENTS}) #for each existing component
 	list(FIND ${PACKAGE_NAME}_COMPONENTS ${component} FIND_INDEX)
 	if(FIND_INDEX EQUAL -1)#component no more exists => remove corresponding files if necessary
-		message("need to remove ${component}")
 		remove_Installed_Component(${component} ${PACKAGE_NAME} ${PACKAGE_INSTALL_VERSION} ${WORKSPACE_DIR})
 		list(REMOVE_ITEM TO_CHECK_COMPONENTS ${component})
 	endif()

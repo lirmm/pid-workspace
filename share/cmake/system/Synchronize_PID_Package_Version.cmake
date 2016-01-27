@@ -32,7 +32,7 @@ if(	EXISTS ${PATH_TO_PACKAGE}/share/cmake/${TARGET_PACKAGE}_PID_Version.cmake)# 
 		execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 		include(${WORKSPACE_DIR}/pid/PID_version.cmake) # get the current workspace version AGAIN (most up to date version)
 		if(${PID_WORKSPACE_VERSION} LESS ${${TARGET_PACKAGE}_PID_VERSION})#still less => impossible
-			message("[PID notification] INFO : PID version ${${TARGET_PACKAGE}_PID_VERSION} is corrupted for package ${TARGET_PACKAGE} ... regenerating version according to most up to date workspace.")
+			message("[PID] INFO : PID version ${${TARGET_PACKAGE}_PID_VERSION} is corrupted for package ${TARGET_PACKAGE} ... regenerating version according to most up to date workspace.")
 			set(${TARGET_PACKAGE}_PID_VERSION ${PID_WORKSPACE_VERSION} CACHE INTERNAL "")
 			file(WRITE ${PATH_TO_PACKAGE}/share/cmake/${TARGET_PACKAGE}_PID_Version.cmake "set(${TARGET_PACKAGE}_PID_VERSION ${${TARGET_PACKAGE}_PID_VERSION} CACHE INTERNAL \"\")")#save the PID version with which the package has been built
 		endif()
@@ -40,12 +40,12 @@ if(	EXISTS ${PATH_TO_PACKAGE}/share/cmake/${TARGET_PACKAGE}_PID_Version.cmake)# 
 		#here we need to synchronize the versions
 		set(${TARGET_PACKAGE}_PID_VERSION ${PID_WORKSPACE_VERSION} CACHE INTERNAL "")
 		file(WRITE ${PATH_TO_PACKAGE}/share/cmake/${TARGET_PACKAGE}_PID_Version.cmake "set(${TARGET_PACKAGE}_PID_VERSION ${${TARGET_PACKAGE}_PID_VERSION} CACHE INTERNAL \"\")")#save the PID version with which the package has been built
-		message("[PID notification] INFO : new PID system version for package ${TARGET_PACKAGE} is: ${${TARGET_PACKAGE}_PID_VERSION}")
+		message("[PID] INFO : new PID system version for package ${TARGET_PACKAGE} is: ${${TARGET_PACKAGE}_PID_VERSION}.")
 	endif()
 else()
 	set(${TARGET_PACKAGE}_PID_VERSION ${PID_WORKSPACE_VERSION})#if no version defined yet then set it to the current workspace one
 	file(WRITE ${PATH_TO_PACKAGE}/share/cmake/${TARGET_PACKAGE}_PID_Version.cmake "set(${TARGET_PACKAGE}_PID_VERSION ${${TARGET_PACKAGE}_PID_VERSION} CACHE INTERNAL \"\")")#save the PID version with which the package has been built
-	message("[PID notification] INFO : PID system version set for package ${TARGET_PACKAGE}: ${${TARGET_PACKAGE}_PID_VERSION}")
+	message("[PID] INFO : PID system version set for package ${TARGET_PACKAGE}: ${${TARGET_PACKAGE}_PID_VERSION}.")
 endif()
 
 
