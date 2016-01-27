@@ -26,13 +26,17 @@ if(DEPENDENT_PACKAGES)
 	SEPARATE_ARGUMENTS(DEPENDENT_PACKAGES)
 	foreach(dep_pack IN ITEMS ${DEPENDENT_PACKAGES})
 		package_Already_Built(IS_BUILT ${dep_pack} ${PACKAGE_LAUCHING_BUILD})
-		if(NOT IS_BUILT)
-			message("Building ${dep_pack} ...")
-			execute_process (COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${dep_pack}/build ${BUILD_TOOL} build)
+		if(NOT IS_BUILT)# if not built modifications
+			get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${dep_pack})
+			if(BRANCH_NAME AND NOT BRANCH_NAME STREQUAL "master") 
+				#if on integration branch or another feature specific branch
+				message("[PID build] Building ${dep_pack} ...")	
+				execute_process (COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${dep_pack}/build ${BUILD_TOOL} build)				
+			endif()
 		endif()
 	endforeach()
 else()
-	message("[ERROR] : no package to build !")
+	message("[PID build] ERROR : no package to build !")
 endif()
 
 

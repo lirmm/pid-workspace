@@ -123,8 +123,15 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Synchronize_PID_Package_Version.cmake
-		COMMENT "[PID build] Synchronizing the package version with workspace current version"
-		VERBATIM
+		COMMENT "[PID build] Synchronizing the package version with workspace current version..."
+	)
+
+	add_custom_target(check-branch
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DFORCE_RELEASE_BUILD=$(force)
+						-P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Branch.cmake
+		COMMENT "[PID build] Checking branch..."
 	)
 	################################################################################################
 	############ creating custom targets to delegate calls to mode specific targets ################
@@ -160,7 +167,9 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		VERBATIM
 	)
 
-	add_dependencies(build reconfigure)
+	add_dependencies(build reconfigure) #checking if reconfiguration is necessary before build
+	add_dependencies(build sync-version)#checking if PID version synchronizing needed before build
+	add_dependencies(build check-branch)#checking if not built on master branch or released tag
 
 	add_custom_target(global_main ALL
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
@@ -522,26 +531,7 @@ endif()
 ###############################################################################
 ######### creating build target for easy sequencing all make commands #########
 ###############################################################################
-#retrieving dependencies on sources packages
-if(	BUILD_DEPENDENT_PACKAGES 
-	AND 	(${CMAKE_BUILD_TYPE} MATCHES Debug 
-		OR (${CMAKE_BUILD_TYPE} MATCHES Release AND BUILD_RELEASE_ONLY)))
-	set(DEPENDENT_SOURCE_PACKAGES)
-	list_All_Source_Packages_In_Workspace(RESULT_PACKAGES)
-	if(RESULT_PACKAGES)
-		foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
-			list(FIND RESULT_PACKAGES ${dep_pack} id)
-			if(NOT id LESS "0")#the package is a dependent source package
-				get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${dep_pack})
-				if(BRANCH_NAME AND NOT BRANCH_NAME STREQUAL "master")#must be on any other branch than master => any development branch 
-					list(APPEND DEPENDENT_SOURCE_PACKAGES ${dep_pack})
-				endif()
-			endif() 
-		endforeach()
-	endif()
-else()
-	set(DEPENDENT_SOURCE_PACKAGES)
-endif()
+
 
 #creating a global build command
 if(GENERATE_INSTALLER)
@@ -585,26 +575,12 @@ if(GENERATE_INSTALLER)
 			endif(BUILD_API_DOC)
 		endif(BUILD_AND_RUN_TESTS)
 	else()#debug
-		if(DEPENDENT_SOURCE_PACKAGES)#only necessary to do dependent build one time, so we do it in debug mode only (first mode built)
-			add_custom_target(build 
-				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-								-DBUILD_TOOL=${CMAKE_MAKE_PROGRAM}
-								-DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
-							 	-DPACKAGE_LAUCHING_BUILD="${PROJECT_NAME}"
-							 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake		
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
-				COMMAND ${CMAKE_MAKE_PROGRAM} package
-				COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-			)
-		else()		
-			add_custom_target(build 
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
-				COMMAND ${CMAKE_MAKE_PROGRAM} package
-				COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-			) 
-		endif()
+		add_custom_target(build 
+			COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+			COMMAND ${CMAKE_MAKE_PROGRAM} install
+			COMMAND ${CMAKE_MAKE_PROGRAM} package
+			COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+		) 
 	endif()
 
 else(GENERATE_INSTALLER)
@@ -639,25 +615,57 @@ else(GENERATE_INSTALLER)
 			endif(BUILD_API_DOC)
 		endif()
 	else()#debug
-		if(DEPENDENT_SOURCE_PACKAGES)#only necessary to do dependent build one time, so we do it in debug mode only (first mode built)
+		add_custom_target(build 
+			COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+			COMMAND ${CMAKE_MAKE_PROGRAM} install
+		) 
+	endif()
+endif(GENERATE_INSTALLER)
 
-			add_custom_target(build
-				COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+#retrieving dependencies on sources packages
+if(	BUILD_DEPENDENT_PACKAGES 
+	AND 	(${CMAKE_BUILD_TYPE} MATCHES Debug 
+		OR (${CMAKE_BUILD_TYPE} MATCHES Release AND BUILD_RELEASE_ONLY)))
+	#only necessary to do dependent build one time, so we do it in debug mode or release if debug not built (i.e. first mode built)	
+	set(DEPENDENT_SOURCE_PACKAGES)
+	list_All_Source_Packages_In_Workspace(RESULT_PACKAGES)
+	if(RESULT_PACKAGES)
+		foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
+			list(FIND RESULT_PACKAGES ${dep_pack} id)
+			if(NOT id LESS "0")#the package is a dependent source package
+				list(APPEND DEPENDENT_SOURCE_PACKAGES ${dep_pack})
+			endif() 
+		endforeach()
+	endif()
+	if(DEPENDENT_SOURCE_PACKAGES)#there are some dependency managed with source package
+		list(LENGTH  DEPENDENT_SOURCE_PACKAGES SIZE)
+		if(SIZE EQUAL 1)
+			add_custom_target(build-dependencies
+				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+								-DBUILD_TOOL=${CMAKE_MAKE_PROGRAM}
+								-DDEPENDENT_PACKAGES=${DEPENDENT_SOURCE_PACKAGES}
+								-DPACKAGE_LAUCHING_BUILD="${PROJECT_NAME}"
+								-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
+					COMMENT "[PID build] building dependencies of ${PROJECT_NAME} ..."
+					VERBATIM
+			)
+		else()
+			add_custom_target(build-dependencies
+				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 								-DBUILD_TOOL=${CMAKE_MAKE_PROGRAM}
 								-DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
 								-DPACKAGE_LAUCHING_BUILD="${PROJECT_NAME}"
-						 		-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
+								-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
+					COMMENT "[PID build] building dependencies of ${PROJECT_NAME} ..."
+					VERBATIM
 			)
-		else()		
-			add_custom_target(build 
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
-			) 
+
 		endif()
+		add_dependencies(build build-dependencies)# first building dependencies
 	endif()
-endif(GENERATE_INSTALLER)
+else()
+	set(DEPENDENT_SOURCE_PACKAGES)
+endif()
 
 #########################################################################################################################
 ######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
