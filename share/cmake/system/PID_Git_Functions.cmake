@@ -244,7 +244,7 @@ endfunction(update_Workspace_Repository)
 ###
 function(publish_Repository_Integration package)
 go_To_Integration(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration)#try pushinh on integration branch
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration OUTPUT_QUIET ERROR_QUIET)#try pushing on integration branch
 
 #now testing if everything is OK using the git log command
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
