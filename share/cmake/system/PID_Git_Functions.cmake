@@ -194,7 +194,7 @@ endfunction(merge_Into_Integration)
 
 ###
 function(integrate_Branch package branch)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge ${branch})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge ${branch} OUTPUT_QUIET ERROR_QUIET)
 endfunction(integrate_Branch)
 
 ###
@@ -460,6 +460,24 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official --tags OUTPUT_QUIET ERROR_QUIET)
 endfunction(check_For_Remote_Respositories)
+
+### checking which remote integration branch can be updated
+function(get_Remotes_To_Update REMOTES_TO_UPDATE package)
+set(return_list)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
+if (NOT "${res}" STREQUAL "")
+	string(FIND "${res}" "origin/integration" INDEX_ORIGIN)
+	string(FIND "${res}" "official/integration" INDEX_OFFICIAL)
+	if(INDEX_ORIGIN LESS 1)
+		list(APPEND return_list origin)
+	endif()
+	if(INDEX_OFFICIAL LESS 1)  
+		list(APPEND return_list official)
+	endif()
+endif()
+
+set(${REMOTES_TO_UPDATE} ${return_list} PARENT_SCOPE)
+endfunction(get_Remotes_To_Update)
 
 ######################################################################
 ############## wiki repository related functions #####################

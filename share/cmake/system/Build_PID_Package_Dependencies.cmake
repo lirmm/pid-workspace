@@ -32,7 +32,7 @@ if(DEPENDENT_PACKAGES)
 				#if on integration branch or another feature specific branch
 				message("[PID] INFO : Building ${dep_pack} ...")	
 				execute_process (COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${dep_pack}/build ${BUILD_TOOL} build)
-				message("[PID] INFO : ${dep_pack} built.")		
+				message("[PID] INFO : ${dep_pack} built.")
 			endif()
 		endif()
 	endforeach()
