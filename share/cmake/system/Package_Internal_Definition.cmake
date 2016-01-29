@@ -119,6 +119,16 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		VERBATIM
 	)
 	
+	add_custom_target(integrate
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DWITH_OFFICIAL=$(official)
+						-P ${WORKSPACE_DIR}/share/cmake/system/Integrate_PID_Package.cmake
+		COMMENT "[PID build] Integrating modifications ..."
+		VERBATIM
+	)
+
+	# updating version of PID
 	add_custom_target(sync-version
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
@@ -126,6 +136,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMENT "[PID build] Synchronizing the package version with workspace current version..."
 	)
 
+	# checking that the build takes place on integration 
 	add_custom_target(check-branch
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}

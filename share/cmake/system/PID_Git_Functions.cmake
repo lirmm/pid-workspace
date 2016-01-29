@@ -193,6 +193,11 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 endfunction(merge_Into_Integration)
 
 ###
+function(integrate_Branch package branch)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge ${branch})
+endfunction(integrate_Branch)
+
+###
 function(commit_Current_Repository_Branch package commit_message)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add --all)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "${commit_message}")
@@ -331,8 +336,8 @@ set(${RESULT} FALSE PARENT_SCOPE)
 endfunction(check_For_New_Commits_To_Release)
 
 ### to know whether a package as a remote or not
-function(is_Package_Connected CONNECTED package branch)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote show ${branch} OUTPUT_QUIET ERROR_VARIABLE res)
+function(is_Package_Connected CONNECTED package remote)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote show ${remote} OUTPUT_QUIET ERROR_VARIABLE res)
 	if(NOT res OR res STREQUAL "")
 		set(${CONNECTED} TRUE PARENT_SCOPE)
 	else()
