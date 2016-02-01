@@ -21,6 +21,8 @@
 #############################################################################################
 ############### API functions for managing user options cache variables #####################
 #############################################################################################
+
+###
 macro(declare_Mode_Cache_Options)
 
 include(CMakeDependentOption)
@@ -36,6 +38,7 @@ option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with 
 option(BUILD_DEPENDENT_PACKAGES "the build will leads to the rebuild of its dependent package that lies in the workspace as source packages" ON)
 endmacro(declare_Mode_Cache_Options)
 
+###
 macro(manage_Parrallel_Build_Option)
 
 ### parallel builds management
@@ -135,6 +138,7 @@ macro(set_Global_Options_From_Mode_Specific)
 	
 endmacro(set_Global_Options_From_Mode_Specific)
 
+###
 function(reset_Mode_Cache_Options)
 #unset all global options
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -180,6 +184,13 @@ endif()
 
 endfunction(init_PID_Version_Variable)
 
+###
+function(first_Called_Build_Mode RESULT)
+set(${RESULT} FALSE PARENT_SCOPE)
+if(CMAKE_BUILD_TYPE MATCHES Debug OR (CMAKE_BUILD_TYPE MATCHES Release AND BUILD_RELEASE_ONLY))
+	set(${RESULT} TRUE PARENT_SCOPE)
+endif()
+endfunction(first_Called_Build_Mode)
 
 ############################################################################
 ############### API functions for setting global package info ##############

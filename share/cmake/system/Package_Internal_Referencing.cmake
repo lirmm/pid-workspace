@@ -137,19 +137,20 @@ endfunction(resolve_Package_Dependencies)
 
 ### function called by find script subfunctions to automatically update a package, if possible 
 function(update_Package_Installed_Version package major minor exact already_installed)
-if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #if no automatic download then simply do nothing
+first_Called_Build_Mode(FIRST_TIME) # do the update only once per configuration
+if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #if no automatic download then simply do nothing
 	package_Source_Exists_In_Workspace(SOURCE_EXIST RETURNED_PATH ${package})
 	if(SOURCE_EXIST) # updating the source package, if possible
 		if(NOT major STREQUAL "" AND NOT MINOR STREQUAL "") 
-			deploy_Source_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact})	
+			deploy_Source_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")	
 		else()
-			deploy_Source_Package(IS_DEPLOYED ${package})
+			deploy_Source_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
 		endif()
 	else() # updating the binary package, if possible
 		if(NOT major STREQUAL "" AND NOT MINOR STREQUAL "")
-			deploy_Binary_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact})
+			deploy_Binary_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
 		else()
-			deploy_Binary_Package(IS_DEPLOYED ${package})
+			deploy_Binary_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
 		endif()
 	endif()
 	if(IS_DEPLOYED)
@@ -289,9 +290,9 @@ endif()
 if(USE_SOURCES) #package sources reside in the workspace
 	set(SOURCE_DEPLOYED FALSE)
 	if(NOT NO_VERSION)
-		deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
+		deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
 	else()
-		deploy_Source_Package(SOURCE_DEPLOYED ${package}) # case when the sources exist but haven't been installed yet (should never happen)
+		deploy_Source_Package(SOURCE_DEPLOYED ${package} "") # case when the sources exist but haven't been installed yet (should never happen)
 	endif()
 	if(NOT SOURCE_DEPLOYED)
 		message("[PID] ERROR : impossible to deploy sources package ${package}. Try \"by hand\".")
@@ -304,9 +305,9 @@ else()#using references
 	if(NOT ${refer_path} STREQUAL NOTFOUND)
 		#message("DEBUG : trying to deploy a binary package !!")
 		if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number 
-			deploy_Binary_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
+			deploy_Binary_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
 		else()# deploying the most up to date version
-			deploy_Binary_Package(PACKAGE_BINARY_DEPLOYED ${package})
+			deploy_Binary_Package(PACKAGE_BINARY_DEPLOYED ${package} "")
 		endif()
 	else()
 		message("[PID] ERROR : reference file not found for package ${package}!! This is maybe due to a bad release of package ${package}. Please contact the administrator of this package. !!!")
@@ -320,9 +321,9 @@ else()#using references
 		if(DEPLOYED) # doing the same as for the USE_SOURCES step
 			set(SOURCE_DEPLOYED FALSE)		
 			if(NOT NO_VERSION)
-				deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT})
+				deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
 			else()
-				deploy_Source_Package(SOURCE_DEPLOYED ${package})
+				deploy_Source_Package(SOURCE_DEPLOYED ${package} "")
 			endif()
 			if(NOT SOURCE_DEPLOYED)
 				set(${INSTALL_OK} FALSE PARENT_SCOPE)				
@@ -375,7 +376,7 @@ endfunction(get_Available_Binary_Package_Versions)
 
 
 ###
-function(deploy_Binary_Package DEPLOYED package)
+function(deploy_Binary_Package DEPLOYED package exclude_versions)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions)
 if(NOT available_versions)
@@ -383,18 +384,16 @@ if(NOT available_versions)
 endif()
 
 select_Last_Version(RES_VERSION "${available_versions}")# taking the most up to date version
-
+list(FIND exclude_versions ${RES_VERSION} INDEX)
 set(INSTALLED FALSE)
-download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}")
-if(INSTALLED)
-	set(${DEPLOYED} TRUE PARENT_SCOPE)
-else()
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
+if(INDEX EQUAL -1) # selected version not found in versions to exclude
+	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}")
 endif()
+set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 endfunction(deploy_Binary_Package)
 
 ###
-function(deploy_Binary_Package_Version DEPLOYED package VERSION_MIN EXACT)
+function(deploy_Binary_Package_Version DEPLOYED package VERSION_MIN EXACT exclude_versions)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions)
 if(NOT available_versions)
@@ -407,15 +406,18 @@ if(EXACT)
 else()
 	select_Best_Version(RES_VERSION ${VERSION_MIN} "${available_versions}")
 endif()
+
+if(NOT RES_VERSION)
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	return()
+endif()
 set(INSTALLED FALSE)
-if(RES_VERSION)
+list(FIND exclude_versions ${RES_VERSION} INDEX)
+if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}")
 endif()
-if(INSTALLED)
-	set(${DEPLOYED} TRUE PARENT_SCOPE)
-else()
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
-endif()
+set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
+
 endfunction(deploy_Binary_Package_Version)
 
 ###
@@ -537,7 +539,7 @@ function(build_And_Install_Source DEPLOYED package version)
 endfunction(build_And_Install_Source)
 
 ###
-function(deploy_Source_Package DEPLOYED package)
+function(deploy_Source_Package DEPLOYED package exclude_versions)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number 
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
@@ -561,20 +563,22 @@ if(NOT RES_VERSION)
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
+list(FIND exclude_versions ${RES_VERSION} INDEX)
+if(INDEX EQUAL -1)
+	set(ALL_IS_OK FALSE)
+	build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
 
-set(ALL_IS_OK FALSE)
-build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
-
-if(ALL_IS_OK)
-	set(${DEPLOYED} TRUE PARENT_SCOPE)
-else()
-	message("[PID]  ERROR : automatic build and install of package ${package} FAILED !!")
+	if(ALL_IS_OK)
+		set(${DEPLOYED} TRUE PARENT_SCOPE)
+	else()
+		message("[PID]  ERROR : automatic build and install of package ${package} FAILED !!")
+	endif()
 endif()
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Package)
 
 ###
-function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT)
+function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT exclude_versions)
 
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
@@ -604,13 +608,13 @@ if(NOT RES_VERSION)
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
+list(FIND exclude_versions ${RES_VERSION} INDEX)
 set(ALL_IS_OK FALSE)
-build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
-if(ALL_IS_OK)
-	set(${DEPLOYED} TRUE PARENT_SCOPE)
-else()
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
+if(INDEX EQUAL -1) # selected version is not excluded from deploy process
+	build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
 endif()
+
+set(${DEPLOYED} ${ALL_IS_OK} PARENT_SCOPE)
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Package_Version)
 
