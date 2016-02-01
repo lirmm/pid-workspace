@@ -512,13 +512,15 @@ set(${PACKAGES} ${result} PARENT_SCOPE)
 endfunction(list_All_Source_Packages_In_Workspace)
 
 ###
-function(list_All_Binary_Packages_In_Workspace PACKAGES)
+function(list_All_Binary_Packages_In_Workspace NATIVE_PACKAGES EXTERNAL_PACKAGES)
 file(GLOB bin_pakages RELATIVE ${WORKSPACE_DIR}/install ${WORKSPACE_DIR}/install/*)
 foreach(a_file IN ITEMS ${bin_pakages})
 	if(EXISTS ${WORKSPACE_DIR}/install/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${a_file})
 		list(APPEND result ${a_file})
 	endif()
 endforeach()
+set(${NATIVE_PACKAGES} ${result} PARENT_SCOPE)
+set(result)
 file(GLOB ext_pakages RELATIVE ${WORKSPACE_DIR}/external ${WORKSPACE_DIR}/external/*)
 foreach(a_file IN ITEMS ${ext_pakages})
 	if(EXISTS ${WORKSPACE_DIR}/external/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${a_file})
@@ -526,7 +528,7 @@ foreach(a_file IN ITEMS ${ext_pakages})
 	endif()
 endforeach()
 
-set(${PACKAGES} ${result} PARENT_SCOPE)
+set(${EXTERNAL_PACKAGES} ${result} PARENT_SCOPE)
 endfunction(list_All_Binary_Packages_In_Workspace)
 
 

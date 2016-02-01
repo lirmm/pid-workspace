@@ -30,7 +30,7 @@ include(Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 if(TARGET_PACKAGE)
 	if(TARGET_PACKAGE STREQUAL "all")
-		update_PID_All_Package()
+		update_PID_All_Packages()
 	else()
 		if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
 			update_PID_Source_Package(${TARGET_PACKAGE})
