@@ -135,6 +135,30 @@ endfunction(resolve_Package_Dependencies)
 ############################### functions for Native Packages ###############################
 #############################################################################################
 
+### function called by find script subfunctions to automatically update a package, if possible 
+function(update_Package_Installed_Version package major minor exact already_installed)
+if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #if no automatic download then simply do nothing
+	package_Source_Exists_In_Workspace(SOURCE_EXIST RETURNED_PATH ${package})
+	if(SOURCE_EXIST) # updating the source package, if possible
+		if(NOT major STREQUAL "" AND NOT MINOR STREQUAL "") 
+			deploy_Source_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact})	
+		else()
+			deploy_Source_Package(IS_DEPLOYED ${package})
+		endif()
+	else() # updating the binary package, if possible
+		if(NOT major STREQUAL "" AND NOT MINOR STREQUAL "")
+			deploy_Binary_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact})
+		else()
+			deploy_Binary_Package(IS_DEPLOYED ${package})
+		endif()
+	endif()
+	if(IS_DEPLOYED)
+		message("[PID] INFO : the dependency package ${package} has been updated.")
+	endif()
+endif()
+endfunction(update_Package_Installed_Version)
+
+
 ###
 function(resolve_Required_Package_Version version_possible min_version is_exact package)
 

@@ -102,6 +102,7 @@ function (check_Exact_Version 	VERSION_HAS_BEEN_FOUND
 				package_name package_install_dir major_version minor_version) #minor version cannot be increased
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 list_Version_Subdirectories(version_dirs ${package_install_dir})
+update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} true "${version_dirs}")
 if(version_dirs)#scanning non local versions
 	set(curr_patch_version -1)
 	foreach(patch IN ITEMS ${version_dirs})
@@ -128,6 +129,7 @@ set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 set(curr_max_minor_version ${minor_version})
 set(curr_patch_version 0)
 list_Version_Subdirectories(version_dirs ${package_install_dir})
+update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} false "${version_dirs}")
 if(version_dirs)#scanning local versions  
 	foreach(version IN ITEMS ${version_dirs})
 		string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
@@ -160,6 +162,7 @@ function(check_Last_Version 	VERSION_HAS_BEEN_FOUND
 				package_name package_install_dir)#taking local version or the most recent if not available
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 list_Version_Subdirectories(non_local_versions ${package_install_dir})
+update_Package_Installed_Version(${package_name} "" "" false "${non_local_versions}")
 if(non_local_versions)  
 	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
 	set(version_string_curr "0.0.0")
