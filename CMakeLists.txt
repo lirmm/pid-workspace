@@ -226,6 +226,7 @@ add_custom_target(release
 add_custom_target(update
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-DTARGET_PACKAGE=$(name)
+					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Update_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

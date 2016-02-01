@@ -848,6 +848,7 @@ endfunction(release_PID_Package)
 ###
 function(update_PID_Source_Package package)
 set(INSTALLED FALSE)
+message("[PID] INFO : launch the update of source package ${package}...")
 deploy_Source_Package(INSTALLED ${package} "")
 if(NOT INSTALLED)
 	message("[PID] ERROR : cannot update ${package}.")
@@ -856,6 +857,7 @@ endfunction(update_PID_Source_Package)
 
 ###
 function(update_PID_Binary_Package package)
+message("[PID] INFO : launch the update of binary package ${package}...")
 deploy_Binary_Package(DEPLOYED ${package} "")
 if(NOT DEPLOYED) 
 	message("[PID] ERROR : cannot update ${package} with its last available version ${version}.")

@@ -516,15 +516,16 @@ function(build_And_Install_Source DEPLOYED package version)
 			WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 			ERROR_QUIET OUTPUT_QUIET
 			)
-	endif()	
+	endif()
+	message("[PID] INFO : configuring version ${version} of package ${package} ...")
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON  ..
+		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF  ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		ERROR_QUIET OUTPUT_QUIET
 		)
 	message("[PID] INFO : building version ${version} of package ${package} ...")
 	execute_process(
-		COMMAND ${CMAKE_BUILD_TOOL} build force=true
+		COMMAND ${CMAKE_MAKE_PROGRAM} build force=true
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		ERROR_QUIET OUTPUT_QUIET
 		)
@@ -533,7 +534,7 @@ function(build_And_Install_Source DEPLOYED package version)
 		message("[PID] INFO : ... package ${package} version ${version} built !")
 	else()
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
-		message("[PID] ERROR : ... build of package ${package} version ${version} has failed !")
+		message("[PID] ERROR : ... building package ${package} version ${version} has FAILED !")
 	endif()
 
 endfunction(build_And_Install_Source)

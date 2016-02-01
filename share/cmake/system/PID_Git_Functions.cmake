@@ -87,7 +87,7 @@ set(${BRANCH_NAME} PARENT_SCOPE)
 execute_process(COMMAND git branch
 		WORKING_DIRECTORY ${repo}
 		OUTPUT_VARIABLE current_branches ERROR_QUIET)
-string(REPLACE "\n" ";" GIT_BRANCHES ${current_branches})
+string(REPLACE "\n" ";" GIT_BRANCHES "${current_branches}")
 
 foreach(branch IN ITEMS ${GIT_BRANCHES})
 	string(REGEX REPLACE "^\\* (.*)$" "\\1" A_BRANCH ${branch})
