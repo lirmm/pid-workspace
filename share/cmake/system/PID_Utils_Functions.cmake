@@ -501,6 +501,31 @@ endfunction(resolve_External_Resources_Path)
 #############################################################
 
 ###
+function(set_Package_Repository_Address package git_url)
+	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
+	string(REPLACE "YEAR" "ADDRESS ${git_url}\n YEAR" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(set_Package_Repository_Address)
+
+###
+function(reset_Package_Repository_Address package new_git_url)
+	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "ADDRESS ${new_git_url}\\2" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(reset_Package_Repository_Address)
+
+###
+function(get_Package_Repository_Address package RES_URL)
+	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "^.+ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
+	if(url STREQUAL "${CONTENT}")#no match
+		set(${RES_URL} "" PARENT_SCOPE)
+		return()
+	endif()
+	set(${RES_URL} ${url} PARENT_SCOPE)
+endfunction(get_Package_Repository_Address)
+
+###
 function(list_All_Source_Packages_In_Workspace PACKAGES)
 file(GLOB source_packages RELATIVE ${WORKSPACE_DIR}/packages ${WORKSPACE_DIR}/packages/*)
 foreach(a_file IN ITEMS ${source_packages})

@@ -284,6 +284,17 @@ endfunction(publish_Repository_Version)
 ###
 function(update_Repository_Versions RESULT package)
 go_To_Master(${package})
+is_Package_Connected(CONNECTED ${package} official)
+if(NOT CONNECTED)#no official remote (due to old package style or due to a misuse of git command within a package)
+	get_Package_Repository_Address(${package} URL)
+	if(NOT URL STREQUAL "")
+		message("[PID] WARNING : package ${package} has no official remote defined (malformed package), set it to ${URL}.")
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${URL} ERROR_QUIET OUTPUT_QUIET)
+	else()
+		set(${RESULT} FALSE PARENT_SCOPE)
+		return()
+	endif()
+endif()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull --ff-only official master RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)#pulling master branch of official
 if(NOT res EQUAL 0)#not a fast forward !! => there is a problem
 	set(${RESULT} FALSE PARENT_SCOPE) 

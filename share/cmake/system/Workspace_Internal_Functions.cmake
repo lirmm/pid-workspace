@@ -596,21 +596,6 @@ endfunction(resolve_PID_Package)
 
 
 ###
-function(set_Package_Repository_Address package git_url)
-	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REPLACE "YEAR" "ADDRESS ${git_url}\n YEAR" NEW_CONTENT ${CONTENT})
-	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
-endfunction(set_Package_Repository_Address)
-
-###
-function(reset_Package_Repository_Address package new_git_url)
-	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REGEX REPLACE "ADDRESS[ \t\n]+([^ \t\n])+[ \t\n]+" "ADDRESS ${new_git_url} " NEW_CONTENT ${CONTENT})
-	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
-endfunction(reset_Package_Repository_Address)
-
-
-###
 function(connect_PID_Package package git_url first_time)
 save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package}) # saving local repository state
 go_To_Integration(${package})
