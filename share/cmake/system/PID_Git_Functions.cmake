@@ -105,7 +105,7 @@ set(${COMMIT_NAME} PARENT_SCOPE)
 execute_process(COMMAND git log -n 1
 		WORKING_DIRECTORY ${repo}
 		OUTPUT_VARIABLE last_log ERROR_QUIET)
-string(REPLACE "\n" ";" LINES ${last_log})
+string(REPLACE "\n" ";" LINES "${last_log}")
 string(REGEX REPLACE "^commit ([^;]+).*$" "\\1" SHA1_ID ${LINES})
 set(${COMMIT_NAME} ${SHA1_ID} PARENT_SCOPE)
 endfunction(get_Repository_Current_Commit)

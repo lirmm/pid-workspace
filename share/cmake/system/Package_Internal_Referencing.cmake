@@ -381,8 +381,8 @@ set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions)
 if(NOT available_versions)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	return()
 endif()
-
 select_Last_Version(RES_VERSION "${available_versions}")# taking the most up to date version
 list(FIND exclude_versions ${RES_VERSION} INDEX)
 set(INSTALLED FALSE)
@@ -436,10 +436,10 @@ get_System_Variables(OS_STRING PACKAGE_STRING)
 #release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
-#message("download_And_Install_Binary_Package package=${package} version=${version_string}")
+message("[PID] INFO : downloading the binary package ${package} version ${version_string}, please wait ...")
 generate_Binary_Package_Name(${package} "${version_string}" Release FILE_BINARY FOLDER_BINARY)
 set(download_url ${${package}_REFERENCE_${version_string}_${OS_STRING}})
-file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res SHOW_PROGRESS)
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
@@ -453,7 +453,7 @@ set(FILE_BINARY_DEBUG "")
 set(FOLDER_BINARY_DEBUG "")
 generate_Binary_Package_Name(${package} ${version_string} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
 set(download_url_dbg ${${package}_REFERENCE_${version_string}_${OS_STRING}_url_DEBUG})
-file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS)
+file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res-dbg 0 numeric_error_dbg)
 list(GET res-dbg 1 status_dbg)
 if(NOT numeric_error_dbg EQUAL 0)#there is an error
@@ -471,6 +471,7 @@ if(NOT EXISTS ${WORKSPACE_DIR}/install/${package} OR NOT IS_DIRECTORY ${WORKSPAC
 endif()
 
 # 2) extracting binary archive in a cross platform way
+message("[PID] INFO : decompressing the binary package ${package}, please wait ...")
 set(error_res "")
 execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
           	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
@@ -483,6 +484,8 @@ if (error_res)
 endif()
 
 # 3) copying resulting folders into the install path in a cross platform way
+message("[PID] INFO : installing the binary package ${package} (version ${version_string}) into the workspace, please wait ...")
+
 set(error_res "")
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${package}
@@ -774,7 +777,7 @@ set(INSTALLED FALSE)
 #begin
 get_System_Variables(OS_STRING PACKAGE_STRING)
 ###### downloading the binary package ######
-message("[PID] INFO : downloading the binary package, please wait ...")
+message("[PID] INFO : downloading the external binary package ${package} with version ${VERSION}, please wait ...")
 #1) release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
@@ -829,7 +832,7 @@ endif()
 
 # 2) extracting binary archive in cross platform way
 set(error_res "")
-message("[PID] INFO : decompressing the binary package, please wait ...")
+message("[PID] INFO : decompressing the external binary package ${package}, please wait ...")
 if(EXISTS download_url_dbg)
 	execute_process(
           	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG}
@@ -849,7 +852,7 @@ if (error_res)
 endif()
 
 # 3) copying resulting folders into the install path in a cross platform way
-message("[PID] INFO : installing the binary package into the workspace, please wait ...")
+message("[PID] INFO : installing the external binary package ${package} (version ${VERSION}) into the workspace, please wait ...")
 set(error_res "")
 if(EXISTS download_url_dbg)
 	execute_process(
