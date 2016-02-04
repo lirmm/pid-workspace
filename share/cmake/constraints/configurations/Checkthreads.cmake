@@ -19,6 +19,7 @@
 
 find_package(Threads)
 set(threads_COMPILE_OPTIONS CACHE INTERNAL "")
+set(threads_INCLUDES CACHE INTERNAL "")
 set(threads_LINK_OPTIONS CACHE INTERNAL "")
 set(threads_RPATH CACHE INTERNAL "")
 if(Threads_FOUND)
