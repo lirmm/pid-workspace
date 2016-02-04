@@ -17,15 +17,14 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-find_package(Threads)
-set(threads_COMPILE_OPTIONS CACHE INTERNAL "")
-set(threads_LINK_OPTIONS CACHE INTERNAL "")
-set(threads_RPATH CACHE INTERNAL "")
-if(Threads_FOUND)
-	set(threads_LINK_OPTIONS ${CMAKE_THREAD_LIBS_INIT} CACHE INTERNAL "")
-	set(CHECK_threads_RESULT TRUE)
-else()
-	set(CHECK_threads_RESULT FALSE)
-endif()
 
+find_package(OpenSSL)
+set(openSSL_COMPILE_OPTIONS CACHE INTERNAL "")
+set(openSSL_LINK_OPTIONS CACHE INTERNAL "")
+set(openSSL_RPATH CACHE INTERNAL "")
+if(OpenSSL_FOUND)
+	set(CHECK_openSSL_RESULT TRUE)
+else()
+	set(CHECK_openSSL_RESULT FALSE)
+endif()
 

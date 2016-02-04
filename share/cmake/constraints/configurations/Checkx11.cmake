@@ -17,15 +17,15 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-find_package(Threads)
-set(threads_COMPILE_OPTIONS CACHE INTERNAL "")
-set(threads_LINK_OPTIONS CACHE INTERNAL "")
-set(threads_RPATH CACHE INTERNAL "")
-if(Threads_FOUND)
-	set(threads_LINK_OPTIONS ${CMAKE_THREAD_LIBS_INIT} CACHE INTERNAL "")
-	set(CHECK_threads_RESULT TRUE)
+
+find_package(X11)
+set(x11_COMPILE_OPTIONS CACHE INTERNAL "")
+set(x11_LINK_OPTIONS CACHE INTERNAL "")
+set(x11_RPATH CACHE INTERNAL "")
+if(X11_FOUND)
+	set(CHECK_x11_RESULT TRUE)
 else()
-	set(CHECK_threads_RESULT FALSE)
+	set(CHECK_x11_RESULT FALSE)
 endif()
 
 
