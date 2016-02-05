@@ -149,6 +149,29 @@ endif()
 define_Wiki("${DECLARE_PID_WIKI_GIT_ADDRESS}" "${DECLARE_PID_WIKI_HOME_PAGE}" "${DECLARE_PID_WIKI_FRAMEWORK_NAME}" "${DECLARE_PID_WIKI_FRAMEWORK_PAGE}" "${DECLARE_PID_WIKI_SPECIFIC_CONTENT}" "${DECLARE_PID_WIKI_DESCRIPTION}")
 endmacro(declare_PID_Documentation)
 
+### API: check_PID_Platform(	NAME resulting_name
+#				OS osname
+#				[ARCH 32 OR 64]
+#				[CONFIGURATION ...])
+macro(check_PID_Platform)
+set(oneValueArgs NAME OS ARCH)
+set(multiValueArgs CONFIGURATION)
+cmake_parse_arguments(CHECK_PID_PLATFORM "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+if(NOT CHECK_PID_PLATFORM_NAME)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the name you will use to manage your platform using NAME keyword.")
+endif()
+if(NOT CHECK_PID_PLATFORM_OS)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the target OS of your platform using OS keyword.")
+elseif((NOT CHECK_PID_PLATFORM_OS STREQUAL linux) AND (NOT CHECK_PID_PLATFORM_OS STREQUAL macosx))
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown operating system ${CHECK_PID_PLATFORM_OS} (see OS argument).")
+endif()
+
+if((NOT CHECK_PID_PLATFORM_ARCH) OR (NOT CHECK_PID_PLATFORM_ARCH EQUAL 32) OR (NOT CHECK_PID_PLATFORM_ARCH EQUAL 64))
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the target architecture (32 or 64) using ARCH keyword.")
+endif()
+check_Platform_Constraints(${CHECK_PID_PLATFORM_NAME} "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_CONFIGURATION}")
+endmacro(check_PID_Platform)
+
 ### API : build_PID_Package()
 macro(build_PID_Package)
 if(${ARGC} GREATER 0)

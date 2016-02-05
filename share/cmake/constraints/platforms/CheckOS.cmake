@@ -20,7 +20,7 @@
 set(CURRENT_DISTRIBUTION CACHE INTERNAL "")
 
 if(APPLE)
- 	if(TEST_OS STREQUAL "macosx")
+ 	if(TEST_OS STREQUAL macosx)
 		set(CHECK_OS_RESULT TRUE)
 	else()
 		set(CHECK_OS_RESULT FALSE)
@@ -28,7 +28,7 @@ if(APPLE)
 	set(CURRENT_DISTRIBUTION "macosx" CACHE INTERNAL "")
 
 elseif(UNIX)
-	if(TEST_OS STREQUAL "linux")
+	if(TEST_OS STREQUAL linux)
 		set(CHECK_OS_RESULT TRUE)
 	else()
 		set(CHECK_OS_RESULT FALSE)

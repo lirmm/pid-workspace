@@ -376,6 +376,31 @@ function(add_Category category_spec)
 	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category_spec} CACHE INTERNAL "")
 endfunction(add_Category)
 
+###
+function(reset_Platforms_Variables)
+	set(${PROJECT_NAME}_AVAILABLE_PLATFORMS CACHE INTERNAL "")
+	set(${PROJECT_NAME}_TEST_PLATFORMS FALSE CACHE INTERNAL "")
+endfunction(reset_Platforms_Variables)
+
+###
+function(add_Platform name)
+	set(${PROJECT_NAME}_AVAILABLE_PLATFORMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS} ${name} CACHE INTERNAL "")
+endfunction(add_Platform)
+
+###
+function(no_Platform_Found has_no)
+	if(${PROJECT_NAME}_TEST_PLATFORMS AND NOT ${PROJECT_NAME}_AVAILABLE_PLATFORMS)#no platform found while testing platforms
+		set(${has_no} TRUE PARENT_SCOPE) 
+	else()
+		set(${has_no} FALSE PARENT_SCOPE)
+	endif()
+endfunction(no_Platform_Found)
+
+###
+function(test_Platforms)
+	set(${PROJECT_NAME}_TEST_PLATFORMS TRUE CACHE INTERNAL "")
+endfunction(test_Platforms)
+
 #############################################################################################
 ############### API functions for setting components related cache variables ################
 #############################################################################################

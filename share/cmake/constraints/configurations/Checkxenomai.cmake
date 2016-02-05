@@ -18,25 +18,29 @@
 #########################################################################################
 
 
-set(xenomai_COMPILE_OPTIONS CACHE INTERNAL "")
-set(xenomai_INCLUDES CACHE INTERNAL "")
-set(xenomai_LINK_OPTIONS CACHE INTERNAL "")
-set(xenomai_RPATH CACHE INTERNAL "")
-execute_process(COMMAND which xeno-config RESULT_VARIABLE res OUTPUT_VARIABLE XENO_CONFIG_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
-if(res)
-	set(XENOMAI_FOUND FALSE)
-else()
-	set(XENOMAI_FOUND TRUE)
-endif()
+if(NOT xenomai_FOUND)
+	set(xenomai_COMPILE_OPTIONS CACHE INTERNAL "")
+	set(xenomai_INCLUDES CACHE INTERNAL "")
+	set(xenomai_LINK_OPTIONS CACHE INTERNAL "")
+	set(xenomai_RPATH CACHE INTERNAL "")
+	execute_process(COMMAND which xeno-config RESULT_VARIABLE res OUTPUT_VARIABLE XENO_CONFIG_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if(res)
+		set(xenomai_FOUND FALSE CACHE INTERNAL "")
+	else()
+		set(xenomai_FOUND TRUE  CACHE INTERNAL "")
+	endif()
 
-if(XENOMAI_FOUND)
-	#getting flags from xenomai to put them in adequate variables
-	execute_process(COMMAND ${XENO_CONFIG_PATH} --skin=posix --cflags OUTPUT_VARIABLE XENO_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
-	execute_process(COMMAND ${XENO_CONFIG_PATH} --skin=posix --ldflags OUTPUT_VARIABLE XENO_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
-	set(xenomai_COMPILE_OPTIONS ${XENO_CFLAGS} CACHE INTERNAL "")
-	set(xenomai_LINK_OPTIONS ${XENO_LDFLAGS} CACHE INTERNAL "") #simply adding all posix standard variabless
-	set(CHECK_xenomai_RESULT TRUE)
+	if(xenomai_FOUND)
+		#getting flags from xenomai to put them in adequate variables
+		execute_process(COMMAND ${XENO_CONFIG_PATH} --skin=posix --cflags OUTPUT_VARIABLE XENO_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+		execute_process(COMMAND ${XENO_CONFIG_PATH} --skin=posix --ldflags OUTPUT_VARIABLE XENO_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+		set(xenomai_COMPILE_OPTIONS ${XENO_CFLAGS} CACHE INTERNAL "")
+		set(xenomai_LINK_OPTIONS ${XENO_LDFLAGS} CACHE INTERNAL "") #simply adding all posix standard variabless
+		set(CHECK_xenomai_RESULT TRUE)
+	else()
+		set(CHECK_xenomai_RESULT FALSE)
+	endif()
 else()
-	set(CHECK_xenomai_RESULT FALSE)
+	set(CHECK_xenomai_RESULT TRUE)
 endif()
 

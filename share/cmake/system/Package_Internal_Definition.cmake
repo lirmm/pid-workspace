@@ -58,6 +58,8 @@ set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the package
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using common find modules of the workspace
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/configurations) # using configuration check modules
 declare_Mode_Cache_Options()
 manage_Parrallel_Build_Option()
 #################################################
@@ -295,6 +297,7 @@ endif(${CMAKE_BINARY_DIR} MATCHES release)
 ######## Initializing cache variables ###########
 #################################################
 reset_All_Component_Cached_Variables()
+reset_Platforms_Variables()
 init_PID_Version_Variable()
 init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}")
 check_For_Remote_Respositories("${address}")
@@ -328,12 +331,56 @@ function(set_Current_Version major minor patch)
 	set_Install_Cache_Variables()
 endfunction(set_Current_Version)
 
+#####################################################################################################
+################## checking that the platfoprm description match the current platform ###############
+#####################################################################################################
+function(check_Platform_Constraints RES_NAME os arch constraints)
+test_Platforms()
+set(${RES_NAME} FALSE PARENT_SCOPE)
+#testing OS
+set(TEST_OS ${os})
+include(CheckOS)
+if(NOT CHECK_OS_RESULT)
+	message("[PID] INFO : when checking platform ${RES_NAME}, not a ${os} operating system.")
+	return()
+endif()
 
+#testing architecture
+set(TEST_ARCH ${arch})
+include(CheckARCH)
+if(NOT CHECK_ARCH_RESULT)
+	message("[PID] INFO : when checking platform ${RES_NAME}, not a ${os} bits architecture.")
+	return()
+endif()
+
+# testing configuration
+if(constraints)
+	foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)
+			include(Check${config})	# check the platform and install it if possible
+			if(NOT CHECK_openssl_RESULT)
+				message("[PID] INFO : when checking platform ${RES_NAME}, ${config} constraint not satisfied.")
+				return()
+			endif()
+		else()
+			message(FATAL_ERROR "[PID] INFO : when checking platform ${RES_NAME}, configuration information for ${config} does not exists.")
+			return()
+		endif()
+	endforeach()
+endif()
+add_Platform(${RES_NAME})
+set(${RES_NAME} TRUE PARENT_SCOPE)
+
+endfunction(check_Platform_Constraints)
 
 ##################################################################################
 ################################### building the package #########################
 ##################################################################################
 macro(build_Package)
+no_Platform_Found(NO_ONE_FOUND)
+if(NO_ONE_FOUND)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : your current environment is not compatible with any platform constraint you defined. Please read previous messages and try to solve the problem by hand.")
+endif()
 
 set(CMAKE_SKIP_BUILD_RPATH FALSE) # don't skip the full RPATH for the build tree
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE) #do not use any link time info when installing

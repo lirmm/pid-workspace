@@ -17,15 +17,19 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-find_package(Threads)
-set(posix_COMPILE_OPTIONS CACHE INTERNAL "")
-set(posix_INCLUDES CACHE INTERNAL "")
-set(posix_LINK_OPTIONS CACHE INTERNAL "")
-set(posix_RPATH CACHE INTERNAL "")
-if(Threads_FOUND)
-	set(posix_LINK_OPTIONS -lm -lpthread -ldl -lrt CACHE INTERNAL "") #simply adding all posix standard variabless
-	set(CHECK_posix_RESULT TRUE)
+if(NOT posix_FOUND)
+	find_package(Threads)
+	set(posix_COMPILE_OPTIONS CACHE INTERNAL "")
+	set(posix_INCLUDES CACHE INTERNAL "")
+	set(posix_LINK_OPTIONS CACHE INTERNAL "")
+	set(posix_RPATH CACHE INTERNAL "")
+	if(Threads_FOUND)
+		set(posix_LINK_OPTIONS -lm -lpthread -ldl -lrt CACHE INTERNAL "") #simply adding all posix standard variabless
+		set(posix_FOUND TRUE CACHE INTERNAL "")
+		set(CHECK_posix_RESULT TRUE)
+	else()
+		set(CHECK_posix_RESULT FALSE)
+	endif()
 else()
-	set(CHECK_posix_RESULT FALSE)
+	set(CHECK_posix_RESULT TRUE)
 endif()
-
