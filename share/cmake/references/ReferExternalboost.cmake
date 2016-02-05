@@ -8,11 +8,19 @@ set(boost_DESCRIPTION external package providing many usefull C++ libraries, rep
 set(boost_CATEGORIES programming/threading;programming/io;programming/timing;programming/container;programming/meta CACHE INTERNAL "")
 
 set(boost_REFERENCES 1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0 linux darwin CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0 linux macosx CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_linux 32 64 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_macosx 64 CACHE INTERNAL "")
 
-set(boost_REFERENCE_1.55.0_linux_url https://gite.lirmm.fr/pid_external_deps/ext-boost/repository/archive.tar.gz?ref=linux-32-64b-1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0_linux_folder ext-boost-linux-32-64b-1.55.0-fc88e6d168ad7e9ad25d312526af5454b95961f0 CACHE INTERNAL "")
+#linux 32
+set(boost_REFERENCE_1.55.0_linux_32_URL https://gite.lirmm.fr/pid_external_deps/ext-boost/repository/archive.tar.gz?ref=linux-32-64b-1.55.0 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_linux_32_folder ext-boost-linux-32-64b-1.55.0-fc88e6d168ad7e9ad25d312526af5454b95961f0 CACHE INTERNAL "")
 
-set(boost_REFERENCE_1.55.0_darwin_url https://gite.lirmm.fr/pid_external_deps/ext-boost/repository/archive.tar.gz?ref=macosx-1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0_darwin_folder ext-boost-macosx-1.55.0-3e324f1ac45c77dc5e64a9ac705261f62ac1f0ba CACHE INTERNAL "")
+#linux 32
+set(boost_REFERENCE_1.55.0_linux_64_URL https://gite.lirmm.fr/pid_external_deps/ext-boost/repository/archive.tar.gz?ref=linux-32-64b-1.55.0 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_linux_64_folder ext-boost-linux-32-64b-1.55.0-fc88e6d168ad7e9ad25d312526af5454b95961f0 CACHE INTERNAL "")
+
+#macosx 64
+set(boost_REFERENCE_1.55.0_macosx_64_URL https://gite.lirmm.fr/pid_external_deps/ext-boost/repository/archive.tar.gz?ref=macosx-1.55.0 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_macosx_64_folder ext-boost-macosx-1.55.0-3e324f1ac45c77dc5e64a9ac705261f62ac1f0ba CACHE INTERNAL "")
 

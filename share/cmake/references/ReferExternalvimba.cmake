@@ -9,6 +9,8 @@ set(vimba_CATEGORIES camera/avt CACHE INTERNAL "")
 
 set(vimba_REFERENCES 1.3.0 CACHE INTERNAL "")
 set(vimba_REFERENCE_1.3.0 linux CACHE INTERNAL "")
-set(vimba_REFERENCE_1.3.0_linux_url https://gite.lirmm.fr/pid_external_deps/ext-vimba/repository/archive.tar.gz?ref=linux-32-64b-1.3.0 CACHE INTERNAL "")
-set(vimba_REFERENCE_1.3.0_linux_folder ext-vimba-linux-32-64b-1.3.0-80c4282b8887a985dab36b7e6cfce6d50f474a7d CACHE INTERNAL "")
+set(vimba_REFERENCE_1.3.0_linux 32 64 CACHE INTERNAL "")
+
+set(vimba_REFERENCE_1.3.0_linux_32_URL https://gite.lirmm.fr/pid_external_deps/ext-vimba/repository/archive.tar.gz?ref=linux-32-64b-1.3.0 CACHE INTERNAL "")
+set(vimba_REFERENCE_1.3.0_linux_32_folder ext-vimba-linux-32-64b-1.3.0-80c4282b8887a985dab36b7e6cfce6d50f474a7d CACHE INTERNAL "")
 

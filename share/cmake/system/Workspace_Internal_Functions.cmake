@@ -333,7 +333,7 @@ function(print_Package_Binaries package)
 foreach(version IN ITEMS ${${package}_REFERENCES})
 	message("	${version}: ")
 	foreach(system IN ITEMS ${${package}_REFERENCE_${version}})
-		foreach(arch IN ITEMS ${${package}_REFERENCE_${version}_${arch}})
+		foreach(arch IN ITEMS ${${package}_REFERENCE_${version}_${system}})
 			print_Accessible_Binary(${package} ${version} ${system} ${arch})
 		endforeach()
 	endforeach()
@@ -465,8 +465,8 @@ set(printed_string "		${system}(${arch}):")
 
 if(	(APPLE AND "${system}" STREQUAL macosx) #test if OS is OK
 	OR (UNIX AND "${system}" STREQUAL linux)) 
-	if(	(${CMAKE_SIZEOF_VOID_P} EQUAL 4 AND ${arch} STREQUAL 32)#test if architecture is OK
-		OR (${CMAKE_SIZEOF_VOID_P} EQUAL 8 AND ${arch} STREQUAL 64) )
+	if(	(${CMAKE_SIZEOF_VOID_P} EQUAL 4 AND ${arch} EQUAL 32)#test if architecture is OK
+		OR (${CMAKE_SIZEOF_VOID_P} EQUAL 8 AND ${arch} EQUAL 64) )
 		set(RESULT FALSE)
 		test_binary_download(${package} ${version} ${system} ${arch} RESULT)
 		if(RESULT)

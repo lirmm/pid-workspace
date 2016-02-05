@@ -8,11 +8,18 @@ set(libxml2_DESCRIPTION external package providing the LibXML2 libraries, repack
 set(libxml2_CATEGORIES programming/parser CACHE INTERNAL "")
 
 set(libxml2_REFERENCES 2.9.2 CACHE INTERNAL "")
-set(libxml2_REFERENCE_2.9.2 linux darwin CACHE INTERNAL "")
+set(libxml2_REFERENCE_2.9.2 linux macosx CACHE INTERNAL "")
 
-set(libxml2_REFERENCE_2.9.2_linux_url https://gite.lirmm.fr/pid_external_deps/ext-libxml2/repository/archive.tar.gz?ref=linux-32-64b-2.9.2 CACHE INTERNAL "")
-set(libxml2_REFERENCE_2.9.2_linux_folder ext-libxml2-linux-32-64b-2.9.2-008a4a6cad0f1f0a16961dae3a4a34fb06b6a035 CACHE INTERNAL "")
+set(libxml2_REFERENCE_2.9.2_linux 32 64)
+set(libxml2_REFERENCE_2.9.2_macosx 64)
 
-set(libxml2_REFERENCE_2.9.2_darwin_url https://gite.lirmm.fr/pid_external_deps/ext-libxml2/repository/archive.tar.gz?ref=macosx-2.9.2 CACHE INTERNAL "")
-set(libxml2_REFERENCE_2.9.2_darwin_folder ext-libxml2-macosx-2.9.2-e010d91f0c7969af5f5bb541ad14719cf3eee966 CACHE INTERNAL "")
+#linux32
+set(libxml2_REFERENCE_2.9.2_linux_32_URL https://gite.lirmm.fr/pid_external_deps/ext-libxml2/repository/archive.tar.gz?ref=linux-32-64b-2.9.2 CACHE INTERNAL "")
+set(libxml2_REFERENCE_2.9.2_linux_32_folder ext-libxml2-linux-32-64b-2.9.2-008a4a6cad0f1f0a16961dae3a4a34fb06b6a035 CACHE INTERNAL "")
+#linux64
+set(libxml2_REFERENCE_2.9.2_linux_64_URL https://gite.lirmm.fr/pid_external_deps/ext-libxml2/repository/archive.tar.gz?ref=linux-32-64b-2.9.2 CACHE INTERNAL "")
+set(libxml2_REFERENCE_2.9.2_linux_64_folder ext-libxml2-linux-32-64b-2.9.2-008a4a6cad0f1f0a16961dae3a4a34fb06b6a035 CACHE INTERNAL "")
+#macosx64
+set(libxml2_REFERENCE_2.9.2_macosx_64_URL https://gite.lirmm.fr/pid_external_deps/ext-libxml2/repository/archive.tar.gz?ref=macosx-2.9.2 CACHE INTERNAL "")
+set(libxml2_REFERENCE_2.9.2_macosx_64_folder ext-libxml2-macosx-2.9.2-e010d91f0c7969af5f5bb541ad14719cf3eee966 CACHE INTERNAL "")
 
