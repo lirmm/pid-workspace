@@ -39,17 +39,6 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 ###########################  declaration of the package ##########################
 ##################################################################################
 macro(declare_Package author institution mail year license address description)
-#################################################
-############ GETTING GENERAL INFO ###############
-#################################################
-set(${PROJECT_NAME}_ARCH CACHE INTERNAL "")
-if(${CMAKE_SIZEOF_VOID_P} EQUAL 2)
-	set(${PROJECT_NAME}_ARCH 16 CACHE INTERNAL "")
-elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-	set(${PROJECT_NAME}_ARCH 32 CACHE INTERNAL "")
-elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-	set(${PROJECT_NAME}_ARCH 64 CACHE INTERNAL "")
-endif()
 
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 #################################################
@@ -297,7 +286,6 @@ endif(${CMAKE_BINARY_DIR} MATCHES release)
 ######## Initializing cache variables ###########
 #################################################
 reset_All_Component_Cached_Variables()
-reset_Platforms_Variables()
 init_PID_Version_Variable()
 init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}")
 check_For_Remote_Respositories("${address}")
@@ -335,7 +323,6 @@ endfunction(set_Current_Version)
 ################## checking that the platfoprm description match the current platform ###############
 #####################################################################################################
 function(check_Platform_Constraints RES_NAME os arch constraints)
-test_Platforms()
 set(${RES_NAME} FALSE PARENT_SCOPE)
 #testing OS
 set(TEST_OS ${os})
@@ -363,12 +350,12 @@ if(constraints)
 				return()
 			endif()
 		else()
-			message(FATAL_ERROR "[PID] INFO : when checking platform ${RES_NAME}, configuration information for ${config} does not exists.")
+			message(FATAL_ERROR "[PID] INFO : when checking platform ${RES_NAME}, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called Check${RES_NAME}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/ to manage this configuration.")
 			return()
 		endif()
 	endforeach()
 endif()
-add_Platform(${RES_NAME})
+add_Platform(${RES_NAME} ${os} ${arch} "${constraints}")
 set(${RES_NAME} TRUE PARENT_SCOPE)
 
 endfunction(check_Platform_Constraints)
@@ -377,9 +364,29 @@ endfunction(check_Platform_Constraints)
 ################################### building the package #########################
 ##################################################################################
 macro(build_Package)
-no_Platform_Found(NO_ONE_FOUND)
-if(NO_ONE_FOUND)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : your current environment is not compatible with any platform constraint you defined. Please read previous messages and try to solve the problem by hand.")
+nb_Platforms_Found(HOW_MANY)
+if(HOW_MANY EQUAL 0)
+	message("[PID] INFO : No check for platform. Automatically building a platform configuration from current environment ...")
+	set(${PROJECT_NAME}_ARCH CACHE INTERNAL "")#keeping it as a cache variable to keep compatibility with old style packages
+	if(${CMAKE_SIZEOF_VOID_P} EQUAL 2)
+		set(${PROJECT_NAME}_ARCH 16 CACHE INTERNAL "")
+	elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
+		set(${PROJECT_NAME}_ARCH 32 CACHE INTERNAL "")
+	elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+		set(${PROJECT_NAME}_ARCH 64 CACHE INTERNAL "")
+	else()
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : current architecture is cannot be found ...")
+	endif()
+	if(APPLE)
+		set(TEMP_OS macosx)
+	elseif(UNIX)
+		set(TEMP_OS linux)
+	else()
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : current operating system is not supported ...")
+	endif()
+	add_Platform("default" ${TEMP_OS} ${${PROJECT_NAME}_ARCH} "")#add a platform with no constraint
+elseif(HOW_MANY GREATER 1)
+	message("[PID] WARNING : more than one platform configuration has been detected ...")
 endif()
 
 set(CMAKE_SKIP_BUILD_RPATH FALSE) # don't skip the full RPATH for the build tree

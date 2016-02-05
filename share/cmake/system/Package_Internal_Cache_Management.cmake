@@ -376,30 +376,42 @@ function(add_Category category_spec)
 	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category_spec} CACHE INTERNAL "")
 endfunction(add_Category)
 
+
+###################################################################################
+############### API functions for setting platform related variables ##############
+###################################################################################
+
 ###
 function(reset_Platforms_Variables)
-	set(${PROJECT_NAME}_AVAILABLE_PLATFORMS CACHE INTERNAL "")
-	set(${PROJECT_NAME}_TEST_PLATFORMS FALSE CACHE INTERNAL "")
+	if(${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX})
+		foreach(platform IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX}})
+			set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_OS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_ARCH${USE_MODE_SUFFIX} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_CONFIGURATION${USE_MODE_SUFFIX} CACHE INTERNAL "")
+		endforeach()
+	endif()
+	set(${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_Platforms_Variables)
 
 ###
-function(add_Platform name)
-	set(${PROJECT_NAME}_AVAILABLE_PLATFORMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS} ${name} CACHE INTERNAL "")
+function(add_Platform name os arch constraints)
+	list(FIND ${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX} "${name}" INDEX)
+	if(INDEX EQUAL -1)
+		set(${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX}} ${name} CACHE INTERNAL "")
+		set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_OS${USE_MODE_SUFFIX} ${os} CACHE INTERNAL "")
+		set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_ARCH${USE_MODE_SUFFIX} ${arch} CACHE INTERNAL "")
+		set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_CONFIGURATION${USE_MODE_SUFFIX} ${constraints} CACHE INTERNAL "")
+	else()
+		message(FATAL_ERROR "[PID] INFO : when defining platform ${name}, this platform is already defined, please use another name.")
+	endif()
 endfunction(add_Platform)
 
 ###
-function(no_Platform_Found has_no)
-	if(${PROJECT_NAME}_TEST_PLATFORMS AND NOT ${PROJECT_NAME}_AVAILABLE_PLATFORMS)#no platform found while testing platforms
-		set(${has_no} TRUE PARENT_SCOPE) 
-	else()
-		set(${has_no} FALSE PARENT_SCOPE)
-	endif()
-endfunction(no_Platform_Found)
+function(nb_Platforms_Found number)
+	list(LENGTH ${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX} SIZE)
+	set(${number} ${SIZE} PARENT_SCOPE)
+endfunction(nb_Platforms_Found)
 
-###
-function(test_Platforms)
-	set(${PROJECT_NAME}_TEST_PLATFORMS TRUE CACHE INTERNAL "")
-endfunction(test_Platforms)
 
 #############################################################################################
 ############### API functions for setting components related cache variables ################
@@ -564,6 +576,7 @@ endforeach()
 
 set(${PROJECT_NAME}_ALL_USED_PACKAGES CACHE INTERNAL "")
 set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES CACHE INTERNAL "")
+reset_Platforms_Variables()
 reset_To_Install_Packages()
 reset_To_Install_External_Packages()
 reset_Wiki_Info()
@@ -883,34 +896,48 @@ else()
 	set(MODE_SUFFIX _DEBUG)
 endif()
 
-#mode dependent info written adequately depending the mode 
+#mode dependent info written adequately depending on the mode 
+# 0) platforms constraints
+file(APPEND ${file} "#### declaration of platform dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+file(APPEND ${file} "set(${package}_AVAILABLE_PLATFORMS${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORMS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+if(${${package}_AVAILABLE_PLATFORMS${MODE_SUFFIX}})
+	foreach(plaform IN ITEMS ${${package}_AVAILABLE_PLATFORMS${MODE_SUFFIX}})
+		file(APPEND ${file} "set(${package}_AVAILABLE_PLATFORM_${plaform}_OS${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORM_${plaform}_OS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_AVAILABLE_PLATFORM_${plaform}_ARCH${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORM_${plaform}_ARCH${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_AVAILABLE_PLATFORM_${plaform}_CONFIGURATION${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORM_${plaform}_CONFIGURATION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	endforeach()
+endif()
 
 # 1) external package dependencies
 file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
-foreach(a_ext_dep IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
-	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	if(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX})
-		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
-	else()
-		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
-	endif()
-	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-endforeach()
+if(${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
+	foreach(a_ext_dep IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
+		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		if(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX})
+			file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+		else()
+			file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+		endif()
+		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	endforeach()
+endif()
 
 # 2) native package dependencies
 file(APPEND ${file} "#### declaration of package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 file(APPEND ${file} "set(${package}_DEPENDENCIES${MODE_SUFFIX} ${${package}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-foreach(a_dep IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
-	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	if(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX})
-		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
-	else()
-		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
-	endif()
-	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-endforeach()
+if(${${package}_DEPENDENCIES${MODE_SUFFIX}})
+	foreach(a_dep IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
+		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		if(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX})
+			file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+		else()
+			file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+		endif()
+		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	endforeach()
+endif()
 
 # 3) internal+external components specifications
 file(APPEND ${file} "#### declaration of components exported flags and binary in ${CMAKE_BUILD_TYPE} mode ####\n")
