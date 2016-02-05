@@ -124,7 +124,8 @@ add_custom_target(info
 
 ## deploying a package (either soure repository or binary package relocatable archive) 
 add_custom_target(deploy
-	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
 					-DPACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/install
 					-DCMAKE_FIND_LIBRARY_PREFIXES=${CMAKE_FIND_LIBRARY_PREFIXES}
 					-DCMAKE_FIND_LIBRARY_SUFFIXES=${CMAKE_FIND_LIBRARY_SUFFIXES}
@@ -142,6 +143,7 @@ add_custom_target(deploy
 ## resolving runtime dependencies of an already installed package
 add_custom_target(resolve
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
 					-DPACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/install
 					-DCMAKE_FIND_LIBRARY_PREFIXES=${CMAKE_FIND_LIBRARY_PREFIXES}
 					-DCMAKE_FIND_LIBRARY_SUFFIXES=${CMAKE_FIND_LIBRARY_SUFFIXES}
@@ -169,7 +171,8 @@ add_custom_target(create
 
 ## connect to newly created PID package to an existing empty repository
 add_custom_target(connect
-	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
 					-DREQUIRED_PACKAGE=$(name) 
 					-DOFFICIAL_GIT_URL=$(official)
 					-DORIGIN_GIT_URL=$(origin)
@@ -217,7 +220,8 @@ add_custom_target(register
 
 ## releasing a package
 add_custom_target(release
-	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
 					-DTARGET_PACKAGE=$(name)
 					-DNEXT_VERSION=$(nextversion)
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Release_PID_Package.cmake
@@ -228,6 +232,7 @@ add_custom_target(release
 ## updating a package
 add_custom_target(update
 	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
 					-DTARGET_PACKAGE=$(name)
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Update_PID_Package.cmake
@@ -236,7 +241,8 @@ add_custom_target(update
 
 ## upgrading the workspace
 add_custom_target(upgrade
-	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
 					-DTARGET_OFFICIAL=$(official)
 					-DUPDATE_ALL_PACKAGES=$(update)
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
