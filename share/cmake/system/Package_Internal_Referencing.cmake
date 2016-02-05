@@ -46,15 +46,23 @@ else()
 file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL \"\")\n")
 endif()
 
-file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} CACHE INTERNAL \"\")\n")
-foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
+file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} CACHE INTERNAL \"\")\n") # all available versions for which there is a reference to a downloadable binary
+if(${PROJECT_NAME}_REFERENCES)
+foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES}) #for each available version, all os for which there is a reference
 	file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n")
-	foreach(ref_system IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}})
+	if(${PROJECT_NAME}_REFERENCE_${ref_version})
+	foreach(ref_system IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}})#for each version & os, all arch for which there is a reference
 		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system} ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_DEBUG ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_DEBUG} CACHE INTERNAL \"\")\n")
-		set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system} CACHE INTERNAL "")
+		if(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system})
+		foreach(ref_arch IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}})#for each version & os & arch, referencing the binary archives of the package
+			file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL} CACHE INTERNAL \"\")\n")
+			file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL_DEBUG ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL_DEBUG} CACHE INTERNAL \"\")\n")
+		endforeach()
+		endif()
 	endforeach()
+	endif()
 endforeach()
+endif()
 endfunction(generate_Reference_File)
 
 ###

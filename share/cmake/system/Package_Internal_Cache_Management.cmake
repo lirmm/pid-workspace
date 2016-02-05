@@ -324,50 +324,31 @@ function(add_Author author institution)
 endfunction(add_Author)
 
 
-function(reset_References_Info)
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
-	# references to package binaries version available must be reset
-	foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
-		foreach(ref_system IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}})
-			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system} CACHE INTERNAL "")
-			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_DEBUG CACHE INTERNAL "")
-		endforeach()
-		set(${PROJECT_NAME}_REFERENCE_${ref_version} CACHE INTERNAL "")
-	endforeach()
-	set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL "")
-	
-endif()
-endfunction(reset_References_Info)
-
-
 ###
-function(add_Reference version system url url-dbg)
+function(add_Reference version os arch url url-dbg)
 	set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} ${version} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${system} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version}_${system} ${url} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version}_${system}_DEBUG ${url-dbg} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${os} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version}_${os} ${${PROJECT_NAME}_REFERENCE_${version}_${os}} ${arch} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version}_${os}_${arch}_URL ${url} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version}_${os}_${arch}_URL_DEBUG ${url-dbg} CACHE INTERNAL "")
 endfunction(add_Reference)
 
 ###
-function(shadow_Repository_Address url)
-	set(${PROJECT_NAME}_ADDRESS ${url} CACHE INTERNAL "")
-endfunction(shadow_Repository_Address)
-
-
 function(reset_References_Info)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
 	# references to package binaries version available must be reset
 	foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
 		foreach(ref_system IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}})
+			foreach(ref_arch IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}})
+				set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL CACHE INTERNAL "")
+				set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL_DEBUG CACHE INTERNAL "")
+			endforeach()
 			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system} CACHE INTERNAL "")
-			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_DEBUG CACHE INTERNAL "")
 		endforeach()
 		set(${PROJECT_NAME}_REFERENCE_${ref_version} CACHE INTERNAL "")
 	endforeach()
 	set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL "")
-	
 endif()
 endfunction(reset_References_Info)
 
