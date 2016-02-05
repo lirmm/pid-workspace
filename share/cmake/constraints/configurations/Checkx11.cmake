@@ -28,7 +28,17 @@ if(X11_FOUND)
 	set(x11_LINK_OPTIONS ${X11_LIBRARIES} CACHE INTERNAL "")
 	set(CHECK_x11_RESULT TRUE)
 else()
+	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu 
+		OR CURRENT_DISTRIBUTION STREQUAL debian)
+		execute_process(COMMAND sudo apt-get install xorg openbox)
+		find_package(X11)
+		if(X11_FOUND)
+			set(x11_INCLUDES ${X11_INCLUDE_DIR} CACHE INTERNAL "")
+			set(x11_LINK_OPTIONS ${X11_LIBRARIES} CACHE INTERNAL "")
+			set(CHECK_x11_RESULT TRUE)
+		else()
+			set(CHECK_x11_RESULT FALSE)
+		endif()
 	set(CHECK_x11_RESULT FALSE)
 endif()
-
 
