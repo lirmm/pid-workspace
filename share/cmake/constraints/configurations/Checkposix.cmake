@@ -18,15 +18,14 @@
 #########################################################################################
 
 find_package(Threads)
-set(threads_COMPILE_OPTIONS CACHE INTERNAL "")
-set(threads_INCLUDES CACHE INTERNAL "")
-set(threads_LINK_OPTIONS CACHE INTERNAL "")
-set(threads_RPATH CACHE INTERNAL "")
+set(posix_COMPILE_OPTIONS CACHE INTERNAL "")
+set(posix_INCLUDES CACHE INTERNAL "")
+set(posix_LINK_OPTIONS CACHE INTERNAL "")
+set(posix_RPATH CACHE INTERNAL "")
 if(Threads_FOUND)
-	set(threads_LINK_OPTIONS ${CMAKE_THREAD_LIBS_INIT} CACHE INTERNAL "")
-	set(CHECK_threads_RESULT TRUE)
+	set(posix_LINK_OPTIONS -lm -lpthread -ldl -lrt CACHE INTERNAL "") #simply adding all posix standard variabless
+	set(CHECK_posix_RESULT TRUE)
 else()
-	set(CHECK_threads_RESULT FALSE)
+	set(CHECK_posix_RESULT FALSE)
 endif()
-
 
