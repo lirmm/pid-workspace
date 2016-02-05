@@ -547,14 +547,17 @@ endfunction(deploy_PID_Package)
 
 ###
 function(deploy_External_Package package version)
-get_System_Variables(OS_STRING PACKAGE_STRING)
+get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
 set(MAX_CURR_VERSION 0.0.0)
 if("${version}" STREQUAL "")#deploying the latest version of the repository
 	foreach(version_i IN ITEMS ${${package}_REFERENCES})
 		list(FIND ${package}_REFERENCE_${version_i} ${OS_STRING} INDEX)
-		if(	NOT index EQUAL -1 #a reference for this OS is known 
+		if(	NOT INDEX EQUAL -1) #a reference for this OS is known
+			list(FIND ${package}_REFERENCE_${version_i}_${OS_STRING} ${ARCH_BITS} INDEX)
+			if(NOT INDEX EQUAL -1 #a reference for this arch is known
 			AND ${version_i} VERSION_GREATER ${MAX_CURR_VERSION})
 				set(MAX_CURR_VERSION ${version_i})
+			endif()
 		endif()
 	endforeach()
 	if(NOT ${MAX_CURR_VERSION} STREQUAL 0.0.0)
@@ -563,7 +566,7 @@ if("${version}" STREQUAL "")#deploying the latest version of the repository
 			message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive. Please contact the administrator of the package ${package}.")
 		endif()
 	else()
-		message("[PID] ERROR : no known version to external package ${package} for OS ${OS_STRING}")
+		message("[PID] ERROR : no known version to external package ${package} for OS ${OS_STRING}.")
 	endif()
 
 else()#deploying the target binary relocatable archive 

@@ -311,7 +311,6 @@ else()#using references
 	include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
 	if(NOT ${refer_path} STREQUAL NOTFOUND)
-		#message("DEBUG : trying to deploy a binary package !!")
 		if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number 
 			deploy_Binary_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
 		else()# deploying the most up to date version
@@ -365,13 +364,18 @@ endfunction(deploy_Package_Repository)
 function(get_Available_Binary_Package_Versions package list_of_versions)
 
 #configuring target system
-get_System_Variables(OS_STRING PACKAGE_STRING)
+get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
 # listing available binaries of the package and searching if there is any "good version"
 set(available_binary_package_version "") 
 foreach(ref_version IN ITEMS ${${package}_REFERENCES})
 	foreach(ref_system IN ITEMS ${${package}_REFERENCE_${ref_version}})
-		if(${ref_system} STREQUAL ${OS_STRING})		
-			list(APPEND available_binary_package_version ${ref_version})
+		if(${ref_system} STREQUAL ${OS_STRING})
+			foreach(ref_arch IN ITEMS ${${package}_REFERENCE_${ref_version}_${OS_STRING}})
+				if(${ref_arch} EQUAL ${ARCH_BITS})				
+					list(APPEND available_binary_package_version ${ref_version})
+					break()
+				endif()
+			endforeach()
 		endif()
 	endforeach()
 endforeach()
@@ -430,23 +434,23 @@ endfunction(deploy_Binary_Package_Version)
 
 ###
 function(generate_Binary_Package_Name package version mode RES_FILE RES_FOLDER)
-get_System_Variables(OS_STRING PACKAGE_STRING)
+get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-
-set(${RES_FILE} "${package}-${version}${TARGET_SUFFIX}-${PACKAGE_STRING}.tar.gz" PARENT_SCOPE)
+#TODO verify generated names and folder => maybe need modifications
+set(${RES_FILE} "${package}-${version}${TARGET_SUFFIX}-${OS_STRING}-${ARCH_BITS}.tar.gz" PARENT_SCOPE)
 set(${RES_FOLDER} "${package}-${version}${TARGET_SUFFIX}-${PACKAGE_STRING}" PARENT_SCOPE)
 endfunction(generate_Binary_Package_Name)
 
 ###
 function(download_And_Install_Binary_Package INSTALLED package version_string)
-get_System_Variables(OS_STRING PACKAGE_STRING)
+get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
 ###### downloading the binary package ######
 #release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
 message("[PID] INFO : downloading the binary package ${package} version ${version_string}, please wait ...")
 generate_Binary_Package_Name(${package} "${version_string}" Release FILE_BINARY FOLDER_BINARY)
-set(download_url ${${package}_REFERENCE_${version_string}_${OS_STRING}})
+set(download_url ${${package}_REFERENCE_${version_string}_${OS_STRING}_${ARCH_BITS}_URL})
 file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
@@ -460,7 +464,7 @@ endif()
 set(FILE_BINARY_DEBUG "")
 set(FOLDER_BINARY_DEBUG "")
 generate_Binary_Package_Name(${package} ${version_string} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
-set(download_url_dbg ${${package}_REFERENCE_${version_string}_${OS_STRING}_url_DEBUG})
+set(download_url_dbg ${${package}_REFERENCE_${version_string}_${OS_STRING}_${ARCH_BITS}_URL_DEBUG})
 file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res-dbg 0 numeric_error_dbg)
 list(GET res-dbg 1 status_dbg)
@@ -787,15 +791,15 @@ endfunction(install_Required_External_Packages)
 function(deploy_External_Package_Version DEPLOYED package VERSION)
 set(INSTALLED FALSE)
 #begin
-get_System_Variables(OS_STRING PACKAGE_STRING)
+get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
 ###### downloading the binary package ######
 message("[PID] INFO : downloading the external binary package ${package} with version ${VERSION}, please wait ...")
 #1) release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
 generate_Binary_Package_Name(${package} ${VERSION} "Release" FILE_BINARY FOLDER_BINARY)
-set(download_url ${${package}_REFERENCE_${VERSION}_${OS_STRING}_url})
-set(FOLDER_BINARY ${${package}_REFERENCE_${VERSION}_${OS_STRING}_folder})
+set(download_url ${${package}_REFERENCE_${VERSION}_${OS_STRING}_${ARCH_BITS}_URL})
+set(FOLDER_BINARY ${${package}_REFERENCE_${VERSION}_${OS_STRING}_${ARCH_BITS}_FOLDER})
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory release
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 			ERROR_QUIET OUTPUT_QUIET)
@@ -808,12 +812,12 @@ if(NOT numeric_error EQUAL 0)
 	return()
 endif()
 #2) debug code (optionnal for external packages => just to avoid unecessary redoing code download)
-if(EXISTS ${package}_REFERENCE_${VERSION}_${OS_STRING}_url_DEBUG)
+if(EXISTS ${package}_REFERENCE_${VERSION}_${OS_STRING}_${ARCH_BITS}_URL_DEBUG)
 	set(FILE_BINARY_DEBUG "")
 	set(FOLDER_BINARY_DEBUG "")
 	generate_Binary_Package_Name(${package} ${VERSION} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
-	set(download_url_dbg ${${package}_REFERENCE_${VERSION}_${OS_STRING}_url_DEBUG})
-	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${VERSION}_${OS_STRING}_folder_DEBUG})
+	set(download_url_dbg ${${package}_REFERENCE_${VERSION}_${OS_STRING}_${ARCH_BITS}_URL_DEBUG})
+	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${VERSION}_${OS_STRING}_${ARCH_BITS}_FOLDER_DEBUG})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory debug
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 			ERROR_QUIET OUTPUT_QUIET)

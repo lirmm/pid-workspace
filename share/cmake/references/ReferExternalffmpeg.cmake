@@ -15,10 +15,10 @@ set(ffmpeg_REFERENCE_2.7.1_linux 32 64 CACHE INTERNAL "")
 
 #linux 32
 set(ffmpeg_REFERENCE_2.7.1_linux_32_URL https://gite.lirmm.fr/pid_external_deps/ext-ffmpeg/repository/archive.tar.gz?ref=linux-32-64b-2.7.1 CACHE INTERNAL "")
-set(ffmpeg_REFERENCE_2.7.1_linux_32_folder ext-ffmpeg-linux-32-64b-2.7.1-30af68120216525ab579c466635fb343b6dee452 CACHE INTERNAL "")
+set(ffmpeg_REFERENCE_2.7.1_linux_32_FOLDER ext-ffmpeg-linux-32-64b-2.7.1-30af68120216525ab579c466635fb343b6dee452 CACHE INTERNAL "")
 #linux 64
 set(ffmpeg_REFERENCE_2.7.1_linux_64_URL https://gite.lirmm.fr/pid_external_deps/ext-ffmpeg/repository/archive.tar.gz?ref=linux-32-64b-2.7.1 CACHE INTERNAL "")
-set(ffmpeg_REFERENCE_2.7.1_linux_64_folder ext-ffmpeg-linux-32-64b-2.7.1-30af68120216525ab579c466635fb343b6dee452 CACHE INTERNAL "")
+set(ffmpeg_REFERENCE_2.7.1_linux_64_FOLDER ext-ffmpeg-linux-32-64b-2.7.1-30af68120216525ab579c466635fb343b6dee452 CACHE INTERNAL "")
 
 ######## #version 2.8.2 ###########
 set(ffmpeg_REFERENCE_2.8.2 linux CACHE INTERNAL "")
@@ -26,10 +26,10 @@ set(ffmpeg_REFERENCE_2.8.2_linux 32 64 CACHE INTERNAL "")
 
 #linux 32
 set(ffmpeg_REFERENCE_2.8.2_linux_32_URL https://gite.lirmm.fr/pid_external_deps/ext-ffmpeg/repository/archive.tar.gz?ref=linux-32-64b-2.8.2 CACHE INTERNAL "")
-set(ffmpeg_REFERENCE_2.8.2_linux_32_folder ext-ffmpeg-linux-32-64b-2.8.2-c9731ee1f2f21c8b906e89d7f152b5637d6923ec CACHE INTERNAL "")
+set(ffmpeg_REFERENCE_2.8.2_linux_32_FOLDER ext-ffmpeg-linux-32-64b-2.8.2-c9731ee1f2f21c8b906e89d7f152b5637d6923ec CACHE INTERNAL "")
 
 #linux 64
 set(ffmpeg_REFERENCE_2.8.2_linux_64_URL https://gite.lirmm.fr/pid_external_deps/ext-ffmpeg/repository/archive.tar.gz?ref=linux-32-64b-2.8.2 CACHE INTERNAL "")
-set(ffmpeg_REFERENCE_2.8.2_linux_64_folder ext-ffmpeg-linux-32-64b-2.8.2-c9731ee1f2f21c8b906e89d7f152b5637d6923ec CACHE INTERNAL "")
+set(ffmpeg_REFERENCE_2.8.2_linux_64_FOLDER ext-ffmpeg-linux-32-64b-2.8.2-c9731ee1f2f21c8b906e89d7f152b5637d6923ec CACHE INTERNAL "")
 
 
