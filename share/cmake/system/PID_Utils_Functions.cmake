@@ -386,7 +386,6 @@ function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PA
 
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(EXT_PACKAGE-NOTFOUND PARENT_SCOPE)
-message("is_External_Package_Defined ${ref_package} ${ext_package} ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX}=${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX}}")
 if(DEFINED ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX})
 	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/external/${ext_package}/${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX}} PARENT_SCOPE)
 	return()

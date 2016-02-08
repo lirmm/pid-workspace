@@ -384,7 +384,7 @@ if(HOW_MANY EQUAL 0)
 	else()
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : current operating system is not supported ...")
 	endif()
-	add_Platform("default" ${TEMP_OS} ${${PROJECT_NAME}_ARCH} "")#add a platform with no constraint
+	add_Platform("${TEMP_OS}${${PROJECT_NAME}_ARCH}" ${TEMP_OS} ${${PROJECT_NAME}_ARCH} "")#add a platform with no constraint
 elseif(HOW_MANY GREATER 1)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : more than one platform configuration has been detected : ${${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX}}")
 endif()

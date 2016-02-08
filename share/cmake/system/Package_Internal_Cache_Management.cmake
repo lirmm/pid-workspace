@@ -898,13 +898,12 @@ endif()
 #mode dependent info written adequately depending on the mode 
 # 0) platforms constraints
 file(APPEND ${file} "#### declaration of platform dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-file(APPEND ${file} "set(${package}_AVAILABLE_PLATFORMS${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORMS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-if(${${package}_AVAILABLE_PLATFORMS${MODE_SUFFIX}})
-	foreach(plaform IN ITEMS ${${package}_AVAILABLE_PLATFORMS${MODE_SUFFIX}})
-		file(APPEND ${file} "set(${package}_AVAILABLE_PLATFORM_${plaform}_OS${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORM_${plaform}_OS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_AVAILABLE_PLATFORM_${plaform}_ARCH${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORM_${plaform}_ARCH${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${package}_AVAILABLE_PLATFORM_${plaform}_CONFIGURATION${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORM_${plaform}_CONFIGURATION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	endforeach()
+file(APPEND ${file} "set(${package}_PLATFORM${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORMS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+if(${package}_AVAILABLE_PLATFORMS${MODE_SUFFIX})
+	set(platform ${${package}_AVAILABLE_PLATFORMS${MODE_SUFFIX}})
+	file(APPEND ${file} "set(${package}_PLATFORM_${platform}_OS${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORM_${platform}_OS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_PLATFORM_${platform}_ARCH${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORM_${platform}_ARCH${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_PLATFORM_${platform}_CONFIGURATION${MODE_SUFFIX} ${${package}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 endif()
 
 # 1) external package dependencies
