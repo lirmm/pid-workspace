@@ -23,49 +23,46 @@
 ##################################################################################
 
 ###
-function(get_Version_Numbers MAJOR MINOR PATCH version)
-string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" VNUMBERS ${version})
-list(GET VNUMBERS 0 ref_major)
-list(GET VNUMBERS 1 ref_minor)
-list(GET VNUMBERS 2 ref_patch)
-set(${MAJOR} ${ref_major} PARENT_SCOPE)
-set(${MINOR} ${ref_minor} PARENT_SCOPE)
-set(${PATCH} ${ref_patch} PARENT_SCOPE)
-endfunction(get_Version_Numbers)
-
-
-###
 function(select_Exact_Version RES_VERSION minimum_version available_versions)
-get_Version_Numbers(MAJOR MINOR PATCH "${minimum_version}.0")
-set(curr_max_patch_number -1)
+get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
+if(DEFINED PATCH)
+	set(curr_max_patch_number ${PATCH})
+else()
+	set(curr_max_patch_number -1)
+endif()
+
 foreach(version IN ITEMS ${available_versions})
-	get_Version_Numbers(COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH "${version}")
+	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
 	if(	${COMPARE_MAJOR} EQUAL ${MAJOR} 
 		AND ${COMPARE_MINOR} EQUAL ${MINOR} 
-		AND ${COMPARE_PATCH} GREATER ${curr_max_patch_number})
+		AND (${COMPARE_PATCH} GREATER ${curr_max_patch_number}) OR (${COMPARE_PATCH} EQUAL ${curr_max_patch_number}))
 		set(curr_max_patch_number ${COMPARE_PATCH})# taking the last patch version available for this major.minor
 	endif()
 endforeach()
 if(curr_max_patch_number EQUAL -1)#i.e. nothing found
 	set(${RES_VERSION} PARENT_SCOPE)
 else()
-	set(${RES_VERSION} "${MAJOR}.${MINOR}.${curr_max_patch_number}")
+	set(${RES_VERSION} "${MAJOR}.${MINOR}.${curr_max_patch_number}" PARENT_SCOPE)
 endif()
 endfunction(select_Exact_Version)
 
 
 ###
 function(select_Best_Version RES_VERSION minimum_version available_versions)
-get_Version_Numbers(MAJOR MINOR PATCH "${minimum_version}.0")
-set(curr_max_patch_number -1)
+get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
+if(DEFINED PATCH)
+	set(curr_max_patch_number ${PATCH})
+else()
+	set(curr_max_patch_number -1)
+endif()
 set(curr_max_minor_number ${MINOR})
 foreach(version IN ITEMS ${available_versions})
-	get_Version_Numbers(COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH "${version}")
+	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
 	if(${COMPARE_MAJOR} EQUAL ${MAJOR})
 		if(	${COMPARE_MINOR} EQUAL ${curr_max_minor_number} 
 			AND ${COMPARE_PATCH} GREATER ${curr_max_patch_number})
 			set(curr_max_patch_number ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
-		elseif(${COMPARE_MINOR} GREATER ${curr_max_minor_number} )
+		elseif((${COMPARE_MINOR} GREATER ${curr_max_minor_number}) OR (${COMPARE_PATCH} EQUAL ${curr_max_patch_number}))
 			set(curr_max_patch_number ${COMPARE_PATCH})# taking the patch version of this major.minor
 			set(curr_max_minor_number ${COMPARE_MINOR})# taking the last minor version available for this major
 		endif()
@@ -209,7 +206,6 @@ function(check_External_Last_Version VERSION_FOUND search_path)
 set(${VERSION_FOUND} PARENT_SCOPE)
 list_Version_Subdirectories(VERSION_DIRS ${search_path})
 if(VERSION_DIRS)
-
 	foreach(version_dir IN ITEMS ${VERSION_DIRS})
 		if(highest_version)
 			if(version_dir VERSION_GREATER highest_version)
@@ -498,7 +494,7 @@ function(is_External_Version_Compatible_With_Previous_Constraints
 		version_to_find
 		package
 		version_string)
-#message("DEBUG is_External_Version_Compatible_With_Previous_Constraints is_compatible=${is_compatible} version_to_find=${version_to_find} package=${package} version_string=${version_string}")
+
 set(${is_compatible} FALSE PARENT_SCOPE)
 # 1) testing compatibility and recording the higher constraint for minor version number
 if(${package}_REQUIRED_VERSION_EXACT)
@@ -673,7 +669,6 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
 		return()#by default the version is compatible (no constraints) so return 
 	endif()
 else()#the dependency has not been already found
-	#message("DEBUG resolve_External_Package_Dependency ${external_dependency} NOT FOUND !!")	
 	if(	${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX})
 		
 		if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version has been specified
@@ -689,7 +684,6 @@ else()#the dependency has not been already found
 
 		else()
 			#WARNING recursive call to find package
-			#message("DEBUG before find : dep= ${external_dependency}, version = ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}")
 			find_package(
 				${external_dependency} 
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}} 
@@ -762,15 +756,14 @@ if(EXIST)
 			endif()
 
 			if(NOT ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND)
-				exitFindScript("[PID] CRITICAL ERROR : some of the requested components of the package ${package} are missing (version chosen is ${${package}_VERSION_STRING}, requested is ${${package}_FIND_VERSION}),either bad names specified or broken package versionning")
+				exitFindScript("[PID] CRITICAL ERROR : some of the requested components of the package ${package} are missing (version chosen is ${${package}_VERSION_STRING}, requested is ${${package}_FIND_VERSION}),either bad names specified or broken package versionning.")
 			endif()	
 		
 		else()#no component check, register all of them
 			all_Components("${package}" ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION})
 			if(USE_FILE_NOTFOUND)
-				exitFindScript("The  selected version of the-testpack-a (${${package}_VERSION_STRING}) has no configuration file or file is corrupted")
+				exitFindScript("[PID] CRITICAL ERROR : the  selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted.")
 			endif()
-				
 		endif()
 
 		#here everything has been found => setting global standard CMake find process variables to adequate values
@@ -824,3 +817,80 @@ else() #if the directory does not exist it means the package cannot be found
 endif()
 
 endmacro(finding_Package)
+
+
+##find script for external packages
+# requires ${package}_PID_KNOWN_VERSION to be before calling this macro, set with at least one exact version (MAJOR.MINOR.PATCH)
+# optionnaly ${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO can be set to define which version (MAJOR.MINOR.PATCH) is no more compatible with ${version}. Can be done for any version defined has known.
+macro(finding_External_Package package)
+
+set(${package}_FOUND FALSE CACHE INTERNAL "")
+#workspace dir must be defined for each package build
+set(EXTERNAL_PACKAGE_${package}_SEARCH_PATH
+    ${EXTERNAL_PACKAGE_BINARY_INSTALL_DIR}/${package}
+    CACHE
+    INTERNAL
+    "path to the package install dir containing versions of ${package} external package"
+  )
+
+check_Directory_Exists(EXIST ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH})
+if(EXIST)
+	# at this stage the only thing to do is to check for versions
+	
+	#variables that will be filled by generic functions
+	if(${package}_FIND_VERSION)
+		if(${package}_FIND_VERSION_EXACT) #using a specific version
+			check_External_Exact_Version(VERSION_TO_USE ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}")
+		else() #using the best version as regard of version constraints
+			check_External_Minimum_Version(VERSION_TO_USE ${package} ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}")
+		endif()
+	else() #no specific version targetted using last available version (takes the last version available)
+		check_External_Last_Version(VERSION_TO_USE ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH})
+	endif()
+
+	if(VERSION_TO_USE)#a good version of the package has been found
+		set(${package}_FOUND TRUE CACHE INTERNAL "")
+		set(${package}_ROOT_DIR ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH}/${VERSION_TO_USE} CACHE INTERNAL "")
+		set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES} ${package} CACHE INTERNAL "")
+		if(${package}_FIND_VERSION)
+			if(${package}_FIND_VERSION_EXACT)
+				set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
+				set(${package}_REQUIRED_VERSION_EXACT "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" CACHE INTERNAL "")
+			else()
+				set(${package}_ALL_REQUIRED_VERSIONS ${${package}_ALL_REQUIRED_VERSIONS} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" CACHE INTERNAL "")	
+			endif()
+		else()
+			set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
+			set(${package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "") #unset the exact required version	
+		endif()
+	else()#no adequate version found
+		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+			if(${package}_FIND_REQUIRED)
+				if(${package}_FIND_VERSION)
+					add_To_Install_External_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${${package}_FIND_VERSION_EXACT})
+				else()
+					add_To_Install_External_Package_Specification(${package} "" FALSE)
+				endif()
+			endif()
+		else()
+			exitFindScript("[PID] ERROR : the required version(${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}) of external package ${package} cannot be found in the workspace.")
+		endif()
+	endif()
+
+else() #if the directory does not exist it means the external package cannot be found
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+		if(${package}_FIND_REQUIRED)
+			if(${package}_FIND_VERSION)
+				add_To_Install_External_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${${package}_FIND_VERSION_EXACT})
+			else()
+				add_To_Install_External_Package_Specification(${package} "" FALSE)
+			endif()
+		endif()
+	else()
+		exitFindScript("[PID] ERROR : the required external package ${package} cannot be found in the workspace.")
+	endif()
+
+endif()
+
+endmacro(finding_External_Package)
+

@@ -386,7 +386,7 @@ if(HOW_MANY EQUAL 0)
 	endif()
 	add_Platform("default" ${TEMP_OS} ${${PROJECT_NAME}_ARCH} "")#add a platform with no constraint
 elseif(HOW_MANY GREATER 1)
-	message("[PID] WARNING : more than one platform configuration has been detected ...")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : more than one platform configuration has been detected : ${${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX}}")
 endif()
 
 set(CMAKE_SKIP_BUILD_RPATH FALSE) # don't skip the full RPATH for the build tree

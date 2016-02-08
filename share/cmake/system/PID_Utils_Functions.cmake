@@ -383,9 +383,10 @@ endfunction(is_Shared_Lib_With_Path)
 
 ###
 function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
+
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(EXT_PACKAGE-NOTFOUND PARENT_SCOPE)
-
+message("is_External_Package_Defined ${ref_package} ${ext_package} ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX}=${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX}}")
 if(DEFINED ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX})
 	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/external/${ext_package}/${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX}} PARENT_SCOPE)
 	return()
@@ -411,7 +412,7 @@ foreach(link IN ITEMS ${ext_links})
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
-		unset(EXT_PACKAGE-NOTFOUND)		
+		unset(EXT_PACKAGE-NOTFOUND)
 		is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
 		if(DEFINED EXT_PACKAGE-NOTFOUND)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")		

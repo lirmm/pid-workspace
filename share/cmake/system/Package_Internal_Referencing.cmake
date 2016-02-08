@@ -91,11 +91,11 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
 			resolve_External_Package_Dependency(${package} ${installed} ${mode})
 			if(NOT ${installed}_FOUND)
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find installed external package ${installed}")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find installed external package ${installed}. This is an internal bug maybe due to a bad find file.")
 			endif()
 		endforeach()
-	else()	
-		message(FATAL_ERROR "[PID] CRITICAL ERROR :  there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${VAR_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option.")
+	else()
+		message(FATAL_ERROR "[PID] CRITICAL ERROR :  there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${VAR_SUFFIX}}. You may use the required packages automatic download option.")
 		return()
 	endif()
 endif()
@@ -409,6 +409,7 @@ function(deploy_Binary_Package_Version DEPLOYED package VERSION_MIN EXACT exclud
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions)
 if(NOT available_versions)
+	message("[PID] ERROR : no available binary versions of package ${package}.")
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
@@ -420,6 +421,11 @@ else()
 endif()
 
 if(NOT RES_VERSION)
+	if(EXACT)
+		message("[PID] ERROR : no binary compatible for ${package} version ${VERSION_MIN} found.")	
+	else()	
+		message("[PID] ERROR : no adequate binary version of package ${package} found with minimum version ${VERSION_MIN}.")
+	endif()	
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
@@ -436,7 +442,6 @@ endfunction(deploy_Binary_Package_Version)
 function(generate_Binary_Package_Name package version mode RES_FILE RES_FOLDER)
 get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-#TODO verify generated names and folder => maybe need modifications
 set(${RES_FILE} "${package}-${version}${TARGET_SUFFIX}-${OS_STRING}-${ARCH_BITS}.tar.gz" PARENT_SCOPE)
 set(${RES_FOLDER} "${package}-${version}${TARGET_SUFFIX}-${PACKAGE_STRING}" PARENT_SCOPE)
 endfunction(generate_Binary_Package_Name)
@@ -456,7 +461,7 @@ list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : problem when downloading binary version ${version_string} of package ${package} from address ${download_url}: ${status}")
+	message("[PID] ERROR : problem when downloading binary version ${version_string} of package ${package} (release binaries) from address ${download_url}: ${status}")
 	return()
 endif()
 
@@ -470,7 +475,7 @@ list(GET res-dbg 0 numeric_error_dbg)
 list(GET res-dbg 1 status_dbg)
 if(NOT numeric_error_dbg EQUAL 0)#there is an error
 	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : problem when downloading binary version ${version_string} of package ${package} from address ${download_url_dbg} : ${status_dbg}.")
+	message("[PID] ERROR : problem when downloading binary version ${version_string} of package ${package} (debug binaries) from address ${download_url_dbg} : ${status_dbg}.")
 	return()
 endif()
 
@@ -750,11 +755,12 @@ endif()
 # 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
 set(SELECTED)
 resolve_Required_External_Package_Version(SELECTED ${package})
-if(SELECTED)
+if(SELECTED) # if there is ONE adequate reference, downloading and installing it
 	#2) installing package
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
 	deploy_External_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${SELECTED})
-	if(PACKAGE_BINARY_DEPLOYED) # if there is ONE adequate reference, downloading and installing it
+	if(PACKAGE_BINARY_DEPLOYED)
+		message("[PID] INFO : external package ${package} (version ${SELECTED}) has been installed.")
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 		return()
 	endif()
@@ -854,16 +860,22 @@ if(EXISTS download_url_dbg)
           	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG}
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/debug
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
-else()
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/release
-		ERROR_VARIABLE error_res OUTPUT_QUIET)
+
+	if (error_res)
+		set(${DEPLOYED} FALSE PARENT_SCOPE)
+		message("[PID] ERROR : cannot extract binary archives ${FILE_BINARY_DEBUG}.")
+		return()
+	endif()
 endif()
+
+execute_process(
+	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY}
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/release
+	ERROR_VARIABLE error_res OUTPUT_QUIET)
 
 if (error_res)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : cannot extract binary archives ${FILE_BINARY} ${FILE_BINARY_DEBUG}.")
+	message("[PID] ERROR : cannot extract binary archives ${FILE_BINARY}.")
 	return()
 endif()
 
