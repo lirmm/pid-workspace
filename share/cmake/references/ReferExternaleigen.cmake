@@ -14,14 +14,14 @@ set(eigen_REFERENCE_3.2.0_macosx 32 64 CACHE INTERNAL "")
 
 
 #linux 32
-set(eigen_REFERENCE_3.2.0_linux_32_URL https://gite.lirmm.fr/pid_external_deps/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.0_linux_32_URL https://gite.lirmm.fr/pid/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
 set(eigen_REFERENCE_3.2.0_linux_32_FOLDER ext-eigen-linux-anyarch-3.2.0-2d527bf5d7eb2ccb4604173926dad246524e1c88 CACHE INTERNAL "")
 #linux 64
-set(eigen_REFERENCE_3.2.0_linux_64_URL https://gite.lirmm.fr/pid_external_deps/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.0_linux_64_URL https://gite.lirmm.fr/pid/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
 set(eigen_REFERENCE_3.2.0_linux_64_FOLDER ext-eigen-linux-anyarch-3.2.0-2d527bf5d7eb2ccb4604173926dad246524e1c88 CACHE INTERNAL "")
 #macosx 32
-set(eigen_REFERENCE_3.2.0_macosx_32_URL https://gite.lirmm.fr/pid_external_deps/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.0_macosx_32_URL https://gite.lirmm.fr/pid/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
 set(eigen_REFERENCE_3.2.0_macosx_32_FOLDER ext-eigen-linux-anyarch-3.2.0-2d527bf5d7eb2ccb4604173926dad246524e1c88 CACHE INTERNAL "")
 #macosx 64
-set(eigen_REFERENCE_3.2.0_macosx_64_URL https://gite.lirmm.fr/pid_external_deps/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.0_macosx_64_URL https://gite.lirmm.fr/pid/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
 set(eigen_REFERENCE_3.2.0_macosx_64_FOLDER ext-eigen-linux-anyarch-3.2.0-2d527bf5d7eb2ccb4604173926dad246524e1c88 CACHE INTERNAL "")
