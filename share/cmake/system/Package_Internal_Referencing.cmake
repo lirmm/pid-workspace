@@ -400,6 +400,8 @@ list(FIND exclude_versions ${RES_VERSION} INDEX)
 set(INSTALLED FALSE)
 if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}")
+else()
+	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 endfunction(deploy_Binary_Package)
@@ -422,7 +424,7 @@ endif()
 
 if(NOT RES_VERSION)
 	if(EXACT)
-		message("[PID] ERROR : no binary compatible for ${package} version ${VERSION_MIN} found.")	
+		message("[PID] ERROR : no binary compatible for ${package} version ${VERSION_MIN} found.")
 	else()	
 		message("[PID] ERROR : no adequate binary version of package ${package} found with minimum version ${VERSION_MIN}.")
 	endif()	
@@ -433,6 +435,8 @@ set(INSTALLED FALSE)
 list(FIND exclude_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}")
+else()
+	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 
