@@ -11,6 +11,11 @@ set(vimba_REFERENCES 1.3.0 CACHE INTERNAL "")
 set(vimba_REFERENCE_1.3.0 linux CACHE INTERNAL "")
 set(vimba_REFERENCE_1.3.0_linux 32 64 CACHE INTERNAL "")
 
-set(vimba_REFERENCE_1.3.0_linux_32_URL https://gite.lirmm.fr/pid_external_deps/ext-vimba/repository/archive.tar.gz?ref=linux-32-64b-1.3.0 CACHE INTERNAL "")
-set(vimba_REFERENCE_1.3.0_linux_32_FOLDER ext-vimba-linux-32-64b-1.3.0-80c4282b8887a985dab36b7e6cfce6d50f474a7d CACHE INTERNAL "")
+# linux 32
+set(vimba_REFERENCE_1.3.0_linux_32_URL https://gite.lirmm.fr/rob-vision-devices/ext-vimba/repository/archive.tar.gz?ref=linux-32-1.3.0 CACHE INTERNAL "")
+set(vimba_REFERENCE_1.3.0_linux_32_FOLDER ext-vimba-linux-32-1.3.0-97952f3383228f4b65c6dffe640dd1b14141d50d CACHE INTERNAL "")
 
+# linux 64 
+
+set(vimba_REFERENCE_1.3.0_linux_64_URL https://gite.lirmm.fr/rob-vision-devices/ext-vimba/repository/archive.tar.gz?ref=linux-64-1.3.0 CACHE INTERNAL "")
+set(vimba_REFERENCE_1.3.0_linux_64_FOLDER ext-vimba-linux-64-1.3.0-0afdd16dd640afb0b9642222d98cf73a430c53cb CACHE INTERNAL "")
