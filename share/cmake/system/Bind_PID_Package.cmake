@@ -36,7 +36,54 @@ list(APPEND CMAKE_MODULE_PATH ${BIN_PACKAGE_PATH}/share/cmake) # adding the cmak
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
 include(Package_Internal_Definition NO_POLICY_SCOPE)
 
-# resolving external dependencies
+###############################################################
+################## resolve platform constraints ###############
+###############################################################
+
+# 1) Debug mode checking if the package has a platform defined
+if(${PACKAGE_NAME}_PLATFORM_DEBUG)
+	set(platform ${${PACKAGE_NAME}_PLATFORM_DEBUG})#arch and OS are not checked as they are supposed to be already OK
+	# 2) checking constraints on configuration
+	if(${PACKAGE_NAME}_PLATFORM_${platform}_CONFIGURATION_DEBUG) #there are configuration constraints
+		foreach(config IN ITEMS ${${PACKAGE_NAME}_PLATFORM_${platform}_CONFIGURATION_DEBUG})
+			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)
+				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)	# check the platform constraint and install it if possible
+				if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${PACKAGE_NAME}.")
+					return()
+				endif()
+			else()
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${PACKAGE_NAME}.")
+				return()
+			endif()
+		endforeach()
+	endif()
+endif() #otherwise no configuration for this platform is supposed to be necessary
+
+# 1) Release mode checking if the package has a platform defined
+if(${PACKAGE_NAME}_PLATFORM)
+	set(platform ${${PACKAGE_NAME}_PLATFORM})#arch and OS are not checked as they are supposed to be already OK
+	# 2) checking constraints on configuration
+	if(${PACKAGE_NAME}_PLATFORM_${platform}_CONFIGURATION) #there are configuration constraints
+		foreach(config IN ITEMS ${${PACKAGE_NAME}_PLATFORM_${platform}_CONFIGURATION})
+			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)
+				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)	# check the platform constraint and install it if possible
+				if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${PACKAGE_NAME}.")
+					return()
+				endif()
+			else()
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${PACKAGE_NAME}.")
+				return()
+			endif()
+		endforeach()
+	endif()
+endif() #otherwise no configuration for this platform is supposed to be necessary
+
+###############################################################
+############### resolving external dependencies ###############
+###############################################################
+
 # 1) getting all the runtime external dependencies of the package
 foreach(ext_dep IN ITEMS ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCIES_DEBUG})
 	if(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_USE_RUNTIME_DEBUG)
@@ -81,28 +128,26 @@ if(NOT_DEFINED_EXT_DEPS OR NOT_DEFINED_EXT_DEPS_DEBUG)
 	foreach(ext_dep IN ITEMS ${NOT_DEFINED_EXT_DEPS})
 		message("[PID] RELEASE mode : ${ext_dep} with path = ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH}")
 	endforeach()
+
+	# 3) replacing "once and for all" (until next rebind call) these dependencies in the use file
+	set(theusefile ${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_VERSION}/share/Use${PACKAGE_NAME}-${PACKAGE_VERSION}.cmake)
+	file(WRITE ${theusefile} "")#resetting the file content
+	write_Use_File(${theusefile} ${PACKAGE_NAME} Debug)
+	write_Use_File(${theusefile} ${PACKAGE_NAME} Release)
 endif()
 
-# 3) replacing "once and for all" (until next rebind call) these dependencies in the use file
-set(theusefile ${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_VERSION}/share/Use${PACKAGE_NAME}-${PACKAGE_VERSION}.cmake)
-file(WRITE ${theusefile} "")#resetting the file content
-write_Use_File(${theusefile} ${PACKAGE_NAME} Release)
-write_Use_File(${theusefile} ${PACKAGE_NAME} Debug)
 
-# 4) resolving all runtime dependencies
+##################################################################
+############### resolving all runtime dependencies ###############
+##################################################################
+
 set(${PACKAGE_NAME}_ROOT_DIR ${BIN_PACKAGE_PATH} CACHE INTERNAL "")
 set(${PACKAGE_NAME}_FOUND TRUE CACHE INTERNAL "")
 
 # finding all package dependencies
-#message("DEBUG RESOLVE PACKAGE DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
 resolve_Package_Dependencies(${PACKAGE_NAME} Debug)
 resolve_Package_Dependencies(${PACKAGE_NAME} Release)
 
-#message("DEBUG RESOLVE PACKAGE BUILD DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
-#configure_Package_Build_Variables(${PACKAGE_NAME} Debug)
-#configure_Package_Build_Variables(${PACKAGE_NAME} Release)
-
-#message("DEBUG RESOLVE PACKAGE RUNTIME DEPENDENCIES FOR ${PACKAGE_NAME} with version ${PACKAGE_VERSION} ...")
 # resolving runtime dependencies
 resolve_Package_Runtime_Dependencies(${PACKAGE_NAME} Debug)
 resolve_Package_Runtime_Dependencies(${PACKAGE_NAME} Release)

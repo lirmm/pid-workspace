@@ -345,7 +345,7 @@ if(constraints)
 	foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
 		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)
 			include(Check${config})	# check the platform and install it if possible
-			if(NOT CHECK_openssl_RESULT)
+			if(NOT CHECK_${config}_RESULT)
 				message("[PID] INFO : when checking platform ${RES_NAME}, ${config} constraint not satisfied.")
 				return()
 			endif()
