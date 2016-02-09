@@ -13,15 +13,15 @@ set(qtlibs_REFERENCE_5.4.1_linux 32 64 CACHE INTERNAL "")
 set(qtlibs_REFERENCE_5.4.1_macosx 64 CACHE INTERNAL "")
 
 #linux 32
-set(qtlibs_REFERENCE_5.4.1_linux_32_URL https://gite.lirmm.fr/pid_external_deps/ext-qtlibs/repository/archive.tar.gz?ref=linux-32-64b-5.4.1 CACHE INTERNAL "")
-set(qtlibs_REFERENCE_5.4.1_linux_32_FOLDER ext-qtlibs-linux-32-64b-5.4.1-434efa85764c2c4941c35ea8a942a531f5dd1cc1 CACHE INTERNAL "")
+set(qtlibs_REFERENCE_5.4.1_linux_32_URL https://gite.lirmm.fr/pid/ext-qtlibs/repository/archive.tar.gz?ref=linux-32-5.4.1 CACHE INTERNAL "")
+set(qtlibs_REFERENCE_5.4.1_linux_32_FOLDER ext-qtlibs-linux-32-5.4.1-f357e44170031f23c91f0897d21c01c4cad4fadf CACHE INTERNAL "")
 
 #linux 64
-set(qtlibs_REFERENCE_5.4.1_linux_64_URL https://gite.lirmm.fr/pid_external_deps/ext-qtlibs/repository/archive.tar.gz?ref=linux-32-64b-5.4.1 CACHE INTERNAL "")
-set(qtlibs_REFERENCE_5.4.1_linux_64_FOLDER ext-qtlibs-linux-32-64b-5.4.1-434efa85764c2c4941c35ea8a942a531f5dd1cc1 CACHE INTERNAL "")
+set(qtlibs_REFERENCE_5.4.1_linux_64_URL https://gite.lirmm.fr/pid/ext-qtlibs/repository/archive.tar.gz?ref=linux-64-5.4.1 CACHE INTERNAL "")
+set(qtlibs_REFERENCE_5.4.1_linux_64_FOLDER ext-qtlibs-linux-64-5.4.1-821d980944d33d031f7fc38051635037d8e99f6c CACHE INTERNAL "")
 
 #macosx 64
-set(qtlibs_REFERENCE_5.4.1_macosx_64_URL https://gite.lirmm.fr/pid_external_deps/ext-qtlibs/repository/archive.tar.gz?ref=macosx-5.4.1 CACHE INTERNAL "")
+set(qtlibs_REFERENCE_5.4.1_macosx_64_URL https://gite.lirmm.fr/pid/ext-qtlibs/repository/archive.tar.gz?ref=macosx-5.4.1 CACHE INTERNAL "")
 set(qtlibs_REFERENCE_5.4.1_macosx_64_FOLDER ext-qtlibs-macosx-5.4.1-ef3b4fb81f28c51e02a6668f5ecc79f5b2585000 CACHE INTERNAL "")
 
 
