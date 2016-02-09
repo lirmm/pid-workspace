@@ -918,6 +918,40 @@ else()
 		ERROR_QUIET OUTPUT_QUIET)
 endif()
 
+#5) checking for platform constraints
+configure_External_Package(${package} ${VERSION} Debug)
+configure_External_Package(${package} ${VERSION} Release)
 set(${DEPLOYED} TRUE PARENT_SCOPE)
 endfunction(deploy_External_Package_Version)
 
+
+function(configure_External_Package package version mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+include(${WORKSPACE_DIR}/external/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+#using the generated Use<package>-<version>.cmake file to get adequate version information about plaforms 
+if(${res} STREQUAL NOTFOUND) 
+	# no platform usage file => nothing to do	
+	return()
+endif()
+
+# checking platforms
+if(${package}_PLATFORM${VAR_SUFFIX})
+	set(platform ${${package}_PLATFORM${VAR_SUFFIX}})#arch and OS are not checked as they are supposed to be already OK
+	# 2) checking constraints on configuration
+	if(${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}) #there are configuration constraints
+		foreach(config IN ITEMS ${${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}})
+			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)
+				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)	# check the platform constraint and install it if possible
+				if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
+					return()
+				endif()
+			else()
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${package}.")
+				return()
+			endif()
+		endforeach()
+	endif()
+endif() #otherwise no configuration for this platform is supposed to be necessary
+
+endfunction(configure_External_Package)
