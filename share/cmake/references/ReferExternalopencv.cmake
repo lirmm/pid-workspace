@@ -13,8 +13,8 @@ set(opencv_REFERENCE_2.4.11_linux 32 64 CACHE INTERNAL "")
 
 #linux 32
 set(opencv_REFERENCE_2.4.11_linux_32_URL https://gite.lirmm.fr/pid/ext-opencv/repository/archive.tar.gz?ref=linux-32-2.4.11 CACHE INTERNAL "")
-set(opencv_REFERENCE_2.4.11_linux_32_FOLDER ext-opencv-linux-32-2.4.11-863a0e28a48d69f8ae4276d807429c910c09a0cf CACHE INTERNAL "")
+set(opencv_REFERENCE_2.4.11_linux_32_FOLDER ext-opencv-linux-32-2.4.11-691f1f1dfefa162bb643b81f6362ef53f02efa2e CACHE INTERNAL "")
 
 #linux 64 
 set(opencv_REFERENCE_2.4.11_linux_64_URL https://gite.lirmm.fr/pid/ext-opencv/repository/archive.tar.gz?ref=linux-64-2.4.11 CACHE INTERNAL "")
-set(opencv_REFERENCE_2.4.11_linux_64_FOLDER ext-opencv-linux-64-2.4.11-3d36c787cdf4f72cc7ce3b7511716c3a845db6e0 CACHE INTERNAL "")
+set(opencv_REFERENCE_2.4.11_linux_64_FOLDER ext-opencv-linux-64-2.4.11-3438bee806663c2d17517c40f26d17d506b61298 CACHE INTERNAL "")
