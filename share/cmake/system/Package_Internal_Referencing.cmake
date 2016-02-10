@@ -927,13 +927,14 @@ endfunction(deploy_External_Package_Version)
 
 function(configure_External_Package package version mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${package}/${version}/share/)
 include(${WORKSPACE_DIR}/external/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
-#using the generated Use<package>-<version>.cmake file to get adequate version information about plaforms 
+#using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms 
 if(${res} STREQUAL NOTFOUND) 
 	# no platform usage file => nothing to do	
 	return()
 endif()
-
+unset(${package}_CURR_DIR)
 # checking platforms
 if(${package}_PLATFORM${VAR_SUFFIX})
 	set(platform ${${package}_PLATFORM${VAR_SUFFIX}})#arch and OS are not checked as they are supposed to be already OK
