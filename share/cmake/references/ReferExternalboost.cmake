@@ -14,13 +14,13 @@ set(boost_REFERENCE_1.55.0_macosx 64 CACHE INTERNAL "")
 
 #linux 32
 set(boost_REFERENCE_1.55.0_linux_32_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=linux-32-1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0_linux_32_FOLDER ext-boost-linux-32-1.55.0-be4c416cad5168d56419d4a3e20a034bb8a08a46 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_linux_32_FOLDER ext-boost-linux-32-1.55.0-c74d0acc8e7a4b683eed88c55077b4a34f821e31 CACHE INTERNAL "")
 
 #linux 64
 set(boost_REFERENCE_1.55.0_linux_64_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=linux-64-1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0_linux_64_FOLDER ext-boost-linux-64-1.55.0-1d1f1f82091112c799d135aefdec2e5883e0538d CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_linux_64_FOLDER ext-boost-linux-64-1.55.0-e86d35e51b47bd069d721337c2ce37b4f794400a CACHE INTERNAL "")
 
 #macosx 64
 set(boost_REFERENCE_1.55.0_macosx_64_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=macosx-1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0_macosx_64_FOLDER ext-boost-macosx-1.55.0-3e324f1ac45c77dc5e64a9ac705261f62ac1f0ba CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_macosx_64_FOLDER ext-boost-macosx-1.55.0-401061767ee224bb6ffa66c4307c0abe84a2455f CACHE INTERNAL "")
 

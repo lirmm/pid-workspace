@@ -36,6 +36,13 @@ list(APPEND CMAKE_MODULE_PATH ${BIN_PACKAGE_PATH}/share/cmake) # adding the cmak
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
 include(Package_Internal_Definition NO_POLICY_SCOPE)
 
+# needed to parse adequately CMAKe variables passed to the script
+SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)
+SEPARATE_ARGUMENTS(CMAKE_SYSTEM_INCLUDE_PATH)
+SEPARATE_ARGUMENTS(CMAKE_SYSTEM_LIBRARY_PATH)
+SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_PREFIXES)
+SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_SUFFIXES)
+SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 ###############################################################
 ################## resolve platform constraints ###############
 ###############################################################

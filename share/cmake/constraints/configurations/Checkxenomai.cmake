@@ -17,25 +17,35 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-
-if(NOT xenomai_FOUND)
-	set(xenomai_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(xenomai_INCLUDES CACHE INTERNAL "")
-	set(xenomai_LINK_OPTIONS CACHE INTERNAL "")
-	set(xenomai_RPATH CACHE INTERNAL "")
+macro(find_Xenomai)
+if(UNIX AND NOT APPLE)
 	execute_process(COMMAND which xeno-config RESULT_VARIABLE res OUTPUT_VARIABLE XENO_CONFIG_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
 	if(res)
 		set(xenomai_FOUND FALSE CACHE INTERNAL "")
 	else()
 		set(xenomai_FOUND TRUE  CACHE INTERNAL "")
-	endif()
-
-	if(xenomai_FOUND)
-		#getting flags from xenomai to put them in adequate variables
 		execute_process(COMMAND ${XENO_CONFIG_PATH} --skin=posix --cflags OUTPUT_VARIABLE XENO_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
 		execute_process(COMMAND ${XENO_CONFIG_PATH} --skin=posix --ldflags OUTPUT_VARIABLE XENO_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
-		set(xenomai_COMPILE_OPTIONS ${XENO_CFLAGS} CACHE INTERNAL "")
-		set(xenomai_LINK_OPTIONS ${XENO_LDFLAGS} CACHE INTERNAL "") #simply adding all posix standard variabless
+		set(xenomai_LINKS ${XENO_LDFLAGS})
+		set(xenomai_CFLAGS ${XENO_CFLAGS})
+	endif()
+else()
+	set(xenomai_FOUND TRUE  CACHE INTERNAL "")
+endif()
+unset(XENO_LDFLAGS)
+unset(XENO_CFLAGS)
+unset(XENO_CONFIG_PATH)
+endmacro(find_Xenomai)
+
+if(NOT xenomai_FOUND)
+	set(xenomai_COMPILE_OPTIONS CACHE INTERNAL "")
+	set(xenomai_LINK_OPTIONS CACHE INTERNAL "")
+	set(xenomai_RPATH CACHE INTERNAL "")
+	find_Xenomai()
+	if(xenomai_FOUND)
+		#getting flags from xenomai find macro to put them in adequate variables
+		set(xenomai_COMPILE_OPTIONS ${xenomai_LINKS} CACHE INTERNAL "")
+		set(xenomai_LINK_OPTIONS ${xenomai_CFLAGS} CACHE INTERNAL "")
 		set(CHECK_xenomai_RESULT TRUE)
 	else()
 		set(CHECK_xenomai_RESULT FALSE)

@@ -17,26 +17,102 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-if(NOT X11_FOUND)
-	find_package(X11)
+macro(find_X11)
+
+# - Find x11 installation
+# Try to find X11 on UNIX systems. The following values are defined
+#  x11_FOUND        - True if X11 is available
+#  x11_LIBRARIES    - link against these to use X11
+if (UNIX)
+  set(x11_FOUND FALSE)
+  # X11 is never a framework and some header files may be
+  # found in tcl on the mac
+  set(CMAKE_FIND_FRAMEWORK_SAVE ${CMAKE_FIND_FRAMEWORK})
+  set(CMAKE_FIND_FRAMEWORK NEVER)
+
+  # MODIFICATION for our needs: must be in default system folders so do not provide additionnal folders !!!!!
+  find_path(x11_X11_INCLUDE_PATH X11/X.h)
+  find_path(x11_Xlib_INCLUDE_PATH X11/Xlib.h)
+  find_path(x11_ICE_INCLUDE_PATH X11/ICE/ICE.h)
+  find_path(x11_SM_INCLUDE_PATH X11/SM/SM.h)
+
+  find_library(x11_X11_LIB X11) 
+  find_library(x11_ICE_LIB ICE)
+  find_library(x11_SM_LIB SM)
+  find_library(x11_Xext_LIB Xext)
+
+  # no need to check for include or library dirs as all must be in default system folders (no configuration required)
+
+  set(x11_LIBRARIES) # start with empty list
+  set(IS_FOUND TRUE)
+  if(x11_X11_INCLUDE_PATH AND x11_Xlib_INCLUDE_PATH AND x11_X11_LIB)
+	set(x11_LIBRARIES ${x11_LIBRARIES} ${x11_X11_LIB})
+  else()
+	message("[PID] ERROR : when finding x11 framework, cannot find X11 base library.")
+	set(IS_FOUND FALSE)
+  endif()
+
+  if(x11_Xext_LIB)
+    	set(x11_LIBRARIES ${x11_LIBRARIES} ${x11_Xext_LIB})
+  else()
+    	message("[PID] ERROR : when finding x11 framework, cannot find X11 extension library.")
+	set(IS_FOUND FALSE)
+  endif()
+
+  if(x11_ICE_LIB AND x11_ICE_INCLUDE_PATH)
+   	set(x11_LIBRARIES ${x11_LIBRARIES} ${x11_ICE_LIB})
+  else()
+	message("[PID] ERROR : when finding x11 framework, cannot find ICE library.")
+	set(IS_FOUND FALSE)
+  endif ()
+
+  if(x11_SM_LIB AND x11_SM_INCLUDE_PATH)
+   	set(x11_LIBRARIES ${x11_LIBRARIES} ${x11_SM_LIB})
+  else()
+	message("[PID] ERROR : when finding x11 framework, cannot find SM library.")
+	set(IS_FOUND FALSE)
+  endif ()
+  if(NOT IS_FOUND)
+	set(x11_FOUND FALSE)
+	if (x11_FIND_REQUIRED)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : DO not find X11 installed.")
+	endif ()
+  else()
+	set(x11_FOUND TRUE)
+  endif ()
+
+unset(IS_FOUND)
+unset(x11_X11_INCLUDE_PATH CACHE)
+unset(x11_Xlib_INCLUDE_PATH CACHE)
+unset(x11_X11_LIB CACHE)
+unset(x11_Xext_LIB CACHE)
+unset(x11_ICE_LIB CACHE)
+unset(x11_ICE_INCLUDE_PATH CACHE)
+unset(x11_SM_LIB CACHE)
+unset(x11_SM_INCLUDE_PATH CACHE)
+
+set(CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK_SAVE})
+endif ()
+endmacro(find_X11)
+
+if(NOT x11_FOUND)
 	set(x11_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(x11_INCLUDES CACHE INTERNAL "")
 	set(x11_LINK_OPTIONS CACHE INTERNAL "")
 	set(x11_RPATH CACHE INTERNAL "")
-	if(X11_FOUND)
-		set(x11_INCLUDES ${X11_INCLUDE_DIR} CACHE INTERNAL "")
-		set(x11_LINK_OPTIONS ${X11_LIBRARIES} CACHE INTERNAL "")
+	find_X11()
+	if(x11_FOUND)
+		set(x11_LINK_OPTIONS ${x11_LIBRARIES} CACHE INTERNAL "")
 		set(CHECK_x11_RESULT TRUE)
 	else()
 		if(	CURRENT_DISTRIBUTION STREQUAL ubuntu 
 			OR CURRENT_DISTRIBUTION STREQUAL debian)
-			message("[PID] INFO : trying to install x11...")
+			
+			message("[PID] INFO : trying to install x11...")		
 			execute_process(COMMAND sudo apt-get install xorg openbox)
-			find_package(X11)
-			if(X11_FOUND)
+			find_X11()
+			if(x11_FOUND)
 				message("[PID] INFO : x11 installed !")
-				set(x11_INCLUDES ${X11_INCLUDE_DIR} CACHE INTERNAL "")
-				set(x11_LINK_OPTIONS ${X11_LIBRARIES} CACHE INTERNAL "")
+				set(x11_LINK_OPTIONS ${x11_LIBRARIES} CACHE INTERNAL "")
 				set(CHECK_x11_RESULT TRUE)
 			else()
 				message("[PID] INFO : install of x11 has failed !")
