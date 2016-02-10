@@ -96,30 +96,29 @@ endfunction(gtk2_Find_Include_Dir)
 #=============================================================
 function(gtk2_Find_Library _var _lib _append_version)
 
-    # Not GTK versions per se but the versions encoded into Windows
-    # import libraries (GtkMM 2.14.1 has a gtkmm-vc80-2_4.lib for example)
-    # Also the MSVC libraries use _ for . (this is handled below)
-    set(_versions 2.20 2.18 2.16 2.14 2.12
-                  2.10  2.8  2.6  2.4  2.2 2.0
-                  1.20 1.18 1.16 1.14 1.12
-                  1.10  1.8  1.6  1.4  1.2 1.0)
+# Not GTK versions per se but the versions encoded into Windows
+# import libraries (GtkMM 2.14.1 has a gtkmm-vc80-2_4.lib for example)
+# Also the MSVC libraries use _ for . (this is handled below)
+set(_versions 2.20 2.18 2.16 2.14 2.12
+          2.10  2.8  2.6  2.4  2.2 2.0
+          1.20 1.18 1.16 1.14 1.12
+          1.10  1.8  1.6  1.4  1.2 1.0)
 
-    set(_lib_list)
-    if(_append_version)
-        foreach(_ver ${_versions})
-            list(APPEND _lib_list  "${_lib}-${_ver}")
-        endforeach()
-    else()
-        set(_lib_list ${_lib})
-    endif()
+set(_lib_list)
+if(_append_version)
+	foreach(_ver ${_versions})
+		list(APPEND _lib_list  "${_lib}-${_ver}")
+	endforeach()
+else()
+	set(_lib_list ${_lib})
+endif()
 
-    find_library(${_var}_LIBRARY_RELEASE ${_lib_list}) #nothing else than standard path
+find_library(${_var}_LIBRARY_RELEASE NAMES ${_lib_list}) #nothing else than standard path
 
-    select_library_configurations(${_var})
+set(${_var}_LIBRARY ${${_var}_LIBRARY_RELEASE} PARENT_SCOPE)
+set(gtk2_LIBRARIES ${gtk2_LIBRARIES} ${${_var}_LIBRARY_RELEASE})
+set(gtk2_LIBRARIES ${gtk2_LIBRARIES} PARENT_SCOPE)
 
-    set(${_var}_LIBRARY ${${_var}_LIBRARY} PARENT_SCOPE)
-    set(gtk2_LIBRARIES ${gtk2_LIBRARIES} ${${_var}_LIBRARY})
-    set(gtk2_LIBRARIES ${gtk2_LIBRARIES} PARENT_SCOPE)
 endfunction(gtk2_Find_Library)
 
 

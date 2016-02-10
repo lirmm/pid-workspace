@@ -58,6 +58,8 @@ if(${PACKAGE_NAME}_PLATFORM_DEBUG)
 				if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
 					message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${PACKAGE_NAME}.")
 					return()
+				else()
+					message("[PID] INFO : platform configuration ${config} for package ${PACKAGE_NAME} is satisfied.")
 				endif()
 			else()
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${PACKAGE_NAME}.")
