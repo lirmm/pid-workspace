@@ -35,6 +35,7 @@ unset(XENO_CONFIG_PATH)
 endmacro(find_Xenomai)
 
 if(NOT xenomai_FOUND)
+	set(xenomai_INCLUDE_DIRS CACHE INTERNAL "")	
 	set(xenomai_COMPILE_OPTIONS CACHE INTERNAL "")
 	set(xenomai_LINK_OPTIONS CACHE INTERNAL "")
 	set(xenomai_RPATH CACHE INTERNAL "")

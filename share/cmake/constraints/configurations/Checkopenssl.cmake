@@ -33,6 +33,7 @@ endmacro(find_Open_SSL)
 
 if(NOT openssl_FOUND)	
 	set(openssl_COMPILE_OPTIONS CACHE INTERNAL "")
+	set(openssl_INCLUDE_DIRS CACHE INTERNAL "")
 	set(openssl_LINK_OPTIONS CACHE INTERNAL "")
 	set(openssl_RPATH CACHE INTERNAL "")
 	find_Open_SSL()
