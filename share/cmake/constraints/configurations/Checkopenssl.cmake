@@ -18,7 +18,7 @@
 #########################################################################################
 
 macro(find_Open_SSL)
-set(openssl_FOUND FALSE)
+set(openssl_FOUND FALSE CACHE INTERNAL "")
 if(UNIX)
 	find_path(openssl_INCLUDE_DIR openssl/ssl.h) #searching only in standard paths
 	find_library(openssl_SSL_LIBRARY NAMES ssl ssleay32 ssleay32MD)
@@ -27,7 +27,7 @@ if(UNIX)
 	unset(openssl_INCLUDE_DIR CACHE)
 	unset(openssl_SSL_LIBRARY CACHE)
 	unset(openssl_CRYPTO_LIBRARY CACHE)
-	set(openssl_FOUND TRUE)
+	set(openssl_FOUND TRUE CACHE INTERNAL "")
 endif()
 endmacro(find_Open_SSL)
 

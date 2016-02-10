@@ -19,7 +19,7 @@
 
 macro(find_Posix)
 
-set(posix_FOUND FALSE)
+set(posix_FOUND FALSE CACHE INTERNAL "")
 # - Find posix installation
 # Try to find libraries for posix on UNIX systems. The following values are defined
 #  posix_FOUND        - True if posix is available
@@ -73,10 +73,8 @@ if (UNIX)
 		set(IS_FOUND FALSE)
 	endif()
 
-	if(NOT IS_FOUND)
-		set(posix_FOUND FALSE)
-	else()
-		set(posix_FOUND TRUE)
+	if(IS_FOUND)
+		set(posix_FOUND TRUE CACHE INTERNAL "")
 	endif ()
 
 	unset(IS_FOUND)
@@ -95,10 +93,8 @@ if(NOT posix_FOUND) #any linux or macosx is posix ...
 	find_Posix()
 	if(posix_FOUND)
 		set(posix_LINK_OPTIONS ${posix_LIBRARIES} CACHE INTERNAL "") #simply adding all posix standard libraries		
-		set(posix_FOUND TRUE CACHE INTERNAL "")
 		set(CHECK_posix_RESULT TRUE)
 	else()
-		set(posix_FOUND FALSE CACHE INTERNAL "")
 		set(CHECK_posix_RESULT FALSE)
 	endif()
 endif()

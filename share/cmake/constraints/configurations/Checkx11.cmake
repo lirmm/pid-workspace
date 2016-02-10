@@ -18,13 +18,13 @@
 #########################################################################################
 
 macro(find_X11)
-
+set(x11_FOUND FALSE CACHE INTERNAL "")
 # - Find x11 installation
 # Try to find X11 on UNIX systems. The following values are defined
 #  x11_FOUND        - True if X11 is available
 #  x11_LIBRARIES    - link against these to use X11
 if (UNIX)
-  set(x11_FOUND FALSE)
+  
   # X11 is never a framework and some header files may be
   # found in tcl on the mac
   set(CMAKE_FIND_FRAMEWORK_SAVE ${CMAKE_FIND_FRAMEWORK})
@@ -72,13 +72,9 @@ if (UNIX)
 	message("[PID] ERROR : when finding x11 framework, cannot find SM library.")
 	set(IS_FOUND FALSE)
   endif ()
-  if(NOT IS_FOUND)
-	set(x11_FOUND FALSE)
-	if (x11_FIND_REQUIRED)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : DO not find X11 installed.")
-	endif ()
-  else()
-	set(x11_FOUND TRUE)
+
+  if(IS_FOUND)
+	set(x11_FOUND TRUE  CACHE INTERNAL "")
   endif ()
 
 unset(IS_FOUND)
