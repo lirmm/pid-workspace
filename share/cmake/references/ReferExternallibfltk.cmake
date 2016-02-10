@@ -9,13 +9,9 @@ set(libfltk_CATEGORIES programming/gui CACHE INTERNAL "")
 
 set(libfltk_REFERENCES 1.3.3 CACHE INTERNAL "")
 set(libfltk_REFERENCE_1.3.3 linux CACHE INTERNAL "")
-set(libfltk_REFERENCE_1.3.3_linux 32 64 CACHE INTERNAL "")
-
-#linux 32
-set(libfltk_REFERENCE_1.3.3_linux_32_URL https://gite.lirmm.fr/pid_external_deps/ext-libfltk/repository/archive.tar.gz?ref=linux-32-64b-1.3.3 CACHE INTERNAL "")
-set(libfltk_REFERENCE_1.3.3_linux_32_FOLDER ext-libfltk-linux-32-64b-1.3.3-d62d4c71c005d798f5f747687d729270a92cbec1 CACHE INTERNAL "")
+set(libfltk_REFERENCE_1.3.3_linux 64 CACHE INTERNAL "")
 
 #linux 64
-set(libfltk_REFERENCE_1.3.3_linux_64_URL https://gite.lirmm.fr/pid_external_deps/ext-libfltk/repository/archive.tar.gz?ref=linux-32-64b-1.3.3 CACHE INTERNAL "")
-set(libfltk_REFERENCE_1.3.3_linux_64_FOLDER ext-libfltk-linux-32-64b-1.3.3-d62d4c71c005d798f5f747687d729270a92cbec1 CACHE INTERNAL "")
+set(libfltk_REFERENCE_1.3.3_linux_64_URL https://gite.lirmm.fr/pid/ext-libfltk/repository/archive.tar.gz?ref=linux-64-1.3.3 CACHE INTERNAL "")
+set(libfltk_REFERENCE_1.3.3_linux_64_FOLDER ext-libfltk-linux-64-1.3.3-7a7d9c369a2d6c6744aad6b68c6280d80a0a6874 CACHE INTERNAL "")
 
