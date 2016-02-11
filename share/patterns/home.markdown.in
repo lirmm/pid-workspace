@@ -24,6 +24,8 @@ For more details see [license file](license.txt).
 
 Last released version (more recent version tag on master branch) : @PACKAGE_LAST_VERSION_FOR_WIKI@.
 
+@RELEASED_BINARY_VERSIONS@
+
 ## Categories
 
 @PACKAGE_CATEGORIES_LIST@
