@@ -325,12 +325,25 @@ endfunction(add_Author)
 
 
 ###
-function(add_Reference version os arch url url-dbg)
+function(add_Category category_spec)
+	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category_spec} CACHE INTERNAL "")
+endfunction(add_Category)
+
+###################################################################################
+############### API functions for setting platform related variables ##############
+###################################################################################
+
+### here platform matches a platform defined in available platforms variable
+function(add_Reference version platform url url-dbg)
+	list(FIND ${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX} ${platform} INDEX)
+	if(INDEX EQUAL -1)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target platform ${platform} when adding reference.")
+		return()
+	endif()
 	set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} ${version} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${os} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version}_${os} ${${PROJECT_NAME}_REFERENCE_${version}_${os}} ${arch} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version}_${os}_${arch}_URL ${url} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version}_${os}_${arch}_URL_DEBUG ${url-dbg} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${platform} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL ${url} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL_DEBUG ${url-dbg} CACHE INTERNAL "")
 endfunction(add_Reference)
 
 ###
@@ -339,12 +352,9 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
 	# references to package binaries version available must be reset
 	foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
-		foreach(ref_system IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}})
-			foreach(ref_arch IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}})
-				set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL CACHE INTERNAL "")
-				set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL_DEBUG CACHE INTERNAL "")
-			endforeach()
-			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system} CACHE INTERNAL "")
+		foreach(ref_platform IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}})
+			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL CACHE INTERNAL "")
+			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG CACHE INTERNAL "")
 		endforeach()
 		set(${PROJECT_NAME}_REFERENCE_${ref_version} CACHE INTERNAL "")
 	endforeach()
@@ -352,15 +362,6 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 endfunction(reset_References_Info)
 
-###
-function(add_Category category_spec)
-	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category_spec} CACHE INTERNAL "")
-endfunction(add_Category)
-
-
-###################################################################################
-############### API functions for setting platform related variables ##############
-###################################################################################
 
 ###
 function(reset_Platforms_Variables)
@@ -398,14 +399,6 @@ function(add_Platform SELECT name os arch constraints)
 endfunction(add_Platform)
 
 ###
-function(select_Default_Platform name os arch)
-	set(${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX} ${name} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PLATFORM_OS${USE_MODE_SUFFIX} ${os} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PLATFORM_ARCH${USE_MODE_SUFFIX} ${arch} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PLATFORM_CONFIGURATION${USE_MODE_SUFFIX} CACHE INTERNAL "")
-endfunction(select_Default_Platform)
-
-###
 function(platform_Selected SELECTED)
 	if(${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX})
 		set(${SELECTED} TRUE PARENT_SCOPE)
@@ -414,6 +407,15 @@ function(platform_Selected SELECTED)
 	endif()
 endfunction(platform_Selected)
 
+
+###
+function(platform_Available AVAILABLE)
+	if(${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX})
+		set(${AVAILABLE} TRUE PARENT_SCOPE)
+	else()
+		set(${AVAILABLE} FALSE PARENT_SCOPE)
+	endif()
+endfunction(platform_Available)
 
 #############################################################################################
 ############### API functions for setting components related cache variables ################

@@ -289,6 +289,19 @@ foreach(author IN ITEMS "${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
 	set(PACKAGE_ALL_AUTHORS "${PACKAGE_ALL_AUTHORS}\n* ${RES_STRING}")
 endforeach()
 
+
+# platform configuration
+set(PACKAGE_PLATFORM_CONFIGURATION "")
+if(${PROJECT_NAME}_AVAILABLE_PLATFORMS) # no platform description => implictly there is no spaeicifc platform configruation 
+	set(PACKAGE_PLATFORM_CONFIGURATION "Here are the possible platform configuration for this package:\n")
+	foreach(platform IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS})# we take only dependencies of the release version
+		generate_Platform_Wiki(${platform} RES_CONTENT_PLATFORM)
+		set(PACKAGE_PLATFORM_CONFIGURATION "${PACKAGE_PLATFORM_CONFIGURATION}\n${RES_CONTENT_PLATFORM}")
+	endforeach()
+else()
+	set(PACKAGE_PLATFORM_CONFIGURATION "This package cannot be used on any platform (this is BUG !!)\n")
+endif()
+
 # last version
 get_Repository_Version_Tags(AVAILABLE_VERSION_TAGS ${PROJECT_NAME})
 
@@ -309,10 +322,8 @@ set(RELEASED_BINARY_VERSIONS "")
 if(${PROJECT_NAME}_REFERENCES)
 set(RELEASED_BINARY_VERSIONS "### Binary versions released:\n\n")
 foreach(version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
-	foreach(os IN ITEMS ${${PROJECT_NAME}_REFERENCE_${version}})
-		foreach(arch IN ITEMS ${${PROJECT_NAME}_REFERENCE_${version}_${os}})
-			set(RELEASED_BINARY_VERSIONS "${RELEASED_BINARY_VERSIONS}+ ${version} for ${os} ${arch} bit\n")
-		endforeach()
+	foreach(platform IN ITEMS ${${PROJECT_NAME}_REFERENCE_${version}})
+		set(RELEASED_BINARY_VERSIONS "${RELEASED_BINARY_VERSIONS}+ ${version} for platform ${platform}\n")
 	endforeach()
 endforeach()
 endif()
@@ -359,17 +370,6 @@ else() #folder exists
 
 endif()
 
-# platform configuration
-set(PACKAGE_PLATFORM_CONFIGURATION "")
-if(NOT ${PROJECT_NAME}_AVAILABLE_PLATFORMS) # no platform description => implictly there is no spaeicifc platform configruation 
-	set(PACKAGE_PLATFORM_CONFIGURATION "This package requires no specific configuration for the target platform.\n")
-else()
-	set(PACKAGE_PLATFORM_CONFIGURATION "Here are the possible platform configuration for this package:\n")
-	foreach(platform IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS})# we take nly dependencies of the release version
-		generate_Platform_Wiki(${platform} RES_CONTENT_PLATFORM)
-		set(PACKAGE_PLATFORM_CONFIGURATION "${PACKAGE_PLATFORM_CONFIGURATION}\n${RES_CONTENT_PLATFORM}")
-	endforeach()
-endif()
 
 # package dependencies
 set(EXTERNAL_WIKI_SECTION "## External\n")

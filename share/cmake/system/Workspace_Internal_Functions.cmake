@@ -283,7 +283,7 @@ if(${package}_CATEGORIES)
 endif()
 if(${package}_REFERENCES)
 	message("BINARY VERSIONS:")
-	print_Package_Binaries(${package})
+	print_Native_Package_Binaries(${package})
 endif()
 endfunction(print_Package_Info)
 
@@ -303,7 +303,7 @@ if(${package}_CATEGORIES)
 endif()
 if(${package}_REFERENCES)
 	message("BINARY VERSIONS:")
-	print_Package_Binaries(${package})
+	print_External_Package_Binaries(${package})
 endif()
 endfunction(print_External_Package_Info)
 
@@ -329,7 +329,7 @@ endfunction(print_External_Package_Contact)
 
 
 ###
-function(print_Package_Binaries package)
+function(print_External_Package_Binaries package)
 foreach(version IN ITEMS ${${package}_REFERENCES})
 	message("	${version}: ")
 	foreach(system IN ITEMS ${${package}_REFERENCE_${version}})
@@ -338,7 +338,18 @@ foreach(version IN ITEMS ${${package}_REFERENCES})
 		endforeach()
 	endforeach()
 endforeach()
-endfunction(print_Package_Binaries)
+endfunction(print_External_Package_Binaries)
+
+
+###
+function(print_Native_Package_Binaries package)
+foreach(version IN ITEMS ${${package}_REFERENCES})
+	message("	${version}: ")
+	foreach(platform IN ITEMS ${${package}_REFERENCE_${version}})
+		print_Platform_Accessible_Binary(${package} ${version} ${platform})
+	endforeach()
+endforeach()
+endfunction(print_Native_Package_Binaries)
 
 
 ###
@@ -483,6 +494,30 @@ endif()
 message("${printed_string}")
 endfunction(print_Accessible_Binary)
 
+###
+function(print_Platform_Accessible_Binary package version platform)
+set(printed_string "		${platform}:")
+#1) testing if binary can be installed
+
+if(	(APPLE AND "${system}" STREQUAL macosx) #test if OS is OK
+	OR (UNIX AND "${system}" STREQUAL linux)) 
+	if(	(${CMAKE_SIZEOF_VOID_P} EQUAL 4 AND ${arch} EQUAL 32)#test if architecture is OK
+		OR (${CMAKE_SIZEOF_VOID_P} EQUAL 8 AND ${arch} EQUAL 64) )
+		set(RESULT FALSE)
+		test_binary_download(${package} ${version} ${system} ${arch} RESULT)
+		if(RESULT)
+			set(printed_string "${printed_string} CAN BE INSTALLED")
+		else()
+			set(printed_string "${printed_string} CANNOT BE DOWNLOADED")
+		endif()
+	else()
+		set(printed_string "${printed_string} CANNOT BE INSTALLED")
+	endif()
+else()
+	set(printed_string "${printed_string} CANNOT BE INSTALLED")
+endif()
+message("${printed_string}")
+endfunction(print_Platform_Accessible_Binary)
 ########################################################################
 #################### Packages lifecycle management #####################
 ########################################################################

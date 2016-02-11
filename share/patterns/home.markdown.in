@@ -20,6 +20,10 @@ The license of the current release version of knowbotics package is : **@PACKAGE
 
 For more details see [license file](license.txt).
 
+## Platform Configuration
+
+@PACKAGE_PLATFORM_CONFIGURATION@
+
 ## Version
 
 Last released version (more recent version tag on master branch) : @PACKAGE_LAST_VERSION_FOR_WIKI@.
@@ -78,10 +82,6 @@ The last possible action is to install it by hand without using PID commands. Th
 	cd <pid-workspace>/packages/knowbotics/build
 	cmake .. && make build
 	```
-
-# Platform Configuration
-
-@PACKAGE_PLATFORM_CONFIGURATION@
 
 # Dependencies
 

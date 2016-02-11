@@ -46,19 +46,30 @@ else()
 file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL \"\")\n")
 endif()
 
-file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} CACHE INTERNAL \"\")\n") # all available versions for which there is a reference to a downloadable binary
+##################################################################
+######### all known platforms supported by the package ###########
+################################################################## 
+file(APPEND ${file} "set(${PROJECT_NAME}_AVAILABLE_PLATFORMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS} CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_AVAILABLE_PLATFORMS)
+foreach(ref_platform IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS}) #for each available version, all os for which there is a reference
+	file(APPEND ${file} "set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_OS ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_OS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_ARCH ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_ARCH} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_CONFIGURATION ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_CONFIGURATION} CACHE INTERNAL \"\")\n")
+endforeach()
+endif()
+
+##################################################################
+### all available versions of the package for which there is a ###
+### reference to a downloadable binary for a given platform ######
+##################################################################
+file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_REFERENCES)
 foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES}) #for each available version, all os for which there is a reference
 	file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n")
 	if(${PROJECT_NAME}_REFERENCE_${ref_version})
-	foreach(ref_system IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}})#for each version & os, all arch for which there is a reference
-		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system} ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}} CACHE INTERNAL \"\")\n")
-		if(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system})
-		foreach(ref_arch IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}})#for each version & os & arch, referencing the binary archives of the package
-			file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL} CACHE INTERNAL \"\")\n")
-			file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL_DEBUG ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_system}_${ref_arch}_URL_DEBUG} CACHE INTERNAL \"\")\n")
-		endforeach()
-		endif()
+	foreach(ref_platform IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}})#for each version & os, all arch for which there is a reference
+		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG} CACHE INTERNAL \"\")\n")
 	endforeach()
 	endif()
 endforeach()
@@ -372,14 +383,20 @@ get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
 # listing available binaries of the package and searching if there is any "good version"
 set(available_binary_package_version "") 
 foreach(ref_version IN ITEMS ${${package}_REFERENCES})
-	foreach(ref_system IN ITEMS ${${package}_REFERENCE_${ref_version}})
-		if(${ref_system} STREQUAL ${OS_STRING})
-			foreach(ref_arch IN ITEMS ${${package}_REFERENCE_${ref_version}_${OS_STRING}})
-				if(${ref_arch} EQUAL ${ARCH_BITS})				
-					list(APPEND available_binary_package_version ${ref_version})
-					break()
-				endif()
-			endforeach()
+	foreach(ref_platform IN ITEMS ${${package}_REFERENCE_${ref_version}})
+		if(	${package}_AVAILABLE_PLATFORM_${ref_platform}_OS STREQUAL ${OS_STRING}
+			AND ${package}_AVAILABLE_PLATFORM_${ref_platform}_ARCH STREQUAL ${ARCH_BITS})
+			#TODO ici il me faudrait aussi les infos de configuration !!!
+			# de manière à trier les packages non valides du fait de leur configuration
+			# => les gérer depuis le workspace de la même manière que dans le package pour pouvoir utiliser les variable PLATFORM
+			# ensuite comment checker ? => il me faudrait AUSSI des infos sur la configuration courante 
+			# ==> en quelque sorte il faut que je fasse un "dry check" de chaque configuration (pas d'autre solution) c a d
+			# 1) pas d'install
+			# 2) pas d'erreur fatale
+			# 
+			# enfin si conflit entre 2 versions valides (RT et pas RT par exemple) je prend la plus contrainte (c a d la première qui vient vu qu'elles sont trièes par ordre de priorité)
+			
+			list(APPEND available_binary_package_version ${ref_version})
 		endif()
 	endforeach()
 endforeach()
@@ -756,7 +773,7 @@ if(NOT IS_EXISTING)
 endif()
 include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
 if(${refer_path} STREQUAL NOTFOUND)
-	message("[PID] ERROR : reference file not found for package ${package}!! This is certainly due to a bad released package. Please contact the administrator or that package !!!")
+	message("[PID] ERROR : reference file not found for package ${package}!! This is certainly due to a bad released package. Please contact the administrator of the external package ${package} !!!")
 	return()
 endif()
 

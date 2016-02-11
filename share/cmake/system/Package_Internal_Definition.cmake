@@ -54,6 +54,15 @@ manage_Parrallel_Build_Option()
 #################################################
 ############ MANAGING build mode ################
 #################################################
+set(${PROJECT_NAME}_ARCH CACHE INTERNAL "")#Deprecated but necessary: keeping arch as a cache variable to maintain compatibility with old style packages
+if(${CMAKE_SIZEOF_VOID_P} EQUAL 2)
+	set(${PROJECT_NAME}_ARCH 16 CACHE INTERNAL "")
+elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
+	set(${PROJECT_NAME}_ARCH 32 CACHE INTERNAL "")
+elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+	set(${PROJECT_NAME}_ARCH 64 CACHE INTERNAL "")
+endif()
+
 if(${CMAKE_BINARY_DIR} MATCHES release)
 	reset_Mode_Cache_Options()
 
@@ -378,34 +387,34 @@ endif()
 
 endfunction(check_Platform_Constraints)
 
+###
+function(create_Default_Platforms_Set) #default set without consfiguration constraints
+	check_Platform_Constraints(linux64 linux 64 "")
+	set(linux64 ${linux64} PARENT_SCOPE)
+	check_Platform_Constraints(linux32 linux 32 "")
+	set(linux32 ${linux32} PARENT_SCOPE)
+	check_Platform_Constraints(macosx64 macosx 64 "")
+	set(macosx64 ${macosx64} PARENT_SCOPE)
+	check_Platform_Constraints(macosx32 macosx 32 "")
+	set(macosx32 ${macosx32} PARENT_SCOPE)
+endfunction(create_Default_Platforms_Set)
+
 ##################################################################################
 ################################### building the package #########################
 ##################################################################################
 macro(build_Package)
+### checking platform constraints
+platform_Available(AVAILABLE)
+if(NOT AVAILABLE)
+	message("[PID] INFO : No check for platform, this code may be built for all default platforms as soon as its dependencies can. Automatically building a platform configuration from current environment ...")
+	create_Default_Platforms_Set() #in case the user did not define any platform check
+endif()
 platform_Selected(SELECTED)
-if(NOT SELECTED)
-	message("[PID] INFO : No check for platform. Automatically building a platform configuration from current environment ...")
-	set(${PROJECT_NAME}_ARCH CACHE INTERNAL "")#keeping it as a cache variable to keep compatibility with old style packages
-	if(${CMAKE_SIZEOF_VOID_P} EQUAL 2)
-		set(${PROJECT_NAME}_ARCH 16 CACHE INTERNAL "")
-	elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-		set(${PROJECT_NAME}_ARCH 32 CACHE INTERNAL "")
-	elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-		set(${PROJECT_NAME}_ARCH 64 CACHE INTERNAL "")
-	else()
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : current architecture is cannot be found ...")
-	endif()
-	if(APPLE)
-		set(TEMP_OS macosx)
-	elseif(UNIX)
-		set(TEMP_OS linux)
-	else()
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : current operating system is not supported ...")
-	endif()
-	set("${TEMP_OS}${${PROJECT_NAME}_ARCH}" TRUE)
-	select_Default_Platform("${TEMP_OS}${${PROJECT_NAME}_ARCH}" ${TEMP_OS} ${${PROJECT_NAME}_ARCH})#select a default platform
+if(NOT SELECTED) # a platform (even a default one) must be selected or we can just not build the project 
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : No platform configuration matches the current environment.")
 endif()
 
+### configuring RPATH management in CMake
 set(CMAKE_SKIP_BUILD_RPATH FALSE) # don't skip the full RPATH for the build tree
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE) #do not use any link time info when installing
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install RPATH already
@@ -568,8 +577,8 @@ if(GENERATE_INSTALLER)
 	if(PACKAGE_SYSTEM_STRING)
 		add_custom_target(	package_install
 					COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${PACKAGE_SYSTEM_STRING}.tar.gz
-					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${OS_STRING}-${ARCH_STRING}.tar.gz
-					COMMENT "[PID build] installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${OS_STRING}-${ARCH_STRING}.tar.gz in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
+					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${${PROJECT_NAME}_PLATFORM}.tar.gz
+					COMMENT "[PID build] installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${${PROJECT_NAME}_PLATFORM}.tar.gz in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
 				)
 		include(CPack)
 	endif()
@@ -728,7 +737,7 @@ if(	BUILD_DEPENDENT_PACKAGES
 								-DDEPENDENT_PACKAGES=${DEPENDENT_SOURCE_PACKAGES}
 								-DPACKAGE_LAUCHING_BUILD=${PROJECT_NAME}
 								-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
-					COMMENT "[PID build] building dependencies of ${PROJECT_NAME} ..."
+					COMMENT "[PID] INFO : building dependencies of ${PROJECT_NAME} ..."
 					VERBATIM
 			)
 		else()
@@ -738,7 +747,7 @@ if(	BUILD_DEPENDENT_PACKAGES
 								-DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
 								-DPACKAGE_LAUCHING_BUILD=${PROJECT_NAME}
 								-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
-					COMMENT "[PID build] building dependencies of ${PROJECT_NAME} ..."
+					COMMENT "[PID] INFO : building dependencies of ${PROJECT_NAME} ..."
 					VERBATIM
 			)
 
