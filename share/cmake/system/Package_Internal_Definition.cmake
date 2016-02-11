@@ -336,7 +336,7 @@ endif()
 set(TEST_ARCH ${arch})
 include(CheckARCH)
 if(NOT CHECK_ARCH_RESULT)
-	message("[PID] INFO : when checking platform ${RES_NAME}, not a ${os} bits architecture.")
+	message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
 	return()
 endif()
 
