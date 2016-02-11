@@ -324,39 +324,57 @@ endfunction(set_Current_Version)
 #####################################################################################################
 function(check_Platform_Constraints RES_NAME os arch constraints)
 set(${RES_NAME} FALSE PARENT_SCOPE)
+set(SKIP FALSE)
 #testing OS
 set(TEST_OS ${os})
 include(CheckOS)
 if(NOT CHECK_OS_RESULT)
 	message("[PID] INFO : when checking platform ${RES_NAME}, not a ${os} operating system.")
-	return()
+	set(SKIP TRUE)
 endif()
 
 #testing architecture
-set(TEST_ARCH ${arch})
-include(CheckARCH)
-if(NOT CHECK_ARCH_RESULT)
-	message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
-	return()
+if(NOT SKIP)
+	set(TEST_ARCH ${arch})
+	include(CheckARCH)
+	if(NOT CHECK_ARCH_RESULT)
+		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
+		set(SKIP TRUE)
+	endif()
 endif()
 
-# testing configuration
-if(constraints)
-	foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)
-			include(Check${config})	# check the platform and install it if possible
-			if(NOT CHECK_${config}_RESULT)
-				message("[PID] INFO : when checking platform ${RES_NAME}, ${config} constraint not satisfied.")
+if(NOT SKIP)
+	# testing configuration
+	if(constraints)
+		foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
+			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)
+				include(Check${config})	# check the platform and install it if possible
+				if(NOT CHECK_${config}_RESULT)
+					message("[PID] INFO : when checking platform ${RES_NAME}, ${config} constraint not satisfied.")
+					set(SKIP TRUE)					
+					break()
+				endif()
+			else()
+				message(FATAL_ERROR "[PID] INFO : when checking platform ${RES_NAME}, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called Check${RES_NAME}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/ to manage this configuration.")
 				return()
 			endif()
-		else()
-			message(FATAL_ERROR "[PID] INFO : when checking platform ${RES_NAME}, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called Check${RES_NAME}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/ to manage this configuration.")
-			return()
-		endif()
-	endforeach()
+		endforeach()
+	endif()
 endif()
-add_Platform(${RES_NAME} ${os} ${arch} "${constraints}")
-set(${RES_NAME} TRUE PARENT_SCOPE)
+
+
+if(NOT SKIP)
+	platform_Selected(SELECTED)
+	if(NOT SELECTED) #no platform registered yet
+		add_Platform(TRUE ${RES_NAME} ${os} ${arch} "${constraints}")
+		set(${RES_NAME} TRUE PARENT_SCOPE)
+	else()
+		add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${constraints}")
+	message("[PID] WARNING : more than one possible platform configuration has been detected : ${${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX}}. Only the first found, ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}, is selected has the current platform.")
+	endif()
+else()
+	add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${constraints}")#simply registering the configuration but do not select it
+endif()
 
 endfunction(check_Platform_Constraints)
 
@@ -364,8 +382,8 @@ endfunction(check_Platform_Constraints)
 ################################### building the package #########################
 ##################################################################################
 macro(build_Package)
-nb_Platforms_Found(HOW_MANY)
-if(HOW_MANY EQUAL 0)
+platform_Selected(SELECTED)
+if(NOT SELECTED)
 	message("[PID] INFO : No check for platform. Automatically building a platform configuration from current environment ...")
 	set(${PROJECT_NAME}_ARCH CACHE INTERNAL "")#keeping it as a cache variable to keep compatibility with old style packages
 	if(${CMAKE_SIZEOF_VOID_P} EQUAL 2)
@@ -384,9 +402,8 @@ if(HOW_MANY EQUAL 0)
 	else()
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : current operating system is not supported ...")
 	endif()
-	add_Platform("${TEMP_OS}${${PROJECT_NAME}_ARCH}" ${TEMP_OS} ${${PROJECT_NAME}_ARCH} "")#add a platform with no constraint
-elseif(HOW_MANY GREATER 1)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : more than one platform configuration has been detected : ${${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX}}")
+	set("${TEMP_OS}${${PROJECT_NAME}_ARCH}" TRUE)
+	select_Default_Platform("${TEMP_OS}${${PROJECT_NAME}_ARCH}" ${TEMP_OS} ${${PROJECT_NAME}_ARCH})#select a default platform
 endif()
 
 set(CMAKE_SKIP_BUILD_RPATH FALSE) # don't skip the full RPATH for the build tree
