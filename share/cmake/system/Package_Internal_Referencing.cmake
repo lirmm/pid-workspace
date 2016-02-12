@@ -376,7 +376,7 @@ endfunction(deploy_Package_Repository)
 
 
 ###
-function(get_Available_Binary_Package_Versions package list_of_versions)
+function(get_Available_Binary_Package_Versions package list_of_versions list_of_versions_with_platform)
 
 #configuring target system
 get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
@@ -386,17 +386,37 @@ foreach(ref_version IN ITEMS ${${package}_REFERENCES})
 	foreach(ref_platform IN ITEMS ${${package}_REFERENCE_${ref_version}})
 		if(	${package}_AVAILABLE_PLATFORM_${ref_platform}_OS STREQUAL ${OS_STRING}
 			AND ${package}_AVAILABLE_PLATFORM_${ref_platform}_ARCH STREQUAL ${ARCH_BITS})
-			#TODO ici il me faudrait aussi les infos de configuration !!!
-			# de manière à trier les packages non valides du fait de leur configuration
-			# => les gérer depuis le workspace de la même manière que dans le package pour pouvoir utiliser les variable PLATFORM
-			# ensuite comment checker ? => il me faudrait AUSSI des infos sur la configuration courante 
-			# ==> en quelque sorte il faut que je fasse un "dry check" de chaque configuration (pas d'autre solution) c a d
-			# 1) pas d'install
-			# 2) pas d'erreur fatale
-			# 
-			# enfin si conflit entre 2 versions valides (RT et pas RT par exemple) je prend la plus contrainte (c a d la première qui vient vu qu'elles sont trièes par ordre de priorité)
+			# OK this binary version is theorically eligible, but need to check for its platform configuration to be sure it can be used
+			set(BINARY_OK TRUE)
+			if(${package}_AVAILABLE_PLATFORM_${ref_platform}_CONFIGURATION)	
+				foreach(config IN ITEMS ${${package}_AVAILABLE_PLATFORM_${ref_platform}_CONFIGURATION})
+					if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)
+						include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)	# find the configuation
+						if(NOT ${config}_FOUND)# not found, trying to see if can be installed
+							if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)		
+								include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)
+								if(NOT ${config}_INSTALLABLE)
+									set(BINARY_OK FALSE)
+									break()
+								endif()
+							else()
+								set(BINARY_OK FALSE)
+								break()
+							endif()
+						endif()
+					else()
+						set(BINARY_OK FALSE)
+						break()
+					endif()
+				endforeach()
+			endif()
 			
-			list(APPEND available_binary_package_version ${ref_version})
+			if(BINARY_OK)
+				list(APPEND available_binary_package_version "${ref_version}")
+				list(APPEND available_binary_package_version_with_platform "${ref_version}/${ref_platform}")
+				break() # no need to test for following platform only the first is selected (this one has the greatest priority by construction)
+			endif()
+			
 		endif()
 	endforeach()
 endforeach()
@@ -404,23 +424,39 @@ if(NOT available_binary_package_version)
 	return()#nothing to do
 endif()
 list(REMOVE_DUPLICATES available_binary_package_version)
+list(REMOVE_DUPLICATES available_binary_package_version_with_platform)
 set(${list_of_versions} ${available_binary_package_version} PARENT_SCOPE)
+set(${list_of_versions_with_platform} ${available_binary_package_version_with_platform} PARENT_SCOPE)
 endfunction(get_Available_Binary_Package_Versions)
 
+###
+function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_PLATFORM)
+
+foreach(bin IN ITEMS ${list_of_bin_with_platform})
+	if(bin MATCHES "^${version}/.*$")
+		string (REGEX REPLACE "^${version}/(.*)$" "\\1" ${bin} RES)
+		set(${RES_PLATFORM} ${RES} PARENT_SCOPE)
+		return()
+	endif()
+endforeach()
+
+endfunction(select_Platform_Binary_For_Version)
 
 ###
 function(deploy_Binary_Package DEPLOYED package exclude_versions)
 set(available_versions "")
-get_Available_Binary_Package_Versions(${package} available_versions)
+get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
-select_Last_Version(RES_VERSION "${available_versions}")# taking the most up to date version
+select_Last_Version(RES_VERSION "${available_versions}")# taking the most up to date version from all eligible versions
 list(FIND exclude_versions ${RES_VERSION} INDEX)
 set(INSTALLED FALSE)
 if(INDEX EQUAL -1) # selected version not found in versions to exclude
-	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}")
+	select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
+	
+	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
 else()
 	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
 endif()
@@ -430,13 +466,14 @@ endfunction(deploy_Binary_Package)
 ###
 function(deploy_Binary_Package_Version DEPLOYED package VERSION_MIN EXACT exclude_versions)
 set(available_versions "")
-get_Available_Binary_Package_Versions(${package} available_versions)
+get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
 	message("[PID] ERROR : no available binary versions of package ${package}.")
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
 
+# taking the adequate version from the list of all eligible versions
 if(EXACT)
 	select_Exact_Version(RES_VERSION ${VERSION_MIN} "${available_versions}")
 else()
@@ -455,7 +492,8 @@ endif()
 set(INSTALLED FALSE)
 list(FIND exclude_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version not found in versions to exclude
-	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}")
+	select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
+	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
 else()
 	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
 endif()
@@ -464,22 +502,23 @@ set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 endfunction(deploy_Binary_Package_Version)
 
 ###
-function(generate_Binary_Package_Name package version mode RES_FILE RES_FOLDER)
+function(generate_Binary_Package_Name package version platform mode RES_FILE RES_FOLDER)
 get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(${RES_FILE} "${package}-${version}${TARGET_SUFFIX}-${OS_STRING}-${ARCH_BITS}.tar.gz" PARENT_SCOPE)
-set(${RES_FOLDER} "${package}-${version}${TARGET_SUFFIX}-${PACKAGE_STRING}" PARENT_SCOPE)
+set(${RES_FILE} "${package}-${version}${TARGET_SUFFIX}-${platform}.tar.gz" PARENT_SCOPE) #this is the archive name generated by PID 
+set(${RES_FOLDER} "${package}-${version}${TARGET_SUFFIX}-${PACKAGE_STRING}" PARENT_SCOPE)#this is the folder name generated by CPack
 endfunction(generate_Binary_Package_Name)
 
 ###
-function(download_And_Install_Binary_Package INSTALLED package version_string)
+function(download_And_Install_Binary_Package INSTALLED package version_string platform)
 get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
 ###### downloading the binary package ######
 #release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
-message("[PID] INFO : downloading the binary package ${package} version ${version_string}, please wait ...")
-generate_Binary_Package_Name(${package} "${version_string}" Release FILE_BINARY FOLDER_BINARY)
+message("[PID] INFO : downloading the binary package ${package} version ${version_string} for platform ${platform}, please wait ...")
+
+generate_Binary_Package_Name(${package} ${version_string} ${platform} Release FILE_BINARY FOLDER_BINARY)
 set(download_url ${${package}_REFERENCE_${version_string}_${OS_STRING}_${ARCH_BITS}_URL})
 file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
@@ -493,7 +532,7 @@ endif()
 #debug code 
 set(FILE_BINARY_DEBUG "")
 set(FOLDER_BINARY_DEBUG "")
-generate_Binary_Package_Name(${package} ${version_string} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
+generate_Binary_Package_Name(${package} ${version_string} ${platform} Debug FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
 set(download_url_dbg ${${package}_REFERENCE_${version_string}_${OS_STRING}_${ARCH_BITS}_URL_DEBUG})
 file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res-dbg 0 numeric_error_dbg)
@@ -552,7 +591,7 @@ endif()
 set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_Package)
 
-### 
+###
 function(build_And_Install_Source DEPLOYED package version)
 	if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/CMakeCache.txt)	
 		#first step populating the cache if needed		
@@ -958,8 +997,8 @@ if(${package}_PLATFORM${VAR_SUFFIX})
 	# 2) checking constraints on configuration
 	if(${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}) #there are configuration constraints
 		foreach(config IN ITEMS ${${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}})
-			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)
-				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)	# check the platform constraint and install it if possible
+			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 				if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
 					message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
 					return()

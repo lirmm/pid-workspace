@@ -48,7 +48,6 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmak
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using common find modules of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/configurations) # using configuration check modules
 declare_Mode_Cache_Options()
 manage_Parrallel_Build_Option()
 #################################################
@@ -356,8 +355,8 @@ if(NOT SKIP)
 	# testing configuration
 	if(constraints)
 		foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
-			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)
-				include(Check${config})	# check the platform and install it if possible
+			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform and install it if possible
 				if(NOT CHECK_${config}_RESULT)
 					message("[PID] INFO : when checking platform ${RES_NAME}, ${config} constraint not satisfied.")
 					set(SKIP TRUE)					
