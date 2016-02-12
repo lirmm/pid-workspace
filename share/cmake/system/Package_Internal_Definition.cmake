@@ -376,9 +376,10 @@ if(NOT SKIP)
 	if(NOT SELECTED) #no platform registered yet
 		add_Platform(TRUE ${RES_NAME} ${os} ${arch} "${constraints}")
 		set(${RES_NAME} TRUE PARENT_SCOPE)
+		message("[PID] INFO : platform ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}} has been selected as current one.")
 	else()
 		add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${constraints}")
-	message("[PID] WARNING : more than one possible platform configuration has been detected : ${${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX}}. Only the first found, ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}, is selected has the current platform.")
+		message("[PID] WARNING : more than one possible platform configuration has been detected : ${${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX}}. Only the first found, ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}, is selected has the current platform.")
 	endif()
 else()
 	add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${constraints}")#simply registering the configuration but do not select it

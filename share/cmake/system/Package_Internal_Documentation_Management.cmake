@@ -423,7 +423,7 @@ set(CONTENT "## ${platform}\n\n+ OS type: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_$
 
 if(${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION)
 	foreach(config IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION})
-		set(CONTENT "${CONTENT}+ installed software: ${config}")
+		set(CONTENT "${CONTENT}+ installed software required: ${config}")
 	endforeach()
 else()
 	set(CONTENT "${CONTENT}+ no specific installed software required.")
