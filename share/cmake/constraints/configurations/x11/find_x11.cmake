@@ -17,7 +17,6 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-macro(find_X11)
 set(x11_FOUND FALSE CACHE INTERNAL "")
 # - Find x11 installation
 # Try to find X11 on UNIX systems. The following values are defined
@@ -94,37 +93,4 @@ unset(x11_SM_INCLUDE_PATH CACHE)
 
 set(CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK_SAVE})
 endif ()
-endmacro(find_X11)
 
-if(NOT x11_FOUND)
-	set(x11_INCLUDE_DIRS CACHE INTERNAL "")
-	set(x11_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(x11_LINK_OPTIONS CACHE INTERNAL "")
-	set(x11_RPATH CACHE INTERNAL "")
-	find_X11()
-	if(x11_FOUND)
-		set(x11_LINK_OPTIONS ${x11_LIBRARIES} CACHE INTERNAL "")
-		set(x11_INCLUDE_DIRS ${x11_PATH} CACHE INTERNAL "")
-		set(CHECK_x11_RESULT TRUE)
-	else()
-		if(	CURRENT_DISTRIBUTION STREQUAL ubuntu 
-			OR CURRENT_DISTRIBUTION STREQUAL debian)
-			
-			message("[PID] INFO : trying to install x11...")		
-			execute_process(COMMAND sudo apt-get install xorg openbox)
-			find_X11()
-			if(x11_FOUND)
-				message("[PID] INFO : x11 installed !")
-				set(x11_LINK_OPTIONS ${x11_LIBRARIES} CACHE INTERNAL "")
-				set(CHECK_x11_RESULT TRUE)
-			else()
-				message("[PID] INFO : install of x11 has failed !")
-				set(CHECK_x11_RESULT FALSE)
-			endif()
-		else()
-			set(CHECK_x11_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_x11_RESULT TRUE)
-endif()

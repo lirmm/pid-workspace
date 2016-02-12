@@ -121,9 +121,6 @@ set(gtk2_LIBRARIES ${gtk2_LIBRARIES} PARENT_SCOPE)
 
 endfunction(gtk2_Find_Library)
 
-
-macro(find_Gtk2)
-
 set(gtk2_FOUND FALSE CACHE INTERNAL "")
 # - Find gtk2 installation
 # Try to find libraries for gtk2 on UNIX systems. The following values are defined
@@ -210,20 +207,3 @@ if (UNIX)
 	unset(IS_FOUND)
 	set(CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK_SAVE})
 endif ()
-endmacro(find_Gtk2)
-
-if(NOT gtk2_FOUND) #any linux or macosx is gtk2 ... 
-	set(gtk2_INCLUDE_DIRS CACHE INTERNAL "")
-	set(gtk2_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(gtk2_LINK_OPTIONS CACHE INTERNAL "")
-	set(gtk2_RPATH CACHE INTERNAL "")
-	find_Gtk2()
-	if(gtk2_FOUND)
-		set(gtk2_INCLUDE_DIRS ${gtk2_INCLUDE_PATH} CACHE INTERNAL "")
-		set(gtk2_LINK_OPTIONS ${gtk2_LIBRARIES} CACHE INTERNAL "") #simply adding all gtk2 standard libraries		
-		set(CHECK_gtk2_RESULT TRUE)
-	else()
-		set(CHECK_gtk2_RESULT FALSE)
-	endif()
-endif()
-

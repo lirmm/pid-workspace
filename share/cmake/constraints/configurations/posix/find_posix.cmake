@@ -17,7 +17,6 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-macro(find_Posix)
 
 set(posix_FOUND FALSE CACHE INTERNAL "")
 # - Find posix installation
@@ -84,19 +83,4 @@ if (UNIX)
 	unset(posix_rt_LIB CACHE)
 	set(CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK_SAVE})
 endif ()
-endmacro(find_Posix)
-
-if(NOT posix_FOUND) #any linux or macosx is posix ... 
-	set(posix_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(posix_INCLUDE_DIRS CACHE INTERNAL "")
-	set(posix_LINK_OPTIONS CACHE INTERNAL "")
-	set(posix_RPATH CACHE INTERNAL "")
-	find_Posix()
-	if(posix_FOUND)
-		set(posix_LINK_OPTIONS ${posix_LIBRARIES} CACHE INTERNAL "") #simply adding all posix standard libraries		
-		set(CHECK_posix_RESULT TRUE)
-	else()
-		set(CHECK_posix_RESULT FALSE)
-	endif()
-endif()
 
