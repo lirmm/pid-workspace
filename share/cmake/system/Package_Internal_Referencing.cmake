@@ -375,7 +375,6 @@ endif()
 endfunction(deploy_Package_Repository)
 
 
-### TODO check que c OK
 function(get_Available_Binary_Package_Versions package list_of_versions list_of_versions_with_platform)
 
 #configuring target system
@@ -439,7 +438,7 @@ foreach(bin IN ITEMS ${list_of_bin_with_platform})
 		return()
 	endif()
 endforeach()
-
+set(${RES_PLATFORM} PARENT_SCOPE)
 endfunction(select_Platform_Binary_For_Version)
 
 ###
@@ -731,11 +730,19 @@ endfunction(build_And_Install_Package)
 
 ###
 function(resolve_Required_External_Package_Version selected_version package)
+get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
+if(NOT available_versions)
+	set(${selected_version} PARENT_SCOPE)
+	message("[PID] ERROR : impossible to find a version of external package ${package} that conforms to current platform constraints.")
+	return()
+endif()
+
 if(NOT ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})#no specific version required
 	if(${package}_REFERENCES)
+		
 		#simply searching to most up to date one in available references
 		set(CURRENT_VERSION 0.0.0)
-		foreach(ref IN ITEMS ${${package}_REFERENCES})
+		foreach(ref IN ITEMS ${available_versions})
 			if(ref VERSION_GREATER ${CURRENT_VERSION})
 				set(CURRENT_VERSION ${ref})
 			endif()
@@ -787,11 +794,18 @@ else()#specific version(s) required
 		if(NOT ${version} VERSION_EQUAL ${CURRENT_VERSION})
 			if(DEFINED ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO
 			AND NOT ${CURRENT_VERSION} VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
-				set(${selected_version} PARENT_SCOPE)
+				set(${selected_version} PARENT_SCOPE) #there is no solution
 				return()
 			endif()
 		endif()
 	endforeach()
+	
+	#3) testing if there is a binary package with adequate platform constraints for the current version
+	list(FIND available_versions ${CURRENT_VERSION} INDEX)
+	if(INDEX EQUAL -1) #a package binary for that version has not been found 
+		set(${selected_version} PARENT_SCOPE) #there is no solution
+		return()	
+	endif()
 
 endif()
 
@@ -868,6 +882,11 @@ if(NOT available_versions)
 endif()
 #now getting the best platform for that version
 select_Platform_Binary_For_Version(${version} "${available_with_platform}" PLATFORM)
+if(NOT PLATFORM)
+	message("[PID] ERROR : cannot find the binary version ${version} of package ${package} compatible with current platform.")
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	return()
+endif()
 download_And_Install_External_Package(INSTALLED ${package} ${version} ${PLATFORM})
 if(NOT INSTALLED)
 	message("[PID] ERROR : cannot install binary version of package ${package}.")
