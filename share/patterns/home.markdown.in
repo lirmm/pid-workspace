@@ -89,7 +89,7 @@ The last possible action is to install it by hand without using PID commands. Th
 
 # Import
 
-You can import @PROJECT_NAME@ as usual with PID. In the root CMakelists.txt file of your package, after the package delcaration you have to put something like:
+You can import @PROJECT_NAME@ as usual with PID. In the root CMakelists.txt file of your package, after the package declaration you have to write something like:
 
 ```
 find_package (@PROJECT_NAME@ REQUIRED)
@@ -97,7 +97,7 @@ declare_PID_Package_Dependency(PACKAGE @PROJECT_NAME@ NATIVE)
 ```
 It will try to install last version of the package.
 
-If you want a specific version (recommended), for instance the currenlty last released version:
+If you want a specific version (recommended), for instance the currently last released version:
 
 ```
 find_package (@PROJECT_NAME@ @PACKAGE_LAST_VERSION_WITH_PATCH@ REQUIRED)

@@ -292,8 +292,8 @@ endforeach()
 
 # platform configuration
 set(PACKAGE_PLATFORM_CONFIGURATION "")
-if(${PROJECT_NAME}_AVAILABLE_PLATFORMS) # no platform description => implictly there is no spaeicifc platform configruation 
-	set(PACKAGE_PLATFORM_CONFIGURATION "Here are the possible platform configuration for this package:\n")
+if(${PROJECT_NAME}_AVAILABLE_PLATFORMS)
+	set(PACKAGE_PLATFORM_CONFIGURATION "Here are the possible platform configurations for this package:\n")
 	foreach(platform IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS})# we take only dependencies of the release version
 		generate_Platform_Wiki(${platform} RES_CONTENT_PLATFORM)
 		set(PACKAGE_PLATFORM_CONFIGURATION "${PACKAGE_PLATFORM_CONFIGURATION}\n${RES_CONTENT_PLATFORM}")
@@ -419,14 +419,14 @@ endfunction(configure_Wiki_Pages)
 
 ###
 function(generate_Platform_Wiki platform RES_CONTENT_PLATFORM)
-set(CONTENT "## ${platform}\n\n+ OS type: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_OS}\n+ architecture: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_ARCH} bit\n")
+set(CONTENT "### ${platform}\n\n+ OS type: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_OS}\n+ architecture: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_ARCH} bits\n")
 
 if(${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION)
 	foreach(config IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION})
-		set(CONTENT "${CONTENT}+ installed software required: ${config}")
+		set(CONTENT "${CONTENT}+ platform configuration required: ${config}")
 	endforeach()
 else()
-	set(CONTENT "${CONTENT}+ no specific installed software required.")
+	set(CONTENT "${CONTENT}+ no specific platform configuration required.")
 endif()
 set(CONTENT "${CONTENT}\n")
 set(${RES_CONTENT_PLATFORM} ${CONTENT} PARENT_SCOPE) 
