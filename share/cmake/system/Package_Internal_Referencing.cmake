@@ -374,7 +374,43 @@ else()
 endif()
 endfunction(deploy_Package_Repository)
 
+###
+function(check_Package_Platform_Against_Current package platform CHECK_OK)
+get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
+if(	${package}_AVAILABLE_PLATFORM_${platform}_OS STREQUAL ${OS_STRING}
+	AND ${package}_AVAILABLE_PLATFORM_${platform}_ARCH STREQUAL ${ARCH_BITS})
+	# OK this binary version is theorically eligible, but need to check for its platform configuration to be sure it can be used
+	if(${package}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION)	
+		foreach(config IN ITEMS ${${package}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION})
+			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)
+				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)	# find the configuation
+				if(NOT ${config}_FOUND)# not found, trying to see if can be installed
+					if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)		
+						include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)
+						if(NOT ${config}_INSTALLABLE)
+							set(${CHECK_OK} FALSE PARENT_SCOPE)
+							return()
+						endif()
+					else()
+						set(${CHECK_OK} FALSE PARENT_SCOPE)
+						return()
+					endif()
+				endif()
+			else()
+				set(${CHECK_OK} FALSE PARENT_SCOPE)
+				return()
+			endif()
+		endforeach()
+	endif()#OK no specific check for configuration so 
+else()
+	set(${CHECK_OK} FALSE PARENT_SCOPE)
+	return()
+endif()	
+set(${CHECK_OK} TRUE PARENT_SCOPE)
+endfunction(check_Package_Platform_Against_Current)
 
+
+###
 function(get_Available_Binary_Package_Versions package list_of_versions list_of_versions_with_platform)
 
 #configuring target system
@@ -383,39 +419,11 @@ get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
 set(available_binary_package_version "") 
 foreach(ref_version IN ITEMS ${${package}_REFERENCES})
 	foreach(ref_platform IN ITEMS ${${package}_REFERENCE_${ref_version}})
-		if(	${package}_AVAILABLE_PLATFORM_${ref_platform}_OS STREQUAL ${OS_STRING}
-			AND ${package}_AVAILABLE_PLATFORM_${ref_platform}_ARCH STREQUAL ${ARCH_BITS})
-			# OK this binary version is theorically eligible, but need to check for its platform configuration to be sure it can be used
-			set(BINARY_OK TRUE)
-			if(${package}_AVAILABLE_PLATFORM_${ref_platform}_CONFIGURATION)	
-				foreach(config IN ITEMS ${${package}_AVAILABLE_PLATFORM_${ref_platform}_CONFIGURATION})
-					if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)
-						include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)	# find the configuation
-						if(NOT ${config}_FOUND)# not found, trying to see if can be installed
-							if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)		
-								include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)
-								if(NOT ${config}_INSTALLABLE)
-									set(BINARY_OK FALSE)
-									break()
-								endif()
-							else()
-								set(BINARY_OK FALSE)
-								break()
-							endif()
-						endif()
-					else()
-						set(BINARY_OK FALSE)
-						break()
-					endif()
-				endforeach()
-			endif()
-			
-			if(BINARY_OK)
-				list(APPEND available_binary_package_version "${ref_version}")
-				list(APPEND available_binary_package_version_with_platform "${ref_version}/${ref_platform}")
-				break() # no need to test for following platform only the first is selected (this one has the greatest priority by construction)
-			endif()
-			
+		check_Package_Platform_Against_Current(${package} ${ref_platform} BINARY_OK)#will return TRUE if the platform conforms to current one
+		if(BINARY_OK)
+			list(APPEND available_binary_package_version "${ref_version}")
+			list(APPEND available_binary_package_version_with_platform "${ref_version}/${ref_platform}")
+			break() # no need to test for following platform only the first is selected (this one has the greatest priority by construction)
 		endif()
 	endforeach()
 endforeach()
@@ -432,8 +440,9 @@ endfunction(get_Available_Binary_Package_Versions)
 function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_PLATFORM)
 
 foreach(bin IN ITEMS ${list_of_bin_with_platform})
-	if(bin MATCHES "^${version}/.*$")
-		string (REGEX REPLACE "^${version}/(.*)$" "\\1" ${bin} RES)
+	string (REGEX REPLACE "^${version}/(.*)$" "\\1" RES ${bin})
+	
+	if(NOT RES STREQUAL "${bin}") #match 	
 		set(${RES_PLATFORM} ${RES} PARENT_SCOPE)
 		return()
 	endif()
@@ -518,7 +527,7 @@ set(FOLDER_BINARY "")
 message("[PID] INFO : downloading the binary package ${package} version ${version_string} for platform ${platform}, please wait ...")
 
 generate_Binary_Package_Name(${package} ${version_string} ${platform} Release FILE_BINARY FOLDER_BINARY)
-set(download_url ${${package}_REFERENCE_${version_string}_${OS_STRING}_${ARCH_BITS}_URL})
+set(download_url ${${package}_REFERENCE_${version_string}_${platform}_URL})
 file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
@@ -532,7 +541,7 @@ endif()
 set(FILE_BINARY_DEBUG "")
 set(FOLDER_BINARY_DEBUG "")
 generate_Binary_Package_Name(${package} ${version_string} ${platform} Debug FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
-set(download_url_dbg ${${package}_REFERENCE_${version_string}_${OS_STRING}_${ARCH_BITS}_URL_DEBUG})
+set(download_url_dbg ${${package}_REFERENCE_${version_string}_${platform}_URL_DEBUG})
 file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res-dbg 0 numeric_error_dbg)
 list(GET res-dbg 1 status_dbg)
@@ -906,13 +915,13 @@ function(download_And_Install_External_Package INSTALLED package version platfor
 set(${INSTALLED} FALSE PARENT_SCOPE)
 
 ###### downloading the binary package ######
-message("[PID] INFO : downloading the external binary package ${package} with version ${VERSION} for platform ${platform}, please wait ...")
+message("[PID] INFO : downloading the external binary package ${package} with version ${version} for platform ${platform}, please wait ...")
 #1) release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
-generate_Binary_Package_Name(${package} ${VERSION} ${platform} Release FILE_BINARY FOLDER_BINARY)
-set(download_url ${${package}_REFERENCE_${VERSION}_${platform}_URL})
-set(FOLDER_BINARY ${${package}_REFERENCE_${VERSION}_${platform}_FOLDER})
+generate_Binary_Package_Name(${package} ${version} ${platform} Release FILE_BINARY FOLDER_BINARY)
+set(download_url ${${package}_REFERENCE_${version}_${platform}_URL})
+set(FOLDER_BINARY ${${package}_REFERENCE_${version}_${platform}_FOLDER})
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory release
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 			ERROR_QUIET OUTPUT_QUIET)
@@ -921,16 +930,16 @@ list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url}: ${status}.")
+	message("[PID] ERROR : problem when downloading binary version ${version} of package ${package} from address ${download_url}: ${status}.")
 	return()
 endif()
 #2) debug code (optionnal for external packages => just to avoid unecessary redoing code download)
-if(EXISTS ${package}_REFERENCE_${VERSION}_${platform}_URL_DEBUG)
+if(EXISTS ${package}_REFERENCE_${version}_${platform}_URL_DEBUG)
 	set(FILE_BINARY_DEBUG "")
 	set(FOLDER_BINARY_DEBUG "")
-	generate_Binary_Package_Name(${package} ${VERSION} ${platform} Debug FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
-	set(download_url_dbg ${${package}_REFERENCE_${VERSION}_${platform}_URL_DEBUG})
-	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${VERSION}_${platform}_FOLDER_DEBUG})
+	generate_Binary_Package_Name(${package} ${version} ${platform} Debug FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
+	set(download_url_dbg ${${package}_REFERENCE_${version}_${platform}_URL_DEBUG})
+	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${version}_${platform}_FOLDER_DEBUG})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory debug
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 			ERROR_QUIET OUTPUT_QUIET)
@@ -939,7 +948,7 @@ if(EXISTS ${package}_REFERENCE_${VERSION}_${platform}_URL_DEBUG)
 	list(GET res-dbg 1 status_dbg)
 	if(NOT numeric_error_dbg EQUAL 0)#there is an error
 		set(${INSTALLED} FALSE PARENT_SCOPE)
-		message("[PID] ERROR : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url_dbg} : ${status_dbg}.")
+		message("[PID] ERROR : problem when downloading binary version ${version} of package ${package} from address ${download_url_dbg} : ${status_dbg}.")
 		return()
 	endif()
 endif()
@@ -951,8 +960,8 @@ if(NOT EXISTS ${WORKSPACE_DIR}/external/${package} OR NOT IS_DIRECTORY ${WORKSPA
 			WORKING_DIRECTORY ${WORKSPACE_DIR}/external/
 			ERROR_QUIET OUTPUT_QUIET)
 endif()
-if(NOT EXISTS ${WORKSPACE_DIR}/external/${package}/${VERSION} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${package}/${VERSION})
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${VERSION}
+if(NOT EXISTS ${WORKSPACE_DIR}/external/${package}/${version} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${package}/${version})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${version}
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/external/${package}
 		ERROR_QUIET OUTPUT_QUIET)
 endif()
@@ -985,16 +994,16 @@ if (error_res)
 endif()
 
 # 3) copying resulting folders into the install path in a cross platform way
-message("[PID] INFO : installing the external binary package ${package} (version ${VERSION}) into the workspace, please wait ...")
+message("[PID] INFO : installing the external binary package ${package} (version ${version}) into the workspace, please wait ...")
 set(error_res "")
 if(EXISTS download_url_dbg)
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${VERSION}
-          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${package}/${VERSION}
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${version}
+          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${package}/${version}
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
 else()
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${VERSION}/
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${version}/
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
 endif()
 

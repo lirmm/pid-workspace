@@ -199,51 +199,49 @@ endfunction(find_Category)
 
 ###
 function(get_Category_Names root_category category_full_string RESULTING_SHORT_NAME RESULTING_LONG_NAME)
+	if("${root_category}" STREQUAL "")
+		set(${RESULTING_SHORT_NAME} ${category_full_string} PARENT_SCOPE)
+		set(${RESULTING_LONG_NAME} ${category_full_string} PARENT_SCOPE)
+		return()
+	endif()
 
-if("${root_category}" STREQUAL "")
-	set(${RESULTING_SHORT_NAME} ${category_full_string} PARENT_SCOPE)
-	set(${RESULTING_LONG_NAME} ${category_full_string} PARENT_SCOPE)
-	return()
-endif()
-
-string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
-if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthed
-	set(${RESULTING_SHORT_NAME} ${CATEGORY_STRING_CONTENT} PARENT_SCOPE)
-	set(${RESULTING_LONG_NAME} "${root_category}/${CATEGORY_STRING_CONTENT}" PARENT_SCOPE)
-else()
-	message("[PID] Error : internal BUG.")
-endif()
-
+	string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
+	if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthed
+		set(${RESULTING_SHORT_NAME} ${CATEGORY_STRING_CONTENT} PARENT_SCOPE)
+		set(${RESULTING_LONG_NAME} "${root_category}/${CATEGORY_STRING_CONTENT}" PARENT_SCOPE)
+	else()
+		message("[PID] Error : internal BUG.")
+	endif()
 endfunction(get_Category_Names)
 
 ###
 function(print_Category root_category category number_of_tabs)
-set(PRINTED_VALUE "")
-set(RESULT_STRING "")
-set(index ${number_of_tabs})
-while(index GREATER 0)
-	set(RESULT_STRING "${RESULT_STRING}	")
-	math(EXPR index '${index}-1')
-endwhile()
+	set(PRINTED_VALUE "")
+	set(RESULT_STRING "")
+	set(index ${number_of_tabs})
+	while(index GREATER 0)
+		set(RESULT_STRING "${RESULT_STRING}	")
+		math(EXPR index '${index}-1')
+	endwhile()
 
-get_Category_Names("${root_category}" ${category} short_name long_name)
+	get_Category_Names("${root_category}" ${category} short_name long_name)
 
-if(CAT_${category}_CATEGORY_CONTENT)
-	set(PRINTED_VALUE "${RESULT_STRING}${short_name}:")
-	foreach(pack IN ITEMS ${CAT_${category}_CATEGORY_CONTENT})
-		set(PRINTED_VALUE "${PRINTED_VALUE} ${pack}")
-	endforeach()
-	message("${PRINTED_VALUE}")
-else()
-	set(PRINTED_VALUE "${RESULT_STRING}${short_name}")
-	message("${PRINTED_VALUE}")	
-endif()
-if(CAT_${category}_CATEGORIES)
-	math(EXPR sub_cat_nb_tabs '${number_of_tabs}+1')
-	foreach(sub_cat IN ITEMS ${CAT_${category}_CATEGORIES})
-		print_Category("${long_name}" "${category}/${sub_cat}" ${sub_cat_nb_tabs})
-	endforeach()
-endif()
+	if(CAT_${category}_CATEGORY_CONTENT)
+		set(PRINTED_VALUE "${RESULT_STRING}${short_name}:")
+		foreach(pack IN ITEMS ${CAT_${category}_CATEGORY_CONTENT})
+			set(PRINTED_VALUE "${PRINTED_VALUE} ${pack}")
+		endforeach()
+		message("${PRINTED_VALUE}")
+	else()
+		set(PRINTED_VALUE "${RESULT_STRING}${short_name}")
+		message("${PRINTED_VALUE}")	
+	endif()
+	if(CAT_${category}_CATEGORIES)
+		math(EXPR sub_cat_nb_tabs '${number_of_tabs}+1')
+		foreach(sub_cat IN ITEMS ${CAT_${category}_CATEGORIES})
+			print_Category("${long_name}" "${category}/${sub_cat}" ${sub_cat_nb_tabs})
+		endforeach()
+	endif()
 endfunction(print_Category)
 
 ########################################################################
@@ -252,272 +250,121 @@ endfunction(print_Category)
 
 ###
 function(print_Author author)
-get_Formatted_Author_String("${author}" RES_STRING)
-message("	${RES_STRING}")
+	get_Formatted_Author_String("${author}" RES_STRING)
+	message("	${RES_STRING}")
 endfunction(print_Author)
 
 ###
 function(print_Package_Contact package)
-get_Formatted_Package_Contact_String(${package} RES_STRING)
-message("CONTACT: ${RES_STRING}")
+	get_Formatted_Package_Contact_String(${package} RES_STRING)
+	message("CONTACT: ${RES_STRING}")
 endfunction(print_Package_Contact)
 
 ###
 function(print_Package_Info package)
-message("NATIVE PACKAGE: ${package}")
-fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
-message("DESCRIPTION: ${descr_string}")
-message("LICENSE: ${${package}_LICENSE}")
-message("DATES: ${${package}_YEARS}")
-message("REPOSITORY: ${${package}_ADDRESS}")
-print_Package_Contact(${package})
-message("AUTHORS:")
-foreach(author IN ITEMS ${${package}_AUTHORS_AND_INSTITUTIONS})
-	print_Author(${author})
-endforeach()
-if(${package}_CATEGORIES)
-	message("CATEGORIES:")
-	foreach(category IN ITEMS ${${package}_CATEGORIES})
-		message("	${category}")
+	message("NATIVE PACKAGE: ${package}")
+	fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
+	message("DESCRIPTION: ${descr_string}")
+	message("LICENSE: ${${package}_LICENSE}")
+	message("DATES: ${${package}_YEARS}")
+	message("REPOSITORY: ${${package}_ADDRESS}")
+	print_Package_Contact(${package})
+	message("AUTHORS:")
+	foreach(author IN ITEMS ${${package}_AUTHORS_AND_INSTITUTIONS})
+		print_Author(${author})
 	endforeach()
-endif()
-if(${package}_REFERENCES)
-	message("BINARY VERSIONS:")
-	print_Native_Package_Binaries(${package})
-endif()
+	if(${package}_CATEGORIES)
+		message("CATEGORIES:")
+		foreach(category IN ITEMS ${${package}_CATEGORIES})
+			message("	${category}")
+		endforeach()
+	endif()
+	if(${package}_REFERENCES)
+		message("BINARY VERSIONS:")
+		print_Package_Binaries(${package})
+	endif()
 endfunction(print_Package_Info)
 
 ###
 function(print_External_Package_Info package)
-message("EXTERNAL PACKAGE: ${package}")
-fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
-message("DESCRIPTION: ${descr_string}")
-message("LICENSES: ${${package}_LICENSES}")
-print_External_Package_Contact(${package})
-message("AUTHORS: ${${package}_AUTHORS}")
-if(${package}_CATEGORIES)
-	message("CATEGORIES:")
-	foreach(category IN ITEMS ${${package}_CATEGORIES})
-		message("	${category}")
-	endforeach()
-endif()
-if(${package}_REFERENCES)
-	message("BINARY VERSIONS:")
-	print_External_Package_Binaries(${package})
-endif()
+	message("EXTERNAL PACKAGE: ${package}")
+	fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
+	message("DESCRIPTION: ${descr_string}")
+	message("LICENSES: ${${package}_LICENSES}")
+	print_External_Package_Contact(${package})
+	message("AUTHORS: ${${package}_AUTHORS}")
+	if(${package}_CATEGORIES)
+		message("CATEGORIES:")
+		foreach(category IN ITEMS ${${package}_CATEGORIES})
+			message("	${category}")
+		endforeach()
+	endif()
+	if(${package}_REFERENCES)
+		message("BINARY VERSIONS:")
+		print_Package_Binaries(${package})
+	endif()
 endfunction(print_External_Package_Info)
 
 ###
 function(print_External_Package_Contact package)
-fill_List_Into_String("${${package}_PID_Package_AUTHOR}" AUTHOR_STRING)
-fill_List_Into_String("${${package}_PID_Package_INSTITUTION}" INSTITUTION_STRING)
-if(NOT INSTITUTION_STRING STREQUAL "")
-	if(${package}_PID_Package_CONTACT_MAIL)
-		message("PID PACKAGE CONTACT: ${AUTHOR_STRING} (${${package}_PID_Package_CONTACT_MAIL}) - ${INSTITUTION_STRING}")
+	fill_List_Into_String("${${package}_PID_Package_AUTHOR}" AUTHOR_STRING)
+	fill_List_Into_String("${${package}_PID_Package_INSTITUTION}" INSTITUTION_STRING)
+	if(NOT INSTITUTION_STRING STREQUAL "")
+		if(${package}_PID_Package_CONTACT_MAIL)
+			message("PID PACKAGE CONTACT: ${AUTHOR_STRING} (${${package}_PID_Package_CONTACT_MAIL}) - ${INSTITUTION_STRING}")
+		else()
+			message("PID PACKAGE CONTACT: ${AUTHOR_STRING} - ${INSTITUTION_STRING}")
+		endif()
 	else()
-		message("PID PACKAGE CONTACT: ${AUTHOR_STRING} - ${INSTITUTION_STRING}")
+		if(${package}_PID_Package_CONTACT_MAIL)
+			message("PID PACKAGE CONTACT: ${AUTHOR_STRING} (${${package}_PID_Package_CONTACT_MAIL})")
+		else()
+			message("PID PACKAGE CONTACT: ${AUTHOR_STRING}")
+		endif()
 	endif()
-else()
-	if(${package}_PID_Package_CONTACT_MAIL)
-		message("PID PACKAGE CONTACT: ${AUTHOR_STRING} (${${package}_PID_Package_CONTACT_MAIL})")
-	else()
-		message("PID PACKAGE CONTACT: ${AUTHOR_STRING}")
-	endif()
-endif()
 endfunction(print_External_Package_Contact)
 
 
-
 ###
-function(print_External_Package_Binaries package)
-foreach(version IN ITEMS ${${package}_REFERENCES})
-	message("	${version}: ")
-	foreach(system IN ITEMS ${${package}_REFERENCE_${version}})
-		foreach(arch IN ITEMS ${${package}_REFERENCE_${version}_${system}})
-			print_Accessible_Binary(${package} ${version} ${system} ${arch})
+function(print_Package_Binaries package)
+	foreach(version IN ITEMS ${${package}_REFERENCES})
+		message("	${version}: ")
+		foreach(platform IN ITEMS ${${package}_REFERENCE_${version}})
+			print_Platform_Compatible_Binary(${package} ${version} ${platform})
 		endforeach()
 	endforeach()
-endforeach()
-endfunction(print_External_Package_Binaries)
-
-
-###
-function(print_Native_Package_Binaries package)
-foreach(version IN ITEMS ${${package}_REFERENCES})
-	message("	${version}: ")
-	foreach(platform IN ITEMS ${${package}_REFERENCE_${version}})
-		print_Platform_Accessible_Binary(${package} ${version} ${platform})
-	endforeach()
-endforeach()
-endfunction(print_Native_Package_Binaries)
-
-
-###
-function(test_Package_Binary_Against_Platform package version IS_COMPATIBLE)
-foreach(system IN ITEMS ${${package}_REFERENCE_${version}})
-	if(system STREQUAL "linux" AND UNIX AND NOT APPLE)
-		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
-		return()
-	elseif(system STREQUAL "darwin" AND APPLE)
-		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
-		return()
-	endif()
-endforeach()
-set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
-endfunction(test_Package_Binary_Against_Platform)
+endfunction(print_Package_Binaries)
 
 ###
 function(exact_Version_Exists package version RESULT)
-list(FIND ${package}_REFERENCES ${version} INDEX)
-if(INDEX EQUAL -1)
-	set(${RESULT} FALSE PARENT_SCOPE)
-	return()
-else()
-	test_Package_Binary_Against_Platform(${package} ${version} COMPATIBLE)
-	if(COMPATIBLE)	
-		set(${RESULT} TRUE PARENT_SCOPE)
-	else()
+	list(FIND ${package}_REFERENCES ${version} INDEX)
+	if(INDEX EQUAL -1)
 		set(${RESULT} FALSE PARENT_SCOPE)
+		return()
+	else()
+		get_Available_Binary_Package_Versions(${package} list_of_versions list_of_versions_with_platform)
+		list(FIND list_of_versions ${version} INDEX)
+		if(INDEX EQUAL -1)	
+			set(${RESULT} FALSE PARENT_SCOPE)
+		else()
+			set(${RESULT} TRUE PARENT_SCOPE)
+		endif()
 	endif()
-endif()
 endfunction(exact_Version_Exists)
 
-### generate the nale of an archive generated by CPack
-function(generate_Binary_Package_Archive_Name package version system mode RES_FILE RES_FOLDER)
-if(system STREQUAL "linux")
-	set(system_string Linux)
-elseif(system STREQUAL "macosx")
-	set(system_string Darwin)
-endif()
-if(mode MATCHES Debug)
-	set(mode_string "-dbg")
-else()
-	set(mode_string "")
-endif()
-
-set(${RES_FILE} "${package}-${version}${mode_string}-${system_string}.tar.gz" PARENT_SCOPE)
-set(${RES_FOLDER} "${package}-${version}${mode_string}-${system_string}" PARENT_SCOPE)
-endfunction(generate_Binary_Package_Archive_Name)
-
 ###
-function(test_binary_download package version system arch RESULT)
-
-#testing release archive
-set(download_url ${${package}_REFERENCE_${version}_${system}_${arch}_URL})
-
-generate_Binary_Package_Archive_Name(${package} ${version} ${system} Release RES_FILE RES_FOLDER)
-set(destination ${CMAKE_BINARY_DIR}/share/${RES_FILE})
-set(res "")
-execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory share
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-			ERROR_QUIET OUTPUT_QUIET)
-
-file(DOWNLOAD ${download_url} ${destination} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)#waiting one second
-list(GET res 0 numeric_error)
-list(GET res 1 status)
-if(NOT numeric_error EQUAL 0)#testing if connection can be established
-	set(${RESULT} FALSE PARENT_SCOPE)
-	return()
-endif()
-execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ${destination}
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-	ERROR_VARIABLE error
-	OUTPUT_QUIET
-)
-file(REMOVE ${destination}) #removing archive file
-if(NOT error STREQUAL "")#testing if archive is valid
-	set(${RESULT} FALSE PARENT_SCOPE)
-	return()
-else()
-	file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/share/${RES_FOLDER})#cleaning (removing extracted folder)
-endif()
-
-
-#testing debug archive
-if(EXISTS ${package}_REFERENCE_${version}_${system}_${arch}_URL_DEBUG)
-	set(download_url_dbg ${${package}_REFERENCE_${version}_${system}_${arch}_URL_DEBUG})
-
-	generate_Binary_Package_Archive_Name(${package} ${version} ${system} Debug RES_FILE RES_FOLDER)
-	set(destination_dbg ${CMAKE_BINARY_DIR}/share/${RES_FILE})
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory share
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-			ERROR_QUIET OUTPUT_QUIET)
-	set(res_dbg "")
-	file(DOWNLOAD ${download_url_dbg} ${destination_dbg} STATUS res_dbg)#waiting one second
-	list(GET res_dbg 0 numeric_error_dbg)
-	list(GET res_dbg 1 status_dbg)
-	if(NOT numeric_error_dbg EQUAL 0)#testing if connection can be established
-		set(${RESULT} FALSE PARENT_SCOPE)
-		return()
-	endif()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ${destination_dbg}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-		ERROR_VARIABLE error
-		OUTPUT_QUIET
-	)
-	file(REMOVE ${destination_dbg})#removing archive file
-	if(NOT error STREQUAL "")#testing if archive is valid
-		set(${RESULT} FALSE PARENT_SCOPE)
-		return()
-	else()
-		file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/share/${RES_FOLDER}) #cleaning (removing extracted folder)
-	endif()
-endif()
-
-#release and debug versions are accessible => OK
-set(${RESULT} TRUE PARENT_SCOPE)
-endfunction(test_binary_download)
-
-
-###
-function(print_Accessible_Binary package version system arch)
-set(printed_string "		${system}(${arch}):")
-#1) testing if binary can be installed
-
-if(	(APPLE AND "${system}" STREQUAL macosx) #test if OS is OK
-	OR (UNIX AND "${system}" STREQUAL linux)) 
-	if(	(${CMAKE_SIZEOF_VOID_P} EQUAL 4 AND ${arch} EQUAL 32)#test if architecture is OK
-		OR (${CMAKE_SIZEOF_VOID_P} EQUAL 8 AND ${arch} EQUAL 64) )
-		set(RESULT FALSE)
-		test_binary_download(${package} ${version} ${system} ${arch} RESULT)
-		if(RESULT)
-			set(printed_string "${printed_string} CAN BE INSTALLED")
-		else()
-			set(printed_string "${printed_string} CANNOT BE DOWNLOADED")
-		endif()
+function(print_Platform_Compatible_Binary package version platform)
+	set(printed_string "		${platform}:")
+	#1) testing if binary can be installed
+	check_Package_Platform_Against_Current(${package} ${platform} BINARY_OK)
+	if(BINARY_OK)
+		set(printed_string "${printed_string} CAN BE INSTALLED")
 	else()
 		set(printed_string "${printed_string} CANNOT BE INSTALLED")
 	endif()
-else()
-	set(printed_string "${printed_string} CANNOT BE INSTALLED")
-endif()
-message("${printed_string}")
-endfunction(print_Accessible_Binary)
+	message("${printed_string}")
+endfunction(print_Platform_Compatible_Binary)
 
-###
-function(print_Platform_Accessible_Binary package version platform)
-set(printed_string "		${platform}:")
-#1) testing if binary can be installed
-
-if(	(APPLE AND "${system}" STREQUAL macosx) #test if OS is OK
-	OR (UNIX AND "${system}" STREQUAL linux)) 
-	if(	(${CMAKE_SIZEOF_VOID_P} EQUAL 4 AND ${arch} EQUAL 32)#test if architecture is OK
-		OR (${CMAKE_SIZEOF_VOID_P} EQUAL 8 AND ${arch} EQUAL 64) )
-		set(RESULT FALSE)
-		test_binary_download(${package} ${version} ${system} ${arch} RESULT)
-		if(RESULT)
-			set(printed_string "${printed_string} CAN BE INSTALLED")
-		else()
-			set(printed_string "${printed_string} CANNOT BE DOWNLOADED")
-		endif()
-	else()
-		set(printed_string "${printed_string} CANNOT BE INSTALLED")
-	endif()
-else()
-	set(printed_string "${printed_string} CANNOT BE INSTALLED")
-endif()
-message("${printed_string}")
-endfunction(print_Platform_Accessible_Binary)
 ########################################################################
 #################### Packages lifecycle management #####################
 ########################################################################

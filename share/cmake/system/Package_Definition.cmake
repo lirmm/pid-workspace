@@ -70,7 +70,7 @@ endif()
 add_Author("${ADD_PID_PACKAGE_AUTHOR_AUTHOR}" "${ADD_PID_PACKAGE_AUTHOR_INSTITUTION}")
 endmacro(add_PID_Package_Author)
 
-### API : 	add_PID_Package_Reference(VERSION major.minor[.patch] OS system_type ARCH arch_size URL url-rel url_dbg)
+### API : 	add_PID_Package_Reference(VERSION major.minor[.patch] PLATFORM platform name URL url-rel url_dbg)
 macro(add_PID_Package_Reference)
 set(oneValueArgs VERSION PLATFORM)
 set(multiValueArgs  URL)
