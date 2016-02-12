@@ -26,7 +26,7 @@ For more details see [license file](license.txt).
 
 ## Version
 
-Last released version (more recent version tag on master branch) : @PACKAGE_LAST_VERSION_FOR_WIKI@.
+Current version (for which this documentation has been generated) : @PACKAGE_LAST_VERSION_FOR_WIKI@.
 
 @RELEASED_BINARY_VERSIONS@
 
