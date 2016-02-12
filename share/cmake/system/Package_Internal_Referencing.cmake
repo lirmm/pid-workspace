@@ -375,7 +375,7 @@ endif()
 endfunction(deploy_Package_Repository)
 
 
-###
+### TODO check que c OK
 function(get_Available_Binary_Package_Versions package list_of_versions list_of_versions_with_platform)
 
 #configuring target system
@@ -858,18 +858,42 @@ endfunction(install_Required_External_Packages)
 
 
 ###
-function(deploy_External_Package_Version DEPLOYED package VERSION)
-set(INSTALLED FALSE)
-#begin
-get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
+function(deploy_External_Package_Version DEPLOYED package version)
+set(available_versions "")
+get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
+if(NOT available_versions)
+	message("[PID] ERROR : no available binary versions of package ${package}.")
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	return()
+endif()
+#now getting the best platform for that version
+select_Platform_Binary_For_Version(${version} "${available_with_platform}" PLATFORM)
+download_And_Install_External_Package(INSTALLED ${package} ${version} ${PLATFORM})
+if(NOT INSTALLED)
+	message("[PID] ERROR : cannot install binary version of package ${package}.")
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	return()
+endif()
+
+#5) checking for platform constraints
+configure_External_Package(${package} ${version} Debug)
+configure_External_Package(${package} ${version} Release)
+set(${DEPLOYED} TRUE PARENT_SCOPE)
+endfunction(deploy_External_Package_Version)
+
+
+###
+function(download_And_Install_External_Package INSTALLED package version platform)
+set(${INSTALLED} FALSE PARENT_SCOPE)
+
 ###### downloading the binary package ######
-message("[PID] INFO : downloading the external binary package ${package} with version ${VERSION}, please wait ...")
+message("[PID] INFO : downloading the external binary package ${package} with version ${VERSION} for platform ${platform}, please wait ...")
 #1) release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
-generate_Binary_Package_Name(${package} ${VERSION} "Release" FILE_BINARY FOLDER_BINARY)
-set(download_url ${${package}_REFERENCE_${VERSION}_${OS_STRING}_${ARCH_BITS}_URL})
-set(FOLDER_BINARY ${${package}_REFERENCE_${VERSION}_${OS_STRING}_${ARCH_BITS}_FOLDER})
+generate_Binary_Package_Name(${package} ${VERSION} ${platform} Release FILE_BINARY FOLDER_BINARY)
+set(download_url ${${package}_REFERENCE_${VERSION}_${platform}_URL})
+set(FOLDER_BINARY ${${package}_REFERENCE_${VERSION}_${platform}_FOLDER})
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory release
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 			ERROR_QUIET OUTPUT_QUIET)
@@ -877,17 +901,17 @@ file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY} S
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	set(${INSTALLED} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url}: ${status}.")
 	return()
 endif()
 #2) debug code (optionnal for external packages => just to avoid unecessary redoing code download)
-if(EXISTS ${package}_REFERENCE_${VERSION}_${OS_STRING}_${ARCH_BITS}_URL_DEBUG)
+if(EXISTS ${package}_REFERENCE_${VERSION}_${platform}_URL_DEBUG)
 	set(FILE_BINARY_DEBUG "")
 	set(FOLDER_BINARY_DEBUG "")
-	generate_Binary_Package_Name(${package} ${VERSION} "Debug" FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
-	set(download_url_dbg ${${package}_REFERENCE_${VERSION}_${OS_STRING}_${ARCH_BITS}_URL_DEBUG})
-	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${VERSION}_${OS_STRING}_${ARCH_BITS}_FOLDER_DEBUG})
+	generate_Binary_Package_Name(${package} ${VERSION} ${platform} Debug FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
+	set(download_url_dbg ${${package}_REFERENCE_${VERSION}_${platform}_URL_DEBUG})
+	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${VERSION}_${platform}_FOLDER_DEBUG})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory debug
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 			ERROR_QUIET OUTPUT_QUIET)
@@ -895,7 +919,7 @@ if(EXISTS ${package}_REFERENCE_${VERSION}_${OS_STRING}_${ARCH_BITS}_URL_DEBUG)
 	list(GET res-dbg 0 numeric_error_dbg)
 	list(GET res-dbg 1 status_dbg)
 	if(NOT numeric_error_dbg EQUAL 0)#there is an error
-		set(${DEPLOYED} FALSE PARENT_SCOPE)
+		set(${INSTALLED} FALSE PARENT_SCOPE)
 		message("[PID] ERROR : problem when downloading binary version ${VERSION} of package ${package} from address ${download_url_dbg} : ${status_dbg}.")
 		return()
 	endif()
@@ -914,8 +938,6 @@ if(NOT EXISTS ${WORKSPACE_DIR}/external/${package}/${VERSION} OR NOT IS_DIRECTOR
 		ERROR_QUIET OUTPUT_QUIET)
 endif()
 
-
-
 # 2) extracting binary archive in cross platform way
 set(error_res "")
 message("[PID] INFO : decompressing the external binary package ${package}, please wait ...")
@@ -926,7 +948,7 @@ if(EXISTS download_url_dbg)
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
 
 	if (error_res)
-		set(${DEPLOYED} FALSE PARENT_SCOPE)
+		set(${INSTALLED} FALSE PARENT_SCOPE)
 		message("[PID] ERROR : cannot extract binary archives ${FILE_BINARY_DEBUG}.")
 		return()
 	endif()
@@ -938,7 +960,7 @@ execute_process(
 	ERROR_VARIABLE error_res OUTPUT_QUIET)
 
 if (error_res)
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	set(${INSTALLED} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : cannot extract binary archives ${FILE_BINARY}.")
 	return()
 endif()
@@ -974,13 +996,11 @@ else()
 		ERROR_QUIET OUTPUT_QUIET)
 endif()
 
-#5) checking for platform constraints
-configure_External_Package(${package} ${VERSION} Debug)
-configure_External_Package(${package} ${VERSION} Release)
-set(${DEPLOYED} TRUE PARENT_SCOPE)
-endfunction(deploy_External_Package_Version)
+set(${INSTALLED} TRUE PARENT_SCOPE)
+endfunction(download_And_Install_External_Package)
 
 
+###
 function(configure_External_Package package version mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${package}/${version}/share/)
