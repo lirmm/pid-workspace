@@ -948,7 +948,7 @@ endif()
 # 2) native package dependencies
 file(APPEND ${file} "#### declaration of package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 file(APPEND ${file} "set(${package}_DEPENDENCIES${MODE_SUFFIX} ${${package}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-if(${${package}_DEPENDENCIES${MODE_SUFFIX}})
+if(${package}_DEPENDENCIES${MODE_SUFFIX})
 	foreach(a_dep IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
 		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		if(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX})
