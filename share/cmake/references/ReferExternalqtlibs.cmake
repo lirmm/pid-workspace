@@ -12,16 +12,13 @@ set(qtlibs_CATEGORIES programming/threading programming/io programming/timing pr
 set(qtlibs_AVAILABLE_PLATFORMS linux64;linux32;macosx64;macosx32 CACHE INTERNAL "")
 set(qtlibs_AVAILABLE_PLATFORM_linux64_OS linux CACHE INTERNAL "")
 set(qtlibs_AVAILABLE_PLATFORM_linux64_ARCH 64 CACHE INTERNAL "")
-set(qtlibs_AVAILABLE_PLATFORM_linux64_CONFIGURATION  CACHE INTERNAL "")
+set(qtlibs_AVAILABLE_PLATFORM_linux64_CONFIGURATION x11 CACHE INTERNAL "")
 set(qtlibs_AVAILABLE_PLATFORM_linux32_OS linux CACHE INTERNAL "")
 set(qtlibs_AVAILABLE_PLATFORM_linux32_ARCH 32 CACHE INTERNAL "")
-set(qtlibs_AVAILABLE_PLATFORM_linux32_CONFIGURATION  CACHE INTERNAL "")
+set(qtlibs_AVAILABLE_PLATFORM_linux32_CONFIGURATION x11 CACHE INTERNAL "")
 set(qtlibs_AVAILABLE_PLATFORM_macosx64_OS macosx CACHE INTERNAL "")
 set(qtlibs_AVAILABLE_PLATFORM_macosx64_ARCH 64 CACHE INTERNAL "")
 set(qtlibs_AVAILABLE_PLATFORM_macosx64_CONFIGURATION  CACHE INTERNAL "")
-set(qtlibs_AVAILABLE_PLATFORM_macosx32_OS macosx CACHE INTERNAL "")
-set(qtlibs_AVAILABLE_PLATFORM_macosx32_ARCH 32 CACHE INTERNAL "")
-set(qtlibs_AVAILABLE_PLATFORM_macosx32_CONFIGURATION  CACHE INTERNAL "")
 
 # declaration of known references
 set(qtlibs_REFERENCES 5.4.1 CACHE INTERNAL "")
@@ -33,7 +30,7 @@ set(qtlibs_REFERENCE_5.4.1_linux32_FOLDER ext-qtlibs-linux-32-5.4.1-f357e4417003
 
 #linux 64
 set(qtlibs_REFERENCE_5.4.1_linux64_URL https://gite.lirmm.fr/pid/ext-qtlibs/repository/archive.tar.gz?ref=linux-64-5.4.1 CACHE INTERNAL "")
-set(qtlibs_REFERENCE_5.4.1_linux64_FOLDER ext-qtlibs-linux-64-5.4.1-821d980944d33d031f7fc38051635037d8e99f6c CACHE INTERNAL "")
+set(qtlibs_REFERENCE_5.4.1_linux64_FOLDER ext-qtlibs-linux-64-5.4.1-721dd518da12100632e4c0c2cdd1fbd636107cb0 CACHE INTERNAL "")
 
 #macosx 64
 set(qtlibs_REFERENCE_5.4.1_macosx64_URL https://gite.lirmm.fr/pid/ext-qtlibs/repository/archive.tar.gz?ref=macosx-5.4.1 CACHE INTERNAL "")
