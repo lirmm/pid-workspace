@@ -39,7 +39,6 @@ if(UNIX)
 	AND NOT opengl_glu_LIBRARY MATCHES opengl_glu_LIBRARY-NOTFOUND
 	AND NOT opengl_glut_LIBRARY MATCHES opengl_glut_LIBRARY-NOTFOUND
 	AND NOT opengl_glut_INCLUDE_DIR MATCHES opengl_glut_INCLUDE_DIR-NOTFOUND)
-		message("LIBS_NAMES = ${LIBS_NAMES}")
 		set(opengl_LIBRARIES ${LIBS_NAMES})
 		unset(opengl_INCLUDE_DIR CACHE)
 		unset(opengl_LIBRARY CACHE)
