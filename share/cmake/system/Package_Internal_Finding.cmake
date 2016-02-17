@@ -752,17 +752,17 @@ if(EXIST)
 				
 			select_Components(${package} ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} "${${package}_FIND_COMPONENTS}")
 			if(USE_FILE_NOTFOUND)
-				exitFindScript("[PID] CRITICAL ERROR : the selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted")
+				exitFindScript(${package} "[PID] CRITICAL ERROR : the selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted")
 			endif()
 
 			if(NOT ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND)
-				exitFindScript("[PID] CRITICAL ERROR : some of the requested components of the package ${package} are missing (version chosen is ${${package}_VERSION_STRING}, requested is ${${package}_FIND_VERSION}),either bad names specified or broken package versionning.")
+				exitFindScript(${package} "[PID] CRITICAL ERROR : some of the requested components of the package ${package} are missing (version chosen is ${${package}_VERSION_STRING}, requested is ${${package}_FIND_VERSION}),either bad names specified or broken package versionning.")
 			endif()	
 		
 		else()#no component check, register all of them
 			all_Components("${package}" ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION})
 			if(USE_FILE_NOTFOUND)
-				exitFindScript("[PID] CRITICAL ERROR : the  selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted.")
+				exitFindScript(${package} "[PID] CRITICAL ERROR : the  selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted.")
 			endif()
 		endif()
 
@@ -798,7 +798,7 @@ if(EXIST)
 				endif()
 			endif()
 		else()
-			exitFindScript("[PID] ERROR : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
+			exitFindScript(${package} "[PID] ERROR : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
 		endif()
 	endif()
 else() #if the directory does not exist it means the package cannot be found
@@ -811,7 +811,7 @@ else() #if the directory does not exist it means the package cannot be found
 			endif()
 		endif()
 	else()
-		exitFindScript("[PID] ERROR : the required package ${package} cannot be found in the workspace.")
+		exitFindScript(${package} "[PID] ERROR : the required package ${package} cannot be found in the workspace.")
 	endif()
 
 endif()
@@ -873,7 +873,7 @@ if(EXIST)
 				endif()
 			endif()
 		else()
-			exitFindScript("[PID] ERROR : the required version(${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}) of external package ${package} cannot be found in the workspace.")
+			exitFindScript(${package} "[PID] ERROR : the required version(${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}) of external package ${package} cannot be found in the workspace.")
 		endif()
 	endif()
 
@@ -887,7 +887,7 @@ else() #if the directory does not exist it means the external package cannot be 
 			endif()
 		endif()
 	else()
-		exitFindScript("[PID] ERROR : the required external package ${package} cannot be found in the workspace.")
+		exitFindScript(${package} "[PID] ERROR : the required external package ${package} cannot be found in the workspace.")
 	endif()
 
 endif()
