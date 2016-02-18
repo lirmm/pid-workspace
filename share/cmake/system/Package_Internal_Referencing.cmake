@@ -718,9 +718,9 @@ endif()
 list(FIND exclude_versions ${RES_VERSION} INDEX)
 
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
-	message("[PID] INFO : deploying version  ${RES_VERSION} of package ${package} ...")
-	build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
 	set(ALL_IS_OK FALSE)
+	message("[PID] INFO : deploying version  ${RES_VERSION} of package ${package} ...")
+	build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")	
 	if(ALL_IS_OK)
 		message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
 		set(${DEPLOYED} TRUE PARENT_SCOPE)
