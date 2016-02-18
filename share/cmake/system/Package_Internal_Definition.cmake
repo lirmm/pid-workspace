@@ -267,6 +267,10 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		)
 	endif()
 
+	if(BUILD_DEPENDENT_PACKAGES)
+		message("[PID] INFO : build process of ${PROJECT_NAME} will be recursive.")
+	endif()
+
 	if(NOT EXISTS ${CMAKE_BINARY_DIR}/debug OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory debug WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 	endif()
