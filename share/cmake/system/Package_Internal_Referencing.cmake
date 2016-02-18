@@ -366,7 +366,13 @@ endfunction(install_Package)
 ###
 function(deploy_Package_Repository IS_DEPLOYED package)
 if(${package}_ADDRESS)
+	message("[PID] INFO : cloning the repository of source package ${package}...")
 	clone_Repository(DEPLOYED ${package} ${${package}_ADDRESS})
+	if(DEPLOYED)
+		message("[PID] INFO : repository of source package ${package} has been cloned.")
+	else()
+		message("[PID] ERROR : cannot clone the repository of source package ${package}.")
+	endif()
 	set(${IS_DEPLOYED} ${DEPLOYED} PARENT_SCOPE)
 else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
@@ -467,6 +473,11 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
 else()
 	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
+endif()
+if(INSTALLED)
+	message("[PID] INFO : deployment of binary package ${package} (version ${version_string}) is finished.")
+else()
+	message("[PID] INFO : deployment of binary package ${package} (version ${version_string}) has failed.")
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 endfunction(deploy_Binary_Package)
@@ -597,10 +608,12 @@ if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
 	return()
 endif()
 set(${INSTALLED} TRUE PARENT_SCOPE)
+message("[PID] INFO : binary package ${package} (version ${version_string}) has been installed into the workspace.")
 endfunction(download_And_Install_Binary_Package)
 
 ###
 function(build_And_Install_Source DEPLOYED package version)
+	message("[PID] INFO : configuring version ${version} of package ${package} ...")
 	if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/CMakeCache.txt)	
 		#first step populating the cache if needed		
 		execute_process(
@@ -609,7 +622,6 @@ function(build_And_Install_Source DEPLOYED package version)
 			ERROR_QUIET OUTPUT_QUIET
 			)
 	endif()
-	message("[PID] INFO : configuring version ${version} of package ${package} ...")
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF  ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
@@ -619,7 +631,6 @@ function(build_And_Install_Source DEPLOYED package version)
 	execute_process(
 		COMMAND ${CMAKE_MAKE_PROGRAM} build force=true
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-		ERROR_QUIET OUTPUT_QUIET
 		)
 	if(EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
 		set(${DEPLOYED} TRUE PARENT_SCOPE)
@@ -659,9 +670,11 @@ endif()
 list(FIND exclude_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1)
 	set(ALL_IS_OK FALSE)
+	message("[PID] INFO : deploying package ${package} ...")
 	build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
 
 	if(ALL_IS_OK)
+		message("[PID] INFO : package ${package} has been deployed ...")
 		set(${DEPLOYED} TRUE PARENT_SCOPE)
 	else()
 		message("[PID]  ERROR : automatic build and install of package ${package} FAILED !!")
@@ -707,15 +720,17 @@ endif()
 list(FIND exclude_versions ${RES_VERSION} INDEX)
 
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
-	message("[PID] INFO : trying to deploy version  ${RES_VERSION} of package ${package} ...")
+	message("[PID] INFO : deploying version  ${RES_VERSION} of package ${package} ...")
 	build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
 	set(ALL_IS_OK FALSE)
 	if(ALL_IS_OK)
+		message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
 		set(${DEPLOYED} TRUE PARENT_SCOPE)
 	else()
-		message("[PID]  ERROR : automatic build and install of package ${package} FAILED !!")
+		message("[PID]  ERROR : automatic build and install of package ${package} (version ${RES_VERSION}) FAILED !!")
 	endif()
 else()
+	message("[PID] INFO : package ${package} is already up to date ...")
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 endif()
 

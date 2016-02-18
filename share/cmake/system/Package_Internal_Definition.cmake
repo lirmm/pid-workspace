@@ -92,7 +92,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 						 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/release/share/Info${PROJECT_NAME}.cmake
 						 -DUSE_MAKE_TOOL=${CMAKE_MAKE_PROGRAM}
 						 -P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Modification.cmake		
-			COMMENT "[PID build] Checking for modified source tree ..."
+			COMMENT "[PID] Checking for modified source tree ..."
     	)
 
 	# target to reconfigure the project
@@ -100,7 +100,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			COMMAND ${CMAKE_MAKE_PROGRAM} rebuild_cache
 			COMMAND ${CMAKE_COMMAND} -E touch ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
 			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources
-			COMMENT "[PID build] Reconfiguring the package ..."
+			COMMENT "[PID] Reconfiguring the package ..."
     	)	
 	add_custom_target(reconfigure
 			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt			
@@ -114,7 +114,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Update_PID_Package.cmake
-		COMMENT "[PID build] Updating the package ..."
+		COMMENT "[PID] Updating the package ..."
 		VERBATIM
 	)
 	
@@ -123,7 +123,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DWITH_OFFICIAL=$(official)
 						-P ${WORKSPACE_DIR}/share/cmake/system/Integrate_PID_Package.cmake
-		COMMENT "[PID build] Integrating modifications ..."
+		COMMENT "[PID] Integrating modifications ..."
 		VERBATIM
 	)
 
@@ -132,7 +132,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Synchronize_PID_Package_Version.cmake
-		COMMENT "[PID build] Synchronizing the package version with workspace current version..."
+		COMMENT "[PID] Synchronizing the package version with workspace current version..."
 	)
 
 	# checking that the build takes place on integration 
@@ -141,7 +141,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DFORCE_RELEASE_BUILD=$(force)
 						-P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Branch.cmake
-		COMMENT "[PID build] Checking branch..."
+		COMMENT "[PID] Checking branch..."
 	)
 	################################################################################################
 	############ creating custom targets to delegate calls to mode specific targets ################
@@ -152,7 +152,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		add_custom_target(build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID build] Building package (Release mode only) ..."
+			COMMENT "[PID] Building package (Release mode only) ..."
 			VERBATIM
 		)
 	else()
@@ -160,20 +160,20 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID build] Building package (Debug and Release modes) ..."
+			COMMENT "[PID] Building package (Debug and Release modes) ..."
 			VERBATIM
 		)
 	endif()
 	#mode specific build commands
 	add_custom_target(release
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
-		COMMENT "[PID build] Release build..."
+		COMMENT "[PID] Release build..."
 		VERBATIM
 	)
 
 	add_custom_target(debug
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
-		COMMENT "[PID build] Debug build..."
+		COMMENT "[PID] Debug build..."
 		VERBATIM
 	)
 
@@ -184,7 +184,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	add_custom_target(global_main ALL
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-		COMMENT "[PID build] Compiling and linking package (Debug and Release modes) ..."	
+		COMMENT "[PID] Compiling and linking package (Debug and Release modes) ..."	
 		VERBATIM
 	)
 
@@ -192,14 +192,14 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	add_custom_target(clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
-		COMMENT "[PID build] Cleaning package (Debug and Release modes) ..."
+		COMMENT "[PID] Cleaning package (Debug and Release modes) ..."
 		VERBATIM
 	)
 
 	# reference file generation target
 	add_custom_target(referencing
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} referencing
-		COMMENT "[PID build] Generating and installing reference to the package ..."
+		COMMENT "[PID] Generating and installing reference to the package ..."
 		VERBATIM
 	)
 
@@ -209,14 +209,14 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} install
-		COMMENT "[PID build] Installing the package ..."
+		COMMENT "[PID] Installing the package ..."
 		VERBATIM
 	)
 	
 	# uninstall target (cleaning the install tree) 
 	add_custom_target(uninstall
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} uninstall
-		COMMENT "[PID build] Uninstalling the package ..."
+		COMMENT "[PID] Uninstalling the package ..."
 		VERBATIM
 	)
 
@@ -225,7 +225,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		# test target (launch test units) 
 		add_custom_target(test
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} test
-			COMMENT "[PID build] Launching tests ..."
+			COMMENT "[PID] Launching tests ..."
 			VERBATIM
 		)
 	endif()
@@ -234,13 +234,13 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		# doc target (generation of API documentation) 
 		add_custom_target(doc
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} doc
-			COMMENT "[PID build] Generating API documentation ..."
+			COMMENT "[PID] Generating API documentation ..."
 			VERBATIM
 		)
 		# wiki target (generation of a wiki documenting the project) 
 		add_custom_target(wiki
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} wiki
-			COMMENT "[PID build] Creating/Updating wiki of the project ..."
+			COMMENT "[PID] Creating/Updating wiki of the project ..."
 			VERBATIM
 		)
 		add_dependencies(wiki doc)
@@ -253,7 +253,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package_install
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package_install			
-			COMMENT "[PID build] Generating and installing system binary package ..."
+			COMMENT "[PID] Generating and installing system binary package ..."
 			VERBATIM
 		)
 	endif()
@@ -262,7 +262,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		# target to add licensing information to all source files
 		add_custom_target(licensing
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} licensing
-			COMMENT "[PID build] Applying license to sources ..."
+			COMMENT "[PID] Applying license to sources ..."
 			VERBATIM
 		)
 	endif()
@@ -578,7 +578,7 @@ if(GENERATE_INSTALLER)
 		add_custom_target(	package_install
 					COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${PACKAGE_SYSTEM_STRING}.tar.gz
 					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.tar.gz
-					COMMENT "[PID build] installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.tar.gz in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
+					COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.tar.gz in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
 				)
 		include(CPack)
 	endif()

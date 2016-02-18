@@ -28,7 +28,7 @@ if(DEPENDENT_PACKAGES)
 		package_Already_Built(IS_BUILT ${dep_pack} ${PACKAGE_LAUCHING_BUILD})
 		if(NOT IS_BUILT)# if not built modifications
 			get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${dep_pack})
-			if(BRANCH_NAME AND NOT BRANCH_NAME STREQUAL "master") 
+			if(BRANCH_NAME AND NOT BRANCH_NAME STREQUAL "master")
 				#if on integration branch or another feature specific branch (not on master or on an "isolated" commit like one pointed by a tag)
 				message("[PID] INFO : Building ${dep_pack} ...")	
 				execute_process (COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${dep_pack}/build ${BUILD_TOOL} build)
