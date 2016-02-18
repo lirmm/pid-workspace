@@ -33,9 +33,9 @@ endif()
 
 foreach(version IN ITEMS ${available_versions})
 	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
-	if(	${COMPARE_MAJOR} EQUAL ${MAJOR} 
-		AND ${COMPARE_MINOR} EQUAL ${MINOR} 
-		AND (${COMPARE_PATCH} GREATER ${curr_max_patch_number}) OR (${COMPARE_PATCH} EQUAL ${curr_max_patch_number}))
+	if(	COMPARE_MAJOR EQUAL ${MAJOR} 
+		AND COMPARE_MINOR EQUAL ${MINOR} 
+		AND COMPARE_PATCH GREATER ${curr_max_patch_number})
 		set(curr_max_patch_number ${COMPARE_PATCH})# taking the last patch version available for this major.minor
 	endif()
 endforeach()
@@ -58,11 +58,11 @@ endif()
 set(curr_max_minor_number ${MINOR})
 foreach(version IN ITEMS ${available_versions})
 	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
-	if(${COMPARE_MAJOR} EQUAL ${MAJOR})
-		if(	${COMPARE_MINOR} EQUAL ${curr_max_minor_number} 
-			AND ${COMPARE_PATCH} GREATER ${curr_max_patch_number})
+	if(COMPARE_MAJOR EQUAL ${MAJOR})
+		if(	COMPARE_MINOR EQUAL ${curr_max_minor_number} 
+			AND COMPARE_PATCH GREATER ${curr_max_patch_number})
 			set(curr_max_patch_number ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
-		elseif((${COMPARE_MINOR} GREATER ${curr_max_minor_number}) OR (${COMPARE_PATCH} EQUAL ${curr_max_patch_number}))
+		elseif(COMPARE_MINOR GREATER ${curr_max_minor_number})
 			set(curr_max_patch_number ${COMPARE_PATCH})# taking the patch version of this major.minor
 			set(curr_max_minor_number ${COMPARE_MINOR})# taking the last minor version available for this major
 		endif()
