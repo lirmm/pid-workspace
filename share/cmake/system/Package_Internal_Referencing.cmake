@@ -176,9 +176,6 @@ if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #if no automatic downloa
 			deploy_Binary_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
 		endif()
 	endif()
-	if(IS_DEPLOYED)
-		message("[PID] INFO : the dependency package ${package} has been updated.")
-	endif()
 endif()
 endfunction(update_Package_Installed_Version)
 
