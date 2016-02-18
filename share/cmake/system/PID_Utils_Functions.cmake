@@ -587,7 +587,7 @@ endfunction(package_Already_Built)
 
 ###
 function(test_Modified_Components package build_tool result)
-
+set(${result} FALSE PARENT_SCOPE)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build/release ${build_tool} cmake_check_build_system OUTPUT_VARIABLE NEED_UPDATE)
 if(NOT NEED_UPDATE STREQUAL "")
 	set(${result} TRUE PARENT_SCOPE)

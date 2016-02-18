@@ -674,7 +674,7 @@ endfunction(deploy_Source_Package)
 
 ###
 function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT exclude_versions)
-
+set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
@@ -686,7 +686,7 @@ endif()
 
 get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
 if(NOT GIT_VERSIONS) #no version available => BUG
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	message("[PID] CRITICAL ERROR : no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
@@ -699,19 +699,26 @@ else()
 	select_Best_Version(RES_VERSION ${VERSION_MIN} "${VERSION_NUMBERS}")
 endif()
 if(NOT RES_VERSION)
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	message("[PID] ERROR : no version found for source package ${package} !! Maybe this is due to a malformed package. Please contact the administrator of this package.")
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
+
 list(FIND exclude_versions ${RES_VERSION} INDEX)
-set(ALL_IS_OK FALSE)
+
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
+	message("[PID] INFO : trying to deploy version  ${RES_VERSION} of package ${package} ...")
 	build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
+	set(ALL_IS_OK FALSE)
+	if(ALL_IS_OK)
+		set(${DEPLOYED} TRUE PARENT_SCOPE)
+	else()
+		message("[PID]  ERROR : automatic build and install of package ${package} FAILED !!")
+	endif()
 else()
-	set(ALL_IS_OK TRUE)
+	set(${DEPLOYED} TRUE PARENT_SCOPE)
 endif()
 
-set(${DEPLOYED} ${ALL_IS_OK} PARENT_SCOPE)
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Package_Version)
 
