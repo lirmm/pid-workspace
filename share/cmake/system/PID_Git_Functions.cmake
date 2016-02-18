@@ -358,7 +358,7 @@ endfunction()
 
 ### function called when deploying a package from reference files
 function(clone_Repository IS_DEPLOYED package url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages git clone ${url})
 if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
 	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch origin OUTPUT_QUIET ERROR_QUIET)
