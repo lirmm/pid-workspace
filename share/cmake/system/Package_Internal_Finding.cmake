@@ -710,12 +710,12 @@ endfunction(resolve_External_Package_Dependency)
 ############################################################################
 macro(exitFindScript package message_to_send)
 	if(${package}_FIND_REQUIRED)
-		message(SEND_ERROR ${message_to_send})#fatal error
+		message(SEND_ERROR "${message_to_send}")#fatal error
 		return()
 	elseif(${package}_FIND_QUIETLY)
 		return()#simply exitting
 	else()
-		message(STATUS ${message_to_send})#simple notification message
+		message(STATUS "${message_to_send}")#simple notification message
 		return() 
 	endif()
 endmacro(exitFindScript)
