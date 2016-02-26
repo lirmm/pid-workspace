@@ -165,7 +165,7 @@ if (UNIX)
 	find_path(x11_XTest_INCLUDE_PATH X11/extensions/XTest.h )
 	find_library(x11_XTest_LIB Xtst)
 	if (x11_XTest_INCLUDE_PATH AND x11_XTest_LIB)
-		set(x11_XTest_LIB -lXTest CACHE INTERNAL "") #remove from user cache
+		set(x11_XTest_LIB -lXtst CACHE INTERNAL "") #remove from user cache
 		set(x11_EXTENSI0NS_LIBS ${x11_EXTENSI0NS_LIBS} ${x11_XTest_LIB})
 	else()
 		unset(x11_XTest_LIB CACHE)#remove from cache
