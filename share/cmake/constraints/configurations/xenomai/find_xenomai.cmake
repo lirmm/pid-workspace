@@ -28,8 +28,10 @@ if(UNIX AND NOT APPLE)
 
 		set(xenomai_LINKS ${XENO_LDFLAGS} -L${XENO_LIBS_DIR} -lcobalt)
 		set(xenomai_CFLAGS ${XENO_CFLAGS})
+		set(xenomai_COBALT_LIB_PATH ${XENO_LIBS_DIR}/libcobalt.so)
 	endif()
 endif()
 unset(XENO_LDFLAGS)
 unset(XENO_CFLAGS)
 unset(XENO_CONFIG_PATH)
+
