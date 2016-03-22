@@ -276,6 +276,15 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		)
 	endif()
 
+	add_custom_target(list_dependencies
+		COMMAND ${CMAKE_COMMAND} -E  echo Listing dependencies in Release mode
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
+		COMMAND ${CMAKE_COMMAND} -E  echo Listing dependencies in Debug mode
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} list_dependencies
+		COMMENT "[PID] listing dependencies of the package ..."
+		VERBATIM
+	)
+
 	if(BUILD_DEPENDENT_PACKAGES)
 		message("[PID] INFO : build process of ${PROJECT_NAME} will be recursive.")
 	endif()
@@ -511,6 +520,7 @@ configure_Wiki_Pages() # generating the home page markdown file for the project 
 generate_API() #generating the API documentation configuration file and the rule to launch doxygen and install the doc
 clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
 generate_Info_File() #generating a cmake "info" file containing info about source code of components 
+generate_Dependencies_File() #generating a cmake "dependencies" file containing information about dependencies
 
 #installing specific folders of the share sub directory
 if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)
@@ -634,6 +644,16 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	)
 	
 endif()
+
+add_custom_target(list_dependencies
+	COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+					-DREQUIRED_PACKAGE=${PROJECT_NAME}
+					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
+					-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+					-P ${WORKSPACE_DIR}/share/cmake/system/Listing_PID_Package_Dependencies.cmake
+	VERBATIM
+)
 
 ###############################################################################
 ######### creating build target for easy sequencing all make commands #########

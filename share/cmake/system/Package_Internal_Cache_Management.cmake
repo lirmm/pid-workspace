@@ -38,6 +38,8 @@ option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OF
 option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
 option(BUILD_DEPENDENT_PACKAGES "the build will leads to the rebuild of its dependent package that lies in the workspace as source packages" ON)
+
+option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode (higgen by default)" OFF)
 endmacro(declare_Mode_Cache_Options)
 
 ###
@@ -150,6 +152,7 @@ set(BUILD_AND_RUN_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTS_IN_DEBUG OFF CACHE BOOL "" FORCE)
 set(BUILD_RELEASE_ONLY OFF CACHE BOOL "" FORCE)
 set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
+set(ADDITIONNAL_DEBUG_INFO OFF CACHE BOOL "" FORCE)
 #default ON options
 set(ENABLE_PARALLEL_BUILD ON CACHE BOOL "" FORCE)
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
@@ -1081,5 +1084,73 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	)
 endif()
 endmacro(generate_Use_File)
+
+
+############ function used to create the Dep<package>.cmake file of the package  ###########
+macro(generate_Dependencies_File)
+get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
+set(file ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
+
+############# FIRST PART : statically declared dependencies ################
+
+# 1) platforms
+file(APPEND ${file} "set(TARGET_PLATFORM${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_PLATFORM${MODE_SUFFIX})
+	file(APPEND ${file} "set(TARGET_PLATFORM_OS${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_OS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(TARGET_PLATFORM_ARCH${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_ARCH${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(TARGET_PLATFORM_CONFIGURATION${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_CONFIGURATION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+endif()
+
+# 2) external packages
+file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+file(APPEND ${file} "set(TARGET_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+
+if(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX})
+	foreach(a_ext_dep IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
+		file(APPEND ${file} "set(TARGET_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX})
+			file(APPEND ${file} "set(TARGET_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+		else()
+			file(APPEND ${file} "set(TARGET_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+		endif()
+	endforeach()
+endif()
+
+# 3) native package dependencies
+file(APPEND ${file} "#### declaration of package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+file(APPEND ${file} "set(TARGET_NATIVE_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_DEPENDENCIES${MODE_SUFFIX})
+	foreach(a_dep IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${MODE_SUFFIX}})
+		file(APPEND ${file} "set(TARGET_NATIVE_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		if(${PROJECT_NAME}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX})
+			file(APPEND ${file} "set(TARGET_NATIVE_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+		else()
+			file(APPEND ${file} "set(TARGET_NATIVE_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+		endif()
+	endforeach()
+endif()
+
+############# SECOND PART : dynamically found dependencies according to current workspace content ################
+file(APPEND ${file} "set(CURRENT_NATIVE_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_ALL_USED_PACKAGES} CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_ALL_USED_PACKAGES)
+	foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
+		if(${a_used_package}_FOUND)
+			file(APPEND ${file} "set(CURRENT_NATIVE_DEPENDENCY_${a_used_package}_VERSION${MODE_SUFFIX} ${${a_used_package}_VERSION_STRING} CACHE INTERNAL \"\")\n")
+			file(APPEND ${file} "set(CURRENT_NATIVE_DEPENDENCY_${a_used_package}_ALL_VERSION${MODE_SUFFIX} ${${a_used_package}_ALL_REQUIRED_VERSIONS} CACHE INTERNAL \"\")\n")
+		endif()
+	endforeach()
+endif()
+
+file(APPEND ${file} "set(CURRENT_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES} CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES)
+	foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES})
+		if(${a_used_package}_FOUND)
+			file(APPEND ${file} "set(CURRENT_EXTERNAL_DEPENDENCY_${a_used_package}_VERSION${MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_used_package}_VERSION${VAR_SUFFIX}} CACHE INTERNAL \"\")\n")
+			file(APPEND ${file} "set(CURRENT_EXTERNAL_DEPENDENCY_${a_used_package}_ALL_VERSION${MODE_SUFFIX} ${${a_used_package}_ALL_REQUIRED_VERSIONS} CACHE INTERNAL \"\")\n")
+		endif()
+	endforeach()
+
+endif()
+endmacro(generate_Dependencies_File)
 
 

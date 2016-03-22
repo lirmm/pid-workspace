@@ -303,7 +303,7 @@ endfunction(create_External_Dependency_Target)
 
 function (create_Dependency_Target dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(NOT TARGET 	${dep_package}-${dep_component}${TARGET_SUFFIX})#target does not exist
+if(NOT TARGET 	${dep_package}-${dep_component}${TARGET_SUFFIX})#check that this target does not exist, otherwise naming conflict
 #create the dependent target (#may produce recursion to build undirect dependencies of targets
 	if(${dep_package}_${dep_component}_TYPE STREQUAL "APP"
 		OR ${dep_package}_${dep_component}_TYPE STREQUAL "EXAMPLE")
@@ -387,7 +387,7 @@ function(create_Imported_Static_Library_Target package component mode)
 endfunction(create_Imported_Static_Library_Target)
 
 function(create_Imported_Shared_Library_Target package component mode)
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
+	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 	add_library(${package}-${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)
 	
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
