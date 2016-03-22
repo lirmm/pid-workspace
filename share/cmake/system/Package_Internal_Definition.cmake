@@ -276,14 +276,20 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		)
 	endif()
 
-	add_custom_target(list_dependencies
-		COMMAND ${CMAKE_COMMAND} -E  echo Listing dependencies in Release mode
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
-		COMMAND ${CMAKE_COMMAND} -E  echo Listing dependencies in Debug mode
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} list_dependencies
-		COMMENT "[PID] listing dependencies of the package ..."
-		VERBATIM
-	)
+	if(ADDITIONNAL_DEBUG_INFO)
+		add_custom_target(list_dependencies
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} list_dependencies
+			COMMENT "[PID] listing dependencies of the package ..."
+			VERBATIM
+		)
+	else()
+		add_custom_target(list_dependencies
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
+			COMMENT "[PID] listing dependencies of the package ..."
+			VERBATIM
+		)
+	endif()
 
 	if(BUILD_DEPENDENT_PACKAGES)
 		message("[PID] INFO : build process of ${PROJECT_NAME} will be recursive.")
@@ -647,7 +653,7 @@ endif()
 
 add_custom_target(list_dependencies
 	COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-					-DREQUIRED_PACKAGE=${PROJECT_NAME}
+					-DPROJECT_NAME=${PROJECT_NAME}
 					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
 					-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
