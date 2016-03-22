@@ -160,20 +160,26 @@ endfunction(resolve_Package_Dependencies)
 
 ### function called by find script subfunctions to automatically update a package, if possible 
 function(update_Package_Installed_Version package major minor exact already_installed)
-first_Called_Build_Mode(FIRST_TIME) # do the update only once per configuration
+first_Called_Build_Mode(FIRST_TIME) # do the update only once per global configuration of the project
 if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #if no automatic download then simply do nothing
-	package_Source_Exists_In_Workspace(SOURCE_EXIST RETURNED_PATH ${package})
-	if(SOURCE_EXIST) # updating the source package, if possible
-		if(NOT major STREQUAL "" AND NOT minor STREQUAL "") 
-			deploy_Source_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")	
-		else()
-			deploy_Source_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
+	list(FIND ALREADY_UPDATED_PACKAGES ${package} INDEX)
+	if(INDEX EQUAL -1) #package has not been already updated during this run
+		package_Source_Exists_In_Workspace(SOURCE_EXIST RETURNED_PATH ${package})
+		if(SOURCE_EXIST) # updating the source package, if possible
+			if(NOT major STREQUAL "" AND NOT minor STREQUAL "") 
+				deploy_Source_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")	
+			else()
+				deploy_Source_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
+			endif()
+		else() # updating the binary package, if possible
+			if(NOT major STREQUAL "" AND NOT minor STREQUAL "")
+				deploy_Binary_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
+			else()
+				deploy_Binary_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
+			endif()
 		endif()
-	else() # updating the binary package, if possible
-		if(NOT major STREQUAL "" AND NOT minor STREQUAL "")
-			deploy_Binary_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
-		else()
-			deploy_Binary_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
+		if(IS_DEPLOYED)
+			list(APPEND ALREADY_UPDATED_PACKAGES ${package})
 		endif()
 	endif()
 endif()
