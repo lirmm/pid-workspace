@@ -31,6 +31,8 @@ option(BUILD_API_DOC "Package generates the HTML API documentation" OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF "BUILD_API_DOC" OFF)
 
 option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
+CMAKE_DEPENDENT_OPTION(BUILD_TESTS_IN_DEBUG "Package build and run test in debug mode also" OFF "BUILD_AND_RUN_TESTS" OFF)
+
 option(BUILD_RELEASE_ONLY "Package only build release version" OFF)
 option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OFF)
 option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
@@ -145,6 +147,7 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_LATEX_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_AND_RUN_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTS_IN_DEBUG OFF CACHE BOOL "" FORCE)
 set(BUILD_RELEASE_ONLY OFF CACHE BOOL "" FORCE)
 set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
 #default ON options

@@ -222,12 +222,21 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 
 	if(BUILD_AND_RUN_TESTS)
-		# test target (launch test units) 
-		add_custom_target(test
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} test
-			COMMENT "[PID] Launching tests ..."
-			VERBATIM
-		)
+		# test target (launch test units)
+		if(BUILD_TESTS_IN_DEBUG)
+			add_custom_target(test
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} test
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} test
+				COMMENT "[PID] Launching tests ..."
+				VERBATIM
+			)
+		else()
+			add_custom_target(test
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} test
+				COMMENT "[PID] Launching tests ..."
+				VERBATIM
+			)
+		endif()
 	endif()
 
 	if(BUILD_API_DOC)
@@ -483,9 +492,12 @@ endif()
 # recursive call into subdirectories to build/install/test the package
 add_subdirectory(src)
 add_subdirectory(apps)
-if(BUILD_AND_RUN_TESTS AND ${CMAKE_BUILD_TYPE} MATCHES Release)
-	enable_testing()
-	add_subdirectory(test)
+if(BUILD_AND_RUN_TESTS)
+ 	if(	${CMAKE_BUILD_TYPE} MATCHES Release 
+		OR (${CMAKE_BUILD_TYPE} MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
+		enable_testing()
+		add_subdirectory(test)
+	endif()
 endif()
 add_subdirectory(share)
 ##########################################################
@@ -670,12 +682,22 @@ if(GENERATE_INSTALLER)
 			endif(BUILD_API_DOC)
 		endif(BUILD_AND_RUN_TESTS)
 	else()#debug
-		add_custom_target(build 
-			COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-			COMMAND ${CMAKE_MAKE_PROGRAM} install
-			COMMAND ${CMAKE_MAKE_PROGRAM} package
-			COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-		) 
+		if(BUILD_AND_RUN_TESTS AND BUILD_DEBUG_TESTS)
+			add_custom_target(build 
+				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_MAKE_PROGRAM} install
+				COMMAND ${CMAKE_MAKE_PROGRAM} package
+				COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+			)
+		else()
+			add_custom_target(build 
+				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_MAKE_PROGRAM} install
+				COMMAND ${CMAKE_MAKE_PROGRAM} package
+				COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+			) 
+		endif()
 	endif()
 
 else(GENERATE_INSTALLER)
@@ -710,10 +732,18 @@ else(GENERATE_INSTALLER)
 			endif(BUILD_API_DOC)
 		endif()
 	else()#debug
-		add_custom_target(build 
-			COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-			COMMAND ${CMAKE_MAKE_PROGRAM} install
-		) 
+		if(BUILD_AND_RUN_TESTS AND BUILD_DEBUG_TESTS)
+			add_custom_target(build 
+				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_MAKE_PROGRAM} install
+			)
+		else()
+			add_custom_target(build 
+				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+				COMMAND ${CMAKE_MAKE_PROGRAM} install
+			) 
+		endif()
 	endif()
 endif(GENERATE_INSTALLER)
 
