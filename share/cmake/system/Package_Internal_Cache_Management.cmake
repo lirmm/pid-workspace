@@ -590,6 +590,7 @@ reset_Platforms_Variables()
 reset_To_Install_Packages()
 reset_To_Install_External_Packages()
 reset_Wiki_Info()
+set(ALREADY_UPDATED_PACKAGES CACHE INTERNAL "")
 endfunction(reset_All_Component_Cached_Variables)
 
 function(init_Component_Description component description usage)
