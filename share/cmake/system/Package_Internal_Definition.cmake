@@ -657,6 +657,7 @@ add_custom_target(list_dependencies
 					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
 					-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+					-DFLAT_PRESENTATION="$(flat)"
 					-P ${WORKSPACE_DIR}/share/cmake/system/Listing_PID_Package_Dependencies.cmake
 	VERBATIM
 )

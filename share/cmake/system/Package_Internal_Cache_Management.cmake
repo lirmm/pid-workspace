@@ -1097,13 +1097,16 @@ file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_ALL_VERSION${MO
 file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${MODE_SUFFIX} ${${package}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
+#platform info
+file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_PLATFORM${MODE_SUFFIX} ${${package}_PLATFORM} CACHE INTERNAL \"\")\n")
+file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_PLATFORM_CONFIGURATION${MODE_SUFFIX} ${${package}_PLATFORM_${${package}_PLATFORM}_CONFIGURATION} CACHE INTERNAL \"\")\n")
 
 #recursion on external dependencies
-list(APPEND ALREADY_MANAGED ${PACKAGES_ALREADY_MANAGED} ${package})
+set(ALREADY_MANAGED ${PACKAGES_ALREADY_MANAGED} ${package})
 set(NEWLY_MANAGED ${package})
 
 foreach(a_used_package IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
-	list(FIND PACKAGES_ALREADY_MANAGED ${a_used_package} INDEX)
+	list(FIND ALREADY_MANAGED ${a_used_package} INDEX)
 	if(INDEX EQUAL -1) #not managed yet
 		current_External_Dependencies_For_Package(${a_used_package} ${depfile} NEW_LIST)
 		list(APPEND ALREADY_MANAGED ${NEW_LIST})
@@ -1111,10 +1114,9 @@ foreach(a_used_package IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}
 	endif()	
 endforeach()
 
-
 #recursion on dependencies
 foreach(a_used_package IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
-	list(FIND PACKAGES_ALREADY_MANAGED_MANAGED ${a_used_package} INDEX)
+	list(FIND ALREADY_MANAGED ${a_used_package} INDEX)
 	if(INDEX EQUAL -1) #not managed yet
 		current_Native_Dependencies_For_Package(${a_used_package} ${depfile} "${ALREADY_MANAGED}" NEW_LIST)
 		list(APPEND ALREADY_MANAGED ${NEW_LIST})
@@ -1131,6 +1133,9 @@ get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
 #information on package to register
 file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_VERSION${MODE_SUFFIX} ${${package}_VERSION_STRING} CACHE INTERNAL \"\")\n")
 file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_ALL_VERSION${MODE_SUFFIX} ${${package}_ALL_REQUIRED_VERSIONS} CACHE INTERNAL \"\")\n")
+
+#no platform info for external libraries
+
 set(NEWLY_MANAGED ${package})
 set(${PACKAGES_NEWLY_MANAGED} ${NEWLY_MANAGED} PARENT_SCOPE)
 endfunction(current_External_Dependencies_For_Package)
@@ -1148,6 +1153,7 @@ file(APPEND ${file} "set(TARGET_PLATFORM${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFOR
 if(${PROJECT_NAME}_PLATFORM${MODE_SUFFIX})
 	file(APPEND ${file} "set(TARGET_PLATFORM_OS${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_OS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(TARGET_PLATFORM_ARCH${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_ARCH${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+
 	file(APPEND ${file} "set(TARGET_PLATFORM_CONFIGURATION${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_CONFIGURATION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 endif()
 
@@ -1180,6 +1186,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${MODE_SUFFIX})
 	endforeach()
 endif()
 
+
 set(NEWLY_MANAGED)
 set(ALREADY_MANAGED)
 ############# SECOND PART : dynamically found dependencies according to current workspace content ################
@@ -1194,9 +1201,12 @@ endif()
 
 file(APPEND ${file} "set(CURRENT_NATIVE_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_ALL_USED_PACKAGES} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_ALL_USED_PACKAGES)
-	foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})		
-		current_Native_Dependencies_For_Package(${a_used_package} ${file} "${ALREADY_MANAGED}" NEWLY_MANAGED)
-		list(APPEND ALREADY_MANAGED ${NEWLY_MANAGED})
+	foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
+		list(FIND ALREADY_MANAGED ${a_used_package} INDEX)
+		if(INDEX EQUAL -1) #not managed yet
+			current_Native_Dependencies_For_Package(${a_used_package} ${file} "${ALREADY_MANAGED}" NEWLY_MANAGED)
+			list(APPEND ALREADY_MANAGED ${NEWLY_MANAGED})
+		endif()
 	endforeach()
 endif()
 

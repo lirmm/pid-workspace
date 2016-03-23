@@ -18,6 +18,7 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
+###
 function(print_Current_Dependencies nb_tabs package)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 set(begin_string "")
@@ -35,10 +36,28 @@ foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${VAR_SU
 	print_Current_Dependencies(${index_plus} ${dep})
 endforeach()
 
-foreach(dep IN ITEMS ${CURRENT_EXTERNAL_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 	message("${begin_string}- ${dep}: ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
 endforeach()
 endfunction(print_Current_Dependencies)
+
+###
+function(agregate_All_Platform_Configurations RES_CONFIGURATIONS)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+set(all_configs ${TARGET_PLATFORM_CONFIGURATION${VAR_SUFFIX}})
+
+foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
+	list(APPEND all_configs ${CURRENT_NATIVE_DEPENDENCY_${dep}_PLATFORM_CONFIGURATION${VAR_SUFFIX}})
+	
+endforeach()
+foreach(dep IN ITEMS ${CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+	list(APPEND all_configs ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_PLATFORM_CONFIGURATION${VAR_SUFFIX}})
+endforeach()
+if(all_configs)
+	list(REMOVE_DUPLICATES all_configs)
+endif()
+set(${RES_CONFIGURATIONS} ${all_configs} PARENT_SCOPE)
+endfunction(agregate_All_Platform_Configurations)
 
 ###################################################################################
 ######## this is the script file to call to list a package's dependencies #########
@@ -56,19 +75,35 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 	message("--------------Debug Mode----------------")
 	endif()
 
-	message("target platform: ${TARGET_PLATFORM${VAR_SUFFIX}} (os=${TARGET_PLATFORM_OS${VAR_SUFFIX}}, arch=${TARGET_PLATFORM_ARCH${MODE_SUFFIX}})")
-
-	if(TARGET_NATIVE_DEPENDENCIES${VAR_SUFFIX})
-		foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
-			message("+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
-			print_Current_Dependencies(1 ${dep})
+	message("target platform: ${TARGET_PLATFORM${VAR_SUFFIX}} (os=${TARGET_PLATFORM_OS${VAR_SUFFIX}}, arch=${TARGET_PLATFORM_ARCH${VAR_SUFFIX}})")
+	agregate_All_Platform_Configurations(ALL_CONFIGURATIONS)
+	if(ALL_CONFIGURATIONS)
+		foreach(config IN ITEMS ${ALL_CONFIGURATIONS})
+			message("* ${config}")
 		endforeach()
 	endif()
-
-	if(TARGET_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	set(DO_FLAT ${FLAT_PRESENTATION})
+	if(DO_FLAT MATCHES true)
+		foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
+			message("+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+		endforeach()
 		foreach(dep IN ITEMS ${CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 			message("- ${dep}: ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
 		endforeach()
+
+	else()
+		if(TARGET_NATIVE_DEPENDENCIES${VAR_SUFFIX})
+			foreach(dep IN ITEMS ${TARGET_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
+				message("+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+				print_Current_Dependencies(1 ${dep})
+			endforeach()
+		endif()
+
+		if(TARGET_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+			foreach(dep IN ITEMS ${TARGET_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+				message("- ${dep}: ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+			endforeach()
+		endif()
 	endif()
 else()
 	message("[PID] Information on dependencies of module ${PROJECT_NAME} cannot be found.")

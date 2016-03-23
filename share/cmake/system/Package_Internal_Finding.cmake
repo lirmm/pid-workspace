@@ -197,6 +197,7 @@ if(VERSION_DIRS)
 	endforeach()
 	if(highest_version)
 		set(${VERSION_FOUND} ${highest_version} PARENT_SCOPE)
+		document_External_Version_Strings(${package} ${highest_version})
 	endif()
 endif()
 endfunction()
@@ -217,6 +218,7 @@ if(VERSION_DIRS)
 	endforeach()
 	if(highest_version)
 		set(${VERSION_FOUND} ${highest_version} PARENT_SCOPE)
+		document_External_Version_Strings(${package} ${highest_version})
 	endif()
 endif()
 endfunction()
@@ -231,7 +233,8 @@ if(VERSION_DIRS)
 	if(INDEX EQUAL -1)
 		return()
 	endif()
-	set(${VERSION_FOUND} ${version} PARENT_SCOPE)		
+	set(${VERSION_FOUND} ${version} PARENT_SCOPE)
+	document_External_Version_Strings(${package} ${version})	
 endif()
 endfunction(check_External_Exact_Version)
 
@@ -820,8 +823,8 @@ endmacro(finding_Package)
 
 
 ##find script for external packages
-# requires ${package}_PID_KNOWN_VERSION to be before calling this macro, set with at least one exact version (MAJOR.MINOR.PATCH)
-# optionnaly ${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO can be set to define which version (MAJOR.MINOR.PATCH) is no more compatible with ${version}. Can be done for any version defined has known.
+# requires ${package}_PID_KNOWN_VERSION to be defined before calling this macro, set with at least one exact version (MAJOR.MINOR.PATCH)
+# optionnaly ${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO can be set to define which version (MAJOR.MINOR.PATCH) is no more compatible with ${version}. Can be done for any version defined as "known".
 macro(finding_External_Package package)
 
 set(${package}_FOUND FALSE CACHE INTERNAL "")

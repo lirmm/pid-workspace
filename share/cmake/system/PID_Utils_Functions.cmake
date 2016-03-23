@@ -163,6 +163,14 @@ function (document_Version_Strings package_name major minor patch)
 	set(${package_name}_VERSION_RELATIVE_PATH "${major}.${minor}.${patch}" CACHE INTERNAL "")
 endfunction(document_Version_Strings)
 
+
+###
+function (document_External_Version_Strings package version)
+	set(${package}_VERSION_STRING "${version}" CACHE INTERNAL "")
+	set(${package}_VERSION_RELATIVE_PATH "${version}" CACHE INTERNAL "")
+endfunction(document_External_Version_Strings)
+
+
 ###
 function(get_Version_String_Numbers version_string major minor patch)
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" A_VERSION "${version_string}")
