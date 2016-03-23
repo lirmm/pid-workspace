@@ -270,7 +270,7 @@ endfunction(fill_Component_Target_With_External_Dependency)
 ############################################################################
 function (create_All_Imported_Dependency_Targets package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-#collect only the package dependencies, not the internnal ones
+#collect only the package dependencies, not the internal ones
 foreach(a_dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 	#for all direct internal dependencies	
 	create_Dependency_Target(${package} ${a_dep_component} ${mode})

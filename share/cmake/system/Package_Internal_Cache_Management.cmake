@@ -1087,10 +1087,60 @@ endmacro(generate_Use_File)
 
 
 ############ function used to create the Dep<package>.cmake file of the package  ###########
+
+###
+function(current_Native_Dependencies_For_Package package depfile PACKAGES_ALREADY_MANAGED PACKAGES_NEWLY_MANAGED)
+get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
+#information on package to register
+file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_VERSION${MODE_SUFFIX} ${${package}_VERSION_STRING} CACHE INTERNAL \"\")\n")
+file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_ALL_VERSION${MODE_SUFFIX} ${${package}_ALL_REQUIRED_VERSIONS} CACHE INTERNAL \"\")\n")
+file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${MODE_SUFFIX} ${${package}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+
+
+#recursion on external dependencies
+list(APPEND ALREADY_MANAGED ${PACKAGES_ALREADY_MANAGED} ${package})
+set(NEWLY_MANAGED ${package})
+
+foreach(a_used_package IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}})
+	list(FIND PACKAGES_ALREADY_MANAGED ${a_used_package} INDEX)
+	if(INDEX EQUAL -1) #not managed yet
+		current_External_Dependencies_For_Package(${a_used_package} ${depfile} NEW_LIST)
+		list(APPEND ALREADY_MANAGED ${NEW_LIST})
+		list(APPEND NEWLY_MANAGED ${NEW_LIST})
+	endif()	
+endforeach()
+
+
+#recursion on dependencies
+foreach(a_used_package IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
+	list(FIND PACKAGES_ALREADY_MANAGED_MANAGED ${a_used_package} INDEX)
+	if(INDEX EQUAL -1) #not managed yet
+		current_Native_Dependencies_For_Package(${a_used_package} ${depfile} "${ALREADY_MANAGED}" NEW_LIST)
+		list(APPEND ALREADY_MANAGED ${NEW_LIST})
+		list(APPEND NEWLY_MANAGED ${NEW_LIST})
+	endif()
+endforeach()
+
+set(${PACKAGES_NEWLY_MANAGED} ${NEWLY_MANAGED} PARENT_SCOPE)
+endfunction(current_Native_Dependencies_For_Package)
+
+###
+function(current_External_Dependencies_For_Package package depfile PACKAGES_NEWLY_MANAGED)
+get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
+#information on package to register
+file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_VERSION${MODE_SUFFIX} ${${package}_VERSION_STRING} CACHE INTERNAL \"\")\n")
+file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_ALL_VERSION${MODE_SUFFIX} ${${package}_ALL_REQUIRED_VERSIONS} CACHE INTERNAL \"\")\n")
+set(NEWLY_MANAGED ${package})
+set(${PACKAGES_NEWLY_MANAGED} ${NEWLY_MANAGED} PARENT_SCOPE)
+endfunction(current_External_Dependencies_For_Package)
+
+
+###
 macro(generate_Dependencies_File)
 get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
 set(file ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
-
+file(WRITE ${file} "")
 ############# FIRST PART : statically declared dependencies ################
 
 # 1) platforms
@@ -1130,27 +1180,26 @@ if(${PROJECT_NAME}_DEPENDENCIES${MODE_SUFFIX})
 	endforeach()
 endif()
 
+set(NEWLY_MANAGED)
+set(ALREADY_MANAGED)
 ############# SECOND PART : dynamically found dependencies according to current workspace content ################
-file(APPEND ${file} "set(CURRENT_NATIVE_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_ALL_USED_PACKAGES} CACHE INTERNAL \"\")\n")
-if(${PROJECT_NAME}_ALL_USED_PACKAGES)
-	foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
-		if(${a_used_package}_FOUND)
-			file(APPEND ${file} "set(CURRENT_NATIVE_DEPENDENCY_${a_used_package}_VERSION${MODE_SUFFIX} ${${a_used_package}_VERSION_STRING} CACHE INTERNAL \"\")\n")
-			file(APPEND ${file} "set(CURRENT_NATIVE_DEPENDENCY_${a_used_package}_ALL_VERSION${MODE_SUFFIX} ${${a_used_package}_ALL_REQUIRED_VERSIONS} CACHE INTERNAL \"\")\n")
-		endif()
-	endforeach()
-endif()
 
 file(APPEND ${file} "set(CURRENT_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES)
 	foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES})
-		if(${a_used_package}_FOUND)
-			file(APPEND ${file} "set(CURRENT_EXTERNAL_DEPENDENCY_${a_used_package}_VERSION${MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_used_package}_VERSION${VAR_SUFFIX}} CACHE INTERNAL \"\")\n")
-			file(APPEND ${file} "set(CURRENT_EXTERNAL_DEPENDENCY_${a_used_package}_ALL_VERSION${MODE_SUFFIX} ${${a_used_package}_ALL_REQUIRED_VERSIONS} CACHE INTERNAL \"\")\n")
-		endif()
+		current_External_Dependencies_For_Package(${a_used_package} ${file} NEWLY_MANAGED)
+		list(APPEND ALREADY_MANAGED ${NEWLY_MANAGED})
 	endforeach()
-
 endif()
+
+file(APPEND ${file} "set(CURRENT_NATIVE_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_ALL_USED_PACKAGES} CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_ALL_USED_PACKAGES)
+	foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})		
+		current_Native_Dependencies_For_Package(${a_used_package} ${file} "${ALREADY_MANAGED}" NEWLY_MANAGED)
+		list(APPEND ALREADY_MANAGED ${NEWLY_MANAGED})
+	endforeach()
+endif()
+
 endmacro(generate_Dependencies_File)
 
 

@@ -18,6 +18,27 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
+function(print_Current_Dependencies nb_tabs package)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+set(begin_string "")
+set(index ${nb_tabs})
+set(index_plus)
+math (EXPR index_plus '${index}+1')
+ 
+while(index GREATER 0)
+	set(begin_string "${begin_string}	")
+	math(EXPR index '${index}-1')
+endwhile()
+
+foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${VAR_SUFFIX}})
+	message("${begin_string}+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+	print_Current_Dependencies(${index_plus} ${dep})
+endforeach()
+
+foreach(dep IN ITEMS ${CURRENT_EXTERNAL_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+	message("${begin_string}- ${dep}: ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+endforeach()
+endfunction(print_Current_Dependencies)
 
 ###################################################################################
 ######## this is the script file to call to list a package's dependencies #########
@@ -38,20 +59,18 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 	message("target platform: ${TARGET_PLATFORM${VAR_SUFFIX}} (os=${TARGET_PLATFORM_OS${VAR_SUFFIX}}, arch=${TARGET_PLATFORM_ARCH${MODE_SUFFIX}})")
 
 	if(TARGET_NATIVE_DEPENDENCIES${VAR_SUFFIX})
-		message("native dependencies:")
-		foreach(dep IN ITEMS ${TARGET_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
-			message("- ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+		foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
+			message("+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+			print_Current_Dependencies(1 ${dep})
 		endforeach()
 	endif()
 
 	if(TARGET_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
-		message("external dependencies:")
-		foreach(dep IN ITEMS ${TARGET_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+		foreach(dep IN ITEMS ${CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 			message("- ${dep}: ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
 		endforeach()
 	endif()
 else()
-
 	message("[PID] Information on dependencies of module ${PROJECT_NAME} cannot be found.")
 endif()
 
