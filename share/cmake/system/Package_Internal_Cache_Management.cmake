@@ -593,11 +593,13 @@ reset_Wiki_Info()
 set(ALREADY_UPDATED_PACKAGES CACHE INTERNAL "")
 endfunction(reset_All_Component_Cached_Variables)
 
+###
 function(init_Component_Description component description usage)
 generate_Formatted_String("${description}" RES_STRING)
 set(${PROJECT_NAME}_${component}_DESCRIPTION "${RES_STRING}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_USAGE_INCLUDES "${usage}" CACHE INTERNAL "")
 endfunction(init_Component_Description)
+
 ###
 function(mark_As_Declared component)
 set(${PROJECT_NAME}_DECLARED_COMPS ${${PROJECT_NAME}_DECLARED_COMPS} ${component} CACHE INTERNAL "")

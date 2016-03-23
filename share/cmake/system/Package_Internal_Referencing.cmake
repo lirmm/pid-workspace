@@ -172,7 +172,8 @@ if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #if no automatic downloa
 				deploy_Source_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
 			endif()
 		else() # updating the binary package, if possible
-			if(NOT major STREQUAL "" AND NOT minor STREQUAL "")
+			include(Refer${package})
+			if(NOT major STREQUAL "" AND NOT minor STREQUAL "")				
 				deploy_Binary_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
 			else()
 				deploy_Binary_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
@@ -411,9 +412,6 @@ if(	${package}_AVAILABLE_PLATFORM_${platform}_OS STREQUAL ${OS_STRING}
 			endif()
 		endforeach()
 	endif()#OK no specific check for configuration so 
-else()
-	set(${CHECK_OK} FALSE PARENT_SCOPE)
-	return()
 endif()	
 set(${CHECK_OK} TRUE PARENT_SCOPE)
 endfunction(check_Package_Platform_Against_Current)
@@ -476,11 +474,7 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
 else()
 	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
-endif()
-if(INSTALLED)
-	message("[PID] INFO : deployment of binary package ${package} (version ${version_string}) is finished.")
-else()
-	message("[PID] INFO : deployment of binary package ${package} (version ${version_string}) has failed.")
+	message("[PID] INFO : package ${package} is already up to date ...")
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 endfunction(deploy_Binary_Package)
@@ -518,6 +512,7 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
 else()
 	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
+	message("[PID] INFO : package ${package} is already up to date ...")
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 
