@@ -411,7 +411,10 @@ if(	${package}_AVAILABLE_PLATFORM_${platform}_OS STREQUAL ${OS_STRING}
 				return()
 			endif()
 		endforeach()
-	endif()#OK no specific check for configuration so 
+	endif()#OK no specific check for configuration so
+else()#the binary is not eligible since does not match either os or arch of the current system
+	set(${CHECK_OK} FALSE PARENT_SCOPE)
+	return()
 endif()	
 set(${CHECK_OK} TRUE PARENT_SCOPE)
 endfunction(check_Package_Platform_Against_Current)
@@ -423,10 +426,12 @@ function(get_Available_Binary_Package_Versions package list_of_versions list_of_
 #configuring target system
 get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
 # listing available binaries of the package and searching if there is any "good version"
-set(available_binary_package_version "") 
+set(available_binary_package_version "")
 foreach(ref_version IN ITEMS ${${package}_REFERENCES})
 	foreach(ref_platform IN ITEMS ${${package}_REFERENCE_${ref_version}})
+		set(BINARY_OK FALSE)
 		check_Package_Platform_Against_Current(${package} ${ref_platform} BINARY_OK)#will return TRUE if the platform conforms to current one
+		
 		if(BINARY_OK)
 			list(APPEND available_binary_package_version "${ref_version}")
 			list(APPEND available_binary_package_version_with_platform "${ref_version}/${ref_platform}")
