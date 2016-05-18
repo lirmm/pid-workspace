@@ -429,7 +429,7 @@ endfunction(deploy_PID_Package)
 
 ###
 function(deploy_External_Package package version)
-get_System_Variables(OS_STRING ARCH_BITS PACKAGE_STRING)
+get_System_Variables(OS_STRING ARCH_BITS ABI_STRING PACKAGE_STRING)
 set(MAX_CURR_VERSION 0.0.0)
 if("${version}" STREQUAL "")#deploying the latest version of the repository
 	foreach(version_i IN ITEMS ${${package}_REFERENCES})

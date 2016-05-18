@@ -17,23 +17,21 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-
 set(CHECK_ABI_RESULT FALSE)
 
 if(CMAKE_COMPILER_IS_GNUCXX) 
 	if(NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 5.1)
-		set(CURRENT_ABI "ELF11" CACHE INTERNAL)
+		set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
 	else()
-		set(CURRENT_ABI "ELF" CACHE INTERNAL)
+		set(CURRENT_ABI "CXX" CACHE INTERNAL "")
 	endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	set(CURRENT_ABI "MAC" CACHE INTERNAL)
-else()
-	set(CURRENT_ABI "" CACHE INTERNAL)	
+	set(CURRENT_ABI "CXX" CACHE INTERNAL "")
+else()#PERMANENT TODO : add new support for compiler or use CMake generic mechanism to do so
+	set(CURRENT_ABI "CXX" CACHE INTERNAL "")	
 endif()
 
-if("${TEST_ABI}" STREQUAL "${CURRENT_ABI}")
+if("${TEST_ABI}" STREQUAL "${CURRENT_ABI}" OR "${TEST_ABI}" STREQUAL "ANY")
 	set(CHECK_ABI_RESULT TRUE)
 endif()
-
 

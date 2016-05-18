@@ -358,7 +358,7 @@ endfunction(set_Current_Version)
 #####################################################################################################
 ################## checking that the platfoprm description match the current platform ###############
 #####################################################################################################
-function(check_Platform_Constraints RES_NAME os arch constraints)
+function(check_Platform_Constraints RES_NAME os arch abi constraints)
 set(${RES_NAME} FALSE PARENT_SCOPE)
 set(SKIP FALSE)
 #testing OS
@@ -369,14 +369,21 @@ if(NOT CHECK_OS_RESULT)
 	set(SKIP TRUE)
 endif()
 
+set(TEST_ARCH ${arch})
+include(CheckARCH)
+
+if(abi)
+	set(TEST_ABI ${abi})
+else()
+	set(TEST_ABI ANY)#no ABI check (not used for referencing a binary package)
+endif()
+include(CheckABI)
+
+
 #testing architecture
-if(NOT SKIP)
-	set(TEST_ARCH ${arch})
-	include(CheckARCH)
-	if(NOT CHECK_ARCH_RESULT)
-		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
-		set(SKIP TRUE)
-	endif()
+if(NOT SKIP AND NOT CHECK_ARCH_RESULT)
+	message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
+	set(SKIP TRUE)
 endif()
 
 if(NOT SKIP)
@@ -398,32 +405,42 @@ if(NOT SKIP)
 	endif()
 endif()
 
+if(NOT SKIP AND NOT CHECK_ABI_RESULT)
+	message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
+	set(SKIP TRUE)
+endif()
+
+if(abi)
+	set(using_ABI ${abi})
+else()
+	set(using_ABI ${CURRENT_ABI}) #the current ABI is in use
+endif()
 
 if(NOT SKIP)
 	platform_Selected(SELECTED)
 	if(NOT SELECTED) #no platform registered yet
-		add_Platform(TRUE ${RES_NAME} ${os} ${arch} "${constraints}")
+		add_Platform(TRUE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
 		set(${RES_NAME} TRUE PARENT_SCOPE)
 		message("[PID] INFO : platform ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}} has been selected as current one.")
 	else()
-		add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${constraints}")
+		add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
 		message("[PID] WARNING : more than one possible platform configuration has been detected. Platform ${RES_NAME} is eligible but only the first found, ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}, is selected has the current platform.")
 	endif()
 else()
-	add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${constraints}")#simply registering the configuration but do not select it
+	add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")#simply registering the configuration but do not select it
 endif()
 
 endfunction(check_Platform_Constraints)
 
 ###
 function(create_Default_Platforms_Set) #default set without consfiguration constraints
-	check_Platform_Constraints(linux64 linux 64 "")
+	check_Platform_Constraints(linux64 linux 64 "" "")
 	set(linux64 ${linux64} PARENT_SCOPE)
-	check_Platform_Constraints(linux32 linux 32 "")
+	check_Platform_Constraints(linux32 linux 32 "" "")
 	set(linux32 ${linux32} PARENT_SCOPE)
-	check_Platform_Constraints(macosx64 macosx 64 "")
+	check_Platform_Constraints(macosx64 macosx 64 "" "")
 	set(macosx64 ${macosx64} PARENT_SCOPE)
-	check_Platform_Constraints(macosx32 macosx 32 "")
+	check_Platform_Constraints(macosx32 macosx 32 "" "")
 	set(macosx32 ${macosx32} PARENT_SCOPE)
 endfunction(create_Default_Platforms_Set)
 
@@ -604,7 +621,7 @@ if(GENERATE_INSTALLER)
 	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
 	list(APPEND CPACK_GENERATOR TGZ)
-	get_System_Variables(OS_STRING ARCH_STRING PACKAGE_SYSTEM_STRING)
+	get_System_Variables(OS_STRING ARCH_STRING ABI_STRING PACKAGE_SYSTEM_STRING)
 
 	if(PACKAGE_SYSTEM_STRING)
 		add_custom_target(	package_install

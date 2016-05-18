@@ -127,10 +127,11 @@ endmacro(declare_PID_Documentation)
 
 ### API: check_PID_Platform(	NAME resulting_name
 #				OS osname
-#				[ARCH 32 OR 64]
+#				ARCH 32 OR 64
+#				[ABI CXX or CXX11]
 #				[CONFIGURATION ...])
 macro(check_PID_Platform)
-set(oneValueArgs NAME OS ARCH)
+set(oneValueArgs NAME OS ARCH ABI)
 set(multiValueArgs CONFIGURATION)
 cmake_parse_arguments(CHECK_PID_PLATFORM "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT CHECK_PID_PLATFORM_NAME)
@@ -145,7 +146,8 @@ endif()
 if((NOT CHECK_PID_PLATFORM_ARCH) OR (NOT CHECK_PID_PLATFORM_ARCH EQUAL 32 AND NOT CHECK_PID_PLATFORM_ARCH EQUAL 64))
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the target architecture (32 or 64) using ARCH keyword.")
 endif()
-check_Platform_Constraints(${CHECK_PID_PLATFORM_NAME} "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_CONFIGURATION}")
+
+check_Platform_Constraints(${CHECK_PID_PLATFORM_NAME} "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}")
 endmacro(check_PID_Platform)
 
 ### API: check_All_PID_Default_Platforms()
