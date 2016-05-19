@@ -610,7 +610,7 @@ endif()
 ############ post install configuration of the workspace ############
 set(PACKAGE_NAME ${package})
 set(PACKAGE_VERSION ${version_string})
-include(${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake)
+include(${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake NO_POLICY_SCOPE)
 if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
 	message("[PID] WARNING : cannot configure runtime dependencies for installed version ${version_string} of package ${package}.")

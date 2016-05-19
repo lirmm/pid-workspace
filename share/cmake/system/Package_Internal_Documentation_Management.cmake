@@ -409,7 +409,7 @@ endfunction(configure_Wiki_Pages)
 
 ###
 function(generate_Platform_Wiki platform RES_CONTENT_PLATFORM)
-set(CONTENT "### ${platform}\n\n+ OS type: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_OS}\n+ architecture: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_ARCH} bits\n")
+set(CONTENT "### ${platform}\n\n+ OS type: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_OS}\n+ architecture: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_ARCH} bits\n+ abi: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_ABI}\n")
 
 if(${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION)
 	foreach(config IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION})
