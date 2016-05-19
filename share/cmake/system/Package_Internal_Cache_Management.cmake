@@ -944,6 +944,7 @@ if(${package}_PLATFORM${MODE_SUFFIX})
 	set(platform ${${package}_PLATFORM${MODE_SUFFIX}})
 	file(APPEND ${file} "set(${package}_PLATFORM_${platform}_OS${MODE_SUFFIX} ${${package}_PLATFORM_OS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_PLATFORM_${platform}_ARCH${MODE_SUFFIX} ${${package}_PLATFORM_ARCH${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_PLATFORM_${platform}_ABI${MODE_SUFFIX} ${${package}_PLATFORM_ABI${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_PLATFORM_${platform}_CONFIGURATION${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 endif()
 
