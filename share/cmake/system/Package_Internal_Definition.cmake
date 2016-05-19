@@ -406,7 +406,7 @@ if(NOT SKIP)
 endif()
 
 if(NOT SKIP AND NOT CHECK_ABI_RESULT)
-	message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
+	message("[PID] INFO : when checking platform ${RES_NAME}, ABI is not adequate (not a ${abi} ABI).")
 	set(SKIP TRUE)
 endif()
 
@@ -433,15 +433,15 @@ endif()
 endfunction(check_Platform_Constraints)
 
 ###
-function(create_Default_Platforms_Set) #default set without consfiguration constraints
-	check_Platform_Constraints(linux64 linux 64 "" "")
+function(create_Default_Platforms_Set common_configuration) #default set without consfiguration constraints
+	check_Platform_Constraints(linux64cxx11 linux 64 CXX11 "${common_configuration}")
+	set(linux64cxx11 ${linux64cxx11} PARENT_SCOPE)
+	check_Platform_Constraints(linux64 linux 64 CXX "${common_configuration}")
 	set(linux64 ${linux64} PARENT_SCOPE)
-	check_Platform_Constraints(linux32 linux 32 "" "")
+	check_Platform_Constraints(linux32 linux 32 CXX "${common_configuration}")
 	set(linux32 ${linux32} PARENT_SCOPE)
-	check_Platform_Constraints(macosx64 macosx 64 "" "")
+	check_Platform_Constraints(macosx64 macosx 64 CXX "${common_configuration}")
 	set(macosx64 ${macosx64} PARENT_SCOPE)
-	check_Platform_Constraints(macosx32 macosx 32 "" "")
-	set(macosx32 ${macosx32} PARENT_SCOPE)
 endfunction(create_Default_Platforms_Set)
 
 ##################################################################################

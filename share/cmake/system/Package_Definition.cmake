@@ -150,9 +150,11 @@ endif()
 check_Platform_Constraints(${CHECK_PID_PLATFORM_NAME} "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}")
 endmacro(check_PID_Platform)
 
-### API: check_All_PID_Default_Platforms()
+### API: check_All_PID_Default_Platforms([CONFIGURATION list of system constraints])
 macro(check_All_PID_Default_Platforms)
-create_Default_Platforms_Set()
+set(multiValueArgs CONFIGURATION)
+cmake_parse_arguments(CHECK_ALL_PID_DEFAULT_PLATFORM "" "" "${multiValueArgs}" ${ARGN} )
+create_Default_Platforms_Set("${CHECK_ALL_PID_DEFAULT_PLATFORM_CONFIGURATION}")
 endmacro(check_All_PID_Default_Platforms)
 
 ### API : build_PID_Package()
