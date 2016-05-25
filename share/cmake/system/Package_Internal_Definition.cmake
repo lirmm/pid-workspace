@@ -452,7 +452,7 @@ macro(build_Package)
 platform_Available(AVAILABLE)
 if(NOT AVAILABLE)
 	message("[PID] INFO : No check for platform, this code may be built for all default platforms as soon as its dependencies can. Automatically building a platform configuration from current environment ...")
-	create_Default_Platforms_Set() #in case the user did not define any platform check
+	create_Default_Platforms_Set("") #in case the user did not define any platform check
 endif()
 platform_Selected(SELECTED)
 if(NOT SELECTED) # a platform (even a default one) must be selected or we can just not build the project 
