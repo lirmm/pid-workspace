@@ -20,7 +20,7 @@
 include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/x11/installable_x11.cmake)
 if(x11_INSTALLABLE)
 	message("[PID] INFO : trying to install x11...")
-	execute_process(COMMAND sudo apt-get install xorg openbox)
+	execute_process(COMMAND sudo apt-get install xorg openbox libx11-dev libxt-dev libxft-dev libxpm-dev libxcomposite-dev libxdamage-dev libxtst-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxcursor-dev libxss-dev libxkbfile-dev)
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/x11/find_x11.cmake)
 	if(x11_FOUND)
 		message("[PID] INFO : x11 installed !")
