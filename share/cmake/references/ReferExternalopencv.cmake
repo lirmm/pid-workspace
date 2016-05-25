@@ -25,7 +25,7 @@ set(opencv_AVAILABLE_PLATFORM_linux32_CONFIGURATION  CACHE INTERNAL "")
 
 # declaration of known references
 set(opencv_REFERENCES 2.4.11 CACHE INTERNAL "")
-set(opencv_REFERENCE_2.4.11 linux32 linux64 CACHE INTERNAL "")
+set(opencv_REFERENCE_2.4.11 linux64cxx11 linux32 linux64 CACHE INTERNAL "")
 
 #linux 32
 set(opencv_REFERENCE_2.4.11_linux32_URL https://gite.lirmm.fr/pid/ext-opencv/repository/archive.tar.gz?ref=linux-32-2.4.11 CACHE INTERNAL "")
