@@ -17,4 +17,18 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-set(gtk2_INSTALLED FALSE)
+include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/gtk2/installable_gtk2.cmake)
+if(gtk2_INSTALLABLE)
+	message("[PID] INFO : trying to install gtk2...")
+	execute_process(COMMAND sudo apt-get install libgtk2.0-dev)
+	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/gtk2/find_gtk2.cmake)
+	if(openssl_FOUND)
+		message("[PID] INFO : gtk2 installed !")
+		set(gtk2_INSTALLED TRUE)
+	else()
+		set(gtk2_INSTALLED FALSE)
+		message("[PID] INFO : install of gtk2 has failed !")
+	endif()
+else()
+	set(gtk2_INSTALLED FALSE)
+endif()

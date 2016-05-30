@@ -17,5 +17,10 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-set(gtk2_INSTALLABLE FALSE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu 
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	set(gtk2_INSTALLABLE TRUE)
+else()
+	set(gtk2_INSTALLABLE FALSE)
+endif()
 
