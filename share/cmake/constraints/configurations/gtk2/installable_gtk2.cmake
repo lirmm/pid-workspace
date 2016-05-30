@@ -16,7 +16,7 @@
 #	You can find the complete license description on the official website 		#
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
-
+message("CURRENT_DISTRIBUTION = ${CURRENT_DISTRIBUTION}")
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu 
 	OR CURRENT_DISTRIBUTION STREQUAL debian)
 	set(gtk2_INSTALLABLE TRUE)

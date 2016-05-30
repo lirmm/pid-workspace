@@ -27,6 +27,7 @@ include(Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 PROJECT(pid-workspace)
 include(CheckOS)
+
 ####
 set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external CACHE INTERNAL "")

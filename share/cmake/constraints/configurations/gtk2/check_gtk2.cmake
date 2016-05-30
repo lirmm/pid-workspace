@@ -29,10 +29,17 @@ if(NOT gtk2_FOUND) #any linux or macosx is gtk2 ...
 		set(gtk2_LINK_OPTIONS ${gtk2_LIBRARIES} CACHE INTERNAL "") #simply adding all gtk2 standard libraries		
 		set(CHECK_gtk2_RESULT TRUE)
 	else()
-		set(CHECK_gtk2_RESULT FALSE)
+		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/gtk2/install_gtk2.cmake)
+		if(gtk2_INSTALLED)
+			set(gtk2_LINK_OPTIONS ${gtk2_LIBRARIES} CACHE INTERNAL "")
+			set(gtk2_INCLUDE_DIRS ${gtk2_INCLUDE_PATH} CACHE INTERNAL "")
+			set(CHECK_gtk2_RESULT TRUE)
+		else()
+			set(CHECK_gtk2_RESULT FALSE)
+		endif()
+
 	endif()
 else()
 	set(CHECK_gtk2_RESULT TRUE)
 endif()
-
 
