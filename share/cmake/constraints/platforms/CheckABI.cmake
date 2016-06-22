@@ -17,29 +17,21 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-if(NOT gtk2_FOUND) #any linux or macosx is gtk2 ... 
-	set(gtk2_INCLUDE_DIRS CACHE INTERNAL "")
-	set(gtk2_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(gtk2_LINK_OPTIONS CACHE INTERNAL "")
-	set(gtk2_RPATH CACHE INTERNAL "")
-	# trying to find gtk2
-	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/gtk2/find_gtk2.cmake)
-	if(gtk2_FOUND)
-		set(gtk2_INCLUDE_DIRS ${gtk2_INCLUDE_PATH} CACHE INTERNAL "")
-		set(gtk2_LINK_OPTIONS ${gtk2_LIBRARIES} CACHE INTERNAL "") #simply adding all gtk2 standard libraries		
-		set(CHECK_gtk2_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/gtk2/install_gtk2.cmake)
-		if(gtk2_INSTALLED)
-			set(gtk2_LINK_OPTIONS ${gtk2_LIBRARIES} CACHE INTERNAL "")
-			set(gtk2_INCLUDE_DIRS ${gtk2_INCLUDE_PATH} CACHE INTERNAL "")
-			set(CHECK_gtk2_RESULT TRUE)
-		else()
-			set(CHECK_gtk2_RESULT FALSE)
-		endif()
+set(CHECK_ABI_RESULT FALSE)
 
+if(CMAKE_COMPILER_IS_GNUCXX) 
+	if(NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 5.1)
+		set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
+	else()
+		set(CURRENT_ABI "CXX" CACHE INTERNAL "")
 	endif()
-else()
-	set(CHECK_gtk2_RESULT TRUE)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	set(CURRENT_ABI "CXX" CACHE INTERNAL "")
+else()#PERMANENT TODO : add new support for compiler or use CMake generic mechanism to do so
+	set(CURRENT_ABI "CXX" CACHE INTERNAL "")	
+endif()
+
+if("${TEST_ABI}" STREQUAL "${CURRENT_ABI}" OR "${TEST_ABI}" STREQUAL "ANY")
+	set(CHECK_ABI_RESULT TRUE)
 endif()
 
