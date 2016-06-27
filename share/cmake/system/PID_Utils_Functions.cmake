@@ -421,7 +421,7 @@ function(resolve_External_Libs_Path COMPLETE_LINKS_PATH package ext_links mode)
 set(res_links)
 foreach(link IN ITEMS ${ext_links})
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${link})
-	if(NOT RES MATCHES ${link})# a replacement has taken place => this is a full path to a library
+	if(NOT RES STREQUAL ${link})# a replacement has taken place => this is a full path to a library
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
@@ -435,7 +435,7 @@ foreach(link IN ITEMS ${ext_links})
 		endif()
 	else() # this may be a link with a prefix (like -L<path>) that need replacement
 		string(REGEX REPLACE "^([^<]+)<([^>]+)>(.*)" "\\1;\\2;\\3" RES_WITH_PREFIX ${link})
-		if(NOT RES_WITH_PREFIX MATCHES ${link})
+		if(NOT RES_WITH_PREFIX STREQUAL ${link})# a replacement has taken place
 			list(GET RES_WITH_PREFIX 0 link_prefix)
 			list(GET RES_WITH_PREFIX 1 ext_package_name)
 			is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
@@ -463,7 +463,7 @@ function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH package_context e
 set(res_includes)
 foreach(include_dir IN ITEMS ${ext_inc_dirs})
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${include_dir})
-	if(NOT RES MATCHES ${include_dir})# a replacement has taken place => this is a full path to an incude dir of an external package
+	if(NOT RES STREQUAL ${include_dir})# a replacement has taken place => this is a full path to an incude dir of an external package
 		list(GET RES 0 ext_package_name)
 		is_External_Package_Defined(${package_context} ${ext_package_name} ${mode} PATHTO)
 		if(EXT_PACKAGE-NOTFOUND)
@@ -479,7 +479,7 @@ foreach(include_dir IN ITEMS ${ext_inc_dirs})
 		list(APPEND res_includes ${fullpath})
 	else() # this may be an include dir with a prefix (-I<path>) that need replacement
 		string(REGEX REPLACE "^-I<([^>]+)>(.*)" "\\1;\\2" RES_WITH_PREFIX ${include_dir})
-		if(NOT RES_WITH_PREFIX MATCHES ${include_dir})
+		if(NOT RES_WITH_PREFIX STREQUAL ${include_dir})
 			list(GET RES_WITH_PREFIX 1 relative_path)
 			list(GET RES_WITH_PREFIX 0 ext_package_name)
 			is_External_Package_Defined(${package_context} ${ext_package_name} ${mode} PATHTO)
@@ -490,7 +490,7 @@ foreach(include_dir IN ITEMS ${ext_inc_dirs})
 			list(APPEND res_includes ${fullpath})
 		else()#this is an include dir that does not require any replacement ! (should be avoided)
 			string(REGEX REPLACE "^-I(.+)" "\\1" RES_WITHOUT_PREFIX ${include_dir})			
-			if(NOT RES_WITHOUT_PREFIX MATCHES ${include_dir})
+			if(NOT RES_WITHOUT_PREFIX STREQUAL ${include_dir})
 				list(APPEND res_includes ${RES_WITHOUT_PREFIX})
 			else()
 				list(APPEND res_includes ${include_dir}) #for absolute path or system dependencies simply copying the path
@@ -507,7 +507,7 @@ function(resolve_External_Resources_Path COMPLETE_RESOURCES_PATH package ext_res
 set(res_resources)
 foreach(resource IN ITEMS ${ext_resources})
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${resource})
-	if(NOT RES MATCHES ${resource})# a replacement has taken place => this is a relative path to an external package resource
+	if(NOT RES STREQUAL ${resource})# a replacement has taken place => this is a relative path to an external package resource
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
