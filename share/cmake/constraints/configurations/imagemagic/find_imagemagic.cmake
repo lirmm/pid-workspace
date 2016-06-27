@@ -72,7 +72,7 @@ ENDFUNCTION(FIND_IMAGEMAGICK_EXE)
 
 set(imagemagic_FOUND FALSE CACHE INTERNAL "")
 # - Find imagemagic installation
-# Try to find X11 on UNIX systems. The following values are defined
+# Try to find ImageMagic on UNIX systems. The following values are defined
 #  imagemagic_FOUND        - True if X11 is available
 #  imagemagic_LIBRARIES    - link against these to use X11
 if (UNIX)
@@ -80,10 +80,10 @@ if (UNIX)
 		  NAMES mogrify${CMAKE_EXECUTABLE_SUFFIX}
 	)
 
-	# Find each component. Search for all tools in same dir
+  # Find each component. Search for all tools in same dir
 	# <ImageMagick_EXECUTABLE_DIR>; otherwise they should be found
 	# independently and not in a cohesive module such as this one.
-	SET(ImageMagick_FOUND TRUE)
+	SET(IS_FOUND TRUE)
 	FOREACH(component ${ImageMagick_FIND_COMPONENTS}
 	    # DEPRECATED: forced components for backward compatibility
 	    convert mogrify import montage composite
@@ -105,17 +105,18 @@ if (UNIX)
 	      FIND_IMAGEMAGICK_EXE(${component})
 	    ENDIF(ImageMagick_EXECUTABLE_DIR)
 	  ENDIF(component STREQUAL "Magick++")
-	  
+
 	  IF(NOT ImageMagick_${component}_FOUND)
 	    LIST(FIND ImageMagick_FIND_COMPONENTS ${component} is_requested)
 	    IF(is_requested GREATER -1)
-	      SET(ImageMagick_FOUND FALSE)
+	      SET(IS_FOUND FALSE)
 	    ENDIF(is_requested GREATER -1)
 	  ENDIF(NOT ImageMagick_${component}_FOUND)
 	ENDFOREACH(component)
 
-	SET(ImageMagick_INCLUDE_DIRS ${ImageMagick_INCLUDE_DIRS})
-	SET(ImageMagick_LIBRARIES ${ImageMagick_LIBRARIES})
+  set(imagemagic_FOUND ${IS_FOUND} CACHE INTERNAL "")
+	set(imagemagic_PATH ${ImageMagick_INCLUDE_DIRS}  CACHE INTERNAL "")
+	set(imagemagic_LIBRARIES ${ImageMagick_LIBRARIES}  CACHE INTERNAL "")
 
 	#---------------------------------------------------------------------
 	# Standard Package Output
@@ -129,4 +130,3 @@ if (UNIX)
 
 
 endif ()
-

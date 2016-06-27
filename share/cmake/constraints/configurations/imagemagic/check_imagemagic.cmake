@@ -19,20 +19,19 @@
 
 if(NOT imagemagic_FOUND)
 	set(imagemagic_INCLUDE_DIRS CACHE INTERNAL "")
-	set(imagemagic_EXTENSIONS_LINK_OPTIONS CACHE INTERNAL "")	
 	set(imagemagic_COMPILE_OPTIONS CACHE INTERNAL "")
 	set(imagemagic_LINK_OPTIONS CACHE INTERNAL "")
 	set(imagemagic_RPATH CACHE INTERNAL "")
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/imagemagic/find_imagemagic.cmake)
 	if(imagemagic_FOUND)
 		set(imagemagic_LINK_OPTIONS ${imagemagic_LIBRARIES} CACHE INTERNAL "")
-		
+
 		set(imagemagic_INCLUDE_DIRS ${imagemagic_PATH} CACHE INTERNAL "")
 		set(CHECK_imagemagic_RESULT TRUE)
 	else()
 		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/imagemagic/install_imagemagic.cmake)
 		if(imagemagic_INSTALLED)
-			set(imagemagic_LINK_OPTIONS ${imagemagic_LIBRARIES} CACHE INTERNAL "")	
+			set(imagemagic_LINK_OPTIONS ${imagemagic_LIBRARIES} CACHE INTERNAL "")
 			set(imagemagic_INCLUDE_DIRS ${imagemagic_PATH} CACHE INTERNAL "")
 			set(CHECK_imagemagic_RESULT TRUE)
 		else()
