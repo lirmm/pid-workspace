@@ -33,7 +33,7 @@ endif()
 endfunction(get_Mode_Variables)
 
 ###
-function(get_System_Variables OS_STRING ARCH_STRING PACKAGE_STRING)
+function(get_System_Variables OS_STRING ARCH_STRING ABI_STRING PACKAGE_STRING)
 if(APPLE)
 	set(${OS_STRING} macosx PARENT_SCOPE)
 	set(${PACKAGE_STRING} Darwin PARENT_SCOPE)
@@ -51,6 +51,12 @@ elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
 else()
 	message(SEND_ERROR "[PID] ERROR : unsupported architecture (Not 32 or 64 bits) !")
 	return()
+endif()
+
+if((NOT CMAKE_COMPILER_IS_GNUCXX) OR (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.1))
+	set(${ABI_STRING} "CXX" PARENT_SCOPE)
+else()
+	set(${ABI_STRING} "CXX11" PARENT_SCOPE)
 endif()
 endfunction(get_System_Variables)
 

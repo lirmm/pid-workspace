@@ -114,14 +114,14 @@ endif()
 #registering interesting infos for each existing component
 
 foreach(component IN ITEMS ${${PACKAGE_NAME}_COMPONENTS})
-	if(NOT ${${PACKAGE_NAME}_${component}_TYPE} STREQUAL "TEST")
+	if(NOT "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "TEST")
 		list(APPEND INSTALLED_COMPONENTS ${component})
 		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0) #initializing usage of headers
 	endif()
 endforeach()
 
 foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
-	if(	${${PACKAGE_NAME}_${component}_TYPE} STREQUAL "HEADER")
+	if(	"${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "HEADER")
 		set(INSTALLED_${component}_TYPE HEADER)
 
 		set(INSTALLED_${component}_HEADER_DIR_NAME ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
@@ -129,7 +129,7 @@ foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
 		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NUMBER_OF_USAGES})
 
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})
-	elseif( ${${PACKAGE_NAME}_${component}_TYPE} STREQUAL "STATIC")
+	elseif( "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "STATIC")
 		set(INSTALLED_${component}_TYPE STATIC)
 
 		set(INSTALLED_${component}_HEADER_DIR_NAME ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
@@ -140,7 +140,7 @@ foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME}) 
 		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
 
-	elseif( ${${PACKAGE_NAME}_${component}_TYPE} STREQUAL "SHARED")
+	elseif( "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "SHARED")
 		set(INSTALLED_${component}_TYPE SHARED)
 
 		set(INSTALLED_${component}_HEADER_DIR_NAME ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
@@ -150,17 +150,17 @@ foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
 		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
-	elseif( ${${PACKAGE_NAME}_${component}_TYPE} STREQUAL "MODULE")
+	elseif( "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "MODULE")
 		set(INSTALLED_${component}_TYPE MODULE)
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
 		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
 
-	elseif(	${${PACKAGE_NAME}_${component}_TYPE} STREQUAL "EXAMPLE")
+	elseif(	"${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "EXAMPLE")
 		set(INSTALLED_${component}_TYPE EXAMPLE)
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
 		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
 
-	elseif( ${${PACKAGE_NAME}_${component}_TYPE} STREQUAL "APP")
+	elseif( "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "APP")
 		set(INSTALLED_${component}_TYPE APP)
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
 		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 

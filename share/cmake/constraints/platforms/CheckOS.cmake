@@ -33,15 +33,16 @@ elseif(UNIX)
 	else()
 		set(CHECK_OS_RESULT FALSE)
 	endif()
+	
 	# now check for distribution (shoud not influence contraints but only the way to install required constraints)
 	execute_process(COMMAND lsb_release -i OUTPUT_VARIABLE DISTRIB_STR ERROR_QUIET)
-	string(REGEX REPLACE "^.*:[ \t]*([^ \t\n]+)[ \t]*$" "\\1" RES "${DISTRIB_STR}")
+	string(REGEX REPLACE "^[^:]+:[ \t\r]*([A-Za-z_0-9]+)[ \t\r\n]*$" "\\1" RES "${DISTRIB_STR}")
+	
 	if(NOT RES STREQUAL "${DISTRIB_STR}")#match
 		string(TOLOWER "${RES}" DISTRIB_ID)
-		set(CURRENT_DISTRIBUTION "${DISTRIB_ID}" CACHE INTERNAL)
+		set(CURRENT_DISTRIBUTION "${DISTRIB_ID}" CACHE INTERNAL "")
 	endif()
 else() #other OS are not known (add new elseif statement to check for other OS
 	set(CHECK_OS_RESULT FALSE)
 endif()
-
 
