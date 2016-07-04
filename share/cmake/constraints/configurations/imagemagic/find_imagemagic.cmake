@@ -108,7 +108,6 @@ if (UNIX)
 	  ENDIF()
 
 	  IF(NOT ImageMagick_${component}_FOUND)
-	    MESSAGE("component ${component} has not been found !")
 	    SET(IS_FOUND FALSE)
 	  ENDIF()
 	ENDFOREACH(component)
@@ -119,8 +118,8 @@ if (UNIX)
 		SET(IS_FOUND FALSE)
 	ENDIF()	
   	set(imagemagic_FOUND ${IS_FOUND} CACHE INTERNAL "")
-	set(imagemagic_INCLUDE_DIRS ${ImageMagick_INCLUDE_DIRS} ${LIBX264_CFLAGS} CACHE INTERNAL "")
-	set(imagemagic_LINK_OPTIONS ${ImageMagick_LIBRARIES}  CACHE INTERNAL "")
+	set(imagemagic_INCLUDE_DIRS ${ImageMagick_INCLUDE_DIRS} ${LIBX264_INCLUDE_DIRS} CACHE INTERNAL "")
+	set(imagemagic_LINK_OPTIONS ${ImageMagick_LIBRARIES} ${LIBX264_LDFLAGS} CACHE INTERNAL "")
 endif ()
 
 
