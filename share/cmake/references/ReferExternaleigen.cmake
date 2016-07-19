@@ -28,8 +28,10 @@ set(eigen_AVAILABLE_PLATFORM_macosx64_ABI CXX CACHE INTERNAL "")
 set(eigen_AVAILABLE_PLATFORM_macosx64_CONFIGURATION  CACHE INTERNAL "")
 
 # declaration of known references
-set(eigen_REFERENCES 3.2.0 CACHE INTERNAL "")
-set(eigen_REFERENCE_3.2.0 linux32 linux64 macosx32 macosx64 CACHE INTERNAL "")
+set(eigen_REFERENCES 3.2.0 3.2.9 CACHE INTERNAL "")
+
+# Version 3.2.0
+set(eigen_REFERENCE_3.2.0 linux64cxx11 linux32 linux64 macosx64 CACHE INTERNAL "")
 
 #linux 32
 set(eigen_REFERENCE_3.2.0_linux32_URL https://gite.lirmm.fr/pid/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
@@ -48,3 +50,21 @@ set(eigen_REFERENCE_3.2.0_macosx64_URL https://gite.lirmm.fr/pid/ext-eigen/repos
 set(eigen_REFERENCE_3.2.0_macosx64_FOLDER ext-eigen-linux-anyarch-3.2.0-2d527bf5d7eb2ccb4604173926dad246524e1c88 CACHE INTERNAL "")
 
 
+# Version 3.2.9
+set(eigen_REFERENCE_3.2.9 linux64cxx11 linux32 linux64 macosx64 CACHE INTERNAL "")
+
+#linux 32
+set(eigen_REFERENCE_3.2.9_linux32_URL https://gite.lirmm.fr/pid/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.9 CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.9_linux32_FOLDER ext-eigen-linux-anyarch-3.2.9-004343a2432b8b91768a84eb791816f9d55a1011 CACHE INTERNAL "")
+#linux 64
+set(eigen_REFERENCE_3.2.9_linux64_URL https://gite.lirmm.fr/pid/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.9 CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.9_linux64_FOLDER ext-eigen-linux-anyarch-3.2.9-004343a2432b8b91768a84eb791816f9d55a1011 CACHE INTERNAL "")
+
+#linux 64 CXX11
+set(eigen_REFERENCE_3.2.9_linux64cxx11_URL https://gite.lirmm.fr/pid/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.9 CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.9_linux64cxx11_FOLDER ext-eigen-linux-anyarch-3.2.9-004343a2432b8b91768a84eb791816f9d55a1011 CACHE INTERNAL "")
+
+
+#macosx 64
+set(eigen_REFERENCE_3.2.9_macosx64_URL https://gite.lirmm.fr/pid/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.9 CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.9_macosx64_FOLDER ext-eigen-linux-anyarch-3.2.9-004343a2432b8b91768a84eb791816f9d55a1011 CACHE INTERNAL "")
