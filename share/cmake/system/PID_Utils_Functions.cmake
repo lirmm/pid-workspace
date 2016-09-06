@@ -16,7 +16,7 @@
 #	You can find the complete license description on the official website 		#
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
-
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
 #############################################################
 ########### general utilities for build management ##########
 #############################################################
@@ -53,7 +53,10 @@ else()
 	return()
 endif()
 
-if((NOT CMAKE_COMPILER_IS_GNUCXX) OR (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.1))
+set(TEST_ABI CXX11)
+include(CheckABI)
+
+if(NOT CHECK_ABI_RESULT)
 	set(${ABI_STRING} "CXX" PARENT_SCOPE)
 else()
 	set(${ABI_STRING} "CXX11" PARENT_SCOPE)
