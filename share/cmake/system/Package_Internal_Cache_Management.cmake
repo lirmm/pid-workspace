@@ -916,6 +916,16 @@ set(MODE_SUFFIX "")
 if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode
 	file(APPEND ${file} "######### declaration of package wiki info ########\n")
 	file(APPEND ${file} "set(${package}_WIKI_HOME ${${package}_WIKI_ROOT_PAGE} CACHE INTERNAL \"\")\n")
+	
+	file(APPEND ${file} "######### declaration of package development info ########\n")	
+	get_Repository_Current_Branch(RES_BRANCH ${WORKSPACE_DIR}/packages/${package})
+	if(NOT RES_BRANCH OR RES_BRANCH STREQUAL "master")#not on a development branch
+		file(APPEND ${file} "set(${package}_DEVELOPMENT_STATE release CACHE INTERNAL \"\")\n")
+	else()
+		file(APPEND ${file} "set(${package}_DEVELOPMENT_STATE development CACHE INTERNAL \"\")\n")
+	endif()
+	
+
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")

@@ -28,7 +28,7 @@ include(Package_Internal_Referencing NO_POLICY_SCOPE)
 include(Package_Internal_Targets_Management NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
-
+include(PID_Version_Management_Functions NO_POLICY_SCOPE)
 ########################################################################
 ########## Categories (classification of packages) management ##########
 ########################################################################
@@ -564,52 +564,6 @@ endfunction(register_PID_Package)
 ############ releasing packages ##########
 ##########################################
 
-###
-function(get_Version_Number_And_Repo_From_Package package NUMBER STRING_NUMBER ADDRESS)
-set(${ADDRESS} PARENT_SCOPE)
-file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
-foreach(line IN ITEMS ${PACKAGE_METADATA})
-	string(REGEX REPLACE "^.*set_PID_Package_Version\\(([0-9]+)(\\ +)([0-9]+)(\\ *)([0-9]*)(\\ *)\\).*$" "\\1;\\3;\\5" A_VERSION ${line})
-	if(NOT "${line}" STREQUAL "${A_VERSION}")
-		set(VERSION_COMMAND ${A_VERSION})#only taking the last instruction since it shadows previous ones
-	endif()
-	string(REGEX REPLACE "^.*ADDRESS[\\ \\\t]+([^\\ \\\t]+\\.git).*$" "\\1" AN_ADDRESS ${line})
-	if(NOT "${line}" STREQUAL "${AN_ADDRESS}")
-		set(${ADDRESS} ${AN_ADDRESS} PARENT_SCOPE)#an address had been found
-	endif()
-endforeach()
-if(VERSION_COMMAND)
-	#from here we are sure there is at least 2 digits 
-	list(GET VERSION_COMMAND 0 MAJOR)
-	list(GET VERSION_COMMAND 1 MINOR)
-	list(LENGTH VERSION_COMMAND size_of_version)
-	if(NOT size_of_version GREATER 2)
-		set(PATCH 0)
-		list(APPEND VERSION_COMMAND 0)
-	else()
-		list(GET VERSION_COMMAND 2 PATCH)
-	endif()
-	set(${STRING_NUMBER} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
-else()
-	set(${STRING_NUMBER} "" PARENT_SCOPE)
-endif()
-
-set(${NUMBER} ${VERSION_COMMAND} PARENT_SCOPE)
-endfunction(get_Version_Number_And_Repo_From_Package)
-
-###
-function(set_Version_Number_To_Package package major minor patch)
-
-file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
-string(REGEX REPLACE "^(.*)set_PID_Package_Version\\(([0-9]+)(\\ +)([0-9]+)(\\ *)([0-9]*)(\\ *)\\)(.*)$" "\\1;\\8" PACKAGE_METADATA_WITHOUT_VERSION ${PACKAGE_METADATA})
-
-list(GET PACKAGE_METADATA_WITHOUT_VERSION 0 BEGIN)
-list(GET PACKAGE_METADATA_WITHOUT_VERSION 1 END)
-
-set(TO_WRITE "${BEGIN}set_PID_Package_Version(${major} ${minor} ${patch})${END}")
-file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${TO_WRITE}) #getting global info on the package
-
-endfunction(set_Version_Number_To_Package)
 
 
 ### releasing the package version => registering the current version with a git tag
@@ -706,6 +660,7 @@ endfunction(release_PID_Package)
 ##########################################
 ############ updating packages ###########
 ##########################################
+
 
 ###
 function(update_PID_Source_Package package)

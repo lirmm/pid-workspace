@@ -687,8 +687,13 @@ if(INDEX EQUAL -1) #not found in installed versions
 	else()
 		message("[PID]  ERROR : automatic build and install of package ${package} FAILED !!")
 	endif()
-else()
-	set(${DEPLOYED} TRUE PARENT_SCOPE)
+else()#already installed !!
+	is_Binary_Package_Version_In_Development(IN_DEV ${package} ${RES_VERSION})
+	if(IN_DEV) # dev version is not generating the same binary as currently installed version
+		message("[PID] WARNING : when installing the package ${package} from source : a possibly conflicting binary package with same version ${RES_VERSION} is already installed. Please uninstall it by hand by using the \"make uninstall\" command frompackage or \"make clear name=${package} version=${RES_VERSION} from package.\"")
+	else()	#problem : the installed version is the result of the user build
+		set(${DEPLOYED} TRUE PARENT_SCOPE)		
+	endif()
 endif()
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Package)
@@ -739,8 +744,13 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 		message("[PID]  ERROR : automatic build and install of package ${package} (version ${RES_VERSION}) FAILED !!")
 	endif()
 else()
-	message("[PID] INFO : package ${package} is already up to date ...")
-	set(${DEPLOYED} TRUE PARENT_SCOPE)
+	is_Binary_Package_Version_In_Development(IN_DEV ${package} ${RES_VERSION})
+	if(IN_DEV) # dev version is not generating the same binary as currently installed version
+		message("[PID] WARNING : when installing the package ${package} from source : a possibly conflicting binary package with same version ${RES_VERSION} is already installed. Please uninstall it by hand by using the \"make uninstall\" command frompackage or \"make clear name=${package} version=${RES_VERSION} from package.\"")
+	else()	#problem : the installed version is the result of the user build
+		set(${DEPLOYED} TRUE PARENT_SCOPE)
+		message("[PID] INFO : package ${package} is already up to date ...")		
+	endif()
 endif()
 
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})

@@ -55,8 +55,8 @@ endif()
 
 ##### management of PID version #####
 # set the current PID version to memorize when updating the workspace.
-set(PID_SYSTEM_VERSION 1 CACHE INTERNAL "")
-configure_file(${CMAKE_SOURCE_DIR}/share/patterns/PID_version.cmake.in ${CMAKE_BINARY_DIR}/PID_version.cmake @ONLY) #put it into a file to allow package to easily retrieve PID version information
+set(PID_SYSTEM_VERSION 2 CACHE INTERNAL "")
+configure_file(${CMAKE_SOURCE_DIR}/share/patterns/PID_version.cmake.in ${CMAKE_BINARY_DIR}/PID_version.cmake @ONLY) #put it into a file to allow packages to easily retrieve PID version information
 
 
 set(ALL_AVAILABLE_PACKAGES "")
