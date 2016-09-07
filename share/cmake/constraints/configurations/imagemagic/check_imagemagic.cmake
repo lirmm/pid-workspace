@@ -17,25 +17,22 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-set(CHECK_ABI_RESULT FALSE)
-
-if(CMAKE_COMPILER_IS_GNUCXX) 
-	if(NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 5.1)
-		set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
+if(NOT imagemagic_FOUND)
+	set(imagemagic_INCLUDE_DIRS CACHE INTERNAL "")
+	set(imagemagic_COMPILE_OPTIONS CACHE INTERNAL "")
+	set(imagemagic_LINK_OPTIONS CACHE INTERNAL "")
+	set(imagemagic_RPATH CACHE INTERNAL "")
+	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/imagemagic/find_imagemagic.cmake)
+	if(imagemagic_FOUND)
+		set(CHECK_imagemagic_RESULT TRUE)
 	else()
-		set(CURRENT_ABI "CXX" CACHE INTERNAL "")
+		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/imagemagic/install_imagemagic.cmake)
+		if(imagemagic_INSTALLED)
+			set(CHECK_imagemagic_RESULT TRUE)
+		else()
+			set(CHECK_imagemagic_RESULT FALSE)
+		endif()
 	endif()
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	if(NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 3.8)
-		set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
-	else()
-		set(CURRENT_ABI "CXX" CACHE INTERNAL "")
-	endif()
-else()#PERMANENT TODO : add new support for compiler or use CMake generic mechanism to do so
-	set(CURRENT_ABI "CXX" CACHE INTERNAL "")	
+else()
+	set(CHECK_imagemagic_RESULT TRUE)
 endif()
-
-if("${TEST_ABI}" STREQUAL "${CURRENT_ABI}" OR "${TEST_ABI}" STREQUAL "ANY")
-	set(CHECK_ABI_RESULT TRUE)
-endif()
-

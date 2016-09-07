@@ -8,7 +8,11 @@ set(freetype2_DESCRIPTION external package for the freetype library, repackaged 
 set(freetype2_CATEGORIES programming/gui CACHE INTERNAL "")
 
 #declaration of possible platforms
-set(freetype2_AVAILABLE_PLATFORMS linux64;linux32;macosx64;macosx32 CACHE INTERNAL "")
+set(freetype2_AVAILABLE_PLATFORMS linux64cxx11;linux64;linux32;macosx64 CACHE INTERNAL "")
+set(freetype2_AVAILABLE_PLATFORM_linux64cxx11_OS linux CACHE INTERNAL "")
+set(freetype2_AVAILABLE_PLATFORM_linux64cxx11_ARCH 64 CACHE INTERNAL "")
+set(freetype2_AVAILABLE_PLATFORM_linux64cxx11_ABI CXX11 CACHE INTERNAL "")
+set(freetype2_AVAILABLE_PLATFORM_linux64cxx11_CONFIGURATION  CACHE INTERNAL "")
 set(freetype2_AVAILABLE_PLATFORM_linux64_OS linux CACHE INTERNAL "")
 set(freetype2_AVAILABLE_PLATFORM_linux64_ARCH 64 CACHE INTERNAL "")
 set(freetype2_AVAILABLE_PLATFORM_linux64_CONFIGURATION  CACHE INTERNAL "")
@@ -24,9 +28,12 @@ set(freetype2_AVAILABLE_PLATFORM_macosx32_CONFIGURATION  CACHE INTERNAL "")
 
 # declaration of known references
 set(freetype2_REFERENCES 2.6.1 CACHE INTERNAL "")
-set(freetype2_REFERENCE_2.6.1 linux64 CACHE INTERNAL "")
+set(freetype2_REFERENCE_2.6.1 linux64 linux64cxx11 CACHE INTERNAL "")
 
 #linux 64
 set(freetype2_REFERENCE_2.6.1_linux64_URL https://gite.lirmm.fr/pid/ext-freetype2/repository/archive.tar.gz?ref=linux-64-2.6.1 CACHE INTERNAL "")
 set(freetype2_REFERENCE_2.6.1_linux64_FOLDER ext-freetype2-linux-64-2.6.1-815676f584b216446aeefbca908ead9e2ecbabc7 CACHE INTERNAL "")
 
+#linux 64 cxx11 ABI
+set(freetype2_REFERENCE_2.6.1_linux64cxx11_URL https://gite.lirmm.fr/pid/ext-freetype2/repository/archive.tar.gz?ref=linux-64-cxx11-2.6.1 CACHE INTERNAL "")
+set(freetype2_REFERENCE_2.6.1_linux64cxx11_FOLDER ext-freetype2-linux-64-cxx11-2.6.1-b4825a0b98108d1cab41f166256de56f0c49925b CACHE INTERNAL "")

@@ -17,25 +17,19 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-set(CHECK_ABI_RESULT FALSE)
-
-if(CMAKE_COMPILER_IS_GNUCXX) 
-	if(NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 5.1)
-		set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
+include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/imagemagic/installable_imagemagic.cmake)
+if(imagemagic_INSTALLABLE)
+	message("[PID] INFO : trying to install imagemagic and some of its related packages...")
+	execute_process(COMMAND sudo apt-get install imagemagick libmagick++-dev libx264-dev)
+	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/imagemagic/find_imagemagic.cmake)
+	if(imagemagic_FOUND)
+		message("[PID] INFO : imagemagic installed !")
+		set(imagemagic_INSTALLED TRUE)
 	else()
-		set(CURRENT_ABI "CXX" CACHE INTERNAL "")
+		set(imagemagic_INSTALLED FALSE)
+		message("[PID] INFO : install of imagemagic has failed !")
 	endif()
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	if(NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 3.8)
-		set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
-	else()
-		set(CURRENT_ABI "CXX" CACHE INTERNAL "")
-	endif()
-else()#PERMANENT TODO : add new support for compiler or use CMake generic mechanism to do so
-	set(CURRENT_ABI "CXX" CACHE INTERNAL "")	
-endif()
-
-if("${TEST_ABI}" STREQUAL "${CURRENT_ABI}" OR "${TEST_ABI}" STREQUAL "ANY")
-	set(CHECK_ABI_RESULT TRUE)
+else()
+	set(imagemagic_INSTALLED FALSE)
 endif()
 

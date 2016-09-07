@@ -18,9 +18,9 @@
 #########################################################################################
 
 include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/opengl/installable_opengl.cmake)
-if(openssl_INSTALLABLE)
+if(opengl_INSTALLABLE)
 	message("[PID] INFO : trying to install opengl...")
-	execute_process(COMMAND sudo apt-get install freeglut3 mesa-utils)
+	execute_process(COMMAND sudo apt-get install freeglut3-dev mesa-utils)
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/opengl/find_opengl.cmake)
 	if(opengl_FOUND)
 		message("[PID] INFO : opengl installed !")
