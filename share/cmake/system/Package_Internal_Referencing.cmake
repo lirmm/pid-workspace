@@ -437,7 +437,6 @@ foreach(ref_version IN ITEMS ${${package}_REFERENCES})
 	foreach(ref_platform IN ITEMS ${${package}_REFERENCE_${ref_version}})
 		set(BINARY_OK FALSE)
 		check_Package_Platform_Against_Current(${package} ${ref_platform} BINARY_OK)#will return TRUE if the platform conforms to current one
-		
 		if(BINARY_OK)
 			list(APPEND available_binary_package_version "${ref_version}")
 			list(APPEND available_binary_package_version_with_platform "${ref_version}/${ref_platform}")

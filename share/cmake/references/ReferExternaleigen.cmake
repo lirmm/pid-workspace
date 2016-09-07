@@ -29,7 +29,7 @@ set(eigen_AVAILABLE_PLATFORM_macosx64_CONFIGURATION  CACHE INTERNAL "")
 
 # declaration of known references
 set(eigen_REFERENCES 3.2.0 CACHE INTERNAL "")
-set(eigen_REFERENCE_3.2.0 linux32 linux64 macosx32 macosx64 CACHE INTERNAL "")
+set(eigen_REFERENCE_3.2.0 linux64cxx11 linux32 linux64 macosx64 CACHE INTERNAL "")
 
 #linux 32
 set(eigen_REFERENCE_3.2.0_linux32_URL https://gite.lirmm.fr/pid/ext-eigen/repository/archive.tar.gz?ref=linux-anyarch-3.2.0 CACHE INTERNAL "")
