@@ -635,7 +635,7 @@ function(build_And_Install_Source DEPLOYED package version)
 		)
 	message("[PID] INFO : building version ${version} of package ${package} ...")
 	execute_process(
-		COMMAND ${CMAKE_MAKE_PROGRAM} build force=true
+		COMMAND ${CMAKE_MAKE_PROGRAM} build "force=true"
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		)
 	if(EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
@@ -648,10 +648,12 @@ function(build_And_Install_Source DEPLOYED package version)
 
 endfunction(build_And_Install_Source)
 
+
 ###
 function(deploy_Source_Package DEPLOYED package exclude_versions)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number 
 set(${DEPLOYED} FALSE PARENT_SCOPE)
+
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available released modifications
 if(NOT UPDATE_OK)
@@ -674,7 +676,7 @@ if(NOT RES_VERSION)
 	return()
 endif()
 list(FIND exclude_versions ${RES_VERSION} INDEX)
-if(INDEX EQUAL -1)
+if(INDEX EQUAL -1) #not found in installed versions
 	set(ALL_IS_OK FALSE)
 	message("[PID] INFO : deploying package ${package} ...")
 	build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
@@ -694,6 +696,7 @@ endfunction(deploy_Source_Package)
 ###
 function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT exclude_versions)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
+
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
