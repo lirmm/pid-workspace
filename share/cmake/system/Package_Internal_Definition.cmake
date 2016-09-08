@@ -165,13 +165,13 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		)
 	endif()
 	#mode specific build commands
-	add_custom_target(release
+	add_custom_target(build_release
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 		COMMENT "[PID] Release build..."
 		VERBATIM
 	)
 
-	add_custom_target(debug
+	add_custom_target(build_debug
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
 		COMMENT "[PID] Debug build..."
 		VERBATIM
