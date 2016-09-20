@@ -431,6 +431,12 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 go_To_Integration(${package})
 endfunction(reconnect_Repository)
 
+
+###
+function(reconnect_Repository_Remote package url remote_name)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url ${remote_name} ${url})
+endfunction(reconnect_Repository_Remote)
+
 ###
 function(change_Origin_Repository package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url origin ${url} OUTPUT_QUIET ERROR_QUIET)
@@ -489,6 +495,26 @@ endif()
 
 set(${REMOTES_TO_UPDATE} ${return_list} PARENT_SCOPE)
 endfunction(get_Remotes_To_Update)
+
+### getting git address of remotes
+function(get_Remotes_Address package RES_OFFICIAL RES_ORIGIN)
+set(${RES_OFFICIAL} PARENT_SCOPE)
+set(${RES_ORIGIN} PARENT_SCOPE)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote -v OUTPUT_VARIABLE RESULTING_REMOTES)
+if(RESULTING_REMOTES)
+	string(REPLACE "\n" ";" LINES ${RESULTING_REMOTES})
+	foreach(remote IN ITEMS ${LINES})
+		string(REGEX REPLACE "^([^ \t]+)[ \t]+([^ \t]+)[ \t]+.*$" "\\1;\\2" REMOTES_INFO ${remote})
+		list(GET REMOTES_INFO 1 ADDR_REMOTE)
+		list(GET REMOTES_INFO 0 NAME_REMOTE)
+		if(NAME_REMOTE STREQUAL "official")
+			set(${RES_OFFICIAL} ${ADDR_REMOTE} PARENT_SCOPE)
+		elseif(NAME_REMOTE STREQUAL "origin")
+			set(${RES_ORIGIN} ${ADDR_REMOTE} PARENT_SCOPE)
+		endif()
+	endforeach()
+endif()
+endfunction(get_Remotes_Address)
 
 ######################################################################
 ############## wiki repository related functions #####################

@@ -167,6 +167,15 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 						-P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Branch.cmake
 		COMMENT "[PID] Checking branch..."
 	)
+
+	# checking that the official has not been modified (migration)
+	add_custom_target(check-repository
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Official_Repository.cmake
+		COMMENT "[PID] Checking official repository consitency..."
+	)
+
 	################################################################################################
 	############ creating custom targets to delegate calls to mode specific targets ################
 	################################################################################################
@@ -204,6 +213,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	add_dependencies(build reconfigure) #checking if reconfiguration is necessary before build
 	add_dependencies(build sync-version)#checking if PID version synchronizing needed before build
 	add_dependencies(build check-branch)#checking if not built on master branch or released tag
+	add_dependencies(build check-repository) #checking if remote addrr needs to be changed
 
 	add_custom_target(global_main ALL
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}

@@ -182,7 +182,7 @@ endfunction(document_External_Version_Strings)
 
 ###
 function(get_Version_String_Numbers version_string major minor patch)
-string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" A_VERSION "${version_string}")
+string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)\\.?(.*)$" "\\1;\\2;\\3;\\4" A_VERSION "${version_string}")
 if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed with major.minor.patch format
 	list(GET A_VERSION 0 major_vers)
 	list(GET A_VERSION 1 minor_vers)
@@ -192,7 +192,7 @@ if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed w
 	set(${patch} ${patch_vers} PARENT_SCOPE)
 else()
 	string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version_string}")
-	if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed with major.minor.patch format
+	if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed with major.minor format
 		list(GET A_VERSION 0 major_vers)
 		list(GET A_VERSION 1 minor_vers)
 		set(${major} ${major_vers} PARENT_SCOPE)

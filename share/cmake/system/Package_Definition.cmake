@@ -303,7 +303,7 @@ endif()
 endmacro(declare_PID_Component)
 
 ### API : declare_PID_Package_Dependency (	PACKAGE name 
-#						<EXTERNAL VERSION version_string [EXACT] | NATIVE VERSION major minor [EXACT] >
+#						<EXTERNAL VERSION version_string [EXACT] | NATIVE [VERSION major[.minor] [EXACT]]] >
 #						[COMPONENTS component ...])
 macro(declare_PID_Package_Dependency)
 set(options EXTERNAL NATIVE)
@@ -337,23 +337,30 @@ elseif(DECLARE_PID_DEPENDENCY_EXTERNAL)
 	endif()
 	declare_External_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${DECLARE_PID_DEPENDENCY_EXTERNAL_VERSION}" "${exact}" "${DECLARE_PID_DEPENDENCY_EXTERNAL_COMPONENTS}")
 elseif(DECLARE_PID_DEPENDENCY_NATIVE)
-	if(DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS)
+	if(DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS)#there are unparsed arguments : a target version has been specified
 		set(options EXACT)
 		set(multiValueArgs VERSION COMPONENTS)
 		cmake_parse_arguments(DECLARE_PID_DEPENDENCY_NATIVE "${options}" "" "${multiValueArgs}" ${DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS})
-		if(DECLARE_PID_DEPENDENCY_PID_UNPARSED_ARGUMENTS)
+		if(DECLARE_PID_DEPENDENCY_NATIVE_UNPARSED_ARGUMENTS)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, there are some unknown arguments ${DECLARE_PID_DEPENDENCY_NATIVE_UNPARSED_ARGUMENTS}.")
 		endif()
 
 		set(exact FALSE)
 		if(DECLARE_PID_DEPENDENCY_NATIVE_VERSION)
 			list(LENGTH DECLARE_PID_DEPENDENCY_NATIVE_VERSION SIZE)
-			if(SIZE EQUAL 2)#it is a version string decomposed into a major and a minor number
+			if(SIZE GREATER 1)#it is a version string decomposed into a major and a minor number (+other not used numbers)
 				list(GET DECLARE_PID_DEPENDENCY_NATIVE_VERSION 0 MAJOR)
 				list(GET DECLARE_PID_DEPENDENCY_NATIVE_VERSION 1 MINOR)
 				set(VERS_NUMB "${MAJOR}.${MINOR}")
-			elseif(SIZE EQUAL 1)#it is a complete version string
-				set(VERS_NUMB "${DECLARE_PID_DEPENDENCY_NATIVE_VERSION}")
+			elseif(SIZE EQUAL 1)#it is a complete version string or just a digit
+				string(REGEX MATCH "^([0-9]+)$" IS_DIGIT ${DECLARE_PID_DEPENDENCY_NATIVE_VERSION})
+				if(IS_DIGIT) #just a digit == major version number
+					set(VERS_NUMB "${IS_DIGIT}.0")
+				else() # should be a real version string (only major.minor is important)
+					get_Version_String_Numbers(${DECLARE_PID_DEPENDENCY_NATIVE_VERSION} MAJOR MINOR PATCH)
+					set(VERS_NUMB "${MAJOR}.${MINOR}")
+				endif()
+				
 			else()
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to input a major and a minor number.")
 			endif()
@@ -372,7 +379,7 @@ elseif(DECLARE_PID_DEPENDENCY_NATIVE)
 			endif()
 		endif()
 		declare_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${VERS_NUMB}" ${exact} "${DECLARE_PID_DEPENDENCY_NATIVE_COMPONENTS}")
-	else()
+	else()# no specific version defined
 		declare_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "" FALSE "")
 	endif()
 	
