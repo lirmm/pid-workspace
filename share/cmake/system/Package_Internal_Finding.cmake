@@ -448,7 +448,8 @@ endfunction(is_Version_Compatible_With_Previous_Constraints)
 function(is_Compatible_External_Version is_compatible package reference_version version_to_compare)
 
 if(${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO)
-	if(${reference_version} VERSION_LESS ${${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO})  
+
+	if(${reference_version}   VERSION_LESS   ${${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO})
 		set(${is_compatible} TRUE PARENT_SCOPE)
 	else()
 		set(${is_compatible} FALSE PARENT_SCOPE)
@@ -468,7 +469,7 @@ function(is_Exact_External_Version_Compatible_With_Previous_Constraints
 set(${is_compatible} FALSE PARENT_SCOPE)
 set(${need_finding} FALSE PARENT_SCOPE)
 if(${package}_REQUIRED_VERSION_EXACT)
-	if(NOT ${${package}_REQUIRED_VERSION_EXACT} VERSION_EQUAL ${version_string})#not compatible if versions are not the same				
+	if(NOT ${${package}_REQUIRED_VERSION_EXACT}  VERSION_EQUAL  ${version_string})#not compatible if versions are not the same
 		return() 
 	endif()
 	set(${is_compatible} TRUE PARENT_SCOPE)
