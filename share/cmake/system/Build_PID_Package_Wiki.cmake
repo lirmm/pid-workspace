@@ -18,7 +18,7 @@
 #########################################################################################
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
-include(Package_Internal_Documentation_Management NO_POLICY_SCOPE)
+include(PID_Package_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 

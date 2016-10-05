@@ -19,7 +19,7 @@
 
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
-include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 if(TARGET_PACKAGE AND TARGET_VERSION)
 	if(	EXISTS ${WORKSPACE_DIR}/install/${TARGET_PACKAGE}

@@ -137,7 +137,7 @@ endif()
 if(TO_INSTALL_DEPS) #there are dependencies to install
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
 		set(INSTALLED_PACKAGES "")
-		install_Required_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES)
+		install_Required_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES NOT_INSTALLED)
 		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
 			resolve_Package_Dependency(${package} ${installed} ${mode})
 			if(${installed}_FOUND)
@@ -163,25 +163,39 @@ endfunction(resolve_Package_Dependencies)
 function(update_Package_Installed_Version package major minor exact already_installed)
 first_Called_Build_Mode(FIRST_TIME) # do the update only once per global configuration of the project
 if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #if no automatic download then simply do nothing
-	list(FIND ALREADY_UPDATED_PACKAGES ${package} INDEX)
-	if(INDEX EQUAL -1) #package has not been already updated during this run
+	if(NOT major STREQUAL "" AND NOT minor STREQUAL "") 
+		set(WITH_VERSION TRUE)
+		check_Package_Version_Managed_In_Current_Process(${package} "${major}.${minor}" RES)
+		if(RES STREQUAL "UNKNOWN") #package has not been already updated during this run session
+			set(NEED_CHECK_UPDATE TRUE)
+		else()
+			set(NEED_CHECK_UPDATE FALSE)
+		endif()
+	else()
+		set(WITH_VERSION FALSE)
+		check_Package_Managed_In_Current_Process(${package} RES)
+		if(RES)
+			set(NEED_CHECK_UPDATE FALSE)
+		else()
+			set(NEED_CHECK_UPDATE TRUE)
+		endif()
+	endif()
+	
+	if(NEED_CHECK_UPDATE) #package has not been already updated during this run session
 		package_Source_Exists_In_Workspace(SOURCE_EXIST RETURNED_PATH ${package})
 		if(SOURCE_EXIST) # updating the source package, if possible
-			if(NOT major STREQUAL "" AND NOT minor STREQUAL "") 
+			if(WITH_VERSION) 
 				deploy_Source_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")	
 			else()
 				deploy_Source_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
 			endif()
 		else() # updating the binary package, if possible
 			include(Refer${package})
-			if(NOT major STREQUAL "" AND NOT minor STREQUAL "")				
+			if(WITH_VERSION)
 				deploy_Binary_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
 			else()
 				deploy_Binary_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
 			endif()
-		endif()
-		if(IS_DEPLOYED)
-			set(ALREADY_UPDATED_PACKAGES ${ALREADY_UPDATED_PACKAGES} ${package} CACHE INTERNAL "")
 		endif()
 	endif()
 endif()
@@ -225,9 +239,10 @@ endfunction(resolve_Required_Package_Version)
 
 
 ### root function for launching automatic installation process
-function(install_Required_Packages list_of_packages_to_install INSTALLED_PACKAGES)
-set(successfully_installed "")
-set(not_installed "")
+function(install_Required_Packages list_of_packages_to_install INSTALLED_PACKAGES NOT_INSTALLED)
+set(successfully_installed )
+set(not_installed )
+set(${NOT_INSTALLED} PARENT_SCOPE)
 foreach(dep_package IN ITEMS ${list_of_packages_to_install}) #while there are still packages to install
 	#message("DEBUG : install required packages : ${dep_package}")
 	set(INSTALL_OK FALSE)
@@ -243,6 +258,7 @@ if(successfully_installed)
 endif()
 if(not_installed)
 	message("[PID] ERROR : some of the required packages cannot be installed : ${not_installed}.")
+	set(${NOT_INSTALLED} ${not_installed} PARENT_SCOPE)
 endif()
 endfunction(install_Required_Packages)
 
@@ -276,7 +292,7 @@ set(${EXIST} ${FALSE} PARENT_SCOPE)
 endfunction(get_Package_References)
 
 
-###
+### install a package for the first time
 function(install_Package INSTALL_OK package)
 
 # 0) test if either reference or source of the package exist in the workspace
@@ -316,6 +332,7 @@ else()
 endif()
 
 if(USE_SOURCES) #package sources reside in the workspace
+
 	set(SOURCE_DEPLOYED FALSE)
 	if(NOT NO_VERSION)
 		deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
@@ -479,12 +496,30 @@ select_Last_Version(RES_VERSION "${available_versions}")# taking the most up to 
 list(FIND exclude_versions ${RES_VERSION} INDEX)
 set(INSTALLED FALSE)
 if(INDEX EQUAL -1) # selected version not found in versions to exclude
-	select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
+	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
+	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the current process
+		select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
 	
-	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
+		download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
+		if(INSTALLED)
+			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
+		else()
+			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} TRUE FALSE)
+		endif()
+	else()
+		if(RES STREQUAL "FAIL") # this package version has FAILED TO be install during current process
+			set(INSTALLED FALSE PARENT_SCOPE)
+		else() #SUCCESS (should never happen since if install was successfull then it would have generate an installed version)
+			message("[PID] WARNING : package ${package} version ${RES_VERSION} is marked as installed BUT the system cannot find it in install path !! Maybe a PID BUG, please contact the developpers of PID.")			
+			set(INSTALLED TRUE PARENT_SCOPE)
+		endif()
+	endif()
+
+
 else()
 	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
 	message("[PID] INFO : package ${package} is already up to date ...")
+	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 endfunction(deploy_Binary_Package)
@@ -518,11 +553,27 @@ endif()
 set(INSTALLED FALSE)
 list(FIND exclude_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version not found in versions to exclude
-	select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
-	download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
+	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
+	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the current process
+		select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
+		download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
+		if(INSTALLED)
+			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
+		else()
+			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} TRUE FALSE)
+		endif()
+	else()
+		if(RES STREQUAL "FAIL") # this package version has FAILED TO be install during current process
+			set(INSTALLED FALSE PARENT_SCOPE)
+		else() #SUCCESS (should never happen since if install was successfull then it would have generate an installed version)
+			message("[PID] WARNING : package ${package} version ${RES_VERSION} is marked as installed BUT the system cannot find it in install path !! Maybe a PID BUG, please contact the developpers of PID.")			
+			set(INSTALLED TRUE PARENT_SCOPE)
+		endif()
+	endif()
 else()
 	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
 	message("[PID] INFO : package ${package} is already up to date ...")
+	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 
@@ -677,18 +728,32 @@ if(NOT RES_VERSION)
 endif()
 list(FIND exclude_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) #not found in installed versions
-	set(ALL_IS_OK FALSE)
-	message("[PID] INFO : deploying package ${package} ...")
-	build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
+	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
+	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the process
+		set(ALL_IS_OK FALSE)
+		message("[PID] INFO : deploying package ${package} ...")
+		build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
 
-	if(ALL_IS_OK)
-		message("[PID] INFO : package ${package} has been deployed ...")
-		set(${DEPLOYED} TRUE PARENT_SCOPE)
+		if(ALL_IS_OK)
+			message("[PID] INFO : package ${package} has been deployed ...")
+			set(${DEPLOYED} TRUE PARENT_SCOPE)
+			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
+		else()
+			message("[PID]  ERROR : automatic build and install of package ${package} FAILED !!")
+			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} TRUE FALSE)
+		endif()
 	else()
-		message("[PID]  ERROR : automatic build and install of package ${package} FAILED !!")
+		if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
+			set(${DEPLOYED} FALSE PARENT_SCOPE)
+		else() #SUCCESS (should never happen since if build was successfull then it would have generate an installed version) 
+			message("[PID] WARNING : package ${package} is marked as installed BUT the system cannot find it in install path !! Maybe a PID BUG, please contact the developpers of PID.")			
+			set(${DEPLOYED} TRUE PARENT_SCOPE)
+		endif()
 	endif()
 else()
+	message("[PID] INFO : package ${package} is already up to date ...")
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
+	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
 endif()
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Package)
@@ -727,20 +792,32 @@ if(NOT RES_VERSION)
 endif()
 
 list(FIND exclude_versions ${RES_VERSION} INDEX)
-
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
-	set(ALL_IS_OK FALSE)
-	message("[PID] INFO : deploying version  ${RES_VERSION} of package ${package} ...")
-	build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")	
-	if(ALL_IS_OK)
-		message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
-		set(${DEPLOYED} TRUE PARENT_SCOPE)
+	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
+	if(RES STREQUAL "UNKNOWN") # this package version has not been build since last command
+		set(ALL_IS_OK FALSE)
+		message("[PID] INFO : deploying version  ${RES_VERSION} of package ${package} ...")
+		build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")	
+		if(ALL_IS_OK)
+			message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
+			set(${DEPLOYED} TRUE PARENT_SCOPE)
+			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
+		else()
+			message("[PID]  ERROR : automatic build and install of package ${package} (version ${RES_VERSION}) FAILED !!")
+			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} TRUE FALSE)
+		endif()
 	else()
-		message("[PID]  ERROR : automatic build and install of package ${package} (version ${RES_VERSION}) FAILED !!")
+		if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
+			set(${DEPLOYED} FALSE PARENT_SCOPE)
+		else() #SUCCESS (should happen when target package version is previously built but at first time the current package is configured)		
+			set(${DEPLOYED} TRUE PARENT_SCOPE)
+		endif()
+
 	endif()
 else()
 	message("[PID] INFO : package ${package} is already up to date ...")
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
+	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
 endif()
 
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
@@ -927,16 +1004,28 @@ if(NOT PLATFORM)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
-download_And_Install_External_Package(INSTALLED ${package} ${version} ${PLATFORM})
-if(NOT INSTALLED)
-	message("[PID] ERROR : cannot install binary version of package ${package}.")
+check_Package_Version_State_In_Current_Process(${package} ${version} RES)
+if(RES STREQUAL "UNKNOWN")
+	download_And_Install_External_Package(INSTALLED ${package} ${version} ${PLATFORM})
+	if(INSTALLED)
+		add_Managed_Package_In_Current_Process(${package} ${version} FALSE TRUE)
+	else()
+		add_Managed_Package_In_Current_Process(${package} ${version} TRUE TRUE)
+		message("[PID] ERROR : cannot install version ${version} of external package ${package}.")
+		set(${DEPLOYED} FALSE PARENT_SCOPE)
+		return()
+	endif()
+
+	#5) checking for platform constraints
+	configure_External_Package(${package} ${version} Debug)
+	configure_External_Package(${package} ${version} Release)
+
+elseif(RES STREQUAL "FAIL") # this package version has FAILED TO be install during current process
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
-	return()
+else() #SUCCESS (should never happen since if install was successfull then it would have generate an installed version)
+	message("[PID] WARNING : package ${package} version ${version} is marked as installed BUT the system cannot find it in install path !! Maybe a PID BUG, please contact the developpers of PID.")			
 endif()
 
-#5) checking for platform constraints
-configure_External_Package(${package} ${version} Debug)
-configure_External_Package(${package} ${version} Release)
 set(${DEPLOYED} TRUE PARENT_SCOPE)
 endfunction(deploy_External_Package_Version)
 

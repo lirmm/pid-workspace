@@ -19,7 +19,7 @@
 
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
-include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 # needed to parse adequately CMAKe variables passed to the script
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)
@@ -28,6 +28,10 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_LIBRARY_PATH)
 SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_PREFIXES)
 SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_SUFFIXES)
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
+
+## global management of the process
+remove_Progress_File() #reset the build progress information (sanity action)
+begin_Progress(workspace NEED_REMOVE)
 
 if(UPDATE_ALL_PACKAGES STREQUAL ON)
 	set(UPDATE_PACKS TRUE)
@@ -41,4 +45,10 @@ else()	#by default using official remote (where all official references are from
 endif()
 upgrade_Workspace(${TARGET_REMOTE} ${UPDATE_PACKS})
 
-
+## global management of the process
+if(UPDATE_PACKS)
+	message("--------------------------------------------")
+	message("All packages deployed during this process : ")
+	print_Deployed_Packages()
+endif()
+finish_Progress(TRUE) #reset the build progress information

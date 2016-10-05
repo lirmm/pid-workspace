@@ -22,7 +22,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 
-include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 if(REQUIRED_PACKAGE)
 	if(NOT EXISTS ${WORKSPACE_DIR}/packages/${REQUIRED_PACKAGE} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/packages/${REQUIRED_PACKAGE})

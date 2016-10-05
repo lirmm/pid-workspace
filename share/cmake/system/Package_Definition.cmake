@@ -18,7 +18,7 @@
 #########################################################################################
 
 
-include(Package_Internal_Definition NO_POLICY_SCOPE)
+include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
 include(CMakeParseArguments)
 
 ### API : declare_PID_Package(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... LICENSE license [ADDRESS address] DESCRIPTION ...)

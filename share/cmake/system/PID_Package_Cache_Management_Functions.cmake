@@ -599,7 +599,6 @@ reset_Platforms_Variables()
 reset_To_Install_Packages()
 reset_To_Install_External_Packages()
 reset_Wiki_Info()
-set(ALREADY_UPDATED_PACKAGES CACHE INTERNAL "")
 endfunction(reset_All_Component_Cached_Variables)
 
 ###
@@ -1044,9 +1043,11 @@ file(WRITE ${file} "")
 write_Use_File(${file} ${PROJECT_NAME} ${CMAKE_BUILD_TYPE})
 
 #finalizing release mode by agregating info from the debug mode
-if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
-	file(READ "${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp" DEBUG_CONTENT)
-	file(APPEND ${file} "${DEBUG_CONTENT}")
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode
+	if(EXISTS ${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp)
+		file(READ ${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp DEBUG_CONTENT)
+		file(APPEND ${file} "${DEBUG_CONTENT}")
+	endif()
 endif()
 endfunction(create_Use_File)
 

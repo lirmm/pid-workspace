@@ -21,13 +21,14 @@
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-include(Package_Internal_Policies NO_POLICY_SCOPE)
-include(Package_Internal_Finding NO_POLICY_SCOPE)
-include(Package_Internal_Configuration NO_POLICY_SCOPE)
-include(Package_Internal_Referencing NO_POLICY_SCOPE)
-include(Package_Internal_Targets_Management NO_POLICY_SCOPE)
+include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
+include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
+include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
+include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
 
 ########################################################################
 ########## Categories (classification of packages) management ##########
@@ -801,5 +802,6 @@ message("VERSION: ${LICENSE_VERSION}")
 message("OFFICIAL NAME: ${LICENSE_FULLNAME}")
 message("AUTHORS: ${LICENSE_AUTHORS}")
 endfunction()
+
 
 
