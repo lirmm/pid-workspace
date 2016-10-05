@@ -146,10 +146,10 @@ if(version_dirs)#seaking for a good version only if there are versions installed
 			endif()
 		endif()
 	endforeach()
-endif()
-if(result)#at least a good version has been found
-	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-	document_Version_Strings(${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
+	if(result)#at least a good version has been found
+		set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+		document_Version_Strings(${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
+	endif()
 endif()
 endfunction(check_Best_Version)
 
@@ -741,12 +741,12 @@ if(EXIST)
 
 	#variables that will be filled by generic functions
 	if(${package}_FIND_VERSION)
-		if(${package}_FIND_VERSION_EXACT) #using a specific version (only patch number can be adapted, first searching if there is any local version matching constraints, otherwise search for a non local version)
+		if(${package}_FIND_VERSION_EXACT) #using a specific version (only patch number can be adapted)
 			check_Exact_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR})
-		else() #using the best version as regard of version constraints (only non local version are used)
+		else() #using the best version as regard of version constraints (only minor and patch numbers can be adapted)
 			check_Best_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR})
 		endif()
-	else() #no specific version targetted using last available version (takes the last version available either local or non local - local first)
+	else() #no specific version targetted using last available version (major minor and patch numbers can be adapted)
 		check_Last_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH})
 	endif()
 
@@ -781,9 +781,6 @@ if(EXIST)
 			else()
 				set(${package}_ALL_REQUIRED_VERSIONS ${${package}_ALL_REQUIRED_VERSIONS} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" CACHE INTERNAL "")	
 			endif()
-		else()
-			set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
-			set(${package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "") #unset the exact required version	
 		endif()
 		
 		#registering PID system version for that package
@@ -863,9 +860,6 @@ if(EXIST)
 			else()
 				set(${package}_ALL_REQUIRED_VERSIONS ${${package}_ALL_REQUIRED_VERSIONS} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" CACHE INTERNAL "")	
 			endif()
-		else()
-			set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
-			set(${package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "") #unset the exact required version	
 		endif()
 	else()#no adequate version found
 		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)

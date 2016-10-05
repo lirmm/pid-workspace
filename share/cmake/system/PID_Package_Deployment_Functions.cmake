@@ -173,7 +173,7 @@ if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #if no automatic downloa
 		endif()
 	else()
 		set(WITH_VERSION FALSE)
-		check_Package_Managed_In_Current_Process(${package} RES)
+		check_Package_Managed_In_Current_Process(${package} RES) #as no version constraint apply simply do nothing if the package as already been managed
 		if(RES)
 			set(NEED_CHECK_UPDATE FALSE)
 		else()
@@ -185,7 +185,7 @@ if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #if no automatic downloa
 		package_Source_Exists_In_Workspace(SOURCE_EXIST RETURNED_PATH ${package})
 		if(SOURCE_EXIST) # updating the source package, if possible
 			if(WITH_VERSION) 
-				deploy_Source_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")	
+				deploy_Source_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
 			else()
 				deploy_Source_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
 			endif()
@@ -485,7 +485,7 @@ set(${RES_PLATFORM} PARENT_SCOPE)
 endfunction(select_Platform_Binary_For_Version)
 
 ###
-function(deploy_Binary_Package DEPLOYED package exclude_versions)
+function(deploy_Binary_Package DEPLOYED package already_installed_versions)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
@@ -493,9 +493,9 @@ if(NOT available_versions)
 	return()
 endif()
 select_Last_Version(RES_VERSION "${available_versions}")# taking the most up to date version from all eligible versions
-list(FIND exclude_versions ${RES_VERSION} INDEX)
+list(FIND already_installed_versions ${RES_VERSION} INDEX)
 set(INSTALLED FALSE)
-if(INDEX EQUAL -1) # selected version not found in versions to exclude
+if(INDEX EQUAL -1) # selected version not found in versions already installed
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the current process
 		select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
@@ -508,13 +508,11 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
 		endif()
 	else()
 		if(RES STREQUAL "FAIL") # this package version has FAILED TO be install during current process
-			set(INSTALLED FALSE PARENT_SCOPE)
-		else() #SUCCESS (should never happen since if install was successfull then it would have generate an installed version)
-			message("[PID] WARNING : package ${package} version ${RES_VERSION} is marked as installed BUT the system cannot find it in install path !! Maybe a PID BUG, please contact the developpers of PID.")			
-			set(INSTALLED TRUE PARENT_SCOPE)
+			set(INSTALLED FALSE)
+		else() #SUCCESS because last correct version already built
+			set(INSTALLED TRUE)
 		endif()
 	endif()
-
 
 else()
 	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
@@ -525,7 +523,7 @@ set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 endfunction(deploy_Binary_Package)
 
 ###
-function(deploy_Binary_Package_Version DEPLOYED package VERSION_MIN EXACT exclude_versions)
+function(deploy_Binary_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
@@ -551,7 +549,7 @@ if(NOT RES_VERSION)
 	return()
 endif()
 set(INSTALLED FALSE)
-list(FIND exclude_versions ${RES_VERSION} INDEX)
+list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the current process
@@ -564,10 +562,9 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
 		endif()
 	else()
 		if(RES STREQUAL "FAIL") # this package version has FAILED TO be install during current process
-			set(INSTALLED FALSE PARENT_SCOPE)
-		else() #SUCCESS (should never happen since if install was successfull then it would have generate an installed version)
-			message("[PID] WARNING : package ${package} version ${RES_VERSION} is marked as installed BUT the system cannot find it in install path !! Maybe a PID BUG, please contact the developpers of PID.")			
-			set(INSTALLED TRUE PARENT_SCOPE)
+			set(INSTALLED FALSE)
+		else() #SUCCESS because last correct version already built
+			set(INSTALLED TRUE)
 		endif()
 	endif()
 else()
@@ -701,7 +698,7 @@ endfunction(build_And_Install_Source)
 
 
 ###
-function(deploy_Source_Package DEPLOYED package exclude_versions)
+function(deploy_Source_Package DEPLOYED package already_installed_versions)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number 
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 
@@ -726,7 +723,7 @@ if(NOT RES_VERSION)
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
-list(FIND exclude_versions ${RES_VERSION} INDEX)
+list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) #not found in installed versions
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the process
@@ -746,7 +743,6 @@ if(INDEX EQUAL -1) #not found in installed versions
 		if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
 			set(${DEPLOYED} FALSE PARENT_SCOPE)
 		else() #SUCCESS (should never happen since if build was successfull then it would have generate an installed version) 
-			message("[PID] WARNING : package ${package} is marked as installed BUT the system cannot find it in install path !! Maybe a PID BUG, please contact the developpers of PID.")			
 			set(${DEPLOYED} TRUE PARENT_SCOPE)
 		endif()
 	endif()
@@ -759,7 +755,7 @@ restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Package)
 
 ###
-function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT exclude_versions)
+function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
@@ -791,7 +787,7 @@ if(NOT RES_VERSION)
 	return()
 endif()
 
-list(FIND exclude_versions ${RES_VERSION} INDEX)
+list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN") # this package version has not been build since last command
@@ -809,7 +805,7 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 	else()
 		if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
 			set(${DEPLOYED} FALSE PARENT_SCOPE)
-		else() #SUCCESS (should happen when target package version is previously built but at first time the current package is configured)		
+		else() #SUCCESS because last correct version already built
 			set(${DEPLOYED} TRUE PARENT_SCOPE)
 		endif()
 
