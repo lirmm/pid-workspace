@@ -634,6 +634,7 @@ endif() # from here we can navigate between branches freely
 update_Repository_Versions(UPDATE_OK ${package})
 if(NOT UPDATE_OK)
 	message("[PID] ERROR : impossible to release package ${TARGET_PACKAGE} because its master branch cannot be updated from official one. Maybe you have no clone rights from official or local master branch of package ${package} is not synchronizable with official master branch.")
+	go_To_Integration(${package}) #always go back to integration branch
 	return()
 endif() #from here graph of commits and version tags are OK
 
@@ -674,6 +675,7 @@ endif()
 merge_Into_Master(MERGE_OK ${package} ${STRING_NUMBER})
 if(NOT MERGE_OK)
 	message("[PID] ERROR : cannot release package ${package}, because there are potential merge conflicts between master and integration branches. Please update ${package} integration branch first then launch again the release process.")
+	go_To_Integration(${package}) #always go back to integration branch	
 	return()
 endif()
 publish_Repository_Version(${package} ${STRING_NUMBER})
@@ -697,11 +699,11 @@ else()#default behavior
 	set(patch 0)
 endif()
 # still on integration branch
-set_Version_Number_To_Package(${package} ${major} ${minor} ${patch})
-register_Repository_Version(${package} "${major}.${minor}.${patch}")
+set_Version_Number_To_Package(${package} ${major} ${minor} ${patch}) #change the package description with new version
+register_Repository_Version(${package} "${major}.${minor}.${patch}") # commit new modified version
 publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand
 set(${RESULT} ${STRING_NUMBER} PARENT_SCOPE)
-update_Remotes(${package})
+update_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory) 
 endfunction(release_PID_Package)
 
 ##########################################
