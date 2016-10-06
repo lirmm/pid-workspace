@@ -198,19 +198,28 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			COMMENT "[PID] Building package (Debug and Release modes) ..."
 			VERBATIM
 		)
+		#mode specific build commands
+		add_custom_target(build_release
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
+			COMMENT "[PID] Release build..."
+			VERBATIM
+		)
+		add_dependencies(build_release reconfigure) #checking if reconfiguration is necessary before build
+		add_dependencies(build_release sync-version)#checking if PID version synchronizing needed before build
+		add_dependencies(build_release check-branch)#checking if not built on master branch or released tag
+		add_dependencies(build_release check-repository) #checking if remote addrr needs to be changed
+		
+		add_custom_target(build_debug
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
+			COMMENT "[PID] Debug build..."
+			VERBATIM
+		)
+		add_dependencies(build_debug reconfigure) #checking if reconfiguration is necessary before build
+		add_dependencies(build_debug sync-version)#checking if PID version synchronizing needed before build
+		add_dependencies(build_debug check-branch)#checking if not built on master branch or released tag
+		add_dependencies(build_debug check-repository) #checking if remote addrr needs to be changed
 	endif()
-	#mode specific build commands
-	add_custom_target(build_release
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
-		COMMENT "[PID] Release build..."
-		VERBATIM
-	)
-
-	add_custom_target(build_debug
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
-		COMMENT "[PID] Debug build..."
-		VERBATIM
-	)
+	
 
 	add_dependencies(build reconfigure) #checking if reconfiguration is necessary before build
 	add_dependencies(build sync-version)#checking if PID version synchronizing needed before build
