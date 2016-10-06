@@ -201,8 +201,16 @@ else()#testing with only two elements
 		set(${major} ${major_vers} PARENT_SCOPE)
 		set(${minor} ${minor_vers} PARENT_SCOPE)
 		set(${patch} PARENT_SCOPE)
-	else()
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : corrupted version string ${version_string}.")
+	else() #only a major number ??
+		string(REGEX REPLACE "^([0-9]+)$" "\\1" A_VERSION "${version_string}")
+		if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed with major.minor format
+			list(GET A_VERSION 0 major_vers)
+			set(${major} ${major_vers} PARENT_SCOPE)
+			set(${minor} PARENT_SCOPE)
+			set(${patch} PARENT_SCOPE)
+		else() #not even a number
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : corrupted version string ${version_string}.")
+		endif()
 	endif()
 endif()	
 endfunction(get_Version_String_Numbers)

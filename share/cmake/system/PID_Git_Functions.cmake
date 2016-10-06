@@ -355,7 +355,7 @@ function(is_Package_Connected CONNECTED package remote)
 	else()
 		set(${CONNECTED} FALSE PARENT_SCOPE)
 	endif()
-endfunction()
+endfunction(is_Package_Connected)
 
 ### function called when deploying a package from reference files
 function(clone_Repository IS_DEPLOYED package url)

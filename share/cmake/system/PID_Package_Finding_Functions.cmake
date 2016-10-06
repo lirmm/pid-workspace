@@ -583,7 +583,6 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 		return()#by default the version is compatible (no constraints) so return 
 	endif()
 else()#the dependency has not been already found
-#	message("DEBUG resolve_Package_Dependency ${dependency} NOT FOUND !!")	
 	if(${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX})
 		
 		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version has been specified

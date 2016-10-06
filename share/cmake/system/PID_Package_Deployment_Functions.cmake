@@ -954,6 +954,8 @@ if(SELECTED) # if there is ONE adequate reference, downloading and installing it
 		message("[PID] INFO : external package ${package} (version ${SELECTED}) has been installed.")
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 		return()
+	else()
+		message("[PID] CRITICAL ERROR : external package ${package} (version ${SELECTED}) cannot be deployed.")
 	endif()
 else()
 	message("[PID] ERROR : impossible to find an adequate version for external package ${package}.")
