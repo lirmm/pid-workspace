@@ -687,7 +687,7 @@ function(build_And_Install_Source DEPLOYED package version)
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		RESULT_VARIABLE BUILD_RES
 		)
-	if(BUILD_RES GREATER -1 AND EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
+	if(BUILD_RES EQUAL 0 AND EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
 		set(${DEPLOYED} TRUE PARENT_SCOPE)
 		message("[PID] INFO : ... package ${package} version ${version} built !")
 	else()
