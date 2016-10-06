@@ -39,7 +39,7 @@ option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of 
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
 option(BUILD_DEPENDENT_PACKAGES "the build will leads to the rebuild of its dependent package that lies in the workspace as source packages" ON)
 
-option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode (higgen by default)" OFF)
+option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 endmacro(declare_Mode_Cache_Options)
 
 ###
@@ -402,7 +402,7 @@ function(add_Platform SELECT name os arch abi constraints)
 		set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_ABI${USE_MODE_SUFFIX} ${abi} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_CONFIGURATION${USE_MODE_SUFFIX} ${constraints} CACHE INTERNAL "")
 	else()
-		message(FATAL_ERROR "[PID] INFO : when defining platform ${name}, this platform is already defined, please use another name.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : when defining platform ${name}, this platform is already defined, please use another name.")
 	endif()
 	if(SELECT)
 		set(${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX} ${name} CACHE INTERNAL "")

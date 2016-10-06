@@ -711,7 +711,7 @@ if(NOT UPDATE_OK)
 endif()
 get_Repository_Version_Tags(GIT_VERSIONS ${package})
 if(NOT GIT_VERSIONS) #no version available => BUG
-	message("[PID] CRITICAL ERROR : no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
+	message("[PID] ERROR : no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
@@ -736,7 +736,7 @@ if(INDEX EQUAL -1) #not found in installed versions
 			set(${DEPLOYED} TRUE PARENT_SCOPE)
 			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
 		else()
-			message("[PID]  ERROR : automatic build and install of package ${package} FAILED !!")
+			message("[PID] ERROR : automatic build and install of package ${package} FAILED !!")
 			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} TRUE FALSE)
 		endif()
 	else()
@@ -747,7 +747,9 @@ if(INDEX EQUAL -1) #not found in installed versions
 		endif()
 	endif()
 else()
-	message("[PID] INFO : package ${package} is already up to date ...")
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : package ${package} is already up to date ...")
+	endif()	
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
 endif()
@@ -769,7 +771,7 @@ endif()
 
 get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
 if(NOT GIT_VERSIONS) #no version available => BUG
-	message("[PID] CRITICAL ERROR : no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
+	message("[PID] ERROR : no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
@@ -939,7 +941,7 @@ if(NOT IS_EXISTING)
 endif()
 include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
 if(${refer_path} STREQUAL NOTFOUND)
-	message("[PID] ERROR : reference file not found for package ${package}!! This is certainly due to a bad released package. Please contact the administrator of the external package ${package} !!!")
+	message("[PID] ERROR : reference file not found for package ${package}!! This is certainly due to a badly released package. Please contact the administrator of the external package ${package} !!!")
 	return()
 endif()
 
@@ -955,7 +957,7 @@ if(SELECTED) # if there is ONE adequate reference, downloading and installing it
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 		return()
 	else()
-		message("[PID] CRITICAL ERROR : external package ${package} (version ${SELECTED}) cannot be deployed.")
+		message("[PID] ERROR : external package ${package} (version ${SELECTED}) cannot be deployed.")
 	endif()
 else()
 	message("[PID] ERROR : impossible to find an adequate version for external package ${package}.")
@@ -1020,8 +1022,6 @@ if(RES STREQUAL "UNKNOWN")
 
 elseif(RES STREQUAL "FAIL") # this package version has FAILED TO be install during current process
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
-else() #SUCCESS (should never happen since if install was successfull then it would have generate an installed version)
-	message("[PID] WARNING : package ${package} version ${version} is marked as installed BUT the system cannot find it in install path !! Maybe a PID BUG, please contact the developpers of PID.")			
 endif()
 
 set(${DEPLOYED} TRUE PARENT_SCOPE)
@@ -1033,7 +1033,11 @@ function(download_And_Install_External_Package INSTALLED package version platfor
 set(${INSTALLED} FALSE PARENT_SCOPE)
 
 ###### downloading the binary package ######
-message("[PID] INFO : downloading the external binary package ${package} with version ${version} for platform ${platform}, please wait ...")
+message("[PID] INFO : deploying the external package ${package} with version ${version} for platform ${platform}, please wait ...")
+if(ADDITIONNAL_DEBUG_INFO)
+	message("[PID] INFO : installing external package ${package}, version ${version}...")
+endif()
+
 #1) release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
@@ -1086,7 +1090,9 @@ endif()
 
 # 2) extracting binary archive in cross platform way
 set(error_res "")
-message("[PID] INFO : decompressing the external binary package ${package}, please wait ...")
+if(ADDITIONNAL_DEBUG_INFO)
+	message("[PID] INFO : decompressing the external binary package ${package}, please wait ...")
+endif()
 if(EXISTS download_url_dbg)
 	execute_process(
           	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG}
@@ -1112,7 +1118,9 @@ if (error_res)
 endif()
 
 # 3) copying resulting folders into the install path in a cross platform way
-message("[PID] INFO : installing the external binary package ${package} (version ${version}) into the workspace, please wait ...")
+if(ADDITIONNAL_DEBUG_INFO)
+	message("[PID] INFO : installing the external binary package ${package} (version ${version}) into the workspace, please wait ...")
+endif()
 set(error_res "")
 if(EXISTS download_url_dbg)
 	execute_process(
@@ -1127,7 +1135,7 @@ endif()
 
 if (error_res)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : cannot extract folder from ${FOLDER_BINARY} ${FOLDER_BINARY_DEBUG}.")
+	message("[PID] ERROR : cannot extract folder from ${FOLDER_BINARY} ${FOLDER_BINARY_DEBUG} to get binary version ${version} of package ${package}.")
 	return()
 endif()
 # 4) removing generated artifacts

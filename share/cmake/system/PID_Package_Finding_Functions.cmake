@@ -598,7 +598,6 @@ else()#the dependency has not been already found
 
 		else()
 			#WARNING recursive call to find package
-#			message("DEBUG before find : dep= ${dependency}, version = ${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}")
 			find_package(
 				${dependency} 
 				${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}} 
