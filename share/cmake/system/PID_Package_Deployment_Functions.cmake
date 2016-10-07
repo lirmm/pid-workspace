@@ -162,7 +162,7 @@ endfunction(resolve_Package_Dependencies)
 ### function called by find script subfunctions to automatically update a package, if possible 
 function(update_Package_Installed_Version package major minor exact already_installed)
 first_Called_Build_Mode(FIRST_TIME) # do the update only once per global configuration of the project
-if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #if no automatic download then simply do nothing
+if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_UPDATE) #if no automatic download then simply do nothing
 	if(NOT major STREQUAL "" AND NOT minor STREQUAL "") 
 		set(WITH_VERSION TRUE)
 		check_Package_Version_Managed_In_Current_Process(${package} "${major}.${minor}" RES)
@@ -321,11 +321,12 @@ if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	set(EXACT FALSE)
 	resolve_Required_Package_Version(POSSIBLE VERSION_MIN EXACT ${package})
 	if(NOT POSSIBLE)
-		message("[PID] ERROR : impossible to find an adequate version for package ${package}.")
+		message("[PID] ERROR : When deploying package ${package}, impossible to find an adequate version for package ${package}.")
 		set(${INSTALL_OK} FALSE PARENT_SCOPE)
 		return()
+	else()
+		message("[PID] INFO : deploying package ${package}...")
 	endif()
-	#message("DEBUG a min version has been chosen : ${VERSION_MIN} and is exact ? = ${EXACT}")
 	set(NO_VERSION FALSE)	
 else()
 	set(NO_VERSION TRUE)
@@ -340,7 +341,7 @@ if(USE_SOURCES) #package sources reside in the workspace
 		deploy_Source_Package(SOURCE_DEPLOYED ${package} "") # case when the sources exist but haven't been installed yet (should never happen)
 	endif()
 	if(NOT SOURCE_DEPLOYED)
-		message("[PID] ERROR : impossible to deploy sources package ${package}. Try \"by hand\".")
+		message("[PID] ERROR : impossible to deploy package ${package} from sources. Try \"by hand\".")
 	else()
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 	endif()
@@ -371,13 +372,13 @@ else()#using references
 			endif()
 			if(NOT SOURCE_DEPLOYED)
 				set(${INSTALL_OK} FALSE PARENT_SCOPE)				
-				message("[PID] ERROR : impossible to build the package sources ${package}. Try \"by hand\".")
+				message("[PID] ERROR : impossible to build the package ${package} (version ${VERSION_MIN}) from sources. Try \"by hand\".")
 				return()
 			endif()
 			set(${INSTALL_OK} TRUE PARENT_SCOPE)
 		else()
 			set(${INSTALL_OK} FALSE PARENT_SCOPE)
-			message("[PID] ERROR : impossible to locate source repository of package ${package}.")			
+			message("[PID] ERROR : impossible to locate source repository of package ${package} or to find a compatible binary version starting from ${VERSION_MIN}.")			
 			return()
 		endif()
 	endif()
@@ -388,10 +389,14 @@ endfunction(install_Package)
 ###
 function(deploy_Package_Repository IS_DEPLOYED package)
 if(${package}_ADDRESS)
-	message("[PID] INFO : cloning the repository of source package ${package}...")
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : cloning the repository of source package ${package}...")
+	endif()	
 	clone_Repository(DEPLOYED ${package} ${${package}_ADDRESS})
 	if(DEPLOYED)
-		message("[PID] INFO : repository of source package ${package} has been cloned.")
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : repository of source package ${package} has been cloned.")
+		endif()
 	else()
 		message("[PID] ERROR : cannot clone the repository of source package ${package}.")
 	endif()
@@ -516,7 +521,9 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 
 else()
 	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
-	message("[PID] INFO : package ${package} is already up to date ...")
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : package ${package} is already up to date ...")
+	endif()
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
@@ -527,7 +534,9 @@ function(deploy_Binary_Package_Version DEPLOYED package VERSION_MIN EXACT alread
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
-	message("[PID] INFO : no available binary versions of package ${package} for the current platform.")
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : no available binary versions of package ${package} for the current platform.")
+	endif()
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
@@ -569,7 +578,9 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	endif()
 else()
 	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
-	message("[PID] INFO : package ${package} is already up to date ...")
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : package ${package} is already up to date ...")
+	endif()
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
@@ -587,11 +598,16 @@ endfunction(generate_Binary_Package_Name)
 ###
 function(download_And_Install_Binary_Package INSTALLED package version_string platform)
 get_System_Variables(OS_STRING ARCH_BITS ABI_STRING PACKAGE_STRING)
+
+message("[PID] INFO : deploying the binary package ${package} with version ${version_string} for platform ${platform}, please wait ...")
+if(ADDITIONNAL_DEBUG_INFO)
+	message("[PID] INFO : downloading the binary package ${package} version ${version_string} for platform ${platform}, please wait ...")
+endif()
+
 ###### downloading the binary package ######
 #release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
-message("[PID] INFO : downloading the binary package ${package} version ${version_string} for platform ${platform}, please wait ...")
 
 generate_Binary_Package_Name(${package} ${version_string} ${platform} Release FILE_BINARY FOLDER_BINARY)
 set(download_url ${${package}_REFERENCE_${version_string}_${platform}_URL})
@@ -627,7 +643,9 @@ if(NOT EXISTS ${WORKSPACE_DIR}/install/${package} OR NOT IS_DIRECTORY ${WORKSPAC
 endif()
 
 # 2) extracting binary archive in a cross platform way
-message("[PID] INFO : decompressing the binary package ${package}, please wait ...")
+if(ADDITIONNAL_DEBUG_INFO)
+	message("[PID] INFO : decompressing the binary package ${package}, please wait ...")
+endif()
 set(error_res "")
 execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
           	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
@@ -640,7 +658,9 @@ if (error_res)
 endif()
 
 # 3) copying resulting folders into the install path in a cross platform way
-message("[PID] INFO : installing the binary package ${package} (version ${version_string}) into the workspace, please wait ...")
+if(ADDITIONNAL_DEBUG_INFO)
+	message("[PID] INFO : installing the binary package ${package} (version ${version_string}) into the workspace, please wait ...")
+endif()
 
 set(error_res "")
 execute_process(
@@ -650,7 +670,7 @@ execute_process(
 
 if (error_res)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] WARNING : cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}.")
+	message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}.")
 	return()
 endif()
 
@@ -669,7 +689,9 @@ endfunction(download_And_Install_Binary_Package)
 
 ###
 function(build_And_Install_Source DEPLOYED package version)
-	message("[PID] INFO : configuring version ${version} of package ${package} ...")
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : configuring version ${version} of package ${package} ...")
+	endif()
 	if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/CMakeCache.txt)	
 		#first step populating the cache if needed		
 		execute_process(
@@ -680,21 +702,31 @@ function(build_And_Install_Source DEPLOYED package version)
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF  ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+		RESULT_VARIABLE CONFIG_RES
 		)
-	message("[PID] INFO : building version ${version} of package ${package} ...")
-	execute_process(
-		COMMAND ${CMAKE_MAKE_PROGRAM} build "force=true"
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-		RESULT_VARIABLE BUILD_RES
-		)
-	if(BUILD_RES EQUAL 0 AND EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
-		set(${DEPLOYED} TRUE PARENT_SCOPE)
-		message("[PID] INFO : ... package ${package} version ${version} built !")
-	else()
-		set(${DEPLOYED} FALSE PARENT_SCOPE)
-		message("[PID] ERROR : ... building package ${package} version ${version} has FAILED !")
-	endif()
+	if(CONFIG_RES EQUAL 0)
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : building version ${version} of package ${package} ...")
+		endif()
+		execute_process(
+			COMMAND ${CMAKE_MAKE_PROGRAM} build "force=true"
+			WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+			RESULT_VARIABLE BUILD_RES
+			)
+		if(BUILD_RES EQUAL 0 AND EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
+			set(${DEPLOYED} TRUE PARENT_SCOPE)
+			if(ADDITIONNAL_DEBUG_INFO)
+				message("[PID] INFO : ... package ${package} version ${version} built !")
+			endif()
+			return()
+		else()
+			message("[PID] ERROR : ... building package ${package} version ${version} has FAILED !")
+		endif()
 
+	else()
+		message("[PID] ERROR : ... configuration of package ${package} version ${version} has FAILED !")
+	endif()
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
 endfunction(build_And_Install_Source)
 
 
@@ -729,15 +761,14 @@ if(INDEX EQUAL -1) #not found in installed versions
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the process
 		set(ALL_IS_OK FALSE)
-		message("[PID] INFO : deploying package ${package} ...")
 		build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
 
 		if(ALL_IS_OK)
-			message("[PID] INFO : package ${package} has been deployed ...")
+			message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
 			set(${DEPLOYED} TRUE PARENT_SCOPE)
 			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
 		else()
-			message("[PID] ERROR : automatic build and install of package ${package} FAILED !!")
+			message("[PID] ERROR : automatic build and install of source package ${package} FAILED !!")
 			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} TRUE FALSE)
 		endif()
 	else()
@@ -795,7 +826,6 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN") # this package version has not been build since last command
 		set(ALL_IS_OK FALSE)
-		message("[PID] INFO : deploying version  ${RES_VERSION} of package ${package} ...")
 		build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")	
 		if(ALL_IS_OK)
 			message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
@@ -814,7 +844,9 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 
 	endif()
 else()
-	message("[PID] INFO : package ${package} is already up to date ...")
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : package ${package} is already up to date ...")
+	endif()
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} FALSE FALSE)
 endif()

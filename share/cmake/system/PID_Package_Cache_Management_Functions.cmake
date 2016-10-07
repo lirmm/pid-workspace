@@ -35,7 +35,10 @@ CMAKE_DEPENDENT_OPTION(BUILD_TESTS_IN_DEBUG "Package build and run test in debug
 
 option(BUILD_RELEASE_ONLY "Package only build release version" OFF)
 option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OFF)
+
 option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
+CMAKE_DEPENDENT_OPTION(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF "REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD" OFF)
+
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
 option(BUILD_DEPENDENT_PACKAGES "the build will leads to the rebuild of its dependent package that lies in the workspace as source packages" ON)
 
@@ -153,6 +156,7 @@ set(BUILD_TESTS_IN_DEBUG OFF CACHE BOOL "" FORCE)
 set(BUILD_RELEASE_ONLY OFF CACHE BOOL "" FORCE)
 set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
 set(ADDITIONNAL_DEBUG_INFO OFF CACHE BOOL "" FORCE)
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)
 #default ON options
 set(ENABLE_PARALLEL_BUILD ON CACHE BOOL "" FORCE)
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
