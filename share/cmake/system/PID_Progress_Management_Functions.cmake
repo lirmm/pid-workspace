@@ -81,7 +81,7 @@ endfunction(remove_Progress_File)
 
 ### function to add an already built in the pid_progress of the workspace
 ### add nothing if the package has already been taken into account
-function(add_Managed_Package_In_Current_Process package version fail external)
+function(add_Managed_Package_In_Current_Process package version state external)
 set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
@@ -91,22 +91,14 @@ if(EXISTS ${thefile})
 		list(REMOVE_DUPLICATES MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS)
 		list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}")
 		list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
-		if(fail)
-			set(${package}_${version}_STATE_IN_CURRENT_PROCESS "FAIL")	
-		else()
-			set(${package}_${version}_STATE_IN_CURRENT_PROCESS "SUCCESS")
-		endif()
+		set(${package}_${version}_STATE_IN_CURRENT_PROCESS ${state})
 	else()
 		list(APPEND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package})
 		list(REMOVE_DUPLICATES MANAGED_PACKAGES_IN_CURRENT_PROCESS)
 		get_Version_String_Numbers(${version} major minor patch)
 		list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${major}.${minor}")
 		list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
-		if(fail)
-			set(${package}_${major}.${minor}_STATE_IN_CURRENT_PROCESS "FAIL")	
-		else()
-			set(${package}_${major}.${minor}_STATE_IN_CURRENT_PROCESS "SUCCESS")
-		endif()
+		set(${package}_${major}.${minor}_STATE_IN_CURRENT_PROCESS ${state})
 	endif()
 	reset_Progress_File()
 	file(APPEND ${thefile} "set(MANAGED_PACKAGES_IN_CURRENT_PROCESS ${MANAGED_PACKAGES_IN_CURRENT_PROCESS})\n")
@@ -176,14 +168,13 @@ if(EXISTS ${thefile})
 		if(NOT FOUND EQUAL -1)# package already managed
 			list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS ${version} FOUND)
 			if(NOT FOUND EQUAL -1)# version of this package already managed
-				set(${RES} TRUE PARENT_SCOPE) #MANAGED !!
+				set(${RES} ${${package}_${version}_STATE_IN_CURRENT_PROCESS} PARENT_SCOPE) #not already managed of no file exists
 				return()
 			endif()
 		endif()
-		
 	endif() 
 endif()
-set(${RES} "UNKNOWN" PARENT_SCOPE) #not already managed of no file exists
+set(${RES} "UNKNOWN" PARENT_SCOPE) #not already managed or no file exists
 endfunction(check_Package_Version_State_In_Current_Process)
 
 
