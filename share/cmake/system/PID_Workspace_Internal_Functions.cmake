@@ -404,9 +404,14 @@ endfunction(create_PID_Package)
 
 
 ###
-function(deploy_PID_Package package version)
+function(deploy_PID_Package package version verbose)
 set(PROJECT_NAME ${package})
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
+if(verbose)
+	set(ADDITIONNAL_DEBUG_INFO ON)
+else()
+	set(ADDITIONNAL_DEBUG_INFO OFF)
+endif()
 if("${version}" STREQUAL "")#deploying the source repository
 	set(DEPLOYED FALSE)
 	deploy_Package_Repository(DEPLOYED ${package})
@@ -429,7 +434,12 @@ endif()
 endfunction(deploy_PID_Package)
 
 ###
-function(deploy_External_Package package version)
+function(deploy_External_Package package version verbose)
+if(verbose)
+	set(ADDITIONNAL_DEBUG_INFO ON)
+else()
+	set(ADDITIONNAL_DEBUG_INFO OFF)
+endif()
 get_System_Variables(OS_STRING ARCH_BITS ABI_STRING PACKAGE_STRING)
 set(MAX_CURR_VERSION 0.0.0)
 if("${version}" STREQUAL "")#deploying the latest version of the repository

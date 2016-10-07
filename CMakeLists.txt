@@ -154,6 +154,7 @@ add_custom_target(deploy
 					-DREQUIRED_PACKAGE=$(name) 
 					-DREQUIRED_VERSION=$(version)
 					-DREQUIRED_EXTERNAL=$(extern)
+					-DVERBOSE_MODE=$(verbose)
 					-DCMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
 					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}

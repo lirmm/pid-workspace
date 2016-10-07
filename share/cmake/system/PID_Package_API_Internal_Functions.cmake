@@ -66,19 +66,26 @@ elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
 endif()
 
 if(${CMAKE_BINARY_DIR} MATCHES release)
-	reset_Mode_Cache_Options()
+	reset_Mode_Cache_Options(CACHE_POPULATED)
 
 	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
 	set (INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
 	set (USE_MODE_SUFFIX "" CACHE INTERNAL "")
+	if(NOT CACHE_POPULATED)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
+		return()
+	endif()
 	
 elseif(${CMAKE_BINARY_DIR} MATCHES debug)
-	reset_Mode_Cache_Options()
+	reset_Mode_Cache_Options(CACHE_POPULATED)
 	
 	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
 	set(INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
 	set(USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "")
-	
+	if(NOT CACHE_POPULATED)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
+		return()
+	endif()
 	
 elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
@@ -320,7 +327,6 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			VERBATIM
 		)
 	endif()
-
 	if(ADDITIONNAL_DEBUG_INFO)
 		add_custom_target(list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies

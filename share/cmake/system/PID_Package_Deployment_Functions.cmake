@@ -244,7 +244,6 @@ set(successfully_installed )
 set(not_installed )
 set(${NOT_INSTALLED} PARENT_SCOPE)
 foreach(dep_package IN ITEMS ${list_of_packages_to_install}) #while there are still packages to install
-	#message("DEBUG : install required packages : ${dep_package}")
 	set(INSTALL_OK FALSE)
 	install_Package(INSTALL_OK ${dep_package})
 	if(INSTALL_OK)
@@ -305,7 +304,6 @@ else()
 	set(IS_EXISTING)
 	package_Reference_Exists_In_Workspace(IS_EXISTING ${package})
 	if(IS_EXISTING)
-		#message("DEBUG package ${package} reference exists in workspace !")
 		set(USE_SOURCES FALSE)
 	else()
 		set(${INSTALL_OK} FALSE PARENT_SCOPE)
@@ -313,7 +311,6 @@ else()
 		return()
 	endif()
 endif()
-#message("DEBUG required versions = ${${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX}}")
 if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 # 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
 	set(POSSIBLE FALSE)
@@ -692,18 +689,12 @@ function(build_And_Install_Source DEPLOYED package version)
 	if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : configuring version ${version} of package ${package} ...")
 	endif()
-	if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/CMakeCache.txt)	
-		#first step populating the cache if needed		
-		execute_process(
-			COMMAND ${CMAKE_COMMAND} ..
-			WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-			)
-	endif()
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF  ..
+		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF -D ADDITIONNAL_DEBUG_INFO:BOOL=${ADDITIONNAL_DEBUG_INFO} ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		RESULT_VARIABLE CONFIG_RES
-		)
+	)
+	
 	if(CONFIG_RES EQUAL 0)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : building version ${version} of package ${package} ...")
@@ -734,7 +725,6 @@ endfunction(build_And_Install_Source)
 function(deploy_Source_Package DEPLOYED package already_installed_versions)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number 
 set(${DEPLOYED} FALSE PARENT_SCOPE)
-
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available released modifications
 if(NOT UPDATE_OK)
@@ -791,7 +781,6 @@ endfunction(deploy_Source_Package)
 ###
 function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
-
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
