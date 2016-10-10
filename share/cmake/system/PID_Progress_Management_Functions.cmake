@@ -160,7 +160,7 @@ if(EXISTS ${thefile})
 		get_Version_String_Numbers(${version} major minor patch)
 		list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${major}.${minor}" FOUND)
 		if(NOT FOUND EQUAL -1)# version of this package already managed
-			set(${RES} ${${package}_${version}_STATE_IN_CURRENT_PROCESS} PARENT_SCOPE) #not already managed of no file exists
+			set(${RES} ${${package}_${major}.${minor}_STATE_IN_CURRENT_PROCESS} PARENT_SCOPE) #not already managed or no file exists
 			return()
 		endif()
 	else() #it may be an external package

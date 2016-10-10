@@ -101,6 +101,9 @@ endif()
 if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
 		set(INSTALLED_EXTERNAL_PACKAGES "")
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : package ${package} needs to install following packages : ${TO_INSTALL_EXTERNAL_DEPS}")
+		endif()
 		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
 		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
 			resolve_External_Package_Dependency(${package} ${installed} ${mode})
@@ -137,6 +140,9 @@ endif()
 if(TO_INSTALL_DEPS) #there are dependencies to install
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
 		set(INSTALLED_PACKAGES "")
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : package ${package} needs to install following packages : ${TO_INSTALL_DEPS}")
+		endif()
 		install_Required_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES NOT_INSTALLED)
 		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
 			resolve_Package_Dependency(${package} ${installed} ${mode})
@@ -663,9 +669,9 @@ set(error_res "")
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${package}
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${package}
-	ERROR_VARIABLE error_res OUTPUT_QUIET)
+	ERROR_QUIET OUTPUT_QUIET)
 
-if (error_res)
+if (NOT EXISTS ${WORKSPACE_DIR}/install/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
 	message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}.")
 	return()
@@ -765,6 +771,9 @@ if(INDEX EQUAL -1) #not found in installed versions
 		if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
 			set(${DEPLOYED} FALSE PARENT_SCOPE)
 		else() #SUCCESS (should never happen since if build was successfull then it would have generate an installed version) 
+			if(ADDITIONNAL_DEBUG_INFO)
+				message("[PID] INFO : package ${package} version ${RES_VERSION} is deployed ...")
+			endif()			
 			set(${DEPLOYED} TRUE PARENT_SCOPE)
 		endif()
 	endif()
@@ -828,6 +837,9 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 		if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
 			set(${DEPLOYED} FALSE PARENT_SCOPE)
 		else() #SUCCESS because last correct version already built
+			if(ADDITIONNAL_DEBUG_INFO)
+				message("[PID] INFO : package ${package} version ${RES_VERSION} is deployed ...")
+			endif()
 			set(${DEPLOYED} TRUE PARENT_SCOPE)
 		endif()
 
