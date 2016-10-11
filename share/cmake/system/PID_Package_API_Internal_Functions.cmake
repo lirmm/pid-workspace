@@ -22,16 +22,19 @@
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-include(Package_Internal_Policies NO_POLICY_SCOPE)
-include(Package_Internal_Finding NO_POLICY_SCOPE)
-include(Package_Internal_Configuration NO_POLICY_SCOPE)
-include(Package_Internal_Referencing NO_POLICY_SCOPE)
-include(Package_Internal_Cache_Management NO_POLICY_SCOPE)
-include(Package_Internal_Documentation_Management NO_POLICY_SCOPE)
-include(Package_Internal_Targets_Management NO_POLICY_SCOPE)
+include(PID_Set_Policies NO_POLICY_SCOPE)
+
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Version_Management_Functions NO_POLICY_SCOPE)
+include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
+include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
+include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Documentation_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
+
 ##################################################################################
 #################### package management public functions and macros ##############
 ##################################################################################
@@ -64,24 +67,31 @@ elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
 endif()
 
 if(${CMAKE_BINARY_DIR} MATCHES release)
-	reset_Mode_Cache_Options()
+	reset_Mode_Cache_Options(CACHE_POPULATED)
 
 	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
 	set (INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
 	set (USE_MODE_SUFFIX "" CACHE INTERNAL "")
+	if(NOT CACHE_POPULATED)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
+		return()
+	endif()
 	
 elseif(${CMAKE_BINARY_DIR} MATCHES debug)
-	reset_Mode_Cache_Options()
+	reset_Mode_Cache_Options(CACHE_POPULATED)
 	
 	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
 	set(INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
 	set(USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "")
-	
+	if(NOT CACHE_POPULATED)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
+		return()
+	endif()
 	
 elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt "")
-		
+	
 	################################################################################################
 	################################ General purpose targets #######################################
 	################################################################################################
@@ -196,19 +206,28 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			COMMENT "[PID] Building package (Debug and Release modes) ..."
 			VERBATIM
 		)
+		#mode specific build commands
+		add_custom_target(build_release
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
+			COMMENT "[PID] Release build..."
+			VERBATIM
+		)
+		add_dependencies(build_release reconfigure) #checking if reconfiguration is necessary before build
+		add_dependencies(build_release sync-version)#checking if PID version synchronizing needed before build
+		add_dependencies(build_release check-branch)#checking if not built on master branch or released tag
+		add_dependencies(build_release check-repository) #checking if remote addrr needs to be changed
+		
+		add_custom_target(build_debug
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
+			COMMENT "[PID] Debug build..."
+			VERBATIM
+		)
+		add_dependencies(build_debug reconfigure) #checking if reconfiguration is necessary before build
+		add_dependencies(build_debug sync-version)#checking if PID version synchronizing needed before build
+		add_dependencies(build_debug check-branch)#checking if not built on master branch or released tag
+		add_dependencies(build_debug check-repository) #checking if remote addrr needs to be changed
 	endif()
-	#mode specific build commands
-	add_custom_target(build_release
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
-		COMMENT "[PID] Release build..."
-		VERBATIM
-	)
-
-	add_custom_target(build_debug
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
-		COMMENT "[PID] Debug build..."
-		VERBATIM
-	)
+	
 
 	add_dependencies(build reconfigure) #checking if reconfiguration is necessary before build
 	add_dependencies(build sync-version)#checking if PID version synchronizing needed before build
@@ -309,7 +328,6 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			VERBATIM
 		)
 	endif()
-
 	if(ADDITIONNAL_DEBUG_INFO)
 		add_custom_target(list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
@@ -325,7 +343,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		)
 	endif()
 
-	if(BUILD_DEPENDENT_PACKAGES)
+	if(BUILD_DEPENDENT_PACKAGES AND ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : build process of ${PROJECT_NAME} will be recursive.")
 	endif()
 
@@ -360,6 +378,7 @@ init_PID_Version_Variable()
 init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}")
 check_For_Remote_Respositories("${address}")
 init_Standard_Path_Cache_Variables()
+begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 endmacro(declare_Package)
 
 
@@ -399,7 +418,9 @@ set(SKIP FALSE)
 set(TEST_OS ${os})
 include(CheckOS)
 if(NOT CHECK_OS_RESULT)
-	message("[PID] INFO : when checking platform ${RES_NAME}, not a ${os} operating system.")
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${os} operating system.")
+	endif()	
 	set(SKIP TRUE)
 endif()
 
@@ -416,7 +437,9 @@ include(CheckABI)
 
 #testing architecture
 if(NOT SKIP AND NOT CHECK_ARCH_RESULT)
-	message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
+	endif()	
 	set(SKIP TRUE)
 endif()
 
@@ -427,12 +450,14 @@ if(NOT SKIP)
 			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
 				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform and install it if possible
 				if(NOT CHECK_${config}_RESULT)
-					message("[PID] INFO : when checking platform ${RES_NAME}, ${config} constraint not satisfied.")
+					if(ADDITIONNAL_DEBUG_INFO)
+						message("[PID] INFO : when checking platform ${RES_NAME}, ${config} constraint not satisfied.")
+					endif()
 					set(SKIP TRUE)					
 					break()
 				endif()
 			else()
-				message(FATAL_ERROR "[PID] INFO : when checking platform ${RES_NAME}, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called Check${RES_NAME}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${RES_NAME} to manage this configuration.")
+				message(FATAL_ERROR "[PID] INFO : when checking platform ${RES_NAME}, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${RES_NAME}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${RES_NAME} to manage this configuration.")
 				return()
 			endif()
 		endforeach()
@@ -440,7 +465,9 @@ if(NOT SKIP)
 endif()
 
 if(NOT SKIP AND NOT CHECK_ABI_RESULT)
-	message("[PID] INFO : when checking platform ${RES_NAME}, ABI is not adequate (not a ${abi} ABI).")
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : when checking platform ${RES_NAME}, ABI is not adequate (not a ${abi} ABI).")
+	endif()	
 	set(SKIP TRUE)
 endif()
 
@@ -455,10 +482,14 @@ if(NOT SKIP)
 	if(NOT SELECTED) #no platform registered yet
 		add_Platform(TRUE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
 		set(${RES_NAME} TRUE PARENT_SCOPE)
-		message("[PID] INFO : platform ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}} has been selected as current one.")
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : platform selected : ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.")
+		endif()
 	else()
 		add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
-		message("[PID] WARNING : more than one possible platform configuration has been detected. Platform ${RES_NAME} is eligible but only the first found, ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}, is selected has the current platform.")
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] WARNING : more than one possible platform configuration has been detected. Platform ${RES_NAME} is eligible but only the first found, ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}} is selected.")
+		endif()	
 	endif()
 else()
 	add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")#simply registering the configuration but do not select it
@@ -485,7 +516,9 @@ macro(build_Package)
 ### checking platform constraints
 platform_Available(AVAILABLE)
 if(NOT AVAILABLE)
-	message("[PID] INFO : No check for platform, this code may be built for all default platforms as soon as its dependencies can. Automatically building a platform configuration from current environment ...")
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : No check for platform, this code may be built for all default platforms as soon as its dependencies can. Automatically building a platform configuration from current environment ...")
+	endif()
 	create_Default_Platforms_Set("") #in case the user did not define any platform check
 endif()
 platform_Selected(SELECTED)
@@ -515,10 +548,14 @@ set(INSTALL_REQUIRED FALSE)
 need_Install_External_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-		message("[PID] INFO : getting required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}.")
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : ${PROJECT_NAME} try to resolve required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}.")
+		endif()
 		set(INSTALLED_PACKAGES "")	
 		install_Required_External_Packages("${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES)
-		message("[PID] INFO : automatically installed external packages : ${INSTALLED_PACKAGES}.")
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : ${PROJECT_NAME} has automatically installed the following external packages : ${INSTALLED_PACKAGES}.")
+		endif()
 	else()
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option to install them automatically.")
 		return()
@@ -529,12 +566,23 @@ set(INSTALL_REQUIRED FALSE)
 need_Install_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-		message("[PID] INFO : getting required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}")
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : ${PROJECT_NAME} try to solve required native package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}")
+		endif()
 		set(INSTALLED_PACKAGES "")	
-		install_Required_Packages("${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES)
-		message("[PID] INFO : automatically installed packages : ${INSTALLED_PACKAGES}")
+		install_Required_Packages("${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES NOT_INSTALLED)
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : ${PROJECT_NAME} has automatically installed the following native packages : ${INSTALLED_PACKAGES}")
+		endif()
+		if(NOT_INSTALLED)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${PROJECT_NAME}, there are some unresolved required package dependencies : ${NOT_INSTALLED}.")
+			return()
+		endif()
+		foreach(a_dep IN ITEMS ${INSTALLED_PACKAGES})
+			resolve_Package_Dependency(${PROJECT_NAME} ${a_dep} ${CMAKE_BUILD_TYPE})
+		endforeach()
 	else()
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option to install them automatically.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR  when building ${PROJECT_NAME} : there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option to install them automatically.")
 		return()
 	endif()
 endif()
@@ -543,8 +591,9 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 1) resolving dependencies of required packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
-		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
-	endforeach()
+ 		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
+ 	endforeach()
+
 	#here every package dependency should have been resolved OR ERROR
 
 	# 2) when done resolving runtime dependencies for all used package (direct or undirect)
@@ -845,7 +894,7 @@ if(	BUILD_DEPENDENT_PACKAGES
 		if(SIZE EQUAL 1)
 			add_custom_target(build-dependencies
 				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-								-DBUILD_TOOL=${CMAKE_MAKE_PROGRAM}
+								-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 								-DDEPENDENT_PACKAGES=${DEPENDENT_SOURCE_PACKAGES}
 								-DPACKAGE_LAUCHING_BUILD=${PROJECT_NAME}
 								-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
@@ -855,7 +904,7 @@ if(	BUILD_DEPENDENT_PACKAGES
 		else()
 			add_custom_target(build-dependencies
 				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-								-DBUILD_TOOL=${CMAKE_MAKE_PROGRAM}
+								-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 								-DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
 								-DPACKAGE_LAUCHING_BUILD=${PROJECT_NAME}
 								-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Dependencies.cmake
@@ -877,9 +926,16 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	if(${PROJECT_NAME}_ADDRESS)
 		generate_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake) 
 	endif()
+
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD AND GLOBAL_PROGRESS_VAR)
+		message("------------------------------------------------------------------")
+		message("Packages updated or installed furing ${PROJECT_NAME} configuration :")
+		print_Deployed_Packages()
+	endif()
 endif()
 #print_Component_Variables()
 reset_Removed_Examples_Build_Option()
+finish_Progress(${GLOBAL_PROGRESS_VAR}) #managing the build from a global point of view
 endmacro(build_Package)
 
 ##################################################################################
@@ -1112,7 +1168,7 @@ endif()
 set(DECLARED FALSE)
 is_Declared(${dep_component} DECLARED)
 if(NOT DECLARED)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : component ${dep_component} is not defined in current package ${PROJECT_NAME}.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : component ${dep_component} is not defined in current package ${PROJECT_NAME}.")
 endif()
 #guarding depending type of involved components
 is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})	
@@ -1165,7 +1221,7 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 
 	endif()
 else()
-	message (FATAL_ERROR "[PID] CRITICAL ERROR : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} of package ${PROJECT_NAME}.")
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} of package ${PROJECT_NAME}.")
 	return()
 endif()
 # include directories and links do not require to be added 
@@ -1191,7 +1247,7 @@ if(NOT COMP_WILL_BE_BUILT)
 endif()
 
 if( NOT ${dep_package}_${dep_component}_TYPE)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : ${dep_component} in package ${dep_package} is not defined.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : ${dep_component} in package ${dep_package} is not defined.")
 endif()
 
 set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} FALSE CACHE INTERNAL "")
@@ -1245,7 +1301,7 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 	endif()
 else()
-	message (FATAL_ERROR "[PID] CRITICAL ERROR : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 	return()
 endif()
 
@@ -1301,7 +1357,7 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	# setting compile definitions for the target
 	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 else()
-	message (FATAL_ERROR "[PID] CRITICAL ERROR : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()
 
 endfunction(declare_System_Component_Dependency)
@@ -1325,7 +1381,7 @@ endif()
 will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
 
 if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
-	message (FATAL_ERROR "[PID] CRITICAL ERROR : the external package ${dep_package} is not defined !")
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} is not defined !")
 else()
 
 	#guarding depending type of involved components
@@ -1351,7 +1407,7 @@ else()
 		# setting compile definitions for the "fake" target
 		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 	else()
-		message (FATAL_ERROR "[PID] CRITICAL ERROR : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
+		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 	endif()
 endif()
 

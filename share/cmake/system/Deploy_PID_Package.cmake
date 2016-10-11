@@ -21,7 +21,7 @@
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
-include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 # needed to parse adequately CMAKe variables passed to the script
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)
@@ -43,6 +43,11 @@ if(REQUIRED_PACKAGE)
 		message("[PID] ERROR : Package name ${REQUIRED_PACKAGE} does not refer to any known package in the workspace.")
 		return()
 	endif()
+
+	## global management of the process
+	remove_Progress_File() #reset the build progress information (sanity action)
+	begin_Progress(workspace NEED_REMOVE)
+	
 	if(REQUIRED_VERSION)
 		if(	REQUIRED_EXTERNAL
 			AND EXISTS ${WORKSPACE_DIR}/external/${REQUIRED_PACKAGE}/${REQUIRED_VERSION}
@@ -62,7 +67,7 @@ if(REQUIRED_PACKAGE)
 		endif()
 		if(REQUIRED_EXTERNAL)
 			message("[PID] INFO : deploying external package ${REQUIRED_PACKAGE} (version ${REQUIRED_VERSION}) in the workspace ...")
-			deploy_External_Package(${REQUIRED_PACKAGE} "${REQUIRED_VERSION}")
+			deploy_External_Package(${REQUIRED_PACKAGE} "${REQUIRED_VERSION}" "${VERBOSE_MODE}")
 			return()
 		endif()
 		message("[PID] INFO : deploying native PID package ${REQUIRED_PACKAGE} (version ${REQUIRED_VERSION}) in the workspace ...")
@@ -76,7 +81,13 @@ if(REQUIRED_PACKAGE)
 		endif()
 		message("[PID] INFO : deploying native PID package ${REQUIRED_PACKAGE} (last version) in the workspace ...")
 	endif()
-	deploy_PID_Package(${REQUIRED_PACKAGE} "${REQUIRED_VERSION}")
+	deploy_PID_Package(${REQUIRED_PACKAGE} "${REQUIRED_VERSION}" "${VERBOSE_MODE}")
+	
+	## global management of the process
+	message("--------------------------------------------")
+	message("All packages deployed during this process : ")
+	print_Deployed_Packages()
+	finish_Progress(TRUE) #reset the build progress information
 	
 else()
 	message("[PID] ERROR : You must specify a package using name=<name of package> argument.")

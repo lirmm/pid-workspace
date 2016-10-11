@@ -34,7 +34,7 @@ set(BIN_PACKAGE_PATH ${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_VERSION}
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system) # using systems scripts the workspace
 list(APPEND CMAKE_MODULE_PATH ${BIN_PACKAGE_PATH}/share/cmake) # adding the cmake find scripts files from the package
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
-include(Package_Internal_Definition NO_POLICY_SCOPE)
+include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
 
 # needed to parse adequately CMAKe variables passed to the script
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)
@@ -53,8 +53,8 @@ if(${PACKAGE_NAME}_PLATFORM_DEBUG)
 	# 2) checking constraints on configuration
 	if(${PACKAGE_NAME}_PLATFORM_${platform}_CONFIGURATION_DEBUG) #there are configuration constraints
 		foreach(config IN ITEMS ${${PACKAGE_NAME}_PLATFORM_${platform}_CONFIGURATION_DEBUG})
-			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)
-				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)	# check the platform constraint and install it if possible
+			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 				if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
 					message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${PACKAGE_NAME}.")
 					return()
@@ -75,8 +75,8 @@ if(${PACKAGE_NAME}_PLATFORM)
 	# 2) checking constraints on configuration
 	if(${PACKAGE_NAME}_PLATFORM_${platform}_CONFIGURATION) #there are configuration constraints
 		foreach(config IN ITEMS ${${PACKAGE_NAME}_PLATFORM_${platform}_CONFIGURATION})
-			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)
-				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/Check${config}.cmake)	# check the platform constraint and install it if possible
+			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 				if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
 					message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${PACKAGE_NAME}.")
 					return()

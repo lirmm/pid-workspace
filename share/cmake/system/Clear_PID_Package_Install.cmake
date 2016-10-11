@@ -19,7 +19,7 @@
 
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
-include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 function(remove_Installed_Component component package install_version workspace)
 	set(PATH_TO_INSTALL_DIR ${workspace}/install/${package}/${install_version})

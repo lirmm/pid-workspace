@@ -32,7 +32,7 @@ set(freetype2_REFERENCE_2.6.1 linux64 linux64cxx11 CACHE INTERNAL "")
 
 #linux 64
 set(freetype2_REFERENCE_2.6.1_linux64_URL https://gite.lirmm.fr/pid/ext-freetype2/repository/archive.tar.gz?ref=linux-64-2.6.1 CACHE INTERNAL "")
-set(freetype2_REFERENCE_2.6.1_linux64_FOLDER ext-freetype2-linux-64-2.6.1-815676f584b216446aeefbca908ead9e2ecbabc7 CACHE INTERNAL "")
+set(freetype2_REFERENCE_2.6.1_linux64_FOLDER ext-freetype2-linux-64-2.6.1-b4825a0b98108d1cab41f166256de56f0c49925b CACHE INTERNAL "")
 
 #linux 64 cxx11 ABI
 set(freetype2_REFERENCE_2.6.1_linux64cxx11_URL https://gite.lirmm.fr/pid/ext-freetype2/repository/archive.tar.gz?ref=linux-64-cxx11-2.6.1 CACHE INTERNAL "")

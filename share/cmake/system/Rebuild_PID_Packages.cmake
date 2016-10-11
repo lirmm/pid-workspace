@@ -17,38 +17,46 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-# needed to parse adequately CMAKe variables passed to the script
-SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)
-SEPARATE_ARGUMENTS(CMAKE_SYSTEM_INCLUDE_PATH)
-SEPARATE_ARGUMENTS(CMAKE_SYSTEM_LIBRARY_PATH)
-SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_PREFIXES)
-SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_SUFFIXES)
-SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
+SEPARATE_ARGUMENTS(REQUIRED_PACKAGES)
 
-## global management of the process
 remove_Progress_File() #reset the build progress information (sanity action)
 begin_Progress(workspace NEED_REMOVE)
 
-if(UPDATE_ALL_PACKAGES STREQUAL ON)
-	set(UPDATE_PACKS TRUE)
-else()
-	set(UPDATE_PACKS FALSE)
+set(LIST_OF_TARGETS)
+
+if(REQUIRED_PACKAGES AND NOT REQUIRED_PACKAGES STREQUAL "all")
+	#clean them first
+	foreach(package IN ITEMS ${REQUIRED_PACKAGES})
+		if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build) #rebuild all target packages
+			list(APPEND LIST_OF_TARGETS ${package})
+		else()
+			message("[PID] WARNING : target package ${package} does not exist in workspace")
+		endif()
+	endforeach()
+else()#default is all
+	list_All_Source_Packages_In_Workspace(ALL_PACKAGES)
+	if(ALL_PACKAGES)
+		set(LIST_OF_TARGETS ${ALL_PACKAGES})
+	endif()
 endif()
-if(TARGET_OFFICIAL STREQUAL OFF)
-	set(TARGET_REMOTE origin)
-else()	#by default using official remote (where all official references are from)
-	set(TARGET_REMOTE official)
+
+if(LIST_OF_TARGETS)
+	#clean them first
+	foreach(package IN ITEMS ${LIST_OF_TARGETS})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} clean)
+	endforeach()
+	#then build them
+	foreach(package IN ITEMS ${LIST_OF_TARGETS})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build force=true)
+	endforeach()
 endif()
-upgrade_Workspace(${TARGET_REMOTE} ${UPDATE_PACKS})
 
 ## global management of the process
-if(UPDATE_PACKS)
-	message("--------------------------------------------")
-	message("All packages deployed during this process : ")
-	print_Deployed_Packages()
-endif()
+message("--------------------------------------------")
+message("All packages built during this process : ${LIST_OF_TARGETS}")
+message("Packages deployed/updated/checked during this process : ")
+print_Deployed_Packages()
 finish_Progress(TRUE) #reset the build progress information

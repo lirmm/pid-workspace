@@ -182,15 +182,18 @@ endfunction(document_External_Version_Strings)
 
 ###
 function(get_Version_String_Numbers version_string major minor patch)
+string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" A_VERSION "${version_string}")
+if(A_VERSION STREQUAL "${version_string}") #no match try with more than 3 elements
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)\\.?(.*)$" "\\1;\\2;\\3;\\4" A_VERSION "${version_string}")
-if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed with major.minor.patch format
+endif()
+if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed with major.minor.patch (at least) format
 	list(GET A_VERSION 0 major_vers)
 	list(GET A_VERSION 1 minor_vers)
 	list(GET A_VERSION 2 patch_vers)
 	set(${major} ${major_vers} PARENT_SCOPE)
 	set(${minor} ${minor_vers} PARENT_SCOPE)
 	set(${patch} ${patch_vers} PARENT_SCOPE)
-else()
+else()#testing with only two elements
 	string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version_string}")
 	if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed with major.minor format
 		list(GET A_VERSION 0 major_vers)
@@ -198,8 +201,16 @@ else()
 		set(${major} ${major_vers} PARENT_SCOPE)
 		set(${minor} ${minor_vers} PARENT_SCOPE)
 		set(${patch} PARENT_SCOPE)
-	else()
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : corrupted version string ${version_string}.")
+	else() #only a major number ??
+		string(REGEX REPLACE "^([0-9]+)$" "\\1" A_VERSION "${version_string}")
+		if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed with major.minor format
+			list(GET A_VERSION 0 major_vers)
+			set(${major} ${major_vers} PARENT_SCOPE)
+			set(${minor} PARENT_SCOPE)
+			set(${patch} PARENT_SCOPE)
+		else() #not even a number
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : corrupted version string ${version_string}.")
+		endif()
 	endif()
 endif()	
 endfunction(get_Version_String_Numbers)
@@ -538,21 +549,21 @@ endfunction(resolve_External_Resources_Path)
 ###
 function(set_Package_Repository_Address package git_url)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REPLACE "YEAR" "ADDRESS ${git_url}\n YEAR" NEW_CONTENT ${CONTENT})
+	string(REGEX REPLACE  "([ \t\n])YEAR" "\\1 ADDRESS ${git_url}\n YEAR" NEW_CONTENT ${CONTENT})
 	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
 endfunction(set_Package_Repository_Address)
 
 ###
 function(reset_Package_Repository_Address package new_git_url)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REGEX REPLACE "ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "ADDRESS ${new_git_url}\\2" NEW_CONTENT ${CONTENT})
+	string(REGEX REPLACE "([ \t\n])ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1 ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
 	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
 endfunction(reset_Package_Repository_Address)
 
 ###
 function(get_Package_Repository_Address package RES_URL)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REGEX REPLACE "^.+ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
+	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
 	if(url STREQUAL "${CONTENT}")#no match
 		set(${RES_URL} "" PARENT_SCOPE)
 		return()

@@ -290,17 +290,18 @@ if(NOT CONNECTED)#no official remote (due to old package style or due to a misus
 	if(NOT URL STREQUAL "")
 		message("[PID] WARNING : package ${package} has no official remote defined (malformed package), set it to ${URL}.")
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${URL} ERROR_QUIET OUTPUT_QUIET)
-	else()
+	else() #no official repository and no URL defined for the package => the package has never been connected (normal situation) 
 		set(${RESULT} FALSE PARENT_SCOPE)
 		return()
 	endif()
 endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags  OUTPUT_QUIET ERROR_QUIET)#getting new tags
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull --ff-only official master RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)#pulling master branch of official
 if(NOT res EQUAL 0)#not a fast forward !! => there is a problem
-	set(${RESULT} FALSE PARENT_SCOPE) 
+	message("[PID] WARNING : local package ${package} master branch and corresponding branch in official repository have diverge ! If you committed no modification to the local master branch (use gitk or git log to see that), ask to the administrator of this repository to solve the problem !")
+	set(${RESULT} FALSE PARENT_SCOPE)
 	return()
 endif()
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags  OUTPUT_QUIET ERROR_QUIET)#getting new tags
 set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(update_Repository_Versions)
 
@@ -354,7 +355,7 @@ function(is_Package_Connected CONNECTED package remote)
 	else()
 		set(${CONNECTED} FALSE PARENT_SCOPE)
 	endif()
-endfunction()
+endfunction(is_Package_Connected)
 
 ### function called when deploying a package from reference files
 function(clone_Repository IS_DEPLOYED package url)

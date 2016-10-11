@@ -99,8 +99,8 @@ function (check_Exact_Version 	VERSION_HAS_BEEN_FOUND
 				package_name package_install_dir major_version minor_version) #minor version cannot be increased
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 list_Version_Subdirectories(version_dirs ${package_install_dir})
-update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} true "${version_dirs}")
-if(version_dirs)#scanning non local versions
+if(version_dirs)#seaking for a good version only if there are versions installed 
+	update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} true "${version_dirs}")#updating only if there are installed versions
 	set(curr_patch_version -1)
 	foreach(patch IN ITEMS ${version_dirs})
 		string(REGEX REPLACE "^${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
@@ -126,8 +126,8 @@ set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 set(curr_max_minor_version ${minor_version})
 set(curr_patch_version 0)
 list_Version_Subdirectories(version_dirs ${package_install_dir})
-update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} false "${version_dirs}")
-if(version_dirs)#scanning local versions  
+if(version_dirs)#seaking for a good version only if there are versions installed
+	update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} false "${version_dirs}")#updating only if there are installed versions
 	foreach(version IN ITEMS ${version_dirs})
 		string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
 		if(NOT (A_VERSION STREQUAL "${version}"))#there is a match
@@ -146,10 +146,10 @@ if(version_dirs)#scanning local versions
 			endif()
 		endif()
 	endforeach()
-endif()
-if(result)#at least a good version has been found
-	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-	document_Version_Strings(${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
+	if(result)#at least a good version has been found
+		set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+		document_Version_Strings(${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
+	endif()
 endif()
 endfunction(check_Best_Version)
 
@@ -159,8 +159,8 @@ function(check_Last_Version 	VERSION_HAS_BEEN_FOUND
 				package_name package_install_dir)#taking local version or the most recent if not available
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 list_Version_Subdirectories(local_versions ${package_install_dir})
-update_Package_Installed_Version(${package_name} "" "" false "${local_versions}")
-if(local_versions)
+if(local_versions)#seaking for a good version only if there are versions installed
+	update_Package_Installed_Version(${package_name} "" "" false "${local_versions}")#updating only if there are installed versions 
 	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
 	set(version_string_curr "0.0.0")
 	foreach(local_version_dir IN ITEMS ${local_versions})
@@ -583,7 +583,6 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 		return()#by default the version is compatible (no constraints) so return 
 	endif()
 else()#the dependency has not been already found
-#	message("DEBUG resolve_Package_Dependency ${dependency} NOT FOUND !!")	
 	if(${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX})
 		
 		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version has been specified
@@ -599,7 +598,6 @@ else()#the dependency has not been already found
 
 		else()
 			#WARNING recursive call to find package
-#			message("DEBUG before find : dep= ${dependency}, version = ${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}")
 			find_package(
 				${dependency} 
 				${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}} 
@@ -741,12 +739,12 @@ if(EXIST)
 
 	#variables that will be filled by generic functions
 	if(${package}_FIND_VERSION)
-		if(${package}_FIND_VERSION_EXACT) #using a specific version (only patch number can be adapted, first searching if there is any local version matching constraints, otherwise search for a non local version)
+		if(${package}_FIND_VERSION_EXACT) #using a specific version (only patch number can be adapted)
 			check_Exact_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR})
-		else() #using the best version as regard of version constraints (only non local version are used)
+		else() #using the best version as regard of version constraints (only minor and patch numbers can be adapted)
 			check_Best_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR})
 		endif()
-	else() #no specific version targetted using last available version (takes the last version available either local or non local - local first)
+	else() #no specific version targetted using last available version (major minor and patch numbers can be adapted)
 		check_Last_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH})
 	endif()
 
@@ -756,17 +754,17 @@ if(EXIST)
 				
 			select_Components(${package} ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} "${${package}_FIND_COMPONENTS}")
 			if(USE_FILE_NOTFOUND)
-				exitFindScript(${package} "[PID] CRITICAL ERROR : the selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted")
+				exitFindScript(${package} "[PID] CRITICAL ERROR  when configuring ${PROJECT_NAME} : the selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted")
 			endif()
 
 			if(NOT ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND)
-				exitFindScript(${package} "[PID] CRITICAL ERROR : some of the requested components of the package ${package} are missing (version chosen is ${${package}_VERSION_STRING}, requested is ${${package}_FIND_VERSION}),either bad names specified or broken package versionning.")
+				exitFindScript(${package} "[PID] CRITICAL ERROR  when configuring ${PROJECT_NAME} : some of the requested components of the package ${package} are missing (version chosen is ${${package}_VERSION_STRING}, requested is ${${package}_FIND_VERSION}),either bad names specified or broken package versionning.")
 			endif()	
 		
 		else()#no component check, register all of them
 			all_Components("${package}" ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION})
 			if(USE_FILE_NOTFOUND)
-				exitFindScript(${package} "[PID] CRITICAL ERROR : the  selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted.")
+				exitFindScript(${package} "[PID] CRITICAL ERROR when configuring ${PROJECT_NAME} : the  selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted.")
 			endif()
 		endif()
 
@@ -781,9 +779,6 @@ if(EXIST)
 			else()
 				set(${package}_ALL_REQUIRED_VERSIONS ${${package}_ALL_REQUIRED_VERSIONS} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" CACHE INTERNAL "")	
 			endif()
-		else()
-			set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
-			set(${package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "") #unset the exact required version	
 		endif()
 		
 		#registering PID system version for that package
@@ -802,7 +797,7 @@ if(EXIST)
 				endif()
 			endif()
 		else()
-			exitFindScript(${package} "[PID] ERROR : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
+			exitFindScript(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
 		endif()
 	endif()
 else() #if the directory does not exist it means the package cannot be found
@@ -815,7 +810,7 @@ else() #if the directory does not exist it means the package cannot be found
 			endif()
 		endif()
 	else()
-		exitFindScript(${package} "[PID] ERROR : the required package ${package} cannot be found in the workspace.")
+		exitFindScript(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the required package ${package} cannot be found in the workspace.")
 	endif()
 
 endif()
@@ -863,9 +858,6 @@ if(EXIST)
 			else()
 				set(${package}_ALL_REQUIRED_VERSIONS ${${package}_ALL_REQUIRED_VERSIONS} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" CACHE INTERNAL "")	
 			endif()
-		else()
-			set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
-			set(${package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "") #unset the exact required version	
 		endif()
 	else()#no adequate version found
 		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)

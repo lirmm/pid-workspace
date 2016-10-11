@@ -35,11 +35,14 @@ CMAKE_DEPENDENT_OPTION(BUILD_TESTS_IN_DEBUG "Package build and run test in debug
 
 option(BUILD_RELEASE_ONLY "Package only build release version" OFF)
 option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OFF)
+
 option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
+CMAKE_DEPENDENT_OPTION(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF "REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD" OFF)
+
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
 option(BUILD_DEPENDENT_PACKAGES "the build will leads to the rebuild of its dependent package that lies in the workspace as source packages" ON)
 
-option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode (higgen by default)" OFF)
+option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 endmacro(declare_Mode_Cache_Options)
 
 ###
@@ -59,26 +62,48 @@ endif()
 
 endmacro(manage_Parrallel_Build_Option)
 
-macro(set_Mode_Specific_Options_From_Global)
+function(set_Mode_Specific_Options_From_Global)
 	execute_process(COMMAND ${CMAKE_COMMAND} -L -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR} OUTPUT_FILE ${CMAKE_BINARY_DIR}/options.txt)
 	#parsing option file and generating a load cache cmake script	
 	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES)
-	set(OPTIONS_FILE ${CMAKE_BINARY_DIR}/share/cacheConfig.cmake) 
-	file(WRITE ${OPTIONS_FILE} "")
+	set(CACHE_OK FALSE)
 	foreach(line IN ITEMS ${LINES})
 		if(NOT line STREQUAL "-- Cache values")
-			string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "set( \\1 \\3\ CACHE \\2 \"\" FORCE)\n" AN_OPTION "${line}")
-			file(APPEND ${OPTIONS_FILE} ${AN_OPTION})
+			set(CACHE_OK TRUE)
+			break()
 		endif()
 	endforeach()
-endmacro(set_Mode_Specific_Options_From_Global)
+	set(OPTIONS_FILE ${CMAKE_BINARY_DIR}/share/cacheConfig.cmake)
+	file(WRITE ${OPTIONS_FILE} "")
+	if(CACHE_OK)		
+		foreach(line IN ITEMS ${LINES})
+			if(NOT line STREQUAL "-- Cache values")
+				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "set( \\1 \\3\ CACHE \\2 \"\" FORCE)\n" AN_OPTION "${line}")
+				file(APPEND ${OPTIONS_FILE} ${AN_OPTION})
+			endif()
+		endforeach()
+	else() # only populating the load cache script with default PID cache variables to transmit them to release/debug mode caches
+		file(APPEND ${OPTIONS_FILE} "set(BUILD_EXAMPLES ${BUILD_EXAMPLES} CACHE BOOL \"\" FORCE)\n")
+		file(APPEND ${OPTIONS_FILE} "set(BUILD_API_DOC ${BUILD_API_DOC} CACHE BOOL \"\" FORCE)\n")
+		file(APPEND ${OPTIONS_FILE} "set(BUILD_LATEX_API_DOC ${BUILD_LATEX_API_DOC} CACHE BOOL \"\" FORCE)\n")
+		file(APPEND ${OPTIONS_FILE} "set(BUILD_AND_RUN_TESTS ${BUILD_AND_RUN_TESTS} CACHE BOOL \"\" FORCE)\n")
+		file(APPEND ${OPTIONS_FILE} "set(BUILD_TESTS_IN_DEBUG ${BUILD_TESTS_IN_DEBUG} CACHE BOOL \"\" FORCE)\n")
+		file(APPEND ${OPTIONS_FILE} "set(BUILD_RELEASE_ONLY ${BUILD_RELEASE_ONLY} CACHE BOOL \"\" FORCE)\n")
+		file(APPEND ${OPTIONS_FILE} "set(GENERATE_INSTALLER ${GENERATE_INSTALLER} CACHE BOOL \"\" FORCE)\n")
+		file(APPEND ${OPTIONS_FILE} "set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ${REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD} CACHE BOOL \"\" FORCE)\n")
+		file(APPEND ${OPTIONS_FILE} "set(REQUIRED_PACKAGES_AUTOMATIC_UPDATE ${REQUIRED_PACKAGES_AUTOMATIC_UPDATE} CACHE BOOL \"\" FORCE)\n")
+		file(APPEND ${OPTIONS_FILE} "set(ENABLE_PARALLEL_BUILD ${ENABLE_PARALLEL_BUILD} CACHE BOOL \"\" FORCE)\n")
+		file(APPEND ${OPTIONS_FILE} "set(BUILD_DEPENDENT_PACKAGES ${BUILD_DEPENDENT_PACKAGES} CACHE BOOL \"\" FORCE)\n")
+		file(APPEND ${OPTIONS_FILE} "set(ADDITIONNAL_DEBUG_INFO ${ADDITIONNAL_DEBUG_INFO} CACHE BOOL \"\" FORCE)\n")
+	endif()
+endfunction(set_Mode_Specific_Options_From_Global)
 
-macro(set_Global_Options_From_Mode_Specific)
+function(set_Global_Options_From_Mode_Specific)
 
-	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
-	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
 	# copying new cache entries in the global build cache
-	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES_GLOBAL)
+	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES_GLOBAL)		
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
 	# searching new cache entries in release mode cache
@@ -136,14 +161,13 @@ macro(set_Global_Options_From_Mode_Specific)
 	endforeach()
 
 	#removing temporary files containing cache entries
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
-	
-endmacro(set_Global_Options_From_Mode_Specific)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
+endfunction(set_Global_Options_From_Mode_Specific)
 
 ###
-function(reset_Mode_Cache_Options)
+function(reset_Mode_Cache_Options CACHE_POPULATED)
 #unset all global options
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
@@ -153,12 +177,18 @@ set(BUILD_TESTS_IN_DEBUG OFF CACHE BOOL "" FORCE)
 set(BUILD_RELEASE_ONLY OFF CACHE BOOL "" FORCE)
 set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
 set(ADDITIONNAL_DEBUG_INFO OFF CACHE BOOL "" FORCE)
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)
 #default ON options
 set(ENABLE_PARALLEL_BUILD ON CACHE BOOL "" FORCE)
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
 set(BUILD_DEPENDENT_PACKAGES ON CACHE BOOL "" FORCE)
 #include the cmake script that sets the options coming from the global build configuration
-include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
+if(EXISTS ${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
+	include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
+	set(${CACHE_POPULATED} TRUE PARENT_SCOPE)
+else()
+	set(${CACHE_POPULATED} FALSE PARENT_SCOPE)
+endif()
 endfunction(reset_Mode_Cache_Options)
 
 
@@ -402,7 +432,7 @@ function(add_Platform SELECT name os arch abi constraints)
 		set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_ABI${USE_MODE_SUFFIX} ${abi} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_CONFIGURATION${USE_MODE_SUFFIX} ${constraints} CACHE INTERNAL "")
 	else()
-		message(FATAL_ERROR "[PID] INFO : when defining platform ${name}, this platform is already defined, please use another name.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : when defining platform ${name}, this platform is already defined, please use another name.")
 	endif()
 	if(SELECT)
 		set(${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX} ${name} CACHE INTERNAL "")
@@ -599,7 +629,6 @@ reset_Platforms_Variables()
 reset_To_Install_Packages()
 reset_To_Install_External_Packages()
 reset_Wiki_Info()
-set(ALREADY_UPDATED_PACKAGES CACHE INTERNAL "")
 endfunction(reset_All_Component_Cached_Variables)
 
 ###
@@ -1054,9 +1083,11 @@ file(WRITE ${file} "")
 write_Use_File(${file} ${PROJECT_NAME} ${CMAKE_BUILD_TYPE})
 
 #finalizing release mode by agregating info from the debug mode
-if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
-	file(READ "${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp" DEBUG_CONTENT)
-	file(APPEND ${file} "${DEBUG_CONTENT}")
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode
+	if(EXISTS ${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp)
+		file(READ ${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp DEBUG_CONTENT)
+		file(APPEND ${file} "${DEBUG_CONTENT}")
+	endif()
 endif()
 endfunction(create_Use_File)
 

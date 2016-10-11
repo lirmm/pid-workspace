@@ -26,7 +26,7 @@
 #################################################################################################
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
-include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 # needed to parse adequately CMAKe variables passed to the script
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)
@@ -35,6 +35,10 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_LIBRARY_PATH)
 SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_PREFIXES)
 SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_SUFFIXES)
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
+
+## global management of the process
+remove_Progress_File() #reset the build progress information (sanity action)
+begin_Progress(workspace NEED_REMOVE)
 
 if(TARGET_PACKAGE)
 	if(TARGET_PACKAGE STREQUAL "all")
@@ -51,3 +55,8 @@ else()
 	message("[PID] ERROR : You must specify the name of the package to update using name= argument. If you use all as name, all packages will be updated, either they are binary or source.")
 endif()
 
+## global management of the process
+message("--------------------------------------------------------")
+message("All packages updated and deployed during this process : ")
+print_Deployed_Packages()
+finish_Progress(TRUE) #reset the build progress information

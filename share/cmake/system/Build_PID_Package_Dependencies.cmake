@@ -19,7 +19,7 @@
 
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
-include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 if(DEPENDENT_PACKAGES)
@@ -31,7 +31,7 @@ if(DEPENDENT_PACKAGES)
 			if(BRANCH_NAME AND NOT BRANCH_NAME STREQUAL "master")
 				#if on integration branch or another feature specific branch (not on master or on an "isolated" commit like one pointed by a tag)
 				message("[PID] INFO : Building ${dep_pack} ...")	
-				execute_process (COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${dep_pack}/build ${BUILD_TOOL} build)
+				execute_process (COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${dep_pack}/build ${CMAKE_MAKE_PROGRAM} build)
 				message("[PID] INFO : ${dep_pack} built.")
 			endif()
 		endif()

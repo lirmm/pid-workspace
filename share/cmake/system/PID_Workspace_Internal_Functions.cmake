@@ -21,14 +21,16 @@
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-include(Package_Internal_Policies NO_POLICY_SCOPE)
-include(Package_Internal_Finding NO_POLICY_SCOPE)
-include(Package_Internal_Configuration NO_POLICY_SCOPE)
-include(Package_Internal_Referencing NO_POLICY_SCOPE)
-include(Package_Internal_Targets_Management NO_POLICY_SCOPE)
+include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Version_Management_Functions NO_POLICY_SCOPE)
+include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
+include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
+include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
+
 ########################################################################
 ########## Categories (classification of packages) management ##########
 ########################################################################
@@ -403,9 +405,14 @@ endfunction(create_PID_Package)
 
 
 ###
-function(deploy_PID_Package package version)
+function(deploy_PID_Package package version verbose)
 set(PROJECT_NAME ${package})
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
+if(verbose)
+	set(ADDITIONNAL_DEBUG_INFO ON)
+else()
+	set(ADDITIONNAL_DEBUG_INFO OFF)
+endif()
 if("${version}" STREQUAL "")#deploying the source repository
 	set(DEPLOYED FALSE)
 	deploy_Package_Repository(DEPLOYED ${package})
@@ -428,7 +435,12 @@ endif()
 endfunction(deploy_PID_Package)
 
 ###
-function(deploy_External_Package package version)
+function(deploy_External_Package package version verbose)
+if(verbose)
+	set(ADDITIONNAL_DEBUG_INFO ON)
+else()
+	set(ADDITIONNAL_DEBUG_INFO OFF)
+endif()
 get_System_Variables(OS_STRING ARCH_BITS ABI_STRING PACKAGE_STRING)
 set(MAX_CURR_VERSION 0.0.0)
 if("${version}" STREQUAL "")#deploying the latest version of the repository
@@ -587,6 +599,7 @@ endif() # from here we can navigate between branches freely
 update_Repository_Versions(UPDATE_OK ${package})
 if(NOT UPDATE_OK)
 	message("[PID] ERROR : impossible to release package ${TARGET_PACKAGE} because its master branch cannot be updated from official one. Maybe you have no clone rights from official or local master branch of package ${package} is not synchronizable with official master branch.")
+	go_To_Integration(${package}) #always go back to integration branch
 	return()
 endif() #from here graph of commits and version tags are OK
 
@@ -627,6 +640,7 @@ endif()
 merge_Into_Master(MERGE_OK ${package} ${STRING_NUMBER})
 if(NOT MERGE_OK)
 	message("[PID] ERROR : cannot release package ${package}, because there are potential merge conflicts between master and integration branches. Please update ${package} integration branch first then launch again the release process.")
+	go_To_Integration(${package}) #always go back to integration branch	
 	return()
 endif()
 publish_Repository_Version(${package} ${STRING_NUMBER})
@@ -650,11 +664,11 @@ else()#default behavior
 	set(patch 0)
 endif()
 # still on integration branch
-set_Version_Number_To_Package(${package} ${major} ${minor} ${patch})
-register_Repository_Version(${package} "${major}.${minor}.${patch}")
+set_Version_Number_To_Package(${package} ${major} ${minor} ${patch}) #change the package description with new version
+register_Repository_Version(${package} "${major}.${minor}.${patch}") # commit new modified version
 publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand
 set(${RESULT} ${STRING_NUMBER} PARENT_SCOPE)
-update_Remotes(${package})
+update_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory) 
 endfunction(release_PID_Package)
 
 ##########################################
@@ -756,5 +770,6 @@ message("VERSION: ${LICENSE_VERSION}")
 message("OFFICIAL NAME: ${LICENSE_FULLNAME}")
 message("AUTHORS: ${LICENSE_AUTHORS}")
 endfunction()
+
 
 

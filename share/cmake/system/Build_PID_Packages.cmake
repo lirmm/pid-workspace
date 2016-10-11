@@ -18,20 +18,42 @@
 #########################################################################################
 
 
-include(${WORKSPACE_DIR}/pid/CategoriesInfo.cmake)
-
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
-
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-if(REQUIRED_CATEGORY)
-	find_In_Categories(${REQUIRED_CATEGORY})
-else()
-	message("CATEGORIES:")
-	foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
-		print_Category("" ${root_cat} 0)
+SEPARATE_ARGUMENTS(REQUIRED_PACKAGES)
+
+remove_Progress_File() #reset the build progress information (sanity action)
+begin_Progress(workspace NEED_REMOVE)
+
+if(REQUIRED_PACKAGES AND NOT REQUIRED_PACKAGES STREQUAL "all")
+	#clean them first
+	foreach(package IN ITEMS ${REQUIRED_PACKAGES})
+		if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build) #rebuild all target packages
+			list(APPEND LIST_OF_TARGETS ${package})
+		else()
+			message("[PID] WARNING : target package ${package} does not exist in workspace")
+		endif()
+	endforeach()
+else()#default is all
+	list_All_Source_Packages_In_Workspace(ALL_PACKAGES)
+	if(ALL_PACKAGES)
+		set(LIST_OF_TARGETS ${ALL_PACKAGES})
+	endif()
+endif()
+
+
+if(LIST_OF_TARGETS)
+	# build them
+	foreach(package IN ITEMS ${LIST_OF_TARGETS})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build force=true)
 	endforeach()
 endif()
 
+
+## global management of the process
+message("--------------------------------------------")
+message("All packages built during this process : ${LIST_OF_TARGETS}")
+message("Other Packages deployed/updated/checked during this process : ")
+print_Deployed_Packages()
+finish_Progress(TRUE) #reset the build progress information

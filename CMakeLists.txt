@@ -23,7 +23,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/licenses)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/find)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/constraints/platforms)
-include(Workspace_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 PROJECT(pid-workspace)
 include(CheckOS)
@@ -96,6 +96,8 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "remove -- Removing the target package from the workspace using name=NAME_OF_PACKAGE argument."
 	COMMAND ${CMAKE_COMMAND} -E echo "register -- Registering the target package in the workspace using name=NAME_OF_PACKAGE argument. The package is published so that people with adequate rights can now deploy it adequately."
 	COMMAND ${CMAKE_COMMAND} -E echo "release -- Releasing the target package using name=NAME_OF_PACKAGE argument and nextversion=MAJOR or MINOR or PATCH to indicate how to icnrease version number. The release mainly consists in good tagging of branches and publication to the server."
+	COMMAND ${CMAKE_COMMAND} -E echo "build -- building target source packages in the workspace. You can use the optionnal argument name= to define which package will be build or use the defaut value all to target all source packages."
+	COMMAND ${CMAKE_COMMAND} -E echo "rebuild -- force the rebuild of target source packages in the workspace. You can use the optionnal argument name= to define which packages will be build or use the default value all to target all source packages."
 	COMMAND ${CMAKE_COMMAND} -E echo "update -- updating a source or binary package using name=NAME_OF_PACKAGE argument. The last available version is deployed in the workspace. If all is used for name, all source and binary packages will be updated."
 	COMMAND ${CMAKE_COMMAND} -E echo "upgrade -- upgrading the workspace: install the more recent version of the PID API and references to packages. You can use the optionnal official argument to use non official remote you will use to update the workspace, by default official=ON which means the official remote is used. The argument update may be set ON or OFF -optionnal, default to OFF- to update all packages once the upgrade has been done."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -152,6 +154,7 @@ add_custom_target(deploy
 					-DREQUIRED_PACKAGE=$(name) 
 					-DREQUIRED_VERSION=$(version)
 					-DREQUIRED_EXTERNAL=$(extern)
+					-DVERBOSE_MODE=$(verbose)
 					-DCMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
 					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
@@ -176,6 +179,24 @@ add_custom_target(deploy
 					-DCMAKE_LIBRARY_ARCHITECTURE=${CMAKE_LIBRARY_ARCHITECTURE}
 					-DCURRENT_DISTRIBUTION=${CURRENT_DISTRIBUTION}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Deploy_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+## building a list of source packages  
+add_custom_target(build
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DREQUIRED_PACKAGES="$(name)"
+					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Build_PID_Packages.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+## rebuilding a list of source packages  
+add_custom_target(rebuild
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DREQUIRED_PACKAGES="$(name)"
+					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Rebuild_PID_Packages.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
