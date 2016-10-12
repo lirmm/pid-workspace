@@ -34,7 +34,7 @@ include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
-include(PID_Package_Coverage_Management NO_POLICY_SCOPE)
+include(PID_Package_Coding_Support NO_POLICY_SCOPE)
 
 ##################################################################################
 #################### package management public functions and macros ##############
