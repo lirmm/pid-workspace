@@ -819,13 +819,23 @@ if(GENERATE_INSTALLER)
 		endif(BUILD_AND_RUN_TESTS)
 	else()#debug
 		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG)
-			add_custom_target(build 
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
-				COMMAND ${CMAKE_MAKE_PROGRAM} package
-				COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-			)
+			if(BUILD_COVERAGE_REPORT)
+				add_custom_target(build 
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+				)
+			else()
+				add_custom_target(build 
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+				)
+			endif()
 		else()
 			add_custom_target(build 
 				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
@@ -869,11 +879,19 @@ else(GENERATE_INSTALLER) #do not generate an installer
 		endif()
 	else()#debug
 		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG)
-			add_custom_target(build 
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
-			)
+			if(BUILD_COVERAGE_REPORT)
+				add_custom_target(build 
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+				)
+			else()
+				add_custom_target(build 
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+				)
+			endif()
 		else()
 			add_custom_target(build 
 				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}

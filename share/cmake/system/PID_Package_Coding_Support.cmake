@@ -19,7 +19,7 @@
 
 
 
-### generating API documentation for the package
+### generating test coverage reports for the package
 function(generate_Coverage)
 
 if(${CMAKE_BUILD_TYPE} MATCHES Debug) # coverage is well generated in debug mode
