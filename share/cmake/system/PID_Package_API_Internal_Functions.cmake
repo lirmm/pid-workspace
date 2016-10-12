@@ -34,6 +34,7 @@ include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
+include(PID_Package_Coverage_Management NO_POLICY_SCOPE)
 
 ##################################################################################
 #################### package management public functions and macros ##############
@@ -292,6 +293,14 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		endif()
 	endif()
 
+	if(BUILD_COVERAGE_REPORT)
+		add_custom_target(coverage
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} coverage
+			COMMENT "[PID] Launching tests and gerenating coverage report ..."
+			VERBATIM
+		)
+	endif()
+	
 	if(BUILD_API_DOC)
 		# doc target (generation of API documentation) 
 		add_custom_target(doc
@@ -611,7 +620,7 @@ if(BUILD_AND_RUN_TESTS)
  	if(	${CMAKE_BUILD_TYPE} MATCHES Release 
 		OR (${CMAKE_BUILD_TYPE} MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
 		enable_testing()
-		add_subdirectory(test)
+		add_subdirectory(test)		
 	endif()
 endif()
 add_subdirectory(share)
@@ -627,6 +636,7 @@ generate_API() #generating the API documentation configuration file and the rule
 clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
 generate_Info_File() #generating a cmake "info" file containing info about source code of components 
 generate_Dependencies_File() #generating a cmake "dependencies" file containing information about dependencies
+generate_Coverage() #generating a coverage report in debug mode
 
 #installing specific folders of the share sub directory
 if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)
@@ -770,7 +780,6 @@ add_custom_target(list_dependencies
 #creating a global build command
 if(GENERATE_INSTALLER)
 	if(CMAKE_BUILD_TYPE MATCHES Release)
-		
 		if(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
 				add_custom_target(build
@@ -809,7 +818,7 @@ if(GENERATE_INSTALLER)
 			endif(BUILD_API_DOC)
 		endif(BUILD_AND_RUN_TESTS)
 	else()#debug
-		if(BUILD_AND_RUN_TESTS AND BUILD_DEBUG_TESTS)
+		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG)
 			add_custom_target(build 
 				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 				COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
@@ -827,7 +836,7 @@ if(GENERATE_INSTALLER)
 		endif()
 	endif()
 
-else(GENERATE_INSTALLER)
+else(GENERATE_INSTALLER) #do not generate an installer
 	if(CMAKE_BUILD_TYPE MATCHES Release)
 		if(BUILD_AND_RUN_TESTS)
 			if(BUILD_API_DOC)
@@ -859,7 +868,7 @@ else(GENERATE_INSTALLER)
 			endif(BUILD_API_DOC)
 		endif()
 	else()#debug
-		if(BUILD_AND_RUN_TESTS AND BUILD_DEBUG_TESTS)
+		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG)
 			add_custom_target(build 
 				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 				COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
@@ -1064,7 +1073,7 @@ if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")
 		return()
 	endif()
 elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
-	if(NOT ${BUILD_AND_RUN_TESTS}) #tests are not built so no need to continue
+	if(NOT BUILD_AND_RUN_TESTS) #tests are not built so no need to continue
 		mark_As_Declared(${c_name})
 		return()
 	endif()
