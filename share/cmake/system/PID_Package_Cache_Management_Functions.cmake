@@ -84,6 +84,7 @@ function(set_Mode_Specific_Options_From_Global)
 			endif()
 		endforeach()
 	else() # only populating the load cache script with default PID cache variables to transmit them to release/debug mode caches
+		file(APPEND ${OPTIONS_FILE} "set(WORKSPACE_DIR ${WORKSPACE_DIR} CACHE PATH \"\" FORCE)\n")
 		file(APPEND ${OPTIONS_FILE} "set(BUILD_EXAMPLES ${BUILD_EXAMPLES} CACHE BOOL \"\" FORCE)\n")
 		file(APPEND ${OPTIONS_FILE} "set(BUILD_API_DOC ${BUILD_API_DOC} CACHE BOOL \"\" FORCE)\n")
 		file(APPEND ${OPTIONS_FILE} "set(BUILD_COVERAGE_REPORT ${BUILD_COVERAGE_REPORT} CACHE BOOL \"\" FORCE)\n")
@@ -171,6 +172,7 @@ endfunction(set_Global_Options_From_Mode_Specific)
 ###
 function(reset_Mode_Cache_Options CACHE_POPULATED)
 #unset all global options
+set(WORKSPACE_DIR "" CACHE PATH "" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_COVERAGE_REPORT OFF CACHE BOOL "" FORCE)
