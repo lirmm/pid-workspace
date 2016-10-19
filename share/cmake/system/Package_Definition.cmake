@@ -533,7 +533,7 @@ if(RUN_PID_TEST_EXE AND RUN_PID_TEST_COMPONENT)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must use either a system executable (using EXE keyword) OR a PID application component (using COMPONENT keyword).")
 endif()
 
-set(PROJECT_RUN_TESTS TRUE)
+set(PROJECT_RUN_TESTS TRUE CACHE INTERNAL "")
 
 if(RUN_PID_TEST_EXE)
 	add_test("${RUN_PID_TEST_NAME}" "${RUN_PID_TEST_EXE}" ${RUN_PID_TEST_ARGUMENTS})

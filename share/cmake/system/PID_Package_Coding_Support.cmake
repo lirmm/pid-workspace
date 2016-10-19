@@ -80,7 +80,7 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
                   
 			COMMAND ${LCOV_PATH} --directory ${CMAKE_BINARY_DIR} --zerocounters #prepare coverage generation
 			
-			COMMAND ${CMAKE_MAKE_PROGRAM} test # Run tests
+			COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests 
 
 			COMMAND ${LCOV_PATH} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info}
 			COMMAND ${LCOV_PATH} --remove ${coverage_info} 'test/*' '/usr/*' 'external/*' 'install/*' --output-file ${coverage_cleaned} #configure the filter of output (remove everything that is not related to
@@ -92,7 +92,13 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 		)
 
 	endif()
-else() #no coverage wanted or possible (no test defined)
+else() #no coverage wanted or possible (no test defined), create a do nothing rule for coverage
+	if(BUILD_COVERAGE_REPORT AND ${CMAKE_BUILD_TYPE} MATCHES Debug) #create a do nothing target when no run is possible on coverage
+		add_custom_target(coverage  
+			COMMAND ${CMAKE_COMMAND} -E echo "[PID] WARNING : no coverage to perform !!"
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		)
+	endif()
 	set(CMAKE_CXX_FLAGS_DEBUG  "-g" CACHE STRING "Flags used by the C++ compiler during coverage builds." FORCE)
 	set(CMAKE_C_FLAGS_DEBUG  "-g" CACHE STRING "Flags used by the C compiler during coverage builds." FORCE)
 	set(CMAKE_EXE_LINKER_FLAGS_DEBUG "" CACHE STRING "Flags used for linking binaries during coverage builds." FORCE)

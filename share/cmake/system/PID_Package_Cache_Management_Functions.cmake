@@ -194,6 +194,8 @@ if(EXISTS ${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
 else()
 	set(${CACHE_POPULATED} FALSE PARENT_SCOPE)
 endif()
+#some purely internal variable that are global for the project
+set(PROJECT_RUN_TESTS FALSE CACHE INTERNAL "")
 endfunction(reset_Mode_Cache_Options)
 
 
