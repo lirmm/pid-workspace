@@ -403,8 +403,7 @@ configure_file(${WORKSPACE_DIR}/share/patterns/CMakeLists.txt.in ../packages/${p
 init_Repository(${package})
 endfunction(create_PID_Package)
 
-
-###
+### Installing a package on the workspace filesystem from an existing package repository, known in the workspace. All its dependencies will be deployed, either has binary (if available) or has source (if not). 
 function(deploy_PID_Package package version verbose)
 set(PROJECT_NAME ${package})
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
@@ -434,7 +433,7 @@ else()#deploying the target binary relocatable archive
 endif()
 endfunction(deploy_PID_Package)
 
-###
+### Installing an external package binary on the workspace filesystem from an existing download point.  
 function(deploy_External_Package package version verbose)
 if(verbose)
 	set(ADDITIONNAL_DEBUG_INFO ON)
@@ -471,7 +470,7 @@ else()#deploying the target binary relocatable archive
 endif()
 endfunction(deploy_External_Package)
 
-###
+### Resolving means: rebinding package loadtime/runtime dependencies
 function(resolve_PID_Package package version)
 set(PACKAGE_NAME ${package})
 set(PROJECT_NAME ${package})
@@ -484,11 +483,11 @@ endif()
 endfunction(resolve_PID_Package)
 
 
-###
+### Configuring the official remote repository of current package 
 function(connect_PID_Package package git_url first_time)
 save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package}) # saving local repository state
 go_To_Integration(${package})
-if(first_time)
+if(first_time)#first time this package is connected because newly created
 	# set the address of the official repository in the CMakeLists.txt of the package 
 	set_Package_Repository_Address(${package} ${git_url})
 	register_Repository_Address(${package})

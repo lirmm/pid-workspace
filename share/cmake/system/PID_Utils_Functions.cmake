@@ -549,7 +549,7 @@ endfunction(resolve_External_Resources_Path)
 ###
 function(set_Package_Repository_Address package git_url)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REGEX REPLACE  "([ \t\n])YEAR" "\\1 ADDRESS ${git_url}\n YEAR" NEW_CONTENT ${CONTENT})
+	string(REGEX REPLACE  "([ \t\n])YEAR" "\\1 ADDRESS ${git_url}\n\\1 YEAR" NEW_CONTENT ${CONTENT})
 	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
 endfunction(set_Package_Repository_Address)
 
