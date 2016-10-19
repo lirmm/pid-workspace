@@ -617,10 +617,10 @@ endif()
 add_subdirectory(src)
 add_subdirectory(apps)
 if(BUILD_AND_RUN_TESTS)
- 	if(	${CMAKE_BUILD_TYPE} MATCHES Release 
+ 	if(	${CMAKE_BUILD_TYPE} MATCHES Release
 		OR (${CMAKE_BUILD_TYPE} MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
 		enable_testing()
-		add_subdirectory(test)		
+		add_subdirectory(test)
 	endif()
 endif()
 add_subdirectory(share)
@@ -764,10 +764,12 @@ endif()
 add_custom_target(list_dependencies
 	COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 					-DPROJECT_NAME=${PROJECT_NAME}
+					-DPROJECT_VERSION=${${PROJECT_NAME}_VERSION}
 					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
 					-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-DFLAT_PRESENTATION="$(flat)"
+					-DWRITE_TO_FILE="$(write_file)"
 					-P ${WORKSPACE_DIR}/share/cmake/system/Listing_PID_Package_Dependencies.cmake
 	VERBATIM
 )

@@ -533,6 +533,8 @@ if(RUN_PID_TEST_EXE AND RUN_PID_TEST_COMPONENT)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must use either a system executable (using EXE keyword) OR a PID application component (using COMPONENT keyword).")
 endif()
 
+set(PROJECT_RUN_TESTS TRUE)
+
 if(RUN_PID_TEST_EXE)
 	add_test("${RUN_PID_TEST_NAME}" "${RUN_PID_TEST_EXE}" ${RUN_PID_TEST_ARGUMENTS})
 else()#RUN_PID_TEST_COMPONENT
@@ -540,7 +542,6 @@ else()#RUN_PID_TEST_COMPONENT
 		set(target_of_test ${RUN_PID_TEST_PACKAGE}-${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX})
 		add_test(${RUN_PID_TEST_NAME} ${target_of_test} ${RUN_PID_TEST_ARGUMENTS})
 	else()#internal component
-		
 		add_test(${RUN_PID_TEST_NAME} ${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX} ${RUN_PID_TEST_ARGUMENTS})
 	endif()
 endif()

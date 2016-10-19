@@ -61,14 +61,13 @@ if(${CMAKE_BUILD_TYPE} MATCHES Debug) # coverage is well generated in debug mode
 	endif() 
 endif()
 
-if(BUILD_COVERAGE_REPORT)
+if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 	
 	set(CMAKE_CXX_FLAGS_DEBUG  "-g -O0 --coverage -fprofile-arcs -ftest-coverage" CACHE STRING "Flags used by the C++ compiler during coverage builds." FORCE)
 	set(CMAKE_C_FLAGS_DEBUG  "-g -O0 --coverage -fprofile-arcs -ftest-coverage" CACHE STRING "Flags used by the C compiler during coverage builds." FORCE)
 	set(CMAKE_EXE_LINKER_FLAGS_DEBUG "--coverage" CACHE STRING "Flags used for linking binaries during coverage builds." FORCE)
 	set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "--coverage" CACHE STRING "Flags used by the shared libraries linker during coverage builds."  FORCE)
 	mark_as_advanced(CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_DEBUG CMAKE_EXE_LINKER_FLAGS_DEBUG CMAKE_SHARED_LINKER_FLAGS_DEBUG)
-
 
 	if(${CMAKE_BUILD_TYPE} MATCHES Debug)
 	
@@ -93,7 +92,7 @@ if(BUILD_COVERAGE_REPORT)
 		)
 
 	endif()
-else() #no coverage wanted or possible
+else() #no coverage wanted or possible (no test defined)
 	set(CMAKE_CXX_FLAGS_DEBUG  "-g" CACHE STRING "Flags used by the C++ compiler during coverage builds." FORCE)
 	set(CMAKE_C_FLAGS_DEBUG  "-g" CACHE STRING "Flags used by the C compiler during coverage builds." FORCE)
 	set(CMAKE_EXE_LINKER_FLAGS_DEBUG "" CACHE STRING "Flags used for linking binaries during coverage builds." FORCE)
