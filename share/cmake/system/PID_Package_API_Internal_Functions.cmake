@@ -278,7 +278,6 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	if(BUILD_AND_RUN_TESTS)
 		# test target (launch test units)
-		message("DEBUG creating targets BUILD_TESTS_IN_DEBUG = ${BUILD_TESTS_IN_DEBUG}")
 		if(BUILD_TESTS_IN_DEBUG)			
 			add_custom_target(test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} test
