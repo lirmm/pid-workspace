@@ -194,7 +194,7 @@ if(EXISTS ${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
 else()
 	set(${CACHE_POPULATED} FALSE PARENT_SCOPE)
 endif()
-message("DEBUG reset_Mode_Cache_Options BUILD_AND_RUN_TESTS=${BUILD_AND_RUN_TESTS} BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG}")
+message("DEBUG reset_Mode_Cache_Options BUILD_AND_RUN_TESTS=${BUILD_AND_RUN_TESTS} BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG} BUILD_COVERAGE_REPORT= ${BUILD_COVERAGE_REPORT}")
 
 #some purely internal variable that are global for the project
 set(PROJECT_RUN_TESTS FALSE CACHE INTERNAL "")
