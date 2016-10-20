@@ -77,7 +77,7 @@ if(${CMAKE_BINARY_DIR} MATCHES release)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
 		return()
 	endif()
-	
+	message("DEBUG in release BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG}")
 elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 	reset_Mode_Cache_Options(CACHE_POPULATED)
 	
@@ -88,7 +88,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
 		return()
 	endif()
-	message("DEBUG BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG}")
+	message("DEBUG in debug BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG}")
 elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt "")
@@ -277,7 +277,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	if(BUILD_AND_RUN_TESTS)
 		# test target (launch test units)
-		message("DEBUG BUILD_TESTS_IN_DEBUG = ${BUILD_TESTS_IN_DEBUG}")
+		message("DEBUG creating targets BUILD_TESTS_IN_DEBUG = ${BUILD_TESTS_IN_DEBUG}")
 		if(BUILD_TESTS_IN_DEBUG)			
 			add_custom_target(test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} test
