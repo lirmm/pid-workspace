@@ -73,8 +73,6 @@ endfunction(agregate_All_Platform_Configurations)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system) # using systems scripts the workspace
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 
-message("WRITE FILE = ${WRITE_TO_FILE}")
-
 if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 	include(${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})

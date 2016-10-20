@@ -277,7 +277,8 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 
 	if(BUILD_AND_RUN_TESTS)
 		# test target (launch test units)
-		if(BUILD_TESTS_IN_DEBUG)
+		message("DEBUG BUILD_TESTS_IN_DEBUG = ${BUILD_TESTS_IN_DEBUG}")
+		if(BUILD_TESTS_IN_DEBUG)			
 			add_custom_target(test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} test
@@ -296,7 +297,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	if(BUILD_COVERAGE_REPORT)
 		add_custom_target(coverage
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} coverage
-			COMMENT "[PID] Launching tests and gerenating coverage report ..."
+			COMMENT "[PID] Generating coverage report for tests ..."
 			VERBATIM
 		)
 	endif()
@@ -616,9 +617,10 @@ endif()
 # recursive call into subdirectories to build/install/test the package
 add_subdirectory(src)
 add_subdirectory(apps)
+message("DEBUG BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG}")
 if(BUILD_AND_RUN_TESTS)
- 	if(	${CMAKE_BUILD_TYPE} MATCHES Release
-		OR (${CMAKE_BUILD_TYPE} MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
+ 	if(	CMAKE_BUILD_TYPE MATCHES Release
+		OR (CMAKE_BUILD_TYPE MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
 		enable_testing()
 		add_subdirectory(test)
 	endif()
