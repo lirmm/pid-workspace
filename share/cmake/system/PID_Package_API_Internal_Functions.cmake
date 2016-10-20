@@ -69,6 +69,7 @@ endif()
 
 if(${CMAKE_BINARY_DIR} MATCHES release)
 	reset_Mode_Cache_Options(CACHE_POPULATED)
+	message("DEBUG in release AFTER reset_Mode_Cache_Options BUILD_AND_RUN_TESTS=${BUILD_AND_RUN_TESTS} BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG} BUILD_COVERAGE_REPORT= ${BUILD_COVERAGE_REPORT}")
 
 	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
 	set (INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
@@ -77,7 +78,7 @@ if(${CMAKE_BINARY_DIR} MATCHES release)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
 		return()
 	endif()
-	message("DEBUG in release AFTER reset_Mode_Cache_Options BUILD_AND_RUN_TESTS=${BUILD_AND_RUN_TESTS} BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG} BUILD_COVERAGE_REPORT= ${BUILD_COVERAGE_REPORT}")
+
 
 elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 	reset_Mode_Cache_Options(CACHE_POPULATED)
