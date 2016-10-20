@@ -171,7 +171,6 @@ endfunction(set_Global_Options_From_Mode_Specific)
 
 ###
 function(reset_Mode_Cache_Options CACHE_POPULATED)
-message("DEBUG reset_Mode_Cache_Options BUILD_AND_RUN_TESTS=${BUILD_AND_RUN_TESTS} BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG}")
 #unset all global options
 set(WORKSPACE_DIR "" CACHE PATH "" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -190,11 +189,13 @@ set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
 set(BUILD_DEPENDENT_PACKAGES ON CACHE BOOL "" FORCE)
 #include the cmake script that sets the options coming from the global build configuration
 if(EXISTS ${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
-	include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
+	include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake NO_POLICY_SCOPE)
 	set(${CACHE_POPULATED} TRUE PARENT_SCOPE)
 else()
 	set(${CACHE_POPULATED} FALSE PARENT_SCOPE)
 endif()
+message("DEBUG reset_Mode_Cache_Options BUILD_AND_RUN_TESTS=${BUILD_AND_RUN_TESTS} BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG}")
+
 #some purely internal variable that are global for the project
 set(PROJECT_RUN_TESTS FALSE CACHE INTERNAL "")
 endfunction(reset_Mode_Cache_Options)
