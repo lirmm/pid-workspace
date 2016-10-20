@@ -88,7 +88,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
 		return()
 	endif()
-	
+	message("DEBUG BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG}")
 elseif(${CMAKE_BINARY_DIR} MATCHES build)
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt "")
@@ -617,7 +617,7 @@ endif()
 # recursive call into subdirectories to build/install/test the package
 add_subdirectory(src)
 add_subdirectory(apps)
-message("DEBUG BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG}")
+
 if(BUILD_AND_RUN_TESTS)
  	if(	CMAKE_BUILD_TYPE MATCHES Release
 		OR (CMAKE_BUILD_TYPE MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
