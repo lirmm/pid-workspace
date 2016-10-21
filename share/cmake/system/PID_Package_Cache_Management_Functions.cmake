@@ -23,7 +23,7 @@
 #############################################################################################
 
 ###
-macro(declare_Mode_Cache_Options)
+macro(declare_Global_Cache_Options)
 
 # base options
 option(BUILD_EXAMPLES "Package builds examples" OFF)
@@ -38,14 +38,12 @@ option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messa
 
 # dependent options
 include(CMakeDependentOption)
-if(DEFINED BUILD_LATEX_API_DOC)
-	CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF "BUILD_API_DOC" OFF)
-endif()
+CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF "BUILD_API_DOC" OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_TESTS_IN_DEBUG "Package build and run test in debug mode also" OFF "BUILD_AND_RUN_TESTS" OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_COVERAGE_REPORT "Package build a coverage report in debug mode" ON "BUILD_AND_RUN_TESTS;BUILD_TESTS_IN_DEBUG" OFF)
 CMAKE_DEPENDENT_OPTION(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF "REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD" OFF)
 
-endmacro(declare_Mode_Cache_Options)
+endmacro(declare_Global_Cache_Options)
 
 ###
 macro(manage_Parrallel_Build_Option)
@@ -186,7 +184,7 @@ set(BUILD_TESTS_IN_DEBUG OFF CACHE BOOL "" FORCE)
 set(BUILD_RELEASE_ONLY OFF CACHE BOOL "" FORCE)
 set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
 set(ADDITIONNAL_DEBUG_INFO OFF CACHE BOOL "" FORCE)
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)
+set(REQUIRED_PACKAGES_AUTOMATIC_UPDATE OFF CACHE BOOL "" FORCE)
 #default ON options
 set(ENABLE_PARALLEL_BUILD ON CACHE BOOL "" FORCE)
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)

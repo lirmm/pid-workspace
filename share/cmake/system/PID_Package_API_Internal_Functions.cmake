@@ -53,8 +53,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmak
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using common find modules of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
-declare_Mode_Cache_Options()
-manage_Parrallel_Build_Option()
+
 #################################################
 ############ MANAGING build mode ################
 #################################################
@@ -68,9 +67,11 @@ elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
 endif()
 
 if(${CMAKE_BINARY_DIR} MATCHES release)
-	reset_Mode_Cache_Options(CACHE_POPULATED)
+	reset_Mode_Cache_Options(CACHE_POPULATED) # force the global cache variables from the one coming from global build
+	manage_Parrallel_Build_Option()
 	message("DEBUG in release AFTER reset_Mode_Cache_Options BUILD_AND_RUN_TESTS=${BUILD_AND_RUN_TESTS} BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG} BUILD_COVERAGE_REPORT= ${BUILD_COVERAGE_REPORT}")
 
+	#setting the variables related to the current build mode 
 	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
 	set (INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
 	set (USE_MODE_SUFFIX "" CACHE INTERNAL "")
@@ -81,9 +82,11 @@ if(${CMAKE_BINARY_DIR} MATCHES release)
 
 
 elseif(${CMAKE_BINARY_DIR} MATCHES debug)
-	reset_Mode_Cache_Options(CACHE_POPULATED)
+	reset_Mode_Cache_Options(CACHE_POPULATED) # force the global cache variables from the one coming from global build 
+	manage_Parrallel_Build_Option()
 	message("DEBUG in debug AFTER reset_Mode_Cache_Options BUILD_AND_RUN_TESTS=${BUILD_AND_RUN_TESTS} BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG} BUILD_COVERAGE_REPORT= ${BUILD_COVERAGE_REPORT}")
 	
+	#setting the variables related to the current build mode 
 	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
 	set(INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
 	set(USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "")
@@ -92,6 +95,8 @@ elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 		return()
 	endif()
 elseif(${CMAKE_BINARY_DIR} MATCHES build)
+	declare_Global_Cache_Options()
+	manage_Parrallel_Build_Option()
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt "")
 	
