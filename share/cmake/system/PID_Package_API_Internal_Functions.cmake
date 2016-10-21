@@ -69,7 +69,6 @@ endif()
 if(${CMAKE_BINARY_DIR} MATCHES release)
 	reset_Mode_Cache_Options(CACHE_POPULATED) # force the global cache variables from the one coming from global build
 	manage_Parrallel_Build_Option()
-	message("DEBUG in release AFTER reset_Mode_Cache_Options BUILD_AND_RUN_TESTS=${BUILD_AND_RUN_TESTS} BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG} BUILD_COVERAGE_REPORT= ${BUILD_COVERAGE_REPORT}")
 
 	#setting the variables related to the current build mode 
 	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
@@ -84,7 +83,6 @@ if(${CMAKE_BINARY_DIR} MATCHES release)
 elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 	reset_Mode_Cache_Options(CACHE_POPULATED) # force the global cache variables from the one coming from global build 
 	manage_Parrallel_Build_Option()
-	message("DEBUG in debug AFTER reset_Mode_Cache_Options BUILD_AND_RUN_TESTS=${BUILD_AND_RUN_TESTS} BUILD_TESTS_IN_DEBUG=${BUILD_TESTS_IN_DEBUG} BUILD_COVERAGE_REPORT= ${BUILD_COVERAGE_REPORT}")
 	
 	#setting the variables related to the current build mode 
 	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
