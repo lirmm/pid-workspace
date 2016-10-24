@@ -73,7 +73,7 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 	
 		set(coverage_info "${CMAKE_BINARY_DIR}/lcovoutput.info")
 		set(coverage_cleaned "${CMAKE_BINARY_DIR}/lcovoutput.cleaned")
-		set(coverage_dir "${CMAKE_BINARY_DIR}/lcovoutput")
+		set(coverage_dir "${CMAKE_BINARY_DIR}/share/lcovoutput")
 	
 		# Setup coverage target
 		add_custom_target(coverage
@@ -153,7 +153,6 @@ function(add_Static_Check component is_library)
 	endif()
 
 	set(CPPCHECK_TEMPLATE_TEST "--template=\"{severity}: {message}\"")
-	#message("DEBUG: ${CPPCHECK_EXECUTABLE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK}")
 	if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
 		add_test(NAME ${component}_staticcheck
 			 COMMAND ${CPPCHECK_EXECUTABLE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} "${CPPCHECK_TEMPLATE_TEST}" ${SOURCES_TO_CHECK} VERBATIM)
@@ -181,7 +180,6 @@ function(add_Static_Check component is_library)
 		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-		COMMENT "[PID] INFO: static check reports will be written in folder ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report"
 	)
 endfunction(add_Static_Check)
 
@@ -206,7 +204,7 @@ if(BUILD_STATIC_CODE_CHECKING_REPORT AND ${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(CMAKE_FIND_APPBUNDLE ${_oldappbundlesetting})
 
 	if(CPPCHECK_EXECUTABLE)
-		add_custom_target(staticchecks COMMENT "[PID] INFO : generating a static check report")
+		add_custom_target(staticchecks COMMENT "[PID] INFO : generating a static check report (look into debug/share/static_checks_report folder)")
 	else()	
 		message(STATUS "[PID] WARNING: cppcheck not found, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
 		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF FORCE)
