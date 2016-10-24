@@ -118,48 +118,23 @@ function(add_Static_Check component is_library)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target name ${component} when trying to cppcheck !")
 	endif()
 	
+	#getting sources of the target 
 	get_target_property(SOURCES_TO_CHECK ${component} SOURCES)
-	# getting specific settings of the target
-	set(ALL_SETTINGS)
-	set(SETTINGS_OPTIONS)
-	get_target_property(DEFS ${component} COMPILE_DEFINITIONS)
-	if(NOT DEFS MATCHES "NOTFOUND")
-		list(APPEND SETTINGS_OPTIONS ${DEFS})
-	endif()
-	get_target_property(INT_DEFS ${component} INTERFACE_COMPILE_DEFINITIONS)
-	if(NOT INT_DEFS MATCHES "NOTFOUND")
-		list(APPEND SETTINGS_OPTIONS ${INT_DEFS})
-	endif()
-	if(SETTINGS_OPTIONS)
-		list(REMOVE_DUPLICATES SETTINGS_OPTIONS)
-		foreach(a_setting ${SETTINGS_OPTIONS})
-			list(APPEND ALL_SETTINGS "-D${a_setting} ")
-		endforeach()
-	endif()
-	set(SETTINGS_INCLUDES)
-	get_target_property(DIRS ${component}  INCLUDE_DIRECTORIES)
-	if(NOT DIRS MATCHES "NOTFOUND")
-		list(APPEND SETTINGS_INCLUDES ${DIRS})
-	endif()
-	get_target_property(INT_DIRS ${component} INTERFACE_INCLUDE_DIRECTORIES)
-		if(NOT INT_DIRS MATCHES "NOTFOUND")
-		list(APPEND SETTINGS_INCLUDES ${INT_DIRS})
-	endif()
-	if(SETTINGS_INCLUDES)
-		list(REMOVE_DUPLICATES SETTINGS_INCLUDES)
-		foreach(a_setting ${SETTINGS_INCLUDES})
-			list(APPEND ALL_SETTINGS "-I${a_setting} ")
-		endforeach()
-	endif()
 
-	set(CPPCHECK_TEMPLATE_TEST "--template=\"{severity}: {message}\"")
+	# getting specific settings of the target (using generator expression to make it robust)
+	set(ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>, -I>>")
+	list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>")
+	list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>>:-I$<JOIN:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>, -I>>")
+	list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>, -I>>")
+
+	set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")
 	if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
 		add_test(NAME ${component}_staticcheck
-			 COMMAND ${CPPCHECK_EXECUTABLE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} "${CPPCHECK_TEMPLATE_TEST}" ${SOURCES_TO_CHECK} VERBATIM)
+			 COMMAND ${CPPCHECK_EXECUTABLE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
 		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: ")
 	endif()
 
-	set(CPPCHECK_TEMPLATE_GLOBAL "--template=\"{id} in file {file} line {line}; {severity}: {message}\"")
+	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
 	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions) 
 		set(CPPCHECK_ARGS --enable=style)
 	else()
@@ -167,11 +142,10 @@ function(add_Static_Check component is_library)
 	endif()
 
 	#adding a target to print all issues for the given target, this is used to generate a report
-	
-	#message("DEBUG :::::::::: ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} --quiet ${CPPCHECK_ARGS} ${SOURCES_TO_CHECK} > ${CMAKE_CURRENT_SOURCE_DIR}/share/static_checks_report_${component}.txt")
+	message("DEBUG :::::::::: ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_GLOBAL} ${CPPCHECK_ARGS} ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_SOURCE_DIR}/share/static_checks_report_${component}.txt")
 
 	add_custom_command(TARGET staticchecks POST_BUILD
-		COMMAND ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} "${CPPCHECK_TEMPLATE_GLOBAL}" ${CPPCHECK_ARGS} ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report/static_checks_report_${component}.txt
+		COMMAND ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_GLOBAL} ${CPPCHECK_ARGS} ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report/static_checks_report_${component}.txt
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
 		VERBATIM)
