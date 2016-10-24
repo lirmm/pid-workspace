@@ -72,8 +72,8 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 	if(${CMAKE_BUILD_TYPE} MATCHES Debug)
 	
 		set(coverage_info "${CMAKE_BINARY_DIR}/lcovoutput.info")
-		set(coverage_cleaned "${CMAKE_BINARY_DIR}/lcovoutput.cleaned")
-		set(coverage_dir "${CMAKE_BINARY_DIR}/share/lcovoutput")
+		set(coverage_cleaned "${CMAKE_BINARY_DIR}/${PROJECT_NAME}_coverage")
+		set(coverage_dir "${CMAKE_BINARY_DIR}/share/coverage_report")
 	
 		# Setup coverage target
 		add_custom_target(coverage
