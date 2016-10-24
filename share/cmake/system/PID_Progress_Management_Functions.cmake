@@ -235,6 +235,15 @@ endif()
 endfunction(finish_Progress)
 
 ###
+function(some_Packages_Deployed_Last_Time DEPLOYED)
+set(${DEPLOYED} FALSE PARENT_SCOPE)
+set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+if(EXISTS ${thefile} AND (MANAGED_PACKAGES_IN_CURRENT_PROCESS OR MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS))
+	set(${DEPLOYED} TRUE PARENT_SCOPE)
+endif()
+endfunction(some_Packages_Deployed_Last_Time)
+
+###
 function (print_Deployed_Packages)
 set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
 if(EXISTS ${thefile})
