@@ -142,8 +142,6 @@ function(add_Static_Check component is_library)
 	endif()
 
 	#adding a target to print all issues for the given target, this is used to generate a report
-	message("DEBUG :::::::::: ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_GLOBAL} ${CPPCHECK_ARGS} ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_SOURCE_DIR}/share/static_checks_report_${component}.txt")
-
 	add_custom_command(TARGET staticchecks POST_BUILD
 		COMMAND ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_GLOBAL} ${CPPCHECK_ARGS} ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report/static_checks_report_${component}.txt
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
