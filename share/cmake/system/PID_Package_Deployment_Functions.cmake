@@ -688,15 +688,37 @@ if(ADDITIONNAL_DEBUG_INFO)
 endif()
 
 set(error_res "")
-execute_process(
+if(ADDITIONNAL_DEBUG_INFO)
+	execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${package}
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${package}
-)#	ERROR_QUIET OUTPUT_QUIET)
+)
+else()
+	execute_process(
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${package}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${package}
+ 	ERROR_QUIET OUTPUT_QUIET)
+endif()
+
 
 if (NOT EXISTS ${WORKSPACE_DIR}/install/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
-	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}.")
-	return()
+	#try again
+	if(ADDITIONNAL_DEBUG_INFO)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+		  	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_VARIABLE error_res)
+	else()
+		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+		  	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_VARIABLE error_res OUTPUT_QUIET)
+	endif()
+	if (NOT EXISTS ${WORKSPACE_DIR}/install/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
+		set(${INSTALLED} FALSE PARENT_SCOPE)
+		message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}.")
+		return()
+	endif()
 endif()
 
 ############ post install configuration of the workspace ############
