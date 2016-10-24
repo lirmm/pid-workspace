@@ -112,40 +112,78 @@ endfunction(generate_Coverage)
 ### generating static code checking reports for the package
 
 ### target configuration for cppcheck
-function(add_StaticCheck component)
+function(add_Static_Check component is_library)
 
-if(BUILD_STATIC_CODE_CHECKING_REPORT AND ${CMAKE_BUILD_TYPE} MATCHES Release)
 	if(NOT TARGET ${component})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target name ${component} when trying to cppcheck !")
 	endif()
 	
-	get_target_property(SOURCES_TO_CHECK "${component}" SOURCES)
-	set(files_to_check)
-	foreach(source_file ${SOURCES_TO_CHECK}) #listing all cpp source files of the target
-		get_source_file_property(CHECK_LANG "${source_file}" LANGUAGE)
-		if("${CHECK_LANG}" MATCHES "CXX")
-			get_source_file_property(CHECK_LOC "${source_file}" LOCATION)
-			list(APPEND files_to_check "${CHECK_LOC}")
-		endif()
-	endforeach()
-
-	if(BUILD_AND_RUN_TESTS) #adding a test target to check for errors
-		add_test(NAME ${component}_cppcheck_test
-			 COMMAND "${CPPCHECK_EXECUTABLE}" ${CPPCHECK_ARGS} ${files_to_check})
-		set_tests_properties(${component}_cppcheck_test PROPERTIES FAIL_REGULAR_EXPRESSION " error: ")
+	get_target_property(SOURCES_TO_CHECK ${component} SOURCES)
+	# getting specific settings of the target
+	set(ALL_SETTINGS)
+	set(SETTINGS_OPTIONS)
+	get_target_property(DEFS ${component} COMPILE_DEFINITIONS)
+	if(NOT DEFS MATCHES "NOTFOUND")
+		list(APPEND SETTINGS_OPTIONS ${DEFS})
+	endif()
+	get_target_property(INT_DEFS ${component} INTERFACE_COMPILE_DEFINITIONS)
+	if(NOT INT_DEFS MATCHES "NOTFOUND")
+		list(APPEND SETTINGS_OPTIONS ${INT_DEFS})
+	endif()
+	if(SETTINGS_OPTIONS)
+		list(REMOVE_DUPLICATES SETTINGS_OPTIONS)
+		foreach(a_setting ${SETTINGS_OPTIONS})
+			list(APPEND ALL_SETTINGS "-D${a_setting} ")
+		endforeach()
+	endif()
+	set(SETTINGS_INCLUDES)
+	get_target_property(DIRS ${component}  INCLUDE_DIRECTORIES)
+	if(NOT DIRS MATCHES "NOTFOUND")
+		list(APPEND SETTINGS_INCLUDES ${DIRS})
+	endif()
+	get_target_property(INT_DIRS ${component} INTERFACE_INCLUDE_DIRECTORIES)
+		if(NOT INT_DIRS MATCHES "NOTFOUND")
+		list(APPEND SETTINGS_INCLUDES ${INT_DIRS})
+	endif()
+	if(SETTINGS_INCLUDES)
+		list(REMOVE_DUPLICATES SETTINGS_INCLUDES)
+		foreach(a_setting ${SETTINGS_INCLUDES})
+			list(APPEND ALL_SETTINGS "-I${a_setting} ")
+		endforeach()
 	endif()
 
-	#adding the output 
-	add_custom_command(TARGET all_cppcheck
-		PRE_BUILD
-		COMMAND ${CPPCHECK_EXECUTABLE} --quiet ${CPPCHECK_ARGS} ${files_to_check}
-		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-		COMMENT
-		"${component}_cppcheck: Running cppcheck on target ${component}..."
-		VERBATIM)
-endif()
+	set(CPPCHECK_TEMPLATE_TEST "--template=\"{severity}: {message}\"")
+	#message("DEBUG: ${CPPCHECK_EXECUTABLE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK}")
+	if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
+		add_test(NAME ${component}_staticcheck
+			 COMMAND ${CPPCHECK_EXECUTABLE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} "${CPPCHECK_TEMPLATE_TEST}" ${SOURCES_TO_CHECK} VERBATIM)
+		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: ")
+	endif()
 
-endfunction(add_StaticCheck)
+	set(CPPCHECK_TEMPLATE_GLOBAL "--template=\"{id} in file {file} line {line}; {severity}: {message}\"")
+	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions) 
+		set(CPPCHECK_ARGS --enable=style)
+	else()
+		set(CPPCHECK_ARGS --enable=all)
+	endif()
+
+	#adding a target to print all issues for the given target, this is used to generate a report
+	
+	#message("DEBUG :::::::::: ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} --quiet ${CPPCHECK_ARGS} ${SOURCES_TO_CHECK} > ${CMAKE_CURRENT_SOURCE_DIR}/share/static_checks_report_${component}.txt")
+
+	add_custom_command(TARGET staticchecks POST_BUILD
+		COMMAND ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} "${CPPCHECK_TEMPLATE_GLOBAL}" ${CPPCHECK_ARGS} ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report/static_checks_report_${component}.txt
+		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
+		VERBATIM)
+
+	add_custom_command(TARGET staticchecks PRE_BUILD
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
+		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+		COMMENT "[PID] INFO: static check reports will be written in folder ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report"
+	)
+endfunction(add_Static_Check)
 
 ##global configuration function
 function(generate_Static_Checks)
@@ -167,13 +205,28 @@ if(BUILD_STATIC_CODE_CHECKING_REPORT AND ${CMAKE_BUILD_TYPE} MATCHES Release)
 	# Restore original setting for appbundle finding
 	set(CMAKE_FIND_APPBUNDLE ${_oldappbundlesetting})
 
-	if(CPPCHECK_EXECUTABLE) #TODO maybe setting args according to the component type (e.g. unsued function for library is normal)
-		set(CPPCHECK_ARGS "--template=\"file {file} line {line};;[{severity};;{id}]:{message}\" --enable=all" CACHE INTERNAL "")
+	if(CPPCHECK_EXECUTABLE)
+		add_custom_target(staticchecks COMMENT "[PID] INFO : generating a static check report")
 	else()	
 		message(STATUS "[PID] WARNING: cppcheck not found, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
-		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF FORCE)	
+		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF FORCE)
+		return()	
 	endif()
-
+	
+	#now creating test target and enriching the staticchecks global target with information coming from components
+	if(${PROJECT_NAME}_COMPONENTS_LIBS)
+		foreach(component ${${PROJECT_NAME}_COMPONENTS_LIBS})
+			add_Static_Check(${component} TRUE)
+		endforeach()
+	endif()
+	if(${PROJECT_NAME}_COMPONENTS_APPS)
+		foreach(component ${${PROJECT_NAME}_COMPONENTS_APPS})
+			# adding a static check target only for applications
+			if(${PROJECT_NAME}_${component}_TYPE STREQUAL "APP")
+				add_Static_Check(${component} FALSE)
+			endif()
+		endforeach()
+	endif()
 endif()
 endfunction(generate_Static_Checks)
 

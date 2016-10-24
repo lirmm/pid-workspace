@@ -306,6 +306,14 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		)
 	endif()
 	
+	if(BUILD_STATIC_CODE_CHECKING_REPORT)
+		add_custom_target(staticchecks
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} staticchecks
+			COMMENT "[PID] Generating static checks report ..."
+			VERBATIM
+		)
+	endif()
+
 	if(BUILD_API_DOC)
 		# doc target (generation of API documentation) 
 		add_custom_target(doc
@@ -618,6 +626,7 @@ endif()
 #################################################
 ############ MANAGING the BUILD #################
 #################################################
+
 # recursive call into subdirectories to build/install/test the package
 add_subdirectory(src)
 add_subdirectory(apps)
@@ -643,6 +652,7 @@ clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if
 generate_Info_File() #generating a cmake "info" file containing info about source code of components 
 generate_Dependencies_File() #generating a cmake "dependencies" file containing information about dependencies
 generate_Coverage() #generating a coverage report in debug mode
+generate_Static_Checks() #generating a static check report in release mode, if tests are enabled then static check test are automatically generated 
 
 #installing specific folders of the share sub directory
 if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)
