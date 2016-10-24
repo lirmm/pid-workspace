@@ -639,7 +639,7 @@ endif()
 
 ######## installing the package ##########
 # 1) creating the package root folder
-if(NOT EXISTS ${WORKSPACE_DIR}/install/${package} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${package})
+if(NOT EXISTS ${WORKSPACE_DIR}/install/${package})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
 			WORKING_DIRECTORY ${WORKSPACE_DIR}/install/
 			ERROR_QUIET OUTPUT_QUIET)
@@ -650,14 +650,36 @@ if(ADDITIONNAL_DEBUG_INFO)
 	message("[PID] INFO : decompressing the binary package ${package}, please wait ...")
 endif()
 set(error_res "")
-execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+if(ADDITIONNAL_DEBUG_INFO)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+		ERROR_VARIABLE error_res)
+else()
+	execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
           	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
+endif()
+
 if (error_res)
-	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] WARNING : cannot extract binary archives ${FILE_BINARY} ${FILE_BINARY_DEBUG} when installing.")
-	return()
+	#try again
+	if(ADDITIONNAL_DEBUG_INFO)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+		  	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_VARIABLE error_res)
+	else()
+		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+		  	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_VARIABLE error_res OUTPUT_QUIET)
+	endif()
+	if (error_res)
+		set(${INSTALLED} FALSE PARENT_SCOPE)
+		message("[PID] WARNING : cannot extract binary archives ${FILE_BINARY} ${FILE_BINARY_DEBUG} when installing.")
+		return()
+	endif()
 endif()
 
 # 3) copying resulting folders into the install path in a cross platform way
