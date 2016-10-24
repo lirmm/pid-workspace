@@ -691,7 +691,7 @@ set(error_res "")
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${package}
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${package}
-	ERROR_QUIET OUTPUT_QUIET)
+)#	ERROR_QUIET OUTPUT_QUIET)
 
 if (NOT EXISTS ${WORKSPACE_DIR}/install/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
