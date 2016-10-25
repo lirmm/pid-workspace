@@ -136,23 +136,20 @@ function(add_Static_Check component is_library)
 
 	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
 	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions) 
-		set(CPPCHECK_ARGS --enable=style)
+		set(CPPCHECK_ARGS --enable=style --inconclusive)
 	else()
-		set(CPPCHECK_ARGS --enable=all)
+		set(CPPCHECK_ARGS --enable=all --inconclusive)
 	endif()
 
 	#adding a target to print all issues for the given target, this is used to generate a report
-	add_custom_command(TARGET staticchecks POST_BUILD
-		COMMAND ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_GLOBAL} ${CPPCHECK_ARGS} ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report/static_checks_report_${component}.txt
+	add_custom_command(TARGET staticchecks PRE_BUILD
+		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
+		COMMAND ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} ${CPPCHECK_ARGS} --xml ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
+		
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
 		VERBATIM)
 
-	add_custom_command(TARGET staticchecks PRE_BUILD
-		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
-		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-	)
 endfunction(add_Static_Check)
 
 ##global configuration function
@@ -166,22 +163,24 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	# cppcheck app bundles on Mac OS X are GUI, we want command line only
 	set(_oldappbundlesetting ${CMAKE_FIND_APPBUNDLE})
 	set(CMAKE_FIND_APPBUNDLE NEVER)
-	find_program(CPPCHECK_EXECUTABLE NAMES cppcheck)
-
-	# Restore original setting for appbundle finding
-	set(CMAKE_FIND_APPBUNDLE ${_oldappbundlesetting})
-
 	#trying to find the cpp check executable
 	find_program(CPPCHECK_EXECUTABLE NAMES cppcheck)
-	mark_as_advanced(CPPCHECK_EXECUTABLE)
-
-	# Restore original setting for appbundle finding
-	set(CMAKE_FIND_APPBUNDLE ${_oldappbundlesetting})
 
 	if(NOT CPPCHECK_EXECUTABLE)
 		message(STATUS "[PID] WARNING: cppcheck not found, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
 		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF FORCE)
 	endif()
+
+	#trying to find the cppcheck-htmlreport executable
+	find_program(CPPCHECK_HTMLREPORT_EXECUTABLE NAMES cppcheck-htmlreport)
+	if(NOT CPPCHECK_HTMLREPORT_EXECUTABLE)
+		message(STATUS "[PID] WARNING: cppcheck-htmlreport not found, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
+		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF FORCE)
+	endif()
+
+	# Restore original setting for appbundle finding
+	set(CMAKE_FIND_APPBUNDLE ${_oldappbundlesetting})
+	mark_as_advanced(CPPCHECK_EXECUTABLE CPPCHECK_HTMLREPORT_EXECUTABLE)
 else()
 	return()
 endif()
@@ -202,6 +201,14 @@ if(BUILD_STATIC_CODE_CHECKING_REPORT)
 			endif()
 		endforeach()
 	endif()
+	add_custom_command(TARGET staticchecks POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
+		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml
+		COMMAND ${CMAKE_COMMAND} -DPATTERN="${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_" -DEXTENSION=".xml" -DOUTPUT_FILE="${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml" -P Utility_Concat_Files_Content.cmake
+		COMMAND ${CPPCHECK_HTMLREPORT_EXECUTABLE} --title="${PROJECT_NAME}" --source-dir=${CMAKE_SOURCE_DIR} --report-dir=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report --file=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml
+		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+	)
 else()
 	add_custom_target(staticchecks COMMENT "[PID] INFO : do not generate a static check report (cppcheck not found)")
 endif()
