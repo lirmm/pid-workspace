@@ -22,7 +22,7 @@
 ### generating test coverage reports for the package
 function(generate_Coverage)
 
-if(${CMAKE_BUILD_TYPE} MATCHES Debug) # coverage is well generated in debug mode
+if(${CMAKE_BUILD_TYPE} MATCHES Debug) # coverage is well generated in debug mode only
 
 	if(NOT BUILD_COVERAGE_REPORT)
 		return()
@@ -158,8 +158,11 @@ endfunction(add_Static_Check)
 ##global configuration function
 function(generate_Static_Checks)
 
-if(BUILD_STATIC_CODE_CHECKING_REPORT AND ${CMAKE_BUILD_TYPE} MATCHES Release)
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
 
+	if(NOT BUILD_STATIC_CODE_CHECKING_REPORT)
+		return()
+	endif()
 	# cppcheck app bundles on Mac OS X are GUI, we want command line only
 	set(_oldappbundlesetting ${CMAKE_FIND_APPBUNDLE})
 	set(CMAKE_FIND_APPBUNDLE NEVER)
@@ -175,14 +178,16 @@ if(BUILD_STATIC_CODE_CHECKING_REPORT AND ${CMAKE_BUILD_TYPE} MATCHES Release)
 	# Restore original setting for appbundle finding
 	set(CMAKE_FIND_APPBUNDLE ${_oldappbundlesetting})
 
-	if(CPPCHECK_EXECUTABLE)
-		add_custom_target(staticchecks COMMENT "[PID] INFO : generating a static check report (look into debug/share/static_checks_report folder)")
-	else()	
+	if(NOT CPPCHECK_EXECUTABLE)
 		message(STATUS "[PID] WARNING: cppcheck not found, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
 		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF FORCE)
-		return()	
 	endif()
-	
+else()
+	return()
+endif()
+
+if(BUILD_STATIC_CODE_CHECKING_REPORT)
+	add_custom_target(staticchecks COMMENT "[PID] INFO : generating a static check report (look into debug/share/static_checks_report folder)")
 	#now creating test target and enriching the staticchecks global target with information coming from components
 	if(${PROJECT_NAME}_COMPONENTS_LIBS)
 		foreach(component ${${PROJECT_NAME}_COMPONENTS_LIBS})
@@ -197,6 +202,9 @@ if(BUILD_STATIC_CODE_CHECKING_REPORT AND ${CMAKE_BUILD_TYPE} MATCHES Release)
 			endif()
 		endforeach()
 	endif()
+else()
+	add_custom_target(staticchecks COMMENT "[PID] INFO : do not generate a static check report (cppcheck not found)")
 endif()
+
 endfunction(generate_Static_Checks)
 

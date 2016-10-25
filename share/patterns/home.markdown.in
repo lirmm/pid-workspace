@@ -64,22 +64,22 @@ make deploy name=@PROJECT_NAME@ version=@PACKAGE_LAST_VERSION_WITH_PATCH@
 
 The last possible action is to install it by hand without using PID commands. This is **not recommended** but could be **helpfull to install another repository of this package (not the official package repository)**. For instance if you fork the official repository to work isolated from official developers you may need this alternative.  
 
-1. Cloning the repository with git
+1. Cloning the official repository of @PROJECT_NAME@ with git
 
 	```
-	cd <pid-workspace>/packages/ && git clone git@gite.lirmm.fr:knowbotics/knowbotics.git
+	cd <pid-workspace>/packages/ && git clone @OFFICIAL_REPOSITORY_ADDRESS@
 	```
 
-	or if your are involved in knowbotics development and forked the knowbotics respository using gitlab, you can prefer doing:
+	or if your are involved in @PROJECT_NAME@ development and forked the @PROJECT_NAME@ official respository (using gitlab), you can prefer doing:
 
 	```
-	cd <pid-workspace>/packages/ && git clone git@gite.lirmm.fr:<your account>/knowbotics.git
+	cd <pid-workspace>/packages/ && git clone @GIT_SERVER@:<your account>/@PROJECT_NAME@.git
 	```
 
 2. Building the repository
 
 	```
-	cd <pid-workspace>/packages/knowbotics/build
+	cd <pid-workspace>/packages/@PROJECT_NAME@/build
 	cmake .. && make build
 	```
 

@@ -328,6 +328,13 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 			VERBATIM
 		)
 		add_dependencies(wiki doc)
+		if(BUILD_COVERAGE_REPORT)
+			add_dependencies(wiki coverage)
+		endif()
+
+		if(BUILD_STATIC_CODE_CHECKING_REPORT)
+			add_dependencies(wiki staticchecks)
+		endif()
 	endif()
 
 	if(GENERATE_INSTALLER)

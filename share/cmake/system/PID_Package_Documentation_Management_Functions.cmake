@@ -261,6 +261,7 @@ function(configure_Wiki_Pages)
 if(NOT ${PROJECT_NAME}_WIKI_ADDRESS) #no wiki definition simply exit
 	return()
 endif()
+
 ## introduction (more detailed description, if any)
 generate_Formatted_String("${${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION}" RES_INTRO)
 if("${RES_INTRO}" STREQUAL "")
@@ -279,6 +280,29 @@ else()
 		set(LINK_TO_PARENT_WIKI "[Back to parent wiki](${${PROJECT_NAME}_WIKI_PARENT_PAGE})")
 	endif()
 endif()
+
+#getting git references of the project (for manual installation explanation)
+if(NOT ${PROJECT_NAME}_ADDRESS)
+	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_WIKI_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS)
+	if(GIT_NAMESPACE AND SERVER_ADDRESS)
+		set(OFFICIAL_REPOSITORY_ADDRESS "${SERVER_ADDRESS}:${GIT_NAMESPACE}/${PROJECT_NAME}.git")
+		set(GIT_SERVER ${SERVER_ADDRESS})
+	else()	#no info about the git namespace => generating a bad address 
+		set(OFFICIAL_REPOSITORY_ADDRESS "unknown_server:unknown_namespace/${PROJECT_NAME}.git")
+		set(GIT_SERVER unknown_server)
+	endif()
+
+else()
+	set(OFFICIAL_REPOSITORY_ADDRESS ${${PROJECT_NAME}_ADDRESS})
+	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS)
+	if(SERVER_ADDRESS)
+		set(GIT_SERVER ${SERVER_ADDRESS})
+	else()	#no info about the git namespace => use the project name
+		set(GIT_SERVER unknown_server)
+	endif()
+endif()
+
+
 
 # authors
 get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
@@ -311,11 +335,11 @@ set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
 set(RELEASED_BINARY_VERSIONS "")
 if(${PROJECT_NAME}_REFERENCES)
 set(RELEASED_BINARY_VERSIONS "### Binary versions released:\n\n")
-foreach(version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
-	foreach(platform IN ITEMS ${${PROJECT_NAME}_REFERENCE_${version}})
-		set(RELEASED_BINARY_VERSIONS "${RELEASED_BINARY_VERSIONS}+ ${version} for platform ${platform}\n")
+	foreach (version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
+		foreach(platform IN ITEMS ${${PROJECT_NAME}_REFERENCE_${version}})
+			set(RELEASED_BINARY_VERSIONS "${RELEASED_BINARY_VERSIONS}+ ${version} for platform ${platform}\n")
+		endforeach()
 	endforeach()
-endforeach()
 endif()
 
 if(${PROJECT_NAME}_LICENSE)
