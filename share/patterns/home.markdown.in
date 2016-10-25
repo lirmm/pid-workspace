@@ -112,8 +112,12 @@ Notice that PID will automatically install the last available patch version of t
 
 @PACKAGE_ADDITIONAL_CONTENT@
 
-# API
+# API documentation
 
 The API doxygen documentation of the package can be found [here](api-doc/html/index.html).
+
+@PACKAGE_COVERAGE_DOCUMENTATION@
+
+@PACKAGE_STATICCHECKS_DOCUMENTATION@
 
 @LINK_TO_PARENT_WIKI@

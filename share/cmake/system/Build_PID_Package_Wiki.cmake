@@ -28,8 +28,22 @@ set(repo_addr ${WIKI_ADDRESS})
 if(DEFINED SYNCHRO_WIKI AND SYNCHRO_WIKI STREQUAL "false")
 	set(push_wiki FALSE)
 else()
-	set(push_wiki TRUE)
+	set(push_wiki TRUE) #push by default
 endif()
+
+if(INCLUDES_COVERAGE)
+	set(include_coverage TRUE)
+else()
+	set(include_coverage FALSE)
+endif()
+
+
+if(INCLUDES_STATIC_CHECKS)
+	set(include_staticchecks TRUE)
+else()
+	set(include_staticchecks FALSE)
+endif()
+
 
 wiki_Project_Exists(WIKI_EXISTS PATH_TO_WIKI ${package})
 
@@ -49,7 +63,7 @@ if(NOT WIKI_EXISTS)
 endif()
 update_Wiki_Repository(${package}) # update wiki repository
 clean_Local_Wiki(${package}) # clean the folder content (api-doc content)
-copy_Wiki_Content(${package} ${content_file_to_remove}) # copy everything needed (api-doc content, share/wiki except content_file_to_remove
+copy_Wiki_Content(${package} ${include_coverage} ${include_staticchecks} ${content_file_to_remove}) # copy everything needed (api-doc content, share/wiki except content_file_to_remove
 if(push_wiki)
 	message("[PID] INFO : wiki of ${package} has been updated on server.")
 	publish_Wiki_Repository(${package})

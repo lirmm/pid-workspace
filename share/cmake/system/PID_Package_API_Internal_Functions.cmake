@@ -423,6 +423,8 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the wiki can be build is release mode
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DREMOVED_CONTENT="${wiki_content_file}"
 						-DWIKI_ADDRESS="${wiki_repo_addr}"
+						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
+						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
 						-DSYNCHRO_WIKI=$(synchro)
 			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Wiki.cmake
 	)
