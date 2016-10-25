@@ -19,33 +19,41 @@
 
 set(OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml)
 
-function(cat in_file errors_list RET_LIST)
-	set(to_append ${errors_list})
+function(cat in_file out_file)
 	file(STRINGS ${in_file} ALL_LINES) #getting global info on the package
 	foreach(line IN ITEMS ${ALL_LINES})
-		string(REGEX MATCH "^[ \t]*<error.*$" A_RESULT ${line}) #if it is an error then report it
-		if(A_RESULT)
-			list(APPEND to_append ${A_RESULT})
+		string(REGEX MATCH "^[ \t]*<(/?results|/?errors|\\?xml|cppcheck).*$" BEGINEND_TAG ${line}) #if it is an error then report it
+		if(NOT BEGINEND_TAG)
+			file(APPEND ${out_file} "${line}\n")
 		endif()
 	endforeach()
-	set(${RET_LIST} ${to_append} PARENT_SCOPE)
+endfunction()
+
+function(extract_Header in_file out_file)
+	set(to_append)
+	file(STRINGS ${in_file} ALL_LINES) #getting global info on the package
+	foreach(line IN ITEMS ${ALL_LINES})
+		string(REGEX MATCH "^[ \t]*<(/results|/errors)>.*$" END_TAG ${line}) #if it is an error then report it
+		if(NOT END_TAG)
+			file(APPEND ${out_file} "${line}\n")
+		endif()
+	endforeach()
 endfunction()
 
 # Prepare a temporary file to "cat" to:
-file(WRITE ${OUTPUT_FILE} "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<results>\n")
+file(WRITE ${OUTPUT_FILE} "") #reset output
 file(GLOB LIST_OF_FILES "${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_*.xml")
 
-# Call the "cat" function for each input file
-set(LIST_OF_ERRORS)
-
+# concatenating the content of xml files
+set(FIRST_FILE TRUE)
 foreach(in_file ${LIST_OF_FILES})
-  cat(${in_file} "${LIST_OF_ERRORS}" LIST_OF_ERRORS)
+	if(FIRST_FILE)
+		extract_Header(${in_file} ${OUTPUT_FILE})
+  		set(FIRST_FILE FALSE)
+	else()
+		cat(${in_file} ${OUTPUT_FILE})
+	endif()
 endforeach()
 
-list(REMOVE_DUPLICATES LIST_OF_ERRORS)
-if(LIST_OF_ERRORS)
-	foreach(error ${LIST_OF_ERRORS})
-		file(APPEND ${OUTPUT_FILE} "${error}")
-	endforeach()
-endif()
-file(APPEND ${OUTPUT_FILE} "\n</results>\n")
+file(APPEND ${OUTPUT_FILE} "\n\t</errors>\n</results>\n")
+

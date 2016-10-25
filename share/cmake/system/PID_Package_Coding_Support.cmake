@@ -122,7 +122,8 @@ function(add_Static_Check component is_library)
 	get_target_property(SOURCES_TO_CHECK ${component} SOURCES)
 
 	# getting specific settings of the target (using generator expression to make it robust)
-	set(ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>, -I>>")
+	set(ALL_SETTING "-I/usr/include/" "-I/usr/local/include/")
+	list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>, -I>>")
 	list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>")
 	list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>>:-I$<JOIN:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>, -I>>")
 	list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>, -I>>")
@@ -136,15 +137,15 @@ function(add_Static_Check component is_library)
 
 	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
 	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions) 
-		set(CPPCHECK_ARGS --enable=style)
+		set(CPPCHECK_ARGS --enable=style –inconclusive --suppress=missingIncludeSystem)
 	else()
-		set(CPPCHECK_ARGS --enable=all)
+		set(CPPCHECK_ARGS --enable=all –inconclusive --suppress=missingIncludeSystem)
 	endif()
 
 	#adding a target to print all issues for the given target, this is used to generate a report
 	add_custom_command(TARGET staticchecks PRE_BUILD
 		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
-		COMMAND ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} ${CPPCHECK_ARGS} --xml ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
+		COMMAND ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} ${CPPCHECK_ARGS} --xml-version=2 ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
 		
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
