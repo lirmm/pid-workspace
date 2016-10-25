@@ -17,30 +17,35 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-if(NOT OUTPUT_FILE)
-	message(FATAL_ERROR "[PID] ERROR : you must define an output where to write the conatctenated content of files")
-endif()
+set(OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml)
 
-if(NOT PATTERN)
-	message(FATAL_ERROR "[PID] ERROR : you must define a pattern for files to read.")
-endif()
-
-
-function(cat IN_FILE OUT_FILE)
-  file(READ ${IN_FILE} CONTENTS)
-  file(APPEND ${OUT_FILE} "${CONTENTS}")
+function(cat in_file errors_list RET_LIST)
+	set(to_append ${errors_list})
+	file(STRINGS ${in_file} ALL_LINES) #getting global info on the package
+	foreach(line IN ITEMS ${ALL_LINES})
+		string(REGEX MATCH "^[ \t]*<error.*$" A_RESULT ${line}) #if it is an error then report it
+		if(A_RESULT)
+			list(APPEND to_append ${A_RESULT})
+		endif()
+	endforeach()
+	set(${RET_LIST} ${to_append} PARENT_SCOPE)
 endfunction()
 
 # Prepare a temporary file to "cat" to:
-file(WRITE ${OUTPUT_FILE} "")
-file(GLOB LIST_OF_FILES "${PATTERN}*${EXTENSION}")
-list(REMOVE_DUPLICATES LIST_OF_FILES)
-list(REMOVE_ITEM LIST_OF_FILES ${OUTPUT_FILE}) #caution: suppress the output from the inputs (if needed)
+file(WRITE ${OUTPUT_FILE} "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<results>\n")
+file(GLOB LIST_OF_FILES "${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_*.xml")
 
 # Call the "cat" function for each input file
+set(LIST_OF_ERRORS)
+
 foreach(in_file ${LIST_OF_FILES})
-  cat(${in_file} ${OUTPUT_FILE})
+  cat(${in_file} "${LIST_OF_ERRORS}" LIST_OF_ERRORS)
 endforeach()
 
-
-
+list(REMOVE_DUPLICATES LIST_OF_ERRORS)
+if(LIST_OF_ERRORS)
+	foreach(error ${LIST_OF_ERRORS})
+		file(APPEND ${OUTPUT_FILE} "${error}")
+	endforeach()
+endif()
+file(APPEND ${OUTPUT_FILE} "\n</results>\n")

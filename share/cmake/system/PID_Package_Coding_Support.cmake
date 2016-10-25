@@ -136,9 +136,9 @@ function(add_Static_Check component is_library)
 
 	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
 	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions) 
-		set(CPPCHECK_ARGS --enable=style --inconclusive)
+		set(CPPCHECK_ARGS --enable=style)
 	else()
-		set(CPPCHECK_ARGS --enable=all --inconclusive)
+		set(CPPCHECK_ARGS --enable=all)
 	endif()
 
 	#adding a target to print all issues for the given target, this is used to generate a report
@@ -205,7 +205,7 @@ if(BUILD_STATIC_CODE_CHECKING_REPORT)
 		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
 		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml
-		COMMAND ${CMAKE_COMMAND} -DPATTERN="${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_" -DEXTENSION=".xml" -DOUTPUT_FILE="${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml" -P Utility_Concat_Files_Content.cmake
+		COMMAND ${CMAKE_COMMAND} -DCMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR} -P ${WORKSPACE_DIR}/share/cmake/system/PID_Utility_Concat_Staticchecks_Files_Content.cmake
 		COMMAND ${CPPCHECK_HTMLREPORT_EXECUTABLE} --title="${PROJECT_NAME}" --source-dir=${CMAKE_SOURCE_DIR} --report-dir=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report --file=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 	)
