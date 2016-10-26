@@ -63,7 +63,7 @@ if(NOT WIKI_EXISTS)
 endif()
 update_Wiki_Repository(${package}) # update wiki repository
 clean_Local_Wiki(${package}) # clean the folder content (api-doc content)
-copy_Wiki_Content(${package} ${include_coverage} ${include_staticchecks} ${content_file_to_remove}) # copy everything needed (api-doc content, share/wiki except content_file_to_remove
+copy_Wiki_Content(${package} ${include_coverage} ${include_staticchecks} "${content_file_to_remove}") # copy everything needed (api-doc content, share/wiki except content_file_to_remove
 if(push_wiki)
 	message("[PID] INFO : wiki of ${package} has been updated on server.")
 	publish_Wiki_Repository(${package})

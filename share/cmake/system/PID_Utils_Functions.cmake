@@ -105,7 +105,7 @@ endfunction()
 
 ###
 function(extract_Package_Namespace_From_SSH_URL url package NAMESPACE SERVER_ADDRESS)
-string (REGEX REPLACE "^([^@]+@[^:]+):([^/]+)/${package}(\.wiki)?\.git$" "\\2;\\1" RESULT ${url})
+string (REGEX REPLACE "^([^@]+@[^:]+):([^/]+)/${package}(\\.wiki)?\\.git$" "\\2;\\1" RESULT ${url})
 if(NOT RESULT STREQUAL "${url}") #match found 
 	list(GET RESULT 0 NAMESPACE_NAME)
 	set(${NAMESPACE} ${NAMESPACE_NAME} PARENT_SCOPE)
