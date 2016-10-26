@@ -90,6 +90,8 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 			COMMENT "Generating code coverage report."
 		)
+		### installing coverage report ###
+		install(DIRECTORY ${CMAKE_BINARY_DIR}/share/coverage_report DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 
 	endif()
 else() #no coverage wanted or possible (no test defined), create a do nothing rule for coverage
@@ -210,6 +212,9 @@ if(BUILD_STATIC_CODE_CHECKING_REPORT)
 		COMMAND ${CPPCHECK_HTMLREPORT_EXECUTABLE} --title="${PROJECT_NAME}" --source-dir=${CMAKE_SOURCE_DIR} --report-dir=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report --file=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 	)
+	### installing static checks report ###
+	install(DIRECTORY ${CMAKE_BINARY_DIR}/share/static_checks_report DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+
 else()
 	add_custom_target(staticchecks COMMENT "[PID] INFO : do not generate a static check report (cppcheck not found)")
 endif()
