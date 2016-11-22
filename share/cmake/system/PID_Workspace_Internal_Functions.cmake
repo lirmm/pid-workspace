@@ -36,10 +36,17 @@ include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
 ########################################################################
 
 ###
-function(classify_Package_Categories all_packages)
+function(classify_Package_Categories all_packages all_frameworks)
 foreach(a_cat IN ITEMS ${ROOT_CATEGORIES})
 	classify_Root_Category(${a_cat} "${all_packages}")
 endforeach()
+if(all_frameworks)
+	foreach(a_framework IN ITEMS ${all_frameworks})
+		foreach(a_cat IN ITEMS ${${a_framework}_ROOT_CATEGORIES})
+			classify_Framework_Root_Category(${a_framework} ${a_cat} "${all_packages}")
+		endforeach()
+	endforeach()
+endif()
 endfunction(classify_Package_Categories)
 
 ###
@@ -51,12 +58,59 @@ foreach(package IN ITEMS ${all_packages})
 endforeach()
 endfunction(classify_Root_Category)
 
+
+###
+function(classify_Framework_Root_Category framework root_category all_packages)
+foreach(package IN ITEMS ${all_packages})
+	if(${package}_FRAMEWORK STREQUAL "${framework}")
+		foreach(a_category IN ITEMS ${${package}_CATEGORIES})
+			list(FIND ${framework}_CATEGORIES ${a_category} INDEX)
+			if(NOT INDEX EQUAL -1)# this category is a category member of the framework
+				classify_Framework_Category(${framework} ${a_category} ${root_category} ${package})
+			endif()
+		endforeach()
+	endif()
+endforeach()
+endfunction(classify_Framework_Root_Category)
+
+
+###
+function(classify_Framework_Category framework category_full_string root_category target_package)
+if("${category_full_string}" STREQUAL "${root_category}")#OK, so the package directly belongs to this category
+	set(${framework}_CAT_${category_full_string}_CATEGORY_CONTENT ${${framework}_CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
+	list(REMOVE_DUPLICATES ${framework}_CAT_${category_full_string}_CATEGORY_CONTENT)
+	set(${framework}_CAT_${category_full_string}_CATEGORY_CONTENT ${${framework}_CAT_${category_full_string}_CATEGORY_CONTENT} CACHE INTERNAL "")# needed to put the removed duplicates list in cache
+else()#not OK we need to know if this is a subcategory or not
+	string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
+	if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthes => there are subcategories with root category as root
+		set(AFTER_ROOT)
+		string(REGEX REPLACE "^([^/]+)/.+$" "\\1" SUBCATEGORY_STRING_CONTENT ${CATEGORY_STRING_CONTENT})
+		if(NOT SUBCATEGORY_STRING_CONTENT STREQUAL "${CATEGORY_STRING_CONTENT}")# there are some subcategories
+			set(AFTER_ROOT ${SUBCATEGORY_STRING_CONTENT} )
+		else()
+			set(AFTER_ROOT ${CATEGORY_STRING_CONTENT})
+		endif()
+		set(${framework}_CAT_${root_category}_CATEGORIES ${${framework}_CAT_${root_category}_CATEGORIES} ${AFTER_ROOT} CACHE INTERNAL "")
+		classify_Framework_Category(${framework} ${category_full_string} "${root_category}/${AFTER_ROOT}" ${target_package})
+		list(REMOVE_DUPLICATES ${framework}_CAT_${root_category}_CATEGORIES)
+		set(${framework}_CAT_${root_category}_CATEGORIES ${${framework}_CAT_${root_category}_CATEGORIES} CACHE INTERNAL "")
+		
+	#else, this is not the same as root_category (otherwise first test would have succeeded => end of recursion 
+	endif()
+
+endif()
+endfunction(classify_Framework_Category)
+
 ###
 function(reset_All_Categories)
 foreach(a_category IN ITEMS ${ROOT_CATEGORIES})
 	reset_Category(${a_category})
 endforeach()
 set(ROOT_CATEGORIES CACHE INTERNAL "")
+foreach(a_framework IN ITEMS ${FRAMEWORKS_CATEGORIES})
+	reset_Framework_Category(${a_framework} ${a_category})
+endforeach()
+set(FRAMEWORKS_CATEGORIES CACHE INTERNAL "")
 endfunction()
 
 ###
@@ -70,6 +124,20 @@ if(CAT_${category}_CATEGORY_CONTENT)
 	set(CAT_${category}_CATEGORY_CONTENT CACHE INTERNAL "")
 endif()
 set(CAT_${category}_CATEGORIES CACHE INTERNAL "")
+endfunction()
+
+
+###
+function(reset_Framework_Category framework category)
+if(${framework}_CAT_${category}_CATEGORIES)
+	foreach(a_sub_category IN ITEMS ${${framework}_CAT_${category}_CATEGORIES})
+		reset_Framework_Category(${framework} "${category}/${a_sub_category}")#recursive call
+	endforeach()
+endif()
+if(${framework}_CAT_${category}_CATEGORY_CONTENT)
+	set(${framework}_CAT_${category}_CATEGORY_CONTENT CACHE INTERNAL "")
+endif()
+set(${framework}_CAT_${category}_CATEGORIES CACHE INTERNAL "")
 endfunction()
 
 ###
@@ -91,8 +159,9 @@ function(get_Root_Categories package RETURNED_ROOTS)
 endfunction(get_Root_Categories)
 
 ###
-function(extract_Root_Categories all_packages)
-set(ALL_ROOTS CACHE INTERNAL "")
+function(extract_Root_Categories all_packages all_frameworks)
+# extracting category information from packages
+set(ALL_ROOTS)
 foreach(a_package IN ITEMS ${all_packages})
 	get_Root_Categories(${a_package} ${a_package}_ROOTS)
 	if(${a_package}_ROOTS)
@@ -105,6 +174,22 @@ if(ALL_ROOTS)
 else()
 	set(ROOT_CATEGORIES CACHE INTERNAL "")
 endif()
+# classifying by frameworks
+set(ALL_ROOTS)
+foreach(a_framework IN ITEMS ${all_frameworks})
+	set(${a_framework}_ROOT_CATEGORIES CACHE INTERNAL "")
+	get_Root_Categories(${a_framework} ${a_framework}_ROOTS)
+	if(${a_framework}_ROOTS)
+		set(${a_framework}_ROOT_CATEGORIES ${${a_framework}_ROOTS} CACHE INTERNAL "")
+		list(APPEND ALL_ROOTS ${a_framework})
+	endif()
+endforeach()
+if(ALL_ROOTS)
+	list(REMOVE_DUPLICATES ALL_ROOTS)
+	set(FRAMEWORKS_CATEGORIES ${ALL_ROOTS} CACHE INTERNAL "")
+else()
+	set(FRAMEWORKS_CATEGORIES CACHE INTERNAL "")
+endif()
 endfunction(extract_Root_Categories)
 
 ###
@@ -112,7 +197,7 @@ function(classify_Category category_full_string root_category target_package)
 if("${category_full_string}" STREQUAL "${root_category}")#OK, so the package directly belongs to this category
 	set(CAT_${category_full_string}_CATEGORY_CONTENT ${CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
 	list(REMOVE_DUPLICATES CAT_${category_full_string}_CATEGORY_CONTENT)
-	set(CAT_${category_full_string}_CATEGORY_CONTENT ${CAT_${category_full_string}_CATEGORY_CONTENT} CACHE INTERNAL "")
+	set(CAT_${category_full_string}_CATEGORY_CONTENT ${CAT_${category_full_string}_CATEGORY_CONTENT} CACHE INTERNAL "")# needed to put the removed duplicates list in cache
 else()#not OK we need to know if this is a subcategory or not
 	string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
 	if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthes => there are subcategories with root category as root
@@ -144,7 +229,16 @@ file(APPEND ${file} "set(ROOT_CATEGORIES \"${ROOT_CATEGORIES}\" CACHE INTERNAL \
 foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
 	write_Category_In_File(${root_cat} ${file})
 endforeach()
-endfunction()
+file(APPEND ${file} "######### declaration of workspace categories classified by framework ########\n")
+file(APPEND ${file} "set(FRAMEWORKS_CATEGORIES \"${FRAMEWORKS_CATEGORIES}\" CACHE INTERNAL \"\")\n")
+if(FRAMEWORKS_CATEGORIES)
+	foreach(framework IN ITEMS ${FRAMEWORKS_CATEGORIES})
+		foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
+			write_Framework_Category_In_File(${framework} ${root_cat} ${file})
+		endforeach()
+	endforeach()
+endif()
+endfunction(write_Categories_File)
 
 ###
 function(write_Category_In_File category thefile)
@@ -155,7 +249,19 @@ if(CAT_${category}_CATEGORIES)
 		write_Category_In_File("${category}/${cat}" ${thefile})
 	endforeach()
 endif()
-endfunction()
+endfunction(write_Category_In_File)
+
+
+###
+function(write_Framework_Category_In_File framework category thefile)
+file(APPEND ${thefile} "set(${framework}_CAT_${category}_CATEGORY_CONTENT \"${${framework}_CAT_${category}_CATEGORY_CONTENT}\" CACHE INTERNAL \"\")\n")
+if(${framework}_CAT_${category}_CATEGORIES)
+	file(APPEND ${thefile} "set(${framework}_CAT_${category}_CATEGORIES \"${${framework}_CAT_${category}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
+	foreach(cat IN ITEMS ${${framework}_CAT_${category}_CATEGORIES})
+		write_Framework_Category_In_File(${framework} "${category}/${cat}" ${thefile})
+	endforeach()
+endif()
+endfunction(write_Framework_Category_In_File)
 
 ###
 function(find_In_Categories searched_category_term)
@@ -245,6 +351,52 @@ function(print_Category root_category category number_of_tabs)
 		endforeach()
 	endif()
 endfunction(print_Category)
+
+###
+function(print_Framework_Category framework root_category category number_of_tabs)
+	set(PRINTED_VALUE "")
+	set(RESULT_STRING "")
+	set(index ${number_of_tabs})
+	while(index GREATER 0)
+		set(RESULT_STRING "${RESULT_STRING}	")
+		math(EXPR index '${index}-1')
+	endwhile()
+
+	get_Category_Names("${root_category}" ${category} short_name long_name)
+
+	if(${framework}_CAT_${category}_CATEGORY_CONTENT)
+		set(PRINTED_VALUE "${RESULT_STRING}${short_name}:")
+		foreach(pack IN ITEMS ${${framework}_CAT_${category}_CATEGORY_CONTENT})
+			set(PRINTED_VALUE "${PRINTED_VALUE} ${pack}")
+		endforeach()
+		message("${PRINTED_VALUE}")
+	else()
+		set(PRINTED_VALUE "${RESULT_STRING}${short_name}")
+		message("${PRINTED_VALUE}")	
+	endif()
+	if(${framework}_CAT_${category}_CATEGORIES)#there are subcategories => recursion
+		math(EXPR sub_cat_nb_tabs '${number_of_tabs}+1')
+		foreach(sub_cat IN ITEMS ${${framework}_CAT_${category}_CATEGORIES})
+			print_Framework_Category(${framework} "${long_name}" "${category}/${sub_cat}" ${sub_cat_nb_tabs})
+		endforeach()
+	endif()
+endfunction(print_Framework_Category)
+
+
+###
+function(print_Framework_Categories framework)
+message("---------------------------------")
+list(FIND FRAMEWORKS_CATEGORIES ${framework} INDEX)
+if(INDEX EQUAL -1)
+	message("Framework ${framework} has no category defined")
+else()
+	message("Framework ${framework} categories:")
+	foreach(a_cat IN ITEMS ${${a_framework}_ROOT_CATEGORIES})
+		print_Framework_Category(${framework} "" ${a_cat} 0)
+	endforeach()
+endif()
+message("---------------------------------")
+endfunction(print_Framework_Categories)
 
 ########################################################################
 ##################### Packages info management #########################
@@ -367,9 +519,68 @@ function(print_Platform_Compatible_Binary package version platform)
 	message("${printed_string}")
 endfunction(print_Platform_Compatible_Binary)
 
+###
+function(print_Framework_Info framework)
+	message("FRAMEWORK: ${framework}")
+	fill_List_Into_String("${${framework}_DESCRIPTION}" descr_string)
+	message("DESCRIPTION: ${descr_string}")
+	message("WEB SITE: ${${framework}_SITE}")
+	message("LICENSE: ${${framework}_LICENSE}")
+	message("DATES: ${${framework}_YEARS}")
+	message("REPOSITORY: ${${framework}_ADDRESS}")
+	print_Package_Contact(${framework})
+	message("AUTHORS:")
+	foreach(author IN ITEMS ${${framework}_AUTHORS_AND_INSTITUTIONS})
+		print_Author(${framework})
+	endforeach()
+	if(${framework}_CATEGORIES)
+		message("CATEGORIES:")
+		foreach(category IN ITEMS ${${framework}_CATEGORIES})
+			message("	${category}")
+		endforeach()
+	endif()
+endfunction(print_Framework_Info)
+
 ########################################################################
 #################### Packages lifecycle management #####################
 ########################################################################
+
+###
+function(create_PID_Framework framework author institution license site)
+#copying the pattern folder into the package folder and renaming it
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/frameworks/framework ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET)
+
+#setting variables
+set(FRAMEWORK_NAME ${framework})
+if(author AND NOT author STREQUAL "")
+	set(FRAMEWORK_AUTHOR_NAME "${author}")
+else()
+	set(FRAMEWORK_AUTHOR_NAME "$ENV{USER}")
+endif()
+if(institution AND NOT institution STREQUAL "")
+	set(FRAMEWORK_AUTHOR_INSTITUTION "INSTITUTION	${institution}")
+else()
+	set(FRAMEWORK_AUTHOR_INSTITUTION "")
+endif()
+if(license AND NOT license STREQUAL "")
+	set(FRAMEWORK_LICENSE "${license}")
+else()
+	message("[PID] WARNING: no license defined so using the default CeCILL license.")
+	set(FRAMEWORK_LICENSE "CeCILL")#default license is CeCILL
+endif()
+if(site AND NOT site STREQUAL "")
+	set(FRAMEWORK_SITE "${site}")
+else()
+	set(FRAMEWORK_SITE "")
+endif()
+set(FRAMEWORK_DESCRIPTION "TODO: input a short description of framework ${framework} utility here")
+string(TIMESTAMP date "%Y")
+set(FRAMEWORK_YEARS ${date}) 
+# generating the root CMakeLists.txt of the package
+configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/CMakeLists.txt.in ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt @ONLY)
+#configuring git repository
+init_Framework_Repository(${framework})
+endfunction(create_PID_Framework)
 
 ###
 function(create_PID_Package package author institution license)
@@ -403,6 +614,24 @@ configure_file(${WORKSPACE_DIR}/share/patterns/packages/CMakeLists.txt.in ../pac
 init_Repository(${package})
 endfunction(create_PID_Package)
 
+
+### Installing a framework on the workspace filesystem from an existing framework repository, known in the workspace.
+function(deploy_PID_Framework framework verbose)
+set(PROJECT_NAME ${framework})
+if(verbose)
+	set(ADDITIONNAL_DEBUG_INFO ON)
+else()
+	set(ADDITIONNAL_DEBUG_INFO OFF)
+endif()
+	deploy_Framework_Repository(DEPLOYED ${framework})
+	if(DEPLOYED)
+		message("[PID] INFO : framework ${framework} has been deployed.")
+	else()
+		message("[PID] ERROR : cannot deploy ${framework} repository.")
+	endif()
+endfunction(deploy_PID_Framework)
+
+
 ### Installing a package on the workspace filesystem from an existing package repository, known in the workspace. All its dependencies will be deployed, either has binary (if available) or has source (if not). 
 function(deploy_PID_Package package version verbose)
 set(PROJECT_NAME ${package})
@@ -432,6 +661,7 @@ else()#deploying the target binary relocatable archive
 	endif()
 endif()
 endfunction(deploy_PID_Package)
+
 
 ### Installing an external package binary on the workspace filesystem from an existing download point.  
 function(deploy_External_Package package version verbose)
@@ -482,6 +712,22 @@ if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
 endif()
 endfunction(resolve_PID_Package)
 
+### Configuring the official remote repository of current package 
+function(connect_PID_Framework framework git_url first_time)
+if(first_time)#first time this framework is connected because newly created
+	# set the address of the official repository in the CMakeLists.txt of the framework 
+	set_Framework_Repository_Address(${framework} ${git_url})
+	register_Framework_Repository_Address(${framework})
+	# synchronizing with the "official" remote git repository
+	connect_Framework_Repository(${framework} ${git_url})
+else() #forced reconnection
+	# updating the address of the official repository in the CMakeLists.txt of the package 
+	reset_Framework_Repository_Address(${framework} ${git_url})
+	register_Framework_Repository_Address(${framework})
+	# synchronizing with the new "official" remote git repository
+	reconnect_Framework_Repository(${framework} ${git_url})
+endif()
+endfunction(connect_PID_Framework)
 
 ### Configuring the official remote repository of current package 
 function(connect_PID_Package package git_url first_time)
@@ -511,6 +757,10 @@ restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT})# resto
 endfunction(add_Connection_To_PID_Package)
 
 
+### reconnecting the origin BUT letting the official remote unchanged
+function(add_Connection_To_PID_Framework framework git_url)
+change_Origin_Framework_Repository(${framework} ${git_url} origin) # synchronizing with the remote "origin" git repository
+endfunction(add_Connection_To_PID_Framework)
 ##########################################
 ###### clearing/removing packages ########
 ##########################################

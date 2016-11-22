@@ -376,7 +376,7 @@ endif()
 endfunction(clone_Repository)
 
 
-### testing if the repository is inialized (from git point of view) according to PID stabdard (basically it has an integration branch)
+### testing if the repository is inialized (from git point of view) according to PID standard (basically it has an integration branch)
 function(test_Remote_Initialized package url INITIALIZED)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid git clone ${url} OUTPUT_QUIET ERROR_QUIET) #cloning in a temporary area
 
@@ -401,6 +401,23 @@ else()
 endif()
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${package} OUTPUT_QUIET ERROR_QUIET)
 endfunction(test_Remote_Initialized)
+
+
+### testing if the repository is inialized (from git point of view) according to PID standard (basically it has an integration branch)
+function(test_Framework_Initialized framework url INITIALIZED)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid git clone ${url} OUTPUT_QUIET ERROR_QUIET) #cloning in a temporary area
+
+execute_process(COMMAND git branch -a
+		WORKING_DIRECTORY ${WORKSPACE_DIR}/pid/${framework}
+		OUTPUT_VARIABLE all_branches ERROR_QUIET)#getting all branches
+
+if(all_branches AND NOT all_branches STREQUAL "")
+	set(${INITIALIZED} TRUE PARENT_SCOPE)
+else()
+	set(${INITIALIZED} FALSE PARENT_SCOPE)
+endif()
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${framework} OUTPUT_QUIET ERROR_QUIET)
+endfunction(test_Framework_Initialized)
 
 ### create a repository with no official remote specified (for now)
 function(init_Repository package)
@@ -521,16 +538,107 @@ if(RESULTING_REMOTES)
 endif()
 endfunction(get_Remotes_Address)
 
+
+
+##############################################################################
+############## frameworks repository related functions #######################
+##############################################################################
+
+###
+function(clone_Framework_Repository IS_DEPLOYED framework url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${framework} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework})
+	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
+else()
+	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
+	message("[PID] ERROR : impossible to clone the repository of framework ${framework} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this framework.")
+endif()
+endfunction(clone_Framework_Repository)
+
+###
+function(init_Framework_Repository CONNECTED framework git_url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git init OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote add origin ${git_url} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git add -A OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git commit -m "initialization of framework" OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master OUTPUT_QUIET ERROR_QUIET)
+#now testing if everything is OK using the git log command
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
+if (NOT "${res}" STREQUAL "")
+	string(FIND "${res}" "master" INDEX_LOCAL)
+	string(FIND "${res}" "origin/master" INDEX_REMOTE)
+	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch  
+		set(${CONNECTED} TRUE PARENT_SCOPE)
+		return()
+	endif()
+endif()
+set(${CONNECTED} FALSE PARENT_SCOPE)
+endfunction(init_Framework_Repository)
+
+###
+function(update_Framework_Repository framework)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
+endfunction(update_Framework_Repository)
+
+###
+function(publish_Framework_Repository framework)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git add -A OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git commit -m "publishing new version of framework" OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master)#pushing to master branch of origin
+endfunction(publish_Framework_Repository)
+
+### registering the address means registering the CMakelists.txt
+function(register_Framework_Repository_Address framework)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git add CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git commit -m "adding repository address to the root CMakeLists.txt file")
+endfunction(register_Framework_Repository_Address)
+
+
+### first time the framework is connected after its creation
+function(connect_Framework_Repository framework url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote add origin ${url})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote add official ${url})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git fetch official)
+endfunction(connect_Framework_Repository)
+
+### rare use function: when official repository has moved
+function(reconnect_Framework_Repository framework url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote set-url official ${url})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull official master)#updating master
+endfunction(reconnect_Framework_Repository)
+
+
+### to know whether a package as a remote or not
+function(is_Framework_Connected CONNECTED framework remote)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote show ${remote} OUTPUT_QUIET ERROR_VARIABLE res)
+	if(NOT res OR res STREQUAL "")
+		set(${CONNECTED} TRUE PARENT_SCOPE)
+	else()
+		set(${CONNECTED} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Framework_Connected)
+
+
+### set the origin remote to a completely new address
+function(change_Origin_Framework_Repository framework url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote set-url origin ${url} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master OUTPUT_QUIET ERROR_QUIET)
+message("[PID] INFO: Origin remote has been changed to ${url}.")
+endfunction(change_Origin_Framework_Repository)
+
 ######################################################################
 ############## wiki repository related functions #####################
 ######################################################################
 
 ###
 function(clone_Wiki_Repository IS_DEPLOYED package url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis git clone ${url} OUTPUT_QUIET ERROR_QUIET)
-if(EXISTS ${WORKSPACE_DIR}/wikis/${package}.wiki AND IS_DIRECTORY ${WORKSPACE_DIR}/wikis/${package}.wiki)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+if(EXISTS ${WORKSPACE_DIR}/sites/wikis/${package}.wiki AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/wikis/${package}.wiki)
 	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
 else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : impossible to clone the repository of package ${package} wiki (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
@@ -539,13 +647,13 @@ endfunction(clone_Wiki_Repository)
 
 ###
 function(init_Wiki_Repository CONNECTED package wiki_git_url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git init OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git remote add origin ${wiki_git_url} OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git add -A OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git commit -m "initialization of wiki" OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git push origin master OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git init OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git remote add origin ${wiki_git_url} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git add -A OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git commit -m "initialization of wiki" OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git push origin master OUTPUT_QUIET ERROR_QUIET)
 #now testing if everything is OK using the git log command
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
 if (NOT "${res}" STREQUAL "")
 	string(FIND "${res}" "master" INDEX_LOCAL)
 	string(FIND "${res}" "origin/master" INDEX_REMOTE)
@@ -559,13 +667,13 @@ endfunction(init_Wiki_Repository)
 
 ###
 function(update_Wiki_Repository package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
 endfunction(update_Wiki_Repository)
 
 ###
 function(publish_Wiki_Repository package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git add -A OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git commit -m "initialization of wiki" OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wikis/${package}.wiki git push origin master)#pushing to master branch of origin
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git add -A OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git commit -m "publising revision of wiki" OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git push origin master)#pushing to master branch of origin
 endfunction(publish_Wiki_Repository package)
 

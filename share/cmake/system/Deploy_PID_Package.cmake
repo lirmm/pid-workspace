@@ -31,57 +31,89 @@ SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_PREFIXES)
 SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_SUFFIXES)
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 
-if(REQUIRED_EXTERNAL)
-	include(ReferExternal${REQUIRED_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
-else()
-	include(Refer${REQUIRED_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
-endif()
-
-if(REQUIRED_PACKAGE)
-	
+#including the adequate reference file
+if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))# a framework is deployed
+	# checks of the arguments
+	include(ReferFramework${TARGET_FRAMEWORK} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(REQUIRED_STATUS STREQUAL NOTFOUND)
-		message("[PID] ERROR : Package name ${REQUIRED_PACKAGE} does not refer to any known package in the workspace.")
+		message("[PID] ERROR : Framework name ${REQUIRED_NAME} does not refer to any known framework in the workspace.")
+		return()	
+	endif()
+	# deployment of the framework
+	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${REQUIRED_NAME} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${REQUIRED_NAME})
+		message("[PID] ERROR : Source repository for framework ${REQUIRED_NAME} already resides in the workspace.")
+		return()	
+	endif()
+	message("[PID] INFO : deploying PID framework ${REQUIRED_NAME} in the workspace ...")
+	deploy_PID_Framework(${REQUIRED_NAME} "${VERBOSE_MODE}") #do the job
+	return()
+else()# a package deployment is required
+	
+	# checks of the arguments	
+	if(TARGET_EXTERNAL AND (NOT TARGET_EXTERNAL STREQUAL ""))
+		include(ReferExternal${TARGET_EXTERNAL} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+		if(REQUIRED_STATUS STREQUAL NOTFOUND)
+			message("[PID] ERROR : External package name ${REQUIRED_NAME} does not refer to any known package in the workspace.")
+			return()	
+		endif()
+	elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
+		include(Refer${TARGET_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+		if(REQUIRED_STATUS STREQUAL NOTFOUND)
+			message("[PID] ERROR : Package name ${REQUIRED_NAME} does not refer to any known package in the workspace.")
+			return()	
+		endif()	
+	else()
+		message("[PID] ERROR : You must specify the project to deploy: either a native package name using package=<name of package>, an external package using external=<name of package> or a framework using framework=<name of framework> argument.")
 		return()
 	endif()
-
-	## global management of the process
+	
+	## start package deployment process
 	remove_Progress_File() #reset the build progress information (sanity action)
 	begin_Progress(workspace NEED_REMOVE)
 	
-	if(REQUIRED_VERSION)
-		if(	REQUIRED_EXTERNAL
-			AND EXISTS ${WORKSPACE_DIR}/external/${REQUIRED_PACKAGE}/${REQUIRED_VERSION}
-			AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${REQUIRED_PACKAGE}/${REQUIRED_VERSION})
-			message("[PID] ERROR : ${REQUIRED_PACKAGE} binary version ${REQUIRED_VERSION} already resides in the workspace.")	
+	# check of the arguments
+	if(TARGET_VERSION)
+		if(	TARGET_EXTERNAL AND (NOT TARGET_EXTERNAL STREQUAL "")
+			AND EXISTS ${WORKSPACE_DIR}/external/${TARGET_EXTERNAL}/${TARGET_VERSION}
+			AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${TARGET_EXTERNAL}/${TARGET_VERSION})
+			message("[PID] ERROR : ${TARGET_EXTERNAL} binary version ${TARGET_VERSION} already resides in the workspace.")	
 			return()
-		elseif(	EXISTS ${WORKSPACE_DIR}/install/${REQUIRED_PACKAGE}/${REQUIRED_VERSION}
-			AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${REQUIRED_PACKAGE}/${REQUIRED_VERSION})
-			message("[PID] ERROR : ${REQUIRED_PACKAGE} binary version ${REQUIRED_VERSION} already resides in the workspace.")	
+		elseif(	EXISTS ${WORKSPACE_DIR}/install/${TARGET_PACKAGE}/${TARGET_VERSION}
+			AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${TARGET_PACKAGE}/${TARGET_VERSION})
+			message("[PID] ERROR : ${TARGET_PACKAGE} binary version ${TARGET_VERSION} already resides in the workspace.")	
 			return()	
+		endif()
+		if(TARGET_EXTERNAL AND (NOT TARGET_EXTERNAL STREQUAL ""))
+			set(PACKAGE_NAME ${TARGET_EXTERNAL})
+		else()
+			set(PACKAGE_NAME ${TARGET_PACKAGE})
 		endif()
 
-		exact_Version_Exists(${REQUIRED_PACKAGE} "${REQUIRED_VERSION}" EXIST)
+		exact_Version_Exists(${PACKAGE_NAME} "${TARGET_VERSION}" EXIST)
 		if(NOT EXIST)
-			message("[PID] ERROR : A binary relocatable archive with version ${REQUIRED_VERSION} does not exist for package ${REQUIRED_PACKAGE}.")
+			message("[PID] ERROR : A binary relocatable archive with version ${TARGET_VERSION} does not exist for package ${PACKAGE_NAME}.")
 			return()
 		endif()
-		if(REQUIRED_EXTERNAL)
-			message("[PID] INFO : deploying external package ${REQUIRED_PACKAGE} (version ${REQUIRED_VERSION}) in the workspace ...")
-			deploy_External_Package(${REQUIRED_PACKAGE} "${REQUIRED_VERSION}" "${VERBOSE_MODE}")
+		if(TARGET_EXTERNAL AND (NOT TARGET_EXTERNAL STREQUAL ""))#external package is deployed
+			message("[PID] INFO : deploying external package ${PACKAGE_NAME} (version ${TARGET_VERSION}) in the workspace ...")
+			deploy_External_Package(${PACKAGE_NAME} "${TARGET_VERSION}" "${VERBOSE_MODE}")
 			return()
+		else()#native package is deployed
+			message("[PID] INFO : deploying native PID package ${PACKAGE_NAME} (version ${TARGET_VERSION}) in the workspace ...")
+			deploy_PID_Package(${PACKAGE_NAME} "${TARGET_VERSION}" "${VERBOSE_MODE}") #do the job
 		endif()
-		message("[PID] INFO : deploying native PID package ${REQUIRED_PACKAGE} (version ${REQUIRED_VERSION}) in the workspace ...")
+		
 	else()
-		if(REQUIRED_EXTERNAL)
-			message("[PID] ERROR : you need to set a version to deploy an external package like ${REQUIRED_PACKAGE}.")
+		if(TARGET_EXTERNAL AND (NOT TARGET_EXTERNAL STREQUAL ""))
+			message("[PID] ERROR : you need to set a version to deploy an external package like ${TARGET_EXTERNAL}.")
 			return()
-		elseif(EXISTS ${WORKSPACE_DIR}/packages/${REQUIRED_PACKAGE} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${REQUIRED_PACKAGE})
-			message("[PID] ERROR : Source repository for package ${REQUIRED_PACKAGE} already resides in the workspace.")
+		elseif(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
+			message("[PID] ERROR : Source repository for package ${TARGET_PACKAGE} already resides in the workspace.")
 			return()	
 		endif()
-		message("[PID] INFO : deploying native PID package ${REQUIRED_PACKAGE} (last version) in the workspace ...")
+		message("[PID] INFO : deploying native PID package ${REQUIRED_NAME} (last version) in the workspace ...")
+		deploy_PID_Package(${PACKAGE_NAME} "${TARGET_VERSION}" "${VERBOSE_MODE}") #do the job
 	endif()
-	deploy_PID_Package(${REQUIRED_PACKAGE} "${REQUIRED_VERSION}" "${VERBOSE_MODE}")
 	
 	## global management of the process
 	message("--------------------------------------------")
@@ -89,8 +121,5 @@ if(REQUIRED_PACKAGE)
 	print_Deployed_Packages()
 	finish_Progress(TRUE) #reset the build progress information
 	
-else()
-	message("[PID] ERROR : You must specify a package using name=<name of package> argument.")
 endif()
-
 

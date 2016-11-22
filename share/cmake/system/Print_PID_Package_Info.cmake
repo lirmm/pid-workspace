@@ -24,22 +24,27 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-if(REQUIRED_PACKAGE)
-	include(Refer${REQUIRED_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
+	include(ReferFramework${TARGET_FRAMEWORK} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(REQUIRED_STATUS STREQUAL NOTFOUND)
-		
-		include(ReferExternal${REQUIRED_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+		message("[PID] ERROR : Framework name ${TARGET_FRAMEWORK} does not refer to any known framework in the workspace")
+	else()
+		print_Framework_Info(${TARGET_FRAMEWORK})	
+	endif()
+elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
+	include(Refer${TARGET_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+	if(REQUIRED_STATUS STREQUAL NOTFOUND)
+	
+		include(ReferExternal${TARGET_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 		if(REQUIRED_STATUS STREQUAL NOTFOUND)
-			message("[PID] ERROR : Package name ${REQUIRED_PACKAGE} does not refer to any known package in the workspace")
+			message("[PID] ERROR : Package name ${TARGET_PACKAGE} does not refer to any known package in the workspace")
 			return()
 		endif()
-		print_External_Package_Info(${REQUIRED_PACKAGE})
+		print_External_Package_Info(${TARGET_PACKAGE})
 		return()
 	endif()
-	print_Package_Info(${REQUIRED_PACKAGE})
-
+	print_Package_Info(${TARGET_PACKAGE})
 else()
-	message("[PID] ERROR : you must specify a package using name=<name of package> argument.")
+	message("[PID] ERROR : you must specify a package to deploy using package=<name of package> argument or specify a framework to deploy using framework=<name of framework> argument.")
 endif()
-
 

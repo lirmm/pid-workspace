@@ -411,6 +411,28 @@ endif()
 endfunction(deploy_Package_Repository)
 
 ###
+function(deploy_Framework_Repository IS_DEPLOYED framework)
+if(${framework}_ADDRESS)
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : cloning the repository of framework ${framework}...")
+	endif()	
+	clone_Repository(DEPLOYED ${framework} ${${framework}_ADDRESS})
+	if(DEPLOYED)
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : repository of framework ${framework} has been cloned.")
+		endif()
+	else()
+		message("[PID] ERROR : cannot clone the repository of framework ${framework}.")
+	endif()
+	set(${IS_DEPLOYED} ${DEPLOYED} PARENT_SCOPE)
+else()
+	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
+	message("[PID] ERROR : impossible to clone the repository of framework ${framework} (no repository address defined). This is maybe due to a malformed package, please contact the administrator of this framework.")
+endif()
+endfunction(deploy_Framework_Repository)
+
+
+###
 function(check_Package_Platform_Against_Current package platform CHECK_OK)
 get_System_Variables(OS_STRING ARCH_BITS ABI_STRING PACKAGE_STRING)
 if(NOT DEFINED ${package}_AVAILABLE_PLATFORM_${platform}_ABI)
@@ -769,7 +791,6 @@ function(build_And_Install_Source DEPLOYED package version)
 	endif()
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 endfunction(build_And_Install_Source)
-
 
 ###
 function(deploy_Source_Package DEPLOYED package already_installed_versions)

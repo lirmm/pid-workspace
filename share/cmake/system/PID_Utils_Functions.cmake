@@ -705,3 +705,34 @@ endif()
 endfunction(is_Binary_Package_Version_In_Development)
 
 
+################################################################
+################ Frameworks Life cycle management ##############
+################################################################
+
+###
+function(set_Framework_Repository_Address framework git_url)
+	file(READ ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE  "([ \t\n])YEAR" "\\1 ADDRESS ${git_url}\n\\1 YEAR" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(set_Framework_Repository_Address)
+
+###
+function(reset_Framework_Repository_Address framework new_git_url)
+	file(READ ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "([ \t\n])ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1 ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(reset_Framework_Repository_Address)
+
+###
+function(get_Framework_Repository_Address framework RES_URL)
+	file(READ ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
+	if(url STREQUAL "${CONTENT}")#no match
+		set(${RES_URL} "" PARENT_SCOPE)
+		return()
+	endif()
+	set(${RES_URL} ${url} PARENT_SCOPE)
+endfunction(get_Framework_Repository_Address)
+
+
+

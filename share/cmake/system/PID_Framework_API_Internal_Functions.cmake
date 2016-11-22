@@ -75,7 +75,6 @@ else()
 	set(LICENSE_FOR_README "The package has no license defined yet.")
 endif()
 
-
 set(README_AUTHORS_LIST "")	
 foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
 	generate_Full_Author_String(${author} STRING_TO_APPEND)
