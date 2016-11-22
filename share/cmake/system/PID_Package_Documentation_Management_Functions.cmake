@@ -165,7 +165,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	
 		find_file(	LICENSE   
 				"License${${PROJECT_NAME}_LICENSE}.cmake"
-				PATH "${WORKSPACE_DIR}/share/cmake/system"
+				PATH "${WORKSPACE_DIR}/share/cmake/licenses"
 				NO_DEFAULT_PATH
 			)
 		set(LICENSE ${LICENSE} CACHE INTERNAL "")

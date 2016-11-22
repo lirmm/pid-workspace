@@ -2,11 +2,19 @@
 Overview
 =========
 
-This repository is used to manage the lifecycle of @FRAMEWORK_NAME@ framework. It has been used to generate the static site of the framework. 
+This repository is used to manage the lifecycle of @FRAMEWORK_NAME@ framework. 
+
+@README_OVERVIEW@
+
+
+This repository has been used to generate the static site of the framework. 
 
 Please visit @FRAMEWORK_SITE@ to view the result and get more information.
 
-@README_OVERVIEW@
+License
+=========
+
+@LICENSE_FOR_README@
 
 
 About authors

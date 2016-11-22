@@ -22,9 +22,9 @@ include(PID_Framework_API_Internal_Functions NO_POLICY_SCOPE)
 include(CMakeParseArguments)
 
 
-### API : declare_PID_Framework(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... [ADDRESS address] DESCRIPTION ... SITE ...)
+### API : declare_PID_Framework(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... [ADDRESS address] LICENSE ... DESCRIPTION ... SITE ...)
 macro(declare_PID_Framework)
-set(oneValueArgs ADDRESS MAIL SITE)
+set(oneValueArgs ADDRESS MAIL SITE LICENSE)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
 cmake_parse_arguments(DECLARE_PID_FRAMEWORK "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_FRAMEWORKE_AUTHOR)
@@ -36,6 +36,9 @@ endif()
 if(NOT DECLARE_PID_FRAMEWORK_SITE)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a web site address must be given using SITE keyword.")
 endif()
+if(NOT DECLARE_PID_FRAMEWORK_LICENSE)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a license must be defined using LICENSE keyword.")
+endif()
 if(NOT DECLARE_PID_FRAMEWORK_DESCRIPTION)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a (short) description of the framework must be given using DESCRIPTION keyword.")
 endif()
@@ -45,7 +48,7 @@ if(DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS)
 endif()
 
 declare_Framework(	"${DECLARE_PID_FRAMEWORKE_AUTHOR}" "${DECLARE_PID_FRAMEWORK_INSTITUTION}" "${DECLARE_PID_FRAMEWORK_MAIL}"
-			"${DECLARE_PID_FRAMEWORK_YEAR}" "${DECLARE_PID_FRAMEWORK_SITE}" 
+			"${DECLARE_PID_FRAMEWORK_YEAR}" "${DECLARE_PID_FRAMEWORK_SITE}" "${DECLARE_PID_FRAMEWORK_LICENSE}"
 			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_DESCRIPTION}")
 endmacro(declare_PID_Framework)
 
@@ -66,7 +69,7 @@ macro(add_PID_Framework_Category)
 if(NOT ${ARGC} EQUAL 1)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the add_PID_Framework_Category command requires one string argument of the form <category>[/subcategory]*.")
 endif()
-define_Category("${ARGV0}")
+add_Category("${ARGV0}")
 endmacro(add_PID_Framework_Category)
 
 ### API : build_PID_Framework()
