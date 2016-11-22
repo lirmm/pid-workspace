@@ -374,7 +374,7 @@ endfunction(print_Platform_Compatible_Binary)
 ###
 function(create_PID_Package package author institution license)
 #copying the pattern folder into the package folder and renaming it
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/package ${WORKSPACE_DIR}/packages/${package} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/packages/package ${WORKSPACE_DIR}/packages/${package} OUTPUT_QUIET ERROR_QUIET)
 
 #setting variables
 set(PACKAGE_NAME ${package})
@@ -398,7 +398,7 @@ set(PACKAGE_DESCRIPTION "TODO: input a short description of package ${package} u
 string(TIMESTAMP date "%Y")
 set(PACKAGE_YEARS ${date}) 
 # generating the root CMakeLists.txt of the package
-configure_file(${WORKSPACE_DIR}/share/patterns/CMakeLists.txt.in ../packages/${package}/CMakeLists.txt @ONLY)
+configure_file(${WORKSPACE_DIR}/share/patterns/packages/CMakeLists.txt.in ../packages/${package}/CMakeLists.txt @ONLY)
 #confuguring git repository
 init_Repository(${package})
 endfunction(create_PID_Package)

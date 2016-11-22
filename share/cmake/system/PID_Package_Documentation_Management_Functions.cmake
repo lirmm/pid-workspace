@@ -53,7 +53,7 @@ find_file(DOXYFILE_IN   "Doxyfile.in"
 set(DOXYFILE_PATH)
 if(DOXYFILE_IN MATCHES DOXYFILE_IN-NOTFOUND)
 	find_file(GENERIC_DOXYFILE_IN   "Doxyfile.in"
-					PATHS "${WORKSPACE_DIR}/share/patterns"
+					PATHS "${WORKSPACE_DIR}/share/patterns/packages"
 					NO_DEFAULT_PATH
 		)
 	if(GENERIC_DOXYFILE_IN MATCHES GENERIC_DOXYFILE_IN-NOTFOUND)
@@ -190,7 +190,7 @@ endfunction(generate_License_File)
 ############ function used to create the README.md file of the package  ###########
 function(generate_Readme_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/README.md.in)
+	set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/packages/README.md.in)
 	## introduction (more detailed description, if any)
 	if(NOT ${PROJECT_NAME}_WIKI_ADDRESS)#no wiki description has been provided
 		# intro		
@@ -364,7 +364,7 @@ endif()
 # additional content
 set(PATH_TO_WIKI_ADDITIONAL_CONTENT ${CMAKE_SOURCE_DIR}/share/wiki)
 if(NOT EXISTS ${PATH_TO_WIKI_ADDITIONAL_CONTENT}) #if folder does not exist (old package style)
-	file(COPY ${WORKSPACE_DIR}/share/patterns/package/share/wiki DESTINATION ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/share)#create the folder
+	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/wiki DESTINATION ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/share)#create the folder
 	set(PACKAGE_ADDITIONAL_CONTENT "")
 	if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] WARNING : creating missing folder wiki in ${PROJECT_NAME} share folder")
@@ -444,7 +444,7 @@ endif()
 
 
 ### now configure the home page of the wiki ###
-set(PATH_TO_HOMEPAGE_PATTERN ${WORKSPACE_DIR}/share/patterns/home.markdown.in)
+set(PATH_TO_HOMEPAGE_PATTERN ${WORKSPACE_DIR}/share/patterns/packages/home.markdown.in)
 configure_file(${PATH_TO_HOMEPAGE_PATTERN} ${CMAKE_BINARY_DIR}/home.markdown @ONLY)#put it in the binary dir for now
 
 endfunction(configure_Wiki_Pages)
