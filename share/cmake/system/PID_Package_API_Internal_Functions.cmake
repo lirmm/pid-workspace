@@ -189,7 +189,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Official_Repository.cmake
-		COMMENT "[PID] Checking official repository consitency..."
+		COMMENT "[PID] Checking official repository consistency..."
 	)
 
 	################################################################################################
