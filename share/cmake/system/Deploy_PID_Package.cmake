@@ -111,8 +111,8 @@ else()# a package deployment is required
 			message("[PID] ERROR : Source repository for package ${TARGET_PACKAGE} already resides in the workspace.")
 			return()	
 		endif()
-		message("[PID] INFO : deploying native PID package ${REQUIRED_NAME} (last version) in the workspace ...")
-		deploy_PID_Package(${PACKAGE_NAME} "${TARGET_VERSION}" "${VERBOSE_MODE}") #do the job
+		message("[PID] INFO : deploying native PID package ${TARGET_PACKAGE} (last version) in the workspace ...")
+		deploy_PID_Package(${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}") #do the job
 	endif()
 	
 	## global management of the process

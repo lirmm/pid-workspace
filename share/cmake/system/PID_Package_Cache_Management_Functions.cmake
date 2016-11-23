@@ -17,6 +17,7 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
+include(CMakeDependentOption)
 
 #############################################################################################
 ############### API functions for managing user options cache variables #####################
