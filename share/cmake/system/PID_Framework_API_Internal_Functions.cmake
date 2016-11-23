@@ -29,7 +29,7 @@ include(PID_Utils_Functions.cmake NO_POLICY_SCOPE)
 ##################################################################################
 ##########################  declaration of the framework #########################
 ##################################################################################
-macro(declare_Framework author institution mail year site license address description)
+macro(declare_Framework author institution mail year site license git_address repo_site description)
 
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the framework
@@ -51,12 +51,22 @@ set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${$
 set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
 set(${PROJECT_NAME}_SITE ${site} CACHE INTERNAL "")
-set(${PROJECT_NAME}_REPOSITORY_SITE CACHE INTERNAL "")
+set(${PROJECT_NAME}_REPOSITORY_SITE ${repo_site} CACHE INTERNAL "")
 set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
-set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
+set(${PROJECT_NAME}_ADDRESS ${git_address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
 endmacro(declare_Framework)
 
+###
+macro(declare_Framework_Image image_file_path is_banner)
+
+if(is_banner)
+	set(${PROJECT_NAME}_BANNER_IMAGE_FILE_NAME ${image_file_path})
+else() #this is a logo
+	set(${PROJECT_NAME}_LOGO_IMAGE_FILE_NAME ${image_file_path})
+endif()
+
+endmacro(declare_Framework_Image)
 
 ##################################################################################
 ############################### building the framework ###########################
@@ -115,30 +125,70 @@ endfunction(generate_Framework_License_File)
 
 
 ############ function used to generate data files for jekyll  ###########
-function(generate_Framework_License_File)
+function(generate_Framework_Data)
+# 1) generate the basic site structure and default files from a pattern
+if(EXISTS ${CMAKE_BINARY_DIR}/to_generate)
+	file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/to_generate)
+endif()
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/to_generate)
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/frameworks/static ${CMAKE_BINARY_DIR}/to_generate
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/to_generate/_data)
+
+# 2) generate the data file containing general information about the framework (generated from a CMake pattern file)
 set(FRAMEWORK_NAME ${PROJECT_NAME})
 set(FRAMEWORK_SITE_URL ${${PROJECT_NAME}_SITE})
 set(FRAMEWORK_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_REPOSITORY_SITE})
 set(FRAMEWORK_MAINTAINER_NAME ${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION}))
 set(FRAMEWORK_MAINTAINER_MAIL ${${PROJECT_NAME}_CONTACT_MAIL})
 set(FRAMEWORK_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION})
-set(FRAMEWORK_BANNER ${PROJECT_NAME}_)
-set(FRAMEWORK_LOGO )
-endfunction(generate_Framework_License_File)
+set(FRAMEWORK_BANNER ${${PROJECT_NAME}_BANNER_IMAGE_FILE_NAME})
+set(FRAMEWORK_LOGO ${${PROJECT_NAME}_LOGO_IMAGE_FILE_NAME})
+configure_file(${CMAKE_SOURCE_DIR}/share/framework.yml.in ${CMAKE_BINARY_DIR}/to_generate/_data/framework.yml @ONLY)
+
+# 3) generate the data file defining categories managed by the framework (generated from scratch)
+file(WRITE ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "")
+if(${PROJECT_NAME}_CATEGORIES)
+	foreach(cat IN iTEMS ${${PROJECT_NAME}_CATEGORIES})
+		extract_All_Words_From_Path(${cat} LIST_OF_NAMES)
+		list(LENGTH LIST_OF_NAMES SIZE)
+		set(FINAL_NAME "")
+		if(SIZE GREATER 1)# there are subcategories
+			foreach(name IN ITEMS ${LIST_OF_NAMES})
+				extract_All_Words(${name} NEW_NAMES)# replace underscores with spaces
+				fill_List_Into_String("${NEW_NAMES}" RES_STRING)
+				set(FINAL_NAME "${RES_STRING} ")
+				math(EXPR SIZE '${SIZE}-1')
+				if(SIZE GREATER 1) #there is more than on categrization level remaining
+					set(FINAL_NAME "${FINAL_NAME}/ ")
+				endif()
+			endforeach()
+		else()
+			extract_All_Words(${cat} NEW_NAMES)# replace underscores with spaces
+			fill_List_Into_String("${NEW_NAMES}" RES_STRING)
+			set(FINAL_NAME "${RES_STRING}")
+			file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
+		endif()
+	endforeach()
+endif()
+
+# 4) generate the configuration file for jekyll generation
+configure_file(${CMAKE_SOURCE_DIR}/share/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
+
+endfunction(generate_Framework_Data)
 
 
 ### main function for building the package
 macro(build_Framework)
 
-#################################################
-############ MANAGING the BUILD #################
-#################################################
+####################################################
+############ CONFIGURING the BUILD #################
+####################################################
 
 # configuring all that can be configured from framework description
 generate_Framework_Readme_File() # generating and putting into source directory the readme file used by gitlab
 generate_Framework_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Framework_Data() # generating the data files for jelkyll (result in the build tree)
-generate_Framework_Site_Configuration() # generating the _config.yml file (result in the build tree)
 
 # build steps
 # 1) create or clean the _site folder in build tree. 

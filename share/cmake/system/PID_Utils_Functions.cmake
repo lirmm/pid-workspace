@@ -93,6 +93,15 @@ string(REPLACE "_" ";" res "${name_with_underscores}")
 set(${all_words_in_list} ${res} PARENT_SCOPE)
 endfunction()
 
+
+###
+function(extract_All_Words_From_Path name_with_slash all_words_in_list)
+set(res "")
+string(REPLACE "/" ";" res "${name_with_slash}")
+set(${all_words_in_list} ${res} PARENT_SCOPE)
+endfunction(extract_All_Words_From_Path)
+
+
 ###
 function(fill_List_Into_String input_list res_string)
 set(res "")

@@ -22,9 +22,9 @@ include(PID_Framework_API_Internal_Functions NO_POLICY_SCOPE)
 include(CMakeParseArguments)
 
 
-### API : declare_PID_Framework(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... [ADDRESS address] LICENSE ... DESCRIPTION ... SITE ...)
+### API : declare_PID_Framework(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... [GIT_ADDRESS address] [GIT_SITE site] LICENSE ... DESCRIPTION ... SITE ... [LOGO logo_image_path_relative_to assets/img ] [BANNER banner_image_path_relative_to assets/img])
 macro(declare_PID_Framework)
-set(oneValueArgs ADDRESS MAIL SITE LICENSE)
+set(oneValueArgs GIT_ADDRESS MAIL SITE GIT_SITE LICENSE LOGO BANNER)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
 cmake_parse_arguments(DECLARE_PID_FRAMEWORK "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_FRAMEWORKE_AUTHOR)
@@ -49,7 +49,14 @@ endif()
 
 declare_Framework(	"${DECLARE_PID_FRAMEWORKE_AUTHOR}" "${DECLARE_PID_FRAMEWORK_INSTITUTION}" "${DECLARE_PID_FRAMEWORK_MAIL}"
 			"${DECLARE_PID_FRAMEWORK_YEAR}" "${DECLARE_PID_FRAMEWORK_SITE}" "${DECLARE_PID_FRAMEWORK_LICENSE}"
-			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_DESCRIPTION}")
+			"${DECLARE_PID_FRAMEWORK_GIT_ADDRESS}" "${DECLARE_PID_FRAMEWORK_GIT_SITE}" "${DECLARE_PID_FRAMEWORK_DESCRIPTION}")
+if(DECLARE_PID_FRAMEWORK_LOGO)
+	declare_Framework_Image(${DECLARE_PID_FRAMEWORK_LOGO} FALSE)
+endif()
+if(DECLARE_PID_FRAMEWORK_BANNER)
+	declare_Framework_Image(${DECLARE_PID_FRAMEWORK_BANNER} TRUE)
+endif()
+
 endmacro(declare_PID_Framework)
 
 
