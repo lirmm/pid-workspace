@@ -21,12 +21,21 @@
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-if(TARGET_PACKAGE)
+if(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
 	if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE}
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
 		register_PID_Package(${TARGET_PACKAGE})
+	else()
+		message("[PID] ERROR : the package ${TARGET_PACKAGE} cannot be found in the workspace (a folder with same name should be in ${WORKSPACE_DIR}/packages folder).")
+	endif()
+elseif(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
+	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
+		register_PID_Framework(${TARGET_FRAMEWORK})
+	else()
+		message("[PID] ERROR : the framework ${TARGET_FRAMEWORK} cannot be found in the workspace (a folder with same name should be in ${WORKSPACE_DIR}/sites/frameworks folder).")
 	endif()
 else()
-	message("[PID] ERROR : you must specify the name of the package to remove using name=<name of package> argument")
+	message("[PID] ERROR : you must specify the name of the package or framework to register using either package=<name of package> or framework=<name fo framework>")
 endif()
 

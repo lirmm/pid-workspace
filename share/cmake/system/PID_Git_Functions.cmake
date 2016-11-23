@@ -223,7 +223,7 @@ endfunction(register_Repository_Version)
 #############################################################################
 
 ###
-function(publish_References_In_Workspace_Repository package)
+function(publish_Package_References_In_Workspace_Repository package)
 if(EXISTS ${WORKSPACE_DIR}/share/cmake/find/Find${package}.cmake AND EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/find/Find${package}.cmake OUTPUT_QUIET ERROR_QUIET)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/references/Refer${package}.cmake OUTPUT_QUIET ERROR_QUIET)
@@ -232,7 +232,19 @@ if(EXISTS ${WORKSPACE_DIR}/share/cmake/find/Find${package}.cmake AND EXISTS ${WO
 else()
 	message("[PID] ERROR : problem registering package ${package}, cannot find adequate cmake files in workspace.")
 endif()
-endfunction(publish_References_In_Workspace_Repository)
+endfunction(publish_Package_References_In_Workspace_Repository)
+
+
+###
+function(publish_Framework_References_In_Workspace_Repository framework)
+if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/references/ReferFramework${framework}.cmake OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git commit -m "framework ${framework} registered" OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git push origin master OUTPUT_QUIET ERROR_QUIET)
+else()
+	message("[PID] ERROR : problem registering framework ${framework}, cannot find adequate cmake files in workspace.")
+endif()
+endfunction(publish_Framework_References_In_Workspace_Repository)
 
 ###
 function(update_Workspace_Repository remote)

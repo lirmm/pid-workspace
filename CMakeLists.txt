@@ -300,7 +300,7 @@ add_custom_target(remove
 
 ## register a package in the workspace
 add_custom_target(register
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(name)
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Register_PID_Package.cmake

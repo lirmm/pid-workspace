@@ -805,7 +805,13 @@ if(	EXISTS ${WORKSPACE_DIR}/install/${package})
 endif()
 
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/packages/${package})
-endfunction(remove_PID_Package package)
+endfunction(remove_PID_Package)
+
+
+###
+function(remove_PID_Framework framework)
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/frameworks/${framework})
+endfunction(remove_PID_Framework)
 
 ##########################################
 ############ registering packages ########
@@ -817,9 +823,16 @@ function(register_PID_Package package)
 go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} install)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} referencing)
-publish_References_In_Workspace_Repository(${package})
+publish_Package_References_In_Workspace_Repository(${package})
 endfunction(register_PID_Package)
 
+###
+function(register_PID_Framework framework)
+go_To_Workspace_Master()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework}/build ${CMAKE_MAKE_PROGRAM} build)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework}/build ${CMAKE_MAKE_PROGRAM} referencing)
+publish_Framework_References_In_Workspace_Repository(${framework})
+endfunction(register_PID_Framework)
 
 ##########################################
 ############ releasing packages ##########
