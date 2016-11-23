@@ -1,0 +1,13 @@
+
+# Site settings
+
+url: "@${PROJECT_NAME}_SITE@" # the base hostname & protocol for your site
+
+# Build settings
+markdown: kramdown
+
+excerpt_separator: ""
+
+port:    4000
+host:    127.0.0.1
+baseurl: ""

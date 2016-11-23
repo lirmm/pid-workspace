@@ -1,0 +1,27 @@
+<nav class="navbar navbar-package-fixed-top">
+ <div class="container">
+   <div class="navbar-package-header">
+      <a id="main-package-name" class="navbar-brand" href="{{ site.data.framework.framework_url }}/packages/{{page.package}}/home.html">
+	{{page.package}}
+      </a>
+  </div><!-- /.navbar-header -->
+   <div class="navbar-collapse collapse" id="mobile-navigation" aria-expanded="false">
+      <ul class="nav navbar-nav">
+        <li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.data.framework.framework_url}}/packages/{{page.package}}/install.html" class="menu-item">Install</a></li>
+	 <li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.data.framework.framework_url}}/packages/{{page.package}}/use.html" class="menu-item">Use</a></li>
+	{% if page.has_apidoc %}
+	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.data.framework.framework_url}}/packages/{{page.package}}/api_doc/index.html" class="menu-item">API</a></li>
+	{% endif %}
+	{% if page.has_checks %}
+	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.data.framework.framework_url}}/packages/{{page.package}}/static_checks/index.html" class="menu-item">StaticChecks</a></li>
+	{% endif %}
+	{% if page.has_coverage %}
+	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.data.framework.framework_url}}/packages/{{page.package}}/coverage/index.html" class="menu-item">Coverage</a></li>
+	{% endif %}
+	{% if page.has_binaries %}
+	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.data.framework.framework_url}}/packages/{{page.package}}/binaries/home.html" class="menu-item">Binaries</a></li>
+	{% endif %}
+      </ul>
+    </div><!-- /.navbar-collapse --> 
+ </div><!-- /.container -->
+</nav>

@@ -1,0 +1,50 @@
+<a href="#" id="nav-button">NAV</a>
+<nav class="sidebar">
+	<ul class="list-unstyled">
+	{% capture sidebar %}
+
+	{% if site.data.categories %}		
+		{% for category in site.data.categories %}
+			{% assign category_packages = 0%} 
+			{% for file in site.pages %}
+			  {% if file.path contains "packages/" %}
+			  {% if file.path contains 'home.md' %}
+			  {% if file.categories contains category.index %}
+			      {% assign category_packages = 1 %}
+			  {% endif %}
+			  {% endif %}
+			  {% endif %}
+			{% endfor %}
+			{% if category_packages != 0 %}
+			<li>{{ category.name }} 
+				<ul class="list-unstyled">
+				{% for package in site.pages %}
+					{% if package.path contains "packages/" %}
+			  		{% if package.path contains 'home.md' %}
+					{% if (package.categories contains category.index) %}
+						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="{{ site.data.framework.framework_url }}{{ package.url }}">{{ package.title }}</a></li>
+					{% endif %}
+					{% endif %}
+					{% endif %}
+				{% endfor %}
+				</ul>
+			{% endif %}
+		{% endfor %}
+	{% endif %}
+
+	<li> All packages
+	<ul class="list-unstyled">
+	{% for package in site.pages %}
+		{% if package.path contains "packages/" %}
+  		{% if package.path contains 'home.md' %}
+		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="{{ site.data.framework.framework_url }}{{ package.url }}">{{ package.title }}</a></li>
+		{% endif %}
+		{% endif %}
+	{% endfor %}
+	</ul>
+	</li>
+	
+	{% endcapture %}
+	{{ sidebar | strip_newlines }}
+	</ul>
+</nav>
