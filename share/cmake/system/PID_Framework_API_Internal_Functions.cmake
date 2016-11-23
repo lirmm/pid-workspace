@@ -24,7 +24,7 @@
 ########################################################################
 include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
-include(PID_Utils_Functions.cmake NO_POLICY_SCOPE)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 ##################################################################################
 ##########################  declaration of the framework #########################
@@ -81,12 +81,13 @@ set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed descriptio
 
 
 if(${PROJECT_NAME}_LICENSE)
-	set(LICENSE_FOR_README "The license that applies to this repository project is **${${PROJECT_NAME}_LICENSE}**.
+	set(LICENSE_FOR_README "The license that applies to this repository project is **${${PROJECT_NAME}_LICENSE}**.")
 else()
 	set(LICENSE_FOR_README "The package has no license defined yet.")
 endif()
 
-set(README_AUTHORS_LIST "")	
+set(README_AUTHORS_LIST "")
+message("${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS = ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
 foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
 	generate_Full_Author_String(${author} STRING_TO_APPEND)
 	set(README_AUTHORS_LIST "${README_AUTHORS_LIST}\n+ ${STRING_TO_APPEND}")
@@ -149,7 +150,7 @@ configure_file(${CMAKE_SOURCE_DIR}/share/framework.yml.in ${CMAKE_BINARY_DIR}/to
 # 3) generate the data file defining categories managed by the framework (generated from scratch)
 file(WRITE ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "")
 if(${PROJECT_NAME}_CATEGORIES)
-	foreach(cat IN iTEMS ${${PROJECT_NAME}_CATEGORIES})
+	foreach(cat IN ITEMS ${${PROJECT_NAME}_CATEGORIES})
 		extract_All_Words_From_Path(${cat} LIST_OF_NAMES)
 		list(LENGTH LIST_OF_NAMES SIZE)
 		set(FINAL_NAME "")

@@ -30,7 +30,7 @@ if(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
 	endif()
 elseif(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
 	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
 		remove_PID_Framework(${TARGET_FRAMEWORK})
 	else()
 		message("[PID] ERROR : the framework to be removed, named ${TARGET_FRAMEWORK}, does not lies in the workspace.")
