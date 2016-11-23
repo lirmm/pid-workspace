@@ -20,16 +20,16 @@
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-SEPARATE_ARGUMENTS(REQUIRED_PACKAGES)
+SEPARATE_ARGUMENTS(TARGET_PACKAGES)
 
 remove_Progress_File() #reset the build progress information (sanity action)
 begin_Progress(workspace NEED_REMOVE)
 
 set(LIST_OF_TARGETS)
 
-if(REQUIRED_PACKAGES AND NOT REQUIRED_PACKAGES STREQUAL "all")
+if(TARGET_PACKAGES AND NOT TARGET_PACKAGES STREQUAL "all")
 	#clean them first
-	foreach(package IN ITEMS ${REQUIRED_PACKAGES})
+	foreach(package IN ITEMS ${TARGET_PACKAGES})
 		if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build) #rebuild all target packages
 			list(APPEND LIST_OF_TARGETS ${package})
 		else()

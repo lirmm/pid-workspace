@@ -192,7 +192,7 @@ add_custom_target(deploy
 
 ## building a list of source packages  
 add_custom_target(build
-	COMMAND ${CMAKE_COMMAND} 	-DREQUIRED_PACKAGES="$(name)"
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="$(package)"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Build_PID_Packages.cmake
@@ -201,7 +201,7 @@ add_custom_target(build
 
 ## rebuilding a list of source packages  
 add_custom_target(rebuild
-	COMMAND ${CMAKE_COMMAND} 	-DREQUIRED_PACKAGES="$(name)"
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="$(package)"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Rebuild_PID_Packages.cmake
@@ -210,7 +210,7 @@ add_custom_target(rebuild
 
 ## resolving runtime dependencies of an already installed package
 add_custom_target(resolve
-	COMMAND ${CMAKE_COMMAND} 	-DREQUIRED_PACKAGE=$(name) 
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES=$(package) 
 					-DREQUIRED_VERSION=$(version)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DPACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/install
@@ -244,7 +244,7 @@ add_custom_target(resolve
 
 ## creating a new package
 add_custom_target(create
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_NAME=$(package)
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
 					-DOPTIONAL_AUTHOR="$(author)" 
 					-DOPTIONAL_INSTITUTION="$(affiliation)"
@@ -272,7 +272,7 @@ add_custom_target(connect
 
 ## listing available licenses
 add_custom_target(license
-	COMMAND ${CMAKE_COMMAND} 	-DREQUIRED_LICENSE=$(name)
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_LICENSE=$(name)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_License_Info.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -280,7 +280,7 @@ add_custom_target(license
 
 ## clearing a package install directory
 add_custom_target(clear
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(name)
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_VERSION=$(version)					
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Clear_PID_Package.cmake
@@ -290,7 +290,7 @@ add_custom_target(clear
 
 ## completely remove a package from workspace
 add_custom_target(remove
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(name)
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Remove_PID_Package.cmake
@@ -310,7 +310,7 @@ add_custom_target(register
 
 ## releasing a package
 add_custom_target(release
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(name)
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DNEXT_VERSION=$(nextversion)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
@@ -341,7 +341,7 @@ add_custom_target(release
 
 ## updating a package
 add_custom_target(update
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(name)
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-DPACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/install
 					-DEXTERNAL_PACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/external
