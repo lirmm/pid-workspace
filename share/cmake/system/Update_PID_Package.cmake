@@ -40,7 +40,7 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 remove_Progress_File() #reset the build progress information (sanity action)
 begin_Progress(workspace NEED_REMOVE)
 
-if(TARGET_PACKAGE)
+if(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
 	if(TARGET_PACKAGE STREQUAL "all")
 		update_PID_All_Packages()
 	else()

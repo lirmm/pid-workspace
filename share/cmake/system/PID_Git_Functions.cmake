@@ -569,23 +569,10 @@ endif()
 endfunction(clone_Framework_Repository)
 
 ###
-function(init_Framework_Repository CONNECTED framework git_url)
+function(init_Framework_Repository framework)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git init OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote add origin ${git_url} OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git add -A OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git commit -m "initialization of framework" OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master OUTPUT_QUIET ERROR_QUIET)
-#now testing if everything is OK using the git log command
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
-if (NOT "${res}" STREQUAL "")
-	string(FIND "${res}" "master" INDEX_LOCAL)
-	string(FIND "${res}" "origin/master" INDEX_REMOTE)
-	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch  
-		set(${CONNECTED} TRUE PARENT_SCOPE)
-		return()
-	endif()
-endif()
-set(${CONNECTED} FALSE PARENT_SCOPE)
 endfunction(init_Framework_Repository)
 
 ###
