@@ -55,6 +55,36 @@ set(${PROJECT_NAME}_REPOSITORY_SITE ${repo_site} CACHE INTERNAL "")
 set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
 set(${PROJECT_NAME}_ADDRESS ${git_address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
+
+
+#searching for jekyll (static site generator)
+find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
+
+if(JEKYLL_EXECUTABLE)
+
+add_custom_target(build
+	COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+					-DTARGET_FRAMEWORK=${PROJECT_NAME}
+					-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+					-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Framework.cmake
+	COMMENT "[PID] Building framework ..."
+	VERBATIM
+)
+
+add_custom_target(serve
+	COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+					-DTARGET_FRAMEWORK=${PROJECT_NAME}
+					-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+					-P ${WORKSPACE_DIR}/share/cmake/system/Serve_PID_Framework.cmake
+	COMMENT "[PID] Serving the static site of the framework ..."
+	VERBATIM
+)
+
+else()
+
+	message("[PID] ERROR: the jekyll executable cannot be found in the system, please install it and put it in a standard path.")
+endif()
+
 endmacro(declare_Framework)
 
 ###
@@ -75,8 +105,10 @@ endmacro(declare_Framework_Image)
 ############ function used to create the README.md file of the framework  ###########
 function(generate_Framework_Readme_File)
 set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/frameworks/README.md.in)
+
+
 set(FRAMEWORK_NAME ${PROJECT_NAME})
-set(FRAMEWORK_SITE ${PROJECT_NAME}_SITE)
+set(FRAMEWORK_SITE ${${PROJECT_NAME}_SITE})
 set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by wiki description use the short one
 
 
@@ -87,7 +119,7 @@ else()
 endif()
 
 set(README_AUTHORS_LIST "")
-message("${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS = ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
+
 foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
 	generate_Full_Author_String(${author} STRING_TO_APPEND)
 	set(README_AUTHORS_LIST "${README_AUTHORS_LIST}\n+ ${STRING_TO_APPEND}")
@@ -140,7 +172,8 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/shar
 set(FRAMEWORK_NAME ${PROJECT_NAME})
 set(FRAMEWORK_SITE_URL ${${PROJECT_NAME}_SITE})
 set(FRAMEWORK_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_REPOSITORY_SITE})
-set(FRAMEWORK_MAINTAINER_NAME ${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION}))
+get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
+set(FRAMEWORK_MAINTAINER_NAME ${RES_STRING})
 set(FRAMEWORK_MAINTAINER_MAIL ${${PROJECT_NAME}_CONTACT_MAIL})
 set(FRAMEWORK_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION})
 set(FRAMEWORK_BANNER ${${PROJECT_NAME}_BANNER_IMAGE_FILE_NAME})
@@ -157,13 +190,16 @@ if(${PROJECT_NAME}_CATEGORIES)
 		if(SIZE GREATER 1)# there are subcategories
 			foreach(name IN ITEMS ${LIST_OF_NAMES})
 				extract_All_Words(${name} NEW_NAMES)# replace underscores with spaces
+				
 				fill_List_Into_String("${NEW_NAMES}" RES_STRING)
-				set(FINAL_NAME "${RES_STRING} ")
+				set(FINAL_NAME "${FINAL_NAME} ${RES_STRING}")
 				math(EXPR SIZE '${SIZE}-1')
-				if(SIZE GREATER 1) #there is more than on categrization level remaining
+				if(SIZE GREATER 0) #there is more than on categrization level remaining
 					set(FINAL_NAME "${FINAL_NAME}/ ")
 				endif()
+				
 			endforeach()
+			file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
 		else()
 			extract_All_Words(${cat} NEW_NAMES)# replace underscores with spaces
 			fill_List_Into_String("${NEW_NAMES}" RES_STRING)

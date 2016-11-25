@@ -22,7 +22,7 @@
 					{% if package.path contains "packages/" %}
 			  		{% if package.path contains 'home.md' %}
 					{% if (package.categories contains category.index) %}
-						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="{{ site.data.framework.framework_url }}{{ package.url }}">{{ package.title }}</a></li>
+						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="/{{ package.url }}">{{ package.title }}</a></li>
 					{% endif %}
 					{% endif %}
 					{% endif %}
@@ -37,7 +37,7 @@
 	{% for package in site.pages %}
 		{% if package.path contains "packages/" %}
   		{% if package.path contains 'home.md' %}
-		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="{{ site.data.framework.framework_url }}{{ package.url }}">{{ package.title }}</a></li>
+		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="/{{ package.url }}">{{ package.title }}</a></li>
 		{% endif %}
 		{% endif %}
 	{% endfor %}

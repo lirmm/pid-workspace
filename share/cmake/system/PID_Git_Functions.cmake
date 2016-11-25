@@ -559,12 +559,20 @@ endfunction(get_Remotes_Address)
 ###
 function(clone_Framework_Repository IS_DEPLOYED framework url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+
+#framework may be named by only by their name or with a -framework suffix
 if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${framework} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework})
 	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
 else()
-	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : impossible to clone the repository of framework ${framework} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this framework.")
+	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${framework}-framework AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}-framework)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${WORKSPACE_DIR}/sites/frameworks/${framework}-framework ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET)
+		set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
+
+	else()
+		set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
+		message("[PID] ERROR : impossible to clone the repository of framework ${framework} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this framework.")
+	endif()
 endif()
 endfunction(clone_Framework_Repository)
 
