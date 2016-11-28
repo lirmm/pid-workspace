@@ -65,7 +65,8 @@ elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
 	set(${PROJECT_NAME}_ARCH 64 CACHE INTERNAL "")
 endif()
 
-if(${CMAKE_BINARY_DIR} MATCHES release)
+file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+if(DIR_NAME STREQUAL "build/release")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
 
 	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
@@ -76,7 +77,7 @@ if(${CMAKE_BINARY_DIR} MATCHES release)
 		return()
 	endif()
 	
-elseif(${CMAKE_BINARY_DIR} MATCHES debug)
+elseif(DIR_NAME STREQUAL "build/debug")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
 	
 	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
@@ -87,7 +88,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES debug)
 		return()
 	endif()
 	
-elseif(${CMAKE_BINARY_DIR} MATCHES build)
+elseif(DIR_NAME STREQUAL "build")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt "")
 	
@@ -367,7 +368,7 @@ elseif(${CMAKE_BINARY_DIR} MATCHES build)
 else()	# the build must be done in the build directory
 	message("[PID] ERROR : please run cmake in the build folder of the package ${PROJECT_NAME}.")
 	return()
-endif(${CMAKE_BINARY_DIR} MATCHES release)
+endif()
 
 #################################################
 ######## Initializing cache variables ###########
