@@ -39,9 +39,10 @@ $on-laptop:        800px;
 body{
 	color: $body-text-color;
 }
-	div.main-body{
-		overflow: auto;
-	}
+
+div.main-body{
+	overflow: auto;
+}
 
 div.main-body{
 	display: flex;
@@ -73,26 +74,6 @@ nav.sidebar{
 			font-weight: bold;
 		}
 }
-
-
-// Search bar
-#site-search{
-	padding-bottom: 30px;
-
-	input{
-		margin: 0;
-		padding: 0 1em;
-	}
-}
-	#search-results{
-		position: absolute;
-		top: 54%;
-		right: 10%;
-		left: 10%;
-	}
-		#search-results li span{
-			padding: 3px 20px;
-		}
 
 
 // Article
@@ -176,10 +157,11 @@ div.article-container{
 
 div.align-center{
 }
-	div.align-center img{
-		max-width: 90%;
-		text-align: center;
-	}
+
+div.align-center img{
+	max-width: 90%;
+	text-align: center;
+}
 
 p {
 	color: #333;
@@ -210,4 +192,12 @@ body.homepage{
 			font-size: 0.875rem;
 		}
 	}
+}
+
+.horizontalLine {
+    border-top-style: solid;
+    border-right-style: none;
+    border-bottom-style: none;
+    border-left-style: none;
+    border-color: $nav-border-color;
 }

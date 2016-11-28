@@ -14,7 +14,7 @@ In **PID** environment **frameworks** are agregates of **packages**, each **pack
  
 # How to use this site ?
 
-This site has the same general "look and feel" as any other [framework in PID](# What is this site ?):
+This site has the same general "look and feel" as any other framework in PID:
 
 - The header bar provides menus that help you navigate between different global pages of the framework.
   - **Documentation** provides submenus to access all kind of documentation of the framework:
