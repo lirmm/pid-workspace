@@ -7,20 +7,55 @@
   </div><!-- /.navbar-header -->
    <div class="navbar-collapse collapse" id="mobile-navigation" aria-expanded="false">
       <ul class="nav navbar-nav">
-        <li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{page.package}}/install.html" class="menu-item">Install</a></li>
-	 <li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{page.package}}/use.html" class="menu-item">Use</a></li>
-	{% if page.has_apidoc %}
-	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{page.package}}/api_doc/index.html" class="menu-item">API</a></li>
+	<li class="dropdown {% if page.nav-hl == 'documentation' %}active{% endif %}">
+          <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Documentation<i class="fa fa-caret-down"></i></a>
+          <ul class="dropdown-menu animated slideInDown">
+	    {% if page.package.has_introduction %}
+            <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="/packages/{{page.package}}/introduction" class="sub menu-item">Introduction</a>
+            </li>
+	    {% endif %}
+            <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="/packages/{{page.package}}/install" class="sub menu-item">Install</a>
+            </li>
+	    <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="/packages/{{page.package}}/use" class="sub menu-item">Use</a>
+            </li>
+	    {% if page.package.has_tutorial %}
+	    <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="/packages/{{page.package}}/tutorial" class="sub menu-item">Tutorial</a>
+            </li>
+  	    {% endif %}
+	    {% if page.package.has_details %}
+	    <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="/packages/{{page.package}}/more" class="sub menu-item">Advanced Topics</a>
+            </li>
+  	    {% endif %}
+	    
+          </ul>
+        </li>
+	{% if page.package.has_developper_info %}
+	<li class="dropdown {% if page.nav-hl == 'documentation' %}active{% endif %}">
+          <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Developpers<i class="fa fa-caret-down"></i></a>
+          <ul class="dropdown-menu animated slideInDown">
+		{% if page.package.has_apidoc %}
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{page.package}}/api_doc/index.html" class="menu-item">API</a></li>
+		{% endif %}
+		{% if page.package.has_checks %}
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{page.package}}/static_checks/index.html" class="menu-item">StaticChecks</a></li>
+		{% endif %}
+		{% if page.package.has_coverage %}
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{page.package}}/coverage/index.html" class="menu-item">Coverage</a></li>
+		{% endif %}
+		{% if page.package.has_binaries %}
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{page.package}}/binaries/home.html" class="menu-item">Binaries</a></li>
+		{% endif %}
+	   </ul>
+	</li>
 	{% endif %}
-	{% if page.has_checks %}
-	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{page.package}}/static_checks/index.html" class="menu-item">StaticChecks</a></li>
-	{% endif %}
-	{% if page.has_coverage %}
-	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{page.package}}/coverage/index.html" class="menu-item">Coverage</a></li>
-	{% endif %}
-	{% if page.has_binaries %}
-	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{page.package}}/binaries/home.html" class="menu-item">Binaries</a></li>
-	{% endif %}
+	<li class="{% if page.nav-hl == 'contact' %}active{% endif %}">
+		<a href="/packages/{{page.package}}/contact" class="menu-item">Contact</a>
+	</li>
       </ul>
     </div><!-- /.navbar-collapse --> 
  </div><!-- /.container -->
