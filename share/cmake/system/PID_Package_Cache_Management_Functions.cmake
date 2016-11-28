@@ -309,24 +309,27 @@ set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH}  CACHE INTERNAL "")
 set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resources CACHE INTERNAL "")
 endfunction(init_Standard_Path_Cache_Variables)
 
-### wiki related cache variables management
-function(init_Wiki_Info_Cache_Variables repo home_page framework parent_page content_file introduction)
-set(${PROJECT_NAME}_WIKI_ADDRESS "${repo}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_WIKI_ROOT_PAGE "${home_page}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_WIKI_FRAMEWORK "${framework}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_WIKI_PARENT_PAGE "${parent_page}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT "${content_file}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION "${introduction}" CACHE INTERNAL "")
-endfunction(init_Wiki_Info_Cache_Variables)
+### documentation sites related cache variables management
+function(init_Documentation_Info_Cache_Variables framework home_page repo introduction)
+if(framework STREQUAL "")
+	set(${PROJECT_NAME}_FRAMEWORK "${framework}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_SITE_ROOT_PAGE CACHE INTERNAL "")
+	set(${PROJECT_NAME}_SITE_GIT_ADDRESS CACHE INTERNAL "")
+else()
+	set(${PROJECT_NAME}_FRAMEWORK CACHE INTERNAL "")
+	set(${PROJECT_NAME}_SITE_ROOT_PAGE "${home_page}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_SITE_GIT_ADDRESS "${repo}" CACHE INTERNAL "")
+endif()
+set(${PROJECT_NAME}_SITE_INTRODUCTION "${introduction}" CACHE INTERNAL "")
+endfunction(init_Documentation_Info_Cache_Variables)
 
-function(reset_Wiki_Info)
-set(${PROJECT_NAME}_WIKI_ADDRESS CACHE INTERNAL "")
-set(${PROJECT_NAME}_WIKI_ROOT_PAGE CACHE INTERNAL "")
-set(${PROJECT_NAME}_WIKI_PARENT_PAGE CACHE INTERNAL "")
-set(${PROJECT_NAME}_WIKI_FRAMEWORK CACHE INTERNAL "")
-set(${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT CACHE INTERNAL "")
-set(${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION CACHE INTERNAL "")
-endfunction(reset_Wiki_Info)
+
+function(reset_Documentation_Info)
+	set(${PROJECT_NAME}_FRAMEWORK CACHE INTERNAL "")
+	set(${PROJECT_NAME}_SITE_ROOT_PAGE CACHE INTERNAL "")
+	set(${PROJECT_NAME}_SITE_GIT_ADDRESS CACHE INTERNAL "")
+	set(${PROJECT_NAME}_SITE_INTRODUCTION CACHE INTERNAL "")
+endfunction(reset_Documentation_Info)
 
 
 ### set cache variable for install
@@ -640,7 +643,7 @@ set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES CACHE INTERNAL "")
 reset_Platforms_Variables()
 reset_To_Install_Packages()
 reset_To_Install_External_Packages()
-reset_Wiki_Info()
+reset_Documentation_Info()
 endfunction(reset_All_Component_Cached_Variables)
 
 ###

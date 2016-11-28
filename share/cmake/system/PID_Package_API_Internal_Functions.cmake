@@ -406,9 +406,40 @@ begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a g
 endmacro(declare_Package)
 
 
-############################################################################
-################## setting info on Wiki ####################################
-############################################################################
+#####################################################################################
+################## setting info on documentation ####################################
+#####################################################################################
+macro(define_Framework_Contribution framework description)
+init_Documentation_Info_Cache_Variables("${framework}" "" "" ${description})
+if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
+	
+	add_custom_target(site
+		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
+						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
+						-DSYNCHRO_WIKI=$(synchro)
+			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Wiki.cmake
+	)
+endif()
+endmacro(define_Framework_Contribution)
+
+macro(define_Static_Site_Contribution url git_repository description)
+init_Documentation_Info_Cache_Variables("" ${url} ${git_repository} ${description})
+if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
+	
+	add_custom_target(site
+		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
+						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
+						-DSYNCHRO_WIKI=$(synchro)
+			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Wiki.cmake
+	)
+endif()
+endmacro(define_Static_Site_Contribution)
+
+
 macro(define_Wiki wiki_repo_addr wiki_home_page package_framework wiki_parent_page wiki_content_file description)
 init_Wiki_Info_Cache_Variables("${wiki_repo_addr}" "${wiki_home_page}" "${package_framework}" "${wiki_parent_page}" "${wiki_content_file}" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the wiki can be build is release mode only
