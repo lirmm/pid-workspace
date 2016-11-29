@@ -958,9 +958,13 @@ endfunction(need_Install_External_Packages)
 function(write_Use_File file package build_mode)
 set(MODE_SUFFIX "")
 if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode
-	file(APPEND ${file} "######### declaration of package wiki info ########\n")
-	file(APPEND ${file} "set(${package}_WIKI_HOME ${${package}_WIKI_ROOT_PAGE} CACHE INTERNAL \"\")\n")
-	
+	file(APPEND ${file} "######### declaration of package web site info ########\n")
+
+	file(APPEND ${file} "set(${package}_FRAMEWORK ${${package}_FRAMEWORK} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_SITE_ROOT_PAGE ${${package}_SITE_ROOT_PAGE} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_SITE_GIT_ADDRESS ${${package}_SITE_GIT_ADDRESS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_SITE_INTRODUCTION ${${package}_SITE_INTRODUCTION} CACHE INTERNAL \"\")\n")
+
 	file(APPEND ${file} "######### declaration of package development info ########\n")	
 	get_Repository_Current_Branch(RES_BRANCH ${WORKSPACE_DIR}/packages/${package})
 	if(NOT RES_BRANCH OR RES_BRANCH STREQUAL "master")#not on a development branch

@@ -1,4 +1,3 @@
-
 #########################################################################################
 #	This file is part of the program PID						#
 #  	Program description : build system supportting the PID methodology  		#
@@ -19,21 +18,22 @@
 #########################################################################################
 
 
-function(PID_Package_Is_With_Development_Info_In_Use_Files RES package)
-	if(${${package}_PID_VERSION} GREATER 1) #with packages generated with version > 1 we can find development info about packages 
-		set(${RES} TRUE PARENT_SCOPE)
-	else()
-		set(${RES} FALSE PARENT_SCOPE)
-	endif()
-endfunction(PID_Package_Is_With_Development_Info_In_Use_Files)
+### script used to build the site using jekyll
+
+#1) copy files from src to the adequate build folder
+
+set(PATH_TO_SITE ${WORKSPACE_DIR}/sites/packages/${TARGET_PACKAGE})
+set(PATH_TO_SITE_SRC ${PATH_TO_SITE}/src)
+set(PATH_TO_SITE_JEKYLL ${PATH_TO_SITE}/build/to_generate)
+set(PATH_TO_SITE_RESULT ${PATH_TO_SITE}/build/generated)
+
+file(REMOVE ${PATH_TO_SITE_RESULT})
+
+file(COPY ${PATH_TO_SITE_SRC}/assets ${PATH_TO_SITE_SRC}/api_doc ${PATH_TO_SITE_SRC}/coverage ${PATH_TO_SITE_SRC}/pages ${PATH_TO_SITE_SRC}/static_checks ${PATH_TO_SITE_SRC}/binaries DESTINATION ${PATH_TO_SITE_JEKYLL})
 
 
-function(PID_Package_Is_With_Site_Info_In_Use_Files RES package)
-	if(${${package}_PID_VERSION} GREATER 1) #with packages generated with version > 1 we can find web site info about packages 
-		set(${RES} TRUE PARENT_SCOPE)
-	else()
-		set(${RES} FALSE PARENT_SCOPE)
-	endif()
-endfunction(PID_Package_Is_With_Site_Info_In_Use_Files)
+#2) build site with jekyll
+
+execute_process(COMMAND jekyll build -d ${PATH_TO_SITE_RESULT} WORKING_DIRECTORY ${PATH_TO_SITE_JEKYLL})
 
 

@@ -27,64 +27,135 @@ include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 ##################################################################################
-##########################  declaration of the framework #########################
+##################  declaration of a lone package static site ####################
+##################################################################################
+
+############ function used to create the README.md file of the framework  ###########
+function(generate_Site_Readme_File)
+set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/static_sites/README.md.in)
+set(PACKAGE_NAME ${PROJECT_NAME})
+configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put it in the source dir
+endfunction(generate_Site_Readme_File)
+
+
+############ function used to generate basic files and directory structure for jekyll  ###########
+function(generate_Site_Data)
+# 1) generate the basic site structure and default files from a pattern
+if(EXISTS ${CMAKE_BINARY_DIR}/to_generate)
+	file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/to_generate)
+endif()
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/to_generate)
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/static ${CMAKE_BINARY_DIR}/to_generate
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/to_generate/_data)
+
+endfunction(generate_Site_Data)
+
+### implementation function for creating a static site for a lone package
+macro(declare_Site)
+
+file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+if(DIR_NAME STREQUAL "build")
+
+	generate_Site_Readme_File() # generating the simple README file for the project
+	generate_Site_Data() #generating the jekyll source folder in build tree
+
+	#searching for jekyll (static site generator)
+	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
+
+	if(JEKYLL_EXECUTABLE)
+
+	add_custom_target(build
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+						-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_SIte.cmake
+		COMMENT "[PID] Building package site ..."
+		VERBATIM
+	)
+
+	add_custom_target(serve
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+						-P ${WORKSPACE_DIR}/share/cmake/system/Serve_PID_Framework.cmake
+		COMMENT "[PID] Serving the static site of the package ..."
+		VERBATIM
+	)
+
+	else()
+		message("[PID] ERROR: the jekyll executable cannot be found in the system, please install it and put it in a standard path.")
+	endif()
+else()
+	message("[PID] ERROR : please run cmake in the build folder of the package ${PROJECT_NAME} static site.")
+	return()
+endif()
+endmacro(declare_Site)
+
+##################################################################################
+##########################  declaration of a framework ###########################
 ##################################################################################
 macro(declare_Framework author institution mail year site license git_address repo_site description)
 
-set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the framework
+file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+if(DIR_NAME STREQUAL "build")
 
-init_PID_Version_Variable() # getting the workspace version used to generate the code 
-set(res_string)	
-foreach(string_el IN ITEMS ${author})
-	set(res_string "${res_string}_${string_el}")
-endforeach()
-set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
+	list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the framework
 
-set(res_string "")
-foreach(string_el IN ITEMS ${institution})
-	set(res_string "${res_string}_${string_el}")
-endforeach()
-set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_CONTACT_MAIL ${mail} CACHE INTERNAL "")
-set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
-set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
-set(${PROJECT_NAME}_SITE ${site} CACHE INTERNAL "")
-set(${PROJECT_NAME}_REPOSITORY_SITE ${repo_site} CACHE INTERNAL "")
-set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
-set(${PROJECT_NAME}_ADDRESS ${git_address} CACHE INTERNAL "")
-set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
+	init_PID_Version_Variable() # getting the workspace version used to generate the code 
+	set(res_string)	
+	foreach(string_el IN ITEMS ${author})
+		set(res_string "${res_string}_${string_el}")
+	endforeach()
+	set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
+
+	set(res_string "")
+	foreach(string_el IN ITEMS ${institution})
+		set(res_string "${res_string}_${string_el}")
+	endforeach()
+	set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_CONTACT_MAIL ${mail} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_SITE ${site} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REPOSITORY_SITE ${repo_site} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_ADDRESS ${git_address} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
 
 
-#searching for jekyll (static site generator)
-find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
+	#searching for jekyll (static site generator)
+	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
 
-if(JEKYLL_EXECUTABLE)
+	if(JEKYLL_EXECUTABLE)
 
-add_custom_target(build
-	COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-					-DTARGET_FRAMEWORK=${PROJECT_NAME}
-					-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
-					-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Framework.cmake
-	COMMENT "[PID] Building framework ..."
-	VERBATIM
-)
+	add_custom_target(build
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_FRAMEWORK=${PROJECT_NAME}
+						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+						-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Framework.cmake
+		COMMENT "[PID] Building framework ..."
+		VERBATIM
+	)
 
-add_custom_target(serve
-	COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-					-DTARGET_FRAMEWORK=${PROJECT_NAME}
-					-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
-					-P ${WORKSPACE_DIR}/share/cmake/system/Serve_PID_Framework.cmake
-	COMMENT "[PID] Serving the static site of the framework ..."
-	VERBATIM
-)
+	add_custom_target(serve
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_FRAMEWORK=${PROJECT_NAME}
+						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+						-P ${WORKSPACE_DIR}/share/cmake/system/Serve_PID_Framework.cmake
+		COMMENT "[PID] Serving the static site of the framework ..."
+		VERBATIM
+	)
 
+	else()
+		message("[PID] ERROR: the jekyll executable cannot be found in the system, please install it and put it in a standard path.")
+	endif()
 else()
-
-	message("[PID] ERROR: the jekyll executable cannot be found in the system, please install it and put it in a standard path.")
+	message("[PID] ERROR : please run cmake in the build folder of the framework ${PROJECT_NAME}.")
+	return()
 endif()
-
 endmacro(declare_Framework)
 
 ###

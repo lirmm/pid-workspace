@@ -255,35 +255,29 @@ endif()
 endfunction(generate_Readme_File)
 
 
-############ functions for the management of wikis of packages  ###########
+############ functions for the management of static sites of packages  ###########
 
-function(configure_Wiki_Pages)
-if(NOT ${PROJECT_NAME}_WIKI_ADDRESS) #no wiki definition simply exit
+#	set(${PROJECT_NAME}_FRAMEWORK CACHE INTERNAL "")
+#	set(${PROJECT_NAME}_SITE_ROOT_PAGE CACHE INTERNAL "")
+#	set(${PROJECT_NAME}_SITE_GIT_ADDRESS CACHE INTERNAL "")
+#	set(${PROJECT_NAME}_SITE_INTRODUCTION CACHE INTERNAL "")
+
+function(configure_Pages)
+if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS) #no web site definition simply exit
 	return()
 endif()
 
 ## introduction (more detailed description, if any)
-generate_Formatted_String("${${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION}" RES_INTRO)
+generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
 if("${RES_INTRO}" STREQUAL "")
-	set(WIKI_INTRODUCTION "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided use the short one
+	set(SITE_INTRODUCTION "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided use the short one
 else()
-	set(WIKI_INTRODUCTION "${RES_INTRO}") #otherwise use detailed one specific for wiki
-endif()
-
-## navigation links
-if("${${PROJECT_NAME}_WIKI_PARENT_PAGE}" STREQUAL "")
-	set(LINK_TO_PARENT_WIKI "")
-else()
-	if(${PROJECT_NAME}_WIKI_FRAMEWORK)
-		set(LINK_TO_PARENT_WIKI "[Back to ${${PROJECT_NAME}_WIKI_FRAMEWORK} wiki](${${PROJECT_NAME}_WIKI_PARENT_PAGE})")
-	else()	
-		set(LINK_TO_PARENT_WIKI "[Back to parent wiki](${${PROJECT_NAME}_WIKI_PARENT_PAGE})")
-	endif()
+	set(SITE_INTRODUCTION "${RES_INTRO}") #otherwise use detailed one specific for site
 endif()
 
 #getting git references of the project (for manual installation explanation)
 if(NOT ${PROJECT_NAME}_ADDRESS)
-	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_WIKI_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS)
+	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_SITE_GIT_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS)
 	if(GIT_NAMESPACE AND SERVER_ADDRESS)
 		set(OFFICIAL_REPOSITORY_ADDRESS "${SERVER_ADDRESS}:${GIT_NAMESPACE}/${PROJECT_NAME}.git")
 		set(GIT_SERVER ${SERVER_ADDRESS})
@@ -327,7 +321,7 @@ else()
 endif()
 
 # last version
-set(PACKAGE_LAST_VERSION_FOR_WIKI "${${PROJECT_NAME}_VERSION}")
+set(PACKAGE_LAST_VERSION_FOR_SITE "${${PROJECT_NAME}_VERSION}")
 set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
 get_Version_String_Numbers(${${PROJECT_NAME}_VERSION} major minor patch)
 set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
@@ -343,10 +337,9 @@ set(RELEASED_BINARY_VERSIONS "### Binary versions released:\n\n")
 endif()
 
 if(${PROJECT_NAME}_LICENSE)
-
-	set(PACKAGE_LICENSE_FOR_WIKI ${${PROJECT_NAME}_LICENSE})
+	set(PACKAGE_LICENSE_FOR_SITE ${${PROJECT_NAME}_LICENSE})
 else()
-	set(PACKAGE_LICENSE_FOR_WIKI "No license Defined")
+	set(PACKAGE_LICENSE_FOR_SITE "No license Defined")
 endif()
 
 # categories
@@ -356,66 +349,67 @@ else()
 	set(PACKAGE_CATEGORIES_LIST "This package belongs to following categories defined in PID workspace:")
 	foreach(category IN ITEMS ${${PROJECT_NAME}_CATEGORIES})
 		set(PACKAGE_CATEGORIES_LIST "${PACKAGE_CATEGORIES_LIST}\n* ${category}")
-
 	endforeach()
 endif()
 
-
+# HERE TODO
 # additional content
-set(PATH_TO_WIKI_ADDITIONAL_CONTENT ${CMAKE_SOURCE_DIR}/share/wiki)
-if(NOT EXISTS ${PATH_TO_WIKI_ADDITIONAL_CONTENT}) #if folder does not exist (old package style)
-	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/wiki DESTINATION ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/share)#create the folder
+set(PATH_TO_SITE_ADDITIONAL_CONTENT ${CMAKE_SOURCE_DIR}/share/site)
+if(EXISTS ${CMAKE_SOURCE_DIR}/share/wiki)
+	file(RENAME ${CMAKE_SOURCE_DIR}/share/wiki ${CMAKE_SOURCE_DIR}/share/site) #managing old style web sites based on wiki
+endif()
+if(NOT EXISTS ${PATH_TO_SITE_ADDITIONAL_CONTENT}) #if folder does not exist (old package style)
+	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/site DESTINATION ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/share)#create the folder
 	set(PACKAGE_ADDITIONAL_CONTENT "")
 	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] WARNING : creating missing folder wiki in ${PROJECT_NAME} share folder")
+		message("[PID] WARNING : creating missing folder site in ${PROJECT_NAME} share folder")
 	endif()
 	if(wiki_content_file)#a content file is targetted but cannot exists in the non-existing folder
-		message("[PID] WARNING : creating missing wiki content file ${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} in ${PROJECT_NAME} share/wiki folder. Remember to commit modifications.")
+		message("[PID] WARNING : creating missing site content file ${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} in ${PROJECT_NAME} share/wiki folder. Remember to commit modifications.")
 		file(WRITE ${CMAKE_SOURCE_DIR}/share/wiki/${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} "\n")
 	endif()
 else() #folder exists 
-	set(PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE ${PATH_TO_WIKI_ADDITIONAL_CONTENT}/${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT})
-	if(NOT EXISTS ${PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE})#no file with target name => create an empty one
+	set(PATH_TO_SITE_ADDITIONAL_CONTENT_FILE ${PATH_TO_SITE_ADDITIONAL_CONTENT}/${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT})
+	if(NOT EXISTS ${PATH_TO_SITE_ADDITIONAL_CONTENT_FILE})#no file with target name => create an empty one
 		message("[PID] WARNING  : missing wiki content file ${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} in ${PROJECT_NAME} share/wiki folder. File created automatically. Please input some text in it or remove this file and reference to this file in your call to declare_PID_Wiki.  Remember to commit modifications.")
-		file(WRITE ${PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE} "\n")
+		file(WRITE ${PATH_TO_SITE_ADDITIONAL_CONTENT_FILE} "\n")
 		set(PACKAGE_ADDITIONAL_CONTENT "")
 	else()#Here everything is OK
-		file(READ ${PATH_TO_WIKI_ADDITIONAL_CONTENT_FILE} FILE_CONTENT)
+		file(READ ${PATH_TO_SITE_ADDITIONAL_CONTENT_FILE} FILE_CONTENT)
 		set(PACKAGE_ADDITIONAL_CONTENT "${FILE_CONTENT}")
 	endif()
-
 endif()
 
 
 # package dependencies
-set(EXTERNAL_WIKI_SECTION "## External\n")
-set(NATIVE_WIKI_SECTION "## Native\n")
+set(EXTERNAL_SITE_SECTION "## External\n")
+set(NATIVE_SITE_SECTION "## Native\n")
 set(PACKAGE_DEPENDENCIES_DESCRIPTION "")
 
 if(NOT ${PROJECT_NAME}_DEPENDENCIES)
 	if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES)
 		set(PACKAGE_DEPENDENCIES_DESCRIPTION "This package has no dependency.\n")
-		set(EXTERNAL_WIKI_SECTION "")
+		set(EXTERNAL_SITE_SECTION "")
 	endif()
-	set(NATIVE_WIKI_SECTION "")
+	set(NATIVE_SITE_SECTION "")
 else()
 	if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES)
-		set(EXTERNAL_WIKI_SECTION "")
+		set(EXTERNAL_SITE_SECTION "")
 	endif()
 endif()
 
 if("${PACKAGE_DEPENDENCIES_DESCRIPTION}" STREQUAL "")
 	foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES})# we take nly dependencies of the release version
 		generate_Dependency_Wiki(${dep_package} RES_CONTENT_NATIVE)
-		set(NATIVE_WIKI_SECTION "${NATIVE_WIKI_SECTION}\n${RES_CONTENT_NATIVE}")
+		set(NATIVE_SITE_SECTION "${NATIVE_SITE_SECTION}\n${RES_CONTENT_NATIVE}")
 	endforeach()
 
 	foreach(dep_package IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES})# we take nly dependencies of the release version
 		generate_External_Dependency_Wiki(${dep_package} RES_CONTENT_EXTERNAL)
-		set(EXTERNAL_WIKI_SECTION "${EXTERNAL_WIKI_SECTION}\n${RES_CONTENT_EXTERNAL}")
+		set(EXTERNAL_SITE_SECTION "${EXTERNAL_SITE_SECTION}\n${RES_CONTENT_EXTERNAL}")
 	endforeach()
 
-	set(PACKAGE_DEPENDENCIES_DESCRIPTION "${EXTERNAL_WIKI_SECTION}\n\n${NATIVE_WIKI_SECTION}")
+	set(PACKAGE_DEPENDENCIES_DESCRIPTION "${EXTERNAL_SITE_SECTION}\n\n${NATIVE_SITE_SECTION}")
 endif()
 
 # package components
@@ -447,7 +441,7 @@ endif()
 set(PATH_TO_HOMEPAGE_PATTERN ${WORKSPACE_DIR}/share/patterns/packages/home.markdown.in)
 configure_file(${PATH_TO_HOMEPAGE_PATTERN} ${CMAKE_BINARY_DIR}/home.markdown @ONLY)#put it in the binary dir for now
 
-endfunction(configure_Wiki_Pages)
+endfunction(configure_Pages)
 
 ###
 function(generate_Platform_Wiki platform RES_CONTENT_PLATFORM)
@@ -643,14 +637,14 @@ endif()#else the repo has been created
 
 endfunction(create_Local_Wiki_Project)
 
-function(wiki_Project_Exists WIKI_EXISTS PATH_TO_WIKI package)
-set(SEARCH_PATH ${WORKSPACE_DIR}/wikis/${package}.wiki)
+function(wiki_Project_Exists WIKI_EXISTS PATH_TO_SITE package)
+set(SEARCH_PATH ${WORKSPACE_DIR}/sites/packages/${package})
 if(EXISTS ${SEARCH_PATH} AND IS_DIRECTORY ${SEARCH_PATH})
-	set(${WIKI_EXISTS} TRUE PARENT_SCOPE)
+	set(${SITE_EXISTS} TRUE PARENT_SCOPE)
 else()
-	set(${WIKI_EXISTS} FALSE PARENT_SCOPE)
+	set(${SITE_EXISTS} FALSE PARENT_SCOPE)
 endif()
-set(${PATH_TO_WIKI} ${SEARCH_PATH} PARENT_SCOPE)
+set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
 endfunction()
 
 function(clean_Local_Wiki package) # clean the folder content (api-doc content)

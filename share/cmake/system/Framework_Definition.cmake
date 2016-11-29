@@ -88,3 +88,7 @@ build_Framework()
 endmacro(build_PID_Framework)
 
 
+### API : declare_PID_Site() -> only for  
+macro(declare_PID_Site)
+declare_Site()
+endmacro(declare_PID_Site)

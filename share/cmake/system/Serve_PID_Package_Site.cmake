@@ -19,21 +19,16 @@
 #########################################################################################
 
 
-function(PID_Package_Is_With_Development_Info_In_Use_Files RES package)
-	if(${${package}_PID_VERSION} GREATER 1) #with packages generated with version > 1 we can find development info about packages 
-		set(${RES} TRUE PARENT_SCOPE)
-	else()
-		set(${RES} FALSE PARENT_SCOPE)
-	endif()
-endfunction(PID_Package_Is_With_Development_Info_In_Use_Files)
+### script used to serve the package static site using jekyll
 
 
-function(PID_Package_Is_With_Site_Info_In_Use_Files RES package)
-	if(${${package}_PID_VERSION} GREATER 1) #with packages generated with version > 1 we can find web site info about packages 
-		set(${RES} TRUE PARENT_SCOPE)
-	else()
-		set(${RES} FALSE PARENT_SCOPE)
-	endif()
-endfunction(PID_Package_Is_With_Site_Info_In_Use_Files)
+set(PATH_TO_PACKAGE ${WORKSPACE_DIR}/sites/packages/${TARGET_PACKAGE})
+set(PATH_TO_FRAMEWORK_RESULT ${PATH_TO_PACKAGE}/build/generated)
+
+if(EXISTS ${PATH_TO_FRAMEWORK_RESULT} AND IS_DIRECTORY ${PATH_TO_FRAMEWORK_RESULT})
+	execute_process(COMMAND jekyll serve WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_RESULT})
+else()
+	message("[PID] ERROR: nothing to serve, no static site found !") 
+endif()
 
 
