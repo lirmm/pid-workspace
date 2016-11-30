@@ -88,7 +88,7 @@ build_Framework()
 endmacro(build_PID_Framework)
 
 
-### API : declare_PID_Site() -> only for  
+### API : declare_PID_Site() -> only for lone packages static sites
 macro(declare_PID_Site)
 declare_Site()
 endmacro(declare_PID_Site)

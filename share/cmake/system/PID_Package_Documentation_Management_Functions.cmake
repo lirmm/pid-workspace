@@ -264,7 +264,21 @@ endfunction(generate_Readme_File)
 
 function(configure_Pages)
 if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS) #no web site definition simply exit
+	#no static site definition done so we create a fake site command in realease mode
+	if(${CMAKE_BUILD_TYPE} MATCHES Release)
+		add_custom_target(site
+			COMMAND ${CMAKE_COMMAND} -E  echo "No specification of a static site in the project, use the declare_PID_Documentation function in the root CMakeLists.txt file of the project"
+		)
+	endif() 
 	return()
+endif()
+
+if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
+#TODO
+
+else()
+
+
 endif()
 
 ## introduction (more detailed description, if any)
@@ -277,7 +291,7 @@ endif()
 
 #getting git references of the project (for manual installation explanation)
 if(NOT ${PROJECT_NAME}_ADDRESS)
-	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_SITE_GIT_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS)
+	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_SITE_GIT_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS EXTENSION)
 	if(GIT_NAMESPACE AND SERVER_ADDRESS)
 		set(OFFICIAL_REPOSITORY_ADDRESS "${SERVER_ADDRESS}:${GIT_NAMESPACE}/${PROJECT_NAME}.git")
 		set(GIT_SERVER ${SERVER_ADDRESS})
@@ -288,7 +302,7 @@ if(NOT ${PROJECT_NAME}_ADDRESS)
 
 else()
 	set(OFFICIAL_REPOSITORY_ADDRESS ${${PROJECT_NAME}_ADDRESS})
-	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS)
+	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS EXTENSION)
 	if(SERVER_ADDRESS)
 		set(GIT_SERVER ${SERVER_ADDRESS})
 	else()	#no info about the git namespace => use the project name
@@ -623,21 +637,26 @@ set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applic
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Component_Wiki)
 
-function(create_Local_Wiki_Project SUCCESS package repo_addr) # package wiki folder does not exists
-set(PATH_TO_WIKI_FOLDER ${WORKSPACE_DIR}/wikis)
-clone_Wiki_Repository(IS_DEPLOYED ${package} ${repo_addr})
+### create a local repository for the package's static site
+function(create_Local_Static_Site_Project SUCCESS package repo_addr push_site) 
+set(PATH_TO_STATIC_SITE_FOLDER ${WORKSPACE_DIR}/sites/packages)
+clone_Static_Site_Repository(IS_DEPLOYED ${package} ${repo_addr})
+set(CONNECTED FALSE)
 if(NOT IS_DEPLOYED)#repository must be initialized first
-	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/wiki ${WORKSPACE_DIR}/wikis/${package}.wiki)#create the folder
-	init_Wiki_Repository(CONNECTED ${package} ${repo_addr})#configuring the folder as a git repository
-	set(${SUCCESS} ${CONNECTED} PARENT_SCOPE) 
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/package ${WORKSPACE_DIR}/sites/package/${package})#create the folder
+	init_Static_Site_Repository(CONNECTED ${package} ${repo_addr} ${push_site})#configuring the folder as a git repository
+	if(push_site AND NOT CONNECTED)
+		set(${SUCCESS} FALSE PARENT_SCOPE)
+	else()
+		set(${SUCCESS} TRUE PARENT_SCOPE)
+	endif()
 else()
 	set(${SUCCESS} TRUE PARENT_SCOPE)
-	message("[PID] INFO : wiki has been installed.")
 endif()#else the repo has been created
+endfunction(create_Local_Static_Site_Project)
 
-endfunction(create_Local_Wiki_Project)
-
-function(wiki_Project_Exists WIKI_EXISTS PATH_TO_SITE package)
+### checking if the package static site repository exists in the workspace 
+function(static_Site_Project_Exists SITE_EXISTS PATH_TO_SITE package)
 set(SEARCH_PATH ${WORKSPACE_DIR}/sites/packages/${package})
 if(EXISTS ${SEARCH_PATH} AND IS_DIRECTORY ${SEARCH_PATH})
 	set(${SITE_EXISTS} TRUE PARENT_SCOPE)
@@ -647,28 +666,51 @@ endif()
 set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
 endfunction()
 
-function(clean_Local_Wiki package) # clean the folder content (api-doc content)
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/wikis/${package}.wiki/api-doc/html)#delete API doc folder
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/wikis/${package}.wiki/coverage/html ERROR_QUIET OUTPUT_QUIET)#delete coverage report folder
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/wikis/${package}.wiki/staticchecks/html ERROR_QUIET OUTPUT_QUIET)#delete static checks report folder
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove ${WORKSPACE_DIR}/wikis/${package}.wiki/license.txt)#delete the license file
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove ${WORKSPACE_DIR}/wikis/${package}.wiki/home.markdown)#delete the main page
-endfunction(clean_Local_Wiki)
+### checking if the framework site repository exists in the workspace
+function(framework_Project_Exists SITE_EXISTS PATH_TO_SITE framework)
+set(SEARCH_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework})
+if(EXISTS ${SEARCH_PATH} AND IS_DIRECTORY ${SEARCH_PATH})
+	set(${SITE_EXISTS} TRUE PARENT_SCOPE)
+else()
+	set(${SITE_EXISTS} FALSE PARENT_SCOPE)
+endif()
+set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
+endfunction()
 
-function(copy_Wiki_Content package include_coverage include_staticchecks content_file) # copy everything needed (api-doc content, share/wiki except content_file_to_remove
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html  ${WORKSPACE_DIR}/wikis/${package}.wiki/api-doc/html)#recreate the api-doc folder from the one generated by the package
+function(clean_Local_Static_Site package include_api_doc include_coverage include_staticchecks) # clean the source folder content
+if(include_api_doc)
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/api_doc)#delete API doc folder
+endif()
+if(include_coverage)
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/coverage ERROR_QUIET OUTPUT_QUIET)#delete coverage report folder
+endif()
+if(include_staticchecks)
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/static_checks ERROR_QUIET OUTPUT_QUIET)#delete static checks report folder
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove ${WORKSPACE_DIR}/sites/packages/${package}/license.txt)#delete the license file
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/pages)#delete all pages
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/pages)#recreate the pages folder
+endfunction(clean_Local_Static_Site)
+
+function(copy_Static_Site_Content package include_api_doc include_coverage include_staticchecks) # copy everything needed (api-doc content, share/wiki except content_file_to_remove
+if(include_api_doc)
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html  ${WORKSPACE_DIR}/sites/packages/${package}/src/api_doc)#recreate the api_doc folder from the one generated by the package
+endif()
 
 if(include_coverage)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/debug/share/coverage_report ${WORKSPACE_DIR}/wikis/${package}.wiki/coverage/html)#recreate the coverage folder from the one generated by the package
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/debug/share/coverage_report ${WORKSPACE_DIR}/sites/packages/${package}/src/coverage)#recreate the coverage folder from the one generated by the package
 endif()
 
 if(include_staticchecks)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/static_checks_report ${WORKSPACE_DIR}/wikis/${package}.wiki/staticchecks/html)#recreate the staticchecks folder from the one generated by the package
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/static_checks_report ${WORKSPACE_DIR}/sites/packages/${package}/src/static_checks)#recreate the static_checks folder from the one generated by the package
 endif()
 
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/share/wiki  ${WORKSPACE_DIR}/wikis/${package}.wiki)#copy the content of the shared wiki folder of the repository (user defined pages, documents and images)
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove ${WORKSPACE_DIR}/wikis/${package}.wiki/${content_file})#exclude the content file from the wiki repository (it is included in the home page)
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/build/release/home.markdown  ${WORKSPACE_DIR}/wikis/${package}.wiki)#copy the up to date wiki home page into wiki repository
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/license.txt  ${WORKSPACE_DIR}/wikis/${package}.wiki)#copy the up to date license file into wiki repository
-endfunction(copy_Wiki_Content)
+#TODO configure files !!
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/license.txt  ${WORKSPACE_DIR}/sites/packages/${package})#copy the up to date license file into wiki repository
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/share/site  ${WORKSPACE_DIR}/sites/packages/${package}/src/pages)#copy the content of the shared site folder of the packages (user defined pages, documents and images)
+
+#TODO copy generated files (all default one, generated at configuration time)
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/build/release/site/  ${WORKSPACE_DIR}/sites/packages/${package}/src/pages)#copy the generated content
+
+endfunction(copy_Static_Site_Content)
 

@@ -17,7 +17,6 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-
 ### script used to build the site using jekyll
 
 #1) copy files from src to the adequate build folder

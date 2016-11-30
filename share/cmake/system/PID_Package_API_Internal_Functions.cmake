@@ -274,6 +274,13 @@ elseif(DIR_NAME STREQUAL "build")
 		VERBATIM
 	)
 
+	
+	# site target (generation of a static site documenting the project) 
+	add_custom_target(site
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} site
+		COMMENT "[PID] Creating/Updating web pages of the project ..."
+		VERBATIM
+	)
 
 	if(BUILD_AND_RUN_TESTS)
 		# test target (launch test units)
@@ -291,15 +298,16 @@ elseif(DIR_NAME STREQUAL "build")
 				VERBATIM
 			)
 		endif()
+		if(BUILD_COVERAGE_REPORT)
+			add_custom_target(coverage
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} coverage
+				COMMENT "[PID] Generating coverage report for tests ..."
+				VERBATIM
+			)
+			add_dependencies(site coverage)
+		endif()
 	endif()
 
-	if(BUILD_COVERAGE_REPORT)
-		add_custom_target(coverage
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} coverage
-			COMMENT "[PID] Generating coverage report for tests ..."
-			VERBATIM
-		)
-	endif()
 	
 	if(BUILD_STATIC_CODE_CHECKING_REPORT)
 		add_custom_target(staticchecks
@@ -307,6 +315,7 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMENT "[PID] Generating static checks report ..."
 			VERBATIM
 		)
+		add_dependencies(site staticchecks)
 	endif()
 
 	if(BUILD_API_DOC)
@@ -316,20 +325,7 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMENT "[PID] Generating API documentation ..."
 			VERBATIM
 		)
-		# wiki target (generation of a wiki documenting the project) 
-		add_custom_target(wiki
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} wiki
-			COMMENT "[PID] Creating/Updating wiki of the project ..."
-			VERBATIM
-		)
-		add_dependencies(wiki doc)
-		if(BUILD_COVERAGE_REPORT)
-			add_dependencies(wiki coverage)
-		endif()
-
-		if(BUILD_STATIC_CODE_CHECKING_REPORT)
-			add_dependencies(wiki staticchecks)
-		endif()
+		add_dependencies(site doc)
 	endif()
 
 	if(GENERATE_INSTALLER)
@@ -342,6 +338,7 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMENT "[PID] Generating and installing system binary package ..."
 			VERBATIM
 		)
+		add_dependencies(site package)
 	endif()
 
 	if(NOT "${license}" STREQUAL "")
@@ -409,22 +406,35 @@ endmacro(declare_Package)
 #####################################################################################
 ################## setting info on documentation ####################################
 #####################################################################################
+### defining a framework static site the package belongs to
 macro(define_Framework_Contribution framework description)
+if(DEFINED ${PROJECT_NAME}_FRAMEWORK)
+	message("[PID] ERROR: a framework has already been defined, cannot define a framework !")
+elseif(DEFINED ${PROJECT_NAME}_SITE_GIT_ADDRESS)
+	message("[PID] ERROR: a static site has already been defined, cannot define a framework !")
+endif()
 init_Documentation_Info_Cache_Variables("${framework}" "" "" ${description})
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
 	
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DTARGET_FRAMEWORK=${framework}
 						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
 						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
-						-DSYNCHRO_WIKI=$(synchro)
-			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Wiki.cmake
+						-DSYNCHRO=$(synchro)
+			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake
 	)
 endif()
 endmacro(define_Framework_Contribution)
 
+### defining a lone static site for the package
 macro(define_Static_Site_Contribution url git_repository description)
+if(DEFINED ${PROJECT_NAME}_FRAMEWORK)
+	message("[PID] ERROR: a framework has already been defined, cannot define a static site !")
+elseif(DEFINED ${PROJECT_NAME}_SITE_GIT_ADDRESS)
+	message("[PID] ERROR: a static site has already been defined, cannot define a static site !")
+endif()
 init_Documentation_Info_Cache_Variables("" ${url} ${git_repository} ${description})
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
 	
@@ -433,29 +443,12 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in rel
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
 						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
-						-DSYNCHRO_WIKI=$(synchro)
-			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Wiki.cmake
+						-DSYNCHRO=$(synchro)
+						-DSITE_GIT="${git_repository}"
+			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake
 	)
 endif()
 endmacro(define_Static_Site_Contribution)
-
-
-macro(define_Wiki wiki_repo_addr wiki_home_page package_framework wiki_parent_page wiki_content_file description)
-init_Wiki_Info_Cache_Variables("${wiki_repo_addr}" "${wiki_home_page}" "${package_framework}" "${wiki_parent_page}" "${wiki_content_file}" "${description}")
-if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the wiki can be build is release mode only
-	
-	add_custom_target(wiki
-		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DREMOVED_CONTENT="${wiki_content_file}"
-						-DWIKI_ADDRESS="${wiki_repo_addr}"
-						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
-						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
-						-DSYNCHRO_WIKI=$(synchro)
-			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Wiki.cmake
-	)
-endif()
-endmacro(define_Wiki)
 
 ############################################################################
 ################## setting currently developed version number ##############
@@ -681,7 +674,7 @@ generate_Readme_File() # generating and putting into source directory the readme
 generate_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Find_File() # generating/installing the generic cmake find file for the package
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
-configure_Pages() # generating the home page markdown file for the project wiki
+configure_Pages() # generating the home page markdown file for the project web pages
 generate_API() #generating the API documentation configuration file and the rule to launch doxygen and install the doc
 clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
 generate_Info_File() #generating a cmake "info" file containing info about source code of components 

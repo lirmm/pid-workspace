@@ -636,46 +636,56 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/framewo
 message("[PID] INFO: Origin remote has been changed to ${url}.")
 endfunction(change_Origin_Framework_Repository)
 
-######################################################################
-############## wiki repository related functions #####################
-######################################################################
+########################################################################################
+############## static site repository repository related functions #####################
+########################################################################################
 
 ###
-function(clone_Wiki_Repository IS_DEPLOYED package url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis git clone ${url} OUTPUT_QUIET ERROR_QUIET)
-if(EXISTS ${WORKSPACE_DIR}/sites/wikis/${package}.wiki AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/wikis/${package}.wiki)
+function(clone_Static_Site_Repository IS_DEPLOYED package url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+# the static sites may have a different name than its package 
+extract_Package_Namespace_From_SSH_URL(${url} ${package} NAMESPACE SERVER_ADDRESS EXTENSION)
+if(EXTENSION AND NOT EXTENSION STREQUAL "") # there is an extension to the name of the package
+	if(EXISTS ${WORKSPACE_DIR}/sites/packages/${package}${EXTENSION} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}${EXTENSION})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${WORKSPACE_DIR}/sites/packages/${package}${EXTENSION} ${WORKSPACE_DIR}/sites/packages/${package} OUTPUT_QUIET ERROR_QUIET)
+	endif()
+endif()
+
+if(EXISTS ${WORKSPACE_DIR}/sites/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package})
 	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
 else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : impossible to clone the repository of package ${package} wiki (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
+	message("[PID] ERROR : impossible to clone the repository of package ${package} static site (maybe ${url} is a bad repository address or you have no clone rights for this repository). Please contact the administrator of this repository.")
 endif()
-endfunction(clone_Wiki_Repository)
+endfunction(clone_Static_Site_Repository)
 
 ###
-function(init_Wiki_Repository CONNECTED package wiki_git_url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git init OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git remote add origin ${wiki_git_url} OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git add -A OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git commit -m "initialization of wiki" OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git push origin master OUTPUT_QUIET ERROR_QUIET)
-#now testing if everything is OK using the git log command
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
-if (NOT "${res}" STREQUAL "")
-	string(FIND "${res}" "master" INDEX_LOCAL)
-	string(FIND "${res}" "origin/master" INDEX_REMOTE)
-	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch  
-		set(${CONNECTED} TRUE PARENT_SCOPE)
-		return()
+function(init_Static_Site_Repository CONNECTED package wiki_git_url push_site)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git init OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git remote add origin ${wiki_git_url} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git add -A OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git commit -m "initialization of wiki" OUTPUT_QUIET ERROR_QUIET)
+if(push_site) #if push is required, then synchronized sattis site local repository with its official repository 
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git push origin master OUTPUT_QUIET ERROR_QUIET)
+	#now testing if everything is OK using the git log command
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
+	if (NOT "${res}" STREQUAL "")
+		string(FIND "${res}" "master" INDEX_LOCAL)
+		string(FIND "${res}" "origin/master" INDEX_REMOTE)
+		if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch  
+			set(${CONNECTED} TRUE PARENT_SCOPE)
+			return()
+		endif()
 	endif()
 endif()
 set(${CONNECTED} FALSE PARENT_SCOPE)
-endfunction(init_Wiki_Repository)
+endfunction(init_Static_Site_Repository)
 
 ###
-function(update_Wiki_Repository package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
-endfunction(update_Wiki_Repository)
+function(update_Static_Site_Repository package)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
+endfunction(update_Static_Site_Repository)
 
 ###
 function(publish_Wiki_Repository package)

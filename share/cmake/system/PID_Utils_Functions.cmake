@@ -113,13 +113,22 @@ set(${res_string} ${res_finished} PARENT_SCOPE)
 endfunction()
 
 ###
-function(extract_Package_Namespace_From_SSH_URL url package NAMESPACE SERVER_ADDRESS)
-string (REGEX REPLACE "^([^@]+@[^:]+):([^/]+)/${package}(\\.site|-site|.pages|-pages)?\\.git$" "\\2;\\1" RESULT ${url})
+function(extract_Package_Namespace_From_SSH_URL url package NAMESPACE SERVER_ADDRESS EXTENSION)
+string (REGEX REPLACE "^([^@]+@[^:]+):([^/]+)/${package}(\\.site|-site|\\.pages|-pages)?\\.git$" "\\2;\\1;\\3" RESULT ${url})
 if(NOT RESULT STREQUAL "${url}") #match found 
 	list(GET RESULT 0 NAMESPACE_NAME)
 	set(${NAMESPACE} ${NAMESPACE_NAME} PARENT_SCOPE)
 	list(GET RESULT 1 ACCOUNT_ADDRESS)
 	set(${SERVER_ADDRESS} ${ACCOUNT_ADDRESS} PARENT_SCOPE)
+
+	list(LENGTH RESULT SIZE)
+	if(SIZE GREATER 2)
+		list(GET RESULT 2 EXTENSION_NAME)
+		set(${EXTENSION} ${EXTENSION_NAME} PARENT_SCOPE)
+	else()
+		set(${EXTENSION} PARENT_SCOPE)
+	endif()
+	
 else()
 	set(${NAMESPACE} PARENT_SCOPE)
 	set(${SERVER_ADDRESS} PARENT_SCOPE)
