@@ -1,9 +1,0 @@
-package_name: "@FRAMEWORK_NAME@"
-package_url: "@FRAMEWORK_SITE_URL@"
-package_git_project: "@FRAMEWORK_PROJECT_REPOSITORY_PAGE@"
-package_contact_name: "@FRAMEWORK_MAINTAINER_NAME@"
-package_contact_mail: "@FRAMEWORK_MAINTAINER_MAIL@"
-package_description: "@FRAMEWORK_DESCRIPTION@"
-package_banner_image: "@FRAMEWORK_BANNER@"
-package_logo: "@FRAMEWORK_LOGO@"
-

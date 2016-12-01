@@ -17,12 +17,10 @@
 	<li class="dropdown {% if page.nav-hl == 'documentation' %}active{% endif %}">
           <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Documentation<i class="fa fa-caret-down"></i></a>
           <ul class="dropdown-menu animated slideInDown">
-	    {% if site.data.package.has_introduction %}
-            <li role="presentation">
+	   <li role="presentation">
               <a role="menuitem" tabindex="-1" href="/pages/introduction" class="sub menu-item">Introduction</a>
             </li>
-	    {% endif %}
-            <li role="presentation">
+	    <li role="presentation">
               <a role="menuitem" tabindex="-1" href="/pages/install" class="sub menu-item">Install</a>
             </li>
 	    <li role="presentation">

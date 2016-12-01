@@ -257,60 +257,75 @@ endfunction(generate_Readme_File)
 
 ############ functions for the management of static sites of packages  ###########
 
-#	set(${PROJECT_NAME}_FRAMEWORK CACHE INTERNAL "")
-#	set(${PROJECT_NAME}_SITE_ROOT_PAGE CACHE INTERNAL "")
-#	set(${PROJECT_NAME}_SITE_GIT_ADDRESS CACHE INTERNAL "")
-#	set(${PROJECT_NAME}_SITE_INTRODUCTION CACHE INTERNAL "")
-
-function(configure_Pages)
-if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS) #no web site definition simply exit
-	#no static site definition done so we create a fake site command in realease mode
-	if(${CMAKE_BUILD_TYPE} MATCHES Release)
-		add_custom_target(site
-			COMMAND ${CMAKE_COMMAND} -E  echo "No specification of a static site in the project, use the declare_PID_Documentation function in the root CMakeLists.txt file of the project"
-		)
-	endif() 
-	return()
-endif()
-
-if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
-#TODO
-
-else()
-
-
-endif()
+### create the data files for jekyll
+function(generate_Static_Site_Data_Files generated_site_folder)
+#1) generating the data file for package site description
+file(MAKE_DIRECTORY ${generated_site_folder}/_data) # create the _data folder to put configuration files inside
+set(PACKAGE_NAME ${PROJECT_NAME})
+set(PACKAGE_SITE_URL ${${PROJECT_NAME}_SITE_ROOT_PAGE})
 
 ## introduction (more detailed description, if any)
 generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
 if("${RES_INTRO}" STREQUAL "")
-	set(SITE_INTRODUCTION "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided use the short one
+	set(PACKAGE_DESCRIPTION "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided use the short one
 else()
-	set(SITE_INTRODUCTION "${RES_INTRO}") #otherwise use detailed one specific for site
+	set(PACKAGE_DESCRIPTION "${RES_INTRO}") #otherwise use detailed one specific for site
 endif()
-
-#getting git references of the project (for manual installation explanation)
-if(NOT ${PROJECT_NAME}_ADDRESS)
-	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_SITE_GIT_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS EXTENSION)
-	if(GIT_NAMESPACE AND SERVER_ADDRESS)
-		set(OFFICIAL_REPOSITORY_ADDRESS "${SERVER_ADDRESS}:${GIT_NAMESPACE}/${PROJECT_NAME}.git")
-		set(GIT_SERVER ${SERVER_ADDRESS})
-	else()	#no info about the git namespace => generating a bad address 
-		set(OFFICIAL_REPOSITORY_ADDRESS "unknown_server:unknown_namespace/${PROJECT_NAME}.git")
-		set(GIT_SERVER unknown_server)
-	endif()
-
+set(PACKAGE_PROJECT_REPOSITORY_PAGE "") 
+set(PACKAGE_MAINTAINER_NAME ${${PROJECT_NAME}_MAIN_AUTHOR})
+set(PACKAGE_MAINTAINER_MAIL ${${PROJECT_NAME}_CONTACT_MAIL})
+set(PACKAGE_LOGO)
+if(EXISTS ${CMAKE_SOURCE_DIR}/src/pages/tutorial.md)
+set(PACKAGE_HAS_TUTORIAL true)
 else()
-	set(OFFICIAL_REPOSITORY_ADDRESS ${${PROJECT_NAME}_ADDRESS})
-	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS EXTENSION)
-	if(SERVER_ADDRESS)
-		set(GIT_SERVER ${SERVER_ADDRESS})
-	else()	#no info about the git namespace => use the project name
-		set(GIT_SERVER unknown_server)
-	endif()
+set(PACKAGE_HAS_TUTORIAL false)
 endif()
+if(EXISTS ${CMAKE_SOURCE_DIR}/src/pages/details.md)
+set(PACKAGE_HAS_DETAILS true)
+else()
+set(PACKAGE_HAS_DETAILS false)
+endif()
+if(BUILD_API_DOC OR BUILD_COVERAGE_REPORT OR BUILD_STATIC_CODE_CHECKING_REPORT OR GENERATE_INSTALLER)
+set(PACKAGE_HAS_DEVELOPPER_INFO true)
+else()
+set(PACKAGE_HAS_DEVELOPPER_INFO false)
+endif()
+if(BUILD_API_DOC)
+set(PACKAGE_HAS_API_DOC true)
+else()
+set(PACKAGE_HAS_API_DOC false)
+endif()
+if(BUILD_COVERAGE_REPORT)
+set(PACKAGE_HAS_COVERAGE true)
+else()
+set(PACKAGE_HAS_COVERAGE false)
+endif()
+if(BUILD_STATIC_CODE_CHECKING_REPORT)
+set(PACKAGE_HAS_STATIC_CHECKS true)
+else()
+set(PACKAGE_HAS_STATIC_CHECKS false)
+endif()
+if(GENERATE_INSTALLER)
+set(PACKAGE_HAS_BINARIES true)
+else()
+set(PACKAGE_HAS_BINARIES false)
+endif()
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/package.yml.in ${generated_site_folder}/_data/package.yml @ONLY)
+
+#2) generating the global configuration file for package site
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/_config.yml.in ${generated_site_folder}/_config.yml @ONLY)
+endfunction(generate_Static_Site_Data_Files)
 
 
+### create introduction page
+function(generate_Static_Site_Page_Introduction generated_pages_folder)
+
+generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
+if("${RES_INTRO}" STREQUAL "")
+	set(PACKAGE_DESCRIPTION "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided use the short one
+else()
+	set(PACKAGE_DESCRIPTION "${RES_INTRO}") #otherwise use detailed one specific for site
+endif()
 
 # authors
 get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
@@ -327,7 +342,7 @@ set(PACKAGE_PLATFORM_CONFIGURATION "")
 if(${PROJECT_NAME}_AVAILABLE_PLATFORMS)
 	set(PACKAGE_PLATFORM_CONFIGURATION "Here are the possible platform configurations for this package:\n")
 	foreach(platform IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS})# we take only dependencies of the release version
-		generate_Platform_Wiki(${platform} RES_CONTENT_PLATFORM)
+		generate_Platform_Site(${platform} RES_CONTENT_PLATFORM)
 		set(PACKAGE_PLATFORM_CONFIGURATION "${PACKAGE_PLATFORM_CONFIGURATION}\n${RES_CONTENT_PLATFORM}")
 	endforeach()
 else()
@@ -336,9 +351,6 @@ endif()
 
 # last version
 set(PACKAGE_LAST_VERSION_FOR_SITE "${${PROJECT_NAME}_VERSION}")
-set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
-get_Version_String_Numbers(${${PROJECT_NAME}_VERSION} major minor patch)
-set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
 
 set(RELEASED_BINARY_VERSIONS "")
 if(${PROJECT_NAME}_REFERENCES)
@@ -366,34 +378,6 @@ else()
 	endforeach()
 endif()
 
-# HERE TODO
-# additional content
-set(PATH_TO_SITE_ADDITIONAL_CONTENT ${CMAKE_SOURCE_DIR}/share/site)
-if(EXISTS ${CMAKE_SOURCE_DIR}/share/wiki)
-	file(RENAME ${CMAKE_SOURCE_DIR}/share/wiki ${CMAKE_SOURCE_DIR}/share/site) #managing old style web sites based on wiki
-endif()
-if(NOT EXISTS ${PATH_TO_SITE_ADDITIONAL_CONTENT}) #if folder does not exist (old package style)
-	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/site DESTINATION ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/share)#create the folder
-	set(PACKAGE_ADDITIONAL_CONTENT "")
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] WARNING : creating missing folder site in ${PROJECT_NAME} share folder")
-	endif()
-	if(wiki_content_file)#a content file is targetted but cannot exists in the non-existing folder
-		message("[PID] WARNING : creating missing site content file ${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} in ${PROJECT_NAME} share/wiki folder. Remember to commit modifications.")
-		file(WRITE ${CMAKE_SOURCE_DIR}/share/wiki/${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} "\n")
-	endif()
-else() #folder exists 
-	set(PATH_TO_SITE_ADDITIONAL_CONTENT_FILE ${PATH_TO_SITE_ADDITIONAL_CONTENT}/${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT})
-	if(NOT EXISTS ${PATH_TO_SITE_ADDITIONAL_CONTENT_FILE})#no file with target name => create an empty one
-		message("[PID] WARNING  : missing wiki content file ${${PROJECT_NAME}_WIKI_ROOT_PAGE_CONTENT} in ${PROJECT_NAME} share/wiki folder. File created automatically. Please input some text in it or remove this file and reference to this file in your call to declare_PID_Wiki.  Remember to commit modifications.")
-		file(WRITE ${PATH_TO_SITE_ADDITIONAL_CONTENT_FILE} "\n")
-		set(PACKAGE_ADDITIONAL_CONTENT "")
-	else()#Here everything is OK
-		file(READ ${PATH_TO_SITE_ADDITIONAL_CONTENT_FILE} FILE_CONTENT)
-		set(PACKAGE_ADDITIONAL_CONTENT "${FILE_CONTENT}")
-	endif()
-endif()
-
 
 # package dependencies
 set(EXTERNAL_SITE_SECTION "## External\n")
@@ -419,46 +403,130 @@ if("${PACKAGE_DEPENDENCIES_DESCRIPTION}" STREQUAL "")
 	endforeach()
 
 	foreach(dep_package IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES})# we take nly dependencies of the release version
-		generate_External_Dependency_Wiki(${dep_package} RES_CONTENT_EXTERNAL)
+		generate_External_Dependency_Site(${dep_package} RES_CONTENT_EXTERNAL)
 		set(EXTERNAL_SITE_SECTION "${EXTERNAL_SITE_SECTION}\n${RES_CONTENT_EXTERNAL}")
 	endforeach()
 
 	set(PACKAGE_DEPENDENCIES_DESCRIPTION "${EXTERNAL_SITE_SECTION}\n\n${NATIVE_SITE_SECTION}")
 endif()
 
+# generating the introduction file for package site
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/introduction.md.in ${generated_pages_folder}/introduction.md @ONLY)
+endfunction(generate_Static_Site_Page_Introduction)
+
+
+
+### create introduction page
+function(generate_Static_Site_Page_Install generated_pages_folder)
+
+#released version info 
+set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
+get_Version_String_Numbers(${${PROJECT_NAME}_VERSION} major minor patch)
+set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
+
+
+#getting git references of the project (for manual installation explanation)
+if(NOT ${PROJECT_NAME}_ADDRESS)
+	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_SITE_GIT_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS EXTENSION)
+	if(GIT_NAMESPACE AND SERVER_ADDRESS)
+		set(OFFICIAL_REPOSITORY_ADDRESS "${SERVER_ADDRESS}:${GIT_NAMESPACE}/${PROJECT_NAME}.git")
+		set(GIT_SERVER ${SERVER_ADDRESS})
+	else()	#no info about the git namespace => generating a bad address 
+		set(OFFICIAL_REPOSITORY_ADDRESS "unknown_server:unknown_namespace/${PROJECT_NAME}.git")
+		set(GIT_SERVER unknown_server)
+	endif()
+
+else()
+	set(OFFICIAL_REPOSITORY_ADDRESS ${${PROJECT_NAME}_ADDRESS})
+	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS EXTENSION)
+	if(SERVER_ADDRESS)
+		set(GIT_SERVER ${SERVER_ADDRESS})
+	else()	#no info about the git namespace => use the project name
+		set(GIT_SERVER unknown_server)
+	endif()
+endif()
+
+# generating the install file for package site
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/install.md.in ${generated_pages_folder}/install.md @ONLY)
+endfunction(generate_Static_Site_Page_Install)
+
+
+
+### create use page
+function(generate_Static_Site_Page_Use generated_pages_folder)
+
+#released version info 
+set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
+get_Version_String_Numbers(${${PROJECT_NAME}_VERSION} major minor patch)
+set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
+
 # package components
 set(PACKAGE_COMPONENTS_DESCRIPTION "")
 if(${PROJECT_NAME}_COMPONENTS) #if there are components
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-	generate_Component_Wiki(${component} RES_CONTENT_COMP)
+	generate_Component_Site(${component} RES_CONTENT_COMP)
 	set(PACKAGE_COMPONENTS_DESCRIPTION "${PACKAGE_COMPONENTS_DESCRIPTION}\n${RES_CONTENT_COMP}")
 endforeach()
 endif()
 
+# generating the install file for package site
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/use.md.in ${generated_pages_folder}/use.md @ONLY)
+endfunction(generate_Static_Site_Page_Use)
 
-### additionnal content reference is provided depending on project configuration 
 
-# code coverage
-set(PACKAGE_COVERAGE_DOCUMENTATION)
-if(BUILD_COVERAGE_REPORT)
-	set(PACKAGE_COVERAGE_DOCUMENTATION "The API coverage report can be found [here](coverage/html/index.html).")
+
+### create the data files from package description
+function(generate_Static_Site_Pages generated_pages_folder)
+set(content_pages_folder ${generated_pages_folder}/pages)
+if(EXISTS ${content_pages_folder})
+	file(REMOVE_RECURSE ${content_pages_folder}) #cleaning the folder
+endif()
+file(MAKE_DIRECTORY ${content_pages_folder}) # create the root pages directory
+# create introduction page
+generate_Static_Site_Page_Introduction(${content_pages_folder})
+# create install page
+generate_Static_Site_Page_Install(${content_pages_folder})
+# create use page 
+generate_Static_Site_Page_Use(${content_pages_folder})
+endfunction(generate_Static_Site_Pages)
+
+
+### site pages generation
+function(configure_Pages)
+if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS) #no web site definition simply exit
+	#no static site definition done so we create a fake "site" command in realease mode
+	if(${CMAKE_BUILD_TYPE} MATCHES Release)
+		message("DEBUG ADDING site CMD configure pages") 
+		add_custom_target(site
+			COMMAND ${CMAKE_COMMAND} -E  echo "No specification of a static site in the project, use the declare_PID_Documentation function in the root CMakeLists.txt file of the project"
+		)
+	endif() 
+	return()
 endif()
 
-# code static checks
-set(PACKAGE_STATICCHECKS_DOCUMENTATION)
-if(BUILD_STATIC_CODE_CHECKING_REPORT)
-	set(PACKAGE_STATICCHECKS_DOCUMENTATION "The API static checks report can be found [here](staticchecks/html/index.html).")
+set(PATH_TO_SITE ${CMAKE_BINARY_DIR}/site)
+if(EXISTS ${PATH_TO_SITE})
+	file(REMOVE_RECURSE ${PATH_TO_SITE})
+endif()
+file(MAKE_DIRECTORY ${PATH_TO_SITE}) # create the site root directory
+
+#1) generate the data files for jekyll (vary depending on the site creation mode
+if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
+	generate_Static_Site_Data_Files(${PATH_TO_SITE})
+else()
+	#TODO
 endif()
 
+# common generation process between framework and lone static sites 
 
-### now configure the home page of the wiki ###
-set(PATH_TO_HOMEPAGE_PATTERN ${WORKSPACE_DIR}/share/patterns/packages/home.markdown.in)
-configure_file(${PATH_TO_HOMEPAGE_PATTERN} ${CMAKE_BINARY_DIR}/home.markdown @ONLY)#put it in the binary dir for now
+#2) generate pages
+generate_Static_Site_Pages(${PATH_TO_SITE})
 
 endfunction(configure_Pages)
 
+
 ###
-function(generate_Platform_Wiki platform RES_CONTENT_PLATFORM)
+function(generate_Platform_Site platform RES_CONTENT_PLATFORM)
 set(CONTENT "### ${platform}\n\n+ OS type: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_OS}\n+ architecture: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_ARCH} bits\n+ abi: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_ABI}\n")
 
 if(${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION)
@@ -470,16 +538,17 @@ else()
 endif()
 set(CONTENT "${CONTENT}\n")
 set(${RES_CONTENT_PLATFORM} ${CONTENT} PARENT_SCOPE) 
-endfunction(generate_Platform_Wiki)
+endfunction(generate_Platform_Site)
 
 ###
-function(generate_Dependency_Wiki dependency RES_CONTENT)
+function(generate_Dependency_Site dependency RES_CONTENT)
+# TODO generate a link according to the nature of the website (framework or lone site)
 
-if(${dependency}_WIKI_HOME)
-	set(RES "+ [${dependency}](${${dependency}_WIKI_HOME})") #creating a link to the package wiki
-else()
+#if(${dependency}_WIKI_HOME)
+#	set(RES "+ [${dependency}](${${dependency}_WIKI_HOME})") #creating a link to the package site
+#else()
 	set(RES "+ ${dependency}")
-endif()
+#endif()
 if(${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION)
 	if(${PROJECT_NAME}_DEPENDENCY_${dependency}_${${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION}_EXACT)
 		set(RES "${RES}: exact version ${${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION} required.")
@@ -490,10 +559,10 @@ else()
 	set(RES "${RES}: last version available.")
 endif()
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
-endfunction(generate_Dependency_Wiki)
+endfunction(generate_Dependency_Site)
 
 
-function(generate_External_Dependency_Wiki dependency RES_CONTENT)
+function(generate_External_Dependency_Site dependency RES_CONTENT)
 set(RES "+ ${dependency}")
 if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION)
 	if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION}_EXACT)
@@ -505,10 +574,10 @@ else()
 	set(RES "${RES}: any version available (dangerous).")
 endif()
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
-endfunction(generate_External_Dependency_Wiki)
+endfunction(generate_External_Dependency_Site)
 
 
-function(generate_Component_Wiki component RES_CONTENT)
+function(generate_Component_Site component RES_CONTENT)
 is_Externally_Usable(IS_EXT_USABLE ${component})
 if(NOT IS_EXT_USABLE)#component cannot be used from outside package => no need to document it
 	set(${RES_CONTENT} "" PARENT_SCOPE)
@@ -635,7 +704,7 @@ endif()
 set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applications, libraries or tests:\n```\ndeclare_PID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tNATIVE\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n```\n")
 
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
-endfunction(generate_Component_Wiki)
+endfunction(generate_Component_Site)
 
 ### create a local repository for the package's static site
 function(create_Local_Static_Site_Project SUCCESS package repo_addr push_site) 
@@ -705,12 +774,21 @@ if(include_staticchecks)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/static_checks_report ${WORKSPACE_DIR}/sites/packages/${package}/src/static_checks)#recreate the static_checks folder from the one generated by the package
 endif()
 
-#TODO configure files !!
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/license.txt  ${WORKSPACE_DIR}/sites/packages/${package})#copy the up to date license file into wiki repository
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/share/site  ${WORKSPACE_DIR}/sites/packages/${package}/src/pages)#copy the content of the shared site folder of the packages (user defined pages, documents and images)
 
-#TODO copy generated files (all default one, generated at configuration time)
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/build/release/site/  ${WORKSPACE_DIR}/sites/packages/${package}/src/pages)#copy the generated content
+#now copy the content -> 2 phases
+
+#1) copy content from source into the binary dir
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/share/site ${WORKSPACE_DIR}/packages/${package}/build/release/site)#copy the content of the shared site folder of the packages (user defined pages, documents and images)
+
+#2) copy content from binary dir to site repository source dir
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/site ${WORKSPACE_DIR}/sites/packages/${package}/src)
 
 endfunction(copy_Static_Site_Content)
+
+#building the static site simply consists in calling adequately the repository project adequate build commands
+function (build_Static_Site package)
+execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/packages/${package} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
+execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
+endfunction(build_Static_Site)
 

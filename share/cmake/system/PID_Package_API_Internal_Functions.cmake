@@ -275,7 +275,8 @@ elseif(DIR_NAME STREQUAL "build")
 	)
 
 	
-	# site target (generation of a static site documenting the project) 
+	# site target (generation of a static site documenting the project)
+	message("DEBUG ADDING site CMD") 
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} site
 		COMMENT "[PID] Creating/Updating web pages of the project ..."
@@ -408,14 +409,16 @@ endmacro(declare_Package)
 #####################################################################################
 ### defining a framework static site the package belongs to
 macro(define_Framework_Contribution framework description)
-if(DEFINED ${PROJECT_NAME}_FRAMEWORK)
-	message("[PID] ERROR: a framework has already been defined, cannot define a framework !")
-elseif(DEFINED ${PROJECT_NAME}_SITE_GIT_ADDRESS)
-	message("[PID] ERROR: a static site has already been defined, cannot define a framework !")
+if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
+	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
+	return()
+elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
+	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a framework !")
+	return()
 endif()
-init_Documentation_Info_Cache_Variables("${framework}" "" "" ${description})
+init_Documentation_Info_Cache_Variables("${framework}" "" "" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
-	
+	message("DEBUG ADDING site CMD framework") 
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
@@ -430,14 +433,17 @@ endmacro(define_Framework_Contribution)
 
 ### defining a lone static site for the package
 macro(define_Static_Site_Contribution url git_repository description)
-if(DEFINED ${PROJECT_NAME}_FRAMEWORK)
-	message("[PID] ERROR: a framework has already been defined, cannot define a static site !")
-elseif(DEFINED ${PROJECT_NAME}_SITE_GIT_ADDRESS)
-	message("[PID] ERROR: a static site has already been defined, cannot define a static site !")
+message("define_Static_Site_Contribution url=${url}\n repo=${git_repository}\n descr=${description}")
+if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
+	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a static site !")
+	return()
+elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
+	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a new one !")
+	return()
 endif()
-init_Documentation_Info_Cache_Variables("" ${url} ${git_repository} ${description})
+init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
-	
+	message("DEBUG ADDING site CMD static site") 
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}

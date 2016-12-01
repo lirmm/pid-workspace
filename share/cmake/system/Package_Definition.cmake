@@ -114,7 +114,7 @@ endmacro(add_PID_Package_Category)
 
 ### API : declare_PID_Documentation()
 macro(declare_PID_Documentation)
-set(oneValueArgs HOME FRAMEWORK GIT INTRODUCTION ADVANCED TUTORIAL)
+set(oneValueArgs HOME FRAMEWORK GIT ADVANCED TUTORIAL)
 set(multiValueArgs DESCRIPTION)
 cmake_parse_arguments(DECLARE_PID_DOCUMENTATION "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_DOCUMENTATION_FRAMEWORK AND NOT DECLARE_PID_DOCUMENTATION_HOME)
@@ -129,9 +129,6 @@ else()#DECLARE_PID_DOCUMENTATION_HOME
 	define_Static_Site_Contribution("${DECLARE_PID_DOCUMENTATION_HOME}" "${DECLARE_PID_DOCUMENTATION_GIT}" "${DECLARE_PID_DOCUMENTATION_DESCRIPTION}")
 endif()
 #user defined doc
-if(DECLARE_PID_DOCUMENTATION_INTRODUCTION)
-	define_Documentation_Content(introduction "${DECLARE_PID_DOCUMENTATION_INTRODUCTION}")
-endif()
 if(DECLARE_PID_DOCUMENTATION_ADVANCED)
 	define_Documentation_Content(advanced "${DECLARE_PID_DOCUMENTATION_ADVANCED}")
 endif()

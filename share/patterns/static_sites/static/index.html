@@ -2,14 +2,6 @@
 layout: default
 ---
 
-{% if site.data.package.package_banner_image != "" %}
-
-<center>
-<img src="/assets/img/{{site.data.package.package_banner_image}}"/>
-</center>
-
-{% endif %}
-
 <h2>Welcome to {{site.data.package.package_name}} package !</h2>
 
 <br>
@@ -20,8 +12,11 @@ layout: default
 
 <h2>First steps</h2>
 
+{% if site.data.package.has_introduction %}
 If your are a new user, you can start reading <a href="/pages/introduction">introduction section</a> and <a href="/pages/install">installation instructions</a>.
-
+{% else %}
+If your are a new user, you can start looking at the documentation tab to access usefull resources to start working with teh package</a>.
+{% endif %}
 <br>
 <br>
 

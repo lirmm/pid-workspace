@@ -78,23 +78,23 @@ elseif(DEFINED SITE_GIT AND (NOT SITE_GIT STREQUAL ""))# the package site is put
 			return()
 		endif()
 	else()
-		update_Static_Site_Repository(${package}) # update static site repository, to ensure its synchronization
+		update_Static_Site_Repository(${TARGET_PACKAGE}) # update static site repository, to ensure its synchronization
 	endif()
 
 	#2) clean and copy files according to project documentation
 
-	clean_Local_Static_Site(${package} ${include_api_doc} ${include_coverage} ${include_staticchecks}) # clean the static site repository content
-	copy_Static_Site_Content(${package} ${include_api_doc}  ${include_coverage} ${include_staticchecks}) # copy everything needed
+	clean_Local_Static_Site(${TARGET_PACKAGE} ${include_api_doc} ${include_coverage} ${include_staticchecks}) # clean the static site repository content
+	copy_Static_Site_Content(${TARGET_PACKAGE} ${include_api_doc}  ${include_coverage} ${include_staticchecks}) # copy everything needed
 	
 	#3) build static site
-	build_Static_Site(${package}) #TODO create this function
+	build_Static_Site(${TARGET_PACKAGE})
 
 	#4) if required push to static site official repository
-	if(push_site)
-		message("[PID] INFO : static site of ${package} has been updated on server.")
-		publish_Wiki_Repository(${package}) #TODO refactor this function
+	if(push_site)		
+		publish_Static_Site_Repository(${TARGET_PACKAGE}) #TODO refactor this function
+		message("[PID] INFO : static site of ${TARGET_PACKAGE} has been updated on server.")
 	else()
-		message("[PID] INFO : static site of ${package} has been updated locally.")
+		message("[PID] INFO : static site of ${TARGET_PACKAGE} has been updated locally.")
 	endif()
 
 else()

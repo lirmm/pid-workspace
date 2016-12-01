@@ -688,9 +688,9 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/package
 endfunction(update_Static_Site_Repository)
 
 ###
-function(publish_Wiki_Repository package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git add -A OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git commit -m "publising revision of wiki" OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/wikis/${package}.wiki git push origin master)#pushing to master branch of origin
-endfunction(publish_Wiki_Repository package)
+function(publish_Static_Site_Repository package)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git add -A OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git commit -m "publising revision of static site" OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git push origin master OUTPUT_QUIET ERROR_QUIET)#pushing to master branch of origin
+endfunction(publish_Static_Site_Repository)
 

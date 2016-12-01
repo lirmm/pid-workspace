@@ -1,0 +1,15 @@
+package_name: "@PACKAGE_NAME@"
+package_url: "@PACKAGE_SITE_URL@"
+package_git_project: "@PACKAGE_PROJECT_REPOSITORY_PAGE@"
+package_contact_name: "@PACKAGE_MAINTAINER_NAME@"
+package_contact_mail: "@PACKAGE_MAINTAINER_MAIL@"
+package_description: "@PACKAGE_DESCRIPTION@"
+package_logo: "@PACKAGE_LOGO@"
+has_tutorial: @PACKAGE_HAS_TUTORIAL@
+has_details: @PACKAGE_HAS_DETAILS@
+has_developper_info: @PACKAGE_HAS_DEVELOPPER_INFO@
+has_apidoc: @PACKAGE_HAS_API_DOC@
+has_coverage: @PACKAGE_HAS_COVERAGE@
+has_checks: @PACKAGE_HAS_STATIC_CHECKS@
+has_binaries: @PACKAGE_HAS_BINARIES@
+
