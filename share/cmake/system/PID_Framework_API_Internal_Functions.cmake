@@ -48,6 +48,9 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/to_generate)
 
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/static ${CMAKE_BINARY_DIR}/to_generate)
 
+#2) generating the global configuration file for package site
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
+
 endfunction(generate_Site_Data)
 
 ### implementation function for creating a static site for a lone package

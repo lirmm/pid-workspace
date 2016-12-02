@@ -1,5 +1,7 @@
-
-# Install
+---
+layout: page
+title: Install
+---
 
 @PROJECT_NAME@ can be deployed as any other native PID package. To know more about PID methodology simply follow [this link](https://gite.lirmm.fr/pid/pid-workspace/wikis/home).
 
@@ -13,38 +15,40 @@ The package @PROJECT_NAME@ will be installed automatically if it is a direct or 
 
 The package @PROJECT_NAME@ can be installed "by hand" using command provided by the PID workspace:
 
-```
+{% highlight shell %}
 cd <pid-workspace>/pid
 make deploy package=@PROJECT_NAME@
-```
+{% endhighlight %}
 
 Or if you want to install a specific binary version of this package, for instance for the last version:
 
-```
+{% highlight shell %}
 cd <pid-workspace>/pid
 make deploy package=@PROJECT_NAME@ version=@PACKAGE_LAST_VERSION_WITH_PATCH@
-```
+{% endhighlight %}
 
 ## Manual Installation 
 
 The last possible action is to install it by hand without using PID commands. This is **not recommended** but could be **helpfull to install another repository of this package (not the official package repository)**. For instance if you fork the official repository to work isolated from official developers you may need this alternative.  
 
-1. Cloning the official repository of @PROJECT_NAME@ with git
++ Cloning the official repository of @PROJECT_NAME@ with git
 
-	```
-	cd <pid-workspace>/packages/ && git clone @OFFICIAL_REPOSITORY_ADDRESS@
-	```
+{% highlight shell %}
+cd <pid-workspace>/packages/ && git clone @OFFICIAL_REPOSITORY_ADDRESS@
+{% endhighlight %}
 
-	or if your are involved in @PROJECT_NAME@ development and forked the @PROJECT_NAME@ official respository (using gitlab), you can prefer doing:
 
-	```
-	cd <pid-workspace>/packages/ && git clone @GIT_SERVER@:<your account>/@PROJECT_NAME@.git
-	```
+or if your are involved in @PROJECT_NAME@ development and forked the @PROJECT_NAME@ official respository (using gitlab), you can prefer doing:
 
-2. Building the repository
 
-	```
-	cd <pid-workspace>/packages/@PROJECT_NAME@/build
-	cmake .. && make build
-	```
+{% highlight shell %}
+cd <pid-workspace>/packages/ && git clone @GIT_SERVER@:<your account>/@PROJECT_NAME@.git
+{% endhighlight %}
+
++ Building the repository
+
+{% highlight shell %}
+cd <pid-workspace>/packages/@PROJECT_NAME@/build
+cmake .. && make build
+{% endhighlight %}
 

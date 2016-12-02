@@ -1,5 +1,7 @@
-
-# Introduction
+---
+layout: page
+title: Introduction
+---
 
 @PACKAGE_DESCRIPTION@
 
@@ -31,8 +33,4 @@ Current version (for which this documentation has been generated) : @PACKAGE_LAS
 # Dependencies
 
 @PACKAGE_DEPENDENCIES_DESCRIPTION@
-
-# Components
-@PACKAGE_COMPONENTS_DESCRIPTION@
-
 
