@@ -21,7 +21,7 @@
 
 ### script used to serve the package static site using jekyll
 
-
+message("TARGET_PACKAGE = ${TARGET_PACKAGE}")
 set(PATH_TO_PACKAGE ${WORKSPACE_DIR}/sites/packages/${TARGET_PACKAGE})
 set(PATH_TO_PACKAGE_RESULT ${PATH_TO_PACKAGE}/build/generated)
 

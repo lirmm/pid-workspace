@@ -641,8 +641,9 @@ endfunction(change_Origin_Framework_Repository)
 ########################################################################################
 
 ###
-function(clone_Static_Site_Repository IS_DEPLOYED package url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+function(clone_Static_Site_Repository IS_INITIALIZED BAD_URL package url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages git clone ${url})
+
 # the static sites may have a different name than its package 
 extract_Package_Namespace_From_SSH_URL(${url} ${package} NAMESPACE SERVER_ADDRESS EXTENSION)
 if(EXTENSION AND NOT EXTENSION STREQUAL "") # there is an extension to the name of the package
@@ -652,11 +653,18 @@ if(EXTENSION AND NOT EXTENSION STREQUAL "") # there is an extension to the name 
 endif()
 
 if(EXISTS ${WORKSPACE_DIR}/sites/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package})
-	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
+	set(${BAD_URL} FALSE PARENT_SCOPE) # if the folder exists it means that the official repository exists but it may be still unintialized 
+	if(EXISTS ${WORKSPACE_DIR}/sites/packages/${package}/build AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build
+		AND EXISTS ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt)
+		set(${IS_INITIALIZED} TRUE PARENT_SCOPE)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
+	else() # the site's repository appear to be non existing
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package} OUTPUT_QUIET ERROR_QUIET) #just in case of 
+		set(${IS_INITIALIZED} FALSE PARENT_SCOPE)
+	endif()
 else()
-	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : impossible to clone the repository of package ${package} static site (maybe ${url} is a bad repository address or you have no clone rights for this repository). Please contact the administrator of this repository.")
+	set(${IS_INITIALIZED} FALSE PARENT_SCOPE)
+	set(${BAD_URL} TRUE PARENT_SCOPE)
 endif()
 endfunction(clone_Static_Site_Repository)
 
@@ -664,9 +672,10 @@ endfunction(clone_Static_Site_Repository)
 function(init_Static_Site_Repository CONNECTED package wiki_git_url push_site)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git init OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git remote add origin ${wiki_git_url} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git add -f build/.gitignore OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git add -A OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git commit -m "initialization of wiki" OUTPUT_QUIET ERROR_QUIET)
-if(push_site) #if push is required, then synchronized sattis site local repository with its official repository 
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git commit -m "initialization of static site project" OUTPUT_QUIET ERROR_QUIET)
+if(push_site) #if push is required, then synchronized static site local repository with its official repository 
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git push origin master OUTPUT_QUIET ERROR_QUIET)
 	#now testing if everything is OK using the git log command
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)

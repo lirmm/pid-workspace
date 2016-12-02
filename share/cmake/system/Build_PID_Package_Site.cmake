@@ -28,7 +28,7 @@ set(PATH_TO_SITE_RESULT ${PATH_TO_SITE}/build/generated)
 
 file(REMOVE ${PATH_TO_SITE_RESULT})
 
-file(COPY ${PATH_TO_SITE_SRC}/assets ${PATH_TO_SITE_SRC}/api_doc ${PATH_TO_SITE_SRC}/coverage ${PATH_TO_SITE_SRC}/pages ${PATH_TO_SITE_SRC}/static_checks ${PATH_TO_SITE_SRC}/binaries DESTINATION ${PATH_TO_SITE_JEKYLL})
+file(COPY ${PATH_TO_SITE_SRC}/assets ${PATH_TO_SITE_SRC}/api_doc ${PATH_TO_SITE_SRC}/coverage ${PATH_TO_SITE_SRC}/pages ${PATH_TO_SITE_SRC}/static_checks ${PATH_TO_SITE_SRC}/binaries ${PATH_TO_SITE_SRC}/_data ${PATH_TO_SITE_SRC}/_config.yml DESTINATION ${PATH_TO_SITE_JEKYLL})
 
 
 #2) build site with jekyll

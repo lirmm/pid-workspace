@@ -46,8 +46,7 @@ if(EXISTS ${CMAKE_BINARY_DIR}/to_generate)
 endif()
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/to_generate)
 
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/static ${CMAKE_BINARY_DIR}/to_generate
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/to_generate/_data)
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/static ${CMAKE_BINARY_DIR}/to_generate)
 
 endfunction(generate_Site_Data)
 
@@ -69,7 +68,7 @@ if(DIR_NAME STREQUAL "build")
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
-						-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_SIte.cmake
+						-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Site.cmake
 		COMMENT "[PID] Building package site ..."
 		VERBATIM
 	)
@@ -78,7 +77,7 @@ if(DIR_NAME STREQUAL "build")
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
-						-P ${WORKSPACE_DIR}/share/cmake/system/Serve_PID_Framework.cmake
+						-P ${WORKSPACE_DIR}/share/cmake/system/Serve_PID_Package_Site.cmake
 		COMMENT "[PID] Serving the static site of the package ..."
 		VERBATIM
 	)
