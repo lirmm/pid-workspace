@@ -3,7 +3,7 @@ layout: page
 title: Help
 ---
 
-# What is this site ?
+## What is this site ?
 
 This is the documentation site of the {{ site.data.package.package_name}} package. A **package** is a git project defining a set of libraries, executables and other software artifacts. 
 
@@ -11,22 +11,20 @@ The site has been automatically generated using jenkins, configured using CMake 
 
 In **PID** environment each **package** contains any kind of software artifacts (libraries, executables, configuration files and more generally any kind of filesystem resources). They allow to put into a common place any information about a given project.
 
- 
-# How to use this site ?
 
-This site has the same general "look and feel" as any other [package site in PID](# What is this site ?):
+## How to use this site ?
+
+This site has the same general "look and feel" as any other [package site in PID](#what-is-this-site-?):
 
 - The header bar provides menus that help you navigate between different global pages of the packages.
   - **Documentation** provides submenus to access all kind of documentation of the framework:
-    {% if site.data.package.has_introduction %}
     + *Introduction* : quick introduction to the package purpose.
-     {% endif %}
     + *Install* : to get installation instructions.
     + *Use* : to know of to use libraries in your own programs
-    {% if site.data.package.has_tutorial %}
+    {% if site.data.package.tutorial != "" %}
     + *Tutorial* : to get information about how to usie the package.
     {% endif %}
-    {% if site.data.package.has_details %}
+    {% if site.data.package.details != "" %}
     + *More* : to get more information on advanced topics.
     {% endif %}
 {% if site.data.package.has_developper_info %}

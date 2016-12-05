@@ -262,7 +262,7 @@ function(generate_Static_Site_Data_Files generated_site_folder)
 #1) generating the data file for package site description
 file(MAKE_DIRECTORY ${generated_site_folder}/_data) # create the _data folder to put configuration files inside
 set(PACKAGE_NAME ${PROJECT_NAME})
-set(PACKAGE_SITE_URL ${${PROJECT_NAME}_SITE_ROOT_PAGE})
+set(PACKAGE_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_SITE_ROOT_PAGE})
 
 ## introduction (more detailed description, if any)
 generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
@@ -271,22 +271,37 @@ if("${RES_INTRO}" STREQUAL "")
 else()
 	set(PACKAGE_DESCRIPTION "${RES_INTRO}") #otherwise use detailed one specific for site
 endif()
-set(PACKAGE_PROJECT_REPOSITORY_PAGE "")
 
 get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
 set(PACKAGE_MAINTAINER_NAME ${RES_STRING})
 set(PACKAGE_MAINTAINER_MAIL ${${PROJECT_NAME}_CONTACT_MAIL})
+
+#configure references to logo, advanced material and tutorial pages
+set(PACKAGE_TUTORIAL)
+if(${PROJECT_NAME}_tutorial_SITE_CONTENT_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${${PROJECT_NAME}_tutorial_SITE_CONTENT_FILE})
+test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_tutorial_SITE_CONTENT_FILE})
+	if(FILE_NAME)
+		set(PACKAGE_TUTORIAL ${FILE_NAME})#put only file name since jekyll may generate html from it
+	endif()
+endif()
+
+set(PACKAGE_DETAILS)
+if(${PROJECT_NAME}_advanced_SITE_CONTENT_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${${PROJECT_NAME}_advanced_SITE_CONTENT_FILE})
+test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_advanced_SITE_CONTENT_FILE})
+	if(FILE_NAME)
+		set(PACKAGE_DETAILS ${FILE_NAME}) #put only file name since jekyll may generate html from it
+	endif()
+endif()
+
 set(PACKAGE_LOGO)
-if(EXISTS ${CMAKE_SOURCE_DIR}/src/pages/tutorial.md)
-set(PACKAGE_HAS_TUTORIAL true)
-else()
-set(PACKAGE_HAS_TUTORIAL false)
+if(${PROJECT_NAME}_logo_SITE_CONTENT_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${${PROJECT_NAME}_logo_SITE_CONTENT_FILE})
+test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_logo_SITE_CONTENT_FILE})
+	if(FILE_NAME)
+		set(PACKAGE_LOGO ${${PROJECT_NAME}_logo_SITE_CONTENT_FILE}) # put the full relative path for the image
+	endif()
 endif()
-if(EXISTS ${CMAKE_SOURCE_DIR}/src/pages/details.md)
-set(PACKAGE_HAS_DETAILS true)
-else()
-set(PACKAGE_HAS_DETAILS false)
-endif()
+
+# configure menus content depending on project configuration
 if(BUILD_API_DOC OR BUILD_COVERAGE_REPORT OR BUILD_STATIC_CODE_CHECKING_REPORT OR GENERATE_INSTALLER)
 set(PACKAGE_HAS_DEVELOPPER_INFO true)
 else()
@@ -370,11 +385,11 @@ endif()
 
 # categories
 if (NOT ${PROJECT_NAME}_CATEGORIES)
-	set(PACKAGE_CATEGORIES_LIST "This package belongs to no category.")
+	set(PACKAGE_CATEGORIES_LIST "\nThis package belongs to no category.\n")
 else()
-	set(PACKAGE_CATEGORIES_LIST "This package belongs to following categories defined in PID workspace:")
+	set(PACKAGE_CATEGORIES_LIST "\nThis package belongs to following categories defined in PID workspace:\n")
 	foreach(category IN ITEMS ${${PROJECT_NAME}_CATEGORIES})
-		set(PACKAGE_CATEGORIES_LIST "${PACKAGE_CATEGORIES_LIST}\n* ${category}")
+		set(PACKAGE_CATEGORIES_LIST "${PACKAGE_CATEGORIES_LIST}\n+ ${category}")
 	endforeach()
 endif()
 
@@ -474,32 +489,36 @@ configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/use.md.in ${generate
 endfunction(generate_Static_Site_Page_Use)
 
 
+###
+function(define_Documentation_Content name file)
+set(${PROJECT_NAME}_${name}_SITE_CONTENT_FILE ${file} CACHE INTERNAL "")
+endfunction(define_Documentation_Content)
+
 
 ### create the data files from package description
 function(generate_Static_Site_Pages generated_pages_folder)
-set(content_pages_folder ${generated_pages_folder}/pages)
-if(EXISTS ${content_pages_folder})
-	file(REMOVE_RECURSE ${content_pages_folder}) #cleaning the folder
-endif()
-file(MAKE_DIRECTORY ${content_pages_folder}) # create the root pages directory
+
 # create introduction page
-generate_Static_Site_Page_Introduction(${content_pages_folder})
+generate_Static_Site_Page_Introduction(${generated_pages_folder})
 # create install page
-generate_Static_Site_Page_Install(${content_pages_folder})
+generate_Static_Site_Page_Install(${generated_pages_folder})
 # create use page 
-generate_Static_Site_Page_Use(${content_pages_folder})
+generate_Static_Site_Page_Use(${generated_pages_folder})
+# copy the site folder
+
 endfunction(generate_Static_Site_Pages)
 
 
 ### site pages generation
 function(configure_Pages)
+if(NOT ${CMAKE_BUILD_TYPE} MATCHES Release)
+	return()
+endif()
 if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS) #no web site definition simply exit
 	#no static site definition done so we create a fake "site" command in realease mode
-	if(${CMAKE_BUILD_TYPE} MATCHES Release)
-		add_custom_target(site
-			COMMAND ${CMAKE_COMMAND} -E  echo "No specification of a static site in the project, use the declare_PID_Documentation function in the root CMakeLists.txt file of the project"
-		)
-	endif() 
+	add_custom_target(site
+		COMMAND ${CMAKE_COMMAND} -E  echo "No specification of a static site in the project, use the declare_PID_Documentation function in the root CMakeLists.txt file of the project"
+	)
 	return()
 endif()
 
@@ -507,7 +526,9 @@ set(PATH_TO_SITE ${CMAKE_BINARY_DIR}/site)
 if(EXISTS ${PATH_TO_SITE})
 	file(REMOVE_RECURSE ${PATH_TO_SITE})
 endif()
-file(MAKE_DIRECTORY ${PATH_TO_SITE}) # create the site root directory
+file(MAKE_DIRECTORY ${PATH_TO_SITE}) # create the site root site directory
+set(PATH_TO_SITE_PAGES ${PATH_TO_SITE}/pages)
+file(MAKE_DIRECTORY ${PATH_TO_SITE_PAGES}) # create the pages directory
 
 #1) generate the data files for jekyll (vary depending on the site creation mode
 if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
@@ -519,7 +540,7 @@ endif()
 # common generation process between framework and lone static sites 
 
 #2) generate pages
-generate_Static_Site_Pages(${PATH_TO_SITE})
+generate_Static_Site_Pages(${PATH_TO_SITE_PAGES})
 
 endfunction(configure_Pages)
 
@@ -786,7 +807,11 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${pac
 #now copy the content -> 2 phases
 
 #1) copy content from source into the binary dir
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/share/site ${WORKSPACE_DIR}/packages/${package}/build/release/site)#copy the content of the shared site folder of the packages (user defined pages, documents and images)
+if(EXISTS ${WORKSPACE_DIR}/packages/${package}/share/site AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/share/site)
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/share/site ${WORKSPACE_DIR}/packages/${package}/build/release/site/pages)#copy the content of the site source share folder of the package (user defined pages, documents and images)
+
+endif()
 
 #2) copy content from binary dir to site repository source dir
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/site ${WORKSPACE_DIR}/sites/packages/${package}/src)

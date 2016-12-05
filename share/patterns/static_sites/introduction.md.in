@@ -18,11 +18,11 @@ Authors of this package:
 
 The license of the current release version of knowbotics package is : **@PACKAGE_LICENSE_FOR_SITE@**. It applies to the whole package content.
 
-For more details see [license file](license.txt).
+For more details see [license file](license).
 
 ## Version
 
-Current version (for which this documentation has been generated) : @PACKAGE_LAST_VERSION_FOR_WIKI@.
+Current version (for which this documentation has been generated) : @PACKAGE_LAST_VERSION_FOR_SITE@.
 
 @RELEASED_BINARY_VERSIONS@
 

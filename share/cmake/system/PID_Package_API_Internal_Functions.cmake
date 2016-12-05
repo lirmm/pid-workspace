@@ -276,7 +276,6 @@ elseif(DIR_NAME STREQUAL "build")
 
 	
 	# site target (generation of a static site documenting the project)
-	message("DEBUG ADDING site CMD") 
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} site
 		COMMENT "[PID] Creating/Updating web pages of the project ..."
@@ -418,13 +417,13 @@ elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRES
 endif()
 init_Documentation_Info_Cache_Variables("${framework}" "" "" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
-	message("DEBUG ADDING site CMD framework") 
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DTARGET_FRAMEWORK=${framework}
+						-DINCLUDES_API_DOC=${BUILD_API_DOC}
 						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
 						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
 						-DSYNCHRO=$(synchro)
@@ -435,7 +434,7 @@ endmacro(define_Framework_Contribution)
 
 ### defining a lone static site for the package
 macro(define_Static_Site_Contribution url git_repository description)
-message("define_Static_Site_Contribution url=${url}\n repo=${git_repository}\n descr=${description}")
+#message("define_Static_Site_Contribution url=${url}\n repo=${git_repository}\n descr=${description}")
 if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
 	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a static site !")
 	return()
@@ -445,12 +444,12 @@ elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRES
 endif()
 init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
-	message("DEBUG ADDING site CMD static site") 
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+						-DINCLUDES_API_DOC=${BUILD_API_DOC}
 						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
 						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
 						-DSYNCHRO=$(synchro)
@@ -459,6 +458,7 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in rel
 	)
 endif()
 endmacro(define_Static_Site_Contribution)
+
 
 ############################################################################
 ################## setting currently developed version number ##############
@@ -684,13 +684,13 @@ generate_Readme_File() # generating and putting into source directory the readme
 generate_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Find_File() # generating/installing the generic cmake find file for the package
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
-configure_Pages() # generating the home page markdown file for the project web pages
 generate_API() #generating the API documentation configuration file and the rule to launch doxygen and install the doc
 clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
 generate_Info_File() #generating a cmake "info" file containing info about source code of components 
 generate_Dependencies_File() #generating a cmake "dependencies" file containing information about dependencies
 generate_Coverage() #generating a coverage report in debug mode
 generate_Static_Checks() #generating a static check report in release mode, if tests are enabled then static check test are automatically generated 
+configure_Pages() # generating the home page markdown file for the project web pages
 
 #installing specific folders of the share sub directory
 if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)

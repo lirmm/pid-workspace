@@ -754,3 +754,27 @@ endfunction(get_Framework_Repository_Address)
 
 
 
+################################################################
+################ Markdown file management ######################
+################################################################
+
+function(test_Site_Content_File FILE_NAME EXTENSION file_name)
+set(FILE_NAME PARENT_SCOPE)
+set(EXTENSION PARENT_SCOPE)
+
+#get the name and extension of the file
+string(REGEX REPLACE "^([^\\.]+)\\.(.+)$" "\\1;\\2" RESULTING_FILE ${file_name})
+if(NOT RESULTING_FILE STREQUAL ${file_name}) #it matches
+	list(GET RESULTING_FILE 1 RES_EXT)
+	list(APPEND POSSIBLE_EXTS markdown mkdown mkdn mkd md htm html jpg png gif bmp)
+	list(FIND POSSIBLE_EXTS ${RES_EXT} INDEX)
+	if(INDEX GREATER -1)
+		list(GET RESULTING_FILE 0 RES_NAME)
+		set(FILE_NAME ${RES_NAME} PARENT_SCOPE)
+		set(EXTENSION ${RES_EXT} PARENT_SCOPE)
+	endif()
+endif()
+endfunction(test_Site_Content_File)
+
+
+

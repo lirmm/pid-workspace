@@ -3,7 +3,7 @@
   {% if site.data.package.package_logo != "" %}
   <div class="navbar-logo">
   <a id="logo" class="navbar-brand" href="/index.html">
-  <img src="assets/img/{{site.data.package.package_logo}}" style="width:60px;height:40px;" />
+  <img src="/pages/{{site.data.package.package_logo}}" style="width:40px;height:40px;" />
   </a>
   </div>
   {% endif %}
@@ -26,14 +26,14 @@
 	    <li role="presentation">
               <a role="menuitem" tabindex="-1" href="/pages/use" class="sub menu-item">Use</a>
             </li>
-	    {% if site.data.package.has_tutorial %}
+	   {% if site.data.package.tutorial != "" %}
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="/pages/tutorial" class="sub menu-item">Tutorial</a>
+              <a role="menuitem" tabindex="-1" href="/pages/{{ site.data.package.tutorial }}" class="sub menu-item">Tutorial</a>
             </li>
   	    {% endif %}
-	    {% if site.data.package.has_details %}
+	    {% if site.data.package.details != "" %}
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="/pages/more" class="sub menu-item">Advanced Topics</a>
+              <a role="menuitem" tabindex="-1" href="/pages/{{ site.data.package.details }}" class="sub menu-item">Advanced Topics</a>
             </li>
   	    {% endif %}
 	   

@@ -30,13 +30,12 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 ##################  declaration of a lone package static site ####################
 ##################################################################################
 
-############ function used to create the README.md file of the framework  ###########
+############ function used to create the README.md file of the site  ###########
 function(generate_Site_Readme_File)
 set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/static_sites/README.md.in)
 set(PACKAGE_NAME ${PROJECT_NAME})
 configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put it in the source dir
 endfunction(generate_Site_Readme_File)
-
 
 ############ function used to generate basic files and directory structure for jekyll  ###########
 function(generate_Site_Data)
@@ -51,6 +50,14 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/shar
 #2) generating the global configuration file for package site
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
 
+#3) adding a license file
+if(EXISTS ${CMAKE_SOURCE_DIR}/license.txt)
+	file(READ ${CMAKE_SOURCE_DIR}/license.txt LICENSE_CONTENT_VAR)
+	file(WRITE ${CMAKE_BINARY_DIR}/to_generate/pages/license.md "---\nlayout: page\ntitle: License\n---\n\n")
+	file(APPEND ${CMAKE_BINARY_DIR}/to_generate/pages/license.md ${LICENSE_CONTENT_VAR})
+else()
+	message("[PID] WARNING: no license for the site !")
+endif()
 endfunction(generate_Site_Data)
 
 ### implementation function for creating a static site for a lone package
@@ -58,12 +65,12 @@ macro(declare_Site)
 
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 if(DIR_NAME STREQUAL "build")
-
+	
 	generate_Site_Readme_File() # generating the simple README file for the project
 	generate_Site_Data() #generating the jekyll source folder in build tree
-
+	
 	#searching for jekyll (static site generator)
-	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
+	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searching for the jekyll executable in standard paths
 
 	if(JEKYLL_EXECUTABLE)
 
