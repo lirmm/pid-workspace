@@ -46,18 +46,19 @@ if(${CMAKE_BUILD_TYPE} MATCHES Debug) # coverage is well generated in debug mode
 	endif()
 
 	if(NOT GCOV_PATH OR NOT LCOV_PATH OR NOT GENHTML_PATH)
-		set(BUILD_COVERAGE_REPORT OFF FORCE)
+		message("[PID] WARNING : generation of coverage reports has been deactivated.")
+		set(BUILD_COVERAGE_REPORT  OFF CACHE INTERNAL "" FORCE)
 	endif()
 
 	# CHECK VALID COMPILER
 	if("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
 		if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 3)
 			message("[PID] WARNING : Clang version must be 3.0.0 or greater to generate coverage reports")
-			set(BUILD_COVERAGE_REPORT OFF FORCE)
+			set(BUILD_COVERAGE_REPORT  OFF CACHE INTERNAL "" FORCE)
 		endif()
 	elseif(NOT CMAKE_COMPILER_IS_GNUCXX)
 		message("[PID] WARNING : not a gnu C/C++ compiler, impossible to generate coverage reports.")
-		set(BUILD_COVERAGE_REPORT OFF FORCE)
+		set(BUILD_COVERAGE_REPORT OFF CACHE INTERNAL "" FORCE)
 	endif() 
 endif()
 
@@ -171,14 +172,14 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 
 	if(NOT CPPCHECK_EXECUTABLE)
 		message(STATUS "[PID] WARNING: cppcheck not found, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
-		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF FORCE)
+		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF CACHE INTERNAL "" FORCE)
 	endif()
 
 	#trying to find the cppcheck-htmlreport executable
 	find_program(CPPCHECK_HTMLREPORT_EXECUTABLE NAMES cppcheck-htmlreport)
 	if(NOT CPPCHECK_HTMLREPORT_EXECUTABLE)
 		message(STATUS "[PID] WARNING: cppcheck-htmlreport not found, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
-		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF FORCE)
+		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF CACHE INTERNAL "" FORCE)
 	endif()
 
 	# Restore original setting for appbundle finding
