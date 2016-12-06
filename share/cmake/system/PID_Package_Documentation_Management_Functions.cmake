@@ -192,46 +192,34 @@ function(generate_Readme_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/packages/README.md.in)
 	## introduction (more detailed description, if any)
-	if(NOT ${PROJECT_NAME}_WIKI_ADDRESS)#no wiki description has been provided
+	if(NOT ${PROJECT_NAME}_SITE_ADDRESS)#no site description has been provided (TODO manage frameworks)
 		# intro		
-		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by wiki use the short one
-		# no reference to wiki page
-		set(PACKAGE_WIKI_REF_IN_README "")
-
-		# no parent framework
-		set(PACKAGE_FRAMEWORK_IN_README "")
+		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site use the short one
+		# no reference to site page
+		set(PACKAGE_SITE_REF_IN_README "")
 
 		# simplified install section
 		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is based on the [PID](https://gite.lirmm.fr/pid/pid-workspace/wikis/home) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
 	else()	
 		# intro
-		generate_Formatted_String("${${PROJECT_NAME}_WIKI_ROOT_PAGE_INTRODUCTION}" RES_INTRO)
+		generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
 		if("${RES_INTRO}" STREQUAL "")
-			set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by wiki description use the short one
+			set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site description use the short one
 		else()
-			set(README_OVERVIEW "${RES_INTRO}") #otherwise use detailed one specific for wiki
+			set(README_OVERVIEW "${RES_INTRO}") #otherwise use detailed one specific for site
 		endif()
 		
 		# install procedure
-		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [wiki][package_wiki]. It is based on a CMake based build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
 
-		# reference to wiki page
-		set(PACKAGE_WIKI_REF_IN_README "[package_wiki]: ${${PROJECT_NAME}_WIKI_ROOT_PAGE} \"${PROJECT_NAME} package\"
+		# reference to site page
+		set(PACKAGE_SITE_REF_IN_README "[package_site]: ${${PROJECT_NAME}_SITE_ROOT_PAGE} \"${PROJECT_NAME} package\"
 ")
-		# framework parent page
-		if(${PROJECT_NAME}_WIKI_FRAMEWORK)
-			if(${PROJECT_NAME}_WIKI_PARENT_PAGE)
-				set(PACKAGE_FRAMEWORK_IN_README "${PROJECT_NAME} package is part of a more global framework called ${${PROJECT_NAME}_WIKI_FRAMEWORK}. Please have a look at [${${PROJECT_NAME}_WIKI_FRAMEWORK} wiki](${${PROJECT_NAME}_WIKI_PARENT_PAGE}) to get more information.")
-			else()
-				set(PACKAGE_FRAMEWORK_IN_README "${PROJECT_NAME} package is part of a more global framework called ${${PROJECT_NAME}_WIKI_FRAMEWORK}. No information where to find information about the ${${PROJECT_NAME}_WIKI_FRAMEWORK} framework is given by the project.")
-			endif()
-		else()
-			set(PACKAGE_FRAMEWORK_IN_README "")
-		endif()
 	endif()
 	
 	if(${PROJECT_NAME}_LICENSE)
-		set(PACKAGE_LICENSE_FOR_README "The license that appies to the whole package content is **${${PROJECT_NAME}_LICENSE}**. For more information about license please read the [wiki][package_wiki] of this package.")
+		set(PACKAGE_LICENSE_FOR_README "The license that applies to the whole package content is **${${PROJECT_NAME}_LICENSE}**. Please look at the license.txt file at the root of this repository.")
+		
 	else()
 		set(PACKAGE_LICENSE_FOR_README "The package has no license defined yet.")
 	endif()
@@ -245,10 +233,10 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	
 	get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
 	set(README_CONTACT_AUTHOR "${RES_STRING}")
-	if(NOT ${PROJECT_NAME}_WIKI_ADDRESS)
+	if(NOT ${PROJECT_NAME}_SITE_ADDRESS)
 		
 	else()
-		set(PACKAGE_WIKI_REF )
+		set(PACKAGE_SITE_REF )
 	endif()
 	configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put it in the source dir
 endif()
@@ -302,11 +290,6 @@ test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_logo_SITE_CONTENT_F
 endif()
 
 # configure menus content depending on project configuration
-if(BUILD_API_DOC OR BUILD_COVERAGE_REPORT OR BUILD_STATIC_CODE_CHECKING_REPORT OR GENERATE_INSTALLER)
-set(PACKAGE_HAS_DEVELOPPER_INFO true)
-else()
-set(PACKAGE_HAS_DEVELOPPER_INFO false)
-endif()
 if(BUILD_API_DOC)
 set(PACKAGE_HAS_API_DOC true)
 else()
@@ -321,11 +304,6 @@ if(BUILD_STATIC_CODE_CHECKING_REPORT)
 set(PACKAGE_HAS_STATIC_CHECKS true)
 else()
 set(PACKAGE_HAS_STATIC_CHECKS false)
-endif()
-if(GENERATE_INSTALLER)
-set(PACKAGE_HAS_BINARIES true)
-else()
-set(PACKAGE_HAS_BINARIES false)
 endif()
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/package.yml.in ${generated_site_folder}/_data/package.yml @ONLY)
 
@@ -367,16 +345,6 @@ endif()
 # last version
 set(PACKAGE_LAST_VERSION_FOR_SITE "${${PROJECT_NAME}_VERSION}")
 
-set(RELEASED_BINARY_VERSIONS "")
-if(${PROJECT_NAME}_REFERENCES)
-set(RELEASED_BINARY_VERSIONS "### Binary versions released:\n\n")
-	foreach (version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
-		foreach(platform IN ITEMS ${${PROJECT_NAME}_REFERENCE_${version}})
-			set(RELEASED_BINARY_VERSIONS "${RELEASED_BINARY_VERSIONS}+ ${version} for platform ${platform}\n")
-		endforeach()
-	endforeach()
-endif()
-
 if(${PROJECT_NAME}_LICENSE)
 	set(PACKAGE_LICENSE_FOR_SITE ${${PROJECT_NAME}_LICENSE})
 else()
@@ -413,7 +381,7 @@ endif()
 
 if("${PACKAGE_DEPENDENCIES_DESCRIPTION}" STREQUAL "")
 	foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES})# we take nly dependencies of the release version
-		generate_Dependency_Wiki(${dep_package} RES_CONTENT_NATIVE)
+		generate_Dependency_Site(${dep_package} RES_CONTENT_NATIVE)
 		set(NATIVE_SITE_SECTION "${NATIVE_SITE_SECTION}\n${RES_CONTENT_NATIVE}")
 	endforeach()
 
@@ -562,13 +530,11 @@ endfunction(generate_Platform_Site)
 
 ###
 function(generate_Dependency_Site dependency RES_CONTENT)
-# TODO generate a link according to the nature of the website (framework or lone site)
-
-#if(${dependency}_WIKI_HOME)
-#	set(RES "+ [${dependency}](${${dependency}_WIKI_HOME})") #creating a link to the package site
-#else()
-	set(RES "+ ${dependency}")
-#endif()
+if(${dependency}_SITE_ROOT_PAGE)
+	set(RES "+ [${dependency}](${${dependency}_SITE_ROOT_PAGE})") #creating a link to the package site
+else()
+	set(RES "+ ${dependency}")#TODO implement this for frameworks
+endif()
 if(${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION)
 	if(${PROJECT_NAME}_DEPENDENCY_${dependency}_${${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION}_EXACT)
 		set(RES "${RES}: exact version ${${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION} required.")
@@ -683,8 +649,8 @@ if(NOT IS_HF)
 			foreach(a_pack IN ITEMS ${EXPORTED_DEPS})
 				set(RES "${RES}+ from package **${a_pack}**:\n")
 				foreach(a_dep IN ITEMS ${EXPORTED_DEP_${a_pack}})
-					if(${a_pack}_WIKI_HOME)
-						set(RES "${RES}\t* [${a_dep}](${${a_pack}_WIKI_HOME}#${a_dep})\n")
+					if(${a_pack}_SITE_ROOT_PAGE)
+						set(RES "${RES}\t* [${a_dep}](${${a_pack}_SITE_ROOT_PAGE}#${a_dep})\n")
 					else()
 						set(RES "${RES}\t* ${a_dep}\n")
 					endif()
@@ -789,7 +755,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/si
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/pages)#recreate the pages folder
 endfunction(clean_Local_Static_Site)
 
-function(copy_Static_Site_Content package include_api_doc include_coverage include_staticchecks) # copy everything needed (api-doc content, share/wiki except content_file_to_remove
+function(copy_Static_Site_Content package version platform include_api_doc include_coverage include_staticchecks include_installer) # copy everything needed
 if(include_api_doc AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html) # #may not exists if the make doc command has not been launched
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html  ${WORKSPACE_DIR}/sites/packages/${package}/src/api_doc)#recreate the api_doc folder from the one generated by the package
 endif()
@@ -802,7 +768,24 @@ if(include_staticchecks AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/re
 	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/static_checks_report ${WORKSPACE_DIR}/sites/packages/${package}/src/static_checks)#recreate the static_checks folder from the one generated by the package
 endif()
 
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/license.txt  ${WORKSPACE_DIR}/sites/packages/${package})#copy the up to date license file into wiki repository
+if(	include_installer
+	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
+	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz) 
+	
+	file(MAKE_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/src/_binaries/${version}/${platform})#create the target folder if it does not exist
+
+	file(COPY ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz 
+		${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
+		DESTINATION  ${WORKSPACE_DIR}/sites/packages/${package}/src/_binaries/${version}/${platform})#copy the binaries
+
+	# configure the file used to reference the binary in jekyll
+	set(BINARY_PACKAGE ${package})
+	set(BINARY_VERSION ${version})
+	set(BINARY_PLATFORM ${platform})
+	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binary.md.in ${WORKSPACE_DIR}/sites/packages/${package}/src/_binaries/${version}/${platform} @ONLY)#adding the cmake project file to the static site project
+endif()
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/license.txt  ${WORKSPACE_DIR}/sites/packages/${package})#copy the up to date license file into site repository
 
 #now copy the content -> 2 phases
 

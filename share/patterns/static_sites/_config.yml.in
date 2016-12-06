@@ -11,3 +11,8 @@ excerpt_separator: ""
 port:    4000
 host:    127.0.0.1
 baseurl: ""
+
+collections:
+ binaries:
+    output: false
+

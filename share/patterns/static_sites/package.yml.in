@@ -6,9 +6,7 @@ package_description: "@PACKAGE_DESCRIPTION@"
 package_logo: "@PACKAGE_LOGO@"
 tutorial: "@PACKAGE_TUTORIAL@"
 details: "@PACKAGE_DETAILS@"
-has_developper_info: @PACKAGE_HAS_DEVELOPPER_INFO@
 has_apidoc: @PACKAGE_HAS_API_DOC@
 has_coverage: @PACKAGE_HAS_COVERAGE@
 has_checks: @PACKAGE_HAS_STATIC_CHECKS@
-has_binaries: @PACKAGE_HAS_BINARIES@
 

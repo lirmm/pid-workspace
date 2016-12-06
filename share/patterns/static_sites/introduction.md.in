@@ -24,8 +24,6 @@ For more details see [license file](license).
 
 Current version (for which this documentation has been generated) : @PACKAGE_LAST_VERSION_FOR_SITE@.
 
-@RELEASED_BINARY_VERSIONS@
-
 ## Categories
 
 @PACKAGE_CATEGORIES_LIST@

@@ -417,15 +417,20 @@ elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRES
 endif()
 init_Documentation_Info_Cache_Variables("${framework}" "" "" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
+	get_System_Variables(OS_STRING ARCH_STRING ABI_STRING PACKAGE_SYSTEM_STRING)
+
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
+						-DTARGET_PLATFORM=${PACKAGE_SYSTEM_STRING}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DTARGET_FRAMEWORK=${framework}
 						-DINCLUDES_API_DOC=${BUILD_API_DOC}
 						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
 						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
+						-DINCLUDES_INSTALLER=${GENERATE_INSTALLER}
 						-DSYNCHRO=$(synchro)
 			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake
 	)
@@ -444,14 +449,19 @@ elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRES
 endif()
 init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
+	get_System_Variables(OS_STRING ARCH_STRING ABI_STRING PACKAGE_SYSTEM_STRING)
+
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
+						-DTARGET_PLATFORM=${PACKAGE_SYSTEM_STRING}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DINCLUDES_API_DOC=${BUILD_API_DOC}
 						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
 						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
+						-DINCLUDES_INSTALLER=${GENERATE_INSTALLER}
 						-DSYNCHRO=$(synchro)
 						-DSITE_GIT="${git_repository}"
 			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake

@@ -52,6 +52,12 @@ else()
 	set(include_staticchecks FALSE)
 endif()
 
+if(INCLUDES_INSTALLER)
+	set(include_installer TRUE)
+else()
+	set(include_installer FALSE)
+endif()
+
 if(DEFINED TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL "")) # the package site is put into a more global site that references all package of the same framework 
 
 #1 find the framework in the workspace
@@ -83,7 +89,7 @@ elseif(DEFINED SITE_GIT AND (NOT SITE_GIT STREQUAL ""))# the package site is put
 
 	#2) clean and copy files according to project documentation
 	clean_Local_Static_Site(${TARGET_PACKAGE} ${include_api_doc} ${include_coverage} ${include_staticchecks}) # clean the static site repository content
-	copy_Static_Site_Content(${TARGET_PACKAGE} ${include_api_doc}  ${include_coverage} ${include_staticchecks}) # copy everything needed
+	copy_Static_Site_Content(${TARGET_PACKAGE} ${TARGET_VERSION} ${TARGET_PLATFORM} ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer}) # copy everything needed
 	
 	#3) build static site
 	build_Static_Site(${TARGET_PACKAGE})

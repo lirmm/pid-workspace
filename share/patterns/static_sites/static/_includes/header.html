@@ -39,25 +39,21 @@
 	   
           </ul>
         </li>
-	{% if site.data.package.has_developper_info %}
 	<li class="dropdown {% if page.nav-hl == 'documentation' %}active{% endif %}">
           <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Developpers<i class="fa fa-caret-down"></i></a>
           <ul class="dropdown-menu animated slideInDown">
 		{% if site.data.package.has_apidoc %}
-		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/api_doc/index.html" target="_blank" class="menu-item">API</a></li>
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/api_doc" target="_blank" class="menu-item">API</a></li>
 		{% endif %}
 		{% if site.data.package.has_checks %}
-		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/static_checks/index.html" target="_blank" class="menu-item">StaticChecks</a></li>
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/static_checks" target="_blank" class="menu-item">StaticChecks</a></li>
 		{% endif %}
 		{% if site.data.package.has_coverage %}
-		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/coverage/index.html" target="_blank" class="menu-item">Coverage</a></li>
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/coverage" target="_blank" class="menu-item">Coverage</a></li>
 		{% endif %}
-		{% if site.data.package.has_binaries %}
-		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/binaries/index.html" class="menu-item">Binaries</a></li>
-		{% endif %}
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/pages/binaries" class="menu-item">Binaries</a></li>
 	   </ul>
 	</li>
-	{% endif %}
 	<li class="dropdown {% if page.nav-hl == 'documentation' %}active{% endif %}">
           <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">About<i class="fa fa-caret-down"></i></a>
 	  <ul class="dropdown-menu animated slideInDown">

@@ -1,0 +1,6 @@
+---
+package: @BINARY_PACKAGE@
+version: @BINARY_VERSION@
+platform: @BINARY_PLATFORM@
+---
+
