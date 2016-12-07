@@ -33,6 +33,7 @@ set(	LICENSE_LEGAL_TERMS
 Software license for the software named : ${PROJECT_NAME}
 
 Software description : ${${PROJECT_NAME}_DESCRIPTION}
+
 Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_LIST}
 
 This software is free software: you can redistribute it and/or modify it under the terms of the ${LICENSE_NAME} license as published by
@@ -41,10 +42,15 @@ is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; wit
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
 
 Information about license applying to this software:
+
 License : ${LICENSE_NAME}
+
 Official name of the license : ${LICENSE_FULLNAME} 
+
 Version of the license : ${LICENSE_VERSION}
+
 License authors : ${LICENSE_AUTHORS}
+
 Additionnal information can be found on the official website of the CeCILL licenses family (http://www.cecill.info/index.en.html)
 
 Legal terms of the license are reproduced below (french and english versions are provided):

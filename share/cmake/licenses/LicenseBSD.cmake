@@ -40,10 +40,15 @@ is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; wit
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
 
 Information about license applying to this software:
+
 License : ${LICENSE_NAME}
+
 Official name of the license : ${LICENSE_FULLNAME} 
+
 Version of the license : ${LICENSE_VERSION}
+
 License authors : ${LICENSE_AUTHORS}
+
 Additionnal information can be found on the official website of the GNU licenses family (http://www.gnu.org/licenses/)
 
 Legal terms of the license are reproduced below:
