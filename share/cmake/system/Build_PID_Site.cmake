@@ -34,6 +34,12 @@ else()
 	set(push_site TRUE) #push by default
 endif()
 
+if(DEFINED FORCED_UPDATE AND FORCED_UPDATE STREQUAL "true")
+	set(forced_update TRUE)
+else()
+	set(forced_update FALSE)
+endif()
+
 if(INCLUDES_API_DOC)
 	set(include_api_doc TRUE)
 else()
@@ -91,8 +97,7 @@ elseif(DEFINED SITE_GIT AND (NOT SITE_GIT STREQUAL ""))# the package site is put
 	endif()
 
 	#2) clean and copy files according to project documentation
-	clean_Local_Static_Site(${TARGET_PACKAGE} ${include_api_doc} ${include_coverage} ${include_staticchecks}) # clean the static site repository content
-	copy_Static_Site_Content(${TARGET_PACKAGE} ${TARGET_VERSION} ${TARGET_PLATFORM} ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer}) # copy everything needed
+	copy_Static_Site_Content(${TARGET_PACKAGE} ${TARGET_VERSION} ${TARGET_PLATFORM} ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
 	
 	#3) build static site
 	build_Static_Site(${TARGET_PACKAGE})

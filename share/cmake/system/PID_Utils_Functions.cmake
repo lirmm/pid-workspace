@@ -802,5 +802,44 @@ if(NOT RESULTING_FILE STREQUAL ${file_name}) #it matches
 endif()
 endfunction(test_Site_Content_File)
 
+#########################################################################
+################ text files manipulation utilities ######################
+#########################################################################
+
+### testing is two regular files have same content
+function(test_Same_File_Content file1_path file2_path ARE_SAME)
+file(READ ${file1_path} FILE_1_CONTENT)
+file(READ ${file2_path} FILE_2_CONTENT)
+if("${FILE_1_CONTENT}" STREQUAL "${FILE_2_CONTENT}")
+	set(${ARE_SAME} TRUE PARENT_SCOPE)
+else()
+	set(${ARE_SAME} FALSE PARENT_SCOPE)
+endif()
+endfunction(test_Same_File_Content)
+
+### testing is two directory have exact same content (even their contained files have same content)
+function(test_Same_Directory_Content dir1_path dir2_path ARE_SAME)
+file(GLOB_RECURSE ALL_FILES_DIR1 RELATIVE ${dir1_path} ${dir1_path}/*)
+file(GLOB_RECURSE ALL_FILES_DIR2 RELATIVE ${dir2_path} ${dir2_path}/*)
+foreach(a_file IN ITEMS ${ALL_FILES_DIR1})
+	list(FIND ALL_FILES_DIR2 ${a_file} INDEX)
+	if(INDEX EQUAL -1)#if file not found -> not same content
+		set(${ARE_SAME} FALSE PARENT_SCOPE)
+		return()
+	else()
+		if(NOT IS_DIRECTORY ${dir1_path}/${a_file} AND NOT IS_SYMLINK ${dir1_path}/${a_file})
+			set(SAME FALSE)
+			test_Same_File_Content(${dir1_path}/${a_file} ${dir2_path}/${a_file} SAME)
+			if(NOT SAME)#file content is different
+				message("testing ${dir1_path}/${a_file} ${dir2_path}/${a_file} is FALSE")
+				set(${ARE_SAME} FALSE PARENT_SCOPE)
+				return()
+			endif()
+		endif()
+	endif()
+endforeach()
+set(${ARE_SAME} TRUE PARENT_SCOPE)
+endfunction(test_Same_Directory_Content)
+
 
 

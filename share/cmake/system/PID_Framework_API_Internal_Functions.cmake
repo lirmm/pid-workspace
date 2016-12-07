@@ -35,7 +35,6 @@ function(generate_Site_Readme_File)
 set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/static_sites/README.md.in)
 set(PACKAGE_NAME ${PROJECT_NAME})
 set(PACKAGE_PROJECT_REPOSITORY ${${PROJECT_NAME}_PROJECT_PAGE})
-message("------------------------------\nPACKAGE_PROJECT_REPOSITORY=${PACKAGE_PROJECT_REPOSITORY}\n---------------------------------\n")
 configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put it in the source dir
 endfunction(generate_Site_Readme_File)
 
