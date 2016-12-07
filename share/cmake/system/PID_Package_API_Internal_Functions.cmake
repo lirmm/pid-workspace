@@ -423,7 +423,7 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in rel
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
-						-DTARGET_PLATFORM=${PACKAGE_SYSTEM_STRING}
+						-DTARGET_PLATFORM=${PACKAGE_SYSTEM_STRING} #TODO change this to the new platform format
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DTARGET_FRAMEWORK=${framework}
@@ -439,7 +439,6 @@ endmacro(define_Framework_Contribution)
 
 ### defining a lone static site for the package
 macro(define_Static_Site_Contribution url git_repository homepage description)
-#message("define_Static_Site_Contribution url=${url}\n repo=${git_repository}\n descr=${description}")
 if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
 	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a static site !")
 	return()
@@ -455,7 +454,7 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in rel
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
-						-DTARGET_PLATFORM=${PACKAGE_SYSTEM_STRING}
+						-DTARGET_PLATFORM=${PACKAGE_SYSTEM_STRING} #TODO change this to the new platform format
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DINCLUDES_API_DOC=${BUILD_API_DOC}
@@ -464,6 +463,8 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in rel
 						-DINCLUDES_INSTALLER=${GENERATE_INSTALLER}
 						-DSYNCHRO=$(synchro)
 						-DSITE_GIT="${git_repository}"
+						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
+						-DPACKAGE_SITE_URL="${${PROJECT_NAME}_SITE_ROOT_PAGE}"
 			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake
 	)
 endif()
@@ -700,7 +701,7 @@ generate_Info_File() #generating a cmake "info" file containing info about sourc
 generate_Dependencies_File() #generating a cmake "dependencies" file containing information about dependencies
 generate_Coverage() #generating a coverage report in debug mode
 generate_Static_Checks() #generating a static check report in release mode, if tests are enabled then static check test are automatically generated 
-configure_Pages() # generating the home page markdown file for the project web pages
+configure_Pages() # generating the markdown files for the project web pages
 
 #installing specific folders of the share sub directory
 if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)

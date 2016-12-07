@@ -4,4 +4,4 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system) # using gener
 include(Framework_Definition NO_POLICY_SCOPE)
 
 PROJECT(@PACKAGE_NAME@)
-declare_PID_Site()
+declare_PID_Site(SITE_URL @PACKAGE_SITE_URL@ PACKAGE_URL @PACKAGE_PROJECT_URL@)

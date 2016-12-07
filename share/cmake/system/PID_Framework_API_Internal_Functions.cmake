@@ -34,6 +34,8 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 function(generate_Site_Readme_File)
 set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/static_sites/README.md.in)
 set(PACKAGE_NAME ${PROJECT_NAME})
+set(PACKAGE_PROJECT_REPOSITORY ${${PROJECT_NAME}_PROJECT_PAGE})
+message("------------------------------\nPACKAGE_PROJECT_REPOSITORY=${PACKAGE_PROJECT_REPOSITORY}\n---------------------------------\n")
 configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put it in the source dir
 endfunction(generate_Site_Readme_File)
 
@@ -60,15 +62,61 @@ else()
 endif()
 endfunction(generate_Site_Data)
 
-### implementation function for creating a static site for a lone package
-macro(declare_Site)
+###
+function(generate_Site_Binary_References)
+set(dir ${CMAKE_SOURCE_DIR}/src/_binaries)
+set(file ${dir}/binary_references.cmake)
+file(WRITE ${file} "# Contains references to binaries that are available for ${PROJECT_NAME} \n")
+file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL \"\")\n")#reset the references
 
+##################################################################
+### all available versions of the package for which there is a ###
+### reference to a downloadable binary for any platform ##########
+##################################################################
+list_Subdirectories(ALL_VERSIONS ${dir})
+if(ALL_VERSIONS)
+	foreach(ref_version IN ITEMS ${ALL_VERSIONS}) #for each available version, all os for which there is a reference
+		set(VERSION_REGISTERED FALSE)
+		
+		list_Subdirectories(ALL_PLATFORMS ${dir}/${ref_version})
+		if(ALL_PLATFORMS)
+			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version	
+				# now referencing the binaries
+				list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
+				if(	ALL_BINARIES
+					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz
+					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz)# both release and binary versions have to exist
+					
+					if(NOT VERSION_REGISTERED)  # the version is registered only if there are binaries inside (sanity check)
+					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} ${ref_version} CACHE INTERNAL \"\")\n") # the version is registered
+					set(VERSION_REGISTERED TRUE)
+					endif()
+					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} ${ref_platform} CACHE INTERNAL \"\")\n") # the platform is registered only if there are binaries inside (sanity check)
+
+					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE_PAGE}/pages/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
+
+					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/pages/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
+
+				endif()
+			endforeach()
+		endif()
+	endforeach()
+endif()
+
+endfunction(generate_Site_Binary_References)
+
+
+### implementation function for creating a static site for a lone package
+macro(declare_Site package_url site_url)
+set(${PROJECT_NAME}_PROJECT_PAGE ${package_url} CACHE INTERNAL "")
+set(${PROJECT_NAME}_SITE_PAGE ${site_url} CACHE INTERNAL "")
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 if(DIR_NAME STREQUAL "build")
 	
 	generate_Site_Readme_File() # generating the simple README file for the project
 	generate_Site_Data() #generating the jekyll source folder in build tree
-	
+	generate_Site_Binary_References() #generating the cmake script that references available binaries
+
 	#searching for jekyll (static site generator)
 	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searching for the jekyll executable in standard paths
 

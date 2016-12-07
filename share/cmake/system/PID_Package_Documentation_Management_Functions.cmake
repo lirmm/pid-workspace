@@ -225,7 +225,6 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(PACKAGE_LICENSE_FOR_README "The package has no license defined yet.")
 	endif()
 
-	
 	set(README_AUTHORS_LIST "")	
 	foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
 		generate_Full_Author_String(${author} STRING_TO_APPEND)
@@ -464,6 +463,16 @@ function(define_Documentation_Content name file)
 set(${PROJECT_NAME}_${name}_SITE_CONTENT_FILE ${file} CACHE INTERNAL "")
 endfunction(define_Documentation_Content)
 
+###
+function(define_Component_Documentation_Content component file)
+set(DECLARED FALSE)
+is_Declared(${component} DECLARED)
+if(DECLARED AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${file})
+	define_Documentation_Content(${component} ${file})
+else()
+	message("[PID] WARNING : documentation file for component ${component} cannot be found at ${CMAKE_SOURCE_DIR}/share/site/${file}. Documentation for this component will not reference this specific content.")
+endif()
+endfunction(define_Component_Documentation_Content)
 
 ### create the data files from package description
 function(generate_Static_Site_Pages generated_pages_folder)
@@ -493,7 +502,7 @@ if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS) #no w
 endif()
 
 set(PATH_TO_SITE ${CMAKE_BINARY_DIR}/site)
-if(EXISTS ${PATH_TO_SITE})
+if(EXISTS ${PATH_TO_SITE}) # delete the content that has to be copied to the site source folder 
 	file(REMOVE_RECURSE ${PATH_TO_SITE})
 endif()
 file(MAKE_DIRECTORY ${PATH_TO_SITE}) # create the site root site directory
@@ -594,6 +603,18 @@ endif()
 
 set(RES "${RES}\n")
 
+# managing component special content
+if(${PROJECT_NAME}_${component}_SITE_CONTENT_FILE)
+test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_${component}_SITE_CONTENT_FILE})
+	if(FILE_NAME)
+		set(RES "${RES}### Details\n")
+		set(RES "${RES}Please look at [this page](${FILE_NAME}) to get more information.\n")
+		set(RES "${RES}\n")
+	endif()
+endif()
+
+
+# managing component dependencies
 is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})
 if(NOT IS_HF)
 	#export possible only for libraries with headers 
@@ -691,11 +712,15 @@ endif()
 # for any kind of usable component
 set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applications, libraries or tests:\n\n{% highlight cmake %}\ndeclare_PID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tNATIVE\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n{% endhighlight %}\n\n")
 
+if(${component}_)
+
+endif()
+
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Component_Site)
 
 ### create a local repository for the package's static site
-function(create_Local_Static_Site_Project SUCCESS package repo_addr push_site) 
+function(create_Local_Static_Site_Project SUCCESS package repo_addr push_site package_url site_url) 
 set(PATH_TO_STATIC_SITE_FOLDER ${WORKSPACE_DIR}/sites/packages)
 clone_Static_Site_Repository(IS_INITIALIZED BAD_URL ${package} ${repo_addr})
 set(CONNECTED FALSE)
@@ -707,6 +732,8 @@ if(NOT IS_INITIALIZED)#repository must be initialized first
 	endif()
 	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/package ${WORKSPACE_DIR}/sites/packages/${package})#create the folder containing the site from the pattern folder
 	set(PACKAGE_NAME ${package})
+	set(PACKAGE_PROJECT_URL ${package_url})
+	set(PACKAGE_SITE_URL ${site_url})
 	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/CMakeLists.txt.in ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt @ONLY)#adding the cmake project file to the static site project
 
 	init_Static_Site_Repository(CONNECTED ${package} ${repo_addr} ${push_site})#configuring the folder as a git repository
@@ -719,6 +746,16 @@ else()
 	set(${SUCCESS} TRUE PARENT_SCOPE)
 endif()#else the repo has been created
 endfunction(create_Local_Static_Site_Project)
+
+### update the local site
+function(update_Local_Static_Site_Project package package_url site_url) 
+update_Static_Site_Repository(${package}) # updating the repository from git
+#reconfigure the root CMakeLists and README to automatically manage evolution in PID
+set(PACKAGE_NAME ${package}) 
+set(PACKAGE_PROJECT_URL ${package_url})
+set(PACKAGE_SITE_URL ${site_url})
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/CMakeLists.txt.in ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt @ONLY)#modifying the cmake project file to the static site project
+endfunction(update_Local_Static_Site_Project)
 
 ### checking if the package static site repository exists in the workspace 
 function(static_Site_Project_Exists SITE_EXISTS PATH_TO_SITE package)
@@ -742,6 +779,7 @@ endif()
 set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
 endfunction()
 
+### cleaning the site repository before copying
 function(clean_Local_Static_Site package include_api_doc include_coverage include_staticchecks) # clean the source folder content
 if(include_api_doc)
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/api_doc)#delete API doc folder
@@ -757,6 +795,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/si
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/pages)#recreate the pages folder
 endfunction(clean_Local_Static_Site)
 
+### copying documentation content to the site repository
 function(copy_Static_Site_Content package version platform include_api_doc include_coverage include_staticchecks include_installer) # copy everything needed
 if(include_api_doc AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html) # #may not exists if the make doc command has not been launched
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html  ${WORKSPACE_DIR}/sites/packages/${package}/src/api_doc)#recreate the api_doc folder from the one generated by the package
@@ -784,7 +823,7 @@ if(	include_installer
 	set(BINARY_PACKAGE ${package})
 	set(BINARY_VERSION ${version})
 	set(BINARY_PLATFORM ${platform})
-	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binary.md.in ${WORKSPACE_DIR}/sites/packages/${package}/src/_binaries/${version}/${platform}/binary.md @ONLY)#adding the cmake project file to the static site project
+	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binary.md.in ${WORKSPACE_DIR}/sites/packages/${package}/src/_binaries/${version}/${platform}/binary.md @ONLY)#adding to the static site project the markdown file describing the binary package (to be used by jekyll)	
 endif()
 
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/license.txt  ${WORKSPACE_DIR}/sites/packages/${package})#copy the up to date license file into site repository
@@ -808,4 +847,5 @@ function (build_Static_Site package)
 execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/packages/${package} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
 endfunction(build_Static_Site)
+
 

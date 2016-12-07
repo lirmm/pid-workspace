@@ -262,6 +262,32 @@ endfunction(list_Version_Subdirectories)
 
 
 ###
+function(list_Subdirectories result curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+	foreach(child ${children})
+		if(IS_DIRECTORY ${curdir}/${child})
+			list(APPEND dirlist ${child})
+		endif()
+	endforeach()
+	set(${result} ${dirlist} PARENT_SCOPE)
+endfunction(list_Subdirectories)
+
+
+###
+function(list_Regular_Files result curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(filelist "")
+	foreach(child ${children})
+		if(NOT IS_DIRECTORY ${curdir}/${child} AND NOT IS_SYMLINK ${curdir}/${child})
+			list(APPEND filelist ${child})
+		endif()
+	endforeach()
+	set(${result} ${filelist} PARENT_SCOPE)
+endfunction(list_Regular_Files)
+
+
+###
 function(is_Compatible_Version is_compatible reference_major reference_minor version_to_compare)
 set(${is_compatible} FALSE PARENT_SCOPE)
 get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)

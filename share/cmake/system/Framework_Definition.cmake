@@ -90,5 +90,9 @@ endmacro(build_PID_Framework)
 
 ### API : declare_PID_Site() -> only for lone packages static sites
 macro(declare_PID_Site)
-declare_Site()
+
+set(oneValueArgs PACKAGE_URL SITE_URL)
+cmake_parse_arguments(DECLARE_PID_SITE "" "${oneValueArgs}" "" ${ARGN} )
+declare_Site("${DECLARE_PID_SITE_PACKAGE_URL}" "${DECLARE_PID_SITE_SITE_URL}")
 endmacro(declare_PID_Site)
+

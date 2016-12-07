@@ -156,16 +156,16 @@ endmacro(declare_PID_Deployment)
 
 ### API : declare_PID_Component_Documentation()
 macro(declare_PID_Component_Documentation)
-set(oneValueArgs COMPONENT DIRECTORY)
+set(oneValueArgs COMPONENT FILE)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DOCUMENTATION "" "${oneValueArgs}" "" ${ARGN} )
-if(NOT DECLARE_PID_COMPONENT_DOCUMENTATION_DIRECTORY)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the folder that contains specific documentation content for the project using DIRECTORY keyword.")
+if(NOT DECLARE_PID_COMPONENT_DOCUMENTATION_FILE)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the file or folder that contains specific documentation content for the project using FILE keyword.")
 endif()
 if(NOT DECLARE_PID_COMPONENT_DOCUMENTATION_COMPONENT)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define a component name for this content using COMPONENT keyword.")
 endif()
 #user defined doc for a given component
-define_Documentation_Content(${DECLARE_PID_COMPONENT_DOCUMENTATION_COMPONENT} "${DECLARE_PID_COMPONENT_DOCUMENTATION_DIRECTORY}")
+define_Component_Documentation_Content(${DECLARE_PID_COMPONENT_DOCUMENTATION_COMPONENT} "${DECLARE_PID_COMPONENT_DOCUMENTATION_FILE}")
 endmacro(declare_PID_Component_Documentation)
 
 ### API: check_PID_Platform(	NAME resulting_name

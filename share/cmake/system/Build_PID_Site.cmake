@@ -58,7 +58,8 @@ else()
 	set(include_installer FALSE)
 endif()
 
-if(DEFINED TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL "")) # the package site is put into a more global site that references all package of the same framework 
+
+if(DEFINED TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL "")) # the package site is put into a more global site that references all packages of the same framework 
 
 #1 find the framework in the workspace
 
@@ -74,17 +75,19 @@ if(DEFINED TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL "")) # the packag
 
 elseif(DEFINED SITE_GIT AND (NOT SITE_GIT STREQUAL ""))# the package site is put into a dedicated static site
 
+	set(project_url "${PACKAGE_PROJECT_URL}")
+	set(site_url "${PACKAGE_SITE_URL}")
 	#1) find or put the package static site in the workspace
 	static_Site_Project_Exists(SITE_EXISTS PATH_TO_WIKI ${TARGET_PACKAGE})
 	if(NOT SITE_EXISTS)
 		#install the static site if necessary or create it if it does not exists
-		create_Local_Static_Site_Project(SUCCEEDED ${TARGET_PACKAGE} ${SITE_GIT} ${push_site})
+		create_Local_Static_Site_Project(SUCCEEDED ${TARGET_PACKAGE} ${SITE_GIT} ${push_site} ${project_url} ${site_url})
 		if(NOT SUCCEEDED)
 			message("[PID] ERROR : impossible to connect to the static site repository. You are probably not a developer of the package ${package} which explains why you cannot publish the static site.")
 			return()
 		endif()
 	else()
-		update_Static_Site_Repository(${TARGET_PACKAGE}) # update static site repository, to ensure its synchronization
+		update_Local_Static_Site_Project(${TARGET_PACKAGE} ${project_url} ${site_url}) # update static site repository, to ensure its synchronization
 	endif()
 
 	#2) clean and copy files according to project documentation
@@ -95,7 +98,7 @@ elseif(DEFINED SITE_GIT AND (NOT SITE_GIT STREQUAL ""))# the package site is put
 	build_Static_Site(${TARGET_PACKAGE})
 
 	#4) if required push to static site official repository
-	if(push_site)		
+	if(push_site)
 		publish_Static_Site_Repository(${TARGET_PACKAGE}) #TODO refactor this function
 		message("[PID] INFO : static site of ${TARGET_PACKAGE} has been updated on server.")
 	else()
