@@ -4,37 +4,31 @@ title: Binaries
 ---
 
 
-{{site.collections.binaries.docs }}
+{{ site.collections.binaries.docs }}
 
 {% assign all_versions = "" %}
 {% unless site.collections.binaries.docs == nil %}
 
-	There is no binary provided for this package ! 
+There is no binary provided for this package ! 
 
 {% else %}
 
-	Here are the binaries provided for this package, classified by version :
+Available binaries classified by version:
 
-	{% for binary in site.collections.binaries.docs %}
+	{% for binary in site.binaries %}
+		{% unless all_versions contains binary.version %}
+## {{ binary.version }}
 
-		{{ binary.platform }}
-
-		{% assign curr_version = binary.version %}
-		{% unless all_versions contains curr_version %}
-
-## {{ curr_version }}: 
-			{% for bin in site.collections.binaries.docs %}
-				{% if bin.version == curr_version %}
- + {{ bin.platform }}
+Available for platforms:
+			{% for bin in site.binaries %}
+				{% if bin.version == binary.version %}
++ {{ bin.platform }}
 				{% endif %}
 			{% endfor %}
 			
-			{% assign all_versions = "all_versions ; curr_version" %}
-
+			{% assign all_versions = all_versions | append: ";" | append: binary.version %}
 		{% endunless %}
 	{% endfor %}
 {% endunless %}
-
-
 
 

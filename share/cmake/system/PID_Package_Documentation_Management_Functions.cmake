@@ -70,7 +70,7 @@ unset(DOXYFILE_IN CACHE)
 if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
 	# general variables
 	set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
-	set(DOXYFILE_MAIN_PAGE "${CMAKE_SOURCE_DIR}/README.md")
+	set(DOXYFILE_MAIN_PAGE "${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md")
 	set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
 	set(DOXYFILE_PROJECT_VERSION ${${PROJECT_NAME}_VERSION})
 	set(DOXYFILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/doc)
@@ -188,11 +188,12 @@ endfunction(generate_License_File)
 
 
 ############ function used to create the README.md file of the package  ###########
-function(generate_Readme_File)
+function(generate_Readme_Files)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/packages/README.md.in)
+	set(APIDOC_WELCOME_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/packages/APIDOC_welcome.md.in)
 	## introduction (more detailed description, if any)
-	if(NOT ${PROJECT_NAME}_SITE_ADDRESS)#no site description has been provided (TODO manage frameworks)
+	if(NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS AND NOT ${PROJECT_NAME}_FRAMEWORK)#no site description has been provided nor framework reference (TODO manage frameworks)
 		# intro		
 		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site use the short one
 		# no reference to site page
@@ -238,9 +239,10 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	else()
 		set(PACKAGE_SITE_REF )
 	endif()
-	configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put it in the source dir
+	configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put the readme in the source dir
+	configure_file(${APIDOC_WELCOME_CONFIG_FILE} ${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md @ONLY)#put api doc welcome page in the build tree 
 endif()
-endfunction(generate_Readme_File)
+endfunction(generate_Readme_Files)
 
 
 ############ functions for the management of static sites of packages  ###########
@@ -250,7 +252,7 @@ function(generate_Static_Site_Data_Files generated_site_folder)
 #1) generating the data file for package site description
 file(MAKE_DIRECTORY ${generated_site_folder}/_data) # create the _data folder to put configuration files inside
 set(PACKAGE_NAME ${PROJECT_NAME})
-set(PACKAGE_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_SITE_ROOT_PAGE})
+set(PACKAGE_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_PROJECT_PAGE})
 
 ## introduction (more detailed description, if any)
 generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
@@ -782,7 +784,7 @@ if(	include_installer
 	set(BINARY_PACKAGE ${package})
 	set(BINARY_VERSION ${version})
 	set(BINARY_PLATFORM ${platform})
-	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binary.md.in ${WORKSPACE_DIR}/sites/packages/${package}/src/_binaries/${version}/${platform} @ONLY)#adding the cmake project file to the static site project
+	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binary.md.in ${WORKSPACE_DIR}/sites/packages/${package}/src/_binaries/${version}/${platform}/binary.md @ONLY)#adding the cmake project file to the static site project
 endif()
 
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/license.txt  ${WORKSPACE_DIR}/sites/packages/${package})#copy the up to date license file into site repository

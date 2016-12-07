@@ -438,7 +438,7 @@ endif()
 endmacro(define_Framework_Contribution)
 
 ### defining a lone static site for the package
-macro(define_Static_Site_Contribution url git_repository description)
+macro(define_Static_Site_Contribution url git_repository homepage description)
 #message("define_Static_Site_Contribution url=${url}\n repo=${git_repository}\n descr=${description}")
 if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
 	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a static site !")
@@ -447,7 +447,7 @@ elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRES
 	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a new one !")
 	return()
 endif()
-init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${description}")
+init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${homepage}" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
 	get_System_Variables(OS_STRING ARCH_STRING ABI_STRING PACKAGE_SYSTEM_STRING)
 
@@ -690,7 +690,7 @@ add_subdirectory(share)
 ##########################################################
 ############ MANAGING non source files ###################
 ##########################################################
-generate_Readme_File() # generating and putting into source directory the readme file used by gitlab
+generate_Readme_Files() # generating and putting into source directory the readme file used by gitlab + in build tree the api doc welcome page (contain the same information)
 generate_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Find_File() # generating/installing the generic cmake find file for the package
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
