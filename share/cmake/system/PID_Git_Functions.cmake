@@ -482,7 +482,7 @@ endfunction(change_Origin_Repository)
 
 
 
-### getting the package name given a repository address
+### getting the project name given a repository address
 function(get_Repository_Name RES_NAME git_url)
 #testing ssh address
 string(REGEX REPLACE "^[^@]+@[^:]+:(.+)$" "\\1" REPO_PATH ${git_url})
