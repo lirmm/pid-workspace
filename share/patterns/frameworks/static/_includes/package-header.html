@@ -1,3 +1,13 @@
+{% for package in site.packages %}
+  	{% if package.path contains 'index' and package.package == page.package %}
+		{% assign package_tutorial = package.tutorial %}
+		{% assign package_details = package.details %}
+      		{% assign package_has_apidoc = package.has_apidoc %}
+		{% assign package_has_checks = package.has_checks %}
+      		{% assign package_has_coverage = package.has_coverage %}
+  	{% endif %}
+{% endfor %}
+
 <nav class="navbar navbar-package-fixed-top">
  <div class="container">
    <div class="navbar-package-header">
@@ -19,14 +29,14 @@
 	    <li role="presentation">
               <a role="menuitem" tabindex="-1" href="/packages/{{ page.package }}/pages/use" class="sub menu-item">Use</a>
             </li>
-	   {% if page.tutorial != "" %}
+	   {% if package_tutorial %}
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="/packages/{{ page.package }}/pages/{{ page.tutorial }}" class="sub menu-item">Tutorial</a>
+              <a role="menuitem" tabindex="-1" href="/packages/{{ page.package }}/pages/{{ package_tutorial }}" class="sub menu-item">Tutorial</a>
             </li>
   	    {% endif %}
-	    {% if page.details != "" %}
+	    {% if package_details %}
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="/packages/{{ page.package }}/pages/{{ page.details }}" class="sub menu-item">Advanced Topics</a>
+              <a role="menuitem" tabindex="-1" href="/packages/{{ page.package }}/pages/{{ package_details }}" class="sub menu-item">Advanced Topics</a>
             </li>
   	    {% endif %}
           </ul>
@@ -34,13 +44,13 @@
 	<li class="dropdown {% if page.nav-hl == 'documentation' %}active{% endif %}">
           <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Developpers<i class="fa fa-caret-down"></i></a>
           <ul class="dropdown-menu animated slideInDown">
-		{% if page.has_apidoc %}
+		{% if package_has_apidoc %}
 		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{ page.package }}/api_doc" target="_blank" class="menu-item">API</a></li>
 		{% endif %}
-		{% if page.has_checks %}
-		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{ page.package }}/static_checks" target="_blank" class="menu-item">StaticChecks</a></li>
+		{% if package_has_checks %}
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{ page.package }}/static_checks" target="_blank" class="menu-item">Static Checks</a></li>
 		{% endif %}
-		{% if page.has_coverage %}
+		{% if package_has_coverage %}
 		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{ page.package }}/coverage" target="_blank" class="menu-item">Coverage</a></li>
 		{% endif %}
 		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{ page.package }}/pages/binaries" class="menu-item">Binaries</a></li>

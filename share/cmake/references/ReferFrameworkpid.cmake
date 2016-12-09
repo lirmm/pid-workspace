@@ -1,0 +1,12 @@
+#### referencing package pid mode ####
+set(pid_FRAMEWORK_MAIN_AUTHOR  CACHE INTERNAL "")
+set(pid_FRAMEWORK_MAIN_INSTITUTION  CACHE INTERNAL "")
+set(pid_FRAMEWORK_YEARS 2016 CACHE INTERNAL "")
+set(pid_FRAMEWORK_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(pid_FRAMEWORK_SITE TODO: input the web site address  CACHE INTERNAL "")
+set(pid_FRAMEWORK_PROJECT_PAGE  CACHE INTERNAL "")
+set(pid_FRAMEWORK_DESCRIPTION TODO: input a short description of framework pid utility here CACHE INTERNAL "")
+set(pid_FRAMEWORK_LICENSE CeCILL-C CACHE INTERNAL "")
+set(pid_FRAMEWORK_ADDRESS git@gite.lirmm.fr:passama/pid-framework.git CACHE INTERNAL "")
+set(pid_FRAMEWORK_AUTHORS_AND_INSTITUTIONS "_Robin_Passama()" CACHE INTERNAL "")
+set(pid_FRAMEWORK_CATEGORIES "programming/resources_management;programming/logging;programming/configuration" CACHE INTERNAL "")

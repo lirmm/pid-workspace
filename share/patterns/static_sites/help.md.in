@@ -1,6 +1,7 @@
 ---
-layout: page
+layout: package
 title: Help
+package: @PACKAGE_NAME@
 ---
 
 ## What is this site ?

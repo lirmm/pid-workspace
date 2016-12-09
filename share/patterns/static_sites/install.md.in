@@ -1,12 +1,7 @@
 ---
-layout: page
+layout: package
 title: Install
 package: @PACKAGE_NAME@
-tutorial: @PACKAGE_TUTORIAL@
-details: @PACKAGE_DETAILS@
-has_apidoc: @PACKAGE_HAS_API_DOC@
-has_checks: @PACKAGE_HAS_STATIC_CHECKS@
-has_coverage: @PACKAGE_HAS_COVERAGE@
 ---
 
 @PACKAGE_NAME@ can be deployed as any other native PID package. To know more about PID methodology simply follow [this link](https://gite.lirmm.fr/pid/pid-workspace/wikis/home).

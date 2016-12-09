@@ -382,6 +382,27 @@ else()
 endif()
 endfunction(get_Formatted_Package_Contact_String)
 
+###
+function(get_Formatted_Framework_Contact_String framework RES_STRING)
+extract_All_Words("${${framework}_FRAMEWORK_MAIN_AUTHOR}" AUTHOR_ALL_WORDS)
+extract_All_Words("${${framework}_FRAMEWORK_MAIN_INSTITUTION}" INSTITUTION_ALL_WORDS)
+fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+if(NOT INSTITUTION_STRING STREQUAL "")
+	if(${framework}_FRAMEWORK_CONTACT_MAIL)
+		set(${RES_STRING} "${AUTHOR_STRING} (${${framework}_FRAMEWORK_CONTACT_MAIL}) - ${INSTITUTION_STRING}" PARENT_SCOPE)
+	else()
+		set(${RES_STRING} "${AUTHOR_STRING} - ${INSTITUTION_STRING}" PARENT_SCOPE)
+	endif()
+else()
+	if(${package}_FRAMEWORK_CONTACT_MAIL)
+		set(${RES_STRING} "${AUTHOR_STRING} (${${framework}_FRAMEWORK_CONTACT_MAIL})" PARENT_SCOPE)
+	else()
+		set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+	endif()
+endif()
+endfunction(get_Formatted_Framework_Contact_String)
+
 #############################################################
 ################ Source file management #####################
 #############################################################

@@ -1,0 +1,28 @@
+---
+layout: package
+categories: @PACKAGE_CATEGORIES@
+package: @PACKAGE_NAME@
+tutorial: @PACKAGE_TUTORIAL@
+details: @PACKAGE_DETAILS@
+has_apidoc: @PACKAGE_HAS_API_DOC@
+has_checks: @PACKAGE_HAS_STATIC_CHECKS@
+has_coverage: @PACKAGE_HAS_COVERAGE@
+---
+
+<h2>Welcome to {{ page.package }} package !</h2>
+
+<br>
+
+@PACKAGE_DESCRIPTION@
+
+<br><br><br><br>
+
+<h2>First steps</h2>
+
+If your are a new user, you can start reading <a href="/packages/{{ page.package }}/pages/introduction">introduction section</a> and <a href="/packages/{{ page.package }}/pages/install">installation instructions</a>. Use the documentation tab to access usefull resources to start working with teh package.
+<br>
+<br>
+
+To lean more about this site and how it is managed you can refer to <a href="/pages/help">this help page</a>.
+
+<br><br><br><br>

@@ -259,6 +259,17 @@ configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/package.yml.in ${gen
 endfunction(generate_Static_Site_Data_Files)
 
 
+### create the index file for package in the framework
+function(generate_Package_Page_Index_In_Framework generated_site_folder)
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/index.html.in ${generated_site_folder}/index.html @ONLY)
+endfunction(generate_Package_Page_Index_In_Framework)
+
+### create the file for listing binaries of a given package in the framework
+function(generate_Package_Page_Binaries_In_Framework generated_pages_folder)
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binaries.md.in ${generated_pages_folder}/binaries.md @ONLY)
+endfunction(generate_Package_Page_Binaries_In_Framework)
+
+
 ### create introduction page
 function(generate_Static_Site_Page_Introduction generated_pages_folder)
 
@@ -373,9 +384,7 @@ endfunction(generate_Static_Site_Page_Contact)
 ###
 function(generate_Static_Site_Page_License generated_pages_folder)
 #adding a license file in markdown format in the site pages (to be copied later if any modification occurred)
-file(READ ${CMAKE_SOURCE_DIR}/license.txt LICENSE_CONTENT_VAR)
-file(WRITE ${CMAKE_BINARY_DIR}/site/pages/license.md "---\nlayout: page\ntitle: License\n---\n\n")
-file(APPEND ${CMAKE_BINARY_DIR}/site/pages/license.md ${LICENSE_CONTENT_VAR})
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/license.md.in ${generated_pages_folder}/license.md @ONLY)
 endfunction(generate_Static_Site_Page_License)
 
 ###
@@ -418,6 +427,7 @@ endfunction(generate_Static_Site_Pages)
 macro(configure_Static_Site_Generation_Variables)
 set(PACKAGE_NAME ${PROJECT_NAME})
 set(PACKAGE_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_PROJECT_PAGE})
+set(PACKAGE_CATEGORIES ${${PROJECT_NAME}_CATEGORIES})
 
 #released version info 
 set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
@@ -447,6 +457,7 @@ endforeach()
 ## managing license
 if(${PROJECT_NAME}_LICENSE)
 	set(PACKAGE_LICENSE_FOR_SITE ${${PROJECT_NAME}_LICENSE})
+	file(READ ${CMAKE_SOURCE_DIR}/license.txt PACKAGE_LICENSE_TEXT_IN_SITE)#getting the text of the license to put into a markdown file for clean printing
 else()
 	set(PACKAGE_LICENSE_FOR_SITE "No license Defined")
 endif()
@@ -520,13 +531,17 @@ file(MAKE_DIRECTORY ${PATH_TO_SITE_PAGES}) # create the pages directory
 configure_Static_Site_Generation_Variables()
 
 #1) generate the data files for jekyll (vary depending on the site creation mode
-if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
-	generate_Static_Site_Data_Files(${PATH_TO_SITE})
+if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework	
+	generate_Static_Site_Data_Files(${PATH_TO_SITE})	
 else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
-	load_Framework(${${PROJECT_NAME}_FRAMEWORK} OK)
-	if(NOT OK)
-		message("[PID] ERROR : the framework you specified is unknown in the workspace.")
+	#find the framework in workspace	
+	load_Framework(IS_LOADED ${${PROJECT_NAME}_FRAMEWORK})
+	if(NOT IS_LOADED)
+		message(FATAL_ERROR "[PID] ERROR : the framework you specified is unknown in the workspace.")
+		return()
 	endif()
+	generate_Package_Page_Index_In_Framework(${PATH_TO_SITE}) # create index page
+	generate_Package_Page_Binaries_In_Framework(${PATH_TO_SITE_PAGES}) # create page allowing to list the binaries
 endif()
 
 # common generation process between framework and lone static sites 

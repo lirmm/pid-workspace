@@ -407,7 +407,7 @@ endmacro(declare_Package)
 ################## setting info on documentation ####################################
 #####################################################################################
 ### defining a framework static site the package belongs to
-macro(define_Framework_Contribution framework description)
+macro(define_Framework_Contribution framework url description)
 if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
 	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
 	return()
@@ -415,7 +415,7 @@ elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRES
 	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a framework !")
 	return()
 endif()
-init_Documentation_Info_Cache_Variables("${framework}" "" "" "${description}")
+init_Documentation_Info_Cache_Variables("${framework}" "${url}" "" "" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
 	get_System_Variables(OS_STRING ARCH_STRING ABI_STRING PACKAGE_SYSTEM_STRING)
 

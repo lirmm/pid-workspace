@@ -15,5 +15,11 @@ baseurl: ""
 
 collections:
  packages:
-    output: false
+    output: true
 
+defaults:
+  - scope:
+      path: ""
+      type: packages
+    values:
+      layout: package

@@ -22,7 +22,7 @@ include(PID_Framework_API_Internal_Functions NO_POLICY_SCOPE)
 include(CMakeParseArguments)
 
 
-### API : declare_PID_Framework(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... [GIT_ADDRESS address] [GIT_SITE site] LICENSE ... DESCRIPTION ... SITE ... [LOGO logo_image_path_relative_to assets/img ] [BANNER banner_image_path_relative_to assets/img])
+### API : declare_PID_Framework(AUTHOR main_author_name ... [INSTITUTION ...] [MAIL ...] YEAR ... [GIT_ADDRESS | ADDRESS address] [GIT_SITE site] LICENSE ... DESCRIPTION ... SITE ... [LOGO logo_image_path_relative_to assets/img ] [BANNER banner_image_path_relative_to assets/img])
 macro(declare_PID_Framework)
 set(oneValueArgs GIT_ADDRESS ADDRESS MAIL SITE GIT_SITE LICENSE LOGO BANNER)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)

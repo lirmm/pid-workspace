@@ -30,6 +30,7 @@ if(	${res} STREQUAL NOTFOUND
 	message("[PID] ERROR : The binary package ${PACKAGE_NAME} (version ${PACKAGE_VERSION}) whose runtime dependencies must be (re)bound cannot be found from the workspace path : ${WORKSPACE_DIR}")
 	return()
 endif()
+
 set(BIN_PACKAGE_PATH ${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_VERSION})
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system) # using systems scripts the workspace
 list(APPEND CMAKE_MODULE_PATH ${BIN_PACKAGE_PATH}/share/cmake) # adding the cmake find scripts files from the package

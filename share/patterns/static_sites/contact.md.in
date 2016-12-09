@@ -1,12 +1,7 @@
 ---
-layout: page
+layout: package
 title: Contact
-package: @PROJECT_NAME@
-tutorial: @PACKAGE_TUTORIAL@
-details: @PACKAGE_DETAILS@
-has_apidoc: @PACKAGE_HAS_API_DOC@
-has_checks: @PACKAGE_HAS_STATIC_CHECKS@
-has_coverage: @PACKAGE_HAS_COVERAGE@
+package: @PACKAGE_NAME@
 ---
 
 To get information about this site or the way it is managed, please contact <a href="mailto: @PACKAGE_MAINTAINER_MAIL@ ">@PACKAGE_MAINTAINER_NAME@</a>

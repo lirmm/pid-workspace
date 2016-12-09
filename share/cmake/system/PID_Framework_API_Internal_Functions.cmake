@@ -85,9 +85,9 @@ if(ALL_VERSIONS)
 					endif()
 					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} ${ref_platform} CACHE INTERNAL \"\")\n") # the platform is registered only if there are binaries inside (sanity check)
 
-					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE_PAGE}/pages/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
+					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
 
-					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/pages/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
+					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
 
 				endif()
 			endforeach()
@@ -157,7 +157,7 @@ if(DIR_NAME STREQUAL "build")
 	foreach(string_el IN ITEMS ${author})
 		set(res_string "${res_string}_${string_el}")
 	endforeach()
-	set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_FRAMEWORK_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
 
 	set(res_string "")
 	foreach(string_el IN ITEMS ${institution})
@@ -242,6 +242,7 @@ endfunction(add_Framework_Category)
 ############################### building the framework ###########################
 ##################################################################################
 
+
 ############ function used to create the README.md file of the framework  ###########
 function(generate_Framework_Readme_File)
 set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/frameworks/README.md.in)
@@ -265,7 +266,7 @@ foreach(author IN ITEMS ${${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS})
 	set(README_AUTHORS_LIST "${README_AUTHORS_LIST}\n+ ${STRING_TO_APPEND}")
 endforeach()
 
-get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
+get_Formatted_Framework_Contact_String(${PROJECT_NAME} RES_STRING)
 set(README_CONTACT_AUTHOR "${RES_STRING}")
 
 configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put it in the source dir
@@ -312,7 +313,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/shar
 set(FRAMEWORK_NAME ${PROJECT_NAME})
 set(FRAMEWORK_SITE_URL ${${PROJECT_NAME}_FRAMEWORK_SITE})
 set(FRAMEWORK_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE})
-get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
+get_Formatted_Framework_Contact_String(${PROJECT_NAME} RES_STRING)
 set(FRAMEWORK_MAINTAINER_NAME ${RES_STRING})
 set(FRAMEWORK_MAINTAINER_MAIL ${${PROJECT_NAME}_FRAMEWORK_CONTACT_MAIL})
 set(FRAMEWORK_DESCRIPTION ${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION})
@@ -388,6 +389,63 @@ endif()
 
 endfunction(generate_Framework_Reference_File)
 
+
+
+###
+function(generate_Framework_Binary_References)
+set(dir ${CMAKE_SOURCE_DIR}/src/_packages)
+list_Subdirectories(ALL_PACKAGES ${dir})
+if(ALL_PACKAGES)
+	foreach(package IN ITEMS ${ALL_PACKAGES})
+		generate_Framework_Binary_Reference_For_Package(${package})
+	endforeach()
+endif()
+endfunction(generate_Framework_Binary_References)
+
+###
+function(generate_Framework_Binary_Reference_For_Package package)
+set(dir ${CMAKE_SOURCE_DIR}/src/_packages/${package}/binaries)
+set(file ${dir}/binary_references.cmake)
+file(WRITE ${file} "# Contains references to binaries that are available for ${PROJECT_NAME} \n")
+file(APPEND ${file} "set(${package}_REFERENCES CACHE INTERNAL \"\")\n")#reset the references
+
+##################################################################
+### all available versions of the package for which there is a ###
+### reference to a downloadable binary for any platform ##########
+##################################################################
+list_Subdirectories(ALL_VERSIONS ${dir})
+if(ALL_VERSIONS)
+	foreach(ref_version IN ITEMS ${ALL_VERSIONS}) #for each available version, all os for which there is a reference
+		set(VERSION_REGISTERED FALSE)
+		
+		list_Subdirectories(ALL_PLATFORMS ${dir}/${ref_version})
+		if(ALL_PLATFORMS)
+			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version	
+				# now referencing the binaries
+				list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
+				if(	ALL_BINARIES
+					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz
+					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)# both release and binary versions have to exist
+					
+					if(NOT VERSION_REGISTERED)  # the version is registered only if there are binaries inside (sanity check)
+					file(APPEND ${file} "set(${package}_REFERENCES ${${package}_REFERENCES} ${ref_version} CACHE INTERNAL \"\")\n") # the version is registered
+					set(VERSION_REGISTERED TRUE)
+					endif()
+					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} ${ref_platform} CACHE INTERNAL \"\")\n") # the platform is registered only if there are binaries inside (sanity check)
+
+					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
+
+					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
+
+				endif()
+			endforeach()
+		endif()
+	endforeach()
+endif()
+endfunction(generate_Framework_Binary_Reference_For_Package)
+
+
+
 ### main function for building the package
 macro(build_Framework)
 
@@ -399,6 +457,8 @@ macro(build_Framework)
 generate_Framework_Readme_File() # generating and putting into source directory the readme file used by gitlab
 generate_Framework_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Framework_Data() # generating the data files for jelkyll (result in the build tree)
+
+generate_Framework_Binary_References() # generating in the project the cmake script files that allow to find references on packages of the framework
 
 # build steps
 # 1) create or clean the "generated" folder in build tree. 
