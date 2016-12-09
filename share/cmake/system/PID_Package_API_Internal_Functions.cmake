@@ -432,6 +432,7 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in rel
 						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
 						-DINCLUDES_INSTALLER=${GENERATE_INSTALLER}
 						-DSYNCHRO=$(synchro)
+						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake
 	)
 endif()

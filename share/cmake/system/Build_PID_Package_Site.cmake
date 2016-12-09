@@ -33,6 +33,6 @@ file(COPY ${PATH_TO_SITE_SRC}/api_doc ${PATH_TO_SITE_SRC}/coverage ${PATH_TO_SIT
 
 #2) build site with jekyll
 
-execute_process(COMMAND jekyll build -d ${PATH_TO_SITE_RESULT} WORKING_DIRECTORY ${PATH_TO_SITE_JEKYLL})
+execute_process(COMMAND ${JEKYLL_EXECUTABLE} build -d ${PATH_TO_SITE_RESULT} WORKING_DIRECTORY ${PATH_TO_SITE_JEKYLL})
 
 

@@ -6,25 +6,17 @@
 	{% if site.data.categories %}		
 		{% for category in site.data.categories %}
 			{% assign category_packages = 0%} 
-			{% for file in site.pages %}
-			  {% if file.path contains "packages/" %}
-			  {% if file.path contains 'home.md' %}
+			{% for file in site.packages %}
 			  {% if file.categories contains category.index %}
 			      {% assign category_packages = 1 %}
-			  {% endif %}
-			  {% endif %}
 			  {% endif %}
 			{% endfor %}
 			{% if category_packages != 0 %}
 			<li>{{ category.name }} 
 				<ul class="list-unstyled">
-				{% for package in site.pages %}
-					{% if package.path contains "packages/" %}
-			  		{% if package.path contains 'home.md' %}
+				{% for package in site.packages %}
 					{% if (package.categories contains category.index) %}
-						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="/{{ package.url }}">{{ package.title }}</a></li>
-					{% endif %}
-					{% endif %}
+						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="{{ package.url }}">{{ package.title }}</a></li>
 					{% endif %}
 				{% endfor %}
 				</ul>
@@ -34,12 +26,8 @@
 
 	<li> All packages
 	<ul class="list-unstyled">
-	{% for package in site.pages %}
-		{% if package.path contains "packages/" %}
-  		{% if package.path contains 'home.md' %}
-		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="/{{ package.url }}">{{ package.title }}</a></li>
-		{% endif %}
-		{% endif %}
+	{% for package in site.packages %}
+		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="{{ package.url }}">{{ package.title }}</a></li>
 	{% endfor %}
 	</ul>
 	</li>

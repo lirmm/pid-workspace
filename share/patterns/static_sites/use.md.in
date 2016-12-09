@@ -1,15 +1,21 @@
 ---
 layout: page
 title: Usage
+package: @PACKAGE_NAME@
+tutorial: @PACKAGE_TUTORIAL@
+details: @PACKAGE_DETAILS@
+has_apidoc: @PACKAGE_HAS_API_DOC@
+has_checks: @PACKAGE_HAS_STATIC_CHECKS@
+has_coverage: @PACKAGE_HAS_COVERAGE@
 ---
 
 ## Import the package
 
-You can import @PROJECT_NAME@ as usual with PID. In the root CMakelists.txt file of your package, after the package declaration you have to write something like:
+You can import @PACKAGE_NAME@ as usual with PID. In the root CMakelists.txt file of your package, after the package declaration you have to write something like:
 
 {% highlight cmake %}
-find_package (@PROJECT_NAME@ REQUIRED)
-declare_PID_Package_Dependency(PACKAGE @PROJECT_NAME@ NATIVE)
+find_package (@PACKAGE_NAME@ REQUIRED)
+declare_PID_Package_Dependency(PACKAGE @PACKAGE_NAME@ NATIVE)
 {% endhighlight %}
 
 It will try to install last version of the package.
@@ -18,9 +24,9 @@ If you want a specific version (recommended), for instance the currently last re
 
 {% highlight cmake %}
 # finding package with classic CMake command, use a version number
-find_package (@PROJECT_NAME@ @PACKAGE_LAST_VERSION_WITH_PATCH@ REQUIRED)
+find_package (@PACKAGE_NAME@ @PACKAGE_LAST_VERSION_WITH_PATCH@ REQUIRED)
 # register the package dependency before using it in components 
-declare_PID_Package_Dependency(PACKAGE @PROJECT_NAME@ NATIVE VERSION @PACKAGE_LAST_VERSION_WITHOUT_PATCH@)
+declare_PID_Package_Dependency(PACKAGE @PACKAGE_NAME@ NATIVE VERSION @PACKAGE_LAST_VERSION_WITHOUT_PATCH@)
 {% endhighlight %}
 
 Notice that PID will automatically install the last available patch version of the package when configuring the project with the option `REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD` to **ON** (default value).

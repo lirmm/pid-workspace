@@ -64,27 +64,23 @@ else()
 	set(include_installer FALSE)
 endif()
 
-
+#two different behaviors depending on what to do
 if(DEFINED TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL "")) # the package site is put into a more global site that references all packages of the same framework 
 
-#1 find the framework in the workspace
+	#1) find or install the framework in the workspace
+	load_Framework(LOADED ${TARGET_FRAMEWORK})
+	if(NOT LOADED)
+		message("[PID] CRITICAL ERROR: cannot build package site because the required framework ${TARGET_FRAMEWORK} cannot be found locally or online. This may be due to a lack of a reference file for this framework in the workspace, ask the author of the framework to provide one and update your workspace before launching again this command.")
+		return()
+	endif()
 
-#2 install the framework if necessary (not found) using adequate reference file
-
-#3 generate files according to project documentation
-
-#4 put package files into framework repository
-
-#5 build framework
-
-#6 if required push to framework official repository
 
 elseif(DEFINED SITE_GIT AND (NOT SITE_GIT STREQUAL ""))# the package site is put into a dedicated static site
 
 	set(project_url "${PACKAGE_PROJECT_URL}")
 	set(site_url "${PACKAGE_SITE_URL}")
 	#1) find or put the package static site in the workspace
-	static_Site_Project_Exists(SITE_EXISTS PATH_TO_WIKI ${TARGET_PACKAGE})
+	static_Site_Project_Exists(SITE_EXISTS PATH_TO_SITE ${TARGET_PACKAGE})
 	if(NOT SITE_EXISTS)
 		#install the static site if necessary or create it if it does not exists
 		create_Local_Static_Site_Project(SUCCEEDED ${TARGET_PACKAGE} ${SITE_GIT} ${push_site} ${project_url} ${site_url})
@@ -96,22 +92,26 @@ elseif(DEFINED SITE_GIT AND (NOT SITE_GIT STREQUAL ""))# the package site is put
 		update_Local_Static_Site_Project(${TARGET_PACKAGE} ${project_url} ${site_url}) # update static site repository, to ensure its synchronization
 	endif()
 
-	#2) clean and copy files according to project documentation
-	copy_Static_Site_Content(${TARGET_PACKAGE} ${TARGET_VERSION} ${TARGET_PLATFORM} ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
-	
-	#3) build static site
-	build_Static_Site(${TARGET_PACKAGE})
-
-	#4) if required push to static site official repository
-	if(push_site)
-		publish_Static_Site_Repository(${TARGET_PACKAGE}) #TODO refactor this function
-		message("[PID] INFO : static site of ${TARGET_PACKAGE} has been updated on server.")
-	else()
-		message("[PID] INFO : static site of ${TARGET_PACKAGE} has been updated locally.")
-	endif()
-
 else()
 	message("[PID] CRITICAL ERROR: cannot build package site due to bad arguments. This situation should never appear so you may face a BUG in PID. Please contact PID developers.")
 endif()
 
+#2) clean generate and copy files according to project documentation
+produce_Static_Site_Content(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}" ${TARGET_VERSION} ${TARGET_PLATFORM} ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
+
+#3) build static site
+build_Static_Site(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}")
+
+#4) if required push to static site official repository
+if(push_site)
+	if(DEFINED TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
+		publish_Framework_Repository(${TARGET_FRAMEWORK})
+		message("[PID] INFO : framework ${TARGET_FRAMEWORK} repository has been updated on server with new content from package ${TARGET_PACKAGE}.")
+	else()
+		publish_Static_Site_Repository(${TARGET_PACKAGE})
+		message("[PID] INFO : static site repository of ${TARGET_PACKAGE} has been updated on server.")
+	endif()
+else()
+	message("[PID] INFO : static site of ${TARGET_PACKAGE} has been updated locally.")
+endif()
 

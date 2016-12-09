@@ -3,9 +3,6 @@ layout: page
 title: Binaries
 ---
 
-
-{{ site.collections.binaries.docs }}
-
 {% assign all_versions = "" %}
 {% unless site.collections.binaries.docs == nil %}
 

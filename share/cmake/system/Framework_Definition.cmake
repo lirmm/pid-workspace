@@ -52,7 +52,7 @@ if(DECLARE_PID_FRAMEWORK_ADDRESS)
 elseif(DECLARE_PID_FRAMEWORK_GIT_ADDRESS)
 	set(address ${DECLARE_PID_FRAMEWORK_GIT_ADDRESS})
 else()
-	set(address)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : you must define the address of the framework's repository using either ADDRESS or GIT_ADDRESS keyword.")
 endif()
 
 declare_Framework(	"${DECLARE_PID_FRAMEWORK_AUTHOR}" "${DECLARE_PID_FRAMEWORK_INSTITUTION}" "${DECLARE_PID_FRAMEWORK_MAIL}"
@@ -75,7 +75,7 @@ cmake_parse_arguments(ADD_PID_FRAMEWORK_AUTHOR "" "" "${multiValueArgs}" ${ARGN}
 if(NOT ADD_PID_FRAMEWORK_AUTHOR_AUTHOR)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an author name must be given using AUTHOR keyword.")
 endif()
-add_Author("${ADD_PID_FRAMEWORK_AUTHOR_AUTHOR}" "${ADD_PID_FRAMEWORK_AUTHOR_INSTITUTION}")
+add_Framework_Author("${ADD_PID_FRAMEWORK_AUTHOR_AUTHOR}" "${ADD_PID_FRAMEWORK_AUTHOR_INSTITUTION}")
 endmacro(add_PID_Framework_Author)
 
 
@@ -84,7 +84,7 @@ macro(add_PID_Framework_Category)
 if(NOT ${ARGC} EQUAL 1)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the add_PID_Framework_Category command requires one string argument of the form <category>[/subcategory]*.")
 endif()
-add_Category("${ARGV0}")
+add_Framework_Category("${ARGV0}")
 endmacro(add_PID_Framework_Category)
 
 ### API : build_PID_Framework()

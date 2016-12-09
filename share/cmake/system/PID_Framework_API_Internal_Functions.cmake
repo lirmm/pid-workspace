@@ -52,14 +52,6 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/shar
 #2) generating the global configuration file for package site
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
 
-#3) adding a license file
-if(EXISTS ${CMAKE_SOURCE_DIR}/license.txt)
-	file(READ ${CMAKE_SOURCE_DIR}/license.txt LICENSE_CONTENT_VAR)
-	file(WRITE ${CMAKE_BINARY_DIR}/to_generate/pages/license.md "---\nlayout: page\ntitle: License\n---\n\n")
-	file(APPEND ${CMAKE_BINARY_DIR}/to_generate/pages/license.md ${LICENSE_CONTENT_VAR})
-else()
-	message("[PID] WARNING: no license for the site !")
-endif()
 endfunction(generate_Site_Data)
 
 ###
@@ -171,16 +163,16 @@ if(DIR_NAME STREQUAL "build")
 	foreach(string_el IN ITEMS ${institution})
 		set(res_string "${res_string}_${string_el}")
 	endforeach()
-	set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_CONTACT_MAIL ${mail} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_SITE ${site} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_ADDRESS ${git_address} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PROJECT_PAGE ${repo_site} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
+	set(${PROJECT_NAME}_FRAMEWORK_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_FRAMEWORK_CONTACT_MAIL ${mail} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_FRAMEWORK_DESCRIPTION "${description}" CACHE INTERNAL "")
+	set(${PROJECT_NAME}_FRAMEWORK_YEARS ${year} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_FRAMEWORK_SITE ${site} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_FRAMEWORK_ADDRESS ${git_address} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE ${repo_site} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_FRAMEWORK_LICENSE ${license} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES CACHE INTERNAL "")#categories are reset
 
 
 	#searching for jekyll (static site generator)
@@ -219,12 +211,32 @@ endmacro(declare_Framework)
 macro(declare_Framework_Image image_file_path is_banner)
 
 if(is_banner)
-	set(${PROJECT_NAME}_BANNER_IMAGE_FILE_NAME ${image_file_path})
+	set(${PROJECT_NAME}_FRAMEWORK_BANNER_IMAGE_FILE_NAME ${image_file_path})
 else() #this is a logo
-	set(${PROJECT_NAME}_LOGO_IMAGE_FILE_NAME ${image_file_path})
+	set(${PROJECT_NAME}_FRAMEWORK_LOGO_IMAGE_FILE_NAME ${image_file_path})
 endif()
 
 endmacro(declare_Framework_Image)
+
+
+###
+function(add_Framework_Author author institution)
+	set(res_string_author)	
+	foreach(string_el IN ITEMS ${author})
+		set(res_string_author "${res_string_author}_${string_el}")
+	endforeach()
+	set(res_string_instit)
+	foreach(string_el IN ITEMS ${institution})
+		set(res_string_instit "${res_string_instit}_${string_el}")
+	endforeach()
+	set(${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS};${res_string_author}(${res_string_instit})" CACHE INTERNAL "")
+endfunction(add_Framework_Author)
+
+
+###
+function(add_Framework_Category category_spec)
+	set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES ${${PROJECT_NAME}_FRAMEWORK_CATEGORIES} ${category_spec} CACHE INTERNAL "")
+endfunction(add_Framework_Category)
 
 ##################################################################################
 ############################### building the framework ###########################
@@ -236,11 +248,11 @@ set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/frameworks/README.md.in)
 
 
 set(FRAMEWORK_NAME ${PROJECT_NAME})
-set(FRAMEWORK_SITE ${${PROJECT_NAME}_SITE})
-set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by wiki description use the short one
+set(FRAMEWORK_SITE ${${PROJECT_NAME}_FRAMEWORK_SITE})
+set(README_OVERVIEW "${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION}") #if no detailed description provided by wiki description use the short one
 
 
-if(${PROJECT_NAME}_LICENSE)
+if(${PROJECT_NAME}_FRAMEWORK_LICENSE)
 	set(LICENSE_FOR_README "The license that applies to this repository project is **${${PROJECT_NAME}_LICENSE}**.")
 else()
 	set(LICENSE_FOR_README "The package has no license defined yet.")
@@ -248,7 +260,7 @@ endif()
 
 set(README_AUTHORS_LIST "")
 
-foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
+foreach(author IN ITEMS ${${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS})
 	generate_Full_Author_String(${author} STRING_TO_APPEND)
 	set(README_AUTHORS_LIST "${README_AUTHORS_LIST}\n+ ${STRING_TO_APPEND}")
 endforeach()
@@ -261,24 +273,24 @@ endfunction(generate_Framework_Readme_File)
 
 ############ function used to create the license.txt file of the package  ###########
 function(generate_Framework_License_File)
-if(	DEFINED ${PROJECT_NAME}_LICENSE 
-	AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+if(	DEFINED ${PROJECT_NAME}_FRAMEWORK_LICENSE 
+	AND NOT ${${PROJECT_NAME}_FRAMEWORK_LICENSE} STREQUAL "")
 
 	find_file(	LICENSE   
-			"License${${PROJECT_NAME}_LICENSE}.cmake"
+			"License${${PROJECT_NAME}_FRAMEWORK_LICENSE}.cmake"
 			PATH "${WORKSPACE_DIR}/share/cmake/licenses"
 			NO_DEFAULT_PATH
 		)
 	set(LICENSE ${LICENSE} CACHE INTERNAL "")
 	
 	if(LICENSE_IN-NOTFOUND)
-		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
+		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_FRAMEWORK_LICENSE} not found in workspace, license file will not be generated")
 	else()
-		foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
+		foreach(author IN ITEMS ${${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS})
 			generate_Full_Author_String(${author} STRING_TO_APPEND)
-			set(${PROJECT_NAME}_AUTHORS_LIST "${${PROJECT_NAME}_AUTHORS_LIST} ${STRING_TO_APPEND}")
+			set(${PROJECT_NAME}_FRAMEWORK_AUTHORS_LIST "${${PROJECT_NAME}_FRAMEWORK_AUTHORS_LIST} ${STRING_TO_APPEND}")
 		endforeach()
-		include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
+		include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_FRAMEWORK_LICENSE}.cmake)
 		file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
 	endif()
 endif()
@@ -298,20 +310,20 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/shar
 
 # 2) generate the data file containing general information about the framework (generated from a CMake pattern file)
 set(FRAMEWORK_NAME ${PROJECT_NAME})
-set(FRAMEWORK_SITE_URL ${${PROJECT_NAME}_SITE})
-set(FRAMEWORK_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_PROJECT_PAGE})
+set(FRAMEWORK_SITE_URL ${${PROJECT_NAME}_FRAMEWORK_SITE})
+set(FRAMEWORK_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE})
 get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
 set(FRAMEWORK_MAINTAINER_NAME ${RES_STRING})
-set(FRAMEWORK_MAINTAINER_MAIL ${${PROJECT_NAME}_CONTACT_MAIL})
-set(FRAMEWORK_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION})
-set(FRAMEWORK_BANNER ${${PROJECT_NAME}_BANNER_IMAGE_FILE_NAME})
-set(FRAMEWORK_LOGO ${${PROJECT_NAME}_LOGO_IMAGE_FILE_NAME})
-configure_file(${CMAKE_SOURCE_DIR}/share/framework.yml.in ${CMAKE_BINARY_DIR}/to_generate/_data/framework.yml @ONLY)
+set(FRAMEWORK_MAINTAINER_MAIL ${${PROJECT_NAME}_FRAMEWORK_CONTACT_MAIL})
+set(FRAMEWORK_DESCRIPTION ${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION})
+set(FRAMEWORK_BANNER ${${PROJECT_NAME}_FRAMEWORK_BANNER_IMAGE_FILE_NAME})
+set(FRAMEWORK_LOGO ${${PROJECT_NAME}_FRAMEWORK_LOGO_IMAGE_FILE_NAME})
+configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/framework.yml.in ${CMAKE_BINARY_DIR}/to_generate/_data/framework.yml @ONLY)
 
 # 3) generate the data file defining categories managed by the framework (generated from scratch)
 file(WRITE ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "")
 if(${PROJECT_NAME}_CATEGORIES)
-	foreach(cat IN ITEMS ${${PROJECT_NAME}_CATEGORIES})
+	foreach(cat IN ITEMS ${${PROJECT_NAME}_FRAMEWORK_CATEGORIES})
 		extract_All_Words_From_Path(${cat} LIST_OF_NAMES)
 		list(LENGTH LIST_OF_NAMES SIZE)
 		set(FINAL_NAME "")
@@ -338,7 +350,7 @@ if(${PROJECT_NAME}_CATEGORIES)
 endif()
 
 # 4) generate the configuration file for jekyll generation
-configure_file(${CMAKE_SOURCE_DIR}/share/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
+configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
 
 endfunction(generate_Framework_Data)
 
@@ -349,33 +361,32 @@ set(file ${pathtonewfile})
 file(WRITE ${file} "")
 
 file(APPEND ${file} "#### referencing package ${PROJECT_NAME} mode ####\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_MAIN_AUTHOR ${${PROJECT_NAME}_MAIN_AUTHOR} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_MAIN_INSTITUTION ${${PROJECT_NAME}_MAIN_INSTITUTION} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_YEARS ${${PROJECT_NAME}_YEARS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_CONTACT_MAIL ${${PROJECT_NAME}_CONTACT_MAIL} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_SITE ${${PROJECT_NAME}_SITE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PROJECT_PAGE ${${PROJECT_NAME}_PROJECT_PAGE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_ADDRESS ${${PROJECT_NAME}_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_MAIN_AUTHOR ${${PROJECT_NAME}_FRAMEWORK_MAIN_AUTHOR} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_MAIN_INSTITUTION ${${PROJECT_NAME}_FRAMEWORK_MAIN_INSTITUTION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_YEARS ${${PROJECT_NAME}_FRAMEWORK_YEARS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_CONTACT_MAIL ${${PROJECT_NAME}_FRAMEWORK_CONTACT_MAIL} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_SITE ${${PROJECT_NAME}_FRAMEWORK_SITE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE ${${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_DESCRIPTION ${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_LICENSE ${${PROJECT_NAME}_FRAMEWORK_LICENSE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_ADDRESS ${${PROJECT_NAME}_FRAMEWORK_ADDRESS} CACHE INTERNAL \"\")\n")
 
 # writing concise author information
 set(res_string "")
-foreach(auth IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
+foreach(auth IN ITEMS ${${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS})
 	list(APPEND res_string ${auth})
 endforeach()
 set(printed_authors "${res_string}")
-file(APPEND ${file} "set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS \"${res_string}\" CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS \"${res_string}\" CACHE INTERNAL \"\")\n")
 
 # writing concise category information
 if(${PROJECT_NAME}_CATEGORIES)
-	file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES \"${${PROJECT_NAME}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES \"${${PROJECT_NAME}_FRAMEWORK_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 else()
-	file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES CACHE INTERNAL \"\")\n")
 endif()
 
 endfunction(generate_Framework_Reference_File)
-
 
 ### main function for building the package
 macro(build_Framework)
@@ -409,4 +420,6 @@ if(${PROJECT_NAME}_ADDRESS)
 endif()
 
 endmacro(build_Framework)
+
+
 

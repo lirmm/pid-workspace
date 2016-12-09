@@ -420,11 +420,11 @@ endfunction(deploy_Package_Repository)
 
 ###
 function(deploy_Framework_Repository IS_DEPLOYED framework)
-if(${framework}_ADDRESS)
+if(${framework}_FRAMEWORK_ADDRESS)
 	if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : cloning the repository of framework ${framework}...")
 	endif()	
-	clone_Repository(DEPLOYED ${framework} ${${framework}_ADDRESS})
+	clone_Framework_Repository(DEPLOYED ${framework} ${${framework}_FRAMEWORK_ADDRESS})
 	if(DEPLOYED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : repository of framework ${framework} has been cloned.")

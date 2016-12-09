@@ -1,0 +1,29 @@
+---
+layout: page
+title: Contact
+package: @PROJECT_NAME@
+tutorial: @PACKAGE_TUTORIAL@
+details: @PACKAGE_DETAILS@
+has_apidoc: @PACKAGE_HAS_API_DOC@
+has_checks: @PACKAGE_HAS_STATIC_CHECKS@
+has_coverage: @PACKAGE_HAS_COVERAGE@
+---
+
+To get information about this site or the way it is managed, please contact <a href="mailto: @PACKAGE_MAINTAINER_MAIL@ ">@PACKAGE_MAINTAINER_NAME@</a>
+
+If you have adequate access rights you can also visit the package [project repository](@PACKAGE_PROJECT_REPOSITORY_PAGE@) and use issue reporting functionnalities to interact with all authors.
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>

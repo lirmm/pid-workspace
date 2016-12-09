@@ -26,7 +26,7 @@ set(PATH_TO_FRAMEWORK ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
 set(PATH_TO_FRAMEWORK_RESULT ${PATH_TO_FRAMEWORK}/build/generated)
 
 if(EXISTS ${PATH_TO_FRAMEWORK_RESULT} AND IS_DIRECTORY ${PATH_TO_FRAMEWORK_RESULT})
-	execute_process(COMMAND jekyll serve WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_RESULT})
+	execute_process(COMMAND ${JEKYLL_EXECUTABLE} serve WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_RESULT})
 else()
 	message("[PID] ERROR: nothing to serve, no static site found !") 
 endif()

@@ -21,12 +21,11 @@
 
 ### script used to serve the package static site using jekyll
 
-message("TARGET_PACKAGE = ${TARGET_PACKAGE}")
 set(PATH_TO_PACKAGE ${WORKSPACE_DIR}/sites/packages/${TARGET_PACKAGE})
 set(PATH_TO_PACKAGE_RESULT ${PATH_TO_PACKAGE}/build/generated)
 
 if(EXISTS ${PATH_TO_PACKAGE_RESULT} AND IS_DIRECTORY ${PATH_TO_PACKAGE_RESULT})
-	execute_process(COMMAND jekyll serve WORKING_DIRECTORY ${PATH_TO_PACKAGE_RESULT})
+	execute_process(COMMAND ${JEKYLL_EXECUTABLE} serve WORKING_DIRECTORY ${PATH_TO_PACKAGE_RESULT})
 else()
 	message("[PID] ERROR: nothing to serve, no static site found !") 
 endif()

@@ -214,8 +214,13 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
 
 		# reference to site page
-		set(PACKAGE_SITE_REF_IN_README "[package_site]: ${${PROJECT_NAME}_SITE_ROOT_PAGE} \"${PROJECT_NAME} package\"
+		if(${PROJECT_NAME}_SITE_GIT_ADDRESS)
+			set(PACKAGE_SITE_REF_IN_README "[package_site]: ${${PROJECT_NAME}_SITE_ROOT_PAGE} \"${PROJECT_NAME} package\"
 ")
+		else()
+			set(PACKAGE_SITE_REF_IN_README "[package_site]: ${${PROJECT_NAME}_FRAMEWORK} \"${PROJECT_NAME} package\"
+")
+		endif()
 	endif()
 	
 	if(${PROJECT_NAME}_LICENSE)
@@ -248,88 +253,14 @@ endfunction(generate_Readme_Files)
 
 ### create the data files for jekyll
 function(generate_Static_Site_Data_Files generated_site_folder)
-#1) generating the data file for package site description
+#generating the data file for package site description
 file(MAKE_DIRECTORY ${generated_site_folder}/_data) # create the _data folder to put configuration files inside
-set(PACKAGE_NAME ${PROJECT_NAME})
-set(PACKAGE_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_PROJECT_PAGE})
-
-## introduction (more detailed description, if any)
-generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
-if("${RES_INTRO}" STREQUAL "")
-	set(PACKAGE_DESCRIPTION "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided use the short one
-else()
-	set(PACKAGE_DESCRIPTION "${RES_INTRO}") #otherwise use detailed one specific for site
-endif()
-
-get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
-set(PACKAGE_MAINTAINER_NAME ${RES_STRING})
-set(PACKAGE_MAINTAINER_MAIL ${${PROJECT_NAME}_CONTACT_MAIL})
-
-#configure references to logo, advanced material and tutorial pages
-set(PACKAGE_TUTORIAL)
-if(${PROJECT_NAME}_tutorial_SITE_CONTENT_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${${PROJECT_NAME}_tutorial_SITE_CONTENT_FILE})
-test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_tutorial_SITE_CONTENT_FILE})
-	if(FILE_NAME)
-		set(PACKAGE_TUTORIAL ${FILE_NAME})#put only file name since jekyll may generate html from it
-	endif()
-endif()
-
-set(PACKAGE_DETAILS)
-if(${PROJECT_NAME}_advanced_SITE_CONTENT_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${${PROJECT_NAME}_advanced_SITE_CONTENT_FILE})
-test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_advanced_SITE_CONTENT_FILE})
-	if(FILE_NAME)
-		set(PACKAGE_DETAILS ${FILE_NAME}) #put only file name since jekyll may generate html from it
-	endif()
-endif()
-
-set(PACKAGE_LOGO)
-if(${PROJECT_NAME}_logo_SITE_CONTENT_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${${PROJECT_NAME}_logo_SITE_CONTENT_FILE})
-test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_logo_SITE_CONTENT_FILE})
-	if(FILE_NAME)
-		set(PACKAGE_LOGO ${${PROJECT_NAME}_logo_SITE_CONTENT_FILE}) # put the full relative path for the image
-	endif()
-endif()
-
-# configure menus content depending on project configuration
-if(BUILD_API_DOC)
-set(PACKAGE_HAS_API_DOC true)
-else()
-set(PACKAGE_HAS_API_DOC false)
-endif()
-if(BUILD_COVERAGE_REPORT)
-set(PACKAGE_HAS_COVERAGE true)
-else()
-set(PACKAGE_HAS_COVERAGE false)
-endif()
-if(BUILD_STATIC_CODE_CHECKING_REPORT)
-set(PACKAGE_HAS_STATIC_CHECKS true)
-else()
-set(PACKAGE_HAS_STATIC_CHECKS false)
-endif()
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/package.yml.in ${generated_site_folder}/_data/package.yml @ONLY)
-
 endfunction(generate_Static_Site_Data_Files)
 
 
 ### create introduction page
 function(generate_Static_Site_Page_Introduction generated_pages_folder)
-
-generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
-if("${RES_INTRO}" STREQUAL "")
-	set(PACKAGE_DESCRIPTION "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided use the short one
-else()
-	set(PACKAGE_DESCRIPTION "${RES_INTRO}") #otherwise use detailed one specific for site
-endif()
-
-# authors
-get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
-set(PACKAGE_CONTACT "${RES_STRING}")
-set(PACKAGE_ALL_AUTHORS "") 
-foreach(author IN ITEMS "${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
-	get_Formatted_Author_String(${author} RES_STRING)
-	set(PACKAGE_ALL_AUTHORS "${PACKAGE_ALL_AUTHORS}\n* ${RES_STRING}")
-endforeach()
-
 
 # platform configuration
 set(PACKAGE_PLATFORM_CONFIGURATION "")
@@ -341,15 +272,6 @@ if(${PROJECT_NAME}_AVAILABLE_PLATFORMS)
 	endforeach()
 else()
 	set(PACKAGE_PLATFORM_CONFIGURATION "This package cannot be used on any platform (this is BUG !!)\n")
-endif()
-
-# last version
-set(PACKAGE_LAST_VERSION_FOR_SITE "${${PROJECT_NAME}_VERSION}")
-
-if(${PROJECT_NAME}_LICENSE)
-	set(PACKAGE_LICENSE_FOR_SITE ${${PROJECT_NAME}_LICENSE})
-else()
-	set(PACKAGE_LICENSE_FOR_SITE "No license Defined")
 endif()
 
 # categories
@@ -398,16 +320,8 @@ endif()
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/introduction.md.in ${generated_pages_folder}/introduction.md @ONLY)
 endfunction(generate_Static_Site_Page_Introduction)
 
-
-
 ### create introduction page
 function(generate_Static_Site_Page_Install generated_pages_folder)
-
-#released version info 
-set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
-get_Version_String_Numbers(${${PROJECT_NAME}_VERSION} major minor patch)
-set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
-
 
 #getting git references of the project (for manual installation explanation)
 if(NOT ${PROJECT_NAME}_ADDRESS)
@@ -434,15 +348,8 @@ endif()
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/install.md.in ${generated_pages_folder}/install.md @ONLY)
 endfunction(generate_Static_Site_Page_Install)
 
-
-
 ### create use page
 function(generate_Static_Site_Page_Use generated_pages_folder)
-
-#released version info 
-set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
-get_Version_String_Numbers(${${PROJECT_NAME}_VERSION} major minor patch)
-set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
 
 # package components
 set(PACKAGE_COMPONENTS_DESCRIPTION "")
@@ -457,6 +364,30 @@ endif()
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/use.md.in ${generated_pages_folder}/use.md @ONLY)
 endfunction(generate_Static_Site_Page_Use)
 
+###
+function(generate_Static_Site_Page_Contact generated_pages_folder)
+# generating the install file for package site
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/contact.md.in ${generated_pages_folder}/contact.md @ONLY)
+endfunction(generate_Static_Site_Page_Contact)
+
+###
+function(generate_Static_Site_Page_License generated_pages_folder)
+#adding a license file in markdown format in the site pages (to be copied later if any modification occurred)
+file(READ ${CMAKE_SOURCE_DIR}/license.txt LICENSE_CONTENT_VAR)
+file(WRITE ${CMAKE_BINARY_DIR}/site/pages/license.md "---\nlayout: page\ntitle: License\n---\n\n")
+file(APPEND ${CMAKE_BINARY_DIR}/site/pages/license.md ${LICENSE_CONTENT_VAR})
+endfunction(generate_Static_Site_Page_License)
+
+###
+function(define_Component_Documentation_Content component file)
+set(DECLARED FALSE)
+is_Declared(${component} DECLARED)
+if(DECLARED AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${file})
+	define_Documentation_Content(${component} ${file})
+else()
+	message("[PID] WARNING : documentation file for component ${component} cannot be found at ${CMAKE_SOURCE_DIR}/share/site/${file}. Documentation for this component will not reference this specific content.")
+endif()
+endfunction(define_Component_Documentation_Content)
 
 ###
 function(define_Documentation_Content name file)
@@ -476,17 +407,93 @@ endfunction(define_Component_Documentation_Content)
 
 ### create the data files from package description
 function(generate_Static_Site_Pages generated_pages_folder)
-
-# create introduction page
-generate_Static_Site_Page_Introduction(${generated_pages_folder})
-# create install page
-generate_Static_Site_Page_Install(${generated_pages_folder})
-# create use page 
-generate_Static_Site_Page_Use(${generated_pages_folder})
-# copy the site folder
-
+	generate_Static_Site_Page_Introduction(${generated_pages_folder}) # create introduction page
+	generate_Static_Site_Page_Install(${generated_pages_folder})# create install page
+	generate_Static_Site_Page_Use(${generated_pages_folder})# create use page
+	generate_Static_Site_Page_Contact(${generated_pages_folder})# create use page
+	generate_Static_Site_Page_License(${generated_pages_folder}) #create license page
 endfunction(generate_Static_Site_Pages)
 
+###
+macro(configure_Static_Site_Generation_Variables)
+set(PACKAGE_NAME ${PROJECT_NAME})
+set(PACKAGE_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_PROJECT_PAGE})
+
+#released version info 
+set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
+get_Version_String_Numbers(${${PROJECT_NAME}_VERSION} major minor patch)
+set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
+
+## descirption (use the most detailed description, if any)
+generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
+if("${RES_INTRO}" STREQUAL "")
+	set(PACKAGE_DESCRIPTION "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided use the short one
+else()
+	set(PACKAGE_DESCRIPTION "${RES_INTRO}") #otherwise use detailed one specific for site
+endif()
+
+## managing authors
+get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
+set(PACKAGE_MAINTAINER_NAME ${RES_STRING})
+set(PACKAGE_MAINTAINER_MAIL ${${PROJECT_NAME}_CONTACT_MAIL})
+
+
+set(PACKAGE_ALL_AUTHORS "") 
+foreach(author IN ITEMS "${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
+	get_Formatted_Author_String(${author} RES_STRING)
+	set(PACKAGE_ALL_AUTHORS "${PACKAGE_ALL_AUTHORS}\n* ${RES_STRING}")
+endforeach()
+
+## managing license
+if(${PROJECT_NAME}_LICENSE)
+	set(PACKAGE_LICENSE_FOR_SITE ${${PROJECT_NAME}_LICENSE})
+else()
+	set(PACKAGE_LICENSE_FOR_SITE "No license Defined")
+endif()
+
+#configure references to logo, advanced material and tutorial pages
+set(PACKAGE_TUTORIAL)
+if(${PROJECT_NAME}_tutorial_SITE_CONTENT_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${${PROJECT_NAME}_tutorial_SITE_CONTENT_FILE})
+	test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_tutorial_SITE_CONTENT_FILE})
+	if(FILE_NAME)
+		set(PACKAGE_TUTORIAL ${FILE_NAME})#put only file name since jekyll may generate html from it
+	endif()
+endif()
+
+set(PACKAGE_DETAILS)
+if(${PROJECT_NAME}_advanced_SITE_CONTENT_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${${PROJECT_NAME}_advanced_SITE_CONTENT_FILE})
+test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_advanced_SITE_CONTENT_FILE})
+	if(FILE_NAME)
+		set(PACKAGE_DETAILS ${FILE_NAME}) #put only file name since jekyll may generate html from it
+	endif()
+endif()
+
+set(PACKAGE_LOGO)
+if(${PROJECT_NAME}_logo_SITE_CONTENT_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${${PROJECT_NAME}_logo_SITE_CONTENT_FILE})
+	test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_logo_SITE_CONTENT_FILE})
+	if(FILE_NAME)
+		set(PACKAGE_LOGO ${${PROJECT_NAME}_logo_SITE_CONTENT_FILE}) # put the full relative path for the image
+	endif()
+endif()
+
+# configure menus content depending on project configuration
+if(BUILD_API_DOC)
+set(PACKAGE_HAS_API_DOC true)
+else()
+set(PACKAGE_HAS_API_DOC false)
+endif()
+if(BUILD_COVERAGE_REPORT)
+set(PACKAGE_HAS_COVERAGE true)
+else()
+set(PACKAGE_HAS_COVERAGE false)
+endif()
+if(BUILD_STATIC_CODE_CHECKING_REPORT)
+set(PACKAGE_HAS_STATIC_CHECKS true)
+else()
+set(PACKAGE_HAS_STATIC_CHECKS false)
+endif()
+
+endmacro(configure_Static_Site_Generation_Variables)
 
 ### site pages generation
 function(configure_Pages)
@@ -509,11 +516,17 @@ file(MAKE_DIRECTORY ${PATH_TO_SITE}) # create the site root site directory
 set(PATH_TO_SITE_PAGES ${PATH_TO_SITE}/pages)
 file(MAKE_DIRECTORY ${PATH_TO_SITE_PAGES}) # create the pages directory
 
+#0) prepare variables used for files generations (it is a macro to keep variable defined in there in the current scope, important for next calls)
+configure_Static_Site_Generation_Variables()
+
 #1) generate the data files for jekyll (vary depending on the site creation mode
 if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
 	generate_Static_Site_Data_Files(${PATH_TO_SITE})
-else()
-	#TODO
+else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
+	load_Framework(${${PROJECT_NAME}_FRAMEWORK} OK)
+	if(NOT OK)
+		message("[PID] ERROR : the framework you specified is unknown in the workspace.")
+	endif()
 endif()
 
 # common generation process between framework and lone static sites 
@@ -766,21 +779,30 @@ else()
 	set(${SITE_EXISTS} FALSE PARENT_SCOPE)
 endif()
 set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
-endfunction()
+endfunction(static_Site_Project_Exists)
 
-### checking if the framework site repository exists in the workspace
-function(framework_Project_Exists SITE_EXISTS PATH_TO_SITE framework)
-set(SEARCH_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework})
-if(EXISTS ${SEARCH_PATH} AND IS_DIRECTORY ${SEARCH_PATH})
-	set(${SITE_EXISTS} TRUE PARENT_SCOPE)
-else()
-	set(${SITE_EXISTS} FALSE PARENT_SCOPE)
-endif()
-set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
-endfunction()
 
 ### copying documentation content to the site repository
-function(copy_Static_Site_Content package version platform include_api_doc include_coverage include_staticchecks include_installer force) # copy everything needed
+function(produce_Static_Site_Content package framework version platform include_api_doc include_coverage include_staticchecks include_installer force) # copy everything needed
+#### preparing the copy depending on the target: lone static site or framework #### 
+if(framework AND NOT framework STREQUAL "")
+	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_packages/${package})
+	set(TARGET_APIDOC_PATH ${TARGET_PACKAGE_PATH}/api_doc)
+	set(TARGET_COVERAGE_PATH ${TARGET_PACKAGE_PATH}/coverage)
+	set(TARGET_STATICCHECKS_PATH ${TARGET_PACKAGE_PATH}/static_checks)
+	set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/binaries/${version}/${platform})
+	set(TARGET_PAGES_PATH ${TARGET_PACKAGE_PATH}/pages)
+	set(TARGET_POSTS_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_posts)
+
+else()#it is a lone static site
+	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/packages/${package}/src)
+	set(TARGET_APIDOC_PATH ${TARGET_PACKAGE_PATH}/api_doc)
+	set(TARGET_COVERAGE_PATH ${TARGET_PACKAGE_PATH}/coverage)
+	set(TARGET_STATICCHECKS_PATH ${TARGET_PACKAGE_PATH}/static_checks)
+	set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/_binaries/${version}/${platform})
+	set(TARGET_PAGES_PATH ${TARGET_PACKAGE_PATH}/pages)
+	set(TARGET_POSTS_PATH ${TARGET_PACKAGE_PATH}/_posts)
+endif()
 
 ######### copy the API doxygen documentation ##############
 set(NEW_POST_CONTENT_API_DOC FALSE)
@@ -788,11 +810,11 @@ if(include_api_doc
 	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html) # #may not exists if the make doc command has not been launched
 	set(ARE_SAME FALSE)	
 	if(NOT force)#only do this heavy check if the generation is not forced
-		test_Same_Directory_Content(${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html ${WORKSPACE_DIR}/sites/packages/${package}/src/api_doc ARE_SAME)
+		test_Same_Directory_Content(${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html ${TARGET_APIDOC_PATH} ARE_SAME)
 	endif()
 	if(NOT ARE_SAME)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/api_doc)#delete API doc folder
-	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html  ${WORKSPACE_DIR}/sites/packages/${package}/src/api_doc)#recreate the api_doc folder from the one generated by the package
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_APIDOC_PATH})#delete API doc folder
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html  ${TARGET_APIDOC_PATH})#recreate the api_doc folder from the one generated by the package
 	set(NEW_POST_CONTENT_API_DOC TRUE)
 	endif()
 endif()
@@ -803,11 +825,11 @@ if(include_coverage
 	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/share/coverage_report)# #may not exists if the make coverage command has not been launched
 	set(ARE_SAME FALSE)
 	if(NOT force)#only do this heavy check if the generation is not forced
-		test_Same_Directory_Content(${WORKSPACE_DIR}/packages/${package}/build/debug/share/coverage_report ${WORKSPACE_DIR}/sites/packages/${package}/src/coverage ARE_SAME)
+		test_Same_Directory_Content(${WORKSPACE_DIR}/packages/${package}/build/debug/share/coverage_report ${TARGET_COVERAGE_PATH} ARE_SAME)
 	endif()
 	if(NOT ARE_SAME)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/coverage ERROR_QUIET OUTPUT_QUIET)#delete coverage report folder
-	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/debug/share/coverage_report ${WORKSPACE_DIR}/sites/packages/${package}/src/coverage)#recreate the coverage folder from the one generated by the package
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_COVERAGE_PATH} ERROR_QUIET OUTPUT_QUIET)#delete coverage report folder
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/debug/share/coverage_report ${TARGET_COVERAGE_PATH})#recreate the coverage folder from the one generated by the package
 	set(NEW_POST_CONTENT_COVERAGE TRUE)
 	endif()
 endif()
@@ -818,11 +840,11 @@ if(include_staticchecks
 	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/static_checks_report) #may not exists if the make staticchecks command has not been launched
 	set(ARE_SAME FALSE)
 	if(NOT force)#only do this heavy check if the generation is not forced
-		test_Same_Directory_Content(${WORKSPACE_DIR}/packages/${package}/build/release/share/static_checks_report ${WORKSPACE_DIR}/sites/packages/${package}/src/static_checks ARE_SAME)
+		test_Same_Directory_Content(${WORKSPACE_DIR}/packages/${package}/build/release/share/static_checks_report ${TARGET_STATICCHECKS_PATH} ARE_SAME)
 	endif()
 	if(NOT ARE_SAME)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/static_checks ERROR_QUIET OUTPUT_QUIET)#delete static checks report folder
-	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/static_checks_report ${WORKSPACE_DIR}/sites/packages/${package}/src/static_checks)#recreate the static_checks folder from the one generated by the package
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_STATICCHECKS_PATH} ERROR_QUIET OUTPUT_QUIET)#delete static checks report folder
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/share/static_checks_report ${TARGET_STATICCHECKS_PATH})#recreate the static_checks folder from the one generated by the package
 	set(NEW_POST_CONTENT_STATICCHECKS TRUE)
 	endif()
 endif()
@@ -832,33 +854,32 @@ set(NEW_POST_CONTENT_BINARY FALSE)
 if(	include_installer
 	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
 	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz 
-	AND NOT EXISTS ${WORKSPACE_DIR}/sites/packages/${package}/src/_binaries/${version}/${platform})
+	AND NOT EXISTS ${TARGET_BINARIES_PATH})
 	# update the site content only if necessary
-	file(MAKE_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/src/_binaries/${version}/${platform})#create the target folder
+	file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder
 
 	file(COPY ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz 
 	${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
-	DESTINATION  ${WORKSPACE_DIR}/sites/packages/${package}/src/_binaries/${version}/${platform})#copy the binaries
+	DESTINATION  ${TARGET_BINARIES_PATH})#copy the binaries
 	# configure the file used to reference the binary in jekyll
 	set(BINARY_PACKAGE ${package})
 	set(BINARY_VERSION ${version})
 	set(BINARY_PLATFORM ${platform})
-	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binary.md.in ${WORKSPACE_DIR}/sites/packages/${package}/src/_binaries/${version}/${platform}/binary.md @ONLY)#adding to the static site project the markdown file describing the binary package (to be used by jekyll)
+	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binary.md.in ${TARGET_BINARIES_PATH}/binary.md @ONLY)#adding to the static site project the markdown file describing the binary package (to be used by jekyll)
 	
 	set(NEW_POST_CONTENT_BINARY TRUE)
 endif()
 
-######### copy the license file ##############
-set(NEW_POST_CONTENT_LICENSE FALSE)
-set(ARE_SAME FALSE)
-if(NOT force)#only do this heavy check if the generation is not forced
-	test_Same_File_Content(${WORKSPACE_DIR}/packages/${package}/license.txt ${WORKSPACE_DIR}/sites/packages/${package}/license.txt ARE_SAME)
+######### copy the license file (only for lone static sites, framework have their own) ##############
+if(NOT framework OR framework STREQUAL "")
+	set(ARE_SAME FALSE)
+	if(NOT force)#only do this heavy check if the generation is not forced
+		test_Same_File_Content(${WORKSPACE_DIR}/packages/${package}/license.txt ${WORKSPACE_DIR}/sites/packages/${package}/license.txt ARE_SAME)
+	endif()
+	if(NOT ARE_SAME)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/license.txt  ${WORKSPACE_DIR}/sites/packages/${package})#copy the up to date license file into site repository
+	endif()
 endif()
-if(NOT ARE_SAME)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/license.txt  ${WORKSPACE_DIR}/sites/packages/${package})#copy the up to date license file into site repository
-	set(NEW_POST_CONTENT_LICENSE TRUE)
-endif()
-
 
 ######### copy the documentation content ##############
 set(NEW_POST_CONTENT_PAGES FALSE)
@@ -871,13 +892,13 @@ endif()
 # 2) if content is new (either generated or user defined) then clean the site and copy the content to the site repository
 set(ARE_SAME FALSE)
 if(NOT force)#only do this heavy check if the generation is not forced
-	test_Same_Directory_Content(${WORKSPACE_DIR}/sites/packages/${package}/src/pages ${WORKSPACE_DIR}/packages/${package}/build/release/site/pages ARE_SAME)
+	test_Same_Directory_Content(${WORKSPACE_DIR}/packages/${package}/build/release/site/pages ${TARGET_PAGES_PATH} ARE_SAME)
 endif()
 if(NOT ARE_SAME)
 	# clean the source folder content
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/pages)#delete all pages
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${WORKSPACE_DIR}/sites/packages/${package}/src/pages)# recreate the pages folder
-	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/site ${WORKSPACE_DIR}/sites/packages/${package}/src)# copy content from binary dir to site repository source dir
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_PAGES_PATH})#delete all pages
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${TARGET_PAGES_PATH})# recreate the pages folder
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/site ${TARGET_PACKAGE_PATH})# copy content from binary dir to site repository source dir
 	set(NEW_POST_CONTENT_PAGES TRUE)
 endif()
 
@@ -905,21 +926,84 @@ endif()
 if(NEW_POST_CONTENT_BINARY)
 	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### A binary version of the package targetting ${platform} platform has been added for version ${version}\n\n")
 endif()
-if(NEW_POST_CONTENT_LICENSE)
-	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### The license of the package has been updated\n\n")
-endif()
 if(NEW_POST_CONTENT_PAGES)
 	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### The pages documenting the package have been updated\n\n")
 endif()
 if(NOT POST_UPDATE_STRING STREQUAL "") #do not generate a post if there is nothing to say (sanity check) 
-	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/post.markdown.in ${WORKSPACE_DIR}/sites/packages/${package}/src/_posts/${POST_FILENAME} @ONLY)#adding to the static site project the markdown file used as a post on the site
+	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/post.markdown.in ${TARGET_POSTS_PATH}/${POST_FILENAME} @ONLY)#adding to the static site project the markdown file used as a post on the site
 endif()
-endfunction(copy_Static_Site_Content)
+endfunction(produce_Static_Site_Content)
 
 ### building the static site simply consists in calling adequately the repository project adequate build commands
-function (build_Static_Site package)
-execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/packages/${package} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
-execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
+function (build_Static_Site package framework)
+if(framework AND NOT framework STREQUAL "")
+	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/frameworks/${framework} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+else()
+	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/packages/${package} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
+	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
+endif()
 endfunction(build_Static_Site)
+
+#####################################################################
+###################Framework usage functions ########################
+#####################################################################
+
+###
+function(framework_Reference_Exists_In_Workspace EXIST framework)
+	if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
+		set(${EXIST} TRUE PARENT_SCOPE)
+	else()
+		set(${EXIST} FALSE PARENT_SCOPE)
+	endif()
+endfunction(framework_Reference_Exists_In_Workspace)
+
+### checking if the framework site repository exists in the workspace
+function(framework_Project_Exists SITE_EXISTS PATH_TO_SITE framework)
+set(SEARCH_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework})
+if(EXISTS ${SEARCH_PATH} AND IS_DIRECTORY ${SEARCH_PATH})
+	set(${SITE_EXISTS} TRUE PARENT_SCOPE)
+else()
+	set(${SITE_EXISTS} FALSE PARENT_SCOPE)
+endif()
+set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
+endfunction(framework_Project_Exists)
+
+###
+function(load_Framework LOADED framework)
+	set(${LOADED} FALSE PARENT_SCOPE)
+	set(FOLDER_EXISTS FALSE)
+	framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
+	if(REF_EXIST)
+		include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
+	endif()
+	
+	framework_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${framework})
+	if(FOLDER_EXISTS)
+		update_Framework_Repository(${framework}) #update the repository to be sure to work on last version
+		if(NOT REF_EXIST) #if reference file does not exist we use the project present in the workspace. This way we may force it to generate references
+			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+			framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
+			if(REF_EXIST)
+				include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
+				set(${LOADED} TRUE PARENT_SCOPE)
+			endif()
+		else()
+			set(${LOADED} TRUE PARENT_SCOPE)
+		endif()
+	elseif(REF_EXIST) #we can try to clone it if we know where to clone from
+		deploy_Framework_Repository(IS_DEPLOYED ${framework})
+		if(IS_DEPLOYED)
+			set(${LOADED} TRUE PARENT_SCOPE)
+		endif()
+	endif()
+endfunction(load_Framework)
+
+###
+function(get_Framework_Site framework SITE)
+set(${SITE} ${${framework}_FRAMEWORK_SITE} PARENT_SCOPE)
+endfunction(get_Framework_Site)
+
+
 
 

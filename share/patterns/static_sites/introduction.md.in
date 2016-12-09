@@ -1,6 +1,12 @@
 ---
 layout: page
 title: Introduction
+package: @PACKAGE_NAME@
+tutorial: @PACKAGE_TUTORIAL@
+details: @PACKAGE_DETAILS@
+has_apidoc: @PACKAGE_HAS_API_DOC@
+has_checks: @PACKAGE_HAS_STATIC_CHECKS@
+has_coverage: @PACKAGE_HAS_COVERAGE@
 ---
 
 @PACKAGE_DESCRIPTION@
@@ -22,7 +28,7 @@ For more details see [license file](license).
 
 ## Version
 
-Current version (for which this documentation has been generated) : @PACKAGE_LAST_VERSION_FOR_SITE@.
+Current version (for which this documentation has been generated) : @PACKAGE_LAST_VERSION_WITH_PATCH@.
 
 ## Categories
 
