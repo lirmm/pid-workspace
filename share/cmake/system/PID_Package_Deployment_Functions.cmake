@@ -432,7 +432,7 @@ if(${package}_FRAMEWORK) #references are deployed in a framework
 		set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_FRAMEWORK_SITE})#get the address of the framework static site
 		file(DOWNLOAD ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 		list(GET res 0 numeric_error)
-		if(NOT numeric_error EQUAL 0) #no reference available or sfrmaeqork site is not online.
+		if(NOT numeric_error EQUAL 0) #no reference available or framework site is not online.
 			return()
 		endif()
 		if(EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)

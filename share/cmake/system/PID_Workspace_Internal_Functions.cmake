@@ -35,21 +35,27 @@ include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
 ########## Categories (classification of packages) management ##########
 ########################################################################
 
-###
-function(classify_Package_Categories all_packages all_frameworks)
-foreach(a_cat IN ITEMS ${ROOT_CATEGORIES})
-	classify_Root_Category(${a_cat} "${all_packages}")
-endforeach()
-if(all_frameworks)
-	foreach(a_framework IN ITEMS ${all_frameworks})
-		foreach(a_cat IN ITEMS ${${a_framework}_ROOT_CATEGORIES})
-			classify_Framework_Root_Category(${a_framework} ${a_cat} "${all_packages}")
+### function used to classify all packages into categories. Usefull to prepare calls to info script.
+function(classify_Packages)
+#1) get the root of categories (cmake variables) where to start recursion of the classification process
+extract_Root_Categories() 
+#2) classification of packages according to categories
+if(ROOT_CATEGORIES)
+	foreach(a_cat IN ITEMS ${ROOT_CATEGORIES})
+		classify_Root_Category(${a_cat} "${ALL_PACKAGES}")
+	endforeach()
+endif()
+#3) classification of packages according to categories defined in frameworks
+if(FRAMEWORKS_CATEGORIES)
+	foreach(a_framework IN ITEMS ${FRAMEWORKS_CATEGORIES})
+		foreach(a_cat IN ITEMS ${FRAMEWORK_${a_framework}_ROOT_CATEGORIES})
+			classify_Framework_Root_Category(${a_framework} ${a_cat} "${ALL_PACKAGES}")
 		endforeach()
 	endforeach()
 endif()
-endfunction(classify_Package_Categories)
+endfunction(classify_Packages)
 
-###
+## subsidiary function to classify all packages according to categories,without taking into account frameworks information
 function(classify_Root_Category root_category all_packages)
 foreach(package IN ITEMS ${all_packages})
 	foreach(a_category IN ITEMS ${${package}_CATEGORIES})
@@ -59,11 +65,12 @@ endforeach()
 endfunction(classify_Root_Category)
 
 
-
-### subsidiary function to classify all packages from a given framework into the categories defined by this framework. This results in creation of variables 
+## subsidiary function to classify all packages from a given framework into the categories defined by this framework. This results in creation of variables 
 function(classify_Framework_Root_Category framework root_category all_packages)
 foreach(package IN ITEMS ${all_packages})
-	if(${package}_FRAMEWORK STREQUAL "${framework}")
+	#message("DEBUG ${package} framework=${${package}_FRAMEWORK}")
+	if(${package}_FRAMEWORK STREQUAL "${framework}")#check if the package belongs to the framework
+		message("${package} belongs to ${${package}_FRAMEWORK} framework.")
 		foreach(a_category IN ITEMS ${${package}_CATEGORIES})
 			list(FIND ${framework}_FRAMEWORK_CATEGORIES ${a_category} INDEX)
 			if(NOT INDEX EQUAL -1)# this category is a category member of the framework
@@ -75,7 +82,7 @@ endforeach()
 endfunction(classify_Framework_Root_Category)
 
 
-### subsidiary function to create variables that describe the structure of categories organization for a given framework
+## subsidiary function to create variables that describe the organization of a given framework in terms of categories
 function(classify_Framework_Category framework category_full_string root_category target_package)
 if("${category_full_string}" STREQUAL "${root_category}")#OK, so the package directly belongs to this category
 	set(FRAMEWORK_${framework}_CAT_${category_full_string}_CATEGORY_CONTENT ${FRAMEWORK_${framework}_CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
@@ -98,21 +105,48 @@ else()#not OK we need to know if this is a subcategory or not
 		
 	#else, this is not the same as root_category (otherwise first test would have succeeded => end of recursion 
 	endif()
-
 endif()
 endfunction(classify_Framework_Category)
 
-### function to reset all variables describing categories
+### macro to reset variables containing workspace content information, according to reference files found in workspace (macro to keep the current scope, important for reference files inclusion)
+macro(reset_Workspace_Content_Information)
+# 1) fill the two root variables, by searching in all reference files lying in the workspace
+set(ALL_AVAILABLE_PACKAGES)
+set(ALL_AVAILABLE_FRAMEWORKS)
+file(GLOB reference_files ${CMAKE_SOURCE_DIR}/share/cmake/references/Refer*.cmake)
+foreach(a_ref_file IN ITEMS ${reference_files})# 2) including all reference files and memorizing packages and frameworks names
+	string(REGEX REPLACE "^${CMAKE_SOURCE_DIR}/share/cmake/references/Refer([^\\.]+)\\.cmake$" "\\1" PACKAGE_NAME ${a_ref_file})
+	if(PACKAGE_NAME MATCHES External)#it is an external package
+		string(REGEX REPLACE "^External([^\\.]+)$" "\\1" PACKAGE_NAME ${PACKAGE_NAME})
+		list(APPEND ALL_AVAILABLE_PACKAGES ${PACKAGE_NAME})
+	elseif(PACKAGE_NAME MATCHES Framework)#it is a framework
+		string(REGEX REPLACE "^Framework([^\\.]+)$" "\\1" FRAMEWORK_NAME ${PACKAGE_NAME})
+		list(APPEND ALL_AVAILABLE_FRAMEWORKS ${FRAMEWORK_NAME})
+	else() #it is a native package
+		list(APPEND ALL_AVAILABLE_PACKAGES ${PACKAGE_NAME})
+	endif()
+	include(${a_ref_file}) # no need to test we know by construction that the file exists
+endforeach()
+set(ALL_PACKAGES ${ALL_AVAILABLE_PACKAGES} CACHE INTERNAL "")
+set(ALL_FRAMEWORKS ${ALL_AVAILABLE_FRAMEWORKS} CACHE INTERNAL "")
+endmacro(reset_Workspace_Content_Information)
+
+## subsidiary function to reset all variables describing categories to start from a clean situation
 function(reset_All_Categories)
-foreach(a_category IN ITEMS ${ROOT_CATEGORIES})
-	reset_Category(${a_category})
-endforeach()
-set(ROOT_CATEGORIES CACHE INTERNAL "")
-foreach(a_framework IN ITEMS ${FRAMEWORKS_CATEGORIES})
-	reset_Framework_Category(${a_framework} ${a_category})
-endforeach()
-set(FRAMEWORKS_CATEGORIES CACHE INTERNAL "")
-endfunction()
+if(ROOT_CATEGORIES)
+	foreach(a_category IN ITEMS ${ROOT_CATEGORIES})
+		reset_Category(${a_category})
+	endforeach()
+	set(ROOT_CATEGORIES CACHE INTERNAL "")
+endif()
+if(FRAMEWORKS_CATEGORIES)
+	foreach(a_framework IN ITEMS ${FRAMEWORKS_CATEGORIES})
+		foreach(a_category IN ITEMS FRAMEWORK_${a_framework}_ROOT_CATEGORIES)
+			reset_Framework_Category(${a_framework} ${a_category})
+		endforeach()
+	endforeach()
+endif()
+endfunction(reset_All_Categories)
 
 ## subsidiary function to reset all variables of a given category
 function(reset_Category category)
@@ -178,11 +212,11 @@ function(get_Framework_Root_Categories framework RETURNED_ROOTS)
 	set(${RETURNED_ROOTS} ${ROOTS_FOUND} PARENT_SCOPE)
 endfunction(get_Framework_Root_Categories)
 
-### extracting the root categories from workspace description as 
-function(extract_Root_Categories all_packages all_frameworks)
+## subsidiary function for extracting root categories from workspace description. It consists in classifying all packages and frameworks relative to category structure. 
+function(extract_Root_Categories)
 # extracting category information from packages
 set(ALL_ROOTS)
-foreach(a_package IN ITEMS ${all_packages})
+foreach(a_package IN ITEMS ${ALL_PACKAGES})
 	get_Root_Categories(${a_package} ${a_package}_ROOTS)
 	if(${a_package}_ROOTS)
 		list(APPEND ALL_ROOTS ${${a_package}_ROOTS})
@@ -194,13 +228,14 @@ if(ALL_ROOTS)
 else()
 	set(ROOT_CATEGORIES CACHE INTERNAL "")
 endif()
+
 # classifying by frameworks
 set(ALL_ROOTS)
-foreach(a_framework IN ITEMS ${all_frameworks})
+foreach(a_framework IN ITEMS ${ALL_FRAMEWORKS})
 	set(FRAMEWORK_${a_framework}_ROOT_CATEGORIES CACHE INTERNAL "")
-	get_Framework_Root_Categories(${a_framework} FRAMEWORK_${a_framework}_ROOTS)
-	if(FRAMEWORK_${a_framework}_ROOTS)
-		set(FRAMEWORK_${a_framework}_ROOT_CATEGORIES ${FRAMEWORK_${a_framework}_ROOTS} CACHE INTERNAL "")
+	get_Framework_Root_Categories(${a_framework} ROOTS)
+	if(ROOTS)
+		set(FRAMEWORK_${a_framework}_ROOT_CATEGORIES ${ROOTS} CACHE INTERNAL "")
 		list(APPEND ALL_ROOTS ${a_framework})
 	endif()
 endforeach()
@@ -245,6 +280,9 @@ function(write_Categories_File)
 set(file ${CMAKE_BINARY_DIR}/CategoriesInfo.cmake)
 file(WRITE ${file} "")
 file(APPEND ${file} "######### declaration of workspace categories ########\n")
+file(APPEND ${file} "set(ALL_PACKAGES \"${ALL_PACKAGES}\" CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(ALL_FRAMEWORKS \"${ALL_FRAMEWORKS}\" CACHE INTERNAL \"\")\n")
+
 file(APPEND ${file} "set(ROOT_CATEGORIES \"${ROOT_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
 	write_Category_In_File(${root_cat} ${file})
@@ -253,7 +291,8 @@ file(APPEND ${file} "######### declaration of workspace categories classified by
 file(APPEND ${file} "set(FRAMEWORKS_CATEGORIES \"${FRAMEWORKS_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 if(FRAMEWORKS_CATEGORIES)
 	foreach(framework IN ITEMS ${FRAMEWORKS_CATEGORIES})
-		foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
+		write_Framework_Root_Categories_In_File(${framework} ${file})
+		foreach(root_cat IN ITEMS ${FRAMEWORK_${framework}_ROOT_CATEGORIES})
 			write_Framework_Category_In_File(${framework} ${root_cat} ${file})
 		endforeach()
 	endforeach()
@@ -272,6 +311,11 @@ endif()
 endfunction(write_Category_In_File)
 
 
+## subsidiary function to write info about root categories defined by a framework into the file
+function(write_Framework_Root_Categories_In_File framework thefile)
+file(APPEND ${thefile} "set(FRAMEWORK_${framework}_ROOT_CATEGORIES \"${FRAMEWORK_${framework}_ROOT_CATEGORIES}\" CACHE INTERNAL \"\")\n")
+endfunction(write_Framework_Root_Categories_In_File)
+
 ## subsidiary function to write info about categories defined by a framework into the file
 function(write_Framework_Category_In_File framework category thefile)
 file(APPEND ${thefile} "set(FRAMEWORK_${framework}_CAT_${category}_CATEGORY_CONTENT \"${FRAMEWORK_${framework}_CAT_${category}_CATEGORY_CONTENT}\" CACHE INTERNAL \"\")\n")
@@ -288,9 +332,7 @@ function(find_In_Categories searched_category_term)
 foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
 	find_Category("" ${root_cat} ${searched_category_term})	
 endforeach()
-message("---------------")
 endfunction(find_In_Categories)
-
 
 ## subsidiary function to print to standard output the "path" generated by a given category 
 function(find_Category root_category current_category_full_path searched_category)
@@ -406,15 +448,15 @@ function(print_Framework_Category framework root_category category number_of_tab
 endfunction(print_Framework_Category)
 
 
-### printing to standard output a description of all categories defined by a framework
+## subsidiary function to print to standard output a description of all categories defined by a framework
 function(print_Framework_Categories framework)
 message("---------------------------------")
 list(FIND FRAMEWORKS_CATEGORIES ${framework} INDEX)
 if(INDEX EQUAL -1)
 	message("Framework ${framework} has no category defined")
 else()
-	message("Framework ${framework} categories:")
-	foreach(a_cat IN ITEMS ${${a_framework}_ROOT_CATEGORIES})
+	message("Packages of the ${framework} framework, by category:")
+	foreach(a_cat IN ITEMS ${FRAMEWORK_${framework}_ROOT_CATEGORIES})
 		print_Framework_Category(${framework} "" ${a_cat} 0)
 	endforeach()
 endif()
@@ -445,6 +487,12 @@ function(print_Package_Info package)
 	message("LICENSE: ${${package}_LICENSE}")
 	message("DATES: ${${package}_YEARS}")
 	message("REPOSITORY: ${${package}_ADDRESS}")
+	load_Package_Binary_References(REFERENCES_OK ${package})
+	if(${package}_FRAMEWORK)
+		message("DOCUMENTATION: ${${${package}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${package}")
+	elseif(${package}_SITE_GIT_ADDRESS)
+		message("DOCUMENTATION: ${${package}_SITE_GIT_ADDRESS}")
+	endif()
 	print_Package_Contact(${package})
 	message("AUTHORS:")
 	foreach(author IN ITEMS ${${package}_AUTHORS_AND_INSTITUTIONS})
@@ -456,7 +504,7 @@ function(print_Package_Info package)
 			message("	${category}")
 		endforeach()
 	endif()
-	load_Package_Binary_References(REFERENCES_OK ${package})
+	
 	if(REFERENCES_OK)
 		message("BINARY VERSIONS:")
 		print_Package_Binaries(${package})

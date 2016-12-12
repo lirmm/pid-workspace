@@ -28,7 +28,7 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 PROJECT(pid-workspace)
 include(CheckOS)
 
-####
+#### TODO modify this when dealing with platforms
 set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external CACHE INTERNAL "")
 
@@ -58,45 +58,26 @@ endif()
 set(PID_SYSTEM_VERSION 2 CACHE INTERNAL "")
 configure_file(${CMAKE_SOURCE_DIR}/share/patterns/PID_version.cmake.in ${CMAKE_BINARY_DIR}/PID_version.cmake @ONLY) #put it into a file to allow packages to easily retrieve PID version information
 
+message("CMAKE_LIBRARY_ARCHITECTURE=${CMAKE_LIBRARY_ARCHITECTURE}")
 
-set(ALL_AVAILABLE_PACKAGES "")
-# 1) searching for all reference files. 
-file(GLOB reference_files ${CMAKE_SOURCE_DIR}/share/cmake/references/Refer*.cmake)
-# 2) including all reference files and memorizing packages and frameworks names
-foreach(a_ref_file IN ITEMS ${reference_files})
-	string(REGEX REPLACE "^${CMAKE_SOURCE_DIR}/share/cmake/references/Refer([^\\.]+)\\.cmake$" "\\1" PACKAGE_NAME ${a_ref_file})
-	if(PACKAGE_NAME MATCHES External)#it is an external package
-		string(REGEX REPLACE "^External([^\\.]+)$" "\\1" PACKAGE_NAME ${PACKAGE_NAME})
-		list(APPEND ALL_AVAILABLE_PACKAGES ${PACKAGE_NAME})
-	elseif(PACKAGE_NAME MATCHES Framework)#it is a framework
-		string(REGEX REPLACE "^Framework([^\\.]+)$" "\\1" FRAMEWORK_NAME ${PACKAGE_NAME})
-		list(APPEND ALL_AVAILABLE_FRAMEWORKS ${FRAMEWORK_NAME})
-	else() #it is a native package
-		list(APPEND ALL_AVAILABLE_PACKAGES ${PACKAGE_NAME})
-	endif()
-	include(${a_ref_file}) # no need to test we know by construction that the file exists
-endforeach()
-# 3) resetting categories
+#1) reset information about categories
 reset_All_Categories()
-# 4) extracting all available categories and classifying all packages in these categories
-extract_Root_Categories("${ALL_AVAILABLE_PACKAGES}" "${ALL_AVAILABLE_FRAMEWORKS}") #getting the roots of all categories defined in the workspace
-classify_Package_Categories("${ALL_AVAILABLE_PACKAGES}" "${ALL_AVAILABLE_FRAMEWORKS}") #classifying packages and frameworks w.r.t. categories (framework are set of categories and packages belong to some categories)
-
-#5) registering categories
+#2) list the content of the workspace to get clean information about packages and framework
+reset_Workspace_Content_Information()
+#3) classifying packages w.r.t. framework and categories (framework are set of categories and packages belong to some categories)
+classify_Packages()
+#4) creating the file that will be used to manage information about categories, packages and frameworks in script file
 write_Categories_File()
 
-#adding targets
+#adding custom targets providing workspace level commands
 add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "Available PID commands:"
 	COMMAND ${CMAKE_COMMAND} -E echo "help -- This help message."
-	COMMAND ${CMAKE_COMMAND} -E echo "version -- getting version of the workspace."
-	COMMAND ${CMAKE_COMMAND} -E echo "list -- listing packages, frameworks or licenses. By default -no argument- it lists packages ordered by categories. If the argument category=*name of a category* is used then it lists the content of the category with same name. If the argument framework=*all* is used, then it will list all frameworks. If, instead, the argument framework=*name of a framework* is used, then it lists all packages of the framework with same name, ordered by categories."
-	COMMAND ${CMAKE_COMMAND} -E echo "info -- getting info on a given package using package=*name of a package* argument. If you use the argument framework=*name of a framework* then you get information about the corresponding framework."
+	COMMAND ${CMAKE_COMMAND} -E echo "info -- getting information about the workspace. With no argument it will printing the current version of PID. If the argument framework=*all* is used, then it lists all frameworks. If, instead, the argument framework=*name of a framework* is used, then it prints information about the framework and lists all packages of the framework with same name, ordered by categories defined by the framework. If the argument package=*name of a package* is used then it prints information about the package. If the argument package=*all* is used then it lists all packages ordered by categories. If the argument license=*all* is used then it lists all licenses avilable in the workspace. If the argument license=*a givenl license* is used then it prints precise information on the license."
 	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive, or a framework. Use only package=*name of a package* argument to deploy source repository or use in addition version=VERSION to deploy the specific binary version. If you want to deploy an external package use external=*name of an external package* argument instead and you must define a version. Otherwise, if you want to deploy a framework use framework=*name of a framework* argument instead."
 	COMMAND ${CMAKE_COMMAND} -E echo "resolve -- resolving runtime dependencies of an already installed package. Use package=*name of a package* and version=*a version number* arguments to specify the target binary package."
 	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package or a new framework. Use package=*name of a package* to specify the name of the new package. If you want to create a framework use the framework=*name of a framework* argument instead. Other optional arguments are: author, affiliation, license, and url. If url is used, the connection with a remote repository is established the same way as calling the connect command. If a framework is created you may use the site=*framework web site url* argument."
 	COMMAND ${CMAKE_COMMAND} -E echo "connect -- synchronize local repository with an empty remote one. Required arguments are : package -to specify the name of the package- or framework -same for a framework- and url to specify the url of the remote repository."
-	COMMAND ${CMAKE_COMMAND} -E echo "license -- Printing information on licenses -no argument- or more precise information on a given license using name=*name of the license* argument."
 	COMMAND ${CMAKE_COMMAND} -E echo "clear -- Clearing the whole install directory of a package using name=*name of package*, version=*all* or version=*a valid number* arguments."
 	COMMAND ${CMAKE_COMMAND} -E echo "remove -- Removing the target package or framework from the workspace. To remove a package use argument package=*name of the package*. To remove a framework use framework=*name of the framework*."
 	COMMAND ${CMAKE_COMMAND} -E echo "register -- Registering the target package in the workspace using package=*name of the package* argument. To register a framework in the workspace use the framework=*name of the framework* argument instead. The package or framework is published so that people with adequate rights can now deploy it."
@@ -108,23 +89,7 @@ add_custom_target(help ALL
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-## getting the version of PID currently in use
-add_custom_target(version
-	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Workspace_Version.cmake
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
-
-## listing all packages ordered by categories OR listing the content of a given category
-add_custom_target(list
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
-					-DTARGET_FRAMEWORK=$(framework)
-					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
-					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Categories.cmake
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
-
-## getting info on a package
+## getting info on the workspace, packages, frameworks or licenses
 add_custom_target(info
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
@@ -150,7 +115,7 @@ add_custom_target(info
 					-DCMAKE_SYSTEM_PREFIX_PATH="${CMAKE_SYSTEM_PREFIX_PATH}"
 					-DCMAKE_LIBRARY_ARCHITECTURE=${CMAKE_LIBRARY_ARCHITECTURE}
 					-DCURRENT_DISTRIBUTION=${CURRENT_DISTRIBUTION}
-					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Package_Info.cmake
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Workspace_Info.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -270,14 +235,6 @@ add_custom_target(connect
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-
-## listing available licenses
-add_custom_target(license
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_LICENSE=$(name)
-					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
-					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_License_Info.cmake
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
 
 ## clearing a package install directory
 add_custom_target(clear

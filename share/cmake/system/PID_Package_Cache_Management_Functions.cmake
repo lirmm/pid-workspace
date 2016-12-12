@@ -116,19 +116,30 @@ execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY
 		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")#this line may contain option info
 			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
 			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
-				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
-				list(GET AN_OPTION 0 var_name)
-				string(FIND "${LINES}" "${var_name}" POS)	
-				if(POS EQUAL -1)#not found, this a new cache entry
-					list(GET AN_OPTION 1 var_value)
-					list(GET AN_OPTION 2 var_type)
-					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
+				string(REGEX REPLACE "^([^:]+):([^=]+)=(.+)$" "\\1;\\2;\\3" AN_OPTION "${line}") #indexes 0: name, 1:value, 2: type 
+				if("${AN_OPTION}" STREQUAL "${line}")#no match this is certainly 
+					string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\2;\\3" AN_OPTION "${line}") #there is certainly no value set for the option 
+					list(GET AN_OPTION 0 var_name)
+					string(FIND "${LINES}" "${var_name}" POS)	
+					if(POS EQUAL -1)#not found, this a new cache entry
+						list(GET AN_OPTION 1 var_type)
+						set(${var_name} CACHE ${var_type} "${last_comment}")
+					endif()
+				else() #OK the option has a value
+					list(GET AN_OPTION 0 var_name)
+					string(FIND "${LINES}" "${var_name}" POS)	
+					if(POS EQUAL -1)#not found, this a new cache entry
+						list(GET AN_OPTION 1 var_type)
+						list(GET AN_OPTION 2 var_value)
+						set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
+					endif()
 				endif()
 			else()#match is OK this is a comment line
 				set(last_comment "${COMMENT}")
 			endif()
 		endif()
 	endforeach()
+
 
 	# searching new cache entries in debug mode cache	
 	foreach(line IN ITEMS ${LINES_DEBUG})
