@@ -431,7 +431,7 @@ if(ALL_VERSIONS)
 					file(APPEND ${file} "set(${package}_REFERENCES ${${package}_REFERENCES} ${ref_version} CACHE INTERNAL \"\")\n") # the version is registered
 					set(VERSION_REGISTERED TRUE)
 					endif()
-					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} ${ref_platform} CACHE INTERNAL \"\")\n") # the platform is registered only if there are binaries inside (sanity check)
+					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version} ${${package}_REFERENCE_${ref_version}} ${ref_platform} CACHE INTERNAL \"\")\n") # the platform added to registered platform for this version versions only if there are binaries inside (sanity check)
 
 					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
 

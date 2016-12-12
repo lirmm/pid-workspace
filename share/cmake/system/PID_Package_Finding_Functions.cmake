@@ -22,7 +22,7 @@
 ##################auxiliary functions to check package version####################
 ##################################################################################
 
-###
+### select the exact compatible version of a native package (with major.minor strict, only patch can be adapted) 
 function(select_Exact_Version RES_VERSION minimum_version available_versions)
 get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
 if(DEFINED PATCH)
@@ -47,7 +47,7 @@ endif()
 endfunction(select_Exact_Version)
 
 
-###
+### select the best compatible version of a native package (last major.minor available)
 function(select_Best_Version RES_VERSION minimum_version available_versions)
 get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
 if(DEFINED PATCH)
@@ -77,7 +77,7 @@ endif()
 endfunction(select_Best_Version)
 
 
-###
+### select the last available version of a native package
 function(select_Last_Version RES_VERSION available_versions)
 set(curr_version 0.0.0)
 foreach(version IN ITEMS ${available_versions})
@@ -177,7 +177,7 @@ endfunction(check_Last_Version)
 ################# auxiliary functions to check external package version ###################
 ###########################################################################################
 
-###
+### check if a version compatible with minimal version of the external package exists
 function(check_External_Minimum_Version VERSION_FOUND package search_path version)
 set(${VERSION_FOUND} PARENT_SCOPE)
 list_Version_Subdirectories(VERSION_DIRS ${search_path})
@@ -202,7 +202,7 @@ if(VERSION_DIRS)
 endif()
 endfunction()
 
-###
+### check if the last version of the external package exists
 function(check_External_Last_Version VERSION_FOUND search_path)
 set(${VERSION_FOUND} PARENT_SCOPE)
 list_Version_Subdirectories(VERSION_DIRS ${search_path})
@@ -242,7 +242,7 @@ endfunction(check_External_Exact_Version)
 ################## auxiliary functions to check components info (native packages only) ##################
 #########################################################################################################
 
-#checking elements of a component
+# checking that elements of a component (headers binary, etc.) exist
 function(check_Component_Elements_Exist COMPONENT_ELEMENT_NOTFOUND package_path package_name component_name)
 set(${COMPONENT_ELEMENT_NOTFOUND} TRUE PARENT_SCOPE)
 if(NOT DEFINED ${package_name}_${component_name}_TYPE)#type of the component must be defined
@@ -307,7 +307,7 @@ endif()
 
 endfunction(check_Component_Elements_Exist)
 
-###
+# checking all component. See: check_Component_Elements_Exist.
 function (all_Components package_name package_version path_to_package_version)
 set(USE_FILE_NOTFOUND FALSE PARENT_SCOPE)
 include(${path_to_package_version}/share/Use${package_name}-${package_version}.cmake  OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
@@ -326,7 +326,7 @@ endforeach()
 endfunction (all_Components)
 
 
-###
+# checking a set of component. See: check_Component_Elements_Exist.
 function (select_Components package_name package_version path_to_package_version list_of_components)
 set(USE_FILE_NOTFOUND FALSE PARENT_SCOPE)
 include(${path_to_package_version}/share/Use${package_name}-${package_version}.cmake OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
@@ -365,7 +365,8 @@ endfunction (select_Components)
 ######################### auxiliary functions to check version info (native packages) ###################
 #########################################################################################################
 
-###
+
+### function used to check is an exact version is compatible with previous version contrainsts that apply to the current build.
 function(is_Exact_Version_Compatible_With_Previous_Constraints 
 		is_compatible
 		need_finding
@@ -398,7 +399,7 @@ endif()
 endfunction(is_Exact_Version_Compatible_With_Previous_Constraints)
 
 
-###
+### function used to check is a version is compatible with previous version contrainsts that apply to the current build.
 function(is_Version_Compatible_With_Previous_Constraints 
 		is_compatible		
 		version_to_find
@@ -443,8 +444,7 @@ endfunction(is_Version_Compatible_With_Previous_Constraints)
 ####################### auxiliary functions to check version info (external packages) ###################
 #########################################################################################################
 
-
-###
+### function used to check the compatibility between two versions of an external package
 function(is_Compatible_External_Version is_compatible package reference_version version_to_compare)
 
 if(${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO)
@@ -459,7 +459,8 @@ else()
 endif()
 endfunction()
 
-###
+
+### function used to check is an exact version of an external package is compatible with previous version contrainsts that apply to the current build.
 function(is_Exact_External_Version_Compatible_With_Previous_Constraints 
 		is_compatible
 		need_finding
@@ -492,7 +493,8 @@ endif()
 endfunction()
 
 
-###
+
+### function used to check is a version of an external package is compatible with previous version contrainsts that apply to the current build.
 function(is_External_Version_Compatible_With_Previous_Constraints 
 		is_compatible		
 		version_to_find
@@ -524,7 +526,7 @@ endfunction(is_External_Version_Compatible_With_Previous_Constraints)
 ################## functions to resolve packages dependencies globally ##################################
 #########################################################################################################
 
-###
+### Function used to find the best version of a dependency of a given package (i.e. another package). It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).    
 # each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
 # other variables set by the package version use file 
 # ${package}_DEPENDENCY_${dependency}_REQUIRED		# TRUE if package is required FALSE otherwise (QUIET MODE)
@@ -722,6 +724,7 @@ macro(exitFindScript package message_to_send)
 	endif()
 endmacro(exitFindScript)
 
+### macro to be called in find script of packages. Implement the finding the standard way in CMake. 
 macro(finding_Package package)
 set(${package}_FOUND FALSE CACHE INTERNAL "")
 

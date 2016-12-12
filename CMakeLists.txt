@@ -46,7 +46,7 @@ if(GIT_REMOTES) #there are remotes defined
 		endif()
 	endforeach()
 endif()
-if(NOT OFFICIAL_EXISTS)
+if(NOT OFFICIAL_EXISTS) # automatically create a branch called official that points to the official remote. This is a sanity action to avoid troubles on updates / deployments. 
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add official ${PID_OFFICIAL_REMOTE_ADDRESS})
 elseif(NOT OFFICIAL_EXISTS STREQUAL PID_OFFICIAL_REMOTE_ADDRESS)#strange thing remote may have changed
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote set-url official ${PID_OFFICIAL_REMOTE_ADDRESS})
@@ -62,7 +62,7 @@ configure_file(${CMAKE_SOURCE_DIR}/share/patterns/PID_version.cmake.in ${CMAKE_B
 set(ALL_AVAILABLE_PACKAGES "")
 # 1) searching for all reference files. 
 file(GLOB reference_files ${CMAKE_SOURCE_DIR}/share/cmake/references/Refer*.cmake)
-# 2) including all reference files and memorizing packages names
+# 2) including all reference files and memorizing packages and frameworks names
 foreach(a_ref_file IN ITEMS ${reference_files})
 	string(REGEX REPLACE "^${CMAKE_SOURCE_DIR}/share/cmake/references/Refer([^\\.]+)\\.cmake$" "\\1" PACKAGE_NAME ${a_ref_file})
 	if(PACKAGE_NAME MATCHES External)#it is an external package
@@ -74,13 +74,13 @@ foreach(a_ref_file IN ITEMS ${reference_files})
 	else() #it is a native package
 		list(APPEND ALL_AVAILABLE_PACKAGES ${PACKAGE_NAME})
 	endif()
-	include(${a_ref_file})
+	include(${a_ref_file}) # no need to test we know by construction that the file exists
 endforeach()
 # 3) resetting categories
 reset_All_Categories()
 # 4) extracting all available categories and classifying all packages in these categories
-extract_Root_Categories("${ALL_AVAILABLE_PACKAGES}" "${ALL_AVAILABLE_FRAMEWORKS}") #getting the root categories
-classify_Package_Categories("${ALL_AVAILABLE_PACKAGES}" "${ALL_AVAILABLE_FRAMEWORKS}") #classifying packages and frameworks w.r.t. categories
+extract_Root_Categories("${ALL_AVAILABLE_PACKAGES}" "${ALL_AVAILABLE_FRAMEWORKS}") #getting the roots of all categories defined in the workspace
+classify_Package_Categories("${ALL_AVAILABLE_PACKAGES}" "${ALL_AVAILABLE_FRAMEWORKS}") #classifying packages and frameworks w.r.t. categories (framework are set of categories and packages belong to some categories)
 
 #5) registering categories
 write_Categories_File()
@@ -90,27 +90,27 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "Available PID commands:"
 	COMMAND ${CMAKE_COMMAND} -E echo "help -- This help message."
 	COMMAND ${CMAKE_COMMAND} -E echo "version -- getting version of the workspace."
-	COMMAND ${CMAKE_COMMAND} -E echo "list -- listing packages, frameworks or licenses. By default (no argumentsit lists packages ordered by categories. If the argument category=<name of a category> is used then it lists the content of the category with same name. If the argument framework=all is used, then it will list all frameworks. If, instead, the argument framework=<name of a framework> is used, then it lists all packages of the framework with same name, ordered by categories."
-	COMMAND ${CMAKE_COMMAND} -E echo "info -- getting info on a given package using package=<name of package> argument. If you use the argument framework=<name fo framework> then you get information about the corresponding framework."
-	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive, or a framework. Use only package=NAME_OF_PACKAGE argument to deploy source repository or use in addition version=VERSION to deploy the specific binary version. If you want to deploy an external package use external=<name of package> argument instead and you must define a version. Otherwise, if you want to deploy a framework use framework=<name fo framework> argument instead."
-	COMMAND ${CMAKE_COMMAND} -E echo "resolve -- resolving runtime dependencies of an already installed package. Use package=<name of package> and version=<VERSION> arguments to specify the target binary package."
-	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package or a new framework. Use package=<name of package> to specify the name of the new package. If you want to create a framework use the framework=<name of framework> argument instead. Other optional arguments are: author, affiliation, license, and url. If url is used, the connection with a remote repository is established the same way as calling the connect command. If a framework is created you may use the site=<web site url> argument."
-	COMMAND ${CMAKE_COMMAND} -E echo "connect -- Synchronize local repository with an empty remote one. Required arguments are : package (to specify the name of the package) or framework (to specify the name of the package) and url to specify the url of the remote repository."
-	COMMAND ${CMAKE_COMMAND} -E echo "license -- Printing information on licenses (no argument) or more precise information on a given license using name=<name fo the license> argument."
-	COMMAND ${CMAKE_COMMAND} -E echo "clear -- Clearing the whole install directory of a package using name=NAME_OF_PACKAGE, version=all or version=a valid number arguments."
-	COMMAND ${CMAKE_COMMAND} -E echo "remove -- Removing the target package or framework from the workspace. To remove a package use argument package=<name of package>. To remove a framework use framework=<name of framework>."
-	COMMAND ${CMAKE_COMMAND} -E echo "register -- Registering the target package in the workspace using package=<name of the package> argument. To register a framework in the workspace use the framework=<name of the framework> argument instead. The package or framework is published so that people with adequate rights can now deploy it."
-	COMMAND ${CMAKE_COMMAND} -E echo "release -- Releasing the target package using package=<name of the package> argument and nextversion=MAJOR or MINOR or PATCH to indicate how to increase version number. The release mainly consists in good tagging of branches and publication to the server."
-	COMMAND ${CMAKE_COMMAND} -E echo "build -- building target source packages in the workspace. You can use the optionnal argument package=<name of the package> to define which package will be build or use the defaut value all to target all source packages."
-	COMMAND ${CMAKE_COMMAND} -E echo "rebuild -- force the rebuild of target source packages in the workspace. You can use the optionnal argument package=<name of the package> to define which packages will be build or use the default value all to target all source packages."
-	COMMAND ${CMAKE_COMMAND} -E echo "update -- updating a source or binary package using package=<name of the package> argument. The last available version is deployed in the workspace. If all is used for name, all source and binary packages will be updated."
-	COMMAND ${CMAKE_COMMAND} -E echo "upgrade -- upgrading the workspace: install the more recent version of the PID API and references to packages. You can use the optionnal official argument to use non official remote you will use to update the workspace, by default official=ON which means the official remote is used. The argument update may be set ON or OFF -optionnal, default to OFF- to update all packages once the upgrade has been done."
+	COMMAND ${CMAKE_COMMAND} -E echo "list -- listing packages, frameworks or licenses. By default -no argument- it lists packages ordered by categories. If the argument category=*name of a category* is used then it lists the content of the category with same name. If the argument framework=*all* is used, then it will list all frameworks. If, instead, the argument framework=*name of a framework* is used, then it lists all packages of the framework with same name, ordered by categories."
+	COMMAND ${CMAKE_COMMAND} -E echo "info -- getting info on a given package using package=*name of a package* argument. If you use the argument framework=*name of a framework* then you get information about the corresponding framework."
+	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive, or a framework. Use only package=*name of a package* argument to deploy source repository or use in addition version=VERSION to deploy the specific binary version. If you want to deploy an external package use external=*name of an external package* argument instead and you must define a version. Otherwise, if you want to deploy a framework use framework=*name of a framework* argument instead."
+	COMMAND ${CMAKE_COMMAND} -E echo "resolve -- resolving runtime dependencies of an already installed package. Use package=*name of a package* and version=*a version number* arguments to specify the target binary package."
+	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package or a new framework. Use package=*name of a package* to specify the name of the new package. If you want to create a framework use the framework=*name of a framework* argument instead. Other optional arguments are: author, affiliation, license, and url. If url is used, the connection with a remote repository is established the same way as calling the connect command. If a framework is created you may use the site=*framework web site url* argument."
+	COMMAND ${CMAKE_COMMAND} -E echo "connect -- synchronize local repository with an empty remote one. Required arguments are : package -to specify the name of the package- or framework -same for a framework- and url to specify the url of the remote repository."
+	COMMAND ${CMAKE_COMMAND} -E echo "license -- Printing information on licenses -no argument- or more precise information on a given license using name=*name of the license* argument."
+	COMMAND ${CMAKE_COMMAND} -E echo "clear -- Clearing the whole install directory of a package using name=*name of package*, version=*all* or version=*a valid number* arguments."
+	COMMAND ${CMAKE_COMMAND} -E echo "remove -- Removing the target package or framework from the workspace. To remove a package use argument package=*name of the package*. To remove a framework use framework=*name of the framework*."
+	COMMAND ${CMAKE_COMMAND} -E echo "register -- Registering the target package in the workspace using package=*name of the package* argument. To register a framework in the workspace use the framework=*name of the framework* argument instead. The package or framework is published so that people with adequate rights can now deploy it."
+	COMMAND ${CMAKE_COMMAND} -E echo "release -- Releasing the target package using package=*name of the package* argument and nextversion=*MAJOR* or *MINOR* or *PATCH* to indicate how to increase version number. The release mainly consists in good tagging of branches and publication to the server."
+	COMMAND ${CMAKE_COMMAND} -E echo "build -- building target source packages in the workspace. You can use the optionnal argument package=*name of the package* to define which package will be build or use the defaut value all to target all source packages."
+	COMMAND ${CMAKE_COMMAND} -E echo "rebuild -- force the rebuild of target source packages in the workspace. You can use the optionnal argument package=*name of the package* to define which package will be build or use the default value *all* to target all source packages."
+	COMMAND ${CMAKE_COMMAND} -E echo "update -- updating a source or binary package using package=*name of the package* argument. The last available version is deployed in the workspace. If *all* is used for name, all source and binary packages will be updated."
+	COMMAND ${CMAKE_COMMAND} -E echo "upgrade -- upgrading the workspace: install the more recent version of the PID API and references to packages. You can use the optionnal official= argument to use a non official repository to update the workspace, by default official=ON which means the official remote is used. The argument update may be set ON or OFF -optionnal, default to OFF- to update all packages once the upgrade has been done."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-## listing all packages ordered by categories OR listing the content of a given category
+## getting the version of PID currently in use
 add_custom_target(version
-	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+	COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Print_PID_Workspace_Version.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

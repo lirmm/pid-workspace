@@ -45,6 +45,6 @@ elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
 	endif()
 	print_Package_Info(${TARGET_PACKAGE})
 else()
-	message("[PID] ERROR : you must specify a package to deploy using package=<name of package> argument or specify a framework to deploy using framework=<name of framework> argument.")
+	message("[PID] ERROR : you must specify the name of a package or framework to get information about it. Use package=<name of package> or framework=<name of framework> argument.")
 endif()
 

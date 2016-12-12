@@ -65,8 +65,8 @@ else()# a package deployment is required
 	else()
 		message("[PID] ERROR : You must specify the project to deploy: either a native package name using package=<name of package>, an external package using external=<name of package> or a framework using framework=<name of framework> argument.")
 		return()
-	endif()
-	
+	endif()	
+
 	## start package deployment process
 	remove_Progress_File() #reset the build progress information (sanity action)
 	begin_Progress(workspace NEED_REMOVE)
@@ -88,7 +88,12 @@ else()# a package deployment is required
 		else()
 			set(PACKAGE_NAME ${TARGET_PACKAGE})
 		endif()
-
+		# now load the binary references of the package
+		load_Package_Binary_References(REFERENCES_OK ${TARGET_PACKAGE})
+		if(NOT REFERENCES_OK)
+			message("[PID] ERROR : Cannot find any reference to a binary version of ${TARGET_PACKAGE}. Aborting.")
+			return()
+		endif()
 		exact_Version_Exists(${PACKAGE_NAME} "${TARGET_VERSION}" EXIST)
 		if(NOT EXIST)
 			message("[PID] ERROR : A binary relocatable archive with version ${TARGET_VERSION} does not exist for package ${PACKAGE_NAME}.")
@@ -109,7 +114,7 @@ else()# a package deployment is required
 			return()
 		elseif(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
 			message("[PID] ERROR : Source repository for package ${TARGET_PACKAGE} already resides in the workspace.")
-			return()	
+			return()
 		endif()
 		message("[PID] INFO : deploying native PID package ${TARGET_PACKAGE} (last version) in the workspace ...")
 		deploy_PID_Package(${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}") #do the job

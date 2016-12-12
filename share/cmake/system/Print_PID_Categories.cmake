@@ -27,7 +27,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
-	if(TARGET_FRAMEWORK STREQUAL "all")
+	if(TARGET_FRAMEWORK STREQUAL "all")#listing all frameworks
 		if(FRAMEWORKS_CATEGORIES)
 			foreach(framework IN ITEMS ${FRAMEWORKS_CATEGORIES})
 				message("- ${framework}")
@@ -35,13 +35,13 @@ if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
 		else()
 			message("[PID] WARNING : no framework defined in your workspace.")
 		endif()
-	else() #targetting a specific framework
-		print_Framework_Categories(${TARGET_FRAMEWORK})
+	else() #describing the categories defined by a specific framework
+		print_Framework_Categories(${TARGET_FRAMEWORK}) #getting info about a framework
 	endif()
 elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
 	find_In_Categories(${TARGET_PACKAGE})
 else()
-	message("CATEGORIES:")
+	message("CATEGORIES:") # printing the structure of categories and packages they belong to
 	foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
 		print_Category("" ${root_cat} 0)
 	endforeach()

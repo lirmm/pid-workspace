@@ -22,6 +22,7 @@
 ####################### new API => configure the package with dependencies  #####################
 #################################################################################################
 
+### list all public headers of a component
 function(list_Public_Includes INCLUDES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
 
@@ -34,6 +35,7 @@ endif()
 set(${INCLUDES} ${RES} PARENT_SCOPE)
 endfunction(list_Public_Includes)
 
+### list all public links of a component
 function(list_Public_Links LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
 #provided additionnal ld flags (exported external/system libraries and ldflags)		
@@ -43,14 +45,15 @@ set(${LINKS} "${RES_LINKS}" PARENT_SCOPE)
 endif()
 endfunction(list_Public_Links)
 
+### list all public definitions of a component
 function(list_Public_Definitions DEFS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
 if(${package}_${component}_DEFS${VAR_SUFFIX}) 	
 	set(${DEFS} ${${package}_${component}_DEFS${VAR_SUFFIX}} PARENT_SCOPE)
 endif()
-
 endfunction(list_Public_Definitions)
 
+### list all public compile options of a component
 function(list_Public_Options OPTS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
 if(${package}_${component}_OPTS${VAR_SUFFIX}) 	
@@ -58,6 +61,7 @@ if(${package}_${component}_OPTS${VAR_SUFFIX})
 endif()
 endfunction(list_Public_Options)
 
+### get the location of a given component resulting binary on the filesystem
 function( get_Binary_Location LOCATION_RES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
 
@@ -69,6 +73,7 @@ elseif(NOT ${package}_${component}_TYPE STREQUAL "HEADER")
 endif()
 endfunction(get_Binary_Location)
 
+### list all the private links of a component (its symbols are not exported, but need to be known in order to manage the link of executables adequately)
 function(list_Private_Links PRIVATE_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #provided additionnal ld flags (exported external/system libraries and ldflags)		
@@ -471,7 +476,7 @@ endfunction(create_Bin_Component_Symlinks)
 ##################################################################################
 
 
-### configuring source components (currntly built) runtime paths (links to libraries, executable, modules, files, etc.)
+### configuring source components (currently built) runtime paths (links to libraries, executable, modules, files, etc.)
 function(create_Source_Component_Symlinks component mode targets)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(target IN ITEMS ${targets})
@@ -507,6 +512,7 @@ endfunction(resolve_Source_Component_Runtime_Dependencies)
 ################### source package run time dependencies in build tree ###########
 ##################################################################################
 
+### 
 function(get_Source_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCES component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)

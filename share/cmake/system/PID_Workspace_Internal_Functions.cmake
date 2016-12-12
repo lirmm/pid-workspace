@@ -59,12 +59,13 @@ endforeach()
 endfunction(classify_Root_Category)
 
 
-###
+
+### subsidiary function to classify all packages from a given framework into the categories defined by this framework. This results in creation of variables 
 function(classify_Framework_Root_Category framework root_category all_packages)
 foreach(package IN ITEMS ${all_packages})
 	if(${package}_FRAMEWORK STREQUAL "${framework}")
 		foreach(a_category IN ITEMS ${${package}_CATEGORIES})
-			list(FIND ${framework}_CATEGORIES ${a_category} INDEX)
+			list(FIND ${framework}_FRAMEWORK_CATEGORIES ${a_category} INDEX)
 			if(NOT INDEX EQUAL -1)# this category is a category member of the framework
 				classify_Framework_Category(${framework} ${a_category} ${root_category} ${package})
 			endif()
@@ -74,12 +75,12 @@ endforeach()
 endfunction(classify_Framework_Root_Category)
 
 
-###
+### subsidiary function to create variables that describe the structure of categories organization for a given framework
 function(classify_Framework_Category framework category_full_string root_category target_package)
 if("${category_full_string}" STREQUAL "${root_category}")#OK, so the package directly belongs to this category
-	set(${framework}_CAT_${category_full_string}_CATEGORY_CONTENT ${${framework}_CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
-	list(REMOVE_DUPLICATES ${framework}_CAT_${category_full_string}_CATEGORY_CONTENT)
-	set(${framework}_CAT_${category_full_string}_CATEGORY_CONTENT ${${framework}_CAT_${category_full_string}_CATEGORY_CONTENT} CACHE INTERNAL "")# needed to put the removed duplicates list in cache
+	set(FRAMEWORK_${framework}_CAT_${category_full_string}_CATEGORY_CONTENT ${FRAMEWORK_${framework}_CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
+	list(REMOVE_DUPLICATES FRAMEWORK_${framework}_CAT_${category_full_string}_CATEGORY_CONTENT)
+	set(FRAMEWORK_${framework}_CAT_${category_full_string}_CATEGORY_CONTENT ${FRAMEWORK_${framework}_CAT_${category_full_string}_CATEGORY_CONTENT} CACHE INTERNAL "")# needed to put the removed duplicates list in cache
 else()#not OK we need to know if this is a subcategory or not
 	string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
 	if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthes => there are subcategories with root category as root
@@ -90,10 +91,10 @@ else()#not OK we need to know if this is a subcategory or not
 		else()
 			set(AFTER_ROOT ${CATEGORY_STRING_CONTENT})
 		endif()
-		set(${framework}_CAT_${root_category}_CATEGORIES ${${framework}_CAT_${root_category}_CATEGORIES} ${AFTER_ROOT} CACHE INTERNAL "")
+		set(FRAMEWORK_${framework}_CAT_${root_category}_CATEGORIES ${FRAMEWORK_${framework}_CAT_${root_category}_CATEGORIES} ${AFTER_ROOT} CACHE INTERNAL "")
 		classify_Framework_Category(${framework} ${category_full_string} "${root_category}/${AFTER_ROOT}" ${target_package})
-		list(REMOVE_DUPLICATES ${framework}_CAT_${root_category}_CATEGORIES)
-		set(${framework}_CAT_${root_category}_CATEGORIES ${${framework}_CAT_${root_category}_CATEGORIES} CACHE INTERNAL "")
+		list(REMOVE_DUPLICATES FRAMEWORK_${framework}_CAT_${root_category}_CATEGORIES)
+		set(FRAMEWORK_${framework}_CAT_${root_category}_CATEGORIES ${FRAMEWORK_${framework}_CAT_${root_category}_CATEGORIES} CACHE INTERNAL "")
 		
 	#else, this is not the same as root_category (otherwise first test would have succeeded => end of recursion 
 	endif()
@@ -101,7 +102,7 @@ else()#not OK we need to know if this is a subcategory or not
 endif()
 endfunction(classify_Framework_Category)
 
-###
+### function to reset all variables describing categories
 function(reset_All_Categories)
 foreach(a_category IN ITEMS ${ROOT_CATEGORIES})
 	reset_Category(${a_category})
@@ -113,7 +114,7 @@ endforeach()
 set(FRAMEWORKS_CATEGORIES CACHE INTERNAL "")
 endfunction()
 
-###
+## subsidiary function to reset all variables of a given category
 function(reset_Category category)
 if(CAT_${category}_CATEGORIES)
 	foreach(a_sub_category IN ITEMS ${CAT_${category}_CATEGORIES})
@@ -127,20 +128,20 @@ set(CAT_${category}_CATEGORIES CACHE INTERNAL "")
 endfunction()
 
 
-###
+## subsidiary function to reset all variables of a given category
 function(reset_Framework_Category framework category)
-if(${framework}_CAT_${category}_CATEGORIES)
-	foreach(a_sub_category IN ITEMS ${${framework}_CAT_${category}_CATEGORIES})
+if(FRAMEWORK_${framework}_CAT_${category}_CATEGORIES)
+	foreach(a_sub_category IN ITEMS ${FRAMEWORK_${framework}_CAT_${category}_CATEGORIES})
 		reset_Framework_Category(${framework} "${category}/${a_sub_category}")#recursive call
 	endforeach()
 endif()
-if(${framework}_CAT_${category}_CATEGORY_CONTENT)
-	set(${framework}_CAT_${category}_CATEGORY_CONTENT CACHE INTERNAL "")
+if(FRAMEWORK_${framework}_CAT_${category}_CATEGORY_CONTENT)
+	set(FRAMEWORK_${framework}_CAT_${category}_CATEGORY_CONTENT CACHE INTERNAL "")
 endif()
-set(${framework}_CAT_${category}_CATEGORIES CACHE INTERNAL "")
+set(FRAMEWORK_${framework}_CAT_${category}_CATEGORIES CACHE INTERNAL "")
 endfunction()
 
-###
+## subsidiary function to get the names of all the root categories to which belong a given package
 function(get_Root_Categories package RETURNED_ROOTS)
 	set(ROOTS_FOUND)
 	foreach(a_category IN ITEMS ${${package}_CATEGORIES})
@@ -158,7 +159,26 @@ function(get_Root_Categories package RETURNED_ROOTS)
 	set(${RETURNED_ROOTS} ${ROOTS_FOUND} PARENT_SCOPE)
 endfunction(get_Root_Categories)
 
-###
+
+## subsidiary function to get the names of all the root categories defined by a framework
+function(get_Framework_Root_Categories framework RETURNED_ROOTS)
+	set(ROOTS_FOUND)
+	foreach(a_category IN ITEMS ${${framework}_FRAMEWORK_CATEGORIES})
+		string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${a_category})
+		if(NOT CATEGORY_STRING_CONTENT STREQUAL ${a_category})# it macthes => there are subcategories
+			list(GET CATEGORY_STRING_CONTENT 0 ROOT_OF_CATEGORY)
+			list(APPEND ROOTS_FOUND ${ROOT_OF_CATEGORY})
+		else()
+			list(APPEND ROOTS_FOUND ${a_category})
+		endif()
+	endforeach()
+	if(ROOTS_FOUND)
+		list(REMOVE_DUPLICATES ROOTS_FOUND)
+	endif()
+	set(${RETURNED_ROOTS} ${ROOTS_FOUND} PARENT_SCOPE)
+endfunction(get_Framework_Root_Categories)
+
+### extracting the root categories from workspace description as 
 function(extract_Root_Categories all_packages all_frameworks)
 # extracting category information from packages
 set(ALL_ROOTS)
@@ -177,10 +197,10 @@ endif()
 # classifying by frameworks
 set(ALL_ROOTS)
 foreach(a_framework IN ITEMS ${all_frameworks})
-	set(${a_framework}_ROOT_CATEGORIES CACHE INTERNAL "")
-	get_Root_Categories(${a_framework} ${a_framework}_ROOTS)
-	if(${a_framework}_ROOTS)
-		set(${a_framework}_ROOT_CATEGORIES ${${a_framework}_ROOTS} CACHE INTERNAL "")
+	set(FRAMEWORK_${a_framework}_ROOT_CATEGORIES CACHE INTERNAL "")
+	get_Framework_Root_Categories(${a_framework} FRAMEWORK_${a_framework}_ROOTS)
+	if(FRAMEWORK_${a_framework}_ROOTS)
+		set(FRAMEWORK_${a_framework}_ROOT_CATEGORIES ${FRAMEWORK_${a_framework}_ROOTS} CACHE INTERNAL "")
 		list(APPEND ALL_ROOTS ${a_framework})
 	endif()
 endforeach()
@@ -192,7 +212,7 @@ else()
 endif()
 endfunction(extract_Root_Categories)
 
-###
+### classifying all packages and frameworks according to categories structure
 function(classify_Category category_full_string root_category target_package)
 if("${category_full_string}" STREQUAL "${root_category}")#OK, so the package directly belongs to this category
 	set(CAT_${category_full_string}_CATEGORY_CONTENT ${CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
@@ -220,7 +240,7 @@ else()#not OK we need to know if this is a subcategory or not
 endif()
 endfunction(classify_Category)
 
-###
+### write in a file that will be used by script for finding info on categories
 function(write_Categories_File)
 set(file ${CMAKE_BINARY_DIR}/CategoriesInfo.cmake)
 file(WRITE ${file} "")
@@ -240,7 +260,7 @@ if(FRAMEWORKS_CATEGORIES)
 endif()
 endfunction(write_Categories_File)
 
-###
+## subidiary function to write info about a given category into the file
 function(write_Category_In_File category thefile)
 file(APPEND ${thefile} "set(CAT_${category}_CATEGORY_CONTENT \"${CAT_${category}_CATEGORY_CONTENT}\" CACHE INTERNAL \"\")\n")
 if(CAT_${category}_CATEGORIES)
@@ -252,18 +272,18 @@ endif()
 endfunction(write_Category_In_File)
 
 
-###
+## subsidiary function to write info about categories defined by a framework into the file
 function(write_Framework_Category_In_File framework category thefile)
-file(APPEND ${thefile} "set(${framework}_CAT_${category}_CATEGORY_CONTENT \"${${framework}_CAT_${category}_CATEGORY_CONTENT}\" CACHE INTERNAL \"\")\n")
-if(${framework}_CAT_${category}_CATEGORIES)
-	file(APPEND ${thefile} "set(${framework}_CAT_${category}_CATEGORIES \"${${framework}_CAT_${category}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
-	foreach(cat IN ITEMS ${${framework}_CAT_${category}_CATEGORIES})
+file(APPEND ${thefile} "set(FRAMEWORK_${framework}_CAT_${category}_CATEGORY_CONTENT \"${FRAMEWORK_${framework}_CAT_${category}_CATEGORY_CONTENT}\" CACHE INTERNAL \"\")\n")
+if(FRAMEWORK_${framework}_CAT_${category}_CATEGORIES)
+	file(APPEND ${thefile} "set(FRAMEWORK_${framework}_CAT_${category}_CATEGORIES \"${FRAMEWORK_${framework}_CAT_${category}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
+	foreach(cat IN ITEMS ${FRAMEWORK_${framework}_CAT_${category}_CATEGORIES})
 		write_Framework_Category_In_File(${framework} "${category}/${cat}" ${thefile})
 	endforeach()
 endif()
 endfunction(write_Framework_Category_In_File)
 
-###
+### function to find and print the sreached term in all (sub-)categories
 function(find_In_Categories searched_category_term)
 foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
 	find_Category("" ${root_cat} ${searched_category_term})	
@@ -271,7 +291,8 @@ endforeach()
 message("---------------")
 endfunction(find_In_Categories)
 
-###
+
+## subsidiary function to print to standard output the "path" generated by a given category 
 function(find_Category root_category current_category_full_path searched_category)
 string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${searched_category})
 if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => searching category into a specific "category path"
@@ -305,7 +326,7 @@ endif()
 endfunction(find_Category)
 
 
-###
+## subsidiary function to print to standard output the "path" generated by category structure 
 function(get_Category_Names root_category category_full_string RESULTING_SHORT_NAME RESULTING_LONG_NAME)
 	if("${root_category}" STREQUAL "")
 		set(${RESULTING_SHORT_NAME} ${category_full_string} PARENT_SCOPE)
@@ -315,14 +336,15 @@ function(get_Category_Names root_category category_full_string RESULTING_SHORT_N
 
 	string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
 	if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthed
-		set(${RESULTING_SHORT_NAME} ${CATEGORY_STRING_CONTENT} PARENT_SCOPE)
+		set(${RESULTING_SHORT_NAME} ${CATEGORY_STRING_CONTENT} PARENT_SCOPE) # 
 		set(${RESULTING_LONG_NAME} "${root_category}/${CATEGORY_STRING_CONTENT}" PARENT_SCOPE)
 	else()
 		message("[PID] Error : internal BUG.")
 	endif()
 endfunction(get_Category_Names)
 
-###
+
+## subsidiary function to print to standard output a description of a given category
 function(print_Category root_category category number_of_tabs)
 	set(PRINTED_VALUE "")
 	set(RESULT_STRING "")
@@ -352,7 +374,8 @@ function(print_Category root_category category number_of_tabs)
 	endif()
 endfunction(print_Category)
 
-###
+
+### subsidiary function to print to standard output a description of a given category defined by a framework
 function(print_Framework_Category framework root_category category number_of_tabs)
 	set(PRINTED_VALUE "")
 	set(RESULT_STRING "")
@@ -364,9 +387,9 @@ function(print_Framework_Category framework root_category category number_of_tab
 
 	get_Category_Names("${root_category}" ${category} short_name long_name)
 
-	if(${framework}_CAT_${category}_CATEGORY_CONTENT)
+	if(FRAMEWORK_${framework}_CAT_${category}_CATEGORY_CONTENT)
 		set(PRINTED_VALUE "${RESULT_STRING}${short_name}:")
-		foreach(pack IN ITEMS ${${framework}_CAT_${category}_CATEGORY_CONTENT})
+		foreach(pack IN ITEMS ${FRAMEWORK_${framework}_CAT_${category}_CATEGORY_CONTENT})
 			set(PRINTED_VALUE "${PRINTED_VALUE} ${pack}")
 		endforeach()
 		message("${PRINTED_VALUE}")
@@ -374,16 +397,16 @@ function(print_Framework_Category framework root_category category number_of_tab
 		set(PRINTED_VALUE "${RESULT_STRING}${short_name}")
 		message("${PRINTED_VALUE}")	
 	endif()
-	if(${framework}_CAT_${category}_CATEGORIES)#there are subcategories => recursion
+	if(FRAMEWORK_${framework}_CAT_${category}_CATEGORIES)#there are subcategories => recursion
 		math(EXPR sub_cat_nb_tabs '${number_of_tabs}+1')
-		foreach(sub_cat IN ITEMS ${${framework}_CAT_${category}_CATEGORIES})
+		foreach(sub_cat IN ITEMS ${FRAMEWORK_${framework}_CAT_${category}_CATEGORIES})
 			print_Framework_Category(${framework} "${long_name}" "${category}/${sub_cat}" ${sub_cat_nb_tabs})
 		endforeach()
 	endif()
 endfunction(print_Framework_Category)
 
 
-###
+### printing to standard output a description of all categories defined by a framework
 function(print_Framework_Categories framework)
 message("---------------------------------")
 list(FIND FRAMEWORKS_CATEGORIES ${framework} INDEX)
@@ -402,19 +425,19 @@ endfunction(print_Framework_Categories)
 ##################### Packages info management #########################
 ########################################################################
 
-###
+## subsidiary function to print information about an author
 function(print_Author author)
 	get_Formatted_Author_String("${author}" RES_STRING)
 	message("	${RES_STRING}")
 endfunction(print_Author)
 
-###
+## subsidiary function to print information about contact author
 function(print_Package_Contact package)
 	get_Formatted_Package_Contact_String(${package} RES_STRING)
 	message("CONTACT: ${RES_STRING}")
 endfunction(print_Package_Contact)
 
-###
+### function used to print a basic description of a native package to the standard output 
 function(print_Package_Info package)
 	message("NATIVE PACKAGE: ${package}")
 	fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
@@ -433,13 +456,14 @@ function(print_Package_Info package)
 			message("	${category}")
 		endforeach()
 	endif()
-	if(${package}_REFERENCES)
+	load_Package_Binary_References(REFERENCES_OK ${package})
+	if(REFERENCES_OK)
 		message("BINARY VERSIONS:")
 		print_Package_Binaries(${package})
 	endif()
 endfunction(print_Package_Info)
 
-###
+### function used to print a basic description of an external package to the standard output 
 function(print_External_Package_Info package)
 	message("EXTERNAL PACKAGE: ${package}")
 	fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
@@ -453,13 +477,14 @@ function(print_External_Package_Info package)
 			message("	${category}")
 		endforeach()
 	endif()
-	if(${package}_REFERENCES)
+	load_Package_Binary_References(REFERENCES_OK ${package})
+	if(REFERENCES_OK)
 		message("BINARY VERSIONS:")
 		print_Package_Binaries(${package})
 	endif()
 endfunction(print_External_Package_Info)
 
-###
+## subsidiary function to print information about contact author
 function(print_External_Package_Contact package)
 	fill_List_Into_String("${${package}_PID_Package_AUTHOR}" AUTHOR_STRING)
 	fill_List_Into_String("${${package}_PID_Package_INSTITUTION}" INSTITUTION_STRING)
@@ -479,7 +504,8 @@ function(print_External_Package_Contact package)
 endfunction(print_External_Package_Contact)
 
 
-###
+### Constraint: the reference file of the package must be loaded before thsi call.
+## subsidiary function to print information about binary versions available for that package
 function(print_Package_Binaries package)
 	foreach(version IN ITEMS ${${package}_REFERENCES})
 		message("	${version}: ")
@@ -489,7 +515,8 @@ function(print_Package_Binaries package)
 	endforeach()
 endfunction(print_Package_Binaries)
 
-###
+### Constraint: the binary references of the package must be loaded before this call.
+## subsidiary function to check if a given version of the package exists
 function(exact_Version_Exists package version RESULT)
 	list(FIND ${package}_REFERENCES ${version} INDEX)
 	if(INDEX EQUAL -1)
@@ -506,7 +533,7 @@ function(exact_Version_Exists package version RESULT)
 	endif()
 endfunction(exact_Version_Exists)
 
-###
+## subsidiary function to print all binaries of a package for a given platform
 function(print_Platform_Compatible_Binary package version platform)
 	set(printed_string "		${platform}:")
 	#1) testing if binary can be installed
@@ -519,23 +546,24 @@ function(print_Platform_Compatible_Binary package version platform)
 	message("${printed_string}")
 endfunction(print_Platform_Compatible_Binary)
 
-###
+
+### function to print brief description of a framework
 function(print_Framework_Info framework)
 	message("FRAMEWORK: ${framework}")
-	fill_List_Into_String("${${framework}_DESCRIPTION}" descr_string)
+	fill_List_Into_String("${${framework}_FRAMEWORK_DESCRIPTION}" descr_string)
 	message("DESCRIPTION: ${descr_string}")
-	message("WEB SITE: ${${framework}_SITE}")
-	message("LICENSE: ${${framework}_LICENSE}")
-	message("DATES: ${${framework}_YEARS}")
-	message("REPOSITORY: ${${framework}_ADDRESS}")
+	message("WEB SITE: ${${framework}_FRAMEWORK_SITE}")
+	message("LICENSE: ${${framework}_FRAMEWORK_LICENSE}")
+	message("DATES: ${${framework}_FRAMEWORK_YEARS}")
+	message("REPOSITORY: ${${framework}_FRAMEWORK_ADDRESS}")
 	print_Package_Contact(${framework})
 	message("AUTHORS:")
-	foreach(author IN ITEMS ${${framework}_AUTHORS_AND_INSTITUTIONS})
-		print_Author(${framework})
+	foreach(author IN ITEMS ${${framework}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS})
+		print_Author(${author})
 	endforeach()
-	if(${framework}_CATEGORIES)
+	if(${framework}_FRAMEWORK_CATEGORIES)
 		message("CATEGORIES:")
-		foreach(category IN ITEMS ${${framework}_CATEGORIES})
+		foreach(category IN ITEMS ${${framework}_FRAMEWORK_CATEGORIES})
 			message("	${category}")
 		endforeach()
 	endif()
@@ -663,7 +691,7 @@ endif()
 endfunction(deploy_PID_Package)
 
 
-### Installing an external package binary on the workspace filesystem from an existing download point.  
+### Installing an external package binary on the workspace filesystem from an existing download point. Constraint: the reference file of the package must be loaded before thsi call.
 function(deploy_External_Package package version verbose)
 if(verbose)
 	set(ADDITIONNAL_DEBUG_INFO ON)
@@ -685,7 +713,7 @@ if("${version}" STREQUAL "")#deploying the latest version of the repository
 	endforeach()
 	if(NOT ${MAX_CURR_VERSION} STREQUAL 0.0.0)
 		deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION})
-		if(NOT DEPLOYED) 
+		if(NOT DEPLOYED)
 			message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive. Please contact the administrator of the package ${package}.")
 		endif()
 	else()
@@ -761,11 +789,12 @@ endfunction(add_Connection_To_PID_Package)
 function(add_Connection_To_PID_Framework framework git_url)
 change_Origin_Framework_Repository(${framework} ${git_url} origin) # synchronizing with the remote "origin" git repository
 endfunction(add_Connection_To_PID_Framework)
-##########################################
-###### clearing/removing packages ########
-##########################################
 
-###
+##################################################
+###### clearing/removing deployment units ########
+##################################################
+
+### clearing consist in clearing a package version related folder from the workspace 
 function(clear_PID_Package package version)
 if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
 
@@ -797,7 +826,7 @@ else()
 endif()
 endfunction(clear_PID_Package)
 
-###
+### removing consists in clearing the workspace of any trace of the target package (including its source repository)
 function(remove_PID_Package package)
 
 if(	EXISTS ${WORKSPACE_DIR}/install/${package})
@@ -808,17 +837,17 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pa
 endfunction(remove_PID_Package)
 
 
-###
+###  removing consists in removing the framework repository from the workspace
 function(remove_PID_Framework framework)
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/frameworks/${framework})
 endfunction(remove_PID_Framework)
 
-##########################################
-############ registering packages ########
-##########################################
+##################################################
+############ registering deployment units ########
+##################################################
 
 
-###
+### registering consists in updating the workspace repository with an updated reference file for this package  
 function(register_PID_Package package)
 go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} install)
@@ -826,7 +855,8 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 publish_Package_References_In_Workspace_Repository(${package})
 endfunction(register_PID_Package)
 
-###
+
+### registering consists in updating the workspace repository with an updated reference file for this framework
 function(register_PID_Framework framework)
 go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework}/build ${CMAKE_MAKE_PROGRAM} build)
@@ -837,7 +867,6 @@ endfunction(register_PID_Framework)
 ##########################################
 ############ releasing packages ##########
 ##########################################
-
 
 
 ### releasing the package version => registering the current version with a git tag
@@ -938,7 +967,7 @@ endfunction(release_PID_Package)
 ##########################################
 
 
-###
+### update a source package based on git tags of its repository 
 function(update_PID_Source_Package package)
 set(INSTALLED FALSE)
 message("[PID] INFO : launch the update of source package ${package}...")
@@ -951,7 +980,8 @@ else()
 endif()
 endfunction(update_PID_Source_Package)
 
-###
+
+### update a binary package based on available binary references 
 function(update_PID_Binary_Package package)
 message("[PID] INFO : launch the update of binary package ${package}...")
 list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${package})
@@ -963,12 +993,12 @@ else()
 endif()
 endfunction(update_PID_Binary_Package)
 
-###
+### update an external package based on available binary references 
 function(update_PID_External_Package package)
 message("[PID] INFO : new versions of external binary package ${package} will not be installed automatically (only if a new version is required by native package)...")
 endfunction(update_PID_External_Package)
 
-###
+### update all packages of the workspace
 function(update_PID_All_Packages)
 list_All_Binary_Packages_In_Workspace(NATIVES EXTERNALS)
 list_All_Source_Packages_In_Workspace(SOURCE_PACKAGES)
@@ -981,12 +1011,22 @@ if(SOURCE_PACKAGES)
 endif()
 if(NATIVES)
 	foreach(package IN ITEMS ${NATIVES})
-		update_PID_Binary_Package(${package})
+		load_Package_Binary_References(REFERENCES_OK ${package})
+		if(NOT REFERENCES_OK)
+			message("[PID] WARNING : no binary reference exists for the package ${package}. Cannot update it ! Please contact the maintainer of package ${package} to have more information about this problem.")
+		else()
+			update_PID_Binary_Package(${package})
+		endif()
 	endforeach()
 endif()
 if(EXTERNALS)
 	foreach(package IN ITEMS ${EXTERNALS})
-		update_PID_External_Package(${package})
+		load_Package_Binary_References(REFERENCES_OK ${package})
+		if(NOT REFERENCES_OK)
+			message("[PID] WARNING : no binary reference exists for the package ${package}. Cannot update it ! Please contact the maintainer of package ${package} to have more information about this problem.")
+		else()
+			update_PID_External_Package(${package})
+		endif()
 	endforeach()
 endif()
 endfunction(update_PID_All_Packages)
@@ -1007,7 +1047,7 @@ endfunction(upgrade_Workspace)
 ######################## Licenses management ###########################
 ########################################################################
 
-###
+### print description on all available licenses
 function(print_Available_Licenses)
 file(GLOB ALL_AVAILABLE_LICENSES ${WORKSPACE_DIR}/share/cmake/licenses/*.cmake)
 list(REMOVE_DUPLICATES ALL_AVAILABLE_LICENSES)
@@ -1024,14 +1064,12 @@ fill_List_Into_String("${licenses}" res_licenses_string)
 message("AVAILABLE LICENSES: ${res_licenses_string}")
 endfunction()
 
-
-###
+### print description of a given license
 function(print_License_Info license)
 message("LICENSE: ${LICENSE_NAME}")
 message("VERSION: ${LICENSE_VERSION}")
 message("OFFICIAL NAME: ${LICENSE_FULLNAME}")
 message("AUTHORS: ${LICENSE_AUTHORS}")
 endfunction()
-
 
 

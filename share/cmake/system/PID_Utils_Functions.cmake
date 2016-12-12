@@ -799,8 +799,6 @@ function(get_Framework_Repository_Address framework RES_URL)
 	set(${RES_URL} ${url} PARENT_SCOPE)
 endfunction(get_Framework_Repository_Address)
 
-
-
 ################################################################
 ################ Markdown file management ######################
 ################################################################

@@ -36,14 +36,15 @@ if (UNIX)
 	find_path(posix_dl_INCLUDE_PATH dlfcn.h)
 	find_path(posix_math_INCLUDE_PATH math.h)
 
-	find_library(posix_pthread_LIB pthread) 
+	find_library(posix_pthread_LIB pthread 
+			PATHS /usr/lib/x86_64-linux-gnu /usr/local/lib /usr/lib /lib ) 
 	find_library(posix_rt_LIB rt)
 	find_library(posix_dl_LIB dl)
 	find_library(posix_math_LIB m)
 	
-
 	set(posix_LIBRARIES) # start with empty list
 	set(IS_FOUND TRUE)
+	message("pthread include=${posix_pthread_INCLUDE_PATH} - lib=${posix_pthread_LIB}")
 	if(posix_pthread_INCLUDE_PATH AND posix_pthread_LIB)
 		set(posix_LIBRARIES ${posix_LIBRARIES} -lpthread)
 	else()
@@ -51,6 +52,7 @@ if (UNIX)
 		set(IS_FOUND FALSE)
 	endif()
 
+	message("rt include=${posix_rt_INCLUDE_PATH} - lib=${posix_rt_LIB}")
 	if(posix_rt_INCLUDE_PATH AND posix_rt_LIB)
 		set(posix_LIBRARIES ${posix_LIBRARIES} -lrt)
 	else()
@@ -58,6 +60,7 @@ if (UNIX)
 		set(IS_FOUND FALSE)
 	endif()
 
+	message("dl include=${posix_dl_INCLUDE_PATH} - lib=${posix_dl_LIB}")
 	if(posix_dl_INCLUDE_PATH AND posix_dl_LIB)
 		set(posix_LIBRARIES ${posix_LIBRARIES} -ldl)
 	else()
@@ -65,6 +68,7 @@ if (UNIX)
 		set(IS_FOUND FALSE)
 	endif()
 
+	message("math include=${posix_math_INCLUDE_PATH} - lib=${posix_math_LIB}")
 	if(posix_math_INCLUDE_PATH AND posix_math_LIB)
 		set(posix_LIBRARIES ${posix_LIBRARIES} -lm)
 	else()
