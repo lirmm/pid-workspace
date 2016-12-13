@@ -52,21 +52,6 @@ else()
 file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL \"\")\n")
 endif()
 
-# TODO this part may disappear (OR NOT ?)
-
-##################################################################
-######### all known platforms supported by the package ###########
-################################################################## 
-file(APPEND ${file} "set(${PROJECT_NAME}_AVAILABLE_PLATFORMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS} CACHE INTERNAL \"\")\n")
-if(${PROJECT_NAME}_AVAILABLE_PLATFORMS)
-foreach(ref_platform IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS}) #for each available version, all os for which there is a reference
-	file(APPEND ${file} "set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_OS ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_OS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_ARCH ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_ARCH} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_ABI ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_ABI} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_CONFIGURATION ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${ref_platform}_CONFIGURATION} CACHE INTERNAL \"\")\n")
-endforeach()
-endif()
-
 ############################################################################
 ###### all available versions of the package for which there is a ##########
 ###### direct reference to a downloadable binary for a given platform ######
@@ -503,7 +488,8 @@ function(build_And_Install_Source DEPLOYED package version)
 			WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 			RESULT_VARIABLE BUILD_RES
 			)
-		if(BUILD_RES EQUAL 0 AND EXISTS ${WORKSPACE_DIR}/install/${package}/${version}/share/Use${package}-${version}.cmake)
+		get_System_Variables(platform package_string)
+		if(BUILD_RES EQUAL 0 AND EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
 			set(${DEPLOYED} TRUE PARENT_SCOPE)
 			if(ADDITIONNAL_DEBUG_INFO)
 				message("[PID] INFO : ... package ${package} version ${version} built !")
@@ -682,17 +668,12 @@ endfunction(build_And_Install_Package)
 
 ### function to test if platforms configurations defined for binary packages are matching the current platform 
 function(check_Package_Platform_Against_Current package platform CHECK_OK)
-get_System_Variables(OS_STRING ARCH_BITS ABI_STRING PACKAGE_STRING)
-if(NOT DEFINED ${package}_AVAILABLE_PLATFORM_${platform}_ABI)
-	set(${package}_AVAILABLE_PLATFORM_${platform}_ABI "CXX")
-endif()
-
-if(	${package}_AVAILABLE_PLATFORM_${platform}_OS STREQUAL ${OS_STRING}
-	AND ${package}_AVAILABLE_PLATFORM_${platform}_ARCH STREQUAL ${ARCH_BITS}
-	AND ${package}_AVAILABLE_PLATFORM_${platform}_ABI STREQUAL ${ABI_STRING})
+set(${CHECK_OK} TRUE PARENT_SCOPE)
+get_System_Variables(PLATFORM_STRING PACKAGE_STRING)
+if(platform STREQUAL ${PLATFORM_STRING})
 	# OK this binary version is theorically eligible, but need to check for its platform configuration to be sure it can be used
-	if(${package}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION)	
-		foreach(config IN ITEMS ${${package}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION})
+	if(${package}_PLATFORM_CONFIGURATIONS)	
+		foreach(config IN ITEMS ${${package}_PLATFORM_CONFIGURATIONS})
 			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)
 				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)	# find the configuation
 				if(NOT ${config}_FOUND)# not found, trying to see if can be installed
@@ -717,14 +698,11 @@ else()#the binary is not eligible since does not match either os or arch of the 
 	set(${CHECK_OK} FALSE PARENT_SCOPE)
 	return()
 endif()	
-set(${CHECK_OK} TRUE PARENT_SCOPE)
 endfunction(check_Package_Platform_Against_Current)
 
 
 ### get the list of binary versions of a given packages that conforms to current platform constraints
 function(get_Available_Binary_Package_Versions package list_of_versions list_of_versions_with_platform)
-#configuring target system
-get_System_Variables(OS_STRING ARCH_BITS ABI_STRING PACKAGE_STRING)
 # listing available binaries of the package and searching if there is any "good version"
 set(available_binary_package_version "")
 foreach(ref_version IN ITEMS ${${package}_REFERENCES})
@@ -861,7 +839,7 @@ endfunction(deploy_Binary_Package_Version)
 
 ### get the filename of a binary archive for a given package, version, platform and build mode.  Constraints: package binary references must be loaded before.
 function(generate_Binary_Package_Name package version platform mode RES_FILE RES_FOLDER)
-get_System_Variables(OS_STRING ARCH_BITS ABI_STRING PACKAGE_STRING)
+get_System_Variables(PLATFORM_STRING PACKAGE_STRING)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(${RES_FILE} "${package}-${version}${TARGET_SUFFIX}-${platform}.tar.gz" PARENT_SCOPE) #this is the archive name generated by PID 
 set(${RES_FOLDER} "${package}-${version}${TARGET_SUFFIX}-${PACKAGE_STRING}" PARENT_SCOPE)#this is the folder name generated by CPack
@@ -869,7 +847,6 @@ endfunction(generate_Binary_Package_Name)
 
 ### download the target binary version archive of a package and then intsall it. Constraint: the binary references of the package must be loaded before this call   
 function(download_And_Install_Binary_Package INSTALLED package version_string platform)
-get_System_Variables(OS_STRING ARCH_BITS ABI_STRING PACKAGE_STRING)
 
 message("[PID] INFO : deploying the binary package ${package} with version ${version_string} for platform ${platform}, please wait ...")
 if(ADDITIONNAL_DEBUG_INFO)
@@ -908,9 +885,9 @@ endif()
 
 ######## installing the package ##########
 # 1) creating the package root folder
-if(NOT EXISTS ${WORKSPACE_DIR}/install/${package})
+if(NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
-			WORKING_DIRECTORY ${WORKSPACE_DIR}/install/
+			WORKING_DIRECTORY ${WORKSPACE_DIR}/install/${platform}
 			ERROR_QUIET OUTPUT_QUIET)
 endif()
 
@@ -959,18 +936,18 @@ endif()
 set(error_res "")
 if(ADDITIONNAL_DEBUG_INFO)
 	execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${package}
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${package}
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
 )
 else()
 	execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${package}
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${package}
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
  	ERROR_QUIET OUTPUT_QUIET)
 endif()
 
 
-if (NOT EXISTS ${WORKSPACE_DIR}/install/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
+if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
 	#try again
 	if(ADDITIONNAL_DEBUG_INFO)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
@@ -983,7 +960,7 @@ if (NOT EXISTS ${WORKSPACE_DIR}/install/${package}/${version_string}/share/Use${
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 			ERROR_VARIABLE error_res OUTPUT_QUIET)
 	endif()
-	if (NOT EXISTS ${WORKSPACE_DIR}/install/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
+	if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
 		set(${INSTALLED} FALSE PARENT_SCOPE)
 		message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}.")
 		return()
@@ -993,6 +970,7 @@ endif()
 ############ post install configuration of the workspace ############
 set(PACKAGE_NAME ${package})
 set(PACKAGE_VERSION ${version_string})
+set(PLATFORM_NAME ${platform})
 include(${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake NO_POLICY_SCOPE)
 if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
@@ -1019,7 +997,6 @@ endif()
 
 if(NOT ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})#no specific version required
 	if(${package}_REFERENCES)
-		
 		#simply searching to most up to date one in available references
 		set(CURRENT_VERSION 0.0.0)
 		foreach(ref IN ITEMS ${available_versions})
@@ -1035,7 +1012,7 @@ if(NOT ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 		return()
 	endif()
 
-else()#specific version(s) required
+else()#specific version(s) required (common case)
 	list(REMOVE_DUPLICATES ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	#1) testing if a solution exists as regard of "exactness" of versions	
 	set(CURRENT_EXACT FALSE)
@@ -1104,9 +1081,16 @@ if(NOT IS_EXISTING)
 	message("[PID] ERROR : unknown external package ${package} : cannot find any reference of this package in the workspace. Cannot install this package.")
 	return()
 endif()
+
 include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
 if(${refer_path} STREQUAL NOTFOUND)
-	message("[PID] ERROR : reference file not found for package ${package}!! This is certainly due to a badly released package. Please contact the administrator of the external package ${package} !!!")
+	message("[PID] ERROR : reference file not found for external package ${package}!! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
+	return()
+endif()
+
+load_Package_Binary_References(REFERENCES_OK ${package}) #getting the references (address of sites) where to download binaries for that package
+if(NOT REFERENCES_OK)
+	message("[PID] ERROR : cannot load the references to external package binaries ! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
 	return()
 endif()
 
@@ -1242,14 +1226,14 @@ endif()
 
 ######## installing the external package ##########
 # 1) creating the external package root folder and the version folder
-if(NOT EXISTS ${WORKSPACE_DIR}/external/${package} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${package})
+if(NOT EXISTS ${WORKSPACE_DIR}/external/${platform}/${package} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform}/${package})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
-			WORKING_DIRECTORY ${WORKSPACE_DIR}/external/
+			WORKING_DIRECTORY ${WORKSPACE_DIR}/external/${platform}
 			ERROR_QUIET OUTPUT_QUIET)
 endif()
-if(NOT EXISTS ${WORKSPACE_DIR}/external/${package}/${version} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${package}/${version})
+if(NOT EXISTS ${WORKSPACE_DIR}/external/${platform}/${package}/${version} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${version}
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/external/${package}
+		WORKING_DIRECTORY ${WORKSPACE_DIR}/external/${platform}/${package}
 		ERROR_QUIET OUTPUT_QUIET)
 endif()
 
@@ -1289,12 +1273,12 @@ endif()
 set(error_res "")
 if(EXISTS download_url_dbg)
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${version}
-          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${package}/${version}
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}
+          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
 else()
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${package}/${version}/
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/
 		ERROR_VARIABLE error_res OUTPUT_QUIET)
 endif()
 
@@ -1322,8 +1306,8 @@ endfunction(download_And_Install_External_Package)
 ### configure the external package, after it has been installed. It can lead to the install of OS related packages depending of its system configuration. See: deploy_External_Package_Version.
 function(configure_External_Package package version mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${package}/${version}/share/)
-include(${WORKSPACE_DIR}/external/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/)
+include(${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
 #using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms 
 if(${res} STREQUAL NOTFOUND) 
 	# no platform usage file => nothing to do	

@@ -269,18 +269,6 @@ endfunction(generate_Package_Page_Binaries_In_Framework)
 ### create introduction page
 function(generate_Static_Site_Page_Introduction generated_pages_folder)
 
-# platform configuration
-set(PACKAGE_PLATFORM_CONFIGURATION "")
-if(${PROJECT_NAME}_AVAILABLE_PLATFORMS)
-	set(PACKAGE_PLATFORM_CONFIGURATION "Here are the possible platform configurations for this package:\n")
-	foreach(platform IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS})# we take only dependencies of the release version
-		generate_Platform_Site(${platform} RES_CONTENT_PLATFORM)
-		set(PACKAGE_PLATFORM_CONFIGURATION "${PACKAGE_PLATFORM_CONFIGURATION}\n${RES_CONTENT_PLATFORM}")
-	endforeach()
-else()
-	set(PACKAGE_PLATFORM_CONFIGURATION "This package cannot be used on any platform (this is BUG !!)\n")
-endif()
-
 # categories
 if (NOT ${PROJECT_NAME}_CATEGORIES)
 	set(PACKAGE_CATEGORIES_LIST "\nThis package belongs to no category.\n")
@@ -546,22 +534,6 @@ endif()
 generate_Static_Site_Pages(${PATH_TO_SITE_PAGES})
 
 endfunction(configure_Pages)
-
-
-###
-function(generate_Platform_Site platform RES_CONTENT_PLATFORM)
-set(CONTENT "### ${platform}\n\n+ OS type: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_OS}\n+ architecture: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_ARCH} bits\n+ abi: ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_ABI}\n")
-
-if(${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION)
-	foreach(config IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORM_${platform}_CONFIGURATION})
-		set(CONTENT "${CONTENT}+ platform configuration required: ${config}")
-	endforeach()
-else()
-	set(CONTENT "${CONTENT}+ no specific platform configuration required.")
-endif()
-set(CONTENT "${CONTENT}\n")
-set(${RES_CONTENT_PLATFORM} ${CONTENT} PARENT_SCOPE) 
-endfunction(generate_Platform_Site)
 
 ###
 function(generate_Dependency_Site dependency RES_CONTENT)

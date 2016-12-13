@@ -74,13 +74,13 @@ else()# a package deployment is required
 	# check of the arguments
 	if(TARGET_VERSION)
 		if(	TARGET_EXTERNAL AND (NOT TARGET_EXTERNAL STREQUAL "")
-			AND EXISTS ${WORKSPACE_DIR}/external/${TARGET_EXTERNAL}/${TARGET_VERSION}
-			AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${TARGET_EXTERNAL}/${TARGET_VERSION})
+			AND EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL}/${TARGET_VERSION}
+			AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL}/${TARGET_VERSION})
 			message("[PID] ERROR : ${TARGET_EXTERNAL} binary version ${TARGET_VERSION} already resides in the workspace.")	
 			return()
-		elseif(	EXISTS ${WORKSPACE_DIR}/install/${TARGET_PACKAGE}/${TARGET_VERSION}
-			AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${TARGET_PACKAGE}/${TARGET_VERSION})
-			message("[PID] ERROR : ${TARGET_PACKAGE} binary version ${TARGET_VERSION} already resides in the workspace.")	
+		elseif(	EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION}
+			AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION})
+			message("[PID] ERROR : ${TARGET_PACKAGE} binary version ${TARGET_VERSION} already resides in the workspace.")
 			return()	
 		endif()
 		if(TARGET_EXTERNAL AND (NOT TARGET_EXTERNAL STREQUAL ""))

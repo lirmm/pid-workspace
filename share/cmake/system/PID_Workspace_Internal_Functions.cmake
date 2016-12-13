@@ -746,15 +746,13 @@ if(verbose)
 else()
 	set(ADDITIONNAL_DEBUG_INFO OFF)
 endif()
-get_System_Variables(OS_STRING ARCH_BITS ABI_STRING PACKAGE_STRING)
+get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 set(MAX_CURR_VERSION 0.0.0)
-if("${version}" STREQUAL "")#deploying the latest version of the repository
+if("${version}" STREQUAL "")#deploying the latest version of the package
 	foreach(version_i IN ITEMS ${${package}_REFERENCES})
-		list(FIND ${package}_REFERENCE_${version_i} ${OS_STRING} INDEX)
-		if(	NOT INDEX EQUAL -1) #a reference for this OS is known
-			list(FIND ${package}_REFERENCE_${version_i}_${OS_STRING} ${ARCH_BITS} INDEX)
-			if(NOT INDEX EQUAL -1 #a reference for this arch is known
-			AND ${version_i} VERSION_GREATER ${MAX_CURR_VERSION})
+		list(FIND ${package}_REFERENCE_${version_i} ${PLATFORM_NAME} INDEX)
+		if(NOT INDEX EQUAL -1) #a reference for this OS is known
+			if(${version_i} VERSION_GREATER ${MAX_CURR_VERSION})
 				set(MAX_CURR_VERSION ${version_i})
 			endif()
 		endif()
@@ -775,18 +773,6 @@ else()#deploying the target binary relocatable archive
 	endif()
 endif()
 endfunction(deploy_External_Package)
-
-### Resolving means: rebinding package loadtime/runtime dependencies
-function(resolve_PID_Package package version)
-set(PACKAGE_NAME ${package})
-set(PROJECT_NAME ${package})
-set(PACKAGE_VERSION ${version})
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)
-include(${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake)
-if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
-	message("[PID] ERROR : cannot configure runtime dependencies for installed version ${version} of package ${package}.")
-endif()
-endfunction(resolve_PID_Package)
 
 ### Configuring the official remote repository of current package 
 function(connect_PID_Framework framework git_url first_time)
@@ -844,27 +830,28 @@ endfunction(add_Connection_To_PID_Framework)
 
 ### clearing consist in clearing a package version related folder from the workspace 
 function(clear_PID_Package package version)
+get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
 
-	if( EXISTS ${WORKSPACE_DIR}/install/${package}/${version}
-	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${package}/${version})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${package}/${version})
+	if( EXISTS ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package}/${version}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package}/${version})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package}/${version})
 	else()
-		if( EXISTS ${WORKSPACE_DIR}/external/${package}/${version}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${package}/${version})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${package}/${version})
+		if( EXISTS ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package}/${version}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package}/${version})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package}/${version})
 		else()
 			message("[PID] ERROR : package ${package} version ${version} does not resides in workspace install directory.")
 		endif()
 	endif()
 elseif("${version}" MATCHES "all")#all versions targetted (including own versions and installers folder)
-	if( EXISTS ${WORKSPACE_DIR}/install/${package}
-	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${package})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${package})
+	if( EXISTS ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
 	else()
-		if( EXISTS ${WORKSPACE_DIR}/external/${package}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${package})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${package})
+		if( EXISTS ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package})
 		else()
 			message("[PID] ERROR : package ${package} is not installed in workspace.")
 		endif()
@@ -876,8 +863,8 @@ endfunction(clear_PID_Package)
 
 ### removing consists in clearing the workspace of any trace of the target package (including its source repository)
 function(remove_PID_Package package)
-
-if(	EXISTS ${WORKSPACE_DIR}/install/${package})
+get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
+if(	EXISTS ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
 	clear_PID_Package(${package} all)
 endif()
 
@@ -1017,9 +1004,10 @@ endfunction(release_PID_Package)
 
 ### update a source package based on git tags of its repository 
 function(update_PID_Source_Package package)
+get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 set(INSTALLED FALSE)
 message("[PID] INFO : launch the update of source package ${package}...")
-list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${package})
+list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
 deploy_Source_Package(INSTALLED ${package} "${version_dirs}")
 if(NOT INSTALLED)
 	message("[PID] ERROR : cannot update ${package}.")
@@ -1031,8 +1019,9 @@ endfunction(update_PID_Source_Package)
 
 ### update a binary package based on available binary references 
 function(update_PID_Binary_Package package)
+get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 message("[PID] INFO : launch the update of binary package ${package}...")
-list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${package})
+list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
 deploy_Binary_Package(DEPLOYED ${package} "${version_dirs}")
 if(NOT DEPLOYED) 
 	message("[PID] ERROR : cannot update ${package}.")
@@ -1120,4 +1109,100 @@ message("OFFICIAL NAME: ${LICENSE_FULLNAME}")
 message("AUTHORS: ${LICENSE_AUTHORS}")
 endfunction()
 
+
+########################################################################
+######################## Platforms management ##########################
+########################################################################
+
+function(manage_Platforms)
+
+## OLD CODE => to put into workspace
+#testing processor type
+set(TEST_TYPE ${type})
+include(CheckTYPE)
+if(NOT CHECK_TYPE_RESULT)
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${type} processor.")
+	endif()	
+	return()
+endif()
+
+#testing processor architecture
+set(TEST_ARCH ${arch})
+include(CheckARCH)
+if(NOT CHECK_ARCH_RESULT)
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
+	endif()	
+	return()
+endif()
+
+#testing OS
+set(TEST_OS ${os})
+include(CheckOS)
+if(NOT CHECK_OS_RESULT)
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${os} operating system.")
+	endif()	
+	return()
+endif()
+
+#testing ABI
+if(abi)
+	set(TEST_ABI ${abi})
+else()
+	set(TEST_ABI ANY)#no ABI check (not used for referencing a binary package)
+endif()
+include(CheckABI)
+if(NOT CHECK_ABI_RESULT)
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${abi} ABI.")
+	endif()	
+	return()
+endif()
+
+
+# testing configuration
+if(constraints)
+	foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform and install it if possible
+			if(NOT CHECK_${config}_RESULT)
+				if(ADDITIONNAL_DEBUG_INFO)
+					message("[PID] INFO : when checking platform ${RES_NAME}, ${config} constraint not satisfied.")
+				endif()
+				set(SKIP TRUE)					
+				break()
+			endif()
+		else()
+			message(FATAL_ERROR "[PID] INFO : when checking platform ${RES_NAME}, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${RES_NAME}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${RES_NAME} to manage this configuration.")
+			return()
+		endif()
+	endforeach()
+endif()
+
+if(abi)
+	set(using_ABI ${abi})
+else()
+	set(using_ABI ${CURRENT_ABI}) #the current ABI is in use
+endif()
+
+if(NOT SKIP)
+	platform_Selected(SELECTED)
+	if(NOT SELECTED) #no platform registered yet
+		add_Platform(TRUE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
+		set(${RES_NAME} TRUE PARENT_SCOPE)
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : platform selected : ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.")
+		endif()
+	else()
+		add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] WARNING : more than one possible platform configuration has been detected. Platform ${RES_NAME} is eligible but only the first found, ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}} is selected.")
+		endif()	
+	endif()
+else()
+	add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")#simply registering the configuration but do not select it
+endif()
+endfunction()
 

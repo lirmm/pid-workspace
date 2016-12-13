@@ -32,16 +32,24 @@ SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_PREFIXES)
 SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_SUFFIXES)
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 
-if(TARGET_PACKAGES AND REQUIRED_VERSION)
-	if(	NOT EXISTS ${WORKSPACE_DIR}/install/${TARGET_PACKAGES} 
-		OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${TARGET_PACKAGES}
-		OR NOT EXISTS ${WORKSPACE_DIR}/install/${TARGET_PACKAGES}/${REQUIRED_VERSION}
-		OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${TARGET_PACKAGES}/${REQUIRED_VERSION}
+if(TARGET_PACKAGE AND TARGET_VERSION)
+	if(	NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE} 
+		OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}
+		OR NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION}
+		OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION}
 	)
-		message("[PID] ERROR : binary package version ${REQUIRED_VERSION} is not installed on the system.")
+		message("[PID] ERROR : binary package version ${TARGET_VERSION} is not installed on the system.")
 		return()
 	endif()
-	resolve_PID_Package(${TARGET_PACKAGES} ${REQUIRED_VERSION})
+	set(PACKAGE_NAME ${package})
+	set(PROJECT_NAME ${package})
+	set(PACKAGE_VERSION ${version})
+	set(PLATFORM_NAME ${CURRENT_PLATFORM})
+	set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)
+	include(${WORKSPACE_DIR}/share/cmake/system/Bind_PID_Package.cmake)
+	if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
+		message("[PID] ERROR : cannot configure runtime dependencies for installed version ${version} of package ${package}.")
+	endif()
 else()
 	message("[PID] ERROR : you must specify (1) a package using argument name=<name of package>, (2) a package version using argument version=<version number>.")
 	return()

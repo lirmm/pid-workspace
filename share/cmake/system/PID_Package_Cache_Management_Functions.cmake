@@ -313,8 +313,9 @@ reset_Version_Cache_Variables()
 endfunction(init_Package_Info_Cache_Variables)
 
 function(init_Standard_Path_Cache_Variables)
-set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "")
-set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL "")
+get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME} CACHE INTERNAL "")
+set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME} CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH}  CACHE INTERNAL "")
 set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resources CACHE INTERNAL "")
@@ -398,25 +399,25 @@ endfunction(add_Category)
 ############### API functions for setting platform related variables ##############
 ###################################################################################
 
-### here platform matches a platform defined in available platforms variable
+### add a direct reference to a binary version of the package
 function(add_Reference version platform url url-dbg)
-	list(FIND ${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX} ${platform} INDEX)
+	list(FIND WORKSPACE_ALL_PLATFORMS ${platform} INDEX)
 	if(INDEX EQUAL -1)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target platform ${platform} when adding reference.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target platform ${platform} when adding reference. Please look into ${WORKSPACE_DIR}/share/cmake/platforms/ to find al predefined platforms and eventually create your own.")
 		return()
 	endif()
 	set(LIST_OF_VERSIONS ${${PROJECT_NAME}_REFERENCES} ${version})
 	list(REMOVE_DUPLICATES LIST_OF_VERSIONS)
-	set(${PROJECT_NAME}_REFERENCES  ${LIST_OF_VERSIONS} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCES  ${LIST_OF_VERSIONS} CACHE INTERNAL "")#to put the modification in cache
 	list(FIND ${PROJECT_NAME}_REFERENCE_${version} ${platform} INDEX)
-	if(INDEX EQUAL -1)	
+	if(INDEX EQUAL -1)#this version for tha target platform is not already registered 
 		set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${platform} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL ${url} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL_DEBUG ${url-dbg} CACHE INTERNAL "")
 	endif()
 endfunction(add_Reference)
 
-###
+### reset variables describing direct references to binaries
 function(reset_References_Info)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
@@ -432,64 +433,47 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 endfunction(reset_References_Info)
 
-
-###
+### reset variables describing platforms constraints
 function(reset_Platforms_Variables)
-	if(${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX})
-		foreach(platform IN ITEMS ${${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX}})
-			set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_OS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-			set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_ARCH${USE_MODE_SUFFIX} CACHE INTERNAL "")
-			set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_ABI${USE_MODE_SUFFIX} CACHE INTERNAL "")
-			set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_CONFIGURATION${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		endforeach()
+	if(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX}) # reset all configurations satisfied by current platform
+		set(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	endif()
-	set(${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PLATFORM_OS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PLATFORM_ARCH${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PLATFORM_ABI${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PLATFORM_CONFIGURATION${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	#reset all constraints defined by the package
+	if(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS_${USE_MODE_SUFFIX} GREATER 0)
+		set(CURRENT_INDEX 0)
+		
+		while(${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS_${USE_MODE_SUFFIX}} GREATER CURRENT_INDEX)
+			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_TYPE${USE_MODE_SUFFIX} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ARCH${USE_MODE_SUFFIX} CACHE INTERNAL "")
+		  	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_OS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ABI${USE_MODE_SUFFIX} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONFIGURATION${USE_MODE_SUFFIX} CACHE INTERNAL "")
+			math(EXPR CURRENT_INDEX "${CURRENT_INDEX}+1")
+		endwhile()
+		set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS_${USE_MODE_SUFFIX} 0 CACHE INTERNAL "")
+	endif()
 endfunction(reset_Platforms_Variables)
 
-###
-function(add_Platform SELECT name os arch abi constraints)
-	list(FIND ${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX} "${name}" INDEX)
-	if(INDEX EQUAL -1)
-		set(${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX}} ${name} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_OS${USE_MODE_SUFFIX} ${os} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_ARCH${USE_MODE_SUFFIX} ${arch} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_ABI${USE_MODE_SUFFIX} ${abi} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_AVAILABLE_PLATFORM_${name}_CONFIGURATION${USE_MODE_SUFFIX} ${constraints} CACHE INTERNAL "")
-	else()
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : when defining platform ${name}, this platform is already defined, please use another name.")
-	endif()
-	if(SELECT)
-		set(${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX} ${name} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_PLATFORM_OS${USE_MODE_SUFFIX} ${os} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_PLATFORM_ARCH${USE_MODE_SUFFIX} ${arch} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_PLATFORM_ABI${USE_MODE_SUFFIX} ${abi} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_PLATFORM_CONFIGURATION${USE_MODE_SUFFIX} ${constraints} CACHE INTERNAL "")
-	endif()
-endfunction(add_Platform)
+### define a set of configuration constraints that applies to all platforms with specific condition specified by type arch os and abi
+function(add_Platform_Constraint_Set type arch os abi constraints)
+	set(CURRENT_INDEX ${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS_${USE_MODE_SUFFIX}}) #current index is the current number of all constraint sets 
+	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_TYPE${USE_MODE_SUFFIX} ${type} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ARCH${USE_MODE_SUFFIX} ${arch} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_OS${USE_MODE_SUFFIX} ${os} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ABI${USE_MODE_SUFFIX} ${abi} CACHE INTERNAL "")
+	# the configuration constraint is written here and applies as soon as all conditions are satisfied
+	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONFIGURATION${USE_MODE_SUFFIX} ${constraints} CACHE INTERNAL "")
 
-###
-function(platform_Selected SELECTED)
-	if(${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX})
-		set(${SELECTED} TRUE PARENT_SCOPE)
-	else()
-		set(${SELECTED} FALSE PARENT_SCOPE)
-	endif()
-endfunction(platform_Selected)
+	math(EXPR NEW_SET_SIZE "${CURRENT_INDEX}+1")
+	set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS_${USE_MODE_SUFFIX} ${NEW_SET_SIZE} CACHE INTERNAL "")
+endfunction(add_Platform_Constraint_Set)
 
-
-###
-function(platform_Available AVAILABLE)
-	if(${PROJECT_NAME}_AVAILABLE_PLATFORMS${USE_MODE_SUFFIX})
-		set(${AVAILABLE} TRUE PARENT_SCOPE)
-	else()
-		set(${AVAILABLE} FALSE PARENT_SCOPE)
-	endif()
-endfunction(platform_Available)
+### add a set of configuration constraints that are satisfied by the current platform 
+function(add_Configuration_To_Platform constraints)
+	list(APPEND ${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} ${constraints})
+	list(REMOVE_DUPLICATES ${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX})
+	set(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX}} CACHE INTERNAL "") #to put the new value in cache
+endfunction(add_Configuration_To_Platform)
 
 #############################################################################################
 ############### API functions for setting components related cache variables ################
@@ -1008,17 +992,12 @@ else()
 	set(MODE_SUFFIX _DEBUG)
 endif()
 
+get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 #mode dependent info written adequately depending on the mode 
-# 0) platforms constraints
+# 0) platforms configuration constraints
 file(APPEND ${file} "#### declaration of platform dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-file(APPEND ${file} "set(${package}_PLATFORM${MODE_SUFFIX} ${${package}_PLATFORM${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-if(${package}_PLATFORM${MODE_SUFFIX})
-	set(platform ${${package}_PLATFORM${MODE_SUFFIX}})
-	file(APPEND ${file} "set(${package}_PLATFORM_${platform}_OS${MODE_SUFFIX} ${${package}_PLATFORM_OS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package}_PLATFORM_${platform}_ARCH${MODE_SUFFIX} ${${package}_PLATFORM_ARCH${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package}_PLATFORM_${platform}_ABI${MODE_SUFFIX} ${${package}_PLATFORM_ABI${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package}_PLATFORM_${platform}_CONFIGURATION${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-endif()
+file(APPEND ${file} "set(${package}_PLATFORM${MODE_SUFFIX} ${CURRENT_PLATFORM_NAME} CACHE INTERNAL \"\")\n") # not really usefull since a use file is bound to a given platform, but may be usefull for debug
+file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
 # 1) external package dependencies
 file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
@@ -1172,10 +1151,11 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 endmacro(generate_Use_File)
 
-
+############################################################################################
 ############ function used to create the Dep<package>.cmake file of the package  ###########
+############################################################################################
 
-###
+## subsidiary function to write the description of native dependencies of a given package in the dependencies description file
 function(current_Native_Dependencies_For_Package package depfile PACKAGES_ALREADY_MANAGED PACKAGES_NEWLY_MANAGED)
 get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
 #information on package to register
@@ -1184,11 +1164,10 @@ file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_ALL_VERSION${MO
 file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${MODE_SUFFIX} ${${package}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
-#platform info
-file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_PLATFORM${MODE_SUFFIX} ${${package}_PLATFORM} CACHE INTERNAL \"\")\n")
-file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_PLATFORM_CONFIGURATION${MODE_SUFFIX} ${${package}_PLATFORM_${${package}_PLATFORM}_CONFIGURATION} CACHE INTERNAL \"\")\n")
+#registering platform configuration info coming from the dependency
+file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
-#recursion on external dependencies
+#call on external dependencies
 set(ALREADY_MANAGED ${PACKAGES_ALREADY_MANAGED} ${package})
 set(NEWLY_MANAGED ${package})
 
@@ -1201,7 +1180,7 @@ foreach(a_used_package IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}
 	endif()	
 endforeach()
 
-#recursion on dependencies
+#recursion on native dependencies
 foreach(a_used_package IN ITEMS ${${package}_DEPENDENCIES${MODE_SUFFIX}})
 	list(FIND ALREADY_MANAGED ${a_used_package} INDEX)
 	if(INDEX EQUAL -1) #not managed yet
@@ -1214,35 +1193,36 @@ endforeach()
 set(${PACKAGES_NEWLY_MANAGED} ${NEWLY_MANAGED} PARENT_SCOPE)
 endfunction(current_Native_Dependencies_For_Package)
 
-###
+## subsidiary function to write the description of external dependencies of a given package in the dependencies description file
 function(current_External_Dependencies_For_Package package depfile PACKAGES_NEWLY_MANAGED)
 get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
 #information on package to register
 file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_VERSION${MODE_SUFFIX} ${${package}_VERSION_STRING} CACHE INTERNAL \"\")\n")
 file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_ALL_VERSION${MODE_SUFFIX} ${${package}_ALL_REQUIRED_VERSIONS} CACHE INTERNAL \"\")\n")
 
-#no platform info for external libraries
+# platform configuration info for external libraries
+file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
 set(NEWLY_MANAGED ${package})
 set(${PACKAGES_NEWLY_MANAGED} ${NEWLY_MANAGED} PARENT_SCOPE)
 endfunction(current_External_Dependencies_For_Package)
 
 
-###
+### generate the dependencies description file
 macro(generate_Dependencies_File)
+get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
 set(file ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 file(WRITE ${file} "")
 ############# FIRST PART : statically declared dependencies ################
 
 # 1) platforms
-file(APPEND ${file} "set(TARGET_PLATFORM${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-if(${PROJECT_NAME}_PLATFORM${MODE_SUFFIX})
-	file(APPEND ${file} "set(TARGET_PLATFORM_OS${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_OS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(TARGET_PLATFORM_ARCH${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_ARCH${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-
-	file(APPEND ${file} "set(TARGET_PLATFORM_CONFIGURATION${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_CONFIGURATION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-endif()
+file(APPEND ${file} "set(TARGET_PLATFORM ${CURRENT_PLATFORM_NAME} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(TARGET_PLATFORM_TYPE ${CURRENT_PLATFORM_TYPE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(TARGET_PLATFORM_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(TARGET_PLATFORM_OS ${CURRENT_PLATFORM_OS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(TARGET_PLATFORM_ABI ${CURRENT_PLATFORM_ABI} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(TARGET_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
 # 2) external packages
 file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")

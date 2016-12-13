@@ -16,20 +16,16 @@
 #	You can find the complete license description on the official website 		#
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
+set(CURRENT_ARCH CACHE INTERNAL "")
 
-
-if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-	if(TEST_ARCH EQUAL 32)
-		set(CHECK_ARCH_RESULT TRUE)
-	else()
-		set(CHECK_ARCH_RESULT FALSE)
-	endif()
+#test of processor architecture is based on the compiler used
+#So it adapts to the current development environment in use
+if(${CMAKE_SIZEOF_VOID_P} EQUAL 2)
+	set(CURRENT_ARCH 16 CACHE INTERNAL "")
+elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
+	set(CURRENT_ARCH 32 CACHE INTERNAL "")
 elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-	if(TEST_ARCH EQUAL 64)
-		set(CHECK_ARCH_RESULT TRUE)
-	else()
-		set(CHECK_ARCH_RESULT FALSE)
-	endif()
+	set(CURRENT_ARCH 64 CACHE INTERNAL "")
 endif()
 
 

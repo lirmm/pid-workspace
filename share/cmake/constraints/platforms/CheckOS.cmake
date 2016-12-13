@@ -18,31 +18,47 @@
 #########################################################################################
 
 set(CURRENT_DISTRIBUTION CACHE INTERNAL "")
+set(CURRENT_PACKAGE_STRING CACHE INTERNAL "")
+set(CURRENT_OS CACHE INTERNAL "")
 
-if(APPLE)
- 	if(TEST_OS STREQUAL macosx)
-		set(CHECK_OS_RESULT TRUE)
+#test of the os is based on the compiler used  (APPLE and UNIX variables) AND on system variables affected by crosscompilation (CMAKE_SYSTEM_NAME)
+#So it adapts to the current development environment in use
+
+if(APPLE AND ${CMAKE_SYSTEM_NAME} STREQUAL Darwin) #darwin = kernel name for macosx systems
+	set(CURRENT_OS macosx  CACHE INTERNAL "")
+	set(CURRENT_PACKAGE_STRING "Darwin" CACHE INTERNAL "")
+	if(NOT PID_CROSSCOMPILATION)
+		set(CURRENT_DISTRIBUTION "macosx" CACHE INTERNAL "")
 	else()
-		set(CHECK_OS_RESULT FALSE)
+		set(CURRENT_DISTRIBUTION "" CACHE INTERNAL "")
 	endif()
-	set(CURRENT_DISTRIBUTION "macosx" CACHE INTERNAL "")
 
-elseif(UNIX)
-	if(TEST_OS STREQUAL linux)
-		set(CHECK_OS_RESULT TRUE)
+elseif(UNIX AND ${CMAKE_SYSTEM_NAME} STREQUAL Linux)# linux kernel = the reference !!
+	set(CURRENT_PACKAGE_STRING "Linux")
+
+	#we need to test if the system is patched with xenomai.
+	get_filename_component(FILENAME_C "${CMAKE_C_COMPILER}" NAME)
+	get_filename_component(FILENAME_CXX "${CMAKE_CXX_COMPILER}" NAME)
+	if(FILENAME_C MATCHES xeno-config AND FILENAME_CXX MATCHES xeno-config )#the xeno-config program is the one used by xenomai to build code  
+		set(CURRENT_OS "xenomai" CACHE INTERNAL "")
 	else()
-		set(CHECK_OS_RESULT FALSE)
+		set(CURRENT_OS "linux" CACHE INTERNAL "")
 	endif()
 	
 	# now check for distribution (shoud not influence contraints but only the way to install required constraints)
-	execute_process(COMMAND lsb_release -i OUTPUT_VARIABLE DISTRIB_STR ERROR_QUIET)
-	string(REGEX REPLACE "^[^:]+:[ \t\r]*([A-Za-z_0-9]+)[ \t\r\n]*$" "\\1" RES "${DISTRIB_STR}")
+	if(NOT PID_CROSSCOMPILATION)
+		execute_process(COMMAND lsb_release -i OUTPUT_VARIABLE DISTRIB_STR ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID
+		string(REGEX REPLACE "^[^:]+:[ \t\r]*([A-Za-z_0-9]+)[ \t\r\n]*$" "\\1" RES "${DISTRIB_STR}")
 	
-	if(NOT RES STREQUAL "${DISTRIB_STR}")#match
-		string(TOLOWER "${RES}" DISTRIB_ID)
-		set(CURRENT_DISTRIBUTION "${DISTRIB_ID}" CACHE INTERNAL "")
+		if(NOT RES STREQUAL "${DISTRIB_STR}")#match
+			string(TOLOWER "${RES}" DISTRIB_ID)
+			set(CURRENT_DISTRIBUTION "${DISTRIB_ID}" CACHE INTERNAL "")
+		else()
+			set(CURRENT_DISTRIBUTION "" CACHE INTERNAL "")
+		endif()
+	else()# when cross compiling we cannot use distribution info
+		set(CURRENT_DISTRIBUTION "" CACHE INTERNAL "")
 	endif()
-else() #other OS are not known (add new elseif statement to check for other OS
-	set(CHECK_OS_RESULT FALSE)
+#other OS are not known (add new elseif statement to check for other OS and set adequate variables)
 endif()
 

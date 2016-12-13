@@ -57,14 +57,6 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms
 #################################################
 ############ MANAGING build mode ################
 #################################################
-set(${PROJECT_NAME}_ARCH CACHE INTERNAL "")#Deprecated but necessary: keeping arch as a cache variable to maintain compatibility with old style packages
-if(${CMAKE_SIZEOF_VOID_P} EQUAL 2)
-	set(${PROJECT_NAME}_ARCH 16 CACHE INTERNAL "")
-elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-	set(${PROJECT_NAME}_ARCH 32 CACHE INTERNAL "")
-elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-	set(${PROJECT_NAME}_ARCH 64 CACHE INTERNAL "")
-endif()
 
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 if(DIR_NAME STREQUAL "build/release")
@@ -417,13 +409,12 @@ elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRES
 endif()
 init_Documentation_Info_Cache_Variables("${framework}" "${url}" "" "" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
-	get_System_Variables(OS_STRING ARCH_STRING ABI_STRING PACKAGE_SYSTEM_STRING)
-
+	get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
-						-DTARGET_PLATFORM=${PACKAGE_SYSTEM_STRING} #TODO change this to the new platform format
+						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DTARGET_FRAMEWORK=${framework}
@@ -449,13 +440,13 @@ elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRES
 endif()
 init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${homepage}" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
-	get_System_Variables(OS_STRING ARCH_STRING ABI_STRING PACKAGE_SYSTEM_STRING)
-
+	
+	get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
-						-DTARGET_PLATFORM=${PACKAGE_SYSTEM_STRING} #TODO change this to the new platform format
+						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DINCLUDES_API_DOC=${BUILD_API_DOC}
@@ -484,120 +475,63 @@ endfunction(set_Current_Version)
 #####################################################################################################
 ################## checking that the platfoprm description match the current platform ###############
 #####################################################################################################
-function(check_Platform_Constraints RES_NAME os arch abi constraints)
-set(${RES_NAME} FALSE PARENT_SCOPE)
+function(check_Platform_Constraints type os arch abi constraints)
 set(SKIP FALSE)
-#testing OS
-set(TEST_OS ${os})
-include(CheckOS)
-if(NOT CHECK_OS_RESULT)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${os} operating system.")
-	endif()	
-	set(SKIP TRUE)
+#The check of compatibility between the target platform and the constraints is immediate using platform configuration information (platform files) + additionnal global information (distribution for instance) coming from the workspace 
+
+#1) checking the conditions to know if the configuration concerns the platform currently in use
+if(type AND NOT type STREQUAL "") # a processor type is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_TYPE STREQUAL ${type})
+		set(SKIP TRUE)
+	endif()
 endif()
 
-set(TEST_ARCH ${arch})
-include(CheckARCH)
-
-if(abi)
-	set(TEST_ABI ${abi})
-else()
-	set(TEST_ABI ANY)#no ABI check (not used for referencing a binary package)
-endif()
-include(CheckABI)
-
-
-#testing architecture
-if(NOT SKIP AND NOT CHECK_ARCH_RESULT)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
-	endif()	
-	set(SKIP TRUE)
+if(NOT SKIP AND arch AND NOT arch STREQUAL "") # a processor architecture is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_ARCH STREQUAL ${arch})
+		set(SKIP TRUE)
+	endif()
 endif()
 
-if(NOT SKIP)
-	# testing configuration
-	if(constraints)
-		foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
-			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform and install it if possible
-				if(NOT CHECK_${config}_RESULT)
-					if(ADDITIONNAL_DEBUG_INFO)
-						message("[PID] INFO : when checking platform ${RES_NAME}, ${config} constraint not satisfied.")
-					endif()
-					set(SKIP TRUE)					
-					break()
-				endif()
-			else()
-				message(FATAL_ERROR "[PID] INFO : when checking platform ${RES_NAME}, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${RES_NAME}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${RES_NAME} to manage this configuration.")
+if(NOT SKIP AND os AND NOT os STREQUAL "") # an operating system is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_OS STREQUAL ${os})
+		set(SKIP TRUE)
+	endif()
+endif()
+
+if(NOT SKIP AND abi AND NOT abi STREQUAL "") # an operating system is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_ABI STREQUAL ${abi})
+		set(SKIP TRUE)
+	endif()
+endif()
+
+#2) testing configuration constrints if the platform currently in use satisfies conditions
+# 
+if(NOT SKIP AND constraints)
+	foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform and install it if possible
+			if(NOT CHECK_${config}_RESULT)
+				message(FATAL_ERROR "[PID] ERROR : current platform does not satisfy configuration constraint ${config}.")
 				return()
 			endif()
-		endforeach()
-	endif()
-endif()
-
-if(NOT SKIP AND NOT CHECK_ABI_RESULT)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : when checking platform ${RES_NAME}, ABI is not adequate (not a ${abi} ABI).")
-	endif()	
-	set(SKIP TRUE)
-endif()
-
-if(abi)
-	set(using_ABI ${abi})
-else()
-	set(using_ABI ${CURRENT_ABI}) #the current ABI is in use
-endif()
-
-if(NOT SKIP)
-	platform_Selected(SELECTED)
-	if(NOT SELECTED) #no platform registered yet
-		add_Platform(TRUE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
-		set(${RES_NAME} TRUE PARENT_SCOPE)
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : platform selected : ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.")
+		else()
+			message(FATAL_ERROR "[PID] INFO : when checking constraints on current platform, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${config}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config} to manage this configuration.")
+			return()
 		endif()
-	else()
-		add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] WARNING : more than one possible platform configuration has been detected. Platform ${RES_NAME} is eligible but only the first found, ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}} is selected.")
-		endif()	
-	endif()
-else()
-	add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")#simply registering the configuration but do not select it
+	endforeach()
+	#from here OK all configuration constraints are satisfied
+	add_Configuration_To_Platform("${constraints}")
 endif()
 
+# whatever the result the constraint is registered
+add_Platform_Constraint_Set()
 endfunction(check_Platform_Constraints)
-
-###
-function(create_Default_Platforms_Set common_configuration) #default set without consfiguration constraints
-	check_Platform_Constraints(linux64cxx11 linux 64 CXX11 "${common_configuration}")
-	set(linux64cxx11 ${linux64cxx11} PARENT_SCOPE)
-	check_Platform_Constraints(linux64 linux 64 CXX "${common_configuration}")
-	set(linux64 ${linux64} PARENT_SCOPE)
-	check_Platform_Constraints(linux32 linux 32 CXX "${common_configuration}")
-	set(linux32 ${linux32} PARENT_SCOPE)
-	check_Platform_Constraints(macosx64 macosx 64 CXX "${common_configuration}")
-	set(macosx64 ${macosx64} PARENT_SCOPE)
-endfunction(create_Default_Platforms_Set)
 
 ##################################################################################
 ################################### building the package #########################
 ##################################################################################
 macro(build_Package)
-### checking platform constraints
-platform_Available(AVAILABLE)
-if(NOT AVAILABLE)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : No check for platform, this code may be built for all default platforms as soon as its dependencies can. Automatically building a platform configuration from current environment ...")
-	endif()
-	create_Default_Platforms_Set("") #in case the user did not define any platform check
-endif()
-platform_Selected(SELECTED)
-if(NOT SELECTED) # a platform (even a default one) must be selected or we can just not build the project 
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : No platform configuration matches the current environment.")
-endif()
+get_System_Variables(CURRENT_PLATFORM_NAME PACKAGE_SYSTEM_STRING)
 
 ### configuring RPATH management in CMake
 set(CMAKE_SKIP_BUILD_RPATH FALSE) # don't skip the full RPATH for the build tree
@@ -606,7 +540,7 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install
 
 if(APPLE)
         set(CMAKE_MACOSX_RPATH TRUE)
-	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to @loader_path to enable easy package relocation
+	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal librari	es managed by default), name is relative to @loader_path to enable easy package relocation
 elseif (UNIX)
 	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
 endif()
@@ -678,7 +612,7 @@ endif()
 ############ MANAGING the BUILD #################
 #################################################
 
-# recursive call into subdirectories to build/install/test the package
+# recursive call into subdirectories to build, install, test the package
 add_subdirectory(src)
 add_subdirectory(apps)
 
@@ -781,13 +715,15 @@ if(GENERATE_INSTALLER)
 	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
 	list(APPEND CPACK_GENERATOR TGZ)
-	get_System_Variables(OS_STRING ARCH_STRING ABI_STRING PACKAGE_SYSTEM_STRING)
 
+	set(PACKAGE_SOURCE_NAME ${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${PACKAGE_SYSTEM_STRING}.tar.gz)
+	set(PACKAGE_TARGET_NAME ${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${CURRENT_PLATFORM_NAME}.tar.gz) #we use specific PID platform name instead of CMake default one to avoid troubles (because it is not really discrimant)
+	
 	if(PACKAGE_SYSTEM_STRING)
 		add_custom_target(	package_install
-					COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${PACKAGE_SYSTEM_STRING}.tar.gz
-					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.tar.gz
-					COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.tar.gz in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
+					COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
+					COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
+					COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
 				)
 		include(CPack)
 	endif()
@@ -822,7 +758,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	# adding an uninstall command (uninstall the whole installed version)
 	add_custom_target(uninstall
 		COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
-		COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
+		COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
 		VERBATIM
 	)
 	

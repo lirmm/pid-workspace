@@ -1,0 +1,5 @@
+set(PLATFORM_x86_32_xenomai_abi98_NAME "x86_32_xenomai_abi98")
+set(PLATFORM_x86_32_xenomai_abi98_TYPE "x86")
+set(PLATFORM_x86_32_xenomai_abi98_ARCH "32")
+set(PLATFORM_x86_32_xenomai_abi98_OS "xenomai")
+set(PLATFORM_x86_32_xenomai_abi98_ABI "CXX")

@@ -17,24 +17,18 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
+set(CURRENT_TYPE CACHE INTERNAL "")
 
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
-include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
+#test of processor type is based on system variables affected by cross compilation
+#So it adapts to the current development environment in use
 
-if(TARGET_PACKAGE AND TARGET_VERSION)
-	if(	EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE})
-		clear_PID_Package(	${TARGET_PACKAGE} 
-					${TARGET_VERSION})
-	elseif(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_PACKAGE}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_PACKAGE})
-		clear_PID_Package(	${TARGET_PACKAGE} 
-					${TARGET_VERSION})
-	else()
-		message("[PID] ERROR : there is no package named ${TARGET_PACKAGE} installed.")
-	endif()
-else()
-	message("[PID] ERROR : you must specify the name of the package to clear using name=<name of package> argument and a version using version=<type or number of the  version>")
-endif()
+if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL arm)
+	set(CURRENT_TYPE arm CACHE INTERNAL "")
+elseif(	"${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86 
+	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86_32
+	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86_64
+	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL amd64)
+	set(CURRENT_TYPE x86 CACHE INTERNAL "")
+endif()# Note: add more check to test other processor architectures
 
 

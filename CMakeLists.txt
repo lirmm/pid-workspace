@@ -28,6 +28,11 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 PROJECT(pid-workspace)
 include(CheckOS)
 
+message("CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
+message("CMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}")
+message("CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
+message("CMAKE_LIBRARY_ARCHITECTURE=${CMAKE_LIBRARY_ARCHITECTURE}")
+
 #### TODO modify this when dealing with platforms
 set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external CACHE INTERNAL "")
@@ -58,7 +63,6 @@ endif()
 set(PID_SYSTEM_VERSION 2 CACHE INTERNAL "")
 configure_file(${CMAKE_SOURCE_DIR}/share/patterns/PID_version.cmake.in ${CMAKE_BINARY_DIR}/PID_version.cmake @ONLY) #put it into a file to allow packages to easily retrieve PID version information
 
-message("CMAKE_LIBRARY_ARCHITECTURE=${CMAKE_LIBRARY_ARCHITECTURE}")
 
 #1) reset information about categories
 reset_All_Categories()
@@ -94,7 +98,8 @@ add_custom_target(info
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
 					-DTARGET_LICENSE=$(license)
-					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}
 					-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 					-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
@@ -127,6 +132,7 @@ add_custom_target(deploy
 					-DTARGET_FRAMEWORK=$(framework)
 					-DVERBOSE_MODE=$(verbose)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DPACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/install
 					-DEXTERNAL_PACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/external
 					-DCMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
@@ -160,6 +166,7 @@ add_custom_target(deploy
 add_custom_target(build
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="$(package)"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Build_PID_Packages.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -169,6 +176,7 @@ add_custom_target(build
 add_custom_target(rebuild
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="$(package)"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Rebuild_PID_Packages.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -176,8 +184,9 @@ add_custom_target(rebuild
 
 ## resolving runtime dependencies of an already installed package
 add_custom_target(resolve
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES=$(package) 
-					-DREQUIRED_VERSION=$(version)
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package) 
+					-DTARGET_VERSION=$(version)
+					-DTARGET_PLATFORM=${CURRENT_PLATFORM}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DPACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/install
 					-DEXTERNAL_PACKAGE_BINARY_INSTALL_DIR=${CMAKE_SOURCE_DIR}/external
@@ -217,7 +226,8 @@ add_custom_target(create
 					-DOPTIONAL_LICENSE=$(license)
 					-DOPTIONNAL_GIT_URL=$(url)
 					-DOPTIONNAL_SITE=$(site)
-					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Create_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -230,6 +240,7 @@ add_custom_target(connect
 					-DORIGIN_GIT_URL=$(origin)
 					-DFORCED_RECONNECTION=$(force)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}					
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Connect_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -239,7 +250,8 @@ add_custom_target(connect
 ## clearing a package install directory
 add_custom_target(clear
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
-					-DTARGET_VERSION=$(version)					
+					-DTARGET_VERSION=$(version)
+					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Clear_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -250,6 +262,7 @@ add_custom_target(clear
 add_custom_target(remove
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
+					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Remove_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -260,6 +273,7 @@ add_custom_target(remove
 add_custom_target(register
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
+					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Register_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
