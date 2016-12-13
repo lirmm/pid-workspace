@@ -193,7 +193,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/packages/README.md.in)
 	set(APIDOC_WELCOME_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/packages/APIDOC_welcome.md.in)
 	## introduction (more detailed description, if any)
-	if(NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS AND NOT ${PROJECT_NAME}_FRAMEWORK)#no site description has been provided nor framework reference (TODO manage frameworks)
+	get_Package_Site_Address(ADDRESS ${PROJECT_NAME})
+	if(NOT ADDRESS)#no site description has been provided nor framework reference
 		# intro		
 		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site use the short one
 		# no reference to site page
@@ -214,13 +215,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
 
 		# reference to site page
-		if(${PROJECT_NAME}_SITE_GIT_ADDRESS)
-			set(PACKAGE_SITE_REF_IN_README "[package_site]: ${${PROJECT_NAME}_SITE_ROOT_PAGE} \"${PROJECT_NAME} package\"
+		set(PACKAGE_SITE_REF_IN_README "[package_site]: ${ADDRESS} \"${PROJECT_NAME} package\"
 ")
-		else()
-			set(PACKAGE_SITE_REF_IN_README "[package_site]: ${${PROJECT_NAME}_FRAMEWORK} \"${PROJECT_NAME} package\"
-")
-		endif()
 	endif()
 	
 	if(${PROJECT_NAME}_LICENSE)
@@ -964,6 +960,19 @@ endfunction(build_Static_Site)
 ###################Framework usage functions ########################
 #####################################################################
 
+### Get the root address of the package page (either if it belongs to a framework or has its own lone static site)
+function(get_Package_Site_Address SITE_ADDRESS package)
+set(${SITE_ADDRESS} PARENT_SCOPE)
+if(${package}_FRAMEWORK) #package belongs to a framework
+	if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${package}_FRAMEWORK}.cmake)
+		include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${package}_FRAMEWORK}.cmake)
+		set(${SITE_ADDRESS} ${${${package}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${package} PARENT_SCOPE)
+	endif()
+elseif(${package}_SITE_GIT_ADDRESS AND ${package}_SITE_ROOT_PAGE)
+	set(${SITE_ADDRESS} ${${package}_SITE_ROOT_PAGE} PARENT_SCOPE)
+endif()
+endfunction(get_Package_Site_Address)
+
 ###
 function(framework_Reference_Exists_In_Workspace EXIST framework)
 	if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
@@ -984,7 +993,7 @@ endif()
 set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
 endfunction(framework_Project_Exists)
 
-###
+### putting the framework repository into the workspace, or update it if it is already there 
 function(load_Framework LOADED framework)
 	set(${LOADED} FALSE PARENT_SCOPE)
 	set(FOLDER_EXISTS FALSE)

@@ -421,7 +421,6 @@ else()#using references
 endif()
 endfunction(install_Package)
 
-
 ### Get the references to binary archives containing package versions. Constraint: the reference file of the package must be loaded before this call.
 function(load_Package_Binary_References REFERENCES_OK package)
 set(${REFERENCES_OK} FALSE PARENT_SCOPE)
