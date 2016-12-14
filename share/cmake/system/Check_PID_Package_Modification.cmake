@@ -17,7 +17,6 @@
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
 
-
 function(Find_Unique_Elements first_list second_list unique_in_first unique_in_second prefix_for_elements)
 
 set(temp_first_res)
@@ -47,8 +46,10 @@ endfunction(Find_Unique_Elements)
 ########### SOURCE_PACKAGE_CONTENT : the cmake file describing the whole package content
 ########### PACKAGE_NAME : name of the package to check
 ########### WORKSPACE_DIR : path to the root of the workspace
-########### USE_MAKE_TOOL : name or path of the make tool
 #################################################################################################
+
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
+
 include(${WORKSPACE_DIR}/share/cmake/system/PID_Utils_Functions.cmake NO_POLICY_SCOPE)
 include(${WORKSPACE_DIR}/share/cmake/system/PID_Set_Policies.cmake NO_POLICY_SCOPE)
 
@@ -65,7 +66,7 @@ set(ADDED_FILES)
 set(path_to_package ${WORKSPACE_DIR}/packages/${PACKAGE_NAME})
 
 #testing if some of the included CMakeLists.txt files have been modified
-test_Modified_Components(${PACKAGE_NAME} ${USE_MAKE_TOOL} MODIFIED)
+test_Modified_Components(${PACKAGE_NAME} ${CMAKE_MAKE_PROGRAM} MODIFIED)
 if(MODIFIED)
 	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/checksources "")
 	return()

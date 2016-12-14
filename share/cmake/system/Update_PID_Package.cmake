@@ -25,6 +25,8 @@
 ########### WORKSPACE_DIR : path to the root of the workspace
 #################################################################################################
 
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
+
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 

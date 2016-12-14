@@ -24,7 +24,7 @@ set(CURRENT_OS CACHE INTERNAL "")
 #test of the os is based on the compiler used  (APPLE and UNIX variables) AND on system variables affected by crosscompilation (CMAKE_SYSTEM_NAME)
 #So it adapts to the current development environment in use
 
-if(APPLE AND ${CMAKE_SYSTEM_NAME} STREQUAL Darwin) #darwin = kernel name for macosx systems
+if(UNIX AND APPLE AND ${CMAKE_SYSTEM_NAME} STREQUAL Darwin) #darwin = kernel name for macosx systems
 	set(CURRENT_OS macosx  CACHE INTERNAL "")
 	set(CURRENT_PACKAGE_STRING "Darwin" CACHE INTERNAL "")
 	if(NOT PID_CROSSCOMPILATION)
@@ -33,18 +33,14 @@ if(APPLE AND ${CMAKE_SYSTEM_NAME} STREQUAL Darwin) #darwin = kernel name for mac
 		set(CURRENT_DISTRIBUTION "" CACHE INTERNAL "")
 	endif()
 
-elseif(UNIX AND ${CMAKE_SYSTEM_NAME} STREQUAL Linux)# linux kernel = the reference !!
-	set(CURRENT_PACKAGE_STRING "Linux")
-
-	#we need to test if the system is patched with xenomai.
-	get_filename_component(FILENAME_C "${CMAKE_C_COMPILER}" NAME)
-	get_filename_component(FILENAME_CXX "${CMAKE_CXX_COMPILER}" NAME)
-	if(FILENAME_C MATCHES xeno-config AND FILENAME_CXX MATCHES xeno-config )#the xeno-config program is the one used by xenomai to build code  
+elseif(UNIX)
+	if(${CMAKE_SYSTEM_NAME} STREQUAL Xenomai)# linux kernel patched with xenomai
+		set(CURRENT_PACKAGE_STRING "Xenomai") 
 		set(CURRENT_OS "xenomai" CACHE INTERNAL "")
-	else()
+	elseif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)# linux kernel = the reference !!
+		set(CURRENT_PACKAGE_STRING "Linux")
 		set(CURRENT_OS "linux" CACHE INTERNAL "")
 	endif()
-	
 	# now check for distribution (shoud not influence contraints but only the way to install required constraints)
 	if(NOT PID_CROSSCOMPILATION)
 		execute_process(COMMAND lsb_release -i OUTPUT_VARIABLE DISTRIB_STR ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID

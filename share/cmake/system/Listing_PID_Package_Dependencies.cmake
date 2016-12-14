@@ -70,6 +70,9 @@ endfunction(agregate_All_Platform_Configurations)
 ###################################################################################
 ######## this is the script file to call to list a package's dependencies #########
 ###################################################################################
+
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
+
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system) # using systems scripts the workspace
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 

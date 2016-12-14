@@ -313,9 +313,6 @@ reset_Version_Cache_Variables()
 endfunction(init_Package_Info_Cache_Variables)
 
 function(init_Standard_Path_Cache_Variables)
-get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
-set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME} CACHE INTERNAL "")
-set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME} CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH}  CACHE INTERNAL "")
 set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resources CACHE INTERNAL "")
@@ -401,9 +398,10 @@ endfunction(add_Category)
 
 ### add a direct reference to a binary version of the package
 function(add_Reference version platform url url-dbg)
+	#message("WORKSPACE_ALL_PLATFORMS=${WORKSPACE_ALL_PLATFORMS}")
 	list(FIND WORKSPACE_ALL_PLATFORMS ${platform} INDEX)
 	if(INDEX EQUAL -1)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target platform ${platform} when adding reference. Please look into ${WORKSPACE_DIR}/share/cmake/platforms/ to find al predefined platforms and eventually create your own.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target platform ${platform} when adding reference. Please look into ${WORKSPACE_DIR}/share/cmake/platforms/ to find all predefined platforms or eventually create your own new one and place it in this folder.")
 		return()
 	endif()
 	set(LIST_OF_VERSIONS ${${PROJECT_NAME}_REFERENCES} ${version})
@@ -439,24 +437,24 @@ function(reset_Platforms_Variables)
 		set(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	endif()
 	#reset all constraints defined by the package
-	if(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS_${USE_MODE_SUFFIX} GREATER 0)
+	if(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} GREATER 0)
 		set(CURRENT_INDEX 0)
 		
-		while(${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS_${USE_MODE_SUFFIX}} GREATER CURRENT_INDEX)
+		while(${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}} GREATER CURRENT_INDEX)
 			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_TYPE${USE_MODE_SUFFIX} CACHE INTERNAL "")
 			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ARCH${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		  	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_OS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ABI${USE_MODE_SUFFIX} CACHE INTERNAL "")
 			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONFIGURATION${USE_MODE_SUFFIX} CACHE INTERNAL "")
 			math(EXPR CURRENT_INDEX "${CURRENT_INDEX}+1")
-		endwhile()
-		set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS_${USE_MODE_SUFFIX} 0 CACHE INTERNAL "")
+		endwhile()		
 	endif()
+	set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} 0 CACHE INTERNAL "")
 endfunction(reset_Platforms_Variables)
 
 ### define a set of configuration constraints that applies to all platforms with specific condition specified by type arch os and abi
 function(add_Platform_Constraint_Set type arch os abi constraints)
-	set(CURRENT_INDEX ${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS_${USE_MODE_SUFFIX}}) #current index is the current number of all constraint sets 
+	set(CURRENT_INDEX ${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}}) #current index is the current number of all constraint sets 
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_TYPE${USE_MODE_SUFFIX} ${type} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ARCH${USE_MODE_SUFFIX} ${arch} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_OS${USE_MODE_SUFFIX} ${os} CACHE INTERNAL "")
@@ -465,7 +463,7 @@ function(add_Platform_Constraint_Set type arch os abi constraints)
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONFIGURATION${USE_MODE_SUFFIX} ${constraints} CACHE INTERNAL "")
 
 	math(EXPR NEW_SET_SIZE "${CURRENT_INDEX}+1")
-	set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS_${USE_MODE_SUFFIX} ${NEW_SET_SIZE} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} ${NEW_SET_SIZE} CACHE INTERNAL "")
 endfunction(add_Platform_Constraint_Set)
 
 ### add a set of configuration constraints that are satisfied by the current platform 
@@ -595,7 +593,7 @@ set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} "${runtime_
 endfunction(init_Component_Cached_Variables_For_Export)
 
 ### resetting all internal cached variables that would cause some troubles
-function(reset_All_Component_Cached_Variables)
+function(reset_Project_Description_Cached_Variables)
 
 # package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
@@ -642,7 +640,7 @@ reset_Platforms_Variables()
 reset_To_Install_Packages()
 reset_To_Install_External_Packages()
 reset_Documentation_Info()
-endfunction(reset_All_Component_Cached_Variables)
+endfunction(reset_Project_Description_Cached_Variables)
 
 ###
 function(init_Component_Description component description usage)
@@ -997,7 +995,7 @@ get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 # 0) platforms configuration constraints
 file(APPEND ${file} "#### declaration of platform dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 file(APPEND ${file} "set(${package}_PLATFORM${MODE_SUFFIX} ${CURRENT_PLATFORM_NAME} CACHE INTERNAL \"\")\n") # not really usefull since a use file is bound to a given platform, but may be usefull for debug
-file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
 # 1) external package dependencies
 file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")

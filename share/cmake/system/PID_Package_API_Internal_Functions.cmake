@@ -45,6 +45,8 @@ include(PID_Package_Coding_Support NO_POLICY_SCOPE)
 ##################################################################################
 macro(declare_Package author institution mail year license address description)
 
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
+
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 #################################################
 ############ Managing options ###################
@@ -94,7 +96,6 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						 -DPACKAGE_NAME=${PROJECT_NAME}
 						 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/release/share/Info${PROJECT_NAME}.cmake
-						 -DUSE_MAKE_TOOL=${CMAKE_MAKE_PROGRAM}
 						 -P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Modification.cmake		
 			COMMENT "[PID] Checking for modified source tree ..."
     	)
@@ -117,30 +118,6 @@ elseif(DIR_NAME STREQUAL "build")
 	add_custom_target(update
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
-						-DPACKAGE_BINARY_INSTALL_DIR=${WORKSPACE_DIR}/install
-						-DEXTERNAL_PACKAGE_BINARY_INSTALL_DIR=${WORKSPACE_DIR}/external
-						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-						-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}					
-						-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-						-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-						-DCMAKE_COMPILER_IS_GNUCXX=${CMAKE_COMPILER_IS_GNUCXX}
-						-DCMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID}
-						-DCMAKE_CXX_COMPILER_VERSION=${CMAKE_CXX_COMPILER_VERSION}
-						-DCMAKE_LINKER=${CMAKE_LINKER}
-						-DCMAKE_RANLIB=${CMAKE_RANLIB}
-						-DCMAKE_NM=${CMAKE_NM}
-						-DCMAKE_AR=${CMAKE_AR}
-						-DCMAKE_OBJDUMP=${CMAKE_OBJDUMP}
-						-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
-						-DCMAKE_SYSTEM_PROGRAM_PATH="${CMAKE_SYSTEM_PROGRAM_PATH}"
-						-DCMAKE_SYSTEM_INCLUDE_PATH="${CMAKE_SYSTEM_INCLUDE_PATH}"
-						-DCMAKE_SYSTEM_LIBRARY_PATH="${CMAKE_SYSTEM_LIBRARY_PATH}"
-						-DCMAKE_FIND_LIBRARY_PREFIXES="${CMAKE_FIND_LIBRARY_PREFIXES}"
-						-DCMAKE_FIND_LIBRARY_SUFFIXES="${CMAKE_FIND_LIBRARY_SUFFIXES}"
-						-DCMAKE_SYSTEM_PREFIX_PATH="${CMAKE_SYSTEM_PREFIX_PATH}"
-						-DCMAKE_LIBRARY_ARCHITECTURE=${CMAKE_LIBRARY_ARCHITECTURE}
-						-DCURRENT_DISTRIBUTION=${CURRENT_DISTRIBUTION}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Update_PID_Package.cmake
 		COMMENT "[PID] Updating the package ..."
 		VERBATIM
@@ -387,7 +364,7 @@ endif()
 #################################################
 ######## Initializing cache variables ###########
 #################################################
-reset_All_Component_Cached_Variables()
+reset_Project_Description_Cached_Variables()
 init_PID_Version_Variable()
 init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}")
 check_For_Remote_Respositories("${address}")
@@ -476,7 +453,7 @@ endfunction(set_Current_Version)
 #####################################################################################################
 ################## checking that the platfoprm description match the current platform ###############
 #####################################################################################################
-function(check_Platform_Constraints type os arch abi constraints)
+function(check_Platform_Constraints type arch os abi constraints)
 set(SKIP FALSE)
 #The check of compatibility between the target platform and the constraints is immediate using platform configuration information (platform files) + additionnal global information (distribution for instance) coming from the workspace 
 
@@ -525,7 +502,7 @@ if(NOT SKIP AND constraints)
 endif()
 
 # whatever the result the constraint is registered
-add_Platform_Constraint_Set()
+add_Platform_Constraint_Set("${type}" "${arch}" "${os}" "${abi}" "${constraints}")
 endfunction(check_Platform_Constraints)
 
 ##################################################################################
