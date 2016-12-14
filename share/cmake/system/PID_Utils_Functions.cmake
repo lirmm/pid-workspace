@@ -16,12 +16,12 @@
 #	You can find the complete license description on the official website 		#
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
+
 #############################################################
 ########### general utilities for build management ##########
 #############################################################
 
-###
+### getting suffixes related to target mode (common accessor usefull in many places) 
 function(get_Mode_Variables TARGET_SUFFIX VAR_SUFFIX mode)
 if(mode MATCHES Release)
 	set(${TARGET_SUFFIX} PARENT_SCOPE)
@@ -32,10 +32,10 @@ else()
 endif()
 endfunction(get_Mode_Variables)
 
-###
-function(get_System_Variables CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
-set(${CURRENT_PLATFORM_NAME} ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_OS}_${CURRENT_PLATFORM_ABI} PARENT_SCOPE)
-set(${PACKAGE_STRING} ${CURRENT_PLATFORM_PACKAGE_STRING} PARENT_SCOPE)
+### getting basic system variables related to current platform (common accessor usefull in many places)
+function(get_System_Variables PLATFORM_NAME CURRENT_PACKAGE_STRING)
+set(${PLATFORM_NAME} ${CURRENT_PLATFORM} PARENT_SCOPE)
+set(${PACKAGE_STRING} ${CURRENT_PACKAGE_STRING} PARENT_SCOPE)
 endfunction(get_System_Variables)
 
 ###

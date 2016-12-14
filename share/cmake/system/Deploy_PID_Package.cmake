@@ -36,16 +36,16 @@ if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))# a framework is depl
 	# checks of the arguments
 	include(ReferFramework${TARGET_FRAMEWORK} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(REQUIRED_STATUS STREQUAL NOTFOUND)
-		message("[PID] ERROR : Framework name ${REQUIRED_NAME} does not refer to any known framework in the workspace.")
+		message("[PID] ERROR : Framework name ${TARGET_FRAMEWORK} does not refer to any known framework in the workspace.")
 		return()	
 	endif()
 	# deployment of the framework
-	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${REQUIRED_NAME} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${REQUIRED_NAME})
-		message("[PID] ERROR : Source repository for framework ${REQUIRED_NAME} already resides in the workspace.")
+	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
+		message("[PID] ERROR : Source repository for framework ${TARGET_FRAMEWORK} already resides in the workspace.")
 		return()	
 	endif()
-	message("[PID] INFO : deploying PID framework ${REQUIRED_NAME} in the workspace ...")
-	deploy_PID_Framework(${REQUIRED_NAME} "${VERBOSE_MODE}") #do the job
+	message("[PID] INFO : deploying PID framework ${TARGET_FRAMEWORK} in the workspace ...")
+	deploy_PID_Framework(${TARGET_FRAMEWORK} "${VERBOSE_MODE}") #do the job
 	return()
 else()# a package deployment is required
 	
@@ -53,13 +53,13 @@ else()# a package deployment is required
 	if(TARGET_EXTERNAL AND (NOT TARGET_EXTERNAL STREQUAL ""))
 		include(ReferExternal${TARGET_EXTERNAL} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 		if(REQUIRED_STATUS STREQUAL NOTFOUND)
-			message("[PID] ERROR : External package name ${REQUIRED_NAME} does not refer to any known package in the workspace.")
+			message("[PID] ERROR : External package name ${TARGET_EXTERNAL} does not refer to any known package in the workspace.")
 			return()	
 		endif()
 	elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
 		include(Refer${TARGET_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 		if(REQUIRED_STATUS STREQUAL NOTFOUND)
-			message("[PID] ERROR : Package name ${REQUIRED_NAME} does not refer to any known package in the workspace.")
+			message("[PID] ERROR : Package name ${TARGET_PACKAGE} does not refer to any known package in the workspace.")
 			return()	
 		endif()	
 	else()

@@ -68,9 +68,7 @@ endfunction(classify_Root_Category)
 ## subsidiary function to classify all packages from a given framework into the categories defined by this framework. This results in creation of variables 
 function(classify_Framework_Root_Category framework root_category all_packages)
 foreach(package IN ITEMS ${all_packages})
-	#message("DEBUG ${package} framework=${${package}_FRAMEWORK}")
 	if(${package}_FRAMEWORK STREQUAL "${framework}")#check if the package belongs to the framework
-		message("${package} belongs to ${${package}_FRAMEWORK} framework.")
 		foreach(a_category IN ITEMS ${${package}_CATEGORIES})
 			list(FIND ${framework}_FRAMEWORK_CATEGORIES ${a_category} INDEX)
 			if(NOT INDEX EQUAL -1)# this category is a category member of the framework
@@ -1114,95 +1112,214 @@ endfunction()
 ######################## Platforms management ##########################
 ########################################################################
 
-function(manage_Platforms)
+## subsidiary function that put sinto cmake variable description of available platforms
+function(detect_Current_Platform)
+	# Now detect the current platform maccording to host environemnt selection (call to script for platform detection)
+	include(CheckTYPE)
+	include(CheckARCH)
+	include(CheckOS)
+	include(CheckABI)
+	if(CURRENT_DISTRIBUTION STREQUAL "")
+		set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor type= ${CURRENT_TYPE}\n + processor architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS}\n + ABI= ${CURRENT_ABI}")
+	else()
+		set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor type= ${CURRENT_TYPE}\n + processor architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS} (${CURRENT_DISTRIBUTION})\n + ABI= ${CURRENT_ABI}")
+	endif()
+	message("[PID] INFO : Current workspace configuration is: \n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n ")
 
-## OLD CODE => to put into workspace
-#testing processor type
-set(TEST_TYPE ${type})
-include(CheckTYPE)
-if(NOT CHECK_TYPE_RESULT)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${type} processor.")
-	endif()	
-	return()
-endif()
-
-#testing processor architecture
-set(TEST_ARCH ${arch})
-include(CheckARCH)
-if(NOT CHECK_ARCH_RESULT)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
-	endif()	
-	return()
-endif()
-
-#testing OS
-set(TEST_OS ${os})
-include(CheckOS)
-if(NOT CHECK_OS_RESULT)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${os} operating system.")
-	endif()	
-	return()
-endif()
-
-#testing ABI
-if(abi)
-	set(TEST_ABI ${abi})
-else()
-	set(TEST_ABI ANY)#no ABI check (not used for referencing a binary package)
-endif()
-include(CheckABI)
-if(NOT CHECK_ABI_RESULT)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${abi} ABI.")
-	endif()	
-	return()
-endif()
-
-
-# testing configuration
-if(constraints)
-	foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform and install it if possible
-			if(NOT CHECK_${config}_RESULT)
-				if(ADDITIONNAL_DEBUG_INFO)
-					message("[PID] INFO : when checking platform ${RES_NAME}, ${config} constraint not satisfied.")
-				endif()
-				set(SKIP TRUE)					
-				break()
-			endif()
-		else()
-			message(FATAL_ERROR "[PID] INFO : when checking platform ${RES_NAME}, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${RES_NAME}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${RES_NAME} to manage this configuration.")
-			return()
+	# Select the platform in use
+	set(POSSIBLE_PLATFORMS)
+	foreach(platform IN ITEMS ${WORKSPACE_ALL_PLATFORMS})
+		check_Current_Configuration_Against_Platform(IT_MATCHES ${platform})
+		if(IT_MATCHES)
+			list(APPEND POSSIBLE_PLATFORMS ${platform})
 		endif()
 	endforeach()
-endif()
 
-if(abi)
-	set(using_ABI ${abi})
-else()
-	set(using_ABI ${CURRENT_ABI}) #the current ABI is in use
-endif()
-
-if(NOT SKIP)
-	platform_Selected(SELECTED)
-	if(NOT SELECTED) #no platform registered yet
-		add_Platform(TRUE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
-		set(${RES_NAME} TRUE PARENT_SCOPE)
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : platform selected : ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.")
-		endif()
+	if(NOT POSSIBLE_PLATFORMS)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : no platform defined in the workspace match the current workspace development environment in use !! ")
 	else()
-		add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] WARNING : more than one possible platform configuration has been detected. Platform ${RES_NAME} is eligible but only the first found, ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}} is selected.")
-		endif()	
+		list(REMOVE_DUPLICATES POSSIBLE_PLATFORMS)
+		list(LENGTH POSSIBLE_PLATFORMS SIZE)
+	
+		if(SIZE GREATER 1)
+			set(CONFLICTING_PLATFORM_DESCRIPTION_FILES "")
+			foreach(platform IN ITEMS ${POSSIBLE_PLATFORMS})
+				set(CONFLICTING_PLATFORM_DESCRIPTION_FILES "${CONFLICTING_PLATFORM_DESCRIPTION_FILES}\n + ${CMAKE_SOURCE_DIR}/share/cmake/platforms/Platform${platform}.cmake")
+			endforeach()
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : more than one platform is eligible as the one currently in use. This is possible only if two platforms define the same properties which is not allowed. Please check the following platform description files: ${CONFLICTING_PLATFORM_DESCRIPTION_FILES}")
+		endif()
+	
+		#simply rewriting previously defined variable to normalize their names between workspace and packages (same accessor function can then be used from any place)
+		set(CURRENT_PLATFORM ${POSSIBLE_PLATFORMS} CACHE INTERNAL "" FORCE)
+		set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL "" FORCE)
+		set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL "" FORCE)
+		set(CURRENT_PLATFORM_TYPE ${CURRENT_TYPE} CACHE INTERNAL "" FORCE)
+		set(CURRENT_PLATFORM_ARCH ${CURRENT_ARCH} CACHE INTERNAL "" FORCE)
+		set(CURRENT_PLATFORM_OS ${CURRENT_OS} CACHE INTERNAL "" FORCE)
+		set(CURRENT_PLATFORM_ABI ${CURRENT_ABI} CACHE INTERNAL "" FORCE)
+		message("[PID] INFO : Current platform in use is ${CURRENT_PLATFORM}")
 	endif()
-else()
-	add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")#simply registering the configuration but do not select it
-endif()
-endfunction()
+endfunction(detect_Current_Platform)
+
+## subsidiary function that put sinto cmake variable description of available platforms
+function(register_Available_Platforms)
+	file(GLOB ALL_AVAILABLE_PLATFORMS RELATIVE ${CMAKE_SOURCE_DIR}/share/cmake/platforms ${CMAKE_SOURCE_DIR}/share/cmake/platforms/*) #getting platform description files names
+	if(NOT ALL_AVAILABLE_PLATFORMS)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : there is no platform defined in the workspace. This is a BUG, please contact the maintainers of pid-workspace project !")
+	endif()
+	set(ALL_PLATFORMS_DEFINED)
+	foreach(platform_file IN ITEMS ${ALL_AVAILABLE_PLATFORMS})#filtering platform description files (check if these are really cmake files related to platform description, according to the PID standard)
+		string(REGEX REPLACE "^Platform([^.]+)\\.cmake$" "\\1" PLATFORM_NAME ${platform_file}) 
+		if(NOT PLATFORM_NAME STREQUAL ${platform_file})# match : this is a platform definition file
+			include(${CMAKE_SOURCE_DIR}/share/cmake/platforms/${platform_file})
+			list(APPEND ALL_PLATFORMS_DEFINED ${PLATFORM_NAME})
+		endif()
+	endforeach()
+	list(REMOVE_DUPLICATES ALL_PLATFORMS_DEFINED)
+	if(NOT ALL_PLATFORMS_DEFINED)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : there is no platform description file found in the workspace. This means that names of files found in ${CMAKE_SOURCE_DIR}/share/cmake/platforms do not conform to PID standard !")
+	endif()
+	set(WORKSPACE_ALL_PLATFORMS ${ALL_PLATFORMS_DEFINED} CACHE INTERNAL "")
+
+endfunction(register_Available_Platforms)
+
+## subsidiary function for testing if the given platform is the current platform for the workspace
+function(check_Current_Configuration_Against_Platform IT_MATCHES platform)
+	if(	PLATFORM_${platform}_TYPE STREQUAL "${CURRENT_TYPE}"
+		AND PLATFORM_${platform}_ARCH EQUAL "${CURRENT_ARCH}"
+		AND PLATFORM_${platform}_OS STREQUAL "${CURRENT_OS}"
+		AND PLATFORM_${platform}_ABI STREQUAL "${CURRENT_ABI}")
+		set(${IT_MATCHES} TRUE PARENT_SCOPE)
+	else()
+		set(${IT_MATCHES} FALSE PARENT_SCOPE)
+	endif()
+endfunction(check_Current_Configuration_Against_Platform)
+
+
+## subsidiary function for writing workspace configuration to a cmake file
+function(write_Current_Configuration file)
+
+file(WRITE ${file} "")#reset the file
+# defining all available platforms (usefull for CI configuration generation)
+file(APPEND ${file} "set(WORKSPACE_ALL_PLATFORMS ${WORKSPACE_ALL_PLATFORMS} CACHE PATH \"\" FORCE)\n")
+foreach(platform IN ITEMS ${WORKSPACE_ALL_PLATFORMS}) 
+	set(type "PLATFORM_${platform}_TYPE")
+	set(arch "PLATFORM_${platform}_ARCH")
+	set(os "PLATFORM_${platform}_OS")
+	set(abi "PLATFORM_${platform}_ABI")
+	file(APPEND ${file} "set(${type} ${${type}} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(${arch} ${${arch}} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(${os} ${${os}} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(${abi} ${${abi}} CACHE INTERNAL \"\" FORCE)\n")
+endforeach()
+
+# defining properties of the current platform 
+file(APPEND ${file} "set(CURRENT_PLATFORM ${CURRENT_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\" FORCE)\n")
+
+
+file(APPEND ${file} "set(CURRENT_PLATFORM_TYPE ${CURRENT_PLATFORM_TYPE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CURRENT_PLATFORM_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CURRENT_PLATFORM_OS ${CURRENT_PLATFORM_OS} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CURRENT_PLATFORM_ABI ${CURRENT_PLATFORM_ABI} CACHE INTERNAL \"\" FORCE)\n")
+
+# defining all build configuration variables related to the current platform
+
+file(APPEND ${file} "set(CMAKE_AR ${CMAKE_AR} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CXX_FLAGS_MINSIZEREL ${CMAKE_CXX_FLAGS_MINSIZEREL} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_CXX_FLAGS_RELWITHDEBINFO} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_C_COMPILER ${CMAKE_C_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_C_FLAGS_MINSIZEREL ${CMAKE_C_FLAGS_MINSIZEREL} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_C_FLAGS_RELWITHDEBINFO ${CMAKE_C_FLAGS_RELWITHDEBINFO} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_EXE_LINKER_FLAGS_DEBUG ${CMAKE_EXE_LINKER_FLAGS_DEBUG} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL ${CMAKE_EXE_LINKER_FLAGS_MINSIZEREL} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_EXE_LINKER_FLAGS_RELEASE ${CMAKE_EXE_LINKER_FLAGS_RELEASE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO ${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_LINKER ${CMAKE_LINKER} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_MODULE_LINKER_FLAGS ${CMAKE_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_MODULE_LINKER_FLAGS_DEBUG ${CMAKE_MODULE_LINKER_FLAGS_DEBUG} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL ${CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_MODULE_LINKER_FLAGS_RELEASE ${CMAKE_MODULE_LINKER_FLAGS_RELEASE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO ${CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_NM ${CMAKE_NM} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_OBJCOPY ${CMAKE_OBJCOPY} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_OBJDUMP ${CMAKE_OBJDUMP} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_RANLIB ${CMAKE_RANLIB} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SHARED_LINKER_FLAGS_DEBUG ${CMAKE_SHARED_LINKER_FLAGS_DEBUG} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL ${CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SHARED_LINKER_FLAGS_RELEASE ${CMAKE_SHARED_LINKER_FLAGS_RELEASE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO ${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_STATIC_LINKER_FLAGS ${CMAKE_STATIC_LINKER_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_STATIC_LINKER_FLAGS_DEBUG ${CMAKE_STATIC_LINKER_FLAGS_DEBUG} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL ${CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_STATIC_LINKER_FLAGS_RELEASE ${CMAKE_STATIC_LINKER_FLAGS_RELEASE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO ${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO} CACHE INTERNAL \"\" FORCE)\n")
+
+# defining additionnal build configuration variables related to the current platform build system in use (private variables)
+
+## cmake related
+file(APPEND ${file} "set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} CACHE INTERNAL \"\" FORCE)\n")
+
+## system related 
+file(APPEND ${file} "set(CMAKE_FIND_LIBRARY_PREFIXES ${CMAKE_FIND_LIBRARY_PREFIXES} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_SYSTEM_PREFIX_PATH} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_LIBRARY_ARCHITECTURE ${CMAKE_LIBRARY_ARCHITECTURE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SYSTEM_PROGRAM_PATH ${CMAKE_SYSTEM_PROGRAM_PATH} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SYSTEM_INCLUDE_PATH ${CMAKE_SYSTEM_INCLUDE_PATH} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SYSTEM_LIBRARY_PATH ${CMAKE_SYSTEM_LIBRARY_PATH} CACHE INTERNAL \"\" FORCE)\n")
+
+## compiler related
+file(APPEND ${file} "set(CMAKE_COMPILER_IS_GNUCXX ${CMAKE_COMPILER_IS_GNUCXX} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CXX_COMPILER_VERSION ${CMAKE_CXX_COMPILER_VERSION} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SIZEOF_VOID_P ${CMAKE_SIZEOF_VOID_P} CACHE INTERNAL \"\" FORCE)\n")
+
+# Finnally defining variables related to crosscompilation
+
+file(APPEND ${file} "set(PID_CROSSCOMPILATION ${PID_CROSSCOMPILATION} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CROSSCOMPILING ${CMAKE_CROSSCOMPILING} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SYSTEM_NAME ${CMAKE_SYSTEM_NAME} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SYSTEM_VERSION ${CMAKE_SYSTEM_VERSION} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_C_COMPILER_TARGET ${CMAKE_C_COMPILER_TARGET} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CXX_COMPILER_TARGET ${CMAKE_CXX_COMPILER_TARGET} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN ${CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN ${CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_SYSROOT ${CMAKE_SYSROOT} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ${CMAKE_FIND_ROOT_PATH_MODE_PROGRAM} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ${CMAKE_FIND_ROOT_PATH_MODE_LIBRARY} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ${CMAKE_FIND_ROOT_PATH_MODE_INCLUDE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ${CMAKE_FIND_ROOT_PATH_MODE_PACKAGE} CACHE INTERNAL \"\" FORCE)\n")
+
+endfunction(write_Current_Configuration)
+
+### define the current platform in use and provide to the user some options to control finally targetted platform
+function(manage_Platforms)
+
+# listing all available platforms from platforms definitions cmake files found in the workspace
+register_Available_Platforms()
+
+# TODO select (platform or) environment with options
+
+
+# detecting which platform is in use according to environment description 
+detect_Current_Platform()
+
+# generate the current platform configuration file (that will be used to build packages)
+set(CONFIG_FILE ${CMAKE_BINARY_DIR}/Workspace_Platforms_Info.cmake)
+write_Current_Configuration(${CONFIG_FILE})
+
+endfunction(manage_Platforms)
 
