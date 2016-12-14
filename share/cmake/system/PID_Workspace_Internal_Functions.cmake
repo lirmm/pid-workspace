@@ -1124,7 +1124,6 @@ function(detect_Current_Platform)
 	else()
 		set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor type= ${CURRENT_TYPE}\n + processor architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS} (${CURRENT_DISTRIBUTION})\n + ABI= ${CURRENT_ABI}")
 	endif()
-	message("[PID] INFO : Current workspace configuration is: \n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n ")
 
 	# Select the platform in use
 	set(POSSIBLE_PLATFORMS)
@@ -1136,7 +1135,7 @@ function(detect_Current_Platform)
 	endforeach()
 
 	if(NOT POSSIBLE_PLATFORMS)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : no platform defined in the workspace match the current workspace development environment in use !! ")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : no platform defined in the workspace match the current development environment in use : \n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n")
 	else()
 		list(REMOVE_DUPLICATES POSSIBLE_PLATFORMS)
 		list(LENGTH POSSIBLE_PLATFORMS SIZE)
@@ -1159,7 +1158,7 @@ function(detect_Current_Platform)
 		set(CURRENT_PLATFORM_ABI ${CURRENT_ABI} CACHE INTERNAL "" FORCE)
 		set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external/${CURRENT_PLATFORM} CACHE INTERNAL "")
 		set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install/${CURRENT_PLATFORM} CACHE INTERNAL "")
-		message("[PID] INFO : Current platform in use is ${CURRENT_PLATFORM}")
+		message("[PID] INFO : Current platform in use is ${CURRENT_PLATFORM}:\n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n")
 	endif()
 endfunction(detect_Current_Platform)
 
@@ -1197,40 +1196,8 @@ function(check_Current_Configuration_Against_Platform IT_MATCHES platform)
 	endif()
 endfunction(check_Current_Configuration_Against_Platform)
 
-
-## subsidiary function for writing workspace configuration to a cmake file
-function(write_Current_Configuration file)
-
-file(WRITE ${file} "")#reset the file
-# defining all available platforms (usefull for CI configuration generation)
-file(APPEND ${file} "set(WORKSPACE_ALL_PLATFORMS ${WORKSPACE_ALL_PLATFORMS} CACHE INTERNAL \"\" FORCE)\n")
-foreach(platform IN ITEMS ${WORKSPACE_ALL_PLATFORMS}) 
-	set(type "PLATFORM_${platform}_TYPE")
-	set(arch "PLATFORM_${platform}_ARCH")
-	set(os "PLATFORM_${platform}_OS")
-	set(abi "PLATFORM_${platform}_ABI")
-	file(APPEND ${file} "set(${type} ${${type}} CACHE INTERNAL \"\" FORCE)\n")
-	file(APPEND ${file} "set(${arch} ${${arch}} CACHE INTERNAL \"\" FORCE)\n")
-	file(APPEND ${file} "set(${os} ${${os}} CACHE INTERNAL \"\" FORCE)\n")
-	file(APPEND ${file} "set(${abi} ${${abi}} CACHE INTERNAL \"\" FORCE)\n")
-endforeach()
-
-# defining properties of the current platform 
-file(APPEND ${file} "set(CURRENT_PLATFORM ${CURRENT_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\" FORCE)\n")
-
-
-file(APPEND ${file} "set(CURRENT_PLATFORM_TYPE ${CURRENT_PLATFORM_TYPE} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(CURRENT_PLATFORM_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(CURRENT_PLATFORM_OS ${CURRENT_PLATFORM_OS} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(CURRENT_PLATFORM_ABI ${CURRENT_PLATFORM_ABI} CACHE INTERNAL \"\" FORCE)\n")
-
-#default install path used for that platform
-file(APPEND ${file} "set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${EXTERNAL_PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(PACKAGE_BINARY_INSTALL_DIR ${PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
-
-# defining all build configuration variables related to the current platform
+## subsidiary function to append to a file the content of advanced options of CMAKE
+function(append_Current_Configuration_Build_Related_Variables file)
 
 file(APPEND ${file} "set(CMAKE_AR ${CMAKE_AR} CACHE FILEPATH \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH \"\" FORCE)\n")
@@ -1309,6 +1276,42 @@ file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ${CMAKE_FIND_ROOT_PAT
 file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ${CMAKE_FIND_ROOT_PATH_MODE_INCLUDE} CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ${CMAKE_FIND_ROOT_PATH_MODE_PACKAGE} CACHE INTERNAL \"\" FORCE)\n")
 
+endfunction(append_Current_Configuration_Build_Related_Variables)
+
+## subsidiary function for writing workspace configuration to a cmake file
+function(write_Current_Configuration file)
+
+file(WRITE ${file} "")#reset the file
+# defining all available platforms (usefull for CI configuration generation)
+file(APPEND ${file} "set(WORKSPACE_ALL_PLATFORMS ${WORKSPACE_ALL_PLATFORMS} CACHE INTERNAL \"\" FORCE)\n")
+foreach(platform IN ITEMS ${WORKSPACE_ALL_PLATFORMS}) 
+	set(type "PLATFORM_${platform}_TYPE")
+	set(arch "PLATFORM_${platform}_ARCH")
+	set(os "PLATFORM_${platform}_OS")
+	set(abi "PLATFORM_${platform}_ABI")
+	file(APPEND ${file} "set(${type} ${${type}} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(${arch} ${${arch}} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(${os} ${${os}} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(${abi} ${${abi}} CACHE INTERNAL \"\" FORCE)\n")
+endforeach()
+
+# defining properties of the current platform 
+file(APPEND ${file} "set(CURRENT_PLATFORM ${CURRENT_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\" FORCE)\n")
+
+
+file(APPEND ${file} "set(CURRENT_PLATFORM_TYPE ${CURRENT_PLATFORM_TYPE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CURRENT_PLATFORM_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CURRENT_PLATFORM_OS ${CURRENT_PLATFORM_OS} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CURRENT_PLATFORM_ABI ${CURRENT_PLATFORM_ABI} CACHE INTERNAL \"\" FORCE)\n")
+
+#default install path used for that platform
+file(APPEND ${file} "set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${EXTERNAL_PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(PACKAGE_BINARY_INSTALL_DIR ${PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
+
+# defining all build configuration variables related to the current platform
+append_Current_Configuration_Build_Related_Variables(${file})
 endfunction(write_Current_Configuration)
 
 ### define the current platform in use and provide to the user some options to control finally targetted platform
