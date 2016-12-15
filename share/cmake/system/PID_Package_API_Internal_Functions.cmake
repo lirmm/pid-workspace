@@ -166,7 +166,7 @@ elseif(DIR_NAME STREQUAL "build")
 		add_custom_target(build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Building package (Release mode only) ..."
+			COMMENT "[PID] Building package (Release mode only) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 	else()
@@ -174,13 +174,13 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Building package (Debug and Release modes) ..."
+			COMMENT "[PID] Building package (Debug and Release modes) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		#mode specific build commands
 		add_custom_target(build_release
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
-			COMMENT "[PID] Release build..."
+			COMMENT "[PID] Release build for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_dependencies(build_release reconfigure) #checking if reconfiguration is necessary before build
@@ -190,7 +190,7 @@ elseif(DIR_NAME STREQUAL "build")
 		
 		add_custom_target(build_debug
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
-			COMMENT "[PID] Debug build..."
+			COMMENT "[PID] Debug build for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_dependencies(build_debug reconfigure) #checking if reconfiguration is necessary before build
