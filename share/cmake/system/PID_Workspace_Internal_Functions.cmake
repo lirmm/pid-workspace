@@ -1320,8 +1320,13 @@ function(manage_Platforms)
 # listing all available platforms from platforms definitions cmake files found in the workspace
 register_Available_Platforms()
 
-# TODO select (platform or) environment with options
-
+if(CURRENT_ENVIRONMENT)
+	#load the environment description
+	include(${CMAKE_SOURCE_DIR}/environments/${CURRENT_ENVIRONMENT}/PID_Environment_Description.cmake)
+	message("[PID] INFO: ${PID_ENVIRONMENT_DESCRIPTION}")
+else()
+	message("[PID] INFO: development environment in use is the host default environment (based on ${CMAKE_CXX_COMPILER_ID} build toolchain).")
+endif()
 
 # detecting which platform is in use according to environment description 
 detect_Current_Platform()
