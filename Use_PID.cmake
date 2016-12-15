@@ -25,6 +25,10 @@ if(${path} STREQUAL "")
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a path must be given to import_PID_Workspace.")
 endif()
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
+
+if(NOT EXISTS ${path})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : the path to the PID workspace ${path} does not exist.")
+endif()
 set(WORKSPACE_DIR ${path} CACHE INTERNAL "")
 
 ########################################################################
@@ -34,22 +38,29 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/platforms)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/conditions)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/configurations)
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-include(Package_Internal_Policies NO_POLICY_SCOPE)
-include(Package_Internal_Cache_Management NO_POLICY_SCOPE)
-include(Package_Internal_Finding NO_POLICY_SCOPE)
-include(Package_Internal_Configuration NO_POLICY_SCOPE)
-include(Package_Internal_Referencing NO_POLICY_SCOPE)
-include(Package_Internal_Targets_Management NO_POLICY_SCOPE)
+include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Git_Functions NO_POLICY_SCOPE)
+include(PID_Version_Management_Functions NO_POLICY_SCOPE)
+include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
+include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
+include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
+
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
+
 ########################################################################
 ############ default value for PID cache variables #####################
 ########################################################################
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "") #do not manage automatic install since outside from a PID workspace
-set(PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/install CACHE INTERNAL "") #install dir for native packages
-set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${WORKSPACE_DIR}/external CACHE INTERNAL "")# install dir for external packages
 endmacro(import_PID_Workspace)
 
 ### 
@@ -58,7 +69,7 @@ set(oneValueArgs NAME VERSION)
 set(multiValueArgs)
 cmake_parse_arguments(IMPORT_PID_PACKAGE "" "${oneValueArgs}" "" ${ARGN})
 if(NOT IMPORT_PID_PACKAGE_NAME)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a package name must be given to import_PID_Package.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a package name must be given to using NAME keyword.")
 endif()
 if(NOT IMPORT_PID_PACKAGE_VERSION)
 	message("[PID] WARNING : no version given to import_PID_Package, last available version of ${IMPORT_PID_PACKAGE_PACKAGE} will be used.")
@@ -84,20 +95,20 @@ set(oneValueArgs PACKAGE NAME)
 set(multiValueArgs COMPONENTS)
 cmake_parse_arguments(LINK_PID_COMPONENTS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 if(NOT LINK_PID_COMPONENTS_NAME)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling link_PID_Components, name of the target must be given.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling link_PID_Components, name of the target must be given using NAME keyword.")
 endif()
 if(NOT LINK_PID_COMPONENTS_PACKAGE)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling link_PID_Components, a package name must be given.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling link_PID_Components, a package name must be given using PACKAGE keyword.")
 endif()
 if(NOT LINK_PID_COMPONENTS_COMPONENTS)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling link_PID_Components, at least one component name must be given.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling link_PID_Components, at least one component name must be given using COMPONENTS keyword.")
 endif()
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX  ${CMAKE_BUILD_TYPE})
 #create the imported targets
 foreach (component IN ITEMS  ${LINK_PID_COMPONENTS_COMPONENTS})
-	create_Dependency_Target(${LINK_PID_COMPONENTS_PACKAGE} ${component} ${CMAKE_BUILD_TYPE})
+	create_Dependency_Target(${LINK_PID_COMPONENTS_PACKAGE} ${component} ${CMAKE_BUILD_TYPE}) #create the fake target for component
 	is_HeaderFree_Component(DEP_IS_HF ${LINK_PID_COMPONENTS_PACKAGE} ${component})
-	if(NOT DEP_IS_HF)
+	if(NOT DEP_IS_HF) #link that target (only possible with non runtime libraries)
 		target_link_libraries(${LINK_PID_COMPONENTS_NAME} PUBLIC ${LINK_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX})
 		target_include_directories(${LINK_PID_COMPONENTS_NAME} PUBLIC 
 			$<TARGET_PROPERTY:${LINK_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
@@ -121,10 +132,10 @@ set(oneValueArgs PACKAGE)
 set(multiValueArgs COMPONENTS)
 cmake_parse_arguments(TARGETS_PID_COMPONENTS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 if(NOT TARGETS_PID_COMPONENTS_PACKAGE)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling targets_For_PID_Components, a package name must be given.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling targets_For_PID_Components, a package name must be given using PACKAGE keyword.")
 endif()
 if(NOT TARGETS_PID_COMPONENTS_COMPONENTS)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling targets_For_PID_Components, at least one component name must be given.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling targets_For_PID_Components, at least one component name must be given using COMPONENTS keyword.")
 endif()
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX  ${CMAKE_BUILD_TYPE})
 #create the imported targets
@@ -133,7 +144,6 @@ foreach (component IN ITEMS  ${TARGETS_PID_COMPONENTS_COMPONENTS})
 	set(${TARGETS_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES ${${TARGETS_PID_PACKAGE}_RPATH}/${component}${TARGET_SUFFIX} CACHE INTERNAL "")
 endforeach()
 endmacro(targets_For_PID_Components)
-
 
 
 ###

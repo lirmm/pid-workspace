@@ -1197,8 +1197,8 @@ function(check_Current_Configuration_Against_Platform IT_MATCHES platform)
 endfunction(check_Current_Configuration_Against_Platform)
 
 ## subsidiary function to append to a file the content of advanced options of CMAKE
-function(append_Current_Configuration_Build_Related_Variables file)
-
+function(write_Current_Configuration_Build_Related_Variables file)
+file(WRITE ${file} "")
 file(APPEND ${file} "set(CMAKE_AR ${CMAKE_AR} CACHE FILEPATH \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_CXX_FLAGS \"${CMAKE_CXX_FLAGS}\" CACHE STRING \"\" FORCE)\n")
@@ -1277,11 +1277,11 @@ if(PID_CROSSCOMPILATION) #only write these information if we are trully cross co
 	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ${CMAKE_FIND_ROOT_PATH_MODE_INCLUDE} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ${CMAKE_FIND_ROOT_PATH_MODE_PACKAGE} CACHE INTERNAL \"\" FORCE)\n")
 endif()
-endfunction(append_Current_Configuration_Build_Related_Variables)
+endfunction(write_Current_Configuration_Build_Related_Variables)
 
-## subsidiary function for writing workspace configuration to a cmake file
-function(write_Current_Configuration file)
 
+## subsidiary function for writing a global description of the workspace into a cmake file
+function(write_Platform_Description file)
 file(WRITE ${file} "")#reset the file
 # defining all available platforms (usefull for CI configuration generation)
 file(APPEND ${file} "set(WORKSPACE_ALL_PLATFORMS ${WORKSPACE_ALL_PLATFORMS} CACHE INTERNAL \"\" FORCE)\n")
@@ -1316,8 +1316,16 @@ if(CURRENT_ENVIRONMENT)
 else()
 	file(APPEND ${file} "set(CURRENT_ENVIRONMENT host CACHE INTERNAL \"\" FORCE)\n")
 endif()
+endfunction(write_Platform_Description)
+
+## subsidiary function for writing workspace configuration to a cmake file
+function(write_Current_Configuration file)
+file(WRITE ${file} "")
+write_Platform_Description(${CMAKE_SOURCE_DIR}/pid/Workspace_Platforms_Description.cmake)
+file(APPEND ${file} "include(${CMAKE_SOURCE_DIR}/pid/Workspace_Platforms_Description.cmake NO_POLICY_SCOPE)\n")
+write_Current_Configuration_Build_Related_Variables(${CMAKE_SOURCE_DIR}/pid/Workspace_Build_Info.cmake)
+file(APPEND ${file} "include(${CMAKE_SOURCE_DIR}/pid/Workspace_Build_Info.cmake NO_POLICY_SCOPE)\n")
 # defining all build configuration variables related to the current platform
-append_Current_Configuration_Build_Related_Variables(${file})
 endfunction(write_Current_Configuration)
 
 ### define the current platform in use and provide to the user some options to control finally targetted platform
