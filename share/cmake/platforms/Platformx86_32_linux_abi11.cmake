@@ -1,0 +1,4 @@
+set(PLATFORM_x86_32_linux_abi11_TYPE "x86" CACHE INTERNAL "")
+set(PLATFORM_x86_32_linux_abi11_ARCH "32" CACHE INTERNAL "")
+set(PLATFORM_x86_32_linux_abi11_OS "linux" CACHE INTERNAL "")
+set(PLATFORM_x86_32_linux_abi11_ABI "CXX11" CACHE INTERNAL "")
