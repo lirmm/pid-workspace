@@ -416,28 +416,23 @@ if(${package}_FRAMEWORK) #references are deployed in a framework
 		set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_FRAMEWORK_SITE})#get the address of the framework static site
 		file(DOWNLOAD ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 		list(GET res 0 numeric_error)
-		if(NOT numeric_error EQUAL 0) #no reference available or framework site is not online.
-			return()
-		endif()
-		if(EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+		if(numeric_error EQUAL 0 #framework site is not online & reference available.
+		AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 			include(${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 			set(${REFERENCES_OK} TRUE PARENT_SCOPE)
-			return()
 		endif()
 	endif()
 elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static site
 	#when package has a lone static site, the reference file can be directly downloaded
 	file(DOWNLOAD ${${package}_SITE_ROOT_PAGE}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 	list(GET res 0 numeric_error)
-	if(NOT numeric_error EQUAL 0) #no reference available or static site not online.
-		return()
-	endif()
-	if(EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+	if(numeric_error EQUAL 0 #static site online & reference available.
+	AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 		include(${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 		set(${REFERENCES_OK} TRUE PARENT_SCOPE)
-		return()
 	endif()
-elseif(${package}_REFERENCES) #if there are direct reference (simpler case), no need to do more becase binary references are already included
+endif()
+if(${package}_REFERENCES) #if there are direct reference (simpler case), no need to do more becase binary references are already included
 	set(${REFERENCES_OK} TRUE PARENT_SCOPE)
 	return()
 endif()

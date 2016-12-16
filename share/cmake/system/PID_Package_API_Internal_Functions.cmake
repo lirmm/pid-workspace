@@ -35,6 +35,7 @@ include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Package_Coding_Support NO_POLICY_SCOPE)
+include(PID_Package_Continuous_Integration_Functions NO_POLICY_SCOPE)
 
 ##################################################################################
 #################### package management public functions and macros ##############
@@ -388,6 +389,11 @@ endif()
 init_Documentation_Info_Cache_Variables("${framework}" "${url}" "" "" "${description}")
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
 	get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING AND GENERATE_INSTALLER)
+		set(INCLUDING_BINARIES TRUE)
+	else()
+		set(INCLUDING_BINARIES TRUE)
+	endif()
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
@@ -399,7 +405,7 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in rel
 						-DINCLUDES_API_DOC=${BUILD_API_DOC}
 						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
 						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
-						-DINCLUDES_INSTALLER=${GENERATE_INSTALLER}
+						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
 						-DSYNCHRO=$(synchro)
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake
@@ -420,6 +426,11 @@ init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${homep
 if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
 	
 	get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING AND GENERATE_INSTALLER)
+		set(INCLUDING_BINARIES TRUE)
+	else()
+		set(INCLUDING_BINARIES TRUE)
+	endif()
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
@@ -430,7 +441,7 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in rel
 						-DINCLUDES_API_DOC=${BUILD_API_DOC}
 						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
 						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
-						-DINCLUDES_INSTALLER=${GENERATE_INSTALLER}
+						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
 						-DSYNCHRO=$(synchro)
 						-DFORCED_UPDATE=$(force)
 						-DSITE_GIT="${git_repository}"
@@ -598,9 +609,10 @@ if(BUILD_AND_RUN_TESTS)
  	if(	CMAKE_BUILD_TYPE MATCHES Release
 		OR (CMAKE_BUILD_TYPE MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
 		enable_testing()
-		add_subdirectory(test)
+		
 	endif()
 endif()
+add_subdirectory(test)
 add_subdirectory(share)
 ##########################################################
 ############ MANAGING non source files ###################
@@ -616,6 +628,7 @@ generate_Dependencies_File() #generating a cmake "dependencies" file containing 
 generate_Coverage() #generating a coverage report in debug mode
 generate_Static_Checks() #generating a static check report in release mode, if tests are enabled then static check test are automatically generated 
 configure_Pages() # generating the markdown files for the project web pages
+generate_CI_Config_File() #generating the CI config file in the project
 
 #installing specific folders of the share sub directory
 if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)
@@ -1073,7 +1086,7 @@ endif()
 if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE") 
 	build_Option_For_Example(${c_name})
 	add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced		
-	if(NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${c_name}) #examples are not built / installed / exported so no need to continue => can be specific to a given 
+	if(NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${c_name}) #examples are not built so no need to continue
 		mark_As_Declared(${c_name})		
 		return()
 	endif()

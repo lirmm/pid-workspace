@@ -341,6 +341,7 @@ function(reset_Documentation_Info)
 	set(${PROJECT_NAME}_SITE_ROOT_PAGE CACHE INTERNAL "")
 	set(${PROJECT_NAME}_SITE_GIT_ADDRESS CACHE INTERNAL "")
 	set(${PROJECT_NAME}_SITE_INTRODUCTION CACHE INTERNAL "")
+	set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING CACHE INTERNAL "")
 endfunction(reset_Documentation_Info)
 
 
@@ -641,6 +642,12 @@ reset_To_Install_Packages()
 reset_To_Install_External_Packages()
 reset_Documentation_Info()
 endfunction(reset_Project_Description_Cached_Variables)
+
+
+###
+function(publish_Binaries true_or_false)
+set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERNAL "")
+endfunction(publish_Binaries)
 
 ###
 function(init_Component_Description component description usage)

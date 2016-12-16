@@ -118,9 +118,10 @@ macro(declare_PID_Documentation)
 endmacro(declare_PID_Documentation)
 
 macro(declare_PID_Deployment)
+set(optionArgs PUBLISH_BINARIES)
 set(oneValueArgs PROJECT FRAMEWORK GIT PAGE ADVANCED TUTORIAL LOGO)
 set(multiValueArgs DESCRIPTION)
-cmake_parse_arguments(DECLARE_PID_DEPLOYMENT "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+cmake_parse_arguments(DECLARE_PID_DEPLOYMENT "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_DEPLOYMENT_PROJECT)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the project page of the official package repository using PROJECT keyword.")
 endif()
@@ -136,6 +137,14 @@ else()#DECLARE_PID_DEPLOYMENT_HOME
 	endif()
 	define_Static_Site_Contribution("${DECLARE_PID_DEPLOYMENT_PROJECT}" "${DECLARE_PID_DEPLOYMENT_GIT}" "${DECLARE_PID_DEPLOYMENT_PAGE}" "${DECLARE_PID_DEPLOYMENT_DESCRIPTION}")
 endif()
+
+#manage publication of binaries
+if(DECLARE_PID_DEPLOYMENT_PUBLISH_BINARIES)
+	publish_Binaries(TRUE)
+else()
+	publish_Binaries(FALSE)
+endif()
+
 #user defined doc
 if(DECLARE_PID_DEPLOYMENT_ADVANCED)
 	define_Documentation_Content(advanced "${DECLARE_PID_DEPLOYMENT_ADVANCED}")

@@ -59,7 +59,7 @@ function(generate_Site_Binary_References)
 set(dir ${CMAKE_SOURCE_DIR}/src/_binaries)
 set(file ${dir}/binary_references.cmake)
 file(WRITE ${file} "# Contains references to binaries that are available for ${PROJECT_NAME} \n")
-file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL \"\")\n")#reset the references
+#this may overwrite binary references hard coded in the reference file, or simply add new ones
 
 ##################################################################
 ### all available versions of the package for which there is a ###
@@ -407,7 +407,7 @@ function(generate_Framework_Binary_Reference_For_Package package)
 set(dir ${CMAKE_SOURCE_DIR}/src/_packages/${package}/binaries)
 set(file ${dir}/binary_references.cmake)
 file(WRITE ${file} "# Contains references to binaries that are available for ${PROJECT_NAME} \n")
-file(APPEND ${file} "set(${package}_REFERENCES CACHE INTERNAL \"\")\n")#reset the references
+#this may overwrite binary references hard coded in the reference file, or simply add new ones
 
 ##################################################################
 ### all available versions of the package for which there is a ###
