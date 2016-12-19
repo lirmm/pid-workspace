@@ -209,8 +209,8 @@ endmacro(declare_Framework)
 
 ###
 macro(declare_Framework_Image image_file_path is_banner)
-
-if(is_banner)
+set(IMG_TYPE ${is_banner})
+if(IMG_TYPE)
 	set(${PROJECT_NAME}_FRAMEWORK_BANNER_IMAGE_FILE_NAME ${image_file_path})
 else() #this is a logo
 	set(${PROJECT_NAME}_FRAMEWORK_LOGO_IMAGE_FILE_NAME ${image_file_path})

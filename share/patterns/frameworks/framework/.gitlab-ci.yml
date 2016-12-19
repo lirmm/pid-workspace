@@ -8,7 +8,7 @@ cache:
 stages:
  - configure
  - compile
- - pages
+ - deploy
  - cleanup
 
 ### configure (CMake project configuration) 
@@ -21,6 +21,8 @@ configure_workspace:
     - cd build/ && cmake .. && cd ..
   only:
     - master
+  tags:
+    - pid
 
 ### build the static site (using jekyll) 
 compile_site:
@@ -29,9 +31,12 @@ compile_site:
     - cd build && cmake --build . && cd ..
   only:
     - master
+  tags:
+    - pid
 
 ### upload the static site (using gitlab pages)
 pages:
+  stage: deploy
   script:
    - ./share/ci/publish_site.sh
   artifacts:
@@ -39,6 +44,8 @@ pages:
     - public
   only:
     - master
+  tags:
+    - pid
 
 
 ## cleanup everything at the end
@@ -47,8 +54,10 @@ cleanup_build:
   script:
      - cd build && rm -Rf * && cd ..
      - cd binaries && rm -Rf * && cd ..
+     - rm -Rf public
   when: always
   only:
     - master
-
+  tags:
+    - pid
 
