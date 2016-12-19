@@ -1,0 +1,54 @@
+
+cache:  
+  key: "$CI_BUILD_REF/$CI_BUILD_REF_NAME"
+  paths:
+   - binaries/
+   - build/
+
+stages:
+ - configure
+ - compile
+ - pages
+ - cleanup
+
+### configure (CMake project configuration) 
+configure_workspace:
+  stage: configure
+  script:
+    - chmod 700 ./share/ci/prepare_workspace.sh
+    - chmod 700 ./share/ci/publish_site.sh
+    - ./share/ci/prepare_workspace.sh
+    - cd build/ && cmake .. && cd ..
+  only:
+    - master
+
+### build the static site (using jekyll) 
+compile_site:
+  stage: compile
+  script:
+    - cd build && cmake --build . && cd ..
+  only:
+    - master
+
+### upload the static site (using gitlab pages)
+pages:
+  script:
+   - ./share/ci/publish_site.sh
+  artifacts:
+    paths:
+    - public
+  only:
+    - master
+
+
+## cleanup everything at the end
+cleanup_build:
+  stage: cleanup
+  script:
+     - cd build && rm -Rf * && cd ..
+     - cd binaries && rm -Rf * && cd ..
+  when: always
+  only:
+    - master
+
+
