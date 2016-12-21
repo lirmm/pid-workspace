@@ -254,7 +254,7 @@ set(README_OVERVIEW "${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION}") #if no detailed 
 
 
 if(${PROJECT_NAME}_FRAMEWORK_LICENSE)
-	set(LICENSE_FOR_README "The license that applies to this repository project is **${${PROJECT_NAME}_LICENSE}**.")
+	set(LICENSE_FOR_README "The license that applies to this repository project is **${${PROJECT_NAME}_FRAMEWORK_LICENSE}**.")
 else()
 	set(LICENSE_FOR_README "The package has no license defined yet.")
 endif()
