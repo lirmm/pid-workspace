@@ -381,7 +381,7 @@ set(printed_authors "${res_string}")
 file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS \"${res_string}\" CACHE INTERNAL \"\")\n")
 
 # writing concise category information
-if(${PROJECT_NAME}_CATEGORIES)
+if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 	file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES \"${${PROJECT_NAME}_FRAMEWORK_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 else()
 	file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES CACHE INTERNAL \"\")\n")
@@ -469,8 +469,8 @@ generate_Framework_Binary_References() # generating in the project the cmake scr
 #########################################################################################################################
 ######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
 #########################################################################################################################
-if(${PROJECT_NAME}_ADDRESS)
-	generate_Framework_Reference_File(${CMAKE_BINARY_DIR}/share/ReferFramework${PROJECT_NAME}.cmake) 
+if(${PROJECT_NAME}_FRAMEWORK_ADDRESS)
+	generate_Framework_Reference_File(${CMAKE_BINARY_DIR}/share/ReferFramework${PROJECT_NAME}.cmake)
 	#copy the reference file of the package into the "references" folder of the workspace
 	add_custom_target(referencing
 		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferFramework${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references

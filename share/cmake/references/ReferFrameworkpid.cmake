@@ -1,0 +1,12 @@
+#### referencing package pid mode ####
+set(pid_FRAMEWORK_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(pid_FRAMEWORK_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(pid_FRAMEWORK_YEARS 2016 CACHE INTERNAL "")
+set(pid_FRAMEWORK_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(pid_FRAMEWORK_SITE **the address of the framework site** CACHE INTERNAL "")
+set(pid_FRAMEWORK_PROJECT_PAGE https://gite.lirmm.fr/pid/pid-framework CACHE INTERNAL "")
+set(pid_FRAMEWORK_DESCRIPTION PID is a global development methodology supported by many tools inclusing a CMake API and dedicated C++ projects. CACHE INTERNAL "")
+set(pid_FRAMEWORK_LICENSE CeCILL-C CACHE INTERNAL "")
+set(pid_FRAMEWORK_ADDRESS git@gite.lirmm.fr:pid/pid-framework.git CACHE INTERNAL "")
+set(pid_FRAMEWORK_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
+set(pid_FRAMEWORK_CATEGORIES "programming;programming/filesystem;programming/meta;programming/resources_management;programming/logging;programming/configuration" CACHE INTERNAL "")
