@@ -36,6 +36,7 @@ include(PID_Package_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Package_Coding_Support NO_POLICY_SCOPE)
 include(PID_Package_Continuous_Integration_Functions NO_POLICY_SCOPE)
+include(PID_Package_Plugins_Management NO_POLICY_SCOPE)
 
 ##################################################################################
 #################### package management public functions and macros ##############
@@ -961,6 +962,9 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	endif()
 endif()
 #print_Component_Variables()
+
+# dealing with plugins at the end of the configuration process
+manage_Plugins()
 reset_Removed_Examples_Build_Option()
 finish_Progress(${GLOBAL_PROGRESS_VAR}) #managing the build from a global point of view
 endmacro(build_Package)

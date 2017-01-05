@@ -1321,10 +1321,10 @@ endfunction(write_Platform_Description)
 ## subsidiary function for writing workspace configuration to a cmake file
 function(write_Current_Configuration file)
 file(WRITE ${file} "")
-write_Platform_Description(${CMAKE_SOURCE_DIR}/pid/Workspace_Platforms_Description.cmake)
-file(APPEND ${file} "include(${CMAKE_SOURCE_DIR}/pid/Workspace_Platforms_Description.cmake NO_POLICY_SCOPE)\n")
-write_Current_Configuration_Build_Related_Variables(${CMAKE_SOURCE_DIR}/pid/Workspace_Build_Info.cmake)
-file(APPEND ${file} "include(${CMAKE_SOURCE_DIR}/pid/Workspace_Build_Info.cmake NO_POLICY_SCOPE)\n")
+write_Platform_Description(${CMAKE_BINARY_DIR}/Workspace_Platforms_Description.cmake)
+file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Platforms_Description.cmake NO_POLICY_SCOPE)\n")
+write_Current_Configuration_Build_Related_Variables(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake)
+file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_POLICY_SCOPE)\n")
 # defining all build configuration variables related to the current platform
 endfunction(write_Current_Configuration)
 
@@ -1350,4 +1350,78 @@ set(CONFIG_FILE ${CMAKE_BINARY_DIR}/Workspace_Platforms_Info.cmake)
 write_Current_Configuration(${CONFIG_FILE})
 
 endfunction(manage_Platforms)
+
+
+########################################################################
+########################## Plugins management ##########################
+########################################################################
+
+## subsidiary function for retrieving available plugins and creating options to activate them
+function(register_Available_Plugins)
+file(GLOB ALL_AVAILABLE_PLUGINS RELATIVE ${CMAKE_SOURCE_DIR}/share/cmake/plugins ${CMAKE_SOURCE_DIR}/share/cmake/plugins/*) #getting plugins container folders names
+	if(NOT ALL_AVAILABLE_PLUGINS)
+		set(WORKSPACE_ALL_PLUGINS CACHE INTERNAL "")
+		set(WORKSPACE_ACTIVE_PLUGINS CACHE INTERNAL "")
+		return()
+	endif()
+	set(ALL_PLUGINS_DEFINED)
+	foreach(plugin IN ITEMS ${ALL_AVAILABLE_PLUGINS})#filtering plugins description files (check if these are really cmake files related to plugins description, according to the PID standard)
+		include(${CMAKE_SOURCE_DIR}/share/cmake/plugins/${plugin}/plugin_description.cmake OPTIONAL RESULT_VARIABLE res)		
+		
+		if(NOT res STREQUAL NOTFOUND)# there may have other dirty files in the folder and we just do not consider them 
+			list(APPEND ALL_PLUGINS_DEFINED ${plugin})
+			option(PLUGIN_${plugin} "${${plugin}_PLUGIN_DESCRIPTION}" OFF)
+		endif()
+	endforeach()
+	list(REMOVE_DUPLICATES ALL_PLUGINS_DEFINED)
+	if(NOT ALL_PLUGINS_DEFINED)
+		set(WORKSPACE_ALL_PLUGINS CACHE INTERNAL "")
+		set(WORKSPACE_ACTIVE_PLUGINS CACHE INTERNAL "")
+		return()
+	endif()
+
+	# detecting which plugins are active
+	set(WORKSPACE_ALL_PLUGINS ${ALL_PLUGINS_DEFINED} CACHE INTERNAL "")
+	set(ALL_PLUGINS_ACTIVE)
+	foreach(plugin IN ITEMS ${WORKSPACE_ALL_PLUGINS})
+		if(PLUGIN_${plugin})
+			list(APPEND ALL_PLUGINS_ACTIVE ${plugin})
+		endif()
+	endforeach()
+	if(ALL_PLUGINS_ACTIVE)
+		set(WORKSPACE_ACTIVE_PLUGINS ${ALL_PLUGINS_ACTIVE} CACHE INTERNAL "")
+	else()
+		set(WORKSPACE_ACTIVE_PLUGINS CACHE INTERNAL "")
+	endif()
+endfunction(register_Available_Plugins)
+
+## subsidiary function for writing workspace active plugins configuration to a cmake file
+function(write_Active_Plugins file)
+file(WRITE ${file} "")
+file(APPEND ${file} "set(WORKSPACE_ALL_PLUGINS ${WORKSPACE_ALL_PLUGINS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(WORKSPACE_ACTIVE_PLUGINS ${WORKSPACE_ACTIVE_PLUGINS} CACHE INTERNAL \"\")\n")
+if(WORKSPACE_ACTIVE_PLUGINS)
+	foreach(plugin IN ITEMS ${WORKSPACE_ACTIVE_PLUGINS})
+		file(APPEND ${file} "set(${plugin}_PLUGIN_ACTIVATION_MESSAGE \"${${plugin}_PLUGIN_ACTIVATION_MESSAGE}\" CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${plugin}_PLUGIN_RESIDUAL_FILES ${${plugin}_PLUGIN_RESIDUAL_FILES} CACHE INTERNAL \"\")\n")
+	endforeach()
+endif()
+endfunction(write_Active_Plugins)
+
+### define active plugins among available plugins
+function(manage_Plugins)
+
+# listing all available plugins from plugins definitions cmake files found in the workspace
+register_Available_Plugins()
+
+if(WORKSPACE_ACTIVE_PLUGINS)
+	message("[PID] Active plugins:")
+	foreach(plugin IN ITEMS ${WORKSPACE_ACTIVE_PLUGINS})
+		message(" ${plugin}")
+	endforeach()
+endif()
+
+set(PLUGINS_FILE ${CMAKE_BINARY_DIR}/Workspace_Plugins_Info.cmake)
+write_Active_Plugins(${PLUGINS_FILE})
+endfunction(manage_Plugins)
 

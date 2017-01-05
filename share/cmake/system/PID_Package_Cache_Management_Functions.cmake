@@ -399,10 +399,9 @@ endfunction(add_Category)
 
 ### add a direct reference to a binary version of the package
 function(add_Reference version platform url url-dbg)
-	#message("WORKSPACE_ALL_PLATFORMS=${WORKSPACE_ALL_PLATFORMS}")
 	list(FIND WORKSPACE_ALL_PLATFORMS ${platform} INDEX)
 	if(INDEX EQUAL -1)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target platform ${platform} when adding reference. Please look into ${WORKSPACE_DIR}/share/cmake/platforms/ to find all predefined platforms or eventually create your own new one and place it in this folder.")
+		message("[PID] WARNING: unknown target platform ${platform} when adding reference. Please look into ${WORKSPACE_DIR}/share/cmake/platforms/ to find all predefined platforms or eventually create your own new one and place it in this folder. The references to binaries using ${platform} will be ignored.") #just do this as a warning to enable compatiblity with V1 style references
 		return()
 	endif()
 	set(LIST_OF_VERSIONS ${${PROJECT_NAME}_REFERENCES} ${version})

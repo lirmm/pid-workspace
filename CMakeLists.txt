@@ -29,7 +29,8 @@ PROJECT(pid-workspace)
 
 manage_Platforms() # define the current platform in use and provide to the user some options to control finally targetted platform
 
-#### TODO modify this when dealing with platforms
+manage_Plugins() # define available plugins and plugins in use 
+
 set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external CACHE INTERNAL "")
 

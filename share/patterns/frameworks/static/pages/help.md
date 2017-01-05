@@ -21,7 +21,7 @@ This site has the same general "look and feel" as any other framework in PID:
     + *Introduction* : quick introduction to the framework purpose.
     + *Install* : to get installation instructions.
     + *Tutorial* : to get information about how using the framework.
-    + *More* : to get more information on advanced topics.
+    + *Advanced topics* : to get more information on advanced topics.
  
   - **Activity** provides the history of last activities in the framework. These activities consist in:
     + Information about packages update. Any time a new version is released, the activity get a new post.
