@@ -91,7 +91,7 @@ else()# a package deployment is required
 			set(PACKAGE_NAME ${TARGET_PACKAGE})
 		endif()
 		# now load the binary references of the package
-		load_Package_Binary_References(REFERENCES_OK ${TARGET_PACKAGE})
+		load_Package_Binary_References(REFERENCES_OK ${PACKAGE_NAME})
 		if(NOT REFERENCES_OK)
 			message("[PID] ERROR : Cannot find any reference to a binary version of ${TARGET_PACKAGE}. Aborting.")
 			return()

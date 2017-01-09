@@ -8,45 +8,25 @@ set(boost_DESCRIPTION external package providing many usefull C++ libraries, rep
 set(boost_CATEGORIES programming/threading;programming/io;programming/timing;programming/container;programming/meta CACHE INTERNAL "")
 
 #declaration of possible platforms
-set(boost_AVAILABLE_PLATFORMS linux64cxx11;linux64;linux32;macosx64;macosx32 CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux64_OS linux CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux64_ARCH 64 CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux64_ABI CXX CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux64_CONFIGURATION posix CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux32_OS linux CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux32_ARCH 32 CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux32_ABI CXX CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux32_CONFIGURATION posix CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_macosx64_OS macosx CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_macosx64_ARCH 64 CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_macosx64_ABI CXX CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_macosx64_CONFIGURATION posix CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_macosx32_OS macosx CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_macosx32_ARCH 32 CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_macosx32_CONFIGURATION posix CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux64cxx11_OS linux CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux64cxx11_ARCH 64 CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux64cxx11_ABI CXX11 CACHE INTERNAL "")
-set(boost_AVAILABLE_PLATFORM_linux64cxx11_CONFIGURATION posix CACHE INTERNAL "")
 
 #declaration of references
 set(boost_REFERENCES 1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0 linux32 linux64 macosx64 linux64cxx11 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0 x86_32_linux_abi98 x86_64_linux_abi98 x86_64_macosx_abi98 x86_64_linux_abi11 CACHE INTERNAL "")
 
 #linux 32
-set(boost_REFERENCE_1.55.0_linux32_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=linux-32-1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0_linux32_FOLDER ext-boost-linux-32-1.55.0-c74d0acc8e7a4b683eed88c55077b4a34f821e31 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_x86_32_linux_abi98_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=linux-32-1.55.0 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_x86_32_linux_abi98_FOLDER ext-boost-linux-32-1.55.0-c74d0acc8e7a4b683eed88c55077b4a34f821e31 CACHE INTERNAL "")
 
 #linux 64
-set(boost_REFERENCE_1.55.0_linux64_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=linux-64-1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0_linux64_FOLDER ext-boost-linux-64-1.55.0-e86d35e51b47bd069d721337c2ce37b4f794400a CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_x86_64_linux_abi98_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=linux-64-1.55.0 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_x86_64_linux_abi98_FOLDER ext-boost-linux-64-1.55.0-e86d35e51b47bd069d721337c2ce37b4f794400a CACHE INTERNAL "")
 
 #macosx 64
-set(boost_REFERENCE_1.55.0_macosx64_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=macosx-1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0_macosx64_FOLDER ext-boost-macosx-1.55.0-401061767ee224bb6ffa66c4307c0abe84a2455f CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_x86_64_macosx_abi98_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=macosx-1.55.0 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_x86_64_macosx_abi98_FOLDER ext-boost-macosx-1.55.0-401061767ee224bb6ffa66c4307c0abe84a2455f CACHE INTERNAL "")
 
 #linux 64 CXX11 ABI
-set(boost_REFERENCE_1.55.0_linux64cxx11_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=linux-64-cxx11-1.55.0 CACHE INTERNAL "")
-set(boost_REFERENCE_1.55.0_linux64cxx11_FOLDER ext-boost-linux-64-cxx11-1.55.0-69978dace6a316dd7b54a863a9c1e2afb7eb97a2 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_x86_64_linux_abi11_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=linux-64-cxx11-1.55.0 CACHE INTERNAL "")
+set(boost_REFERENCE_1.55.0_x86_64_linux_abi11_FOLDER ext-boost-linux-64-cxx11-1.55.0-69978dace6a316dd7b54a863a9c1e2afb7eb97a2 CACHE INTERNAL "")
 
 

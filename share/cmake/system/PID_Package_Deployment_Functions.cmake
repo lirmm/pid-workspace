@@ -626,7 +626,7 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 else()
 	is_Binary_Package_Version_In_Development(IN_DEV ${package} ${RES_VERSION})
 	if(IN_DEV) # dev version is not generating the same binary as currently installed version
-		message("[PID] WARNING : when installing the package ${package} from source : a possibly conflicting binary package with same version ${RES_VERSION} is already installed. Please uninstall it by hand by using the \"make uninstall\" command from package build folder or \"make clear name=${package} version=${RES_VERSION}  from workspace pid folder.\"")
+		message("[PID] WARNING : when installing the package ${package} from source : a possibly conflicting binary package with same version ${RES_VERSION} is already installed. Please uninstall it by hand by using the \"make uninstall\" command from package build folder or \"make clear name=${package} version=${RES_VERSION} from workspace pid folder.\"")
 	else()	#problem : the installed version is the result of the user build
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : package ${package} is already up to date ...")
