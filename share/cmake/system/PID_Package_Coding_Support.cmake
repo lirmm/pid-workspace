@@ -120,16 +120,27 @@ function(add_Static_Check component is_library)
 	if(NOT TARGET ${component})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target name ${component} when trying to cppcheck !")
 	endif()
-	
-	#getting sources of the target 
-	get_target_property(SOURCES_TO_CHECK ${component} SOURCES)
-
-	# getting specific settings of the target (using generator expression to make it robust)
 	set(ALL_SETTING "-I/usr/include/" "-I/usr/local/include/")
-	list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>, -I>>")
-	list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>")
-	list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>>:-I$<JOIN:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>, -I>>")
-	list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>, -I>>")
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+		#header targets have no sources => list them by hand
+		set(SOURCES_TO_CHECK)
+		foreach(source IN ITEMS ${${PROJECT_NAME}_${component}_HEADERS})
+			list(APPEND SOURCES_TO_CHECK ${CMAKE_SOURCE_DIR}/include/${${PROJECT_NAME}_${component}_HEADER_DIR_NAME}/${source})
+		endforeach()
+	else()
+		#getting sources of the target 
+		get_target_property(SOURCES_TO_CHECK ${component} SOURCES)
+		list(APPEND ALL_SETTINGS $<$<BOOL:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>, -I>>)
+		list(APPEND ALL_SETTINGS $<$<BOOL:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>>:-I$<JOIN:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>, -I>>)
+	endif()
+	
+	# getting specific settings of the target (using generator expression to make it robust)
+	
+	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})
+	if(NOT IS_HF)
+		list(APPEND ALL_SETTINGS $<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>)
+		list(APPEND ALL_SETTINGS $<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>, -I>>)
+	endif()	
 
 	set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")
 	if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
@@ -213,8 +224,6 @@ if(BUILD_STATIC_CODE_CHECKING_REPORT)
 		COMMAND ${CPPCHECK_HTMLREPORT_EXECUTABLE} --title="${PROJECT_NAME}" --source-dir=${CMAKE_SOURCE_DIR} --report-dir=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report --file=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 	)
-	### installing static checks report ###
-	install(DIRECTORY ${CMAKE_BINARY_DIR}/share/static_checks_report DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 
 else()
 	add_custom_target(staticchecks COMMENT "[PID] INFO : do not generate a static check report (cppcheck not found)")

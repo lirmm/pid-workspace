@@ -222,7 +222,7 @@ check_Platform_Constraints("${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_AR
 endmacro(check_PID_Platform)
 
 ### API: get_PID_Platform_Info([TYPE res_type] [OS res_os] [ARCH res_arch] [ABI res_abi])
-macro(get_PID_Platform_Info)
+function(get_PID_Platform_Info)
 set(oneValueArgs NAME OS ARCH ABI TYPE)
 set(multiValueArgs CONFIGURATION)
 cmake_parse_arguments(GET_PID_PLATFORM_INFO "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -250,7 +250,7 @@ endif()
 if(NOT OK)
 	message("[PID] ERROR : you must use one or more of the NAME, TYPE, ARCH, OS or ABI keywords together with corresponding variables that will contain the resulting property of the current platform in use.")
 endif()
-endmacro(get_PID_Platform_Info)
+endfunction(get_PID_Platform_Info)
 
 ### API: check_All_PID_Default_Platforms([CONFIGURATION] list of system constraints). Same as previously but without any condition
 macro(check_All_PID_Default_Platforms)
