@@ -48,73 +48,24 @@ endif()
 endfunction(get_Dir_Path_For_Component)
 
 ## subsidiary function to fill the .clang_complete file
-function(write_In_Clang_Complete_File path_to_file list_of_components)
-message("------------ ${path_to_file} --------------")
+function(write_In_Clang_Complete_File path_to_file target_component)
 #the generated file is based on generator expressions to be able to deal with targets properties
-set(INC_FLAGS_CONTENT)
-set(DEF_FLAGS_CONTENT)
-set(OPT_FLAGS_CONTENT)
-
-#grouping properties of components, by category
-foreach(component IN ITEMS ${list_of_components})
-	#includes
-	set(COMPONENT_INC_FLAGS $<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>)
-	set(INC_TO_ADD $<$<BOOL:${COMPONENT_INC_FLAGS}>:-I$<JOIN:${COMPONENT_INC_FLAGS},$<SEMICOLON>-I>>)
-	list(APPEND INC_FLAGS_CONTENT ${INC_TO_ADD})
-
-	#definitions
-	set(COMPONENT_DEF_FLAGS $<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>)
-	set(DEF_TO_ADD $<$<BOOL:${COMPONENT_DEF_FLAGS}>:-D$<JOIN:${COMPONENT_DEF_FLAGS},$<SEMICOLON>-D>>)
-	list(APPEND DEF_FLAGS_CONTENT ${DEF_TO_ADD})
-	
-	#options
-	set(COMPONENT_OPT_FLAGS $<TARGET_PROPERTY:${component},COMPILE_OPTIONS>)
-	set(OPT_TO_ADD $<$<BOOL:${COMPONENT_OPT_FLAGS}>:$<JOIN:${COMPONENT_OPT_FLAGS},$<SEMICOLON>>>)
-	#if(OPT_FLAGS_CONTENT)
-	#	set(OPT_FLAGS_CONTENT $<$<BOOL:${OPT_FLAGS_CONTENT}>,${OPT_FLAGS_CONTENT}$<SEMICOLON>${OPT_TO_ADD}>$<$<NOT:$<BOOL:${OPT_FLAGS_CONTENT}>>,${OPT_TO_ADD}>)
-	#else()
-	#	set(OPT_FLAGS_CONTENT ${OPT_TO_ADD})
-	#endif()
-	list(APPEND OPT_FLAGS_CONTENT ${OPT_TO_ADD})
-	
-endforeach()
-
-
-message("INC_FLAGS_CONTENT:")
-foreach(member IN ITEMS ${INC_FLAGS_CONTENT})
-message(" + ${member}")
-endforeach()
-
-
-message("COMPONENT_OPT_FLAGS:")
-foreach(member IN ITEMS ${OPT_FLAGS_CONTENT})
-message(" + ${member}")
-endforeach()
-
-
-message("DEF_FLAGS_CONTENT:")
-foreach(member IN ITEMS ${DEF_FLAGS_CONTENT})
-message(" + ${member}")
-endforeach()
-message("----------------------------------------")
+set(COMPONENT_INC_FLAGS $<TARGET_PROPERTY:${target_component},INCLUDE_DIRECTORIES>)
+set(COMPONENT_DEF_FLAGS $<TARGET_PROPERTY:${target_component},COMPILE_DEFINITIONS>)
+set(COMPONENT_OPT_FLAGS $<TARGET_PROPERTY:${target_component},COMPILE_OPTIONS>)
 
 #preparing merge expression
-set(OPT_CONTENT_EXIST $<BOOL:${OPT_FLAGS_CONTENT}>)
-set(DEF_CONTENT_EXIST $<BOOL:${DEF_FLAGS_CONTENT}>)
-set(INC_CONTENT_EXIST $<BOOL:${INC_FLAGS_CONTENT}>)
+set(OPT_CONTENT_EXIST $<AND:$<BOOL:${COMPONENT_OPT_FLAGS}>,$<NOT:$<STREQUAL:${COMPONENT_OPT_FLAGS},$<SEMICOLON>>>>)#deal with empty list of one element
+set(DEF_CONTENT_EXIST $<AND:$<BOOL:${COMPONENT_DEF_FLAGS}>,$<NOT:$<STREQUAL:${COMPONENT_DEF_FLAGS},$<SEMICOLON>>>>)#deal with empty list of one element
+set(INC_CONTENT_EXIST $<AND:$<BOOL:${COMPONENT_INC_FLAGS}>,$<NOT:$<STREQUAL:${COMPONENT_INC_FLAGS},$<SEMICOLON>>>>)#deal with empty list of one element
 set(OPT_CONTENT_DOESNT_EXIST $<NOT:${OPT_CONTENT_EXIST}>)
 set(DEF_CONTENT_DOESNT_EXIST $<NOT:${DEF_CONTENT_EXIST}>)
 set(INC_CONTENT_DOESNT_EXIST $<NOT:${INC_CONTENT_EXIST}>)
 
-set(STUPID_DEBUG_STRING_OPT "$<${OPT_CONTENT_EXIST}:EXIST-$<JOIN:${OPT_FLAGS_CONTENT}, EXIST->+>$<${OPT_CONTENT_DOESNT_EXIST}:OPT DOES NOT EXIST !!>")
-set(STUPID_DEBUG_STRING_DEF "$<${DEF_CONTENT_EXIST}:EXIST-$<JOIN:${DEF_FLAGS_CONTENT}, EXIST->+>$<${DEF_CONTENT_DOESNT_EXIST}:DEF DOES NOT EXIST !!>")
-set(STUPID_DEBUG_STRING_INC "$<${INC_CONTENT_EXIST}:EXIST-$<JOIN:${INC_FLAGS_CONTENT}, EXIST->+>$<${INC_CONTENT_DOESNT_EXIST}:INC DOES NOT EXIST !!>")
-set(STUPID_DEBUG_STRING "-------------\n${STUPID_DEBUG_STRING_OPT}\n${STUPID_DEBUG_STRING_DEF}\n${STUPID_DEBUG_STRING_INC}\n-------------\n")
-
 #merging all flags together to put them in a file
-set(ALL_OPTS_LINES $<${OPT_CONTENT_EXIST}:$<JOIN:${OPT_FLAGS_CONTENT},\n>>$<${OPT_CONTENT_DOESNT_EXIST}:>)
-set(ALL_DEFS_LINES $<${DEF_CONTENT_EXIST}:$<${OPT_CONTENT_EXIST}:\n>$<JOIN:${DEF_FLAGS_CONTENT},\n>>$<${DEF_CONTENT_DOESNT_EXIST}:>)
-set(ALL_INCS_LINES $<${INC_CONTENT_EXIST}:$<$<OR:${OPT_CONTENT_EXIST},${DEF_CONTENT_EXIST}>:\n>$<JOIN:${INC_FLAGS_CONTENT},\n>>$<${INC_CONTENT_DOESNT_EXIST}:>)
+set(ALL_OPTS_LINES $<${OPT_CONTENT_EXIST}:$<JOIN:${COMPONENT_OPT_FLAGS},\n>>$<${OPT_CONTENT_DOESNT_EXIST}:>)
+set(ALL_DEFS_LINES $<${DEF_CONTENT_EXIST}:$<${OPT_CONTENT_EXIST}:\n>-D$<JOIN:${COMPONENT_DEF_FLAGS},\n-D>>$<${DEF_CONTENT_DOESNT_EXIST}:>)
+set(ALL_INCS_LINES $<${INC_CONTENT_EXIST}:$<$<OR:${OPT_CONTENT_EXIST},${DEF_CONTENT_EXIST}>:\n>-I$<JOIN:${COMPONENT_INC_FLAGS},\n-I>>$<${INC_CONTENT_DOESNT_EXIST}:>)
 
 #generating the file at generation time (after configuration ends)
 if(EXISTS ${path_to_file})
@@ -126,6 +77,11 @@ endfunction(write_In_Clang_Complete_File)
 ## subsidiary function that generate a .clang_complete file for a source directory of the package
 function(generate_Clang_Complete_File target_dir)
 set(COMPONENTS_FOR_DIR)
+get_filename_component(FOLDER_NAME ${target_dir} NAME)
+get_filename_component(FULL_FOLDER ${target_dir} DIRECTORY)
+get_filename_component(CONTAINER_FOLDER_NAME ${FULL_FOLDER} NAME)
+set(FOLDER_IDENTIFIER ${CONTAINER_FOLDER_NAME}/${FOLDER_NAME})
+
 # 1) finding all components that use this folder
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	get_Dir_Path_For_Component(RET_SOURCE_PATH RET_HEADER_PATH ${component})	
@@ -136,9 +92,27 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	endif()
 endforeach()
 
-# 2) Getting the flags from all components using this folder and generating the resulting .clang_complete file for this folder
+# 2) now creating options if there are more than one component for a given directory
+list(LENGTH COMPONENTS_FOR_DIR SIZE)
+if(SIZE GREATER 1)
+	list(GET COMPONENTS_FOR_DIR 0 DEFAULT_COMP)
+	set(PLUGIN_CLANG_COMPLETE_TARGET_COMPONENT_FOR_${FOLDER_IDENTIFIER} ${DEFAULT_COMP} CACHE STRING "Set the component to be used by clang complete when dealing with directory ${FOLDER_IDENTIFIER}")
+	# verifying if the target component exists
+	list(FIND ${PROJECT_NAME}_COMPONENTS ${PLUGIN_CLANG_COMPLETE_TARGET_COMPONENT_FOR_${FOLDER_IDENTIFIER}} INDEX)
+	if(INDEX EQUAL -1) # component not found
+		message("[PID] WARNING: the component ${PLUGIN_CLANG_COMPLETE_TARGET_COMPONENT_FOR_${FOLDER_IDENTIFIER}} specified for directory ${FOLDER_IDENTIFIER} clang complete file, is unknown.")
+		return()
+	endif()
+elseif(SIZE EQUAL 1)
+	set(PLUGIN_CLANG_COMPLETE_TARGET_COMPONENT_FOR_${FOLDER_IDENTIFIER} ${COMPONENTS_FOR_DIR} CACHE INTERNAL "")
+else() #no component for that folder,this folder is not used as an include folder for other components or as a sorce folder (maybe a temporary folder => do not manage it)
+	return()
+endif()
+
+
+# 3) Getting the flags from all components using this folder and generating the resulting .clang_complete file for this folder
 set(TARGET_FILE ${target_dir}/.clang_complete)
-write_In_Clang_Complete_File(${TARGET_FILE} "${COMPONENTS_FOR_DIR}")
+write_In_Clang_Complete_File(${TARGET_FILE} ${PLUGIN_CLANG_COMPLETE_TARGET_COMPONENT_FOR_${FOLDER_IDENTIFIER}})
 endfunction(generate_Clang_Complete_File)
 
 ## main script
