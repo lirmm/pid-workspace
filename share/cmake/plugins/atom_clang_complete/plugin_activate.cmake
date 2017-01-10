@@ -50,9 +50,16 @@ endfunction(get_Dir_Path_For_Component)
 ## subsidiary function to fill the .clang_complete file
 function(write_In_Clang_Complete_File path_to_file target_component)
 #the generated file is based on generator expressions to be able to deal with targets properties
-set(COMPONENT_INC_FLAGS $<TARGET_PROPERTY:${target_component},INCLUDE_DIRECTORIES>)
-set(COMPONENT_DEF_FLAGS $<TARGET_PROPERTY:${target_component},COMPILE_DEFINITIONS>)
-set(COMPONENT_OPT_FLAGS $<TARGET_PROPERTY:${target_component},COMPILE_OPTIONS>)
+if(${PROJECT_NAME}_${target_component}_TYPE STREQUAL HEADER)
+	set(COMPONENT_INC_FLAGS $<TARGET_PROPERTY:${target_component},INTERFACE_INCLUDE_DIRECTORIES>)
+	set(COMPONENT_DEF_FLAGS $<TARGET_PROPERTY:${target_component},INTERFACE_COMPILE_DEFINITIONS>)
+	set(COMPONENT_OPT_FLAGS $<TARGET_PROPERTY:${target_component},INTERFACE_COMPILE_OPTIONS>)
+
+else()
+	set(COMPONENT_INC_FLAGS $<TARGET_PROPERTY:${target_component},INCLUDE_DIRECTORIES>)
+	set(COMPONENT_DEF_FLAGS $<TARGET_PROPERTY:${target_component},COMPILE_DEFINITIONS>)
+	set(COMPONENT_OPT_FLAGS $<TARGET_PROPERTY:${target_component},COMPILE_OPTIONS>)
+endif()
 
 #preparing merge expression
 set(OPT_CONTENT_EXIST $<AND:$<BOOL:${COMPONENT_OPT_FLAGS}>,$<NOT:$<STREQUAL:${COMPONENT_OPT_FLAGS},$<SEMICOLON>>>>)#deal with empty list of one element
