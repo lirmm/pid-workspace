@@ -147,7 +147,7 @@ endmacro(targets_For_PID_Components)
 
 
 ###
-macro(path_To_PID_Component_Resources)
+function(path_To_PID_Component_Resources)
 
 set(oneValueArgs PACKAGE COMPONENT RESOURCES)
 cmake_parse_arguments(PATH_PID_RESOURCES "" "${oneValueArgs}" "" ${ARGN})
@@ -164,6 +164,6 @@ endif()
 
 file(GLOB RESULT ${${TARGETS_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES}/*)
 set(${PATH_PID_RESOURCES_RESOURCES} ${RESULT} PARENT_SCOPE)
-endmacro(path_To_PID_Component_Resources)
+endfunction(path_To_PID_Component_Resources)
 
 
