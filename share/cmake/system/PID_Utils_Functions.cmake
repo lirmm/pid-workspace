@@ -833,7 +833,7 @@ foreach(a_file IN ITEMS ${ALL_FILES_DIR1})
 			set(SAME FALSE)
 			test_Same_File_Content(${dir1_path}/${a_file} ${dir2_path}/${a_file} SAME)
 			if(NOT SAME)#file content is different
-				message("testing ${dir1_path}/${a_file} ${dir2_path}/${a_file} is FALSE")
+				
 				set(${ARE_SAME} FALSE PARENT_SCOPE)
 				return()
 			endif()

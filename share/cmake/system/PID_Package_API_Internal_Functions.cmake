@@ -388,30 +388,6 @@ elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRES
 	return()
 endif()
 init_Documentation_Info_Cache_Variables("${framework}" "${url}" "" "" "${description}")
-if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
-	get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
-	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING AND GENERATE_INSTALLER)
-		set(INCLUDING_BINARIES TRUE)
-	else()
-		set(INCLUDING_BINARIES TRUE)
-	endif()
-	add_custom_target(site
-		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
-						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
-						-DCMAKE_COMMAND=${CMAKE_COMMAND}
-						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-						-DTARGET_FRAMEWORK=${framework}
-						-DINCLUDES_API_DOC=${BUILD_API_DOC}
-						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
-						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
-						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
-						-DSYNCHRO=$(synchro)
-						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
-			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake
-	)
-endif()
 endmacro(define_Framework_Contribution)
 
 ### defining a lone static site for the package
@@ -424,14 +400,36 @@ elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRES
 	return()
 endif()
 init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${homepage}" "${description}")
-if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
+
+endif()
+endmacro(define_Static_Site_Contribution)
+
+## 
+function(create_Documentation_Target)
+if(NOT ${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
+	return()
+endif()
+
+#general information
+get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 	
-	get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
-	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING AND GENERATE_INSTALLER)
-		set(INCLUDING_BINARIES TRUE)
-	else()
-		set(INCLUDING_BINARIES TRUE)
-	endif()
+# management of binaries publication
+if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING AND GENERATE_INSTALLER)
+	set(INCLUDING_BINARIES TRUE)
+else()
+	set(INCLUDING_BINARIES FALSE)
+endif()
+
+#checking for coverage generation
+if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
+	set(INCLUDING_COVERAGE TRUE)
+else()
+	set(INCLUDING_COVERAGE FALSE)
+endif()
+
+
+if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done within a lone static site
+
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
@@ -440,19 +438,35 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in rel
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DINCLUDES_API_DOC=${BUILD_API_DOC}
-						-DINCLUDES_COVERAGE=${BUILD_COVERAGE_REPORT}
+						-DINCLUDES_COVERAGE=${INCLUDING_COVERAGE}
 						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
 						-DSYNCHRO=$(synchro)
 						-DFORCED_UPDATE=$(force)
-						-DSITE_GIT="${git_repository}"
+						-DSITE_GIT="${${PROJECT_NAME}_SITE_GIT_ADDRESS}"
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 						-DPACKAGE_SITE_URL="${${PROJECT_NAME}_SITE_ROOT_PAGE}"
+			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake)
+elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done with a framework
+		
+	add_custom_target(site
+		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
+						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
+						-DCMAKE_COMMAND=${CMAKE_COMMAND}
+						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}
+						-DINCLUDES_API_DOC=${BUILD_API_DOC}
+						-DINCLUDES_COVERAGE=${INCLUDING_COVERAGE}
+						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
+						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
+						-DSYNCHRO=$(synchro)
+						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake
 	)
 endif()
-endmacro(define_Static_Site_Contribution)
-
+endfunction(create_Documentation_Target)
 
 ############################################################################
 ################## setting currently developed version number ##############
@@ -628,6 +642,7 @@ generate_Info_File() #generating a cmake "info" file containing info about sourc
 generate_Dependencies_File() #generating a cmake "dependencies" file containing information about dependencies
 generate_Coverage() #generating a coverage report in debug mode
 generate_Static_Checks() #generating a static check report in release mode, if tests are enabled then static check test are automatically generated 
+create_Documentation_Target() # create target for generating documentation
 configure_Pages() # generating the markdown files for the project web pages
 generate_CI_Config_File() #generating the CI config file in the project
 

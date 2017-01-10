@@ -12,7 +12,7 @@ set(pid-log_DESCRIPTION A package that defines libraries to easily manage loggin
 set(pid-log_YEARS 2014 CACHE INTERNAL "")
 set(pid-log_LICENSE CeCILL-C CACHE INTERNAL "")
 set(pid-log_ADDRESS git@gite.lirmm.fr:pid/pid-log.git CACHE INTERNAL "")
-set(pid-log_CATEGORIES "programming/log" CACHE INTERNAL "")
+set(pid-log_CATEGORIES "programming/logging" CACHE INTERNAL "")
 set(pid-log_REFERENCES 1.0.0 CACHE INTERNAL "")
 set(pid-log_REFERENCE_1.0.0 x86_64_linux_abi98;x86_64_linux_abi11 CACHE INTERNAL "")
 set(pid-log_REFERENCE_1.0.0_x86_64_linux_abi98_URL https://gite.lirmm.fr/pid/pid-binaries/wikis/pid-log/1.0.0/linux64/pid-log-1.0.0-linux64.tar.gz CACHE INTERNAL "")

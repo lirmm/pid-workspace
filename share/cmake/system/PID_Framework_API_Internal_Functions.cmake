@@ -323,7 +323,7 @@ configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/framework.yml.in ${CMA
 
 # 3) generate the data file defining categories managed by the framework (generated from scratch)
 file(WRITE ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "")
-if(${PROJECT_NAME}_CATEGORIES)
+if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 	foreach(cat IN ITEMS ${${PROJECT_NAME}_FRAMEWORK_CATEGORIES})
 		extract_All_Words_From_Path(${cat} LIST_OF_NAMES)
 		list(LENGTH LIST_OF_NAMES SIZE)

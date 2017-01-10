@@ -477,7 +477,7 @@ set(PACKAGE_HAS_API_DOC true)
 else()
 set(PACKAGE_HAS_API_DOC false)
 endif()
-if(BUILD_COVERAGE_REPORT)
+if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 set(PACKAGE_HAS_COVERAGE true)
 else()
 set(PACKAGE_HAS_COVERAGE false)
@@ -868,7 +868,7 @@ endif()
 set(NEW_POST_CONTENT_PAGES FALSE)
 # 1) copy content from source into the binary dir
 if(EXISTS ${WORKSPACE_DIR}/packages/${package}/share/site AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/share/site)
-	#copy the content of the site source share folder of the package (user defined pages, documents and images)
+	#copy the content of the site source share folder of the package (user defined pages, documents and images) to the package final site in build tree 
 	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/share/site ${WORKSPACE_DIR}/packages/${package}/build/release/site/pages)
 endif()
 
@@ -877,12 +877,15 @@ set(ARE_SAME FALSE)
 if(NOT force)#only do this heavy check if the generation is not forced
 	test_Same_Directory_Content(${WORKSPACE_DIR}/packages/${package}/build/release/site/pages ${TARGET_PAGES_PATH} ARE_SAME)
 endif()
+
 if(NOT ARE_SAME)
 	# clean the source folder content
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_PAGES_PATH})#delete all pages
 	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${TARGET_PAGES_PATH})# recreate the pages folder
 	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/build/release/site ${TARGET_PACKAGE_PATH})# copy content from binary dir to site repository source dir
 	set(NEW_POST_CONTENT_PAGES TRUE)
+else()
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/packages/${package}/build/release/site/index.html ${TARGET_PACKAGE_PATH})# copy content from binary dir to site repository source dir
 endif()
 
 

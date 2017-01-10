@@ -19,7 +19,7 @@ has_coverage: @PACKAGE_HAS_COVERAGE@
 
 <h2>First steps</h2>
 
-If your are a new user, you can start reading <a href="/packages/{{ page.package }}/pages/introduction">introduction section</a> and <a href="/packages/{{ page.package }}/pages/install">installation instructions</a>. Use the documentation tab to access usefull resources to start working with teh package.
+If your are a new user, you can start reading <a href="/packages/{{ page.package }}/pages/introduction">introduction section</a> and <a href="/packages/{{ page.package }}/pages/install">installation instructions</a>. Use the documentation tab to access usefull resources to start working with the package.
 <br>
 <br>
 
