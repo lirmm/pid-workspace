@@ -33,7 +33,7 @@ endif()
 endfunction(get_Mode_Variables)
 
 ### getting basic system variables related to current platform (common accessor usefull in many places)
-function(get_System_Variables PLATFORM_NAME CURRENT_PACKAGE_STRING)
+function(get_System_Variables PLATFORM_NAME PACKAGE_STRING)
 set(${PLATFORM_NAME} ${CURRENT_PLATFORM} PARENT_SCOPE)
 set(${PACKAGE_STRING} ${CURRENT_PACKAGE_STRING} PARENT_SCOPE)
 endfunction(get_System_Variables)

@@ -35,6 +35,6 @@ if(TARGET_PACKAGE)
 		message("[PID] ERROR : the target package ${TARGET_PACKAGE} does not exist.")
 	endif()
 else()
-	message("[PID] ERROR : You must specify the name of the package to release using name=<name of package> argument.")
+	message("[PID] ERROR : You must specify the name of the package to release using package=<name of package> argument.")
 endif()
 
