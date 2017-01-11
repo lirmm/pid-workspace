@@ -416,10 +416,16 @@ if(${package}_FRAMEWORK) #references are deployed in a framework
 		set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_FRAMEWORK_SITE})#get the address of the framework static site
 		file(DOWNLOAD ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 		list(GET res 0 numeric_error)
-		if(numeric_error EQUAL 0 #framework site is not online & reference available.
+		if(numeric_error EQUAL 0 #framework site is online & reference available.
 		AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 			include(${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
-			set(${REFERENCES_OK} TRUE PARENT_SCOPE)
+		else() #it may be an external package, try this
+			file(DOWNLOAD ${FRAMEWORK_ADDRESS}/external/${package}/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
+			list(GET res 0 numeric_error)
+			if(numeric_error EQUAL 0 #framework site is online & reference available.
+			AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+				include(${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+			endif()
 		endif()
 	endif()
 elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static site
@@ -429,7 +435,6 @@ elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static s
 	if(numeric_error EQUAL 0 #static site online & reference available.
 	AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 		include(${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
-		set(${REFERENCES_OK} TRUE PARENT_SCOPE)
 	endif()
 endif()
 if(${package}_REFERENCES) #if there are direct reference (simpler case), no need to do more becase binary references are already included
@@ -661,7 +666,7 @@ endfunction(build_And_Install_Package)
 ############################### functions for native binary Packages #############################
 ##################################################################################################
 
-### function to test if platforms configurations defined for binary packages are matching the current platform #HERE
+### function to test if platforms configurations defined for binary packages are matching the current platform
 function(check_Package_Platform_Against_Current package platform CHECK_OK)
 set(${CHECK_OK} TRUE PARENT_SCOPE)
 get_System_Variables(PLATFORM_STRING PACKAGE_STRING)

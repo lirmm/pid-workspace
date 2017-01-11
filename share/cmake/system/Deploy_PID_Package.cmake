@@ -93,7 +93,7 @@ else()# a package deployment is required
 		# now load the binary references of the package
 		load_Package_Binary_References(REFERENCES_OK ${PACKAGE_NAME})
 		if(NOT REFERENCES_OK)
-			message("[PID] ERROR : Cannot find any reference to a binary version of ${TARGET_PACKAGE}. Aborting.")
+			message("[PID] ERROR : Cannot find any reference to a binary version of ${PACKAGE_NAME}. Aborting.")
 			return()
 		endif()
 		exact_Version_Exists(${PACKAGE_NAME} "${TARGET_VERSION}" EXIST)

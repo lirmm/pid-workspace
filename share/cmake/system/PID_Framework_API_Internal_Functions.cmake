@@ -397,9 +397,18 @@ set(dir ${CMAKE_SOURCE_DIR}/src/_packages)
 list_Subdirectories(ALL_PACKAGES ${dir})
 if(ALL_PACKAGES)
 	foreach(package IN ITEMS ${ALL_PACKAGES})
-		generate_Framework_Binary_Reference_For_Package(${package})
+		generate_Framework_Binary_Reference_For_Package(${package} TRUE)
 	endforeach()
 endif()
+#dealing also with external packages (no documentation only binary references)
+set(dir ${CMAKE_SOURCE_DIR}/src/external)
+list_Subdirectories(ALL_PACKAGES ${dir})
+if(ALL_PACKAGES)
+	foreach(package IN ITEMS ${ALL_PACKAGES})
+		generate_Framework_Binary_Reference_For_Package(${package} FALSE)
+	endforeach()
+endif()
+
 endfunction(generate_Framework_Binary_References)
 
 
@@ -409,14 +418,19 @@ configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binaries.md.in ${gen
 endfunction(generate_Package_Page_Binaries_In_Framework)
 
 ### generating a cmake script files that references the binaries for a given package (native or external) that has been put into the framework
-function(generate_Framework_Binary_Reference_For_Package package)
-set(PATH_TO_PACKAGE_PAGES ${CMAKE_SOURCE_DIR}/src/_packages/${package}/pages)
-set(PACKAGE_NAME ${package})
-generate_Package_Page_Binaries_In_Framework(${PATH_TO_PACKAGE_PAGES}) # create markdown page listing available binaries
+function(generate_Framework_Binary_Reference_For_Package package native)
+if(native)
+	set(PATH_TO_PACKAGE_PAGES ${CMAKE_SOURCE_DIR}/src/_packages/${package}/pages)
+	set(PACKAGE_NAME ${package})
+	generate_Package_Page_Binaries_In_Framework(${PATH_TO_PACKAGE_PAGES}) # create markdown page listing available binaries
+	set(dir ${CMAKE_SOURCE_DIR}/src/_packages/${package}/binaries)
+else() # external packages have different deployment
+	set(dir ${CMAKE_SOURCE_DIR}/src/external/${package})
+endif()
 
-set(dir ${CMAKE_SOURCE_DIR}/src/_packages/${package}/binaries)
+
 set(file ${dir}/binary_references.cmake)
-file(WRITE ${file} "# Contains references to binaries that are available for ${PROJECT_NAME} \n")
+file(WRITE ${file} "# Contains references to binaries that are available for ${package} \n")
 #this may overwrite binary references hard coded in the reference file, or simply add new ones
 
 ##################################################################
@@ -426,38 +440,59 @@ file(WRITE ${file} "# Contains references to binaries that are available for ${P
 list_Subdirectories(ALL_VERSIONS ${dir})
 if(ALL_VERSIONS)
 	foreach(ref_version IN ITEMS ${ALL_VERSIONS}) #for each available version, all os for which there is a reference
-		set(VERSION_REGISTERED FALSE)
 		
 		list_Subdirectories(ALL_PLATFORMS ${dir}/${ref_version})
 		if(ALL_PLATFORMS)
 			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version	
 				# now referencing the binaries
 				list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
-				if(	ALL_BINARIES
-					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz
-					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)# both release and binary versions have to exist
-					
+				if(ALL_BINARIES) # check to avoid problem is the binaries have been badly released
+
 					# the version is registered only if there are binaries inside (sanity check)
-					set(${package}_REFERENCES ${${package}_REFERENCES} ${ref_version})
-					set(${package}_REFERENCE_${ref_version} ${${package}_REFERENCE_${ref_version}} ${ref_platform})
-					set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
-					set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
+					if(native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz
+						  AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)# both release and binary versions have to exist for native packages
+						set(${package}_REFERENCES ${${package}_REFERENCES} ${ref_version})
+						set(${package}_REFERENCE_${ref_version} ${${package}_REFERENCE_${ref_version}} ${ref_platform})
+						set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
+						set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)	
+					elseif(NOT NATIVE AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) #at least a release version is required for external packages
+						set(${package}_REFERENCES ${${package}_REFERENCES} ${ref_version})
+						set(${package}_REFERENCE_${ref_version} ${${package}_REFERENCE_${ref_version}} ${ref_platform})
+						set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
+						set(${package}_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${package}-${ref_version}-${ref_platform})
+						if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
+							set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
+							set(${package}_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${package}-${ref_version}-dbg-${ref_platform})
+						endif()
+					endif()
 				endif()
 			endforeach()
 		endif()
 	endforeach()
 
 	if(${package}_REFERENCES)
-	list(REMOVE_DUPLICATES ${package}_REFERENCES)
-	file(APPEND ${file} "set(${package}_REFERENCES ${${package}_REFERENCES} CACHE INTERNAL \"\")\n") # the version is registered
-	foreach(ref_version IN ITEMS ${${package}_REFERENCES})
-		list(REMOVE_DUPLICATES ${package}_REFERENCE_${ref_version})
-		file(APPEND ${file} "set(${package}_REFERENCE_${ref_version} ${${package}_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n") 
-		foreach(ref_platform IN ITEMS ${${package}_REFERENCE_${ref_version}}) #there is at least one platform referenced so no need to test for nullity
-			file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
-			file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
+		list(REMOVE_DUPLICATES ${package}_REFERENCES)
+		file(APPEND ${file} "set(${package}_REFERENCES ${${package}_REFERENCES} CACHE INTERNAL \"\")\n") # the version is registered
+		foreach(ref_version IN ITEMS ${${package}_REFERENCES})
+			list(REMOVE_DUPLICATES ${package}_REFERENCE_${ref_version})
+			file(APPEND ${file} "set(${package}_REFERENCE_${ref_version} ${${package}_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n") 
+			foreach(ref_platform IN ITEMS ${${package}_REFERENCE_${ref_version}}) #there is at least one platform referenced so no need to test for nullity
+
+				#release binary referencing				
+				file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${package}_REFERENCE_${ref_version}_${ref_platform}_URL} CACHE INTERNAL \"\")\n")#reference on the release binary
+				if(NOT native)
+					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${${package}_REFERENCE_${ref_version}_${ref_platform}_FOLDER} CACHE INTERNAL \"\")\n")# name of the folder contained in the archive
+				endif()
+
+				#debug binary referencing
+				if(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG) #always true for native packages, may be true for native packages
+					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG} CACHE INTERNAL \"\")\n")#reference on the debug binary
+					if(NOT native)
+						file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${${package}_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG} CACHE INTERNAL \"\")\n")#name of the folder contained in the archive
+					endif()
+				endif()
+			endforeach()
 		endforeach()
-	endforeach()
 	endif()
 endif()
 endfunction(generate_Framework_Binary_Reference_For_Package)
