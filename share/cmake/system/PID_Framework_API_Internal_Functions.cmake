@@ -391,7 +391,7 @@ endfunction(generate_Framework_Reference_File)
 
 
 
-###
+### generating cmake script files that reference the binaries of framework's packages
 function(generate_Framework_Binary_References)
 set(dir ${CMAKE_SOURCE_DIR}/src/_packages)
 list_Subdirectories(ALL_PACKAGES ${dir})
@@ -402,8 +402,18 @@ if(ALL_PACKAGES)
 endif()
 endfunction(generate_Framework_Binary_References)
 
-###
+
+### create the file for listing binaries of a given package in the framework
+function(generate_Package_Page_Binaries_In_Framework generated_pages_folder)
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binaries.md.in ${generated_pages_folder}/binaries.md @ONLY)
+endfunction(generate_Package_Page_Binaries_In_Framework)
+
+### generating a cmake script files that references the binaries for a given package (native or external) that has been put into the framework
 function(generate_Framework_Binary_Reference_For_Package package)
+set(PATH_TO_PACKAGE_PAGES ${CMAKE_SOURCE_DIR}/src/_packages/${package}/pages)
+set(PACKAGE_NAME ${package})
+generate_Package_Page_Binaries_In_Framework(${PATH_TO_PACKAGE_PAGES}) # create markdown page listing available binaries
+
 set(dir ${CMAKE_SOURCE_DIR}/src/_packages/${package}/binaries)
 set(file ${dir}/binary_references.cmake)
 file(WRITE ${file} "# Contains references to binaries that are available for ${PROJECT_NAME} \n")
@@ -427,20 +437,28 @@ if(ALL_VERSIONS)
 					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz
 					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)# both release and binary versions have to exist
 					
-					if(NOT VERSION_REGISTERED)  # the version is registered only if there are binaries inside (sanity check)
-					file(APPEND ${file} "set(${package}_REFERENCES ${${package}_REFERENCES} ${ref_version} CACHE INTERNAL \"\")\n") # the version is registered
-					set(VERSION_REGISTERED TRUE)
-					endif()
-					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version} ${${package}_REFERENCE_${ref_version}} ${ref_platform} CACHE INTERNAL \"\")\n") # the platform added to registered platform for this version versions only if there are binaries inside (sanity check)
-
-					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
-
-					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
-
+					# the version is registered only if there are binaries inside (sanity check)
+					set(${package}_REFERENCES ${${package}_REFERENCES} ${ref_version})
+					set(${package}_REFERENCE_${ref_version} ${${package}_REFERENCE_${ref_version}} ${ref_platform})
+					set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
+					set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
 				endif()
 			endforeach()
 		endif()
 	endforeach()
+
+	if(${package}_REFERENCES)
+	list(REMOVE_DUPLICATES ${package}_REFERENCES)
+	file(APPEND ${file} "set(${package}_REFERENCES ${${package}_REFERENCES} CACHE INTERNAL \"\")\n") # the version is registered
+	foreach(ref_version IN ITEMS ${${package}_REFERENCES})
+		list(REMOVE_DUPLICATES ${package}_REFERENCE_${ref_version})
+		file(APPEND ${file} "set(${package}_REFERENCE_${ref_version} ${${package}_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n") 
+		foreach(ref_platform IN ITEMS ${${package}_REFERENCE_${ref_version}}) #there is at least one platform referenced so no need to test for nullity
+			file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
+			file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
+		endforeach()
+	endforeach()
+	endif()
 endif()
 endfunction(generate_Framework_Binary_Reference_For_Package)
 

@@ -661,14 +661,28 @@ endfunction(build_And_Install_Package)
 ############################### functions for native binary Packages #############################
 ##################################################################################################
 
-### function to test if platforms configurations defined for binary packages are matching the current platform 
+### function to test if platforms configurations defined for binary packages are matching the current platform #HERE
 function(check_Package_Platform_Against_Current package platform CHECK_OK)
 set(${CHECK_OK} TRUE PARENT_SCOPE)
 get_System_Variables(PLATFORM_STRING PACKAGE_STRING)
 if(platform STREQUAL ${PLATFORM_STRING})
 	# OK this binary version is theorically eligible, but need to check for its platform configuration to be sure it can be used
-	if(${package}_PLATFORM_CONFIGURATIONS)	
-		foreach(config IN ITEMS ${${package}_PLATFORM_CONFIGURATIONS})
+	set(CONFIGS_TO_CHECK)
+	if(${package}_PLATFORM_CONFIGURATIONS)
+		set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})
+	else() # this case may be true if the package binary has been release in old PID v1 style
+		PID_Package_Is_With_V2_Platform_Info_In_Use_Files(RES ${package})
+		if(NOT RES) #this is an old style platform description
+			set(OLD_PLATFORM_NAME ${${package}_PLATFORM})
+			set(OLD_PLATFORM_CONFIG ${${package}_PLATFORM_${OLD_PLATFORM_NAME}_CONFIGURATION})
+			if(OLD_PLATFORM_CONFIG) #there are required configurations in old style
+				set(CONFIGS_TO_CHECK ${OLD_PLATFORM_CONFIG})
+			endif()
+		endif()
+	endif()
+	
+	if(CONFIGS_TO_CHECK)
+		foreach(config IN ITEMS ${CONFIGS_TO_CHECK})
 			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)
 				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)	# find the configuation
 				if(NOT ${config}_FOUND)# not found, trying to see if can be installed
@@ -688,8 +702,8 @@ if(platform STREQUAL ${PLATFORM_STRING})
 				return()
 			endif()
 		endforeach()
-	endif()#OK no specific check for configuration so
-else()#the binary is not eligible since does not match either os or arch of the current system
+	endif()#OK no specific check for configuration so simply reply TRUE
+else()#the binary is not eligible since does not match either familly, os, arch or ABI of the current system
 	set(${CHECK_OK} FALSE PARENT_SCOPE)
 	return()
 endif()	
@@ -1310,25 +1324,33 @@ if(${res} STREQUAL NOTFOUND)
 endif()
 unset(${package}_CURR_DIR)
 # checking platforms
-if(${package}_PLATFORM${VAR_SUFFIX})
-	set(platform ${${package}_PLATFORM${VAR_SUFFIX}})#arch and OS are not checked as they are supposed to be already OK
-	# 2) checking constraints on configuration
-	if(${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}) #there are configuration constraints
-		foreach(config IN ITEMS ${${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}})
-			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
-				if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
-					message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
-					return()
-				else()
-					message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
-				endif()
-			else()
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${package}.")
-				return()
-			endif()
-		endforeach()
+set(CONFIGS_TO_CHECK)
+if(${package}_PLATFORM_CONFIGURATIONS)
+	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})#there are configuration constraints in PID v2 style
+elseif(${package}_PLATFORM${VAR_SUFFIX}) # this case may be true if the package binary has been release in old PID v1 style
+	set(platform ${${package}_PLATFORM})
+	set(OLD_PLATFORM_CONFIG ${${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}})
+	if(OLD_PLATFORM_CONFIG) #there are required configurations in old style
+		set(CONFIGS_TO_CHECK ${OLD_PLATFORM_CONFIG})#there are configuration constraints in PID v1 style
 	endif()
+endif()
+
+if(CONFIGS_TO_CHECK)#arch and OS are not checked as they are supposed to be already OK
+	# 2) checking constraints on configuration
+	foreach(config IN ITEMS ${CONFIGS_TO_CHECK})
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
+			if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
+				return()
+			else()
+				message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
+			endif()
+		else()
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${package}.")
+			return()
+		endif()
+	endforeach()
 endif() #otherwise no configuration for this platform is supposed to be necessary
 
 endfunction(configure_External_Package)

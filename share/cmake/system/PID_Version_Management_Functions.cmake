@@ -20,6 +20,10 @@
 
 
 function(PID_Package_Is_With_Development_Info_In_Use_Files RES package)
+	if(NOT ${package}_PID_VERSION)
+		set(${RES} FALSE PARENT_SCOPE)
+		return()
+	endif()	
 	if(${${package}_PID_VERSION} GREATER 1) #with packages generated with version > 1 we can find development info about packages 
 		set(${RES} TRUE PARENT_SCOPE)
 	else()
@@ -29,6 +33,10 @@ endfunction(PID_Package_Is_With_Development_Info_In_Use_Files)
 
 
 function(PID_Package_Is_With_Site_Info_In_Use_Files RES package)
+	if(NOT ${package}_PID_VERSION)
+		set(${RES} FALSE PARENT_SCOPE)
+		return()
+	endif()	
 	if(${${package}_PID_VERSION} GREATER 1) #with packages generated with version > 1 we can find web site info about packages 
 		set(${RES} TRUE PARENT_SCOPE)
 	else()
@@ -36,4 +44,16 @@ function(PID_Package_Is_With_Site_Info_In_Use_Files RES package)
 	endif()
 endfunction(PID_Package_Is_With_Site_Info_In_Use_Files)
 
+
+function(PID_Package_Is_With_V2_Platform_Info_In_Use_Files RES package)
+	if(NOT ${package}_PID_VERSION)
+		set(${RES} FALSE PARENT_SCOPE)
+		return()
+	endif()
+	if(${${package}_PID_VERSION} GREATER 1) #with packages generated with version > 1 we can find development info about packages 
+		set(${RES} TRUE PARENT_SCOPE)
+	else()
+		set(${RES} FALSE PARENT_SCOPE)
+	endif()
+endfunction(PID_Package_Is_With_V2_Platform_Info_In_Use_Files)
 

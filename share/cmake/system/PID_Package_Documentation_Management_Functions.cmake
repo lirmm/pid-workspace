@@ -260,12 +260,6 @@ function(generate_Package_Page_Index_In_Framework generated_site_folder)
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/index.html.in ${generated_site_folder}/index.html @ONLY)
 endfunction(generate_Package_Page_Index_In_Framework)
 
-### create the file for listing binaries of a given package in the framework
-function(generate_Package_Page_Binaries_In_Framework generated_pages_folder)
-configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binaries.md.in ${generated_pages_folder}/binaries.md @ONLY)
-endfunction(generate_Package_Page_Binaries_In_Framework)
-
-
 ### create introduction page
 function(generate_Static_Site_Page_Introduction generated_pages_folder)
 
@@ -525,7 +519,6 @@ else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 		return()
 	endif()
 	generate_Package_Page_Index_In_Framework(${PATH_TO_SITE}) # create index page
-	generate_Package_Page_Binaries_In_Framework(${PATH_TO_SITE_PAGES}) # create page allowing to list the binaries
 endif()
 
 # common generation process between framework and lone static sites 
