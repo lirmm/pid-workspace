@@ -13,10 +13,26 @@
 			  {% endif %}
 			  {% endif %}
 			{% endfor %}
+			{% if category_packages != 1 %}
+			{% for package in site.external %}
+			  {% if package.path contains 'index' %}
+			  {% if package.categories contains category.index %}
+			      {% assign category_packages = 1 %}
+			  {% endif %}
+			  {% endif %}
+			{% endfor %}
+			{% endif %}
 			{% if category_packages != 0 %}
 			<li>{{ category.name }} 
 				<ul class="list-unstyled">
 				{% for package in site.packages %}
+					{% if package.path contains 'index' %}
+					{% if (package.categories contains category.index) %}
+						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="{{ package.url }}">{{ package.package }}</a></li>
+					{% endif %}
+					{% endif %}					
+				{% endfor %}
+				{% for package in site.external %}
 					{% if package.path contains 'index' %}
 					{% if (package.categories contains category.index) %}
 						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="{{ package.url }}">{{ package.package }}</a></li>
@@ -31,6 +47,11 @@
 	<li> All packages
 	<ul class="list-unstyled">
 	{% for package in site.packages %}
+		{% if package.path contains 'index' %}
+		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="{{ package.url }}">{{ package.package }}</a></li>
+		{% endif %}
+	{% endfor %}
+	{% for package in site.external %}
 		{% if package.path contains 'index' %}
 		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="{{ package.url }}">{{ package.package }}</a></li>
 		{% endif %}

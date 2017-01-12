@@ -85,7 +85,7 @@ foreach(element IN ITEMS ${input_list})
 endforeach()
 string(STRIP "${res}" res_finished)
 set(${res_string} ${res_finished} PARENT_SCOPE)
-endfunction()
+endfunction(fill_List_Into_String)
 
 ###
 function(extract_Package_Namespace_From_SSH_URL url package NAMESPACE SERVER_ADDRESS EXTENSION)

@@ -1,0 +1,1 @@
+This folder contains external packages related content (only binaries archives).

@@ -1,0 +1,29 @@
+---
+layout: external
+categories: @EXTERNAL_PACKAGE_CATEGORIES@ 
+package: @EXTERNAL_PACKAGE_NAME@ 
+---
+
+## @EXTERNAL_PACKAGE_NAME@ external package
+
+<br>
+
+@EXTERNAL_PACKAGE_NAME@ is a third party project that has been wrapped into a PID **external package**.
+
+### Purpose
+
+@EXTERNAL_PACKAGE_DESCRIPTION@
+
+### About @EXTERNAL_PACKAGE_NAME@
+
+@EXTERNAL_PACKAGE_NAME@ has been developed by @EXTERNAL_PACKAGE_AUTHORS@.
+
+@EXTERNAL_PACKAGE_NAME@ has been developed under license: @EXTERNAL_PACKAGE_LICENSE@.
+
+## Available Binaries
+
+Here are the PID binary archives provided by the @FRAMEWORK_NAME@ framework for the @EXTERNAL_PACKAGE_NAME@ project: 
+
+@EXTERNAL_PACKAGE_BINARIES@
+
+<br><br><br><br>

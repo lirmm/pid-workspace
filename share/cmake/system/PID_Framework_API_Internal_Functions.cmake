@@ -401,7 +401,7 @@ if(ALL_PACKAGES)
 	endforeach()
 endif()
 #dealing also with external packages (no documentation only binary references)
-set(dir ${CMAKE_SOURCE_DIR}/src/external)
+set(dir ${CMAKE_SOURCE_DIR}/src/_external)
 list_Subdirectories(ALL_PACKAGES ${dir})
 if(ALL_PACKAGES)
 	foreach(package IN ITEMS ${ALL_PACKAGES})
@@ -413,19 +413,97 @@ endfunction(generate_Framework_Binary_References)
 
 
 ### create the file for listing binaries of a given package in the framework
-function(generate_Package_Page_Binaries_In_Framework generated_pages_folder)
-configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binaries.md.in ${generated_pages_folder}/binaries.md @ONLY)
+function(generate_Package_Page_Binaries_In_Framework package)
+set(PACKAGE_NAME ${package})
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binaries.md.in ${CMAKE_SOURCE_DIR}/src/_packages/${package}/pages/binaries.md @ONLY)
 endfunction(generate_Package_Page_Binaries_In_Framework)
+
+### create the file for presenting an exetrnal package and listing its binaries in the framework
+function(generate_External_Page_In_Framework package)
+set(PATH_TO_PAGE ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
+set(PATH_TO_REFERENCE_FILE ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${package}.cmake)
+if(NOT EXISTS ${PATH_TO_REFERENCE_FILE})
+	message("[PID] WARNING : refernce file to package ${package} does not exists !")
+	return()
+endif()
+if(EXISTS ${PATH_TO_PAGE}) #remove the file to be sure
+	file(REMOVE ${PATH_TO_PAGE})
+endif()
+
+include(${PATH_TO_REFERENCE_FILE})
+
+set(EXTERNAL_PACKAGE_NAME ${package})
+
+#fill_List_Into_String(${${package}_DESCRIPTION} DESCRIPTION_STRING)
+#set(EXTERNAL_PACKAGE_DESCRIPTION ${DESCRIPTION_STRING})
+set(EXTERNAL_PACKAGE_DESCRIPTION ${${package}_DESCRIPTION})
+
+set(EXTERNAL_PACKAGE_AUTHORS ${${package}_AUTHORS})
+set(EXTERNAL_PACKAGE_LICENSE ${${package}_LICENSES})
+
+# managing categories
+if(NOT ${package}_CATEGORIES)
+	set(EXTERNAL_PACKAGE_CATEGORIES)
+else()
+	list(LENGTH ${package}_CATEGORIES SIZE)
+	if(SIZE EQUAL 1)
+		set(EXTERNAL_PACKAGE_CATEGORIES ${${package}_CATEGORIES})
+	else()
+		set(EXTERNAL_PACKAGE_CATEGORIES "[")
+		set(idx 0)
+		foreach(cat IN ITEMS ${${package}_CATEGORIES})
+			set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES}${cat}")
+			math(EXPR idx '${idx}+1')
+			if(NOT idx EQUAL SIZE)
+				set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES},")
+			endif()
+		endforeach()
+		set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES}]")
+	endif()
+endif()
+# managing binaries
+set(binary_dir ${CMAKE_SOURCE_DIR}/src/_external/${package})
+list_Subdirectories(ALL_VERSIONS ${binary_dir})
+set(PRINTED_VERSIONS)
+if(ALL_VERSIONS)
+	foreach(ref_version IN ITEMS ${ALL_VERSIONS}) #for each available version, all os for which there is a reference
+		set(${ref_version}__PRINTED_PLATFORM)
+		list_Subdirectories(ALL_PLATFORMS ${binary_dir}/${ref_version})
+		if(ALL_PLATFORMS)
+			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version	
+				# now referencing the binaries
+				list_Regular_Files(ALL_BINARIES ${binary_dir}/${ref_version}/${ref_platform})
+				if(ALL_BINARIES AND EXISTS ${binary_dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) # check to avoid problem is the binaries have been badly published
+					list(APPEND PRINTED_VERSIONS ${ref_version})
+					list(APPEND ${ref_version}_PRINTED_PLATFORM ${ref_platform})
+				endif()
+			endforeach()
+		endif()
+	endforeach()
+endif()
+if(PRINTED_VERSIONS)
+list(REMOVE_DUPLICATES PRINTED_VERSIONS)
+foreach(version IN ITEMS ${PRINTED_VERSIONS})
+	set(EXTERNAL_PACKAGE_BINARIES "### ${version}\n\n") 
+	foreach(platform IN ITEMS ${${version}_PRINTED_PLATFORM})
+		set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES} + ${platform}\n")
+	endforeach()
+endforeach()
+set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES}\n")
+else()
+	set(EXTERNAL_PACKAGE_BINARIES "There is no binary provided for this package !")
+endif()
+configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/external_index.md.in ${PATH_TO_PAGE} @ONLY)
+endfunction(generate_External_Page_In_Framework)
 
 ### generating a cmake script files that references the binaries for a given package (native or external) that has been put into the framework
 function(generate_Framework_Binary_Reference_For_Package package native)
 if(native)
-	set(PATH_TO_PACKAGE_PAGES ${CMAKE_SOURCE_DIR}/src/_packages/${package}/pages)
-	set(PACKAGE_NAME ${package})
-	generate_Package_Page_Binaries_In_Framework(${PATH_TO_PACKAGE_PAGES}) # create markdown page listing available binaries
+	generate_Package_Page_Binaries_In_Framework(${package}) # create markdown page listing available binaries
 	set(dir ${CMAKE_SOURCE_DIR}/src/_packages/${package}/binaries)
 else() # external packages have different deployment
-	set(dir ${CMAKE_SOURCE_DIR}/src/external/${package})
+	generate_External_Page_In_Framework(${package})
+	set(dir ${CMAKE_SOURCE_DIR}/src/_external/${package})
 endif()
 
 
@@ -509,7 +587,7 @@ macro(build_Framework)
 # configuring all that can be configured from framework description
 generate_Framework_Readme_File() # generating and putting into source directory the readme file used by gitlab
 generate_Framework_License_File() # generating and putting into source directory the file containing license info about the package
-generate_Framework_Data() # generating the data files for jelkyll (result in the build tree)
+generate_Framework_Data() # generating the data files for jekyll (result in the build tree)
 
 generate_Framework_Binary_References() # generating in the project the cmake script files that allow to find references on packages of the framework
 

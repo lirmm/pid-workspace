@@ -1,7 +1,7 @@
 
 # Site settings
 
-url: "@${PROJECT_NAME}_SITE@" # the base hostname & protocol for your site
+url: "@${PROJECT_NAME}_FRAMEWORK_SITE@" # the base hostname & protocol for your site
 
 # Build settings
 markdown: kramdown
@@ -16,6 +16,8 @@ baseurl: ""
 collections:
  packages:
     output: true
+ external:
+    output: true
 
 defaults:
   - scope:
@@ -23,3 +25,10 @@ defaults:
       type: packages
     values:
       layout: package
+
+defaults:
+  - scope:
+      path: ""
+      type: external
+    values:
+      layout: external
