@@ -20,7 +20,7 @@ package: @EXTERNAL_PACKAGE_NAME@
 
 @EXTERNAL_PACKAGE_NAME@ has been developed under license: @EXTERNAL_PACKAGE_LICENSE@.
 
-## Available Binaries
+## Available binaries
 
 Here are the PID binary archives provided by the @FRAMEWORK_NAME@ framework for the @EXTERNAL_PACKAGE_NAME@ project: 
 
