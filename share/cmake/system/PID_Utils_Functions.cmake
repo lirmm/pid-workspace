@@ -110,6 +110,14 @@ else()
 endif()
 endfunction(extract_Package_Namespace_From_SSH_URL)
 
+
+###
+function(format_PID_Identifier_Into_Markdown_Link RES_LINK function_name)
+string(REPLACE "_" "" RES_STR ${function_name})#simply remove underscores
+string(REPLACE " " "-" FINAL_STR ${RES_STR})#simply remove underscores
+set(${RES_LINK} ${FINAL_STR} PARENT_SCOPE)
+endfunction(format_PID_Identifier_Into_Markdown_Link)
+
 #############################################################
 ################ filesystem management utilities ############
 #############################################################

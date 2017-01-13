@@ -291,7 +291,7 @@ else()
 	endif()
 endif()
 
-if("${PACKAGE_DEPENDENCIES_DESCRIPTION}" STREQUAL "")
+if("${PACKAGE_DEPENDENCIES_DESCRIPTION}" STREQUAL "") #means that the package has dependencies
 	foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES})# we take nly dependencies of the release version
 		generate_Dependency_Site(${dep_package} RES_CONTENT_NATIVE)
 		set(NATIVE_SITE_SECTION "${NATIVE_SITE_SECTION}\n${RES_CONTENT_NATIVE}")
@@ -510,7 +510,8 @@ configure_Static_Site_Generation_Variables()
 
 #1) generate the data files for jekyll (vary depending on the site creation mode
 if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework	
-	generate_Static_Site_Data_Files(${PATH_TO_SITE})	
+	generate_Static_Site_Data_Files(${PATH_TO_SITE})
+	
 else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 	#find the framework in workspace	
 	load_Framework(IS_LOADED ${${PROJECT_NAME}_FRAMEWORK})
@@ -528,12 +529,24 @@ generate_Static_Site_Pages(${PATH_TO_SITE_PAGES})
 
 endfunction(configure_Pages)
 
-###
+## generate the section of md file to describe native package dependencies
 function(generate_Dependency_Site dependency RES_CONTENT)
 if(${dependency}_SITE_ROOT_PAGE)
 	set(RES "+ [${dependency}](${${dependency}_SITE_ROOT_PAGE})") #creating a link to the package site
-else()
-	set(RES "+ ${dependency}")#TODO implement this for frameworks
+elseif(${dependency}_FRAMEWORK) #the package belongs to a framework, creating a link to this page in the framework
+	if(NOT ${${dependency}_FRAMEWORK}_FRAMEWORK_SITE) #getting framework online site
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${dependency}_FRAMEWORK}.cmake)
+			include (${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${dependency}_FRAMEWORK}.cmake) #get the information about the framework
+		endif()
+	endif()
+
+	if(${${dependency}_FRAMEWORK}_FRAMEWORK_SITE) #get the information about the framework
+		set(RES "+ [${dependency}](${${${dependency}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${dependency})")
+	else()#in case of a problem (framework unknown), do not create the link 
+		set(RES "+ ${dependency}") 
+	endif()
+else()# the dependency has no documentation site
+	set(RES "+ ${dependency}")
 endif()
 if(${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION)
 	if(${PROJECT_NAME}_DEPENDENCY_${dependency}_${${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION}_EXACT)
@@ -547,9 +560,25 @@ endif()
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Dependency_Site)
 
-
+## generate the section of md file to describe external package dependencies
 function(generate_External_Dependency_Site dependency RES_CONTENT)
-set(RES "+ ${dependency}")
+if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${dependency}.cmake)
+	include (${WORKSPACE_DIR}/share/cmake/references/ReferExternal${dependency}.cmake) #get the information about the framework
+endif()
+if(${dependency}_FRAMEWORK)
+	if(NOT ${${dependency}_FRAMEWORK}_FRAMEWORK_SITE)#getting framework online site
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${dependency}_FRAMEWORK}.cmake)
+			include (${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${dependency}_FRAMEWORK}.cmake) #get the information about the framework
+		endif()
+	endif()
+	if(${${dependency}_FRAMEWORK}_FRAMEWORK_SITE)
+		set(RES "+ [${dependency}](${${${dependency}_FRAMEWORK}_FRAMEWORK_SITE}/external/${dependency})")
+	else()#in case of a problem (framework unknown, problem in framework description), do not create the link 
+		set(RES "+ ${dependency}")
+	endif()
+else()
+	set(RES "+ ${dependency}")
+endif()
 if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION)
 	if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION}_EXACT)
 		set(RES "${RES}: exact version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION} required.")
@@ -563,6 +592,7 @@ set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_External_Dependency_Site)
 
 
+## generate the section of md file to describe a component of the package
 function(generate_Component_Site component RES_CONTENT)
 is_Externally_Usable(IS_EXT_USABLE ${component})
 if(NOT IS_EXT_USABLE)#component cannot be used from outside package => no need to document it
@@ -653,16 +683,30 @@ if(NOT IS_HF)
 		if(INT_EXPORTED_DEPS)
 			set(RES "${RES}+ from this package:\n")
 			foreach(a_dep IN ITEMS ${INT_EXPORTED_DEPS})
-				set(RES "${RES}\t* [${a_dep}](#${a_dep})\n")
+				format_PID_Identifier_Into_Markdown_Link(RES_STR "${a_dep}")
+				set(RES "${RES}\t* [${a_dep}](#${RES_STR})\n")
 			endforeach()
 			set(RES "${RES}\n")
 		endif()
 		if(EXPORTED_DEPS)
 			foreach(a_pack IN ITEMS ${EXPORTED_DEPS})
-				set(RES "${RES}+ from package **${a_pack}**:\n")
+				#defining the target documentation page of the package				
+				if(${a_pack}_SITE_ROOT_PAGE)
+					set(TARGET_PAGE ${${a_pack}_SITE_ROOT_PAGE})
+				elseif(${a_pack}_FRAMEWORK AND ${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE)
+					set(TARGET_PAGE ${${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${a_pack})
+				else()
+					set(TARGET_PAGE)
+				endif()
+				if(TARGET_PAGE)
+					set(RES "${RES}+ from package [${a_pack}](${TARGET_PAGE}):\n")
+				else()
+					set(RES "${RES}+ from package **${a_pack}**:\n")
+				endif()
 				foreach(a_dep IN ITEMS ${EXPORTED_DEP_${a_pack}})
-					if(${a_pack}_SITE_ROOT_PAGE)
-						set(RES "${RES}\t* [${a_dep}](${${a_pack}_SITE_ROOT_PAGE}#${a_dep})\n")
+					if(TARGET_PAGE)# the package to which the component belong has a static site defined
+						format_PID_Identifier_Into_Markdown_Link(RES_STR "${a_dep}")
+						set(RES "${RES}\t* [${a_dep}](${TARGET_PAGE}/pages/use#${RES_STR})\n")
 					else()
 						set(RES "${RES}\t* ${a_dep}\n")
 					endif()
@@ -673,7 +717,16 @@ if(NOT IS_HF)
 		endif()
 		if(EXT_EXPORTED_DEPS)
 			foreach(a_pack IN ITEMS ${EXT_EXPORTED_DEPS})
-				set(RES "${RES}+ external package **${a_pack}**\n")
+				if(${a_pack}_FRAMEWORK AND ${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE)
+					set(TARGET_PAGE ${${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE}/external/${a_pack})
+				else()
+					set(TARGET_PAGE)
+				endif()
+				if(TARGET_PAGE)
+					set(RES "${RES}+ external package [${a_pack}](${TARGET_PAGE})\n")
+				else()
+					set(RES "${RES}+ external package **${a_pack}**\n")
+				endif()
 			endforeach()
 
 		endif()
@@ -701,9 +754,6 @@ endif()
 # for any kind of usable component
 set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applications, libraries or tests:\n\n{% highlight cmake %}\ndeclare_PID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tNATIVE\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n{% endhighlight %}\n\n")
 
-if(${component}_)
-
-endif()
 
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Component_Site)
