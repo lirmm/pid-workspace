@@ -6,7 +6,7 @@ set(boost_AUTHORS "Boost.org authors, see http://www.boost.org/" CACHE INTERNAL 
 set(boost_LICENSES "Boost license" CACHE INTERNAL "")
 set(boost_DESCRIPTION external package providing many usefull C++ libraries, repackaged for PID CACHE INTERNAL "")
 set(boost_FRAMEWORK pid CACHE INTERNAL "")
-set(boost_CATEGORIES programming/operating_system;programming/resources_management;programming/logging;programming/meta CACHE INTERNAL "")
+set(boost_CATEGORIES programming/operating_system;programming/logging;programming/meta CACHE INTERNAL "")
 
 #declaration of possible platforms
 

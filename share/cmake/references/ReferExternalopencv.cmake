@@ -5,7 +5,8 @@ set(opencv_PID_Package_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
 set(opencv_AUTHORS "OpenCV.org authors, see http://www.opencv.org" CACHE INTERNAL "")
 set(opencv_LICENSES "3-clause BSD License" CACHE INTERNAL "")
 set(opencv_DESCRIPTION external package providing C++ libraries for computer vision, repackaged for PID CACHE INTERNAL "")
-set(opencv_CATEGORIES image vision CACHE INTERNAL "")
+set(opencv_CATEGORIES programming/image vision CACHE INTERNAL "")
+set(opencv_FRAMEWORK pid CACHE INTERNAL "")
 
 # declaration of known references
 set(opencv_REFERENCES 2.4.11 CACHE INTERNAL "")

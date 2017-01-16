@@ -29,20 +29,20 @@ This site has the same general "look and feel" as any other framework in PID:
 
   - **About** provides this help page and a contact page.
 
-- The left sidebar provides an entry for each **package** belonging to the framework. By cliking on it you can simply go to the package page. The package page has a header that allows to navigate between package elements.
+- The left sidebar provides an entry for each **package** belonging to the framework. By cliking on it you can simply go to the package page. The package page has a header that allows to navigate between package elements. This header menu is empty for external packages. For native packages it contains following items:
   - **Documentation** provides submenus to access all kind of documentation of the framework:
     + *Introduction* : quick introduction to the package purpose.
     + *Install* : to get installation instructions.
     + *Use* : to know of to use libraries in your own programs
     + *Tutorial* : to get information about how to use the package.
-    + *More* : to get more information on advanced topics.
+    + *Advanced topics* : to get more information on advanced topics.
 
   - **Developers**  provides submenus to get info about the development of the package (some of these section may be unavailable depending on the package)
     + *API documentation* lets you consult the **doxygen** generated documentation of the package (last release version only).
-    + *Static Cheks* lets you consult the **cppcheck** generated report of static checks on the package (last release version only).
+    + *Static Checks* lets you consult the **cppcheck** generated report of static checks on the package (last release version only).
     + *Coverage* lets you consult the **lcov** generated report of tests coverage on the package (last release version only).
-    + *Binaries* lets you navigate between all available binaries (different versions for different platforms).
+    + *Binaries* gives the list of all available binaries (available versions for different platforms).
 
-  - **Contact** tells you who to contact to get help.
+  - **Contact** tells you who to contact to get help about the package.
 
 

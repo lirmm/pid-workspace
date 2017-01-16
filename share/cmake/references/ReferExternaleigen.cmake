@@ -5,7 +5,8 @@ set(eigen_PID_Package_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
 set(eigen_AUTHORS "Eigen developers team, see http://eigen.tuxfamily.org" CACHE INTERNAL "")
 set(eigen_LICENSES "MPL2" CACHE INTERNAL "")
 set(eigen_DESCRIPTION external package for linear algebra, repackaged for PID CACHE INTERNAL "")
-set(eigen_CATEGORIES math/linear_algebra CACHE INTERNAL "")
+set(eigen_FRAMEWORK pid CACHE INTERNAL "")
+set(eigen_CATEGORIES math/linear_algebra programming/math CACHE INTERNAL "")
 
 
 # declaration of known references

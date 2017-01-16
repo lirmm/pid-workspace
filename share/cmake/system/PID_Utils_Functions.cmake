@@ -235,14 +235,39 @@ function(list_Version_Subdirectories result curdir)
 	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
 	set(dirlist "")
 	foreach(child ${children})
-		if(IS_DIRECTORY ${curdir}/${child})
+		if(IS_DIRECTORY ${curdir}/${child} AND "${child}" MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
 			list(APPEND dirlist ${child})
 		endif()
 	endforeach()
-	list(REMOVE_ITEM dirlist "installers")
 	set(${result} ${dirlist} PARENT_SCOPE)
 endfunction(list_Version_Subdirectories)
 
+###
+function(list_Platform_Symlinks result curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+	foreach(child ${children})
+		if(IS_SYMLINK ${curdir}/${child} AND "${child}" MATCHES "^[^_]+_[^_]+_[^_]+_[^_]+$")
+			list(APPEND dirlist ${child})
+		endif()
+	endforeach()
+	set(${result} ${dirlist} PARENT_SCOPE)
+endfunction(list_Platform_Symlinks)
+
+
+###
+function(list_Platform_Subdirectories result curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+	foreach(child ${children})
+		if(IS_DIRECTORY ${curdir}/${child}
+			AND NOT IS_SYMLINK ${curdir}/${child}
+			AND "${child}" MATCHES "^[^_]+_[^_]+_[^_]+_[^_]+$")
+			list(APPEND dirlist ${child})
+		endif()
+	endforeach()
+	set(${result} ${dirlist} PARENT_SCOPE)
+endfunction(list_Platform_Subdirectories)
 
 ###
 function(list_Subdirectories result curdir)
