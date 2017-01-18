@@ -658,16 +658,19 @@ endmacro(run_PID_Test)
 
 
 ### API : external_PID_Package_Path (NAME external_package PATH result)
-macro(external_PID_Package_Path)
+function(external_PID_Package_Path)
 set(oneValueArgs NAME PATH)
 cmake_parse_arguments(EXT_PACKAGE_PATH "" "${oneValueArgs}" "" ${ARGN} )
 if(NOT EXT_PACKAGE_PATH_NAME OR NOT EXT_PACKAGE_PATH_PATH)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name of an external package must be provided with name and a variable containing the resulting path must be set with PATH keyword.")
 endif()
-set(${EXT_PACKAGE_PATH_PATH})
-is_External_Package_Defined(${PROJECT_NAME} "${EXT_PACKAGE_PATH_NAME}" ${CMAKE_BUILD_TYPE} ${EXT_PACKAGE_PATH_PATH})
-
-endmacro(external_PID_Package_Path)
+is_External_Package_Defined(${PROJECT_NAME} "${EXT_PACKAGE_PATH_NAME}" ${CMAKE_BUILD_TYPE} PATHTO)
+if(PATHTO STREQUAL NOTFOUND)
+	set(${EXT_PACKAGE_PATH_PATH} NOTFOUND PARENT_SCOPE)
+else()
+	set(${EXT_PACKAGE_PATH_PATH} ${PATHTO} PARENT_SCOPE)
+endif()
+endfunction(external_PID_Package_Path)
 
 
 ### API : create_PID_Install_Symlink (PATH where_to_create NAME symlink_name TARGET target_of_symlink)
