@@ -509,6 +509,27 @@ else()
 endif()
 endfunction(is_Shared_Lib_With_Path)
 
+###
+function(get_Link_Type RES_TYPE input_link)
+get_filename_component(LIB_TYPE ${input_link} EXT)
+if(LIB_TYPE)
+        if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
+		set(${RES_TYPE} SHARED PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib (MACOSX)
+		set(${RES_TYPE} SHARED PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.a$")#found static lib (C)
+		set(${RES_TYPE} STATIC PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.la$")#found static lib (pkg-config)
+		set(${RES_TYPE} STATIC PARENT_SCOPE)
+	else()#unknown extension => linker option
+		set(${RES_TYPE} OPTION PARENT_SCOPE)
+	endif()
+else()
+	# no extension => a possibly strange linker option
+	set(${RES_TYPE} OPTION PARENT_SCOPE)
+endif()
+endfunction(get_Link_Type)
+
 ### function used to retrieve the adequate version to an external package
 function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
