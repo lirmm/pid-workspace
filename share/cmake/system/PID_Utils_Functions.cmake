@@ -434,6 +434,9 @@ file(	GLOB_RECURSE
 	"${dir}/*.hpp"
 	"${dir}/*.hh"
 	"${dir}/*.hxx"
+	"${dir}/*.s"
+	"${dir}/*.S"
+	"${dir}/*.asm"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Relative)
@@ -451,6 +454,9 @@ file(	GLOB_RECURSE
 	"${dir}/*.hpp"
 	"${dir}/*.hh"
 	"${dir}/*.hxx"
+	"${dir}/*.s"
+	"${dir}/*.S"
+	"${dir}/*.asm"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Absolute)

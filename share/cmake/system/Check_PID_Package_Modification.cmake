@@ -101,7 +101,10 @@ foreach(component IN ITEMS ${${PACKAGE_NAME}_COMPONENTS})
 			"${current_dir}/*.c"
 			"${current_dir}/*.cc"
 			"${current_dir}/*.cpp"
-			"${current_dir}/*.cxx")
+			"${current_dir}/*.cxx"
+			"${current_dir}/*.s"
+			"${current_dir}/*.S"
+			"${current_dir}/*.asm")
 		Find_Unique_Elements(	"${${PACKAGE_NAME}_${component}_SOURCE_CODE}"	#registered sources
 					"${FILE_PACKAGE_SOURCES}" 			#really existing sources	
 					TO_REMOVE 						
@@ -145,7 +148,10 @@ foreach(component IN ITEMS ${${PACKAGE_NAME}_COMPONENTS})
 			"${current_dir}/*.c"
 			"${current_dir}/*.cc"
 			"${current_dir}/*.cpp"
-			"${current_dir}/*.cxx")
+			"${current_dir}/*.cxx"
+			"${current_dir}/*.s"
+			"${current_dir}/*.S"
+			"${current_dir}/*.asm")
 		Find_Unique_Elements(	"${${PACKAGE_NAME}_${component}_SOURCE_CODE}"	#registered sources
 					"${FILE_PACKAGE_SOURCES}" 			#really existing sources	
 					TO_REMOVE 						
