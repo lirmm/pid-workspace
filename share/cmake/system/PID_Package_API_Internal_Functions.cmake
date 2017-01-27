@@ -254,7 +254,7 @@ elseif(DIR_NAME STREQUAL "build")
 		VERBATIM
 	)
 
-	if(BUILD_AND_RUN_TESTS)
+	if(BUILD_AND_RUN_TESTS AND NOT PID_CROSSCOMPILATION)
 		# test target (launch test units)
 		if(BUILD_TESTS_IN_DEBUG)			
 			add_custom_target(test
@@ -792,7 +792,7 @@ add_custom_target(list_dependencies
 #creating a global build command
 if(GENERATE_INSTALLER)
 	if(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS)
+		if(BUILD_AND_RUN_TESTS AND PROJECT_RUN_TESTS)#if tests are not run then remove the test target
 			if(BUILD_API_DOC)
 				add_custom_target(build
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
@@ -811,7 +811,7 @@ if(GENERATE_INSTALLER)
 					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			endif(BUILD_API_DOC) 
-		else(BUILD_AND_RUN_TESTS)
+		else()
 			if(BUILD_API_DOC)
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
@@ -830,8 +830,8 @@ if(GENERATE_INSTALLER)
 			endif(BUILD_API_DOC)
 		endif(BUILD_AND_RUN_TESTS)
 	else()#debug
-		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG)
-			if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
+		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG AND PROJECT_RUN_TESTS)  #if tests are not run then remove the coverage or test target
+			if(BUILD_COVERAGE_REPORT)
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
@@ -860,7 +860,7 @@ if(GENERATE_INSTALLER)
 
 else(GENERATE_INSTALLER) #do not generate an installer
 	if(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS)
+		if(BUILD_AND_RUN_TESTS AND PROJECT_RUN_TESTS) #if tests are not run then remove the test target
 			if(BUILD_API_DOC)
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
@@ -875,7 +875,7 @@ else(GENERATE_INSTALLER) #do not generate an installer
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			endif(BUILD_API_DOC) 
-		else(BUILD_AND_RUN_TESTS)
+		else()
 			if(BUILD_API_DOC)
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
@@ -890,8 +890,8 @@ else(GENERATE_INSTALLER) #do not generate an installer
 			endif(BUILD_API_DOC)
 		endif()
 	else()#debug
-		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG)
-			if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
+		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG AND PROJECT_RUN_TESTS)  #if tests are not run then remove the coverage or test target
+			if(BUILD_COVERAGE_REPORT)
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}

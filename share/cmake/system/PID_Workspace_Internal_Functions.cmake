@@ -1262,7 +1262,6 @@ file(APPEND ${file} "set(CMAKE_SIZEOF_VOID_P ${CMAKE_SIZEOF_VOID_P} CACHE INTERN
 # Finnally defining variables related to crosscompilation
 file(APPEND ${file} "set(PID_CROSSCOMPILATION ${PID_CROSSCOMPILATION} CACHE INTERNAL \"\" FORCE)\n")
 if(PID_CROSSCOMPILATION) #only write these information if we are trully cross compiling
-	message("CROSSCOMPILING !!!!!")
 	file(APPEND ${file} "set(CMAKE_CROSSCOMPILING ${CMAKE_CROSSCOMPILING} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_SYSTEM_NAME ${CMAKE_SYSTEM_NAME} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_SYSTEM_VERSION ${CMAKE_SYSTEM_VERSION} CACHE INTERNAL \"\" FORCE)\n")
