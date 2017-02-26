@@ -162,7 +162,12 @@ elseif(DIR_NAME STREQUAL "build")
 	################################################################################################
 	############ creating custom targets to delegate calls to mode specific targets ################
 	################################################################################################
-	
+
+	if(RUN_TESTS_WITH_PRIVILEGES)
+		set(SUDOER_PRIVILEGES sudo)
+	else()
+		set(SUDOER_PRIVILEGES)
+	endif()
 	# global build target
 	if(BUILD_RELEASE_ONLY)
 		add_custom_target(build
@@ -258,21 +263,21 @@ elseif(DIR_NAME STREQUAL "build")
 		# test target (launch test units)
 		if(BUILD_TESTS_IN_DEBUG)			
 			add_custom_target(test
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} test
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} test
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests ..."
 				VERBATIM
 			)
 		else()
 			add_custom_target(test
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} test
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests ..."
 				VERBATIM
 			)
 		endif()
 		if(BUILD_COVERAGE_REPORT)
 			add_custom_target(coverage
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} coverage
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES}${CMAKE_MAKE_PROGRAM} coverage
 				COMMENT "[PID] Generating coverage report for tests ..."
 				VERBATIM
 			)
@@ -788,6 +793,11 @@ add_custom_target(list_dependencies
 ######### creating build target for easy sequencing all make commands #########
 ###############################################################################
 
+if(RUN_TESTS_WITH_PRIVILEGES)
+	set(SUDOER_PRIVILEGES sudo)
+else()
+	set(SUDOER_PRIVILEGES)
+endif()
 
 #creating a global build command
 if(GENERATE_INSTALLER)
@@ -796,7 +806,7 @@ if(GENERATE_INSTALLER)
 			if(BUILD_API_DOC)
 				add_custom_target(build
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
@@ -805,7 +815,7 @@ if(GENERATE_INSTALLER)
 			else(BUILD_API_DOC)
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
 					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
@@ -834,7 +844,7 @@ if(GENERATE_INSTALLER)
 			if(BUILD_COVERAGE_REPORT)
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${SUDOER_PRIVILEGES} coverage ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
 					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
@@ -842,7 +852,7 @@ if(GENERATE_INSTALLER)
 			else()
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
 					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
@@ -864,14 +874,14 @@ else(GENERATE_INSTALLER) #do not generate an installer
 			if(BUILD_API_DOC)
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			else(BUILD_API_DOC)
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			endif(BUILD_API_DOC) 
@@ -894,13 +904,13 @@ else(GENERATE_INSTALLER) #do not generate an installer
 			if(BUILD_COVERAGE_REPORT)
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			else()
 				add_custom_target(build 
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			endif()

@@ -620,12 +620,14 @@ endmacro(declare_PID_Component_Dependency)
 
 ### API : run_PID_Test (NAME 			test_name
 #			<EXE name | COMPONENT 	name [PACKAGE name]>
+#			PRIVILEGED
 #			ARGUMENTS	 	list_of_args
 #			)
 macro(run_PID_Test)
+set(options PRIVILEGED)
 set(oneValueArgs NAME EXE COMPONENT PACKAGE)
 set(multiValueArgs ARGUMENTS)
-cmake_parse_arguments(RUN_PID_TEST "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+cmake_parse_arguments(RUN_PID_TEST "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(RUN_PID_TEST_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
 endif()
@@ -643,6 +645,12 @@ endif()
 
 if(NOT PID_CROSSCOMPILATION)
 	set(PROJECT_RUN_TESTS TRUE CACHE INTERNAL "")
+endif()
+
+if(RUN_PID_TEST_PRIVILEGED)
+	if(NOT RUN_TESTS_WITH_PRIVILEGES)
+		set(RUN_TESTS_WITH_PRIVILEGES TRUE CACHE INTERNAL "")
+	endif()
 endif()
 
 if(RUN_PID_TEST_EXE)
