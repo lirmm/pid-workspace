@@ -17,11 +17,11 @@ set(opencv_AVAILABLE_PLATFORM_linux64cxx11_CONFIGURATION posix gtk2  CACHE INTER
 set(opencv_AVAILABLE_PLATFORM_linux64_OS linux CACHE INTERNAL "")
 set(opencv_AVAILABLE_PLATFORM_linux64_ARCH 64 CACHE INTERNAL "")
 set(opencv_AVAILABLE_PLATFORM_linux64_ABI CXX CACHE INTERNAL "")
-set(opencv_AVAILABLE_PLATFORM_linux64_CONFIGURATION posix gtk2 CACHE INTERNAL "")
+set(opencv_AVAILABLE_PLATFORM_linux64_CONFIGURATION posix gtk2  CACHE INTERNAL "")
 set(opencv_AVAILABLE_PLATFORM_linux32_OS linux CACHE INTERNAL "")
 set(opencv_AVAILABLE_PLATFORM_linux32_ARCH 32 CACHE INTERNAL "")
 set(opencv_AVAILABLE_PLATFORM_linux32_ABI CXX CACHE INTERNAL "")
-set(opencv_AVAILABLE_PLATFORM_linux32_CONFIGURATION posix gtk2 CACHE INTERNAL "")
+set(opencv_AVAILABLE_PLATFORM_linux32_CONFIGURATION posix gtk2  CACHE INTERNAL "")
 
 # declaration of known references
 set(opencv_REFERENCES 2.4.11 CACHE INTERNAL "")
@@ -38,4 +38,4 @@ set(opencv_REFERENCE_2.4.11_linux64_FOLDER ext-opencv-linux-64-2.4.11-3438bee806
 #linux64cxx11
 
 set(opencv_REFERENCE_2.4.11_linux64cxx11_URL https://gite.lirmm.fr/pid/ext-opencv/repository/archive.tar.gz?ref=linux-64-cxx11-2.4.11 CACHE INTERNAL "")
-set(opencv_REFERENCE_2.4.11_linux64cxx11_FOLDER ext-opencv-linux-64-cxx11-2.4.11-87d4c6d4d43c230daefc6d6acbed9162d17f9240 CACHE INTERNAL "")
+set(opencv_REFERENCE_2.4.11_linux64cxx11_FOLDER ext-opencv-linux-64-cxx11-2.4.11-ecd63ef3a7492839c460a41d0b0cf06551ca2608 CACHE INTERNAL "")
