@@ -21,6 +21,6 @@ set(opencv_REFERENCE_2.4.11_x86_64_linux_abi98_URL https://gite.lirmm.fr/pid/ext
 set(opencv_REFERENCE_2.4.11_x86_64_linux_abi98_FOLDER ext-opencv-linux-64-2.4.11-3438bee806663c2d17517c40f26d17d506b61298 CACHE INTERNAL "")
 
 #x86_64_linux_abi11
-
 set(opencv_REFERENCE_2.4.11_x86_64_linux_abi11_URL https://gite.lirmm.fr/pid/ext-opencv/repository/archive.tar.gz?ref=linux-64-cxx11-2.4.11 CACHE INTERNAL "")
-set(opencv_REFERENCE_2.4.11_x86_64_linux_abi11_FOLDER ext-opencv-linux-64-cxx11-2.4.11-87d4c6d4d43c230daefc6d6acbed9162d17f9240 CACHE INTERNAL "")
+set(opencv_REFERENCE_2.4.11_x86_64_linux_abi11_FOLDER ext-opencv-linux-64-cxx11-2.4.11-ecd63ef3a7492839c460a41d0b0cf06551ca2608 CACHE INTERNAL "")
+
