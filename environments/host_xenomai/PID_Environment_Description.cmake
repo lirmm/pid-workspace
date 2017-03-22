@@ -16,9 +16,24 @@
 #	You can find the complete license description on the official website 		#
 #	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
 #########################################################################################
+execute_process(COMMAND which xeno-config RESULT_VARIABLE res OUTPUT_VARIABLE XENO_CONFIG_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(UNIX AND NOT APPLE)
+	execute_process(COMMAND which xeno-config RESULT_VARIABLE res OUTPUT_VARIABLE XENO_CONFIG_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if(res)
+		message("[PID] ERROR: xenomai not found on the workstation, keeping current configuration.")
+		set(PID_ENVIRONMENT_NOT_AVAILABLE TRUE)
+	else()
+		# the gcc compiler is user for building codes on host
+		set(PID_ENVIRONMENT_DESCRIPTION "The development environment is based on the host base configuration configured to generate xenomai compatible code" CACHE INTERNAL "")
 
-# the gcc compiler is user for building codes on host
-set(PID_ENVIRONMENT_DESCRIPTION "The development environment is based on the host default configuration with GNU gcc toolchain" CACHE INTERNAL "")
+		set(PID_CROSSCOMPILATION FALSE CACHE INTERNAL "") #do not crosscompile since it is the same environment (host)
 
-set(PID_CROSSCOMPILATION FALSE CACHE INTERNAL "") #do not crosscompile since it is the same environment (host)
+	endif()
+else()
+	set(CURRENT_ENVIRONMENT host CACHE INTERNAL "" FORCE)
+	message("[PID] ERROR: xenomai cannot be used on apple platforms, keeping current configuration.")
+	set(PID_ENVIRONMENT_NOT_AVAILABLE TRUE)
+endif()
+
+
 

@@ -33,7 +33,7 @@ endfunction(clean_Build_Tree)
 
 ### script used to configure the environment to another one
 
-if(NOT TARGET_ENVIRONMENT STREQUAL "")
+if(NOT TARGET_ENVIRONMENT STREQUAL "") # checking if the target environment has to change
 	if(	TARGET_ENVIRONMENT STREQUAL "${CURRENT_ENVIRONMENT}"
 		OR (NOT CURRENT_ENVIRONMENT AND TARGET_ENVIRONMENT STREQUAL "host"))
 		message("[PID] INFO : the target environment ${TARGET_ENVIRONMENT} is already the current environment of the workspace.")
@@ -47,6 +47,10 @@ if(NOT TARGET_ENVIRONMENT STREQUAL "")
 				WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 
 	elseif(EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/PID_Environment_Description.cmake)# selecting a specific environment
+		include(${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/PID_Environment_Description.cmake)
+		if(PID_ENVIRONMENT_NOT_AVAILABLE)#check to be sure that the environment can be used
+			return()	
+		endif()
 		message("[PID] INFO : changing to environment ${TARGET_ENVIRONMENT}")
 
 		#removing all cmake or pid configuration files 
