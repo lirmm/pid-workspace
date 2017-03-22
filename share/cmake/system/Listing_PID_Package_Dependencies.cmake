@@ -26,27 +26,32 @@ set(index ${nb_tabs})
 set(index_plus)
 math (EXPR index_plus '${index}+1')
  
-while(index GREATER 0)
+while(index GREATER 0)#add as many tabulations as needed to indent correctly
 	set(begin_string "${begin_string}	")
 	math(EXPR index '${index}-1')
 endwhile()
 
-foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${VAR_SUFFIX}})
-	if(NOT path_to_write STREQUAL "")
-		file(APPEND ${path_to_write} "${begin_string}+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}\n")
-	else()
-		message("${begin_string}+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
-	endif()
-	print_Current_Dependencies(${index_plus} ${dep} ${path_to_write})
-endforeach()
-
-foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-	if(NOT path_to_write STREQUAL "")
-		file(APPEND ${path_to_write} "${begin_string}- ${dep}: ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}\n")
-	else()
-		message("${begin_string}- ${dep}: ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
-	endif()
-endforeach()
+#native dependencies
+if(CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${VAR_SUFFIX}})
+		if(NOT path_to_write STREQUAL "")
+			file(APPEND ${path_to_write} "${begin_string}+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}\n")
+		else()
+			message("${begin_string}+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+		endif()
+		print_Current_Dependencies(${index_plus} ${dep} "${path_to_write}")#recursion of dependencies with management of indent  
+	endforeach()
+endif()
+#external dependencies
+if(CURRENT_NATIVE_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+		if(NOT path_to_write STREQUAL "")
+			file(APPEND ${path_to_write} "${begin_string}- ${dep}: ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}\n")
+		else()
+			message("${begin_string}- ${dep}: ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+		endif()
+	endforeach()
+endif()
 endfunction(print_Current_Dependencies)
 
 ###
@@ -114,23 +119,40 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 	
 	
 	set(DO_FLAT ${FLAT_PRESENTATION})
-	if(DO_FLAT MATCHES true)
+	if(DO_FLAT MATCHES true) # presenting as a flat list without hierarchical dependencies
+		# CURRENT_NATIVE_DEPENDENCIES and CURRENT_EXTERNAL_DEPENDENCIES are used because these variables collect all direct and undirect dependencies
+
+		#native dependencies
+		set( ALL_NATIVE_DEP_STRINGS)
 		foreach(dep IN ITEMS ${CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
+			list(APPEND  ALL_NATIVE_DEP_STRINGS "+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+		endforeach()
+		list(REMOVE_DUPLICATES  ALL_NATIVE_DEP_STRINGS)
+		foreach(dep IN ITEMS ${ALL_NATIVE_DEP_STRINGS})
 			if(WRITE_TO_FILE MATCHES true)
-				file(APPEND ${file_path} "+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}\n")
+				file(APPEND ${file_path} "${dep}\n")
 			else()
-				message("+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+				message("${dep}")
 			endif()
 		endforeach()
+
+		#external dependencies
+		set( ALL_EXTERNAL_DEP_STRINGS)
 		foreach(dep IN ITEMS ${CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+			list(APPEND  ALL_EXTERNAL_DEP_STRINGS "- ${dep}:  ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+		endforeach()
+		list(REMOVE_DUPLICATES  ALL_EXTERNAL_DEP_STRINGS)
+		foreach(dep IN ITEMS ${ALL_EXTERNAL_DEP_STRINGS})
 			if(WRITE_TO_FILE MATCHES true)
-				file(APPEND ${file_path} "- ${dep}: ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}\n")
+				file(APPEND ${file_path} "${dep}\n")
 			else()
-				message("- ${dep}: ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+				message("${dep}")
 			endif()
 		endforeach()
 
 	else()
+		# TARGET_NATIVE_DEPENDENCIES and TARGET_EXTERNAL_DEPENDENCIES are used because these variables only collect direct dependencies, CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION and CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION will be used to get the information at root level
+		#native dependencies
 		if(TARGET_NATIVE_DEPENDENCIES${VAR_SUFFIX})
 			foreach(dep IN ITEMS ${TARGET_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
 				if(WRITE_TO_FILE MATCHES true)
@@ -143,6 +165,7 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 			endforeach()
 		endif()
 
+		#external dependencies (no recursion to manage)
 		if(TARGET_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 			foreach(dep IN ITEMS ${TARGET_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 				if(WRITE_TO_FILE MATCHES true)
