@@ -629,6 +629,7 @@ foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
 	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
 	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
 endforeach()
+
 foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES})
 	set(${a_used_package}_FOUND CACHE INTERNAL "")
 	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
@@ -1264,6 +1265,7 @@ set(NEWLY_MANAGED)
 set(ALREADY_MANAGED)
 ############# SECOND PART : dynamically found dependencies according to current workspace content ################
 
+#external dependencies
 file(APPEND ${file} "set(CURRENT_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES)
 	foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES})
@@ -1271,6 +1273,8 @@ if(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES)
 		list(APPEND ALREADY_MANAGED ${NEWLY_MANAGED})
 	endforeach()
 endif()
+
+#native dependencies
 
 file(APPEND ${file} "set(CURRENT_NATIVE_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_ALL_USED_PACKAGES} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_ALL_USED_PACKAGES)
