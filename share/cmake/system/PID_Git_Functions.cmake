@@ -503,12 +503,27 @@ if(git_url STREQUAL "") #no official repository => do nothing
 endif()
 is_Package_Connected(CONNECTED ${PROJECT_NAME} official)
 if(CONNECTED) #the package has an official remote
-	return()
+	#here check that official address conforms
+	get_Remotes_Address(${PROJECT_NAME} RES_OFFICIAL RES_ORIGIN)
+	if(NOT ${RES_OFFICIAL} STREQUAL ${git_url})#problem address do not match
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote set-url official ${git_url} OUTPUT_QUIET ERROR_QUIET)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official OUTPUT_QUIET ERROR_QUIET)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official --tags OUTPUT_QUIET ERROR_QUIET)
+	#else() nothing to do
+	endif()
+else()
+	# not connected to an official remote while it should => problem => corrective action
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add official ${git_url} OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official --tags OUTPUT_QUIET ERROR_QUIET)
 endif()
-# not connected to an official remote while it should => problem => corrective action
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add official ${git_url} OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official --tags OUTPUT_QUIET ERROR_QUIET)
+#now checking that there is an origin remote
+is_Package_Connected(CONNECTED ${PROJECT_NAME} origin)
+if(NOT CONNECTED) #the package has no origin remote => create it and set it to the same address as official
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add origin ${git_url} OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch origin OUTPUT_QUIET ERROR_QUIET)
+#else we cannot conclude if origin is OK or not as the user may have forked the official project (and so may want to keep another address than official)
+endif()
 endfunction(check_For_Remote_Respositories)
 
 ### checking which remote integration branch can be updated
