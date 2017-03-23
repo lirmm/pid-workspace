@@ -1,21 +1,20 @@
-
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
 
@@ -69,16 +68,16 @@ list_Subdirectories(ALL_VERSIONS ${dir})
 if(ALL_VERSIONS)
 	foreach(ref_version IN ITEMS ${ALL_VERSIONS}) #for each available version, all os for which there is a reference
 		set(VERSION_REGISTERED FALSE)
-		
+
 		list_Subdirectories(ALL_PLATFORMS ${dir}/${ref_version})
 		if(ALL_PLATFORMS)
-			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version	
+			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version
 				# now referencing the binaries
 				list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
 				if(	ALL_BINARIES
 					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz
 					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz)# both release and binary versions have to exist
-					
+
 					if(NOT VERSION_REGISTERED)  # the version is registered only if there are binaries inside (sanity check)
 					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} ${ref_version} CACHE INTERNAL \"\")\n") # the version is registered
 					set(VERSION_REGISTERED TRUE)
@@ -104,7 +103,7 @@ set(${PROJECT_NAME}_PROJECT_PAGE ${package_url} CACHE INTERNAL "")
 set(${PROJECT_NAME}_SITE_PAGE ${site_url} CACHE INTERNAL "")
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 if(DIR_NAME STREQUAL "build")
-	
+
 	generate_Site_Readme_File() # generating the simple README file for the project
 	generate_Site_Data() #generating the jekyll source folder in build tree
 	generate_Site_Binary_References() #generating the cmake script that references available binaries
@@ -152,8 +151,8 @@ if(DIR_NAME STREQUAL "build")
 	set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 	list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the framework
 
-	init_PID_Version_Variable() # getting the workspace version used to generate the code 
-	set(res_string)	
+	init_PID_Version_Variable() # getting the workspace version used to generate the code
+	set(res_string)
 	foreach(string_el IN ITEMS ${author})
 		set(res_string "${res_string}_${string_el}")
 	endforeach()
@@ -221,7 +220,7 @@ endmacro(declare_Framework_Image)
 
 ###
 function(add_Framework_Author author institution)
-	set(res_string_author)	
+	set(res_string_author)
 	foreach(string_el IN ITEMS ${author})
 		set(res_string_author "${res_string_author}_${string_el}")
 	endforeach()
@@ -274,16 +273,16 @@ endfunction(generate_Framework_Readme_File)
 
 ############ function used to create the license.txt file of the package  ###########
 function(generate_Framework_License_File)
-if(	DEFINED ${PROJECT_NAME}_FRAMEWORK_LICENSE 
+if(	DEFINED ${PROJECT_NAME}_FRAMEWORK_LICENSE
 	AND NOT ${${PROJECT_NAME}_FRAMEWORK_LICENSE} STREQUAL "")
 
-	find_file(	LICENSE   
+	find_file(	LICENSE
 			"License${${PROJECT_NAME}_FRAMEWORK_LICENSE}.cmake"
 			PATH "${WORKSPACE_DIR}/share/cmake/licenses"
 			NO_DEFAULT_PATH
 		)
 	set(LICENSE ${LICENSE} CACHE INTERNAL "")
-	
+
 	if(LICENSE_IN-NOTFOUND)
 		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_FRAMEWORK_LICENSE} not found in workspace, license file will not be generated")
 	else()
@@ -331,14 +330,14 @@ if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 		if(SIZE GREATER 1)# there are subcategories
 			foreach(name IN ITEMS ${LIST_OF_NAMES})
 				extract_All_Words(${name} NEW_NAMES)# replace underscores with spaces
-				
+
 				fill_List_Into_String("${NEW_NAMES}" RES_STRING)
 				set(FINAL_NAME "${FINAL_NAME} ${RES_STRING}")
 				math(EXPR SIZE '${SIZE}-1')
 				if(SIZE GREATER 0) #there is more than on categrization level remaining
 					set(FINAL_NAME "${FINAL_NAME}/ ")
 				endif()
-				
+
 			endforeach()
 			file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
 		else()
@@ -470,7 +469,7 @@ if(ALL_VERSIONS)
 		# binaries may be referenced with subdirectories (basic case)
 		list_Platform_Subdirectories(ALL_PLATFORMS ${binary_dir}/${ref_version})
 		if(ALL_PLATFORMS)
-			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version	
+			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version
 				# now referencing the binaries
 				list_Regular_Files(ALL_BINARIES ${binary_dir}/${ref_version}/${ref_platform})
 				if(ALL_BINARIES AND EXISTS ${binary_dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) # check to avoid problem is the binaries have been badly published
@@ -479,15 +478,15 @@ if(ALL_VERSIONS)
 				endif()
 			endforeach()
 		endif()
-		
+
 		# binaries may also be referenced with symlinks (case when different platform can share the same binary package, typical with header only libraries)
 		list_Platform_Symlinks(ALL_PLATFORMS ${binary_dir}/${ref_version})
 		if(ALL_PLATFORMS)
-			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version	
+			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version
 				# now referencing the binaries
 				list_Regular_Files(ALL_BINARIES ${binary_dir}/${ref_version}/${ref_platform})
 				if(ALL_BINARIES) #do not check for binary archive name since it may differ from standard regarding platform (king of generic platform name may be used)
-					
+
 					list(APPEND PRINTED_VERSIONS ${ref_version})
 					list(APPEND ${ref_version}_PRINTED_PLATFORM ${ref_platform})
 				endif()
@@ -498,7 +497,7 @@ endif()
 if(PRINTED_VERSIONS)
 list(REMOVE_DUPLICATES PRINTED_VERSIONS)
 foreach(version IN ITEMS ${PRINTED_VERSIONS})
-	set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES}\n### ${version}\n\n") 
+	set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES}\n### ${version}\n\n")
 	foreach(platform IN ITEMS ${${version}_PRINTED_PLATFORM})
 		set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES} + ${platform}\n")
 	endforeach()
@@ -533,24 +532,24 @@ list_Version_Subdirectories(ALL_VERSIONS ${dir})
 
 if(ALL_VERSIONS)
 	foreach(ref_version IN ITEMS ${ALL_VERSIONS}) #for each available version, all os for which there is a reference
-		
+
 		list_Platform_Subdirectories(ALL_PLATFORMS ${dir}/${ref_version})
 		if(ALL_PLATFORMS)
-			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version	
+			foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version
 				# now referencing the binaries
 				list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
-						
+
 				if(ALL_BINARIES) # check to avoid problem is the binaries have been badly released
-					
+
 					# the version is registered only if there are binaries inside (sanity check)
 					if(native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz
 						  AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)# both release and binary versions have to exist for native packages
 						set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
 						set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
 						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
-						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)	
+						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
 					elseif(NOT NATIVE AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) #at least a release version is required for external packages
-						
+
 						set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
 						set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
 						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
@@ -566,7 +565,7 @@ if(ALL_VERSIONS)
 		if(NOT native) # testing the reference on external with symlinks
 			list_Platform_Symlinks(ALL_PLATFORMS ${dir}/${ref_version})
 			if(ALL_PLATFORMS)
-				foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version	
+				foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version
 					# now referencing the binaries
 					list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
 					if(ALL_BINARIES) #do not check for binary archive name since it may differ from standard regarding platform (king of generic platform name may be used instead of the symink one)
@@ -593,7 +592,7 @@ if(ALL_VERSIONS)
 							if(DEBUG_BINARY)
 								set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${DEBUG_BINARY}.tar.gz)
 								set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${package}-${ref_version}-dbg-${DEBUG_BINARY})
-							
+
 							endif()
 						endif()
 
@@ -608,10 +607,10 @@ if(ALL_VERSIONS)
 		file(APPEND ${file} "set(${package}_REFERENCES ${${package}_FRAMEWORK_REFERENCES} CACHE INTERNAL \"\")\n") # the version is registered
 		foreach(ref_version IN ITEMS ${${package}_FRAMEWORK_REFERENCES})
 			list(REMOVE_DUPLICATES ${package}_FRAMEWORK_REFERENCE_${ref_version})
-			file(APPEND ${file} "set(${package}_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n") 
+			file(APPEND ${file} "set(${package}_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n")
 			foreach(ref_platform IN ITEMS ${${package}_FRAMEWORK_REFERENCE_${ref_version}}) #there is at least one platform referenced so no need to test for nullity
 
-				#release binary referencing				
+				#release binary referencing
 				file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL} CACHE INTERNAL \"\")\n")#reference on the release binary
 				if(NOT native)
 					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER} CACHE INTERNAL \"\")\n")# name of the folder contained in the archive
@@ -647,7 +646,7 @@ generate_Framework_Data() # generating the data files for jekyll (result in the 
 generate_Framework_Binary_References() # generating in the project the cmake script files that allow to find references on packages of the framework
 
 # build steps
-# 1) create or clean the "generated" folder in build tree. 
+# 1) create or clean the "generated" folder in build tree.
 # 2) create or clean the "to_generate" folder in build tree. When created all files are copied from "static" folder of framework pattern. When cleaned only user specific code is removed
 # 3) copy all framework specific content from src (hand written or generated by packages) INTO the "to_generate" folder.
 # 4) call jekyll on the "to_generate" folder with "generated" has output => the output site is in the "generated" folder of the build tree.
@@ -666,6 +665,3 @@ if(${PROJECT_NAME}_FRAMEWORK_ADDRESS)
 endif()
 
 endmacro(build_Framework)
-
-
-

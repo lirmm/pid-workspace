@@ -1,21 +1,22 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
+
 
 ###################################################################################
 ########### this is the script file to call to rebind a package's content #########
@@ -102,7 +103,7 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS_DEBUG})
 	if(CONFIG_${ext_dep})#the path has been set by the user with -DCONFIG_<package>=<path> argument
 		set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG ${CONFIG_${ext_dep}})#changing the reference path
 	else()
-		is_A_System_Reference_Path(${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG} RES)		
+		is_A_System_Reference_Path(${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG} RES)
 		if(NOT RES)#by default we consider that the workspace contains installed external projects in a dedicated folder for it if the external package has not been declared as installed by default in system directories
 			set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${ext_dep} CACHE PATH "")
 			list(APPEND NOT_DEFINED_EXT_DEPS_DEBUG ${ext_dep})
@@ -113,13 +114,13 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS})
 	if(CONFIG_${ext_dep})#the path has been set by the user with -DCONFIG_<package>=<path> argument
 		set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH ${CONFIG_${ext_dep}})#changing the reference path
 	else()
-		is_A_System_Reference_Path(${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH} RES)		
+		is_A_System_Reference_Path(${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH} RES)
 		if(NOT RES)
 			set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${ext_dep} CACHE PATH "")
 			list(APPEND NOT_DEFINED_EXT_DEPS ${ext_dep})
 		endif()
-		
-	endif() 
+
+	endif()
 endforeach()
 if(NOT_DEFINED_EXT_DEPS OR NOT_DEFINED_EXT_DEPS_DEBUG)
 	message(WARNING "[PID] WARNING : Following external packages path has been automatically set. To resolve their path by hand use -DCONFIG_<package>=<path> option when calling this script")

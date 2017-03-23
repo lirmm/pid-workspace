@@ -1,20 +1,20 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
 include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
@@ -38,35 +38,33 @@ foreach(a_file IN ITEMS ${all_files})
 	set(PROJECT_FILENAME ${file_name})
 	file(READ ${CONFIG_FILE} raw_header)
 	string(CONFIGURE ${raw_header} configured_header @ONLY)
-	
-	#getting appropriate corresponding characters in the source file  
+
+	#getting appropriate corresponding characters in the source file
 	string(LENGTH "${configured_header}" header_size)
 	file(READ ${a_file} beginning_of_file LIMIT ${header_size})
-	# comparing header of the source with configured header   
+	# comparing header of the source with configured header
 	if(NOT "${beginning_of_file}" STREQUAL "${configured_header}")#headers are not matching !!
 		#header comment must be updated or created
 		string(LENGTH "/* 	File: ${PROJECT_FILENAME}" beginning_of_header_size)
 		math(EXPR beginning_of_header_size "${beginning_of_header_size}+1")
-		file(READ ${a_file} first_line_of_file LIMIT ${beginning_of_header_size})		
+		file(READ ${a_file} first_line_of_file LIMIT ${beginning_of_header_size})
 		file(READ ${a_file} full_content)
 		if("${first_line_of_file}" STREQUAL "/* 	File: ${PROJECT_FILENAME}\n") #the file already has a license comment
 			#this comment must be suppressed first
 			string(FIND "${full_content}" "*/" position_of_first_comment_ending)
 			math(EXPR thelength "${position_of_first_comment_ending}+2")
 			string(SUBSTRING "${full_content}" ${thelength} -1 res_file_content)
-			set(full_content ${res_file_content})#now only code and user defined header comments (e.g. for doxygen) are part of the new file content  
+			set(full_content ${res_file_content})#now only code and user defined header comments (e.g. for doxygen) are part of the new file content
 			#message("RESULT = ${full_content}")
 		endif()
-		
+
 		# now adding the newly created header to the file
 		set(RES "${configured_header}")
 		set(RES "${RES}${full_content}")
 		file(WRITE ${a_file} "${RES}")
 		message("[PID] INFO : license header added to file ${a_file}.")
 	else()
-		message("[PID] INFO : file ${a_file} ALREADY contains a license header.")	
+		message("[PID] INFO : file ${a_file} ALREADY contains a license header.")
 	endif()
-		
+
 endforeach()
-
-

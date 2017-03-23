@@ -1,22 +1,21 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
 
 ########################################################################
 ############ inclusion of required macros and functions ################
@@ -38,7 +37,7 @@ include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
 ### function used to classify all packages into categories. Usefull to prepare calls to info script.
 function(classify_Packages)
 #1) get the root of categories (cmake variables) where to start recursion of the classification process
-extract_Root_Categories() 
+extract_Root_Categories()
 #2) classification of packages according to categories
 if(ROOT_CATEGORIES)
 	foreach(a_cat IN ITEMS ${ROOT_CATEGORIES})
@@ -59,13 +58,13 @@ endfunction(classify_Packages)
 function(classify_Root_Category root_category all_packages)
 foreach(package IN ITEMS ${all_packages})
 	foreach(a_category IN ITEMS ${${package}_CATEGORIES})
-		classify_Category(${a_category} ${root_category} ${package})	
+		classify_Category(${a_category} ${root_category} ${package})
 	endforeach()
 endforeach()
 endfunction(classify_Root_Category)
 
 
-## subsidiary function to classify all packages from a given framework into the categories defined by this framework. This results in creation of variables 
+## subsidiary function to classify all packages from a given framework into the categories defined by this framework. This results in creation of variables
 function(classify_Framework_Root_Category framework root_category all_packages)
 foreach(package IN ITEMS ${all_packages})
 	if(${package}_FRAMEWORK STREQUAL "${framework}")#check if the package belongs to the framework
@@ -100,8 +99,8 @@ else()#not OK we need to know if this is a subcategory or not
 		classify_Framework_Category(${framework} ${category_full_string} "${root_category}/${AFTER_ROOT}" ${target_package})
 		list(REMOVE_DUPLICATES FRAMEWORK_${framework}_CAT_${root_category}_CATEGORIES)
 		set(FRAMEWORK_${framework}_CAT_${root_category}_CATEGORIES ${FRAMEWORK_${framework}_CAT_${root_category}_CATEGORIES} CACHE INTERNAL "")
-		
-	#else, this is not the same as root_category (otherwise first test would have succeeded => end of recursion 
+
+	#else, this is not the same as root_category (otherwise first test would have succeeded => end of recursion
 	endif()
 endif()
 endfunction(classify_Framework_Category)
@@ -210,7 +209,7 @@ function(get_Framework_Root_Categories framework RETURNED_ROOTS)
 	set(${RETURNED_ROOTS} ${ROOTS_FOUND} PARENT_SCOPE)
 endfunction(get_Framework_Root_Categories)
 
-## subsidiary function for extracting root categories from workspace description. It consists in classifying all packages and frameworks relative to category structure. 
+## subsidiary function for extracting root categories from workspace description. It consists in classifying all packages and frameworks relative to category structure.
 function(extract_Root_Categories)
 # extracting category information from packages
 set(ALL_ROOTS)
@@ -266,8 +265,8 @@ else()#not OK we need to know if this is a subcategory or not
 		list(REMOVE_DUPLICATES CAT_${root_category}_CATEGORIES)
 		set(CAT_${root_category}_CATEGORIES ${CAT_${root_category}_CATEGORIES} CACHE INTERNAL "")
 
-		
-	#else, this is not the same as root_category (otherwise first test would have succeeded => end of recursion 
+
+	#else, this is not the same as root_category (otherwise first test would have succeeded => end of recursion
 	endif()
 
 endif()
@@ -328,11 +327,11 @@ endfunction(write_Framework_Category_In_File)
 ### function to find and print the sreached term in all (sub-)categories
 function(find_In_Categories searched_category_term)
 foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
-	find_Category("" ${root_cat} ${searched_category_term})	
+	find_Category("" ${root_cat} ${searched_category_term})
 endforeach()
 endfunction(find_In_Categories)
 
-## subsidiary function to print to standard output the "path" generated by a given category 
+## subsidiary function to print to standard output the "path" generated by a given category
 function(find_Category root_category current_category_full_path searched_category)
 string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${searched_category})
 if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => searching category into a specific "category path"
@@ -343,20 +342,20 @@ if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => sea
 		find_Category("${root_category}" "${current_category_full_path}" ${REMAINING_OF_CATEGORY}) #search for a possible match
 	endif()
 	if(CAT_${current_category_full_path}_CATEGORIES)
-		#now recursion to search inside subcategories	
+		#now recursion to search inside subcategories
 		foreach(root_cat IN ITEMS ${CAT_${current_category_full_path}_CATEGORIES})
-			find_Category("${current_category_full_path}" "${current_category_full_path}/${root_cat}" ${searched_category})	
+			find_Category("${current_category_full_path}" "${current_category_full_path}/${root_cat}" ${searched_category})
 		endforeach()
-	endif()	
+	endif()
 else()#this is a simple category name (end of recursion on path), just testing if this category exists
 	get_Category_Names("${root_category}" ${current_category_full_path} SHORT_NAME LONG_NAME)
-	
+
 	if(SHORT_NAME STREQUAL "${searched_category}")# same name -> end of recursion a match has been found
-		message("---------------")	
+		message("---------------")
 		print_Category("" ${current_category_full_path} 0)
 	else()#recursion
 		if(CAT_${current_category_full_path}_CATEGORIES)
-			#now recursion to search inside subcategories	
+			#now recursion to search inside subcategories
 			foreach(root_cat IN ITEMS ${CAT_${current_category_full_path}_CATEGORIES})
 				find_Category("${current_category_full_path}" "${current_category_full_path}/${root_cat}" ${searched_category})
 			endforeach()
@@ -366,7 +365,7 @@ endif()
 endfunction(find_Category)
 
 
-## subsidiary function to print to standard output the "path" generated by category structure 
+## subsidiary function to print to standard output the "path" generated by category structure
 function(get_Category_Names root_category category_full_string RESULTING_SHORT_NAME RESULTING_LONG_NAME)
 	if("${root_category}" STREQUAL "")
 		set(${RESULTING_SHORT_NAME} ${category_full_string} PARENT_SCOPE)
@@ -376,7 +375,7 @@ function(get_Category_Names root_category category_full_string RESULTING_SHORT_N
 
 	string(REGEX REPLACE "^${root_category}/(.+)$" "\\1" CATEGORY_STRING_CONTENT ${category_full_string})
 	if(NOT CATEGORY_STRING_CONTENT STREQUAL ${category_full_string})# it macthed
-		set(${RESULTING_SHORT_NAME} ${CATEGORY_STRING_CONTENT} PARENT_SCOPE) # 
+		set(${RESULTING_SHORT_NAME} ${CATEGORY_STRING_CONTENT} PARENT_SCOPE) #
 		set(${RESULTING_LONG_NAME} "${root_category}/${CATEGORY_STRING_CONTENT}" PARENT_SCOPE)
 	else()
 		message("[PID] Error : internal BUG.")
@@ -404,7 +403,7 @@ function(print_Category root_category category number_of_tabs)
 		message("${PRINTED_VALUE}")
 	else()
 		set(PRINTED_VALUE "${RESULT_STRING}${short_name}")
-		message("${PRINTED_VALUE}")	
+		message("${PRINTED_VALUE}")
 	endif()
 	if(CAT_${category}_CATEGORIES)
 		math(EXPR sub_cat_nb_tabs '${number_of_tabs}+1')
@@ -435,7 +434,7 @@ function(print_Framework_Category framework root_category category number_of_tab
 		message("${PRINTED_VALUE}")
 	else()
 		set(PRINTED_VALUE "${RESULT_STRING}${short_name}")
-		message("${PRINTED_VALUE}")	
+		message("${PRINTED_VALUE}")
 	endif()
 	if(FRAMEWORK_${framework}_CAT_${category}_CATEGORIES)#there are subcategories => recursion
 		math(EXPR sub_cat_nb_tabs '${number_of_tabs}+1')
@@ -477,7 +476,7 @@ function(print_Package_Contact package)
 	message("CONTACT: ${RES_STRING}")
 endfunction(print_Package_Contact)
 
-### function used to print a basic description of a native package to the standard output 
+### function used to print a basic description of a native package to the standard output
 function(print_Package_Info package)
 	message("NATIVE PACKAGE: ${package}")
 	fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
@@ -502,14 +501,14 @@ function(print_Package_Info package)
 			message("	${category}")
 		endforeach()
 	endif()
-	
+
 	if(REFERENCES_OK)
 		message("BINARY VERSIONS:")
 		print_Package_Binaries(${package})
 	endif()
 endfunction(print_Package_Info)
 
-### function used to print a basic description of an external package to the standard output 
+### function used to print a basic description of an external package to the standard output
 function(print_External_Package_Info package)
 	message("EXTERNAL PACKAGE: ${package}")
 	fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
@@ -571,7 +570,7 @@ function(exact_Version_Exists package version RESULT)
 	else()
 		get_Available_Binary_Package_Versions(${package} list_of_versions list_of_versions_with_platform)
 		list(FIND list_of_versions ${version} INDEX)
-		if(INDEX EQUAL -1)	
+		if(INDEX EQUAL -1)
 			set(${RESULT} FALSE PARENT_SCOPE)
 		else()
 			set(${RESULT} TRUE PARENT_SCOPE)
@@ -649,7 +648,7 @@ else()
 endif()
 set(FRAMEWORK_DESCRIPTION "\"TODO: input a short description of framework ${framework} utility here\"")
 string(TIMESTAMP date "%Y")
-set(FRAMEWORK_YEARS ${date}) 
+set(FRAMEWORK_YEARS ${date})
 # generating the root CMakeLists.txt of the package
 configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/CMakeLists.txt.in ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt @ONLY)
 #configuring git repository
@@ -681,7 +680,7 @@ else()
 endif()
 set(PACKAGE_DESCRIPTION "TODO: input a short description of package ${package} utility here")
 string(TIMESTAMP date "%Y")
-set(PACKAGE_YEARS ${date}) 
+set(PACKAGE_YEARS ${date})
 # generating the root CMakeLists.txt of the package
 configure_file(${WORKSPACE_DIR}/share/patterns/packages/CMakeLists.txt.in ../packages/${package}/CMakeLists.txt @ONLY)
 #confuguring git repository
@@ -706,7 +705,7 @@ endif()
 endfunction(deploy_PID_Framework)
 
 
-### Installing a package on the workspace filesystem from an existing package repository, known in the workspace. All its dependencies will be deployed, either has binary (if available) or has source (if not). 
+### Installing a package on the workspace filesystem from an existing package repository, known in the workspace. All its dependencies will be deployed, either has binary (if available) or has source (if not).
 function(deploy_PID_Package package version verbose)
 set(PROJECT_NAME ${package})
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
@@ -728,9 +727,9 @@ if("${version}" STREQUAL "")#deploying the source repository
 	else()
 		message("[PID] ERROR : cannot deploy ${package} repository.")
 	endif()
-else()#deploying the target binary relocatable archive 
+else()#deploying the target binary relocatable archive
 	deploy_Binary_Package_Version(DEPLOYED ${package} ${version} TRUE "")
-	if(NOT DEPLOYED) 
+	if(NOT DEPLOYED)
 		message("[PID] ERROR : cannot deploy ${package} binary archive version ${version}.")
 	endif()
 endif()
@@ -764,24 +763,24 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 		message("[PID] ERROR : no known version to external package ${package} for OS ${OS_STRING}.")
 	endif()
 
-else()#deploying the target binary relocatable archive 
+else()#deploying the target binary relocatable archive
 	deploy_External_Package_Version(DEPLOYED ${package} ${version})
-	if(NOT DEPLOYED) 
+	if(NOT DEPLOYED)
 		message("[PID] ERROR : cannot deploy ${package} binary archive version ${version}.")
 	endif()
 endif()
 endfunction(deploy_External_Package)
 
-### Configuring the official remote repository of current package 
+### Configuring the official remote repository of current package
 function(connect_PID_Framework framework git_url first_time)
 if(first_time)#first time this framework is connected because newly created
-	# set the address of the official repository in the CMakeLists.txt of the framework 
+	# set the address of the official repository in the CMakeLists.txt of the framework
 	set_Framework_Repository_Address(${framework} ${git_url})
 	register_Framework_Repository_Address(${framework})
 	# synchronizing with the "official" remote git repository
 	connect_Framework_Repository(${framework} ${git_url})
 else() #forced reconnection
-	# updating the address of the official repository in the CMakeLists.txt of the package 
+	# updating the address of the official repository in the CMakeLists.txt of the package
 	reset_Framework_Repository_Address(${framework} ${git_url})
 	register_Framework_Repository_Address(${framework})
 	# synchronizing with the new "official" remote git repository
@@ -789,18 +788,18 @@ else() #forced reconnection
 endif()
 endfunction(connect_PID_Framework)
 
-### Configuring the official remote repository of current package 
+### Configuring the official remote repository of current package
 function(connect_PID_Package package git_url first_time)
 save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package}) # saving local repository state
 go_To_Integration(${package})
 if(first_time)#first time this package is connected because newly created
-	# set the address of the official repository in the CMakeLists.txt of the package 
+	# set the address of the official repository in the CMakeLists.txt of the package
 	set_Package_Repository_Address(${package} ${git_url})
 	register_Repository_Address(${package})
 	# synchronizing with the "official" remote git repository
 	connect_Repository(${package} ${git_url})
 else() #forced reconnection
-	# updating the address of the official repository in the CMakeLists.txt of the package 
+	# updating the address of the official repository in the CMakeLists.txt of the package
 	reset_Package_Repository_Address(${package} ${git_url})
 	register_Repository_Address(${package})
 	# synchronizing with the new "official" remote git repository
@@ -826,7 +825,7 @@ endfunction(add_Connection_To_PID_Framework)
 ###### clearing/removing deployment units ########
 ##################################################
 
-### clearing consist in clearing a package version related folder from the workspace 
+### clearing consist in clearing a package version related folder from the workspace
 function(clear_PID_Package package version)
 get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
@@ -880,7 +879,7 @@ endfunction(remove_PID_Framework)
 ##################################################
 
 
-### registering consists in updating the workspace repository with an updated reference file for this package  
+### registering consists in updating the workspace repository with an updated reference file for this package
 function(register_PID_Package package)
 go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} install)
@@ -964,7 +963,7 @@ endif()
 merge_Into_Master(MERGE_OK ${package} ${STRING_NUMBER})
 if(NOT MERGE_OK)
 	message("[PID] ERROR : cannot release package ${package}, because there are potential merge conflicts between master and integration branches. Please update ${package} integration branch first then launch again the release process.")
-	go_To_Integration(${package}) #always go back to integration branch	
+	go_To_Integration(${package}) #always go back to integration branch
 	return()
 endif()
 publish_Repository_Version(${package} ${STRING_NUMBER})
@@ -992,7 +991,7 @@ set_Version_Number_To_Package(${package} ${major} ${minor} ${patch}) #change the
 register_Repository_Version(${package} "${major}.${minor}.${patch}") # commit new modified version
 publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand
 set(${RESULT} ${STRING_NUMBER} PARENT_SCOPE)
-update_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory) 
+update_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory)
 endfunction(release_PID_Package)
 
 ##########################################
@@ -1000,7 +999,7 @@ endfunction(release_PID_Package)
 ##########################################
 
 
-### update a source package based on git tags of its repository 
+### update a source package based on git tags of its repository
 function(update_PID_Source_Package package)
 get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 set(INSTALLED FALSE)
@@ -1015,20 +1014,20 @@ endif()
 endfunction(update_PID_Source_Package)
 
 
-### update a binary package based on available binary references 
+### update a binary package based on available binary references
 function(update_PID_Binary_Package package)
 get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 message("[PID] INFO : launch the update of binary package ${package}...")
 list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
 deploy_Binary_Package(DEPLOYED ${package} "${version_dirs}")
-if(NOT DEPLOYED) 
+if(NOT DEPLOYED)
 	message("[PID] ERROR : cannot update ${package}.")
 else()
 	message("[PID] INFO : package ${package} update finished...")
 endif()
 endfunction(update_PID_Binary_Package)
 
-### update an external package based on available binary references 
+### update an external package based on available binary references
 function(update_PID_External_Package package)
 message("[PID] INFO : new versions of external binary package ${package} will not be installed automatically (only if a new version is required by native package)...")
 endfunction(update_PID_External_Package)
@@ -1139,7 +1138,7 @@ function(detect_Current_Platform)
 	else()
 		list(REMOVE_DUPLICATES POSSIBLE_PLATFORMS)
 		list(LENGTH POSSIBLE_PLATFORMS SIZE)
-	
+
 		if(SIZE GREATER 1)
 			set(CONFLICTING_PLATFORM_DESCRIPTION_FILES "")
 			foreach(platform IN ITEMS ${POSSIBLE_PLATFORMS})
@@ -1147,7 +1146,7 @@ function(detect_Current_Platform)
 			endforeach()
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : more than one platform is eligible as the one currently in use. This is possible only if two platforms define the same properties which is not allowed. Please check the following platform description files: ${CONFLICTING_PLATFORM_DESCRIPTION_FILES}")
 		endif()
-	
+
 		#simply rewriting previously defined variable to normalize their names between workspace and packages (same accessor function can then be used from any place)
 		set(CURRENT_PLATFORM ${POSSIBLE_PLATFORMS} CACHE INTERNAL "" FORCE)
 		set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL "" FORCE)
@@ -1170,7 +1169,7 @@ function(register_Available_Platforms)
 	endif()
 	set(ALL_PLATFORMS_DEFINED)
 	foreach(platform_file IN ITEMS ${ALL_AVAILABLE_PLATFORMS})#filtering platform description files (check if these are really cmake files related to platform description, according to the PID standard)
-		string(REGEX REPLACE "^Platform([^.]+)\\.cmake$" "\\1" PLATFORM_NAME ${platform_file}) 
+		string(REGEX REPLACE "^Platform([^.]+)\\.cmake$" "\\1" PLATFORM_NAME ${platform_file})
 		if(NOT PLATFORM_NAME STREQUAL ${platform_file})# match : this is a platform definition file
 			include(${CMAKE_SOURCE_DIR}/share/cmake/platforms/${platform_file})
 			list(APPEND ALL_PLATFORMS_DEFINED ${PLATFORM_NAME})
@@ -1244,7 +1243,7 @@ file(APPEND ${file} "set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO \"${CMAKE_STAT
 ## cmake related
 file(APPEND ${file} "set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} CACHE INTERNAL \"\" FORCE)\n")
 
-## system related 
+## system related
 file(APPEND ${file} "set(CMAKE_FIND_LIBRARY_PREFIXES ${CMAKE_FIND_LIBRARY_PREFIXES} CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_SYSTEM_PREFIX_PATH} CACHE INTERNAL \"\" FORCE)\n")
@@ -1284,7 +1283,7 @@ function(write_Platform_Description file)
 file(WRITE ${file} "")#reset the file
 # defining all available platforms (usefull for CI configuration generation)
 file(APPEND ${file} "set(WORKSPACE_ALL_PLATFORMS ${WORKSPACE_ALL_PLATFORMS} CACHE INTERNAL \"\" FORCE)\n")
-foreach(platform IN ITEMS ${WORKSPACE_ALL_PLATFORMS}) 
+foreach(platform IN ITEMS ${WORKSPACE_ALL_PLATFORMS})
 	set(type "PLATFORM_${platform}_TYPE")
 	set(arch "PLATFORM_${platform}_ARCH")
 	set(os "PLATFORM_${platform}_OS")
@@ -1295,7 +1294,7 @@ foreach(platform IN ITEMS ${WORKSPACE_ALL_PLATFORMS})
 	file(APPEND ${file} "set(${abi} ${${abi}} CACHE INTERNAL \"\" FORCE)\n")
 endforeach()
 
-# defining properties of the current platform 
+# defining properties of the current platform
 file(APPEND ${file} "set(CURRENT_PLATFORM ${CURRENT_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\" FORCE)\n")
@@ -1341,7 +1340,7 @@ else()
 	message("[PID] INFO: development environment in use is the host default environment (based on ${CMAKE_CXX_COMPILER_ID} build toolchain).")
 endif()
 
-# detecting which platform is in use according to environment description 
+# detecting which platform is in use according to environment description
 detect_Current_Platform()
 
 # generate the current platform configuration file (that will be used to build packages)
@@ -1365,9 +1364,9 @@ file(GLOB ALL_AVAILABLE_PLUGINS RELATIVE ${CMAKE_SOURCE_DIR}/share/cmake/plugins
 	endif()
 	set(ALL_PLUGINS_DEFINED)
 	foreach(plugin IN ITEMS ${ALL_AVAILABLE_PLUGINS})#filtering plugins description files (check if these are really cmake files related to plugins description, according to the PID standard)
-		include(${CMAKE_SOURCE_DIR}/share/cmake/plugins/${plugin}/plugin_description.cmake OPTIONAL RESULT_VARIABLE res)		
-		
-		if(NOT res STREQUAL NOTFOUND)# there may have other dirty files in the folder and we just do not consider them 
+		include(${CMAKE_SOURCE_DIR}/share/cmake/plugins/${plugin}/plugin_description.cmake OPTIONAL RESULT_VARIABLE res)
+
+		if(NOT res STREQUAL NOTFOUND)# there may have other dirty files in the folder and we just do not consider them
 			list(APPEND ALL_PLUGINS_DEFINED ${plugin})
 			option(PLUGIN_${plugin} "${${plugin}_PLUGIN_DESCRIPTION}" OFF)
 		endif()
@@ -1423,4 +1422,3 @@ endif()
 set(PLUGINS_FILE ${CMAKE_BINARY_DIR}/Workspace_Plugins_Info.cmake)
 write_Active_Plugins(${PLUGINS_FILE})
 endfunction(manage_Plugins)
-

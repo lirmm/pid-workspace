@@ -1,20 +1,20 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
 set(x11_FOUND FALSE CACHE INTERNAL "")
@@ -35,7 +35,7 @@ if (UNIX)
 	find_path(x11_ICE_INCLUDE_PATH X11/ICE/ICE.h)
 	find_path(x11_SM_INCLUDE_PATH X11/SM/SM.h)
 
-	find_library(x11_X11_LIB X11) 
+	find_library(x11_X11_LIB X11)
 	find_library(x11_ICE_LIB ICE)
 	find_library(x11_SM_LIB SM)
 	find_library(x11_Xext_LIB Xext)
@@ -79,13 +79,13 @@ if (UNIX)
 	endif ()
 
 	### now searching extension libraries they may be present or not ###
-	
+
 	#Xt
 	find_path(x11_Xt_INCLUDE_PATH X11/Intrinsic.h)
-	find_library(x11_Xt_LIB Xt )	
+	find_library(x11_Xt_LIB Xt )
 	if(x11_Xt_LIB AND x11_Xt_INCLUDE_PATH)
 		set(x11_Xt_LIB -lXt CACHE INTERNAL "") #remove from user cache
-		set(x11_EXTENSI0NS_LIBS ${x11_EXTENSI0NS_LIBS} ${x11_Xt_LIB})		
+		set(x11_EXTENSI0NS_LIBS ${x11_EXTENSI0NS_LIBS} ${x11_Xt_LIB})
 	else()
 		unset(x11_Xt_LIB CACHE)#remove from cache
 	endif ()
@@ -96,7 +96,7 @@ if (UNIX)
 	if(x11_Xft_LIB AND x11_Xft_INCLUDE_PATH)
 		set(x11_Xft_LIB -lXft CACHE INTERNAL "") #remove from user cache
 		set(x11_EXTENSI0NS_LIBS ${x11_EXTENSI0NS_LIBS} ${x11_Xft_LIB})
-		
+
 	else()
 		unset(x11_Xft_LIB CACHE)#remove from cache
 	endif ()
@@ -131,7 +131,7 @@ if (UNIX)
 		unset(x11_Xdmcp_LIB CACHE)#remove from cache
 	endif ()
 
-	#Xpm	
+	#Xpm
 	find_path(x11_Xpm_INCLUDE_PATH X11/xpm.h )
 	find_library(x11_Xpm_LIB Xpm )
 	if (x11_Xpm_INCLUDE_PATH AND x11_Xpm_LIB)
@@ -171,7 +171,7 @@ if (UNIX)
 		unset(x11_XTest_LIB CACHE)#remove from cache
 	endif ()
 
-	
+
 	#Xinput
 	find_path(x11_Xinput_INCLUDE_PATH X11/extensions/XInput.h )
 	find_library(x11_Xinput_LIB Xi  )
@@ -296,7 +296,7 @@ if (UNIX)
 	endif ()
 
 
-	# variable to select extension libraries 
+	# variable to select extension libraries
 	unset(IS_FOUND)
 	unset(x11_X11_INCLUDE_PATH CACHE)
 	unset(x11_Xlib_INCLUDE_PATH CACHE)
@@ -332,4 +332,3 @@ if (UNIX)
 	unset(x11_Xv_INCLUDE_PATH CACHE)
 	set(CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK_SAVE})
 endif ()
-

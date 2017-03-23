@@ -1,3 +1,22 @@
+#########################################################################################
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
+#########################################################################################
+
 ##################################################################
 ######## CMake License file description : Free BSD ###############
 ##################################################################
@@ -7,15 +26,15 @@ set(LICENSE_FULLNAME "BSD 2 Clause License")
 set(LICENSE_VERSION "1")
 set(LICENSE_AUTHORS "the University of California Berkeley")
 
-set(	LICENSE_HEADER_FILE_DESCRIPTION 
-"/* 	TFile: @PROJECT_FILENAME@ 	
+set(	LICENSE_HEADER_FILE_DESCRIPTION
+"/* 	TFile: @PROJECT_FILENAME@
 *	This file is part of the program ${PROJECT_NAME}
 *  	Program description : ${${PROJECT_NAME}_DESCRIPTION}
 *  	Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_LIST}. All Right reserved.
 *
 *	This software is free software: you can redistribute it and/or modify
 *	it under the terms of the ${LICENSE_NAME} license as published by
-*	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} 
+*	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION}
 *	of the License, or (at your option) any later version.
 *	This software is distributed in the hope that it will be useful,
 *	but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -36,15 +55,15 @@ Software description : ${${PROJECT_NAME}_DESCRIPTION}
 Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_LIST}
 
 This software is free software: you can redistribute it and/or modify it under the terms of the ${LICENSE_NAME} license as published by
-${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software 
-is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software
+is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 Information about license applying to this software:
 
 License : ${LICENSE_NAME}
 
-Official name of the license : ${LICENSE_FULLNAME} 
+Official name of the license : ${LICENSE_FULLNAME}
 
 Version of the license : ${LICENSE_VERSION}
 
@@ -63,4 +82,3 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ")
-

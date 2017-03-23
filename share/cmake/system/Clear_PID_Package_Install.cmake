@@ -1,22 +1,21 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
 
 include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
 
@@ -70,7 +69,7 @@ set(PATH_TO_INSTALL_DIR ${workspace}/install/${platform}/${package}/${install_ve
 
 foreach(component IN ITEMS ${all_components_to_check}) #for each remaining existing component
 	#component exists, check for header files/folders suppression/changes
-	if(	"${INSTALLED_${component}_TYPE}" STREQUAL "HEADER" 
+	if(	"${INSTALLED_${component}_TYPE}" STREQUAL "HEADER"
 		OR "${INSTALLED_${component}_TYPE}" STREQUAL "STATIC"
 		OR "${INSTALLED_${component}_TYPE}" STREQUAL "SHARED")#if component is a library its header folder still exist at this step (not removed by previous function)
 		# checking header folder modification/suppression
@@ -139,8 +138,8 @@ foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
 		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NUMBER_OF_USAGES})
 
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})
-		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME}) 
-		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
+		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
+		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG})
 
 	elseif( "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "SHARED")
 		set(INSTALLED_${component}_TYPE SHARED)
@@ -151,21 +150,21 @@ foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
 
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
-		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
+		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG})
 	elseif( "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "MODULE")
 		set(INSTALLED_${component}_TYPE MODULE)
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
-		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
+		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG})
 
 	elseif(	"${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "EXAMPLE")
 		set(INSTALLED_${component}_TYPE EXAMPLE)
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
-		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
+		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG})
 
 	elseif( "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "APP")
 		set(INSTALLED_${component}_TYPE APP)
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
-		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
+		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG})
 	endif()
 endforeach()
 

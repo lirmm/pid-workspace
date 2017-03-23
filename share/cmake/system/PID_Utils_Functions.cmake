@@ -1,27 +1,27 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
 #############################################################
 ########### general utilities for build management ##########
 #############################################################
 
-### getting suffixes related to target mode (common accessor usefull in many places) 
+### getting suffixes related to target mode (common accessor usefull in many places)
 function(get_Mode_Variables TARGET_SUFFIX VAR_SUFFIX mode)
 if(mode MATCHES Release)
 	set(${TARGET_SUFFIX} PARENT_SCOPE)
@@ -90,14 +90,14 @@ endfunction(fill_List_Into_String)
 ###
 function(extract_Package_Namespace_From_SSH_URL url package NAMESPACE SERVER_ADDRESS EXTENSION)
 string (REGEX REPLACE "^([^@]+@[^:]+):([^/]+)/${package}(\\.site|-site|\\.pages|-pages)?\\.git$" "\\2;\\1" RESULT ${url})
-if(NOT RESULT STREQUAL "${url}") #match found 
+if(NOT RESULT STREQUAL "${url}") #match found
 	list(GET RESULT 0 NAMESPACE_NAME)
 	set(${NAMESPACE} ${NAMESPACE_NAME} PARENT_SCOPE)
 	list(GET RESULT 1 ACCOUNT_ADDRESS)
 	set(${SERVER_ADDRESS} ${ACCOUNT_ADDRESS} PARENT_SCOPE)
-	
+
 	string (REGEX REPLACE "^[^@]+@[^:]+:[^/]+/${package}(\\.site|-site|\\.pages|-pages)\\.git$" "\\1" RESULT ${url})
-	if(NOT RESULT STREQUAL "${url}") #match found 
+	if(NOT RESULT STREQUAL "${url}") #match found
 		set(${EXTENSION} ${RESULT} PARENT_SCOPE)
 	else()
 		set(${EXTENSION} PARENT_SCOPE)
@@ -164,7 +164,7 @@ endfunction(install_Rpath_Symlink)
 
 ###
 function (check_Directory_Exists is_existing path)
-if(	EXISTS "${path}" 
+if(	EXISTS "${path}"
 	AND IS_DIRECTORY "${path}"
   )
 	set(${is_existing} TRUE PARENT_SCOPE)
@@ -227,7 +227,7 @@ else()#testing with only two elements
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : corrupted version string ${version_string}.")
 		endif()
 	endif()
-endif()	
+endif()
 endfunction(get_Version_String_Numbers)
 
 ###
@@ -423,9 +423,9 @@ endfunction(get_Formatted_Framework_Contact_String)
 
 ###
 function(get_All_Sources_Relative RESULT dir)
-file(	GLOB_RECURSE 
+file(	GLOB_RECURSE
 	RES
-	RELATIVE ${dir} 
+	RELATIVE ${dir}
 	"${dir}/*.c"
 	"${dir}/*.cc"
 	"${dir}/*.cpp"
@@ -443,9 +443,9 @@ endfunction(get_All_Sources_Relative)
 
 ###
 function(get_All_Sources_Absolute RESULT dir)
-file(	GLOB_RECURSE 
+file(	GLOB_RECURSE
 	RES
-	${dir} 
+	${dir}
 	"${dir}/*.c"
 	"${dir}/*.cc"
 	"${dir}/*.cpp"
@@ -463,9 +463,9 @@ endfunction(get_All_Sources_Absolute)
 
 ###
 function(get_All_Headers_Relative RESULT dir)
-file(	GLOB_RECURSE 
+file(	GLOB_RECURSE
 	RES
-	RELATIVE ${dir} 
+	RELATIVE ${dir}
 	"${dir}/*.h"
 	"${dir}/*.hpp"
 	"${dir}/*.hh"
@@ -476,9 +476,9 @@ endfunction(get_All_Headers_Relative)
 
 ###
 function(get_All_Headers_Absolute RESULT dir)
-file(	GLOB_RECURSE 
+file(	GLOB_RECURSE
 	RES
-	${dir} 
+	${dir}
 	"${dir}/*.h"
 	"${dir}/*.hpp"
 	"${dir}/*.hh"
@@ -554,10 +554,10 @@ foreach(link IN ITEMS ${ext_links})
 		list(GET RES 1 relative_path)
 		is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
 		if(PATHTO STREQUAL NOTFOUND)
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")		
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
 		else()
 			set(fullpath ${PATHTO}${relative_path})
-			list(APPEND res_links ${fullpath})				
+			list(APPEND res_links ${fullpath})
 		endif()
 	else() # this may be a link with a prefix (like -L<path>) that need replacement
 		string(REGEX REPLACE "^([^<]+)<([^>]+)>(.*)" "\\1;\\2;\\3" RES_WITH_PREFIX ${link})
@@ -572,7 +572,7 @@ foreach(link IN ITEMS ${ext_links})
 			if(SIZE EQUAL 3)
 				list(GET RES_WITH_PREFIX 2 relative_path)
 				set(fullpath ${link_prefix}${PATHTO}/${relative_path})
-			else()	
+			else()
 				set(fullpath ${link_prefix}${PATHTO})
 			endif()
 			list(APPEND res_links ${fullpath})
@@ -615,12 +615,12 @@ foreach(include_dir IN ITEMS ${ext_inc_dirs})
 			set(fullpath ${PATHTO}${relative_path})
 			list(APPEND res_includes ${fullpath})
 		else()#this is an include dir that does not require any replacement ! (should be avoided)
-			string(REGEX REPLACE "^-I(.+)" "\\1" RES_WITHOUT_PREFIX ${include_dir})			
+			string(REGEX REPLACE "^-I(.+)" "\\1" RES_WITHOUT_PREFIX ${include_dir})
 			if(NOT RES_WITHOUT_PREFIX STREQUAL ${include_dir})
 				list(APPEND res_includes ${RES_WITHOUT_PREFIX})
 			else()
 				list(APPEND res_includes ${include_dir}) #for absolute path or system dependencies simply copying the path
-			endif()				
+			endif()
 		endif()
 	endif()
 endforeach()
@@ -639,13 +639,13 @@ foreach(resource IN ITEMS ${ext_resources})
 		list(GET RES 1 relative_path)
 		is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
 		if(PATHTO STREQUAL NOTFOUND)
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for resource ${resource}!! Please set the path to this external package.")		
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for resource ${resource}!! Please set the path to this external package.")
 		else()
 			set(fullpath ${PATHTO}${relative_path})
-			list(APPEND res_resources ${fullpath})				
+			list(APPEND res_resources ${fullpath})
 		endif()
 	else()
-		list(APPEND res_resources ${resource})	#for  relative path or system dependencies (absolute path) simply copying the path	
+		list(APPEND res_resources ${resource})	#for  relative path or system dependencies (absolute path) simply copying the path
 	endif()
 endforeach()
 set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
@@ -731,7 +731,7 @@ set(${result} FALSE PARENT_SCOPE)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build/release ${build_tool} cmake_check_build_system OUTPUT_VARIABLE NEED_UPDATE)
 if(NOT NEED_UPDATE STREQUAL "")
 	set(${result} TRUE PARENT_SCOPE)
-endif() 
+endif()
 endfunction(test_Modified_Components)
 
 
@@ -750,7 +750,7 @@ foreach(line IN ITEMS ${PACKAGE_METADATA})
 	endif()
 endforeach()
 if(VERSION_COMMAND)
-	#from here we are sure there is at least 2 digits 
+	#from here we are sure there is at least 2 digits
 	list(GET VERSION_COMMAND 0 MAJOR)
 	list(GET VERSION_COMMAND 1 MINOR)
 	list(LENGTH VERSION_COMMAND size_of_version)
@@ -786,7 +786,7 @@ endfunction(set_Version_Number_To_Package)
 function(is_Binary_Package_Version_In_Development RESULT package version)
 set(${RESULT} FALSE PARENT_SCOPE)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
-set(USE_FILE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${version}/share/Use${package}-${version}.cmake) 
+set(USE_FILE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${version}/share/Use${package}-${version}.cmake)
 if(EXISTS ${USE_FILE}) #file does not exists means the target version is not in development
 	set(PID_VERSION_FILE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${version}/share/cmake/${package}_PID_Version.cmake)
 	if(EXISTS ${PID_VERSION_FILE})
@@ -883,7 +883,7 @@ foreach(a_file IN ITEMS ${ALL_FILES_DIR1})
 			set(SAME FALSE)
 			test_Same_File_Content(${dir1_path}/${a_file} ${dir2_path}/${a_file} SAME)
 			if(NOT SAME)#file content is different
-				
+
 				set(${ARE_SAME} FALSE PARENT_SCOPE)
 				return()
 			endif()
@@ -892,6 +892,3 @@ foreach(a_file IN ITEMS ${ALL_FILES_DIR1})
 endforeach()
 set(${ARE_SAME} TRUE PARENT_SCOPE)
 endfunction(test_Same_Directory_Content)
-
-
-

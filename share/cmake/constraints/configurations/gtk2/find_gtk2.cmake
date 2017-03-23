@@ -1,20 +1,20 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
 #=============================================================
@@ -127,7 +127,7 @@ set(gtk2_FOUND FALSE CACHE INTERNAL "")
 #  gtk2_FOUND        - True if gtk2 is available
 #  gtk2_LIBRARIES    - link against these to use gtk2 system
 if (UNIX)
-	
+
 	# gtk2 is never a framework and some header files may be
 	# found in tcl on the mac
 	set(CMAKE_FIND_FRAMEWORK_SAVE ${CMAKE_FIND_FRAMEWORK})
@@ -147,18 +147,18 @@ if (UNIX)
 	gtk2_Find_Include_Dir(gtk2_GDK_PIXBUF gdk-pixbuf/gdk-pixbuf.h)
 	gtk2_Find_Include_Dir(gtk2_ATK atk/atk.h)
 	gtk2_Find_Include_Dir(gtk2_GOBJECT gobject/gobject.h)
-				
-	if(	NOT gtk2_GTK_INCLUDE_DIR 
-		OR NOT gtk2_GDK_INCLUDE_DIR 
-		OR NOT gtk2_GDKCONFIG_INCLUDE_DIR 
-		OR NOT gtk2_GLIB_INCLUDE_DIR 
-		OR NOT gtk2_GLIBCONFIG_INCLUDE_DIR 
-		OR NOT gtk2_FONTCONFIG_INCLUDE_DIR 
-		OR NOT gtk2_PANGO_INCLUDE_DIR 
-		OR NOT gtk2_CAIRO_INCLUDE_DIR 
-		OR NOT gtk2_GDK_PIXBUF_INCLUDE_DIR 
-		OR NOT gtk2_ATK_INCLUDE_DIR 
-		OR NOT gtk2_GOBJECT_INCLUDE_DIR 
+
+	if(	NOT gtk2_GTK_INCLUDE_DIR
+		OR NOT gtk2_GDK_INCLUDE_DIR
+		OR NOT gtk2_GDKCONFIG_INCLUDE_DIR
+		OR NOT gtk2_GLIB_INCLUDE_DIR
+		OR NOT gtk2_GLIBCONFIG_INCLUDE_DIR
+		OR NOT gtk2_FONTCONFIG_INCLUDE_DIR
+		OR NOT gtk2_PANGO_INCLUDE_DIR
+		OR NOT gtk2_CAIRO_INCLUDE_DIR
+		OR NOT gtk2_GDK_PIXBUF_INCLUDE_DIR
+		OR NOT gtk2_ATK_INCLUDE_DIR
+		OR NOT gtk2_GOBJECT_INCLUDE_DIR
 		)
 		message("[PID] ERROR : when finding gtk2 framework, cannot find all gtk headers.")
 		set(IS_FOUND FALSE)
@@ -199,7 +199,7 @@ if (UNIX)
 			set(IS_FOUND FALSE)
 		endif()
 	endif()
-	
+
 	if(IS_FOUND)
 		set(gtk2_FOUND TRUE CACHE INTERNAL "")
 	endif ()

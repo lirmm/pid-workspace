@@ -1,22 +1,21 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
 
 include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
 
@@ -47,7 +46,7 @@ if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))# a framework is crea
 		get_Repository_Name(RES_NAME ${OPTIONNAL_GIT_URL})
 		if(	NOT "${RES_NAME}" STREQUAL "${TARGET_FRAMEWORK}"
 			AND NOT "${RES_NAME}" STREQUAL "${TARGET_FRAMEWORK}-framework")
-			
+
 			message("[PID] ERROR : the git url of the repository (${OPTIONNAL_GIT_URL}) does not define a repository with same name than framework ${TARGET_FRAMEWORK}.")
 			return()
 		endif()
@@ -63,14 +62,14 @@ if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))# a framework is crea
 			connect_PID_Framework(${TARGET_FRAMEWORK} ${OPTIONNAL_GIT_URL} TRUE)
 			message("[PID] INFO : new framework ${TARGET_FRAMEWORK} has just been connected to official remote ${OPTIONNAL_GIT_URL}.")
 		endif()
-		
+
 	else() #simply create the package locally
 		create_PID_Framework(${TARGET_FRAMEWORK} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}" "${OPTIONAL_SITE}")
-		message("[PID] INFO : new framework ${TARGET_FRAMEWORK} has just been created locally.") 
+		message("[PID] INFO : new framework ${TARGET_FRAMEWORK} has just been created locally.")
 	endif()
 
 elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
-	
+
 	include(${WORKSPACE_DIR}/share/cmake/references/Refer${TARGET_PACKAGE}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(NOT REQUIRED_STATUS STREQUAL NOTFOUND)
 		message("[PID] ERROR : A package with the same name ${TARGET_PACKAGE} is already referenced in the workspace repository.")
@@ -107,15 +106,12 @@ elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
 			connect_PID_Package(${TARGET_PACKAGE} ${OPTIONNAL_GIT_URL} TRUE)
 			message("[PID] INFO : new package ${TARGET_PACKAGE} has just been connected to official remote ${OPTIONNAL_GIT_URL}.")
 		endif()
-		
+
 	else() #simply create the package locally
 		create_PID_Package(${TARGET_PACKAGE} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}")
-		message("[PID] INFO : new package ${TARGET_PACKAGE} has just been created locally.") 
+		message("[PID] INFO : new package ${TARGET_PACKAGE} has just been created locally.")
 	endif()
 
 else()
 	message("[PID] ERROR : You must specify a name for the package to create using package=<name of package> argument or use framework=<name fo framework> to ceate a new framework.")
 endif()
-
-
-

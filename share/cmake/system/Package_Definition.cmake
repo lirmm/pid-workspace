@@ -1,20 +1,20 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
 
@@ -44,7 +44,7 @@ if(DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS)
 endif()
 
 declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${DECLARE_PID_PACKAGE_MAIL}"
-			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}" 
+			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}"
 			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_DESCRIPTION}")
 endmacro(declare_PID_Package)
 
@@ -191,7 +191,7 @@ if(CHECK_PID_PLATFORM_NAME)
 	message("[PID] WARNING : NAME is a deprecated argument. Platforms are now defined at workspace level and this macro now check if the current platform satisfies configuration constraints according to the optionnal conditions specified by TYPE, ARCH, OS and ABI. The only constraints that will be checked are those for which the current platform satisfies the conditions.")
 endif()
 if(NOT CHECK_PID_PLATFORM_CONFIGURATION)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : you must use the CONFIGURATION keyword to describe the set of configuration constraints that apply to the current platform.")  
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : you must use the CONFIGURATION keyword to describe the set of configuration constraints that apply to the current platform.")
 endif()
 if(CHECK_PID_PLATFORM_TYPE)
 	list(FIND WORKSPACE_ALL_TYPE ${CHECK_PID_PLATFORM_TYPE} INDEX)
@@ -260,7 +260,7 @@ cmake_parse_arguments(CHECK_PID_PLATFORM "" "" "${multiValueArgs}" ${ARGN} )
 if(NOT CHECK_PID_PLATFORM_CONFIGURATION)
 	if(NOT ARGN)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must specify the set of configuration constraints that apply using the CONFIGURATION keyword.")
-	endif() 
+	endif()
 endif()
 check_Platform_Constraints("" "" "" "" "${CHECK_PID_PLATFORM_CONFIGURATION}")
 endmacro(check_All_PID_Default_Platforms)
@@ -273,11 +273,11 @@ endif()
 build_Package()
 endmacro(build_PID_Package)
 
-### API : declare_PID_Component(NAME name 
-#				DIRECTORY dirname 
-#				<STATIC_LIB|SHARED_LIB|MODULE_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
-#				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [COMPILER_OPTIONS ...] [LINKS link ...] ] 
-#				[EXPORTED [DEFINITIONS def ...] [COMPILER_OPTIONS ...] [LINKS link ...] 
+### API : declare_PID_Component(NAME name
+#				DIRECTORY dirname
+#				<STATIC_LIB|SHARED_LIB|MODULE_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION>
+#				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [COMPILER_OPTIONS ...] [LINKS link ...] ]
+#				[EXPORTED [DEFINITIONS def ...] [COMPILER_OPTIONS ...] [LINKS link ...]
 #				[RUNTIME_RESOURCES <some path to files in the share/resources dir>]
 #				[DESCRIPTION short description of the utility of this component]
 #				[USAGE includes...])
@@ -384,22 +384,22 @@ if(DECLARE_PID_COMPONENT_RUNTIME_RESOURCES)
 endif()
 
 if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
-	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME} 
-					${DECLARE_PID_COMPONENT_DIRECTORY} 
-					${type} 
-					"${internal_inc_dirs}" 
-					"${internal_defs}" 
+	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME}
+					${DECLARE_PID_COMPONENT_DIRECTORY}
+					${type}
+					"${internal_inc_dirs}"
+					"${internal_defs}"
 					"${internal_compiler_options}"
 					"${internal_link_flags}"
 					"${runtime_resources}")
 else() #it is a library
-	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME} 
-					${DECLARE_PID_COMPONENT_DIRECTORY} 
-					${type} 
+	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME}
+					${DECLARE_PID_COMPONENT_DIRECTORY}
+					${type}
 					"${internal_inc_dirs}"
 					"${internal_defs}"
 					"${internal_compiler_options}"
-					"${exported_defs}" 
+					"${exported_defs}"
 					"${exported_compiler_options}"
 					"${internal_link_flags}"
 					"${exported_link_flags}"
@@ -410,7 +410,7 @@ if(NOT "${DECLARE_PID_COMPONENT_DESCRIPTION}" STREQUAL "")
 endif()
 endmacro(declare_PID_Component)
 
-### API : declare_PID_Package_Dependency (	PACKAGE name 
+### API : declare_PID_Package_Dependency (	PACKAGE name
 #						<EXTERNAL VERSION version_string [EXACT] | NATIVE [VERSION major[.minor] [EXACT]]] >
 #						[COMPONENTS component ...])
 macro(declare_PID_Package_Dependency)
@@ -431,7 +431,7 @@ elseif(DECLARE_PID_DEPENDENCY_EXTERNAL)
 		set(multiValueArgs COMPONENTS)
 		cmake_parse_arguments(DECLARE_PID_DEPENDENCY_EXTERNAL "${options}" "${oneValueArgs}" "${multiValueArgs}" ${DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS})
 		if(DECLARE_PID_DEPENDENCY_EXTERNAL_EXACT)
-			set(exact TRUE)			
+			set(exact TRUE)
 			if(NOT DECLARE_PID_DEPENDENCY_EXTERNAL_VERSION)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must use the EXACT keyword together with the VERSION keyword.")
 			endif()
@@ -468,7 +468,7 @@ elseif(DECLARE_PID_DEPENDENCY_NATIVE)
 					get_Version_String_Numbers(${DECLARE_PID_DEPENDENCY_NATIVE_VERSION} MAJOR MINOR PATCH)
 					set(VERS_NUMB "${MAJOR}.${MINOR}")
 				endif()
-				
+
 			else()
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to input a major and a minor number.")
 			endif()
@@ -479,7 +479,7 @@ elseif(DECLARE_PID_DEPENDENCY_NATIVE)
 		else()
 			set(VERS_NUMB "")
 		endif()
-	
+
 		if(DECLARE_PID_DEPENDENCY_NATIVE_COMPONENTS)
 			list(LENGTH DECLARE_PID_DEPENDENCY_NATIVE_COMPONENTS SIZE)
 			if(SIZE LESS 1)
@@ -490,19 +490,19 @@ elseif(DECLARE_PID_DEPENDENCY_NATIVE)
 	else()# no specific version defined
 		declare_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "" FALSE "")
 	endif()
-	
+
 endif()
 endmacro(declare_PID_Package_Dependency)
 
 
 ### API : declare_PID_Component_Dependency (	COMPONENT name
-#						[EXPORT] 
-#						<DEPEND|NATIVE dep_component [PACKAGE dep_package] 
+#						[EXPORT]
+#						<DEPEND|NATIVE dep_component [PACKAGE dep_package]
 #						| [EXTERNAL ext_package INCLUDE_DIRS dir ... RUNTIME_RESOURCES ...] LINKS [STATIC link ...] [SHARED link ...]>
 #						[INTERNAL_DEFINITIONS def ...]
 #						[IMPORTED_DEFINITIONS def ...]
 #						[EXPORTED_DEFINITIONS def ...]
-#						
+#
 #						)
 macro(declare_PID_Component_Dependency)
 set(options EXPORT)
@@ -568,20 +568,20 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 	endif()
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE)#package dependency
 		declare_Package_Component_Dependency(
-					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT} 
-					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} 
+					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
+					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
 					${target_component}
 					${export}
-					"${comp_defs}" 
+					"${comp_defs}"
 					"${comp_exp_defs}"
 					"${dep_defs}"
 					)
 	else()#internal dependency
 		declare_Internal_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
-					${target_component} 
+					${target_component}
 					${export}
-					"${comp_defs}" 
+					"${comp_defs}"
 					"${comp_exp_defs}"
 					"${dep_defs}"
 					)
@@ -591,10 +591,10 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 
 	declare_External_Component_Dependency(
 				${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
-				${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} 
-				${export} 
+				${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}
+				${export}
 				"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
-				"${comp_defs}" 
+				"${comp_defs}"
 				"${comp_exp_defs}"
 				"${dep_defs}"
 				"${compiler_options}"
@@ -607,7 +607,7 @@ else()#system dependency
 			${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 			${export}
 			"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
-			"${comp_defs}" 
+			"${comp_defs}"
 			"${comp_exp_defs}"
 			"${dep_defs}"
 			"${compiler_options}"
@@ -699,4 +699,3 @@ add_custom_target(install_symlink_${link} ALL
 	COMMAND ${CMAKE_COMMAND} -E chdir ${FULL_INSTALL_PATH} ${CMAKE_COMMAND} -E  create_symlink ${target} ${link})
 
 endmacro(create_PID_Install_Symlink)
-

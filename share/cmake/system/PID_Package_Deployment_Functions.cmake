@@ -1,22 +1,21 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
 
 #############################################################################################
 ############### API functions for managing references on dependent packages #################
@@ -76,19 +75,18 @@ endfunction(generate_Reference_File)
 ################ external) in the workspace #################################################
 #############################################################################################
 
-### resolving dependencies means that each dependency of teh package finally targets a given package located in the workspace. This can lead to the install of packages either direct or undirect dependencies of the target package.  
+### resolving dependencies means that each dependency of teh package finally targets a given package located in the workspace. This can lead to the install of packages either direct or undirect dependencies of the target package.
 function(resolve_Package_Dependencies package mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-
 ################## external packages ##################
 
 # 1) managing external package dependencies (the list of dependent packages is defined as ${package}_EXTERNAL_DEPENDENCIES)
 # - locating dependent external packages in the workspace and configuring their build variables recursively
 set(TO_INSTALL_EXTERNAL_DEPS)
+
 if(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 		# 1) resolving direct dependencies
-	
 		resolve_External_Package_Dependency(${package} ${dep_ext_pack} ${mode})
 		if(NOT ${dep_ext_pack}_FOUND)
 			list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
@@ -152,9 +150,9 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 				endif()
 			else()
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find installed package ${installed}")
-			endif()	
+			endif()
 		endforeach()
-	else()	
+	else()
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${VAR_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()

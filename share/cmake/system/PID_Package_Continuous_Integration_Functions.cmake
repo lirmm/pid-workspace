@@ -1,23 +1,23 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-### sets the adequate ci scripts in the package repository 
+### sets the adequate ci scripts in the package repository
 function(verify_CI_Content)
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/share/ci)#the ci folder is missing
@@ -51,7 +51,7 @@ endif()
 set(PACKAGE_CI_HAS_TESTS "false")
 set(PACKAGE_CI_HAS_EXAMPLES "false")
 foreach(component IN ITEMS ${${PROJECT_NAME}_DECLARED_COMPS})#looking into all declared components
-	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE") 
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE")
 		set(PACKAGE_CI_HAS_EXAMPLES "true")
 	elseif(${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
 		set(PACKAGE_CI_HAS_TESTS "true")
@@ -116,4 +116,3 @@ file(APPEND ${configfile} "install_release_${platform}:\n  <<: *install_release\
 file(APPEND ${configfile} "deploy_release_${platform}:\n  <<: *deploy_release\n  <<: *selection_platform_${platform}\n\n")
 file(APPEND ${configfile} "cleanup_release_${platform}:\n  <<: *cleanup_release\n  <<: *selection_platform_${platform}\n\n")
 endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform)
-

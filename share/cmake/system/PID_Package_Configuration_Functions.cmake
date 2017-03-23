@@ -1,22 +1,21 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
 
 #################################################################################################
 ####################### new API => configure the package with dependencies  #####################
@@ -24,7 +23,7 @@
 
 ### list all public headers of a component
 function(list_Public_Includes INCLUDES package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 set(RES "${${package}_ROOT_DIR}/include/${${package}_${component}_HEADER_DIR_NAME}")
 #additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
@@ -37,8 +36,8 @@ endfunction(list_Public_Includes)
 
 ### list all public links of a component
 function(list_Public_Links LINKS package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
-#provided additionnal ld flags (exported external/system libraries and ldflags)		
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+#provided additionnal ld flags (exported external/system libraries and ldflags)
 if(${package}_${component}_LINKS${VAR_SUFFIX})
 	resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})
 set(${LINKS} "${RES_LINKS}" PARENT_SCOPE)
@@ -47,23 +46,23 @@ endfunction(list_Public_Links)
 
 ### list all public definitions of a component
 function(list_Public_Definitions DEFS package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
-if(${package}_${component}_DEFS${VAR_SUFFIX}) 	
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+if(${package}_${component}_DEFS${VAR_SUFFIX})
 	set(${DEFS} ${${package}_${component}_DEFS${VAR_SUFFIX}} PARENT_SCOPE)
 endif()
 endfunction(list_Public_Definitions)
 
 ### list all public compile options of a component
 function(list_Public_Options OPTS package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
-if(${package}_${component}_OPTS${VAR_SUFFIX}) 	
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+if(${package}_${component}_OPTS${VAR_SUFFIX})
 	set(${OPTS} ${${package}_${component}_OPTS${VAR_SUFFIX}} PARENT_SCOPE)
 endif()
 endfunction(list_Public_Options)
 
 ### get the location of a given component resulting binary on the filesystem
 function( get_Binary_Location LOCATION_RES package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 is_Executable_Component(IS_EXE ${package} ${component})
 if(IS_EXE)
@@ -76,7 +75,7 @@ endfunction(get_Binary_Location)
 ### list all the private links of a component (its symbols are not exported, but need to be known in order to manage the link of executables adequately)
 function(list_Private_Links PRIVATE_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-#provided additionnal ld flags (exported external/system libraries and ldflags)		
+#provided additionnal ld flags (exported external/system libraries and ldflags)
 if(${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX})
 	resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})
 set(${PRIVATE_LINKS} "${RES_LINKS}" PARENT_SCOPE)
@@ -92,7 +91,7 @@ set(undirect_list)
 get_Mode_Variables(mode_binary_suffix mode_var_suffix ${mode})
 # 0) no need to search for systems dependencies as they can be found automatically using OS shared libraries binding mechanism
 
-# 1) searching public external dependencies 
+# 1) searching public external dependencies
 if(NOT is_direct) #otherwise external dependencies are direct dependencies so their LINKS (i.e. exported links) are already taken into account (not private)
 	if(${package}_${component}_LINKS${mode_var_suffix})
 		resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
@@ -118,28 +117,28 @@ endif()
 
 # 2) searching in dependent packages
 foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_suffix}})
-	foreach(dep_component IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${mode_var_suffix}}) 
+	foreach(dep_component IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${mode_var_suffix}})
 		set(UNDIRECT)
 		if(is_direct) # current component is a direct dependency of the application
 			if(	${dep_package}_${dep_component}_TYPE STREQUAL "STATIC"
 				OR ${dep_package}_${dep_component}_TYPE STREQUAL "HEADER"
 				OR ${package}_${component}_EXPORTS_${dep_package}_${dep_component}${mode_var_suffix})
-				 #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application 
-				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} TRUE ${mode}) 
+				 #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application
+				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} TRUE ${mode})
 			elseif(${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported
-				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application 
-				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")				
+				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application
+				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")
 			endif()
 		else() #current component is NOT a direct dependency of the application
 			if(	${dep_package}_${dep_component}_TYPE STREQUAL "STATIC"
 				OR ${dep_package}_${dep_component}_TYPE STREQUAL "HEADER")
 				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode})
 			elseif(${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported
-				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode}) #the shared lib dependency is a direct dependency of the application 
-				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")				
+				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode}) #the shared lib dependency is a direct dependency of the application
+				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")
 			endif()
-		endif()		
-		
+		endif()
+
 		if(UNDIRECT)
 			list(APPEND undirect_list ${UNDIRECT})
 		endif()
@@ -153,7 +152,7 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
 			OR ${package}_${dep_component}_TYPE STREQUAL "HEADER"
 			OR ${package}_${component}_INTERNAL_EXPORTS_${dep_component}${mode_var_suffix})
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} TRUE ${mode}) #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application 
+			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} TRUE ${mode}) #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application
 		elseif(${package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application
 			#adding this shared lib to the links of the application
@@ -161,10 +160,10 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 				#special case => the currenlty built package is the target package (may be not the case on recursion on another package)
 				# we cannot target the lib folder as it does not exist at build time in the build tree
 				# we simply target the corresponding build "target"
-				list(APPEND undirect_list "${dep_component}${mode_binary_suffix}")		
-			else()			
-				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")		
-			endif()		
+				list(APPEND undirect_list "${dep_component}${mode_binary_suffix}")
+			else()
+				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")
+			endif()
 		endif()
 	else() #current component is NOT a direct dependency of the application
 		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
@@ -172,19 +171,19 @@ foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode})
 		elseif(${package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is exported or NOT
 			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application in all cases
-			
+
 			#adding this shared lib to the links of the application
 			if(${package} STREQUAL ${PROJECT_NAME})
 				#special case => the currenlty built package is the target package (may be not the case on recursion on another package)
 				# we cannot target the lib folder as it does not exist at build time in the build tree
 				# we simply target the corresponding build "target"
-				list(APPEND undirect_list "${dep_component}${mode_binary_suffix}")		
-			else()			
-				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")		
-			endif()	
+				list(APPEND undirect_list "${dep_component}${mode_binary_suffix}")
+			else()
+				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")
+			endif()
 		endif()
 	endif()
-	
+
 	if(UNDIRECT)
 		list(APPEND undirect_list ${UNDIRECT})
 	endif()
@@ -232,7 +231,7 @@ foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
 			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
 		endif()
-		
+
 	endforeach()
 endforeach()
 
@@ -263,7 +262,7 @@ if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
 
         resolve_External_Libs_Path(RES ${package} "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
         if(RES)
-		foreach(lib IN ITEMS ${RES})			
+		foreach(lib IN ITEMS ${RES})
                         is_Shared_Lib_With_Path(IS_SHARED ${lib})
 			if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
                                 list(APPEND result ${lib})
@@ -298,7 +297,7 @@ endfunction(get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies)
 
 ### recursive function to find runtime dependencies
 function(get_Bin_Component_Runtime_Dependencies ALL_RUNTIME_RESOURCES package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result "")
 
 # 1) adding directly used external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
@@ -309,7 +308,7 @@ list(APPEND result ${RES_LINKS})
 # 2) adding package components dependencies
 foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 	foreach(dep_comp IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX}})
-		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC")		
+		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC")
 			get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
 			if(INT_DEP_RUNTIME_RESOURCES)
 				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
@@ -329,7 +328,7 @@ endforeach()
 
 # 3) adding internal components dependencies
         foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-	if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")		
+	if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")
 		get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
 		if(INT_DEP_RUNTIME_RESOURCES)
 			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
@@ -364,7 +363,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 is_Executable_Component(COMP_IS_EXEC ${PROJECT_NAME} ${component})
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 
-if(	NOT COMP_IS_EXEC 
+if(	NOT COMP_IS_EXEC
 	OR NOT COMP_WILL_BE_BUILT)#special case for executables that need rpath link to be specified (due to system shared libraries linking system)-> the linker must resolve all target links (even shared libs) transitively
 	return()
 endif()
@@ -399,7 +398,7 @@ foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENC
 endforeach()
 
 if(undirect_deps) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
-	list(REMOVE_DUPLICATES undirect_deps)	
+	list(REMOVE_DUPLICATES undirect_deps)
 	get_target_property(thelibs ${component}${TARGET_SUFFIX} LINK_LIBRARIES)
 	set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES LINK_LIBRARIES "${thelibs};${undirect_deps}")
 	set(${THIRD_PARTY_LINKS} ${undirect_deps} PARENT_SCOPE)
@@ -425,7 +424,7 @@ set(${package}_DURING_PREPARE_RUNTIME TRUE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 # 1) resolving runtime dependencies by recursion (resolving dependancy packages' components first)
-if(${package}_DEPENDENCIES${VAR_SUFFIX}) 
+if(${package}_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep IN ITEMS ${${package}_DEPENDENCIES${VAR_SUFFIX}})
 		resolve_Package_Runtime_Dependencies(${dep} ${mode})
 	endforeach()
@@ -443,17 +442,17 @@ endfunction(resolve_Package_Runtime_Dependencies)
 function(resolve_Bin_Component_Runtime_Dependencies package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(	${package}_${component}_TYPE STREQUAL "SHARED"
-	OR ${package}_${component}_TYPE STREQUAL "MODULE" 
-	OR ${package}_${component}_TYPE STREQUAL "APP" 
+	OR ${package}_${component}_TYPE STREQUAL "MODULE"
+	OR ${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
-	
+
 	# 1) getting direct runtime dependencies
 	get_Bin_Component_Runtime_Dependencies(ALL_RUNTIME_DEPS ${package} ${component} ${mode})#suppose that findPackage has resolved everything
 
 	# 2) adding direct private external dependencies
 	get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${package} ${component} ${mode})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_PRIVATE_LINKS})
-	
+
 	#3) getting direct and undirect runtime resources dependencies
 	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${package} ${component} ${mode})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
@@ -487,13 +486,13 @@ endfunction(create_Source_Component_Symlinks)
 ###
 function(resolve_Source_Component_Runtime_Dependencies component mode THIRD_PARTY_LIBS)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
-	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE" 
-	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP" 
+if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE"
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
-	# 1) getting all public runtime dependencies (including inherited ones)	
+	# 1) getting all public runtime dependencies (including inherited ones)
 	get_Bin_Component_Runtime_Dependencies(ALL_RUNTIME_DEPS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
-	
+
 	# 2) adding direct private external dependencies
 	get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_PRIVATE_LINKS})
@@ -512,7 +511,7 @@ endfunction(resolve_Source_Component_Runtime_Dependencies)
 ################### source package run time dependencies in build tree ###########
 ##################################################################################
 
-### 
+###
 function(get_Source_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCES component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
@@ -550,7 +549,7 @@ foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFI
 		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
 			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
 		endif()
-		
+
 	endforeach()
 endforeach()
 
@@ -587,10 +586,10 @@ endfunction(create_Source_Component_Symlinks_Build_Tree)
 ###
 function(resolve_Source_Component_Runtime_Dependencies_Build_Tree component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
-	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE" 
-	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP" 
-	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" 
+if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE"
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP"
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
 
 	# getting direct and undirect runtime resources dependencies
@@ -600,23 +599,21 @@ endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies_Build_Tree)
 
 ###############################################################################################
-############################## cleaning the installed tree #################################### 
+############################## cleaning the installed tree ####################################
 ###############################################################################################
 function(clean_Install_Dir)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
-if(	${CMAKE_BUILD_TYPE} MATCHES Release 
+if(	${CMAKE_BUILD_TYPE} MATCHES Release
 	AND EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH}
 	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH})# if package is already installed
 	# calling a script that will do the job in its own context (to avoid problem when including cmake scripts that would redefine critic variables)
-	execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} 
+	execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						 -DPACKAGE_NAME=${PROJECT_NAME}
 						 -DCURRENT_PLATFORM=${CURRENT_PLATFORM_NAME}
-						 -DPACKAGE_INSTALL_VERSION=${${PROJECT_NAME}_DEPLOY_PATH} 
+						 -DPACKAGE_INSTALL_VERSION=${${PROJECT_NAME}_DEPLOY_PATH}
 						 -DPACKAGE_VERSION=${${PROJECT_NAME}_VERSION}
 						 -DNEW_USE_FILE=${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake
 						 -P ${WORKSPACE_DIR}/share/cmake/system/Clear_PID_Package_Install.cmake
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
 endfunction(clean_Install_Dir)
-
-

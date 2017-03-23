@@ -1,22 +1,21 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
 
 ### adding source code of the example components to the API doc
 function(add_Example_To_Doc c_name)
@@ -38,7 +37,7 @@ if(EXISTS ${PROJECT_SOURCE_DIR}/share/doxygen/img/)
 	file(COPY ${PROJECT_SOURCE_DIR}/share/doxygen/img/ DESTINATION ${PROJECT_BINARY_DIR}/share/doc/)
 endif()
 
-#finding doxygen tool and doxygen configuration file 
+#finding doxygen tool and doxygen configuration file
 find_package(Doxygen)
 if(NOT DOXYGEN_FOUND)
 	message("[PID] WARNING : Doxygen not found please install it to generate the API documentation")
@@ -104,7 +103,7 @@ if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
 
 	### doxyfile configuration ###
 
-	# configuring doxyfile for html generation 
+	# configuring doxyfile for html generation
 	set(DOXYFILE_GENERATE_HTML "YES")
 
 	# configuring doxyfile to use dot executable if available
@@ -113,7 +112,7 @@ if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
 		set(DOXYFILE_DOT "YES")
 	endif()
 
-	# configuring doxyfile for latex generation 
+	# configuring doxyfile for latex generation
 	set(DOXYFILE_PDFLATEX "NO")
 
 	if(BUILD_LATEX_API_DOC)
@@ -160,16 +159,16 @@ endfunction(generate_API)
 ############ function used to create the license.txt file of the package  ###########
 function(generate_License_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	if(	DEFINED ${PROJECT_NAME}_LICENSE 
+	if(	DEFINED ${PROJECT_NAME}_LICENSE
 		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
-	
-		find_file(	LICENSE   
+
+		find_file(	LICENSE
 				"License${${PROJECT_NAME}_LICENSE}.cmake"
 				PATH "${WORKSPACE_DIR}/share/cmake/licenses"
 				NO_DEFAULT_PATH
 			)
 		set(LICENSE ${LICENSE} CACHE INTERNAL "")
-		
+
 		if(LICENSE_IN-NOTFOUND)
 			message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
 		else(LICENSE_IN-NOTFOUND)
@@ -195,14 +194,14 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	## introduction (more detailed description, if any)
 	get_Package_Site_Address(ADDRESS ${PROJECT_NAME})
 	if(NOT ADDRESS)#no site description has been provided nor framework reference
-		# intro		
+		# intro
 		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site use the short one
 		# no reference to site page
 		set(PACKAGE_SITE_REF_IN_README "")
 
 		# simplified install section
 		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is based on the [PID](https://gite.lirmm.fr/pid/pid-workspace/wikis/home) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
-	else()	
+	else()
 		# intro
 		generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
 		if("${RES_INTRO}" STREQUAL "")
@@ -210,7 +209,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		else()
 			set(README_OVERVIEW "${RES_INTRO}") #otherwise use detailed one specific for site
 		endif()
-		
+
 		# install procedure
 		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
 
@@ -218,29 +217,29 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(PACKAGE_SITE_REF_IN_README "[package_site]: ${ADDRESS} \"${PROJECT_NAME} package\"
 ")
 	endif()
-	
+
 	if(${PROJECT_NAME}_LICENSE)
 		set(PACKAGE_LICENSE_FOR_README "The license that applies to the whole package content is **${${PROJECT_NAME}_LICENSE}**. Please look at the license.txt file at the root of this repository.")
-		
+
 	else()
 		set(PACKAGE_LICENSE_FOR_README "The package has no license defined yet.")
 	endif()
 
-	set(README_AUTHORS_LIST "")	
+	set(README_AUTHORS_LIST "")
 	foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
 		generate_Full_Author_String(${author} STRING_TO_APPEND)
 		set(README_AUTHORS_LIST "${README_AUTHORS_LIST}\n+ ${STRING_TO_APPEND}")
 	endforeach()
-	
+
 	get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
 	set(README_CONTACT_AUTHOR "${RES_STRING}")
 	if(NOT ${PROJECT_NAME}_SITE_ADDRESS)
-		
+
 	else()
 		set(PACKAGE_SITE_REF )
 	endif()
 	configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put the readme in the source dir
-	configure_file(${APIDOC_WELCOME_CONFIG_FILE} ${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md @ONLY)#put api doc welcome page in the build tree 
+	configure_file(${APIDOC_WELCOME_CONFIG_FILE} ${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md @ONLY)#put api doc welcome page in the build tree
 endif()
 endfunction(generate_Readme_Files)
 
@@ -318,7 +317,7 @@ if(NOT ${PROJECT_NAME}_ADDRESS)
 	if(GIT_NAMESPACE AND SERVER_ADDRESS)
 		set(OFFICIAL_REPOSITORY_ADDRESS "${SERVER_ADDRESS}:${GIT_NAMESPACE}/${PROJECT_NAME}.git")
 		set(GIT_SERVER ${SERVER_ADDRESS})
-	else()	#no info about the git namespace => generating a bad address 
+	else()	#no info about the git namespace => generating a bad address
 		set(OFFICIAL_REPOSITORY_ADDRESS "unknown_server:unknown_namespace/${PROJECT_NAME}.git")
 		set(GIT_SERVER unknown_server)
 	endif()
@@ -407,7 +406,7 @@ set(PACKAGE_NAME ${PROJECT_NAME})
 set(PACKAGE_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_PROJECT_PAGE})
 set(PACKAGE_CATEGORIES ${${PROJECT_NAME}_CATEGORIES})
 
-#released version info 
+#released version info
 set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
 get_Version_String_Numbers(${${PROJECT_NAME}_VERSION} major minor patch)
 set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
@@ -426,7 +425,7 @@ set(PACKAGE_MAINTAINER_NAME ${RES_STRING})
 set(PACKAGE_MAINTAINER_MAIL ${${PROJECT_NAME}_CONTACT_MAIL})
 
 
-set(PACKAGE_ALL_AUTHORS "") 
+set(PACKAGE_ALL_AUTHORS "")
 foreach(author IN ITEMS "${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}")
 	get_Formatted_Author_String(${author} RES_STRING)
 	set(PACKAGE_ALL_AUTHORS "${PACKAGE_ALL_AUTHORS}\n* ${RES_STRING}")
@@ -498,7 +497,7 @@ if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS) #no w
 endif()
 
 set(PATH_TO_SITE ${CMAKE_BINARY_DIR}/site)
-if(EXISTS ${PATH_TO_SITE}) # delete the content that has to be copied to the site source folder 
+if(EXISTS ${PATH_TO_SITE}) # delete the content that has to be copied to the site source folder
 	file(REMOVE_RECURSE ${PATH_TO_SITE})
 endif()
 file(MAKE_DIRECTORY ${PATH_TO_SITE}) # create the site root site directory
@@ -509,11 +508,11 @@ file(MAKE_DIRECTORY ${PATH_TO_SITE_PAGES}) # create the pages directory
 configure_Static_Site_Generation_Variables()
 
 #1) generate the data files for jekyll (vary depending on the site creation mode
-if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework	
+if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
 	generate_Static_Site_Data_Files(${PATH_TO_SITE})
-	
+
 else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
-	#find the framework in workspace	
+	#find the framework in workspace
 	load_Framework(IS_LOADED ${${PROJECT_NAME}_FRAMEWORK})
 	if(NOT IS_LOADED)
 		message(FATAL_ERROR "[PID] ERROR : the framework you specified is unknown in the workspace.")
@@ -522,7 +521,7 @@ else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 	generate_Package_Page_Index_In_Framework(${PATH_TO_SITE}) # create index page
 endif()
 
-# common generation process between framework and lone static sites 
+# common generation process between framework and lone static sites
 
 #2) generate pages
 generate_Static_Site_Pages(${PATH_TO_SITE_PAGES})
@@ -542,8 +541,8 @@ elseif(${dependency}_FRAMEWORK) #the package belongs to a framework, creating a 
 
 	if(${${dependency}_FRAMEWORK}_FRAMEWORK_SITE) #get the information about the framework
 		set(RES "+ [${dependency}](${${${dependency}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${dependency})")
-	else()#in case of a problem (framework unknown), do not create the link 
-		set(RES "+ ${dependency}") 
+	else()#in case of a problem (framework unknown), do not create the link
+		set(RES "+ ${dependency}")
 	endif()
 else()# the dependency has no documentation site
 	set(RES "+ ${dependency}")
@@ -573,7 +572,7 @@ if(${dependency}_FRAMEWORK)
 	endif()
 	if(${${dependency}_FRAMEWORK}_FRAMEWORK_SITE)
 		set(RES "+ [${dependency}](${${${dependency}_FRAMEWORK}_FRAMEWORK_SITE}/external/${dependency})")
-	else()#in case of a problem (framework unknown, problem in framework description), do not create the link 
+	else()#in case of a problem (framework unknown, problem in framework description), do not create the link
 		set(RES "+ ${dependency}")
 	endif()
 else()
@@ -636,7 +635,7 @@ endif()
 # managing component dependencies
 is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})
 if(NOT IS_HF)
-	#export possible only for libraries with headers 
+	#export possible only for libraries with headers
 	set(EXPORTS_SOMETHING FALSE)
 	set(EXPORTED_DEPS)
 	set(INT_EXPORTED_DEPS)
@@ -664,10 +663,10 @@ if(NOT IS_HF)
 			endforeach()
 		endforeach()
 	endif()
-	
+
 	if(${PROJECT_NAME}_${component}_INC_DIRS) # the component export some external dependencies
 		foreach(inc IN ITEMS ${${PROJECT_NAME}_${component}_INC_DIRS})
-			string(REGEX REPLACE "^<([^>]+)>.*$" "\\1" RES_EXT_PACK ${inc})			
+			string(REGEX REPLACE "^<([^>]+)>.*$" "\\1" RES_EXT_PACK ${inc})
 			if(NOT RES_EXT_PACK STREQUAL "${inc}")#match !!
 				set(EXPORTS_SOMETHING TRUE)
 				if(NOT ${RES_EXT_PACK}_EXPORTED)
@@ -690,7 +689,7 @@ if(NOT IS_HF)
 		endif()
 		if(EXPORTED_DEPS)
 			foreach(a_pack IN ITEMS ${EXPORTED_DEPS})
-				#defining the target documentation page of the package				
+				#defining the target documentation page of the package
 				if(${a_pack}_SITE_ROOT_PAGE)
 					set(TARGET_PAGE ${${a_pack}_SITE_ROOT_PAGE})
 				elseif(${a_pack}_FRAMEWORK AND ${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE)
@@ -736,14 +735,14 @@ if(NOT IS_HF)
 	set(RES "${RES}### include directive :\n")
 	if(${PROJECT_NAME}_${component}_USAGE_INCLUDES)
 		set(RES "${RES}In your code using the library:\n\n")
-		set(RES "${RES}{% highlight cpp %}\n")	
+		set(RES "${RES}{% highlight cpp %}\n")
 		foreach(include_file IN ITEMS ${${PROJECT_NAME}_${component}_USAGE_INCLUDES})
 			set(RES "${RES}#include <${include_file}>\n")
 		endforeach()
 		set(RES "${RES}{% endhighlight %}\n")
 	else()
 		set(RES "${RES}Not specified (dangerous). You can try including any or all of these headers:\n\n")
-		set(RES "${RES}{% highlight cpp %}\n")	
+		set(RES "${RES}{% highlight cpp %}\n")
 		foreach(include_file IN ITEMS ${${PROJECT_NAME}_${component}_HEADERS})
 			set(RES "${RES}#include <${include_file}>\n")
 		endforeach()
@@ -759,7 +758,7 @@ set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Component_Site)
 
 ### create a local repository for the package's static site
-function(create_Local_Static_Site_Project SUCCESS package repo_addr push_site package_url site_url) 
+function(create_Local_Static_Site_Project SUCCESS package repo_addr push_site package_url site_url)
 set(PATH_TO_STATIC_SITE_FOLDER ${WORKSPACE_DIR}/sites/packages)
 clone_Static_Site_Repository(IS_INITIALIZED BAD_URL ${package} ${repo_addr})
 set(CONNECTED FALSE)
@@ -787,16 +786,16 @@ endif()#else the repo has been created
 endfunction(create_Local_Static_Site_Project)
 
 ### update the local site
-function(update_Local_Static_Site_Project package package_url site_url) 
+function(update_Local_Static_Site_Project package package_url site_url)
 update_Static_Site_Repository(${package}) # updating the repository from git
 #reconfigure the root CMakeLists and README to automatically manage evolution in PID
-set(PACKAGE_NAME ${package}) 
+set(PACKAGE_NAME ${package})
 set(PACKAGE_PROJECT_URL ${package_url})
 set(PACKAGE_SITE_URL ${site_url})
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/CMakeLists.txt.in ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt @ONLY)#modifying the cmake project file to the static site project
 endfunction(update_Local_Static_Site_Project)
 
-### checking if the package static site repository exists in the workspace 
+### checking if the package static site repository exists in the workspace
 function(static_Site_Project_Exists SITE_EXISTS PATH_TO_SITE package)
 set(SEARCH_PATH ${WORKSPACE_DIR}/sites/packages/${package})
 if(EXISTS ${SEARCH_PATH} AND IS_DIRECTORY ${SEARCH_PATH})
@@ -810,7 +809,7 @@ endfunction(static_Site_Project_Exists)
 
 ### copying documentation content to the site repository
 function(produce_Static_Site_Content package framework version platform include_api_doc include_coverage include_staticchecks include_installer force) # copy everything needed
-#### preparing the copy depending on the target: lone static site or framework #### 
+#### preparing the copy depending on the target: lone static site or framework ####
 if(framework AND NOT framework STREQUAL "")
 	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_packages/${package})
 	set(TARGET_APIDOC_PATH ${TARGET_PACKAGE_PATH}/api_doc)
@@ -832,9 +831,9 @@ endif()
 
 ######### copy the API doxygen documentation ##############
 set(NEW_POST_CONTENT_API_DOC FALSE)
-if(include_api_doc 
+if(include_api_doc
 	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html) # #may not exists if the make doc command has not been launched
-	set(ARE_SAME FALSE)	
+	set(ARE_SAME FALSE)
 	if(NOT force)#only do this heavy check if the generation is not forced
 		test_Same_Directory_Content(${WORKSPACE_DIR}/packages/${package}/build/release/share/doc/html ${TARGET_APIDOC_PATH} ARE_SAME)
 	endif()
@@ -847,7 +846,7 @@ endif()
 
 ######### copy the coverage report ##############
 set(NEW_POST_CONTENT_COVERAGE FALSE)
-if(include_coverage 
+if(include_coverage
 	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/share/coverage_report)# #may not exists if the make coverage command has not been launched
 	set(ARE_SAME FALSE)
 	if(NOT force)#only do this heavy check if the generation is not forced
@@ -862,7 +861,7 @@ endif()
 
 ######### copy the static check report ##############
 set(NEW_POST_CONTENT_STATICCHECKS FALSE)
-if(include_staticchecks 
+if(include_staticchecks
 	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/static_checks_report) #may not exists if the make staticchecks command has not been launched
 	set(ARE_SAME FALSE)
 	if(NOT force)#only do this heavy check if the generation is not forced
@@ -879,12 +878,12 @@ endif()
 set(NEW_POST_CONTENT_BINARY FALSE)
 if(	include_installer
 	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
-	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz 
+	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
 	AND NOT EXISTS ${TARGET_BINARIES_PATH})
 	# update the site content only if necessary
 	file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder
 
-	file(COPY ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz 
+	file(COPY ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
 	${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
 	DESTINATION  ${TARGET_BINARIES_PATH})#copy the binaries
 	# configure the file used to reference the binary in jekyll
@@ -892,7 +891,7 @@ if(	include_installer
 	set(BINARY_VERSION ${version})
 	set(BINARY_PLATFORM ${platform})
 	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binary.md.in ${TARGET_BINARIES_PATH}/binary.md @ONLY)#adding to the static site project the markdown file describing the binary package (to be used by jekyll)
-	
+
 	set(NEW_POST_CONTENT_BINARY TRUE)
 endif()
 
@@ -911,7 +910,7 @@ endif()
 set(NEW_POST_CONTENT_PAGES FALSE)
 # 1) copy content from source into the binary dir
 if(EXISTS ${WORKSPACE_DIR}/packages/${package}/share/site AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/share/site)
-	#copy the content of the site source share folder of the package (user defined pages, documents and images) to the package final site in build tree 
+	#copy the content of the site source share folder of the package (user defined pages, documents and images) to the package final site in build tree
 	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/share/site ${WORKSPACE_DIR}/packages/${package}/build/release/site/pages)
 endif()
 
@@ -958,7 +957,7 @@ endif()
 if(NEW_POST_CONTENT_PAGES)
 	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### The pages documenting the package have been updated\n\n")
 endif()
-if(NOT POST_UPDATE_STRING STREQUAL "") #do not generate a post if there is nothing to say (sanity check) 
+if(NOT POST_UPDATE_STRING STREQUAL "") #do not generate a post if there is nothing to say (sanity check)
 	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/post.markdown.in ${TARGET_POSTS_PATH}/${POST_FILENAME} @ONLY)#adding to the static site project the markdown file used as a post on the site
 endif()
 endfunction(produce_Static_Site_Content)
@@ -1011,7 +1010,7 @@ endif()
 set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
 endfunction(framework_Project_Exists)
 
-### putting the framework repository into the workspace, or update it if it is already there 
+### putting the framework repository into the workspace, or update it if it is already there
 function(load_Framework LOADED framework)
 	set(${LOADED} FALSE PARENT_SCOPE)
 	set(FOLDER_EXISTS FALSE)
@@ -1019,7 +1018,7 @@ function(load_Framework LOADED framework)
 	if(REF_EXIST)
 		include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
 	endif()
-	
+
 	framework_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${framework})
 	if(FOLDER_EXISTS)
 		update_Framework_Repository(${framework}) #update the repository to be sure to work on last version
@@ -1045,7 +1044,3 @@ endfunction(load_Framework)
 function(get_Framework_Site framework SITE)
 set(${SITE} ${${framework}_FRAMEWORK_SITE} PARENT_SCOPE)
 endfunction(get_Framework_Site)
-
-
-
-

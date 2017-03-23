@@ -1,22 +1,21 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
 
 ######################################################################
 ############# function used to navigate between branches #############
@@ -24,7 +23,7 @@
 
 ###
 function(go_To_Integration package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration 
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration
 		OUTPUT_QUIET ERROR_QUIET)
 endfunction(go_To_Integration)
 ###
@@ -157,7 +156,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git status --
 if(NOT res_out)# no modification to stage or commit
 	set(${SAVED_CONTENT} FALSE PARENT_SCOPE)
 else()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash save --include-untracked OUTPUT_QUIET ERROR_QUIET)	
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash save --include-untracked OUTPUT_QUIET ERROR_QUIET)
 	set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
 endif()
 endfunction(save_Workspace_Repository_Context)
@@ -180,7 +179,7 @@ go_To_Master(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge --ff-only integration RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)
 if(NOT res EQUAL 0)
 	set(${RESULT} FALSE PARENT_SCOPE)
-	return()	
+	return()
 endif()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v${version_string} -m "releasing version ${version_string}")
 set(${RESULT} TRUE PARENT_SCOPE)
@@ -263,7 +262,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 if (NOT "${res}" STREQUAL "")
 	string(FIND "${res}" "integration" INDEX_LOCAL)
 	string(FIND "${res}" "origin/integration" INDEX_REMOTE)
-	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on integration branch is tracked by local and remote integration branches  
+	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on integration branch is tracked by local and remote integration branches
 		return()
 	else()
 		message("[PID] WARNING : problem updating package ${package} integration branch on its origin remote. Maybe due to a conflict between local and origin integration branches.")
@@ -282,7 +281,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 if (NOT "${res}" STREQUAL "")
 	string(FIND "${res}" "master" INDEX_LOCAL)
 	string(FIND "${res}" "official/master" INDEX_REMOTE)
-	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch  
+	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch
 		set(OFFICIAL_SYNCHRO TRUE)
 	else()
 		set(OFFICIAL_SYNCHRO FALSE)
@@ -302,7 +301,7 @@ if(NOT CONNECTED)#no official remote (due to old package style or due to a misus
 	if(NOT URL STREQUAL "")
 		message("[PID] WARNING : package ${package} has no official remote defined (malformed package), set it to ${URL}.")
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${URL} ERROR_QUIET OUTPUT_QUIET)
-	else() #no official repository and no URL defined for the package => the package has never been connected (normal situation) 
+	else() #no official repository and no URL defined for the package => the package has never been connected (normal situation)
 		set(${RESULT} FALSE PARENT_SCOPE)
 		return()
 	endif()
@@ -406,7 +405,7 @@ if(all_branches AND NOT all_branches STREQUAL "")
 			break()
 		endif()
 	endforeach()
-	
+
 	set(${INITIALIZED} ${INTEGRATION_FOUND} PARENT_SCOPE)
 else()
 	set(${INITIALIZED} FALSE PARENT_SCOPE)
@@ -466,7 +465,7 @@ go_To_Integration(${package})
 endfunction(reconnect_Repository)
 
 
-### 
+###
 function(reconnect_Repository_Remote package url remote_name)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url ${remote_name} ${url})
 endfunction(reconnect_Repository_Remote)
@@ -494,7 +493,7 @@ if(REPO_PATH STREQUAL "${git_url}")
 	endif()
 endif()
 get_filename_component(REPO_NAME ${REPO_PATH} NAME_WE)
-set(${RES_NAME} ${REPO_NAME} PARENT_SCOPE) 
+set(${RES_NAME} ${REPO_NAME} PARENT_SCOPE)
 endfunction(get_Repository_Name)
 
 ### checking if package has official and origin remote repositories
@@ -503,7 +502,7 @@ if(git_url STREQUAL "") #no official repository => do nothing
 	return()
 endif()
 is_Package_Connected(CONNECTED ${PROJECT_NAME} official)
-if(CONNECTED) #the package has an official remote 
+if(CONNECTED) #the package has an official remote
 	return()
 endif()
 # not connected to an official remote while it should => problem => corrective action
@@ -522,7 +521,7 @@ if (NOT "${res}" STREQUAL "")
 	if(INDEX_ORIGIN LESS 1)
 		list(APPEND return_list origin)
 	endif()
-	if(INDEX_OFFICIAL LESS 1)  
+	if(INDEX_OFFICIAL LESS 1)
 		list(APPEND return_list official)
 	endif()
 endif()
@@ -647,7 +646,7 @@ endfunction(change_Origin_Framework_Repository)
 function(clone_Static_Site_Repository IS_INITIALIZED BAD_URL package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages git clone ${url})
 
-# the static sites may have a different name than its package 
+# the static sites may have a different name than its package
 extract_Package_Namespace_From_SSH_URL(${url} ${package} NAMESPACE SERVER_ADDRESS EXTENSION)
 if(EXTENSION AND NOT EXTENSION STREQUAL "") # there is an extension to the name of the package
 	if(EXISTS ${WORKSPACE_DIR}/sites/packages/${package}${EXTENSION} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}${EXTENSION})
@@ -656,13 +655,13 @@ if(EXTENSION AND NOT EXTENSION STREQUAL "") # there is an extension to the name 
 endif()
 
 if(EXISTS ${WORKSPACE_DIR}/sites/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package})
-	set(${BAD_URL} FALSE PARENT_SCOPE) # if the folder exists it means that the official repository exists but it may be still unintialized 
+	set(${BAD_URL} FALSE PARENT_SCOPE) # if the folder exists it means that the official repository exists but it may be still unintialized
 	if(EXISTS ${WORKSPACE_DIR}/sites/packages/${package}/build AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build
 		AND EXISTS ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt)
 		set(${IS_INITIALIZED} TRUE PARENT_SCOPE)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
 	else() # the site's repository appear to be non existing
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package} OUTPUT_QUIET ERROR_QUIET) #just in case of 
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package} OUTPUT_QUIET ERROR_QUIET) #just in case of
 		set(${IS_INITIALIZED} FALSE PARENT_SCOPE)
 	endif()
 else()
@@ -680,14 +679,14 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/package
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs track "*.tar.gz" OUTPUT_QUIET ERROR_QUIET) #tracking tar.gz archives with git LFS
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git add -A OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git commit -m "initialization of static site project" OUTPUT_QUIET ERROR_QUIET)
-if(push_site) #if push is required, then synchronized static site local repository with its official repository 
+if(push_site) #if push is required, then synchronized static site local repository with its official repository
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git push origin master OUTPUT_QUIET ERROR_QUIET)
 	#now testing if everything is OK using the git log command
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
 	if (NOT "${res}" STREQUAL "")
 		string(FIND "${res}" "master" INDEX_LOCAL)
 		string(FIND "${res}" "origin/master" INDEX_REMOTE)
-		if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch  
+		if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch
 			set(${CONNECTED} TRUE PARENT_SCOPE)
 			return()
 		endif()
@@ -708,6 +707,5 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/package
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git commit -m "publising ${package} static site" OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs fetch origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git push origin master OUTPUT_QUIET ERROR_QUIET)#pushing the package site by pushing to master branch of origin => will induce an automatic management of artefact generation/publication to finally publish the resulting web site  
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git push origin master OUTPUT_QUIET ERROR_QUIET)#pushing the package site by pushing to master branch of origin => will induce an automatic management of artefact generation/publication to finally publish the resulting web site
 endfunction(publish_Static_Site_Repository)
-

@@ -1,23 +1,21 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
-
 
 ### generating test coverage reports for the package
 function(generate_Coverage)
@@ -59,11 +57,11 @@ if(${CMAKE_BUILD_TYPE} MATCHES Debug) # coverage is well generated in debug mode
 	elseif(NOT CMAKE_COMPILER_IS_GNUCXX)
 		message("[PID] WARNING : not a gnu C/C++ compiler, impossible to generate coverage reports.")
 		set(BUILD_COVERAGE_REPORT OFF CACHE INTERNAL "" FORCE)
-	endif() 
+	endif()
 endif()
 
 if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
-	
+
 	set(CMAKE_CXX_FLAGS_DEBUG  "-g -O0 --coverage -fprofile-arcs -ftest-coverage" CACHE STRING "Flags used by the C++ compiler during coverage builds." FORCE)
 	set(CMAKE_C_FLAGS_DEBUG  "-g -O0 --coverage -fprofile-arcs -ftest-coverage" CACHE STRING "Flags used by the C compiler during coverage builds." FORCE)
 	set(CMAKE_EXE_LINKER_FLAGS_DEBUG "--coverage" CACHE STRING "Flags used for linking binaries during coverage builds." FORCE)
@@ -71,17 +69,17 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 	mark_as_advanced(CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_DEBUG CMAKE_EXE_LINKER_FLAGS_DEBUG CMAKE_SHARED_LINKER_FLAGS_DEBUG)
 
 	if(${CMAKE_BUILD_TYPE} MATCHES Debug)
-	
+
 		set(coverage_info "${CMAKE_BINARY_DIR}/lcovoutput.info")
 		set(coverage_cleaned "${CMAKE_BINARY_DIR}/${PROJECT_NAME}_coverage")
 		set(coverage_dir "${CMAKE_BINARY_DIR}/share/coverage_report")
-	
+
 		# Setup coverage target
 		add_custom_target(coverage
-                  
+
 			COMMAND ${LCOV_PATH} --directory ${CMAKE_BINARY_DIR} --zerocounters #prepare coverage generation
-			
-			COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests 
+
+			COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests
 
 			COMMAND ${LCOV_PATH} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info}
 			COMMAND ${LCOV_PATH} --remove ${coverage_info} 'test/*' '/usr/*' 'external/*' 'install/*' --output-file ${coverage_cleaned} #configure the filter of output (remove everything that is not related to
@@ -97,7 +95,7 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 	endif()
 else() #no coverage wanted or possible (no test defined), create a do nothing rule for coverage
 	if(BUILD_COVERAGE_REPORT AND ${CMAKE_BUILD_TYPE} MATCHES Debug) #create a do nothing target when no run is possible on coverage
-		add_custom_target(coverage  
+		add_custom_target(coverage
 			COMMAND ${CMAKE_COMMAND} -E echo "[PID] WARNING : no coverage to perform !!"
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		)
@@ -128,19 +126,19 @@ function(add_Static_Check component is_library)
 			list(APPEND SOURCES_TO_CHECK ${CMAKE_SOURCE_DIR}/include/${${PROJECT_NAME}_${component}_HEADER_DIR_NAME}/${source})
 		endforeach()
 	else()
-		#getting sources of the target 
+		#getting sources of the target
 		get_target_property(SOURCES_TO_CHECK ${component} SOURCES)
 		list(APPEND ALL_SETTINGS $<$<BOOL:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>, -I>>)
 		list(APPEND ALL_SETTINGS $<$<BOOL:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>>:-I$<JOIN:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>, -I>>)
 	endif()
-	
+
 	# getting specific settings of the target (using generator expression to make it robust)
-	
+
 	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})
 	if(NOT IS_HF)
 		list(APPEND ALL_SETTINGS $<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>)
 		list(APPEND ALL_SETTINGS $<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>, -I>>)
-	endif()	
+	endif()
 
 	set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")
 	if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
@@ -150,7 +148,7 @@ function(add_Static_Check component is_library)
 	endif()
 
 	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
-	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions) 
+	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions)
 		set(CPPCHECK_ARGS --enable=style –inconclusive --suppress=missingIncludeSystem)
 	else()
 		set(CPPCHECK_ARGS --enable=all –inconclusive --suppress=missingIncludeSystem)
@@ -160,7 +158,7 @@ function(add_Static_Check component is_library)
 	add_custom_command(TARGET staticchecks PRE_BUILD
 		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
 		COMMAND ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} ${CPPCHECK_ARGS} --xml-version=2 ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
-		
+
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
 		VERBATIM)
@@ -230,4 +228,3 @@ else()
 endif()
 
 endfunction(generate_Static_Checks)
-

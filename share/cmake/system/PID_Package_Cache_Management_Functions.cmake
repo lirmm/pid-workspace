@@ -1,20 +1,20 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
 include(CMakeDependentOption)
@@ -66,7 +66,7 @@ endmacro(manage_Parrallel_Build_Option)
 
 function(set_Mode_Specific_Options_From_Global)
 	execute_process(COMMAND ${CMAKE_COMMAND} -L -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR} OUTPUT_FILE ${CMAKE_BINARY_DIR}/options.txt)
-	#parsing option file and generating a load cache cmake script	
+	#parsing option file and generating a load cache cmake script
 	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES)
 	set(CACHE_OK FALSE)
 	foreach(line IN ITEMS ${LINES})
@@ -77,7 +77,7 @@ function(set_Mode_Specific_Options_From_Global)
 	endforeach()
 	set(OPTIONS_FILE ${CMAKE_BINARY_DIR}/share/cacheConfig.cmake)
 	file(WRITE ${OPTIONS_FILE} "")
-	if(CACHE_OK)		
+	if(CACHE_OK)
 		foreach(line IN ITEMS ${LINES})
 			if(NOT line STREQUAL "-- Cache values")
 				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "set( \\1 \\3\ CACHE \\2 \"\" FORCE)\n" AN_OPTION "${line}")
@@ -109,7 +109,7 @@ function(set_Global_Options_From_Mode_Specific)
 	# copying new cache entries in the global build cache
 	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
-	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES_GLOBAL)		
+	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES_GLOBAL)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
 	# searching new cache entries in release mode cache
@@ -117,18 +117,18 @@ execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY
 		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")#this line may contain option info
 			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
 			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
-				string(REGEX REPLACE "^([^:]+):([^=]+)=(.+)$" "\\1;\\2;\\3" AN_OPTION "${line}") #indexes 0: name, 1:value, 2: type 
-				if("${AN_OPTION}" STREQUAL "${line}")#no match this is certainly 
-					string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\2;\\3" AN_OPTION "${line}") #there is certainly no value set for the option 
+				string(REGEX REPLACE "^([^:]+):([^=]+)=(.+)$" "\\1;\\2;\\3" AN_OPTION "${line}") #indexes 0: name, 1:value, 2: type
+				if("${AN_OPTION}" STREQUAL "${line}")#no match this is certainly
+					string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\2;\\3" AN_OPTION "${line}") #there is certainly no value set for the option
 					list(GET AN_OPTION 0 var_name)
-					string(FIND "${LINES}" "${var_name}" POS)	
+					string(FIND "${LINES}" "${var_name}" POS)
 					if(POS EQUAL -1)#not found, this a new cache entry
 						list(GET AN_OPTION 1 var_type)
 						set(${var_name} CACHE ${var_type} "${last_comment}")
 					endif()
 				else() #OK the option has a value
 					list(GET AN_OPTION 0 var_name)
-					string(FIND "${LINES}" "${var_name}" POS)	
+					string(FIND "${LINES}" "${var_name}" POS)
 					if(POS EQUAL -1)#not found, this a new cache entry
 						list(GET AN_OPTION 1 var_type)
 						list(GET AN_OPTION 2 var_value)
@@ -142,7 +142,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY
 	endforeach()
 
 
-	# searching new cache entries in debug mode cache	
+	# searching new cache entries in debug mode cache
 	foreach(line IN ITEMS ${LINES_DEBUG})
 		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
 			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
@@ -153,7 +153,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY
 				string(FIND "${LINES_RELEASE}" "${var_name}" POS_REL)
 				if(POS EQUAL -1 AND POS_REL EQUAL -1)#not found
 					list(GET AN_OPTION 1 var_value)
-					list(GET AN_OPTION 2 var_type)				
+					list(GET AN_OPTION 2 var_type)
 					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
 				endif()
 			else()#match is OK this is a comment line
@@ -225,7 +225,7 @@ endif()
 include(${WORKSPACE_DIR}/pid/PID_version.cmake) # get the current workspace version
 
 if(	EXISTS ${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake)# get the workspace version with wich the package has been built
-	#The file already resides in package shared files 
+	#The file already resides in package shared files
 	include(${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake)
 	if(${PID_WORKSPACE_VERSION} LESS ${${PROJECT_NAME}_PID_VERSION})#workspace need to be updated
 		update_Workspace_Repository("origin")
@@ -284,12 +284,12 @@ macro(print_Component_Variables)
 	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
 
 	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-		print_Component(${component} FALSE)	
+		print_Component(${component} FALSE)
 	endforeach()
 endmacro(print_Component_Variables)
 
 function(init_Package_Info_Cache_Variables author institution mail description year license address)
-set(res_string)	
+set(res_string)
 foreach(string_el IN ITEMS ${author})
 	set(res_string "${res_string}_${string_el}")
 endforeach()
@@ -378,7 +378,7 @@ endfunction(reset_Version_Cache_Variables)
 
 ###
 function(add_Author author institution)
-	set(res_string_author)	
+	set(res_string_author)
 	foreach(string_el IN ITEMS ${author})
 		set(res_string_author "${res_string_author}_${string_el}")
 	endforeach()
@@ -410,7 +410,7 @@ function(add_Reference version platform url url-dbg)
 	list(REMOVE_DUPLICATES LIST_OF_VERSIONS)
 	set(${PROJECT_NAME}_REFERENCES  ${LIST_OF_VERSIONS} CACHE INTERNAL "")#to put the modification in cache
 	list(FIND ${PROJECT_NAME}_REFERENCE_${version} ${platform} INDEX)
-	if(INDEX EQUAL -1)#this version for tha target platform is not already registered 
+	if(INDEX EQUAL -1)#this version for tha target platform is not already registered
 		set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${platform} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL ${url} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL_DEBUG ${url-dbg} CACHE INTERNAL "")
@@ -441,7 +441,7 @@ function(reset_Platforms_Variables)
 	#reset all constraints defined by the package
 	if(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} GREATER 0)
 		set(CURRENT_INDEX 0)
-		
+
 		while(${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}} GREATER CURRENT_INDEX)
 			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_TYPE${USE_MODE_SUFFIX} CACHE INTERNAL "")
 			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ARCH${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -449,14 +449,14 @@ function(reset_Platforms_Variables)
 			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ABI${USE_MODE_SUFFIX} CACHE INTERNAL "")
 			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONFIGURATION${USE_MODE_SUFFIX} CACHE INTERNAL "")
 			math(EXPR CURRENT_INDEX "${CURRENT_INDEX}+1")
-		endwhile()		
+		endwhile()
 	endif()
 	set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} 0 CACHE INTERNAL "")
 endfunction(reset_Platforms_Variables)
 
 ### define a set of configuration constraints that applies to all platforms with specific condition specified by type arch os and abi
 function(add_Platform_Constraint_Set type arch os abi constraints)
-	set(CURRENT_INDEX ${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}}) #current index is the current number of all constraint sets 
+	set(CURRENT_INDEX ${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}}) #current index is the current number of all constraint sets
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_TYPE${USE_MODE_SUFFIX} ${type} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ARCH${USE_MODE_SUFFIX} ${arch} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_OS${USE_MODE_SUFFIX} ${os} CACHE INTERNAL "")
@@ -468,7 +468,7 @@ function(add_Platform_Constraint_Set type arch os abi constraints)
 	set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} ${NEW_SET_SIZE} CACHE INTERNAL "")
 endfunction(add_Platform_Constraint_Set)
 
-### add a set of configuration constraints that are satisfied by the current platform 
+### add a set of configuration constraints that are satisfied by the current platform
 function(add_Configuration_To_Platform constraints)
 	list(APPEND ${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} ${constraints})
 	list(REMOVE_DUPLICATES ${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX})
@@ -484,55 +484,55 @@ function (configure_Install_Variables component export include_dirs dep_defs exp
 
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
-	if(	NOT dep_defs STREQUAL "" 
-		OR NOT exported_defs  STREQUAL "")	
+	if(	NOT dep_defs STREQUAL ""
+		OR NOT exported_defs  STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
+			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}}
 			${exported_defs} ${dep_defs}
 			CACHE INTERNAL "")
 	endif()
 	if(NOT include_dirs STREQUAL "")
-		set(	${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} 
-			${${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX}} 
+		set(	${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX}
+			${${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX}}
 			${include_dirs}
 			CACHE INTERNAL "")
 	endif()
-	if(NOT exported_options STREQUAL "")	
+	if(NOT exported_options STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX}} 
+			${${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX}}
 			${exported_options}
 			CACHE INTERNAL "")
 	endif()
-	
-	# links are exported since we will need to resolve symbols in the third party components that will the use the component 	
+
+	# links are exported since we will need to resolve symbols in the third party components that will the use the component
 	if(NOT shared_links STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
-			${shared_links}			
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
+			${shared_links}
 			CACHE INTERNAL "")
 	endif()
 	if(NOT static_links STREQUAL "")
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
-			${static_links}			
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
+			${static_links}
 			CACHE INTERNAL "")
 	endif()
 
 else() # otherwise no need to register them since no more useful
-	if(NOT exported_defs STREQUAL "") 
+	if(NOT exported_defs STREQUAL "")
 		#just add the exported defs of the component not those of the dependency
 		set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}} 
+			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}}
 			${exported_defs}
 			CACHE INTERNAL "")
 	endif()
 	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared lib (otherwise they simply disappear)
-		if (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER" 
+		if (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER"
 			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
 		)
 		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}			
-			${static_links}			
+			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
+			${static_links}
 			CACHE INTERNAL "")
 		endif()
 	endif()
@@ -553,7 +553,7 @@ endif()
 endfunction(configure_Install_Variables)
 
 
-### reset components related cached variables 
+### reset components related cached variables
 function(reset_Component_Cached_Variables component)
 # resetting package dependencies
 foreach(a_dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}})
@@ -599,15 +599,15 @@ function(reset_Project_Description_Cached_Variables)
 
 # package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
-	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")	
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endforeach()
 set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
-# external package dependencies declaration must be reinitialized 
+# external package dependencies declaration must be reinitialized
 foreach(dep_package IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
-	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")	
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endforeach()
@@ -685,7 +685,7 @@ if(IS_HF)
 	set(${IS_EXPORTING} FALSE PARENT_SCOPE)
 	return()
 endif()
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})	
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 if(package STREQUAL "${dep_package}")
 	if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
@@ -698,7 +698,7 @@ else()
 		set(${IS_EXPORTING} TRUE PARENT_SCOPE)
 	else()
 		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
-	endif()	
+	endif()
 
 endif()
 
@@ -764,7 +764,7 @@ foreach(a_cache_var ${ALL_CACHED_VARIABLES})
 endforeach()
 endfunction(reset_Removed_Examples_Build_Option)
 
-### 
+###
 function(will_be_Built result component)
 if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
@@ -774,7 +774,7 @@ else()
 endif()
 endfunction(will_be_Built)
 
-### 
+###
 function(will_be_Installed result component)
 if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
@@ -784,7 +784,7 @@ else()
 endif()
 endfunction(will_be_Installed)
 
-### 
+###
 function(is_Externally_Usable result component)
 if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"))
@@ -821,7 +821,7 @@ if(${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 			set(${RESULT} TRUE PARENT_SCOPE)
 			return()
 		endif()
-	endforeach()		
+	endforeach()
 endif()
 
 # scanning package dependencies
@@ -864,7 +864,7 @@ else()#package already required as "to install"
 				set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
 			endif()
 		elseif(version_exact) #if this version was previously not exact it becomes exact if exact is required
-			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")		
+			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		endif()
 	else()# when there is a problem !! (maybe a warning could be cgood idea)
 		set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
@@ -922,7 +922,7 @@ else()#package already required as "to install"
 				set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
 			endif()
 		elseif(version_exact) #if this version was previously not exact it becomes exact if exact is required
-			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")		
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		endif()
 	else()#on a buggy package this may happen (a warning may be a good idea)
 		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
@@ -957,8 +957,8 @@ endfunction(need_Install_External_Packages)
 
 
 ##################################################################################
-############################## install the dependancies ########################## 
-########### functions used to create the use<package><version>.cmake  ############ 
+############################## install the dependancies ##########################
+########### functions used to create the use<package><version>.cmake  ############
 ##################################################################################
 function(write_Use_File file package build_mode)
 set(MODE_SUFFIX "")
@@ -970,20 +970,20 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 	file(APPEND ${file} "set(${package}_SITE_GIT_ADDRESS ${${package}_SITE_GIT_ADDRESS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_SITE_INTRODUCTION ${${package}_SITE_INTRODUCTION} CACHE INTERNAL \"\")\n")
 
-	file(APPEND ${file} "######### declaration of package development info ########\n")	
+	file(APPEND ${file} "######### declaration of package development info ########\n")
 	get_Repository_Current_Branch(RES_BRANCH ${WORKSPACE_DIR}/packages/${package})
 	if(NOT RES_BRANCH OR RES_BRANCH STREQUAL "master")#not on a development branch
 		file(APPEND ${file} "set(${package}_DEVELOPMENT_STATE release CACHE INTERNAL \"\")\n")
 	else()
 		file(APPEND ${file} "set(${package}_DEVELOPMENT_STATE development CACHE INTERNAL \"\")\n")
 	endif()
-	
+
 
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${${package}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
-	
+
 	file(APPEND ${file} "####### internal specs of package components #######\n")
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_LIBS})
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
@@ -1000,7 +1000,7 @@ else()
 endif()
 
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
-#mode dependent info written adequately depending on the mode 
+#mode dependent info written adequately depending on the mode
 # 0) platforms configuration constraints
 file(APPEND ${file} "#### declaration of platform dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 file(APPEND ${file} "set(${package}_PLATFORM${MODE_SUFFIX} ${CURRENT_PLATFORM_NAME} CACHE INTERNAL \"\")\n") # not really usefull since a use file is bound to a given platform, but may be usefull for debug
@@ -1063,15 +1063,15 @@ foreach(a_component IN ITEMS ${${package}_COMPONENTS})
 		file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		foreach(a_int_dep IN ITEMS ${${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}})
 			if(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX})
-				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")				
+				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
 			else()
-				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")			
+				file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_EXPORT_${a_int_dep}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
 			endif()
 		endforeach()
 	endif()
 endforeach()
 
-# 5) component dependencies 
+# 5) component dependencies
 file(APPEND ${file} "#### declaration of component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 foreach(a_component IN ITEMS ${${package}_COMPONENTS})
 	if(${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}) # the component has package dependencies
@@ -1091,7 +1091,7 @@ endforeach()
 endfunction(write_Use_File)
 
 function(create_Use_File)
-if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode
 	set(file ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake)
 else()
 	set(file ${CMAKE_BINARY_DIR}/share/UseDebugTemp)
@@ -1111,24 +1111,24 @@ endif()
 endfunction(create_Use_File)
 
 ###############################################################################################
-############################## providing info on the package content ########################## 
+############################## providing info on the package content ##########################
 ###############################################################################################
 
-#################### function used to create the Info<package>.cmake  ######################### 
+#################### function used to create the Info<package>.cmake  #########################
 function(generate_Info_File)
-if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode 
+if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode
 	set(file ${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake)
 	file(WRITE ${file} "")#resetting the file content
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${PROJECT_NAME}_COMPONENTS ${${PROJECT_NAME}_COMPONENTS} CACHE INTERNAL \"\")\n")
-	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})		
+	foreach(a_component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		file(APPEND ${file} "######### content of package component ${a_component} ########\n")
 		file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_TYPE ${${PROJECT_NAME}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
 		if(${PROJECT_NAME}_${a_component}_SOURCE_DIR)
 			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_DIR ${${PROJECT_NAME}_${a_component}_SOURCE_DIR} CACHE INTERNAL \"\")\n")
 			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_SOURCE_CODE ${${PROJECT_NAME}_${a_component}_SOURCE_CODE} CACHE INTERNAL \"\")\n")
 		endif()
-		if(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME)	
+		if(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME)
 			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME ${${PROJECT_NAME}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
 			file(APPEND ${file} "set(${PROJECT_NAME}_${a_component}_HEADERS ${${PROJECT_NAME}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
 
@@ -1142,7 +1142,7 @@ endfunction(generate_Info_File)
 ############ function used to create the  Find<package>.cmake file of the package  ###########
 function(generate_Find_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	# generating/installing the generic cmake find file for the package 
+	# generating/installing the generic cmake find file for the package
 	configure_file(${WORKSPACE_DIR}/share/patterns/packages/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
 	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
 endif()
@@ -1152,7 +1152,7 @@ endfunction(generate_Find_File)
 macro(generate_Use_File)
 create_Use_File()
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	install(	FILES ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake 
+	install(	FILES ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake
 			DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}
 	)
 endif()
@@ -1184,7 +1184,7 @@ foreach(a_used_package IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}
 		current_External_Dependencies_For_Package(${a_used_package} ${depfile} NEW_LIST)
 		list(APPEND ALREADY_MANAGED ${NEW_LIST})
 		list(APPEND NEWLY_MANAGED ${NEW_LIST})
-	endif()	
+	endif()
 endforeach()
 
 #recursion on native dependencies
@@ -1288,5 +1288,3 @@ if(${PROJECT_NAME}_ALL_USED_PACKAGES)
 endif()
 
 endmacro(generate_Dependencies_File)
-
-

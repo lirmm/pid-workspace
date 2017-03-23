@@ -1,20 +1,20 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
@@ -29,7 +29,7 @@ PROJECT(pid-workspace)
 
 manage_Platforms() # define the current platform in use and provide to the user some options to control finally targetted platform
 
-manage_Plugins() # define available plugins and plugins in use 
+manage_Plugins() # define available plugins and plugins in use
 
 set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external CACHE INTERNAL "")
@@ -48,7 +48,7 @@ if(GIT_REMOTES) #there are remotes defined
 		endif()
 	endforeach()
 endif()
-if(NOT OFFICIAL_EXISTS) # automatically create a branch called official that points to the official remote. This is a sanity action to avoid troubles on updates / deployments. 
+if(NOT OFFICIAL_EXISTS) # automatically create a branch called official that points to the official remote. This is a sanity action to avoid troubles on updates / deployments.
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add official ${PID_OFFICIAL_REMOTE_ADDRESS})
 elseif(NOT OFFICIAL_EXISTS STREQUAL PID_OFFICIAL_REMOTE_ADDRESS)#strange thing remote may have changed
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote set-url official ${PID_OFFICIAL_REMOTE_ADDRESS})
@@ -101,9 +101,9 @@ add_custom_target(info
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-## deploying a package (either soure repository or binary package relocatable archive) 
+## deploying a package (either soure repository or binary package relocatable archive)
 add_custom_target(deploy
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package) 
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_VERSION=$(version)
 					-DTARGET_EXTERNAL=$(external)
 					-DTARGET_FRAMEWORK=$(framework)
@@ -113,7 +113,7 @@ add_custom_target(deploy
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-## building a list of source packages  
+## building a list of source packages
 add_custom_target(build
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="$(package)"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
@@ -121,7 +121,7 @@ add_custom_target(build
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-## rebuilding a list of source packages  
+## rebuilding a list of source packages
 add_custom_target(rebuild
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="$(package)"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
@@ -131,7 +131,7 @@ add_custom_target(rebuild
 
 ## resolving runtime dependencies of an already installed package
 add_custom_target(resolve
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package) 
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_VERSION=$(version)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Resolve_PID_Package.cmake
@@ -142,7 +142,7 @@ add_custom_target(resolve
 add_custom_target(create
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
-					-DOPTIONAL_AUTHOR="$(author)" 
+					-DOPTIONAL_AUTHOR="$(author)"
 					-DOPTIONAL_INSTITUTION="$(affiliation)"
 					-DOPTIONAL_LICENSE=$(license)
 					-DOPTIONNAL_GIT_URL=$(url)
@@ -155,12 +155,12 @@ add_custom_target(create
 ## connect to newly created PID package to an existing empty repository
 add_custom_target(connect
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_FRAMEWORK=$(framework)
-					-DTARGET_PACKAGE=$(package) 
+					-DTARGET_PACKAGE=$(package)
 					-DOFFICIAL_GIT_URL=$(official)
 					-DORIGIN_GIT_URL=$(origin)
 					-DFORCED_RECONNECTION=$(force)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}					
+					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Connect_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -170,7 +170,7 @@ add_custom_target(connect
 add_custom_target(clear
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_VERSION=$(version)
-					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Clear_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -180,7 +180,7 @@ add_custom_target(clear
 add_custom_target(remove
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
-					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Remove_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -190,7 +190,7 @@ add_custom_target(remove
 add_custom_target(register
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
-					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR} 
+					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Register_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

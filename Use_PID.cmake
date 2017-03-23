@@ -1,25 +1,25 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can be find the complete license description on the official website 	#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
 include(CMakeParseArguments)
 
-### 
+###
 macro(import_PID_Workspace path)
 if(${path} STREQUAL "")
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a path must be given to import_PID_Workspace.")
@@ -63,7 +63,7 @@ include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake) #loading the
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "") #do not manage automatic install since outside from a PID workspace
 endmacro(import_PID_Workspace)
 
-### 
+###
 macro(import_PID_Package)
 set(oneValueArgs NAME VERSION)
 set(multiValueArgs)
@@ -84,7 +84,7 @@ endif()
 set(${IMPORT_PID_PACKAGE_NAME}_RPATH ${${IMPORT_PID_PACKAGE_NAME}_ROOT_DIR}/.rpath CACHE INTERNAL "")
 endmacro(import_PID_Package)
 
-### 
+###
 macro(link_PID_Components)
 
 if(CMAKE_BUILD_TYPE STREQUAL "")
@@ -110,17 +110,17 @@ foreach (component IN ITEMS  ${LINK_PID_COMPONENTS_COMPONENTS})
 	is_HeaderFree_Component(DEP_IS_HF ${LINK_PID_COMPONENTS_PACKAGE} ${component})
 	if(NOT DEP_IS_HF) #link that target (only possible with non runtime libraries)
 		target_link_libraries(${LINK_PID_COMPONENTS_NAME} PUBLIC ${LINK_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX})
-		target_include_directories(${LINK_PID_COMPONENTS_NAME} PUBLIC 
+		target_include_directories(${LINK_PID_COMPONENTS_NAME} PUBLIC
 			$<TARGET_PROPERTY:${LINK_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
 
-		target_compile_definitions(${LINK_PID_COMPONENTS_NAME} PUBLIC 
+		target_compile_definitions(${LINK_PID_COMPONENTS_NAME} PUBLIC
 			$<TARGET_PROPERTY:${LINK_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
 		target_compile_options(${LINK_PID_COMPONENTS_NAME} PUBLIC
 			$<TARGET_PROPERTY:${LINK_PID_COMPONENTS_PACKAGE}-${component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
 	endif()
 	set(${LINK_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES ${${LINK_PID_COMPONENTS_PACKAGE}_RPATH}/${component}${TARGET_SUFFIX} CACHE INTERNAL "")
-	
+
 endforeach()
 endmacro(link_PID_Components)
 
@@ -165,5 +165,3 @@ endif()
 file(GLOB RESULT ${${TARGETS_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES}/*)
 set(${PATH_PID_RESOURCES_RESOURCES} ${RESULT} PARENT_SCOPE)
 endfunction(path_To_PID_Component_Resources)
-
-
