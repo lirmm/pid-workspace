@@ -360,8 +360,8 @@ endfunction(check_For_New_Commits_To_Release)
 
 ### to know whether a package as a remote or not
 function(is_Package_Connected CONNECTED package remote)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote show ${remote} OUTPUT_QUIET ERROR_VARIABLE res)
-	if(NOT res OR res STREQUAL "")
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote get-url ${remote} OUTPUT_VARIABLE out RESULT_VARIABLE res)
+	if(NOT res AND NOT res STREQUAL "")
 		set(${CONNECTED} TRUE PARENT_SCOPE)
 	else()
 		set(${CONNECTED} FALSE PARENT_SCOPE)
