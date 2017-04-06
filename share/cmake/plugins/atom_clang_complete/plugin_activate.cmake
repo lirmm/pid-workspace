@@ -76,7 +76,7 @@ set(ALL_INCS_LINES $<${INC_CONTENT_EXIST}:$<$<OR:${OPT_CONTENT_EXIST},${DEF_CONT
 if(EXISTS ${path_to_file})
 	file(REMOVE ${path_to_file})
 endif()
-file(GENERATE OUTPUT ${path_to_file} CONTENT "${STUPID_DEBUG_STRING}\n${ALL_OPTS_LINES}${ALL_DEFS_LINES}${ALL_INCS_LINES}")
+file(GENERATE OUTPUT ${path_to_file} CONTENT "${ALL_OPTS_LINES}${ALL_DEFS_LINES}${ALL_INCS_LINES}")
 endfunction(write_In_Clang_Complete_File)
 
 ## subsidiary function that generate a .clang_complete file for a source directory of the package
