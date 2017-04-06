@@ -61,18 +61,16 @@ else()
 	set(COMPONENT_OPT_FLAGS $<TARGET_PROPERTY:${target_component},COMPILE_OPTIONS>)
 endif()
 
-#preparing merge expression
-set(OPT_CONTENT_EXIST $<AND:$<BOOL:${COMPONENT_OPT_FLAGS}>,$<NOT:$<STREQUAL:${COMPONENT_OPT_FLAGS},$<SEMICOLON>>>>)#deal with empty list of one element
-set(DEF_CONTENT_EXIST $<AND:$<BOOL:${COMPONENT_DEF_FLAGS}>,$<NOT:$<STREQUAL:${COMPONENT_DEF_FLAGS},$<SEMICOLON>>>>)#deal with empty list of one element
-set(INC_CONTENT_EXIST $<AND:$<BOOL:${COMPONENT_INC_FLAGS}>,$<NOT:$<STREQUAL:${COMPONENT_INC_FLAGS},$<SEMICOLON>>>>)#deal with empty list of one element
-set(OPT_CONTENT_DOESNT_EXIST $<NOT:${OPT_CONTENT_EXIST}>)
-set(DEF_CONTENT_DOESNT_EXIST $<NOT:${DEF_CONTENT_EXIST}>)
-set(INC_CONTENT_DOESNT_EXIST $<NOT:${INC_CONTENT_EXIST}>)
+
+#preparing test expression -> getting generator expression resolved content (remove the list to get only one appended element) and test if there is any element
+set(OPT_CONTENT_EXIST $<BOOL:$<JOIN:${COMPONENT_OPT_FLAGS},>>)#deal with empty list
+set(DEF_CONTENT_EXIST $<BOOL:$<JOIN:${COMPONENT_DEF_FLAGS},>>)#deal with empty list
+set(INC_CONTENT_EXIST $<BOOL:$<JOIN:${COMPONENT_INC_FLAGS},>>)#deal with empty list
 
 #merging all flags together to put them in a file
-set(ALL_OPTS_LINES $<${OPT_CONTENT_EXIST}:$<JOIN:${COMPONENT_OPT_FLAGS},\n>>$<${OPT_CONTENT_DOESNT_EXIST}:>)
-set(ALL_DEFS_LINES $<${DEF_CONTENT_EXIST}:$<${OPT_CONTENT_EXIST}:\n-D>$<JOIN:${COMPONENT_DEF_FLAGS},\n-D>>$<${DEF_CONTENT_DOESNT_EXIST}:>)
-set(ALL_INCS_LINES $<${INC_CONTENT_EXIST}:$<$<OR:${OPT_CONTENT_EXIST},${DEF_CONTENT_EXIST}>:\n-I>$<JOIN:${COMPONENT_INC_FLAGS},\n-I>>$<${INC_CONTENT_DOESNT_EXIST}:>)
+set(ALL_OPTS_LINES $<${OPT_CONTENT_EXIST}:$<JOIN:${COMPONENT_OPT_FLAGS},\n>>)
+set(ALL_DEFS_LINES $<${DEF_CONTENT_EXIST}:$<${OPT_CONTENT_EXIST}:\n>-D$<JOIN:${COMPONENT_DEF_FLAGS},\n-D>>)
+set(ALL_INCS_LINES $<${INC_CONTENT_EXIST}:$<$<OR:${OPT_CONTENT_EXIST},${DEF_CONTENT_EXIST}>:\n>-I$<JOIN:${COMPONENT_INC_FLAGS},\n-I>>)
 
 #generating the file at generation time (after configuration ends)
 if(EXISTS ${path_to_file})
