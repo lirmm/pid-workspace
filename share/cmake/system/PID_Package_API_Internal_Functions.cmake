@@ -149,13 +149,16 @@ elseif(DIR_NAME STREQUAL "build")
 		COMMENT "[PID] Checking branch..."
 	)
 
+
 	# checking that the official has not been modified (migration)
+	if(${PROJECT_NAME}_ADDRESS) #only if there is an official address spefified
 	add_custom_target(check-repository
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Official_Repository.cmake
 		COMMENT "[PID] Checking official repository consistency..."
 	)
+	endif()
 
 	################################################################################################
 	############ creating custom targets to delegate calls to mode specific targets ################
@@ -191,8 +194,9 @@ elseif(DIR_NAME STREQUAL "build")
 		add_dependencies(build_release reconfigure) #checking if reconfiguration is necessary before build
 		add_dependencies(build_release sync-version)#checking if PID version synchronizing needed before build
 		add_dependencies(build_release check-branch)#checking if not built on master branch or released tag
+		if(${PROJECT_NAME}_ADDRESS)
 		add_dependencies(build_release check-repository) #checking if remote addrr needs to be changed
-
+		endif()
 		add_custom_target(build_debug
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
 			COMMENT "[PID] Debug build for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
@@ -201,15 +205,19 @@ elseif(DIR_NAME STREQUAL "build")
 		add_dependencies(build_debug reconfigure) #checking if reconfiguration is necessary before build
 		add_dependencies(build_debug sync-version)#checking if PID version synchronizing needed before build
 		add_dependencies(build_debug check-branch)#checking if not built on master branch or released tag
+		if(${PROJECT_NAME}_ADDRESS)
 		add_dependencies(build_debug check-repository) #checking if remote addrr needs to be changed
+	  endif()
 	endif()
 
 
 	add_dependencies(build reconfigure) #checking if reconfiguration is necessary before build
 	add_dependencies(build sync-version)#checking if PID version synchronizing needed before build
 	add_dependencies(build check-branch)#checking if not built on master branch or released tag
+	if(${PROJECT_NAME}_ADDRESS)
 	add_dependencies(build check-repository) #checking if remote addrr needs to be changed
-
+	endif()
+	
 	add_custom_target(global_main ALL
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}

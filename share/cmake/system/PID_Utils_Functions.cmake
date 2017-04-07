@@ -715,11 +715,12 @@ endfunction(list_All_Binary_Packages_In_Workspace)
 
 
 ###
-function(package_Already_Built answer package reference_package)
-set(${answer} FALSE PARENT_SCOPE)
+function(package_Already_Built ANSWER package reference_package)
+set(${ANSWER} TRUE PARENT_SCOPE)
 if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build/build_process)
 	if(${WORKSPACE_DIR}/packages/${package}/build/build_process IS_NEWER_THAN ${WORKSPACE_DIR}/packages/${reference_package}/build/build_process)
-		set(${answer} TRUE PARENT_SCOPE)
+		message("package ${package} is newer than package ${reference_package}")
+		set(${ANSWER} FALSE PARENT_SCOPE)
 	endif()
 endif()
 endfunction(package_Already_Built)
