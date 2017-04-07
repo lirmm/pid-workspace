@@ -272,9 +272,13 @@ endfunction(publish_Repository_Integration)
 
 
 ###
-function(publish_Repository_Version package version_string)
+function(publish_Repository_Version package version_string RESULT)
 go_To_Master(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push official master OUTPUT_QUIET ERROR_QUIET)#releasing on master branch of official
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push --porcelain official master OUTPUT_VARIABLE out ERROR_QUIET)#releasing on master branch of official
+if(out MATCHES "^.*rejected.*$")
+	set(${RESULT} FALSE PARENT_SCOPE)
+	return()
+endif()
 
 #now testing if everything is OK using the git log command
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
@@ -289,6 +293,9 @@ if (NOT "${res}" STREQUAL "")
 endif()
 if(OFFICIAL_SYNCHRO)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push official v${version_string} OUTPUT_QUIET ERROR_QUIET)#releasing version tag
+	set(${RESULT} TRUE PARENT_SCOPE)
+else()
+	set(${RESULT} FALSE PARENT_SCOPE)
 endif()
 endfunction(publish_Repository_Version)
 

@@ -966,7 +966,12 @@ if(NOT MERGE_OK)
 	go_To_Integration(${package}) #always go back to integration branch
 	return()
 endif()
-publish_Repository_Version(${package} ${STRING_NUMBER})
+publish_Repository_Version(${package} ${STRING_NUMBER} RESULT)
+if(NOT RESULT) #the user has no sufficient push rights
+	message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push to its master branch !")
+	go_To_Integration(${package}) #always go back to integration branch
+	return()
+endif()
 merge_Into_Integration(${package})
 
 ### now starting a new version
