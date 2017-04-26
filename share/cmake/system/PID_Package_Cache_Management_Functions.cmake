@@ -183,6 +183,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
 endfunction(set_Global_Options_From_Mode_Specific)
 
+
 ###
 function(reset_Mode_Cache_Options CACHE_POPULATED)
 
@@ -337,6 +338,7 @@ set(${PROJECT_NAME}_SITE_INTRODUCTION "${introduction}" CACHE INTERNAL "")
 endfunction(init_Documentation_Info_Cache_Variables)
 
 
+### reset all cache variables used in static web site based documentation
 function(reset_Documentation_Info)
 	set(${PROJECT_NAME}_FRAMEWORK CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PROJECT_PAGE CACHE INTERNAL "")

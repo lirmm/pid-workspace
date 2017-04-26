@@ -86,6 +86,8 @@ elseif(DIR_NAME STREQUAL "build/debug")
 		return()
 	endif()
 elseif(DIR_NAME STREQUAL "build")
+	declare_Global_Cache_Options() #first of all declaring global options so that the package is preconfigured with default options values and adequate comments for each variable 
+
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt "")
 
