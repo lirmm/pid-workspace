@@ -401,22 +401,79 @@ endfunction(add_Category)
 ############### API functions for setting platform related variables ##############
 ###################################################################################
 
+## check if a platform name match a platform defined in workspace
+function(platform_Exist IS_DEFINED platform)
+if(platform AND NOT platform STREQUAL "") 
+	list(FIND WORKSPACE_ALL_PLATFORMS "${platform}" INDEX)
+	if(INDEX EQUAL -1)
+		set(${IS_DEFINED} FALSE PARENT_SCOPE)
+	else()
+		set(${IS_DEFINED} TRUE PARENT_SCOPE)
+	endif()
+else()
+	set(${IS_DEFINED} FALSE PARENT_SCOPE)
+endif()
+endfunction(platform_Exist)
+
+
+## function used to create uvariable usefull to list common properties of platforms
+function(initialize_Platform_Variables)
+set(WORKSPACE_ALL_TYPE PARENT_SCOPE)
+set(WORKSPACE_ALL_OS  PARENT_SCOPE)
+set(WORKSPACE_ALL_ARCH PARENT_SCOPE)
+set(WORKSPACE_ALL_ABI PARENT_SCOPE)
+if(WORKSPACE_ALL_PLATFORMS)
+	foreach(platform IN ITEMS ${WORKSPACE_ALL_PLATFORMS})
+		string(REGEX REPLACE "^([^_]+)_([^_]+)_([^_]+)_([^_]+)$" "\\1;\\2;\\3;\\4" RES_LIST ${platform})
+		if(NOT platform STREQUAL "${RES_LIST}")#match a platform with a target OS
+			list(GET RES_LIST 0 TYPE)
+			list(GET RES_LIST 1 ARCH)
+			list(GET RES_LIST 2 OS)
+			list(GET RES_LIST 3 ABI)
+			list(APPEND WORKSPACE_ALL_TYPE ${TYPE})
+			list(APPEND WORKSPACE_ALL_OS ${OS})
+			list(APPEND WORKSPACE_ALL_ARCH ${ARCH})
+			list(APPEND WORKSPACE_ALL_ABI ${ABI})
+		else()
+			string(REGEX REPLACE "^([^_]+)_([^_]+)_([^_]+)$" "\\1;\\2;\\3" RES_LIST ${platform})
+			if(NOT platform STREQUAL "${RES_LIST}")#match a platform without any target OS
+				list(GET RES_LIST 0 TYPE)
+				list(GET RES_LIST 1 ARCH)
+				list(GET RES_LIST 2 ABI)
+				list(APPEND WORKSPACE_ALL_TYPE ${TYPE})
+				list(APPEND WORKSPACE_ALL_ARCH ${ARCH})
+				list(APPEND WORKSPACE_ALL_ABI ${ABI})
+			endif()
+		endif()
+	endforeach()
+	list(REMOVE_DUPLICATES WORKSPACE_ALL_TYPE)
+	list(REMOVE_DUPLICATES WORKSPACE_ALL_OS)
+	list(REMOVE_DUPLICATES WORKSPACE_ALL_ARCH)
+	list(REMOVE_DUPLICATES WORKSPACE_ALL_ABI)
+
+	set(WORKSPACE_ALL_TYPE ${WORKSPACE_ALL_TYPE} PARENT_SCOPE)
+	set(WORKSPACE_ALL_OS ${WORKSPACE_ALL_OS} PARENT_SCOPE)
+	set(WORKSPACE_ALL_ARCH ${WORKSPACE_ALL_ARCH} PARENT_SCOPE)
+	set(WORKSPACE_ALL_ABI ${WORKSPACE_ALL_ABI} PARENT_SCOPE)
+endif()
+endfunction(initialize_Platform_Variables)
+
+
 ### add a direct reference to a binary version of the package
 function(add_Reference version platform url url-dbg)
-	list(FIND WORKSPACE_ALL_PLATFORMS ${platform} INDEX)
-	if(INDEX EQUAL -1)
-		message("[PID] WARNING: unknown target platform ${platform} when adding reference. Please look into ${WORKSPACE_DIR}/share/cmake/platforms/ to find all predefined platforms or eventually create your own new one and place it in this folder. The references to binaries using ${platform} will be ignored.") #just do this as a warning to enable compatiblity with V1 style references
-		return()
-	endif()
-	set(LIST_OF_VERSIONS ${${PROJECT_NAME}_REFERENCES} ${version})
-	list(REMOVE_DUPLICATES LIST_OF_VERSIONS)
-	set(${PROJECT_NAME}_REFERENCES  ${LIST_OF_VERSIONS} CACHE INTERNAL "")#to put the modification in cache
-	list(FIND ${PROJECT_NAME}_REFERENCE_${version} ${platform} INDEX)
-	if(INDEX EQUAL -1)#this version for tha target platform is not already registered
-		set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${platform} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL ${url} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL_DEBUG ${url-dbg} CACHE INTERNAL "")
-	endif()
+platform_Exist(IS_DEFINED ${platform})
+if(NOT IS_DEFINED)
+	return()
+endif()
+set(LIST_OF_VERSIONS ${${PROJECT_NAME}_REFERENCES} ${version})
+list(REMOVE_DUPLICATES LIST_OF_VERSIONS)
+set(${PROJECT_NAME}_REFERENCES  ${LIST_OF_VERSIONS} CACHE INTERNAL "")#to put the modification in cache
+list(FIND ${PROJECT_NAME}_REFERENCE_${version} ${platform} INDEX)
+if(INDEX EQUAL -1)#this version for tha target platform is not already registered
+	set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${platform} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL ${url} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL_DEBUG ${url-dbg} CACHE INTERNAL "")
+endif()
 endfunction(add_Reference)
 
 ### reset variables describing direct references to binaries

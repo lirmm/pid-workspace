@@ -57,6 +57,8 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using c
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
 
 configure_Git(${PROJECT_NAME})
+set(${PROJECT_NAME}_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL "")#to keep compatibility with PID v1 released package versions
+initialize_Platform_Variables() #initialize platform related variables usefull for other end-user API functions  
 
 #################################################
 ############ MANAGING build mode ################
@@ -494,7 +496,7 @@ endfunction(set_Current_Version)
 #####################################################################################################
 ################## checking that the platfoprm description match the current platform ###############
 #####################################################################################################
-function(check_Platform_Constraints type arch os abi constraints)
+function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints)
 set(SKIP FALSE)
 #The check of compatibility between the target platform and the constraints is immediate using platform configuration information (platform files) + additionnal global information (distribution for instance) coming from the workspace
 
@@ -523,19 +525,26 @@ if(NOT SKIP AND abi AND NOT abi STREQUAL "") # an operating system is specified,
 	endif()
 endif()
 
-#2) testing configuration constrints if the platform currently in use satisfies conditions
+#2) testing configuration constraints if the platform currently in use satisfies conditions
 #
+set(${RESULT} TRUE PARENT_SCOPE)
+if(SKIP)
+	set(${IS_CURRENT} PARENT_SCOPE)
+else()
+	set(${IS_CURRENT} ${CURRENT_PLATFORM} PARENT_SCOPE)
+endif()
+
 if(NOT SKIP AND constraints)
 	foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
 		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
 			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform and install it if possible
 			if(NOT CHECK_${config}_RESULT)
-				message(FATAL_ERROR "[PID] ERROR : current platform does not satisfy configuration constraint ${config}.")
-				return()
+				message("[PID] ERROR : current platform does not satisfy configuration constraint ${config}.")
+				set(${RESULT} FALSE PARENT_SCOPE) 
 			endif()
 		else()
-			message(FATAL_ERROR "[PID] INFO : when checking constraints on current platform, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${config}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config} to manage this configuration.")
-			return()
+			message("[PID] INFO : when checking constraints on current platform, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${config}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config} to manage this configuration.")
+			set(${RESULT} FALSE PARENT_SCOPE) 
 		endif()
 	endforeach()
 	#from here OK all configuration constraints are satisfied
