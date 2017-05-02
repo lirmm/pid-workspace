@@ -10,7 +10,7 @@ set(boost_CATEGORIES programming/threading;programming/io;programming/timing;pro
 
 
 # declaration of known reference
-set(boost_REFERENCES 1.55.0 1.64.0 CACHE INTERNAL "")
+set(boost_REFERENCES 1.55.0 1.63.0 1.64.0 CACHE INTERNAL "")
 
 # Version 1.55.0
 set(boost_REFERENCE_1.55.0 x86_32_linux_abi98 x86_64_linux_abi98 x86_64_macosx_abi98 x86_64_linux_abi11 CACHE INTERNAL "")
@@ -31,6 +31,13 @@ set(boost_REFERENCE_1.55.0_x86_64_macosx_abi98_FOLDER ext-boost-macosx-1.55.0-40
 #linux 64 CXX11 ABI
 set(boost_REFERENCE_1.55.0_x86_64_linux_abi11_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=linux-64-cxx11-1.55.0 CACHE INTERNAL "")
 set(boost_REFERENCE_1.55.0_x86_64_linux_abi11_FOLDER ext-boost-linux-64-cxx11-1.55.0-69978dace6a316dd7b54a863a9c1e2afb7eb97a2 CACHE INTERNAL "")
+
+# Version 1.63.0
+set(boost_REFERENCE_1.63.0 x86_64_linux_abi11 CACHE INTERNAL "")
+
+#linux 64 CXX11 ABI
+set(boost_REFERENCE_1.63.0_x86_64_linux_abi11_URL https://gite.lirmm.fr/pid/ext-boost/repository/archive.tar.gz?ref=linux-64-cxx11-1.63.0 CACHE INTERNAL "")
+set(boost_REFERENCE_1.63.0_x86_64_linux_abi11_FOLDER ext-boost-linux-64-cxx11-1.63.0-f26166e3bf05a566eeb730e84b0d8784ecaa9389 CACHE INTERNAL "")
 
 # Version 1.64.0
 set(boost_REFERENCE_1.64.0 x86_64_linux_abi11 CACHE INTERNAL "")
