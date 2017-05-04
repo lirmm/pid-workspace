@@ -18,6 +18,33 @@
 #########################################################################################
 
 ######################################################################
+############# function related to git tool configuration #############
+######################################################################
+
+###
+function(configure_Git package)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git --version OUTPUT_VARIABLE version_string)
+string(REGEX REPLACE "^[^0-9]*([0-9]+\\.[0-9]+\\.[0-9]+).*$" "\\1" VERSION ${version_string})
+if(VERSION STREQUAL ${version_string})
+	message("[PID] WARNING : cannot determine version of git")
+	set(GIT_VERSION CACHE INTERNAL "" FORCE)
+else()
+	set(GIT_VERSION ${VERSION} CACHE INTERNAL "" FORCE)
+endif()
+endfunction(configure_Git)
+
+###
+function(git_Provides_GETURL RESULT)
+
+if(GIT_VERSION AND NOT (GIT_VERSION VERSION_LESS 2.7.0))
+	set(${RESULT} TRUE PARENT_SCOPE)
+else()
+	set(${RESULT} FALSE PARENT_SCOPE)
+endif()
+
+endfunction(git_Provides_GETURL)
+
+######################################################################
 ############# function used to navigate between branches #############
 ######################################################################
 
@@ -26,6 +53,7 @@ function(go_To_Integration package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration
 		OUTPUT_QUIET ERROR_QUIET)
 endfunction(go_To_Integration)
+
 ###
 function(go_To_Master package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout master
@@ -367,11 +395,26 @@ endfunction(check_For_New_Commits_To_Release)
 
 ### to know whether a package as a remote or not
 function(is_Package_Connected CONNECTED package remote)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote get-url ${remote} OUTPUT_VARIABLE out RESULT_VARIABLE res)
-	if(NOT res AND NOT res STREQUAL "")
-		set(${CONNECTED} TRUE PARENT_SCOPE)
+	git_Provides_GETURL(RESULT)
+	if(RESULT)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote get-url ${remote} OUTPUT_VARIABLE out RESULT_VARIABLE res)
+		if(NOT res AND NOT out STREQUAL "")
+			set(${CONNECTED} TRUE PARENT_SCOPE)
+		else()
+			set(${CONNECTED} FALSE PARENT_SCOPE)
+		endif()
+		return()
 	else()
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote -v OUTPUT_VARIABLE out RESULT_VARIABLE res)
+		if(NOT res AND NOT out STREQUAL "")
+			string(REPLACE "${remote}" "found" IS_FOUND ${out})
+			if(NOT IS_FOUND STREQUAL ${out})
+				set(${CONNECTED} TRUE PARENT_SCOPE)
+				return()
+			endif()
+		endif()
 		set(${CONNECTED} FALSE PARENT_SCOPE)
+		return()
 	endif()
 endfunction(is_Package_Connected)
 
