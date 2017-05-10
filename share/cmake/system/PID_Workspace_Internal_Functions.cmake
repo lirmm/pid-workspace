@@ -1039,11 +1039,16 @@ endfunction(update_PID_External_Package)
 
 ### update all packages of the workspace
 function(update_PID_All_Packages)
+set(NATIVES)
+set(EXTERNALS)
+set(SOURCE_PACKAGES)
 list_All_Binary_Packages_In_Workspace(NATIVES EXTERNALS)
 list_All_Source_Packages_In_Workspace(SOURCE_PACKAGES)
 
 if(SOURCE_PACKAGES)
-	list(REMOVE_ITEM NATIVES ${SOURCE_PACKAGES})
+	if(NATIVES)
+		list(REMOVE_ITEM NATIVES ${SOURCE_PACKAGES})
+	endif()	
 	foreach(package IN ITEMS ${SOURCE_PACKAGES})
 		update_PID_Source_Package(${package})
 	endforeach()
