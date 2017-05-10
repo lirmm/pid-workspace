@@ -19,7 +19,7 @@
 
 ### script used to server the framework static site using jekyll
 
-set(PATH_TO_FRAMEWORK ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
+set(PATH_TO_FRAMEWORK ${FRAMEWORK_PATH})
 set(PATH_TO_FRAMEWORK_RESULT ${PATH_TO_FRAMEWORK}/build/generated)
 
 if(EXISTS ${PATH_TO_FRAMEWORK_RESULT} AND IS_DIRECTORY ${PATH_TO_FRAMEWORK_RESULT})

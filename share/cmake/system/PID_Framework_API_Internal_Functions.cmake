@@ -180,20 +180,20 @@ if(DIR_NAME STREQUAL "build")
 	if(JEKYLL_EXECUTABLE)
 
 	add_custom_target(build
-		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+		COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
 						-DTARGET_FRAMEWORK=${PROJECT_NAME}
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Framework.cmake
-		COMMENT "[PID] Building framework ..."
+		COMMENT "[PID] Building framework ${PROJECT_NAME} ..."
 		VERBATIM
 	)
 
 	add_custom_target(serve
-		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+		COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
 						-DTARGET_FRAMEWORK=${PROJECT_NAME}
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Serve_PID_Framework.cmake
-		COMMENT "[PID] Serving the static site of the framework ..."
+		COMMENT "[PID] Serving the static site of the framework ${PROJECT_NAME} ..."
 		VERBATIM
 	)
 

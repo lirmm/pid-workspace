@@ -21,7 +21,7 @@
 
 #1) copy files from src to the adequate build folder
 
-set(PATH_TO_FRAMEWORK ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
+set(PATH_TO_FRAMEWORK ${FRAMEWORK_PATH})
 set(PATH_TO_FRAMEWORK_SRC ${PATH_TO_FRAMEWORK}/src)
 set(PATH_TO_FRAMEWORK_JEKYLL ${PATH_TO_FRAMEWORK}/build/to_generate)
 set(PATH_TO_FRAMEWORK_RESULT ${PATH_TO_FRAMEWORK}/build/generated)

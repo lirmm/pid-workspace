@@ -11,14 +11,20 @@ stages:
  - deploy
  - cleanup
 
+before_script:
+  - eval $(ssh-agent -s)
+  - ssh-add <(echo "$SSH_PRIVATE_KEY")
+  - mkdir -p ~/.ssh
+  - '[[ -f /.dockerenv ]] && echo "$SSH_SERVER_HOSTKEYS" > ~/.ssh/known_hosts'
+
 ### configure (CMake project configuration) 
 configure_workspace:
   stage: configure
   script:
     - chmod 700 ./share/ci/prepare_workspace.sh
-    - chmod 700 ./share/ci/publish_site.sh
+    - chmod 700 ./share/ci/configure_framework.sh
     - ./share/ci/prepare_workspace.sh
-    - cd build/ && cmake .. && cd ..
+    - ./share/ci/configure_framework.sh
   only:
     - master
   tags:
@@ -28,7 +34,7 @@ configure_workspace:
 compile_site:
   stage: compile
   script:
-    - cd build && cmake --build . && cd ..
+    - cd build && cmake --build . --target build && cd ..
   only:
     - master
   tags:
@@ -38,6 +44,7 @@ compile_site:
 pages:
   stage: deploy
   script:
+   - chmod 700 ./share/ci/publish_site.sh
    - ./share/ci/publish_site.sh
   artifacts:
     paths:
