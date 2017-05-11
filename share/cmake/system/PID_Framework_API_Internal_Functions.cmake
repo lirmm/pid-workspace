@@ -49,7 +49,19 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/to_generate)
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/static ${CMAKE_BINARY_DIR}/to_generate)
 
 #2) generating the global configuration file for package site
-set(PACKAGE_SITE_URL ${${PROJECT_NAME}_SITE_PAGE})
+if(${PROJECT_NAME}_SITE_PAGE)
+	get_Jekyll_URLs(${${PROJECT_NAME}_SITE_PAGE} PUBLIC_URL BASE_URL)
+	set(PACKAGE_SITE_URL ${PUBLIC_URL})
+	if(BASE_URL AND NOT BASE_URL STREQUAL "")
+		set(PACKAGE_SITE_BASE_FOLDER "/${BASE_URL}")
+	else()
+		set(PACKAGE_SITE_BASE_FOLDER)
+	endif()
+else()
+	set(PACKAGE_SITE_URL)
+	set(PACKAGE_SITE_BASE_FOLDER)
+endif()
+
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
 
 endfunction(generate_Site_Data)
@@ -316,7 +328,6 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/shar
 
 # 2) generate the data file containing general information about the framework (generated from a CMake pattern file)
 set(FRAMEWORK_NAME ${PROJECT_NAME})
-message("${PROJECT_NAME}_FRAMEWORK_SITE = ${${PROJECT_NAME}_FRAMEWORK_SITE}")
 if(${PROJECT_NAME}_FRAMEWORK_SITE)
 	get_Jekyll_URLs(${${PROJECT_NAME}_FRAMEWORK_SITE} PUBLIC_URL BASE_URL)
 	set(FRAMEWORK_SITE_URL ${PUBLIC_URL})

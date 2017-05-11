@@ -18,22 +18,22 @@
           <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Documentation<i class="fa fa-caret-down"></i></a>
           <ul class="dropdown-menu animated slideInDown">
 	   <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/introduction" class="sub menu-item">Introduction</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/introduction.html" class="sub menu-item">Introduction</a>
             </li>
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/install" class="sub menu-item">Install</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/install.html" class="sub menu-item">Install</a>
             </li>
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/use" class="sub menu-item">Use</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/use.html" class="sub menu-item">Use</a>
             </li>
 	   {% if site.data.package.tutorial != "" %}
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/{{ site.data.package.tutorial }}" class="sub menu-item">Tutorial</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/{{ site.data.package.tutorial }}.html" class="sub menu-item">Tutorial</a>
             </li>
   	    {% endif %}
 	    {% if site.data.package.details != "" %}
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/{{ site.data.package.details }}" class="sub menu-item">Advanced Topics</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/{{ site.data.package.details }}.html" class="sub menu-item">Advanced Topics</a>
             </li>
   	    {% endif %}
 
@@ -54,15 +54,15 @@
 		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/pages/binaries" class="menu-item">Binaries</a></li>
 	   </ul>
 	</li>
-	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/pages/activity" class="menu-item">Activity</a></li>
+	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/pages/activity.html" class="menu-item">Activity</a></li>
 	<li class="dropdown {% if page.nav-hl == 'documentation' %}active{% endif %}">
           <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">About<i class="fa fa-caret-down"></i></a>
 	  <ul class="dropdown-menu animated slideInDown">
             <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/contact" class="sub menu-item">Contact</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/contact.html" class="sub menu-item">Contact</a>
             </li>
             <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/help" class="sub menu-item">Help</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/help.html" class="sub menu-item">Help</a>
             </li>
           </ul>
        </li>

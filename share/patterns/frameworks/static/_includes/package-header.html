@@ -21,22 +21,22 @@
           <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Documentation<i class="fa fa-caret-down"></i></a>
            <ul class="dropdown-menu animated slideInDown">
 	   <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/introduction" class="sub menu-item">Introduction</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/introduction.html" class="sub menu-item">Introduction</a>
             </li>
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/install" class="sub menu-item">Install</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/install.html" class="sub menu-item">Install</a>
             </li>
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/use" class="sub menu-item">Use</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/use.html" class="sub menu-item">Use</a>
             </li>
 	   {% if package_tutorial %}
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/{{ package_tutorial }}" class="sub menu-item">Tutorial</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/{{ package_tutorial }}.html" class="sub menu-item">Tutorial</a>
             </li>
   	    {% endif %}
 	    {% if package_details %}
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/{{ package_details }}" class="sub menu-item">Advanced Topics</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/{{ package_details }}.html" class="sub menu-item">Advanced Topics</a>
             </li>
   	    {% endif %}
           </ul>
@@ -57,7 +57,7 @@
 	   </ul>
 	</li>
 	<li class="{% if page.nav-hl == 'contact' %}active{% endif %}">
-		<a href="{{ site.baseurl }}/packages/{{ page.package }}/pages/contact" class="menu-item">Contact</a>
+		<a href="{{ site.baseurl }}/packages/{{ page.package }}/pages/contact.html" class="menu-item">Contact</a>
 	</li>
       </ul>
     </div><!-- /.navbar-collapse -->

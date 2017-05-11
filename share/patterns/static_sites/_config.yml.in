@@ -9,10 +9,9 @@ highlighter: rouge
 excerpt_separator: ""
 
 port:    4000
-host:    127.0.0.1
-baseurl: ""
+host:    localhost
+baseurl: "@PACKAGE_SITE_BASE_FOLDER@"
 
 collections:
  binaries:
     output: false
-
