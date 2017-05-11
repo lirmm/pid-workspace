@@ -1,7 +1,7 @@
 
 # Site settings
 
-url: "@${PROJECT_NAME}_FRAMEWORK_SITE@" # the base hostname & protocol for your site
+url: "@FRAMEWORK_SITE_URL@" # the base hostname & protocol for your site
 
 # Build settings
 markdown: kramdown
