@@ -833,6 +833,21 @@ function(get_Framework_Repository_Address framework RES_URL)
 	set(${RES_URL} ${url} PARENT_SCOPE)
 endfunction(get_Framework_Repository_Address)
 
+### function used to extract information used by jekyll to adequately configure the site
+function(get_Jekyll_URLs full_url PUBLIC_URL BASE_URL)
+	string(REGEX REPLACE "^(http[s]?://[^/]+)/(.+)$" "\\1;\\2" all_urls ${full_url})
+	if(NOT (all_urls STREQUAL ${full_url}))#it matches
+		list(GET all_urls 0 pub)
+		list(GET all_urls 1 base)
+		set(PUBLIC_URL ${pub} PARENT_SCOPE)
+		set(BASE_URL ${base} PARENT_SCOPE)
+	else()
+		string(REGEX REPLACE "^(http[s]?://[^/]+)/?$" "\\1" pub_url ${full_url})
+		set(PUBLIC_URL ${pub_url} PARENT_SCOPE)
+		set(BASE_URL PARENT_SCOPE)
+	endif()
+endfunction(get_Jekyll_URLs)
+
 ################################################################
 ################ Markdown file management ######################
 ################################################################

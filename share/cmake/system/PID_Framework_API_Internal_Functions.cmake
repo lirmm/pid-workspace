@@ -49,6 +49,7 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/to_generate)
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/static ${CMAKE_BINARY_DIR}/to_generate)
 
 #2) generating the global configuration file for package site
+set(PACKAGE_SITE_URL ${${PROJECT_NAME}_SITE_PAGE})
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
 
 endfunction(generate_Site_Data)
@@ -112,7 +113,8 @@ if(DIR_NAME STREQUAL "build")
 	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searching for the jekyll executable in standard paths
 
 	if(JEKYLL_EXECUTABLE)
-
+	get_Jekyll_URLs(${${PROJECT_NAME}_PROJECT_PAGE} PUBLIC_URL BASE_URL)
+	set(STATIC_SITE_BASEURL "${BASE_URL}")
 	add_custom_target(build
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
@@ -126,6 +128,7 @@ if(DIR_NAME STREQUAL "build")
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+						-DSITE_BASE_URL=${STATIC_SITE_BASEURL}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Serve_PID_Package_Site.cmake
 		COMMENT "[PID] Serving the static site of the package ..."
 		VERBATIM
@@ -178,6 +181,8 @@ if(DIR_NAME STREQUAL "build")
 	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
 
 	if(JEKYLL_EXECUTABLE)
+	get_Jekyll_URLs(${${PROJECT_NAME}_FRAMEWORK_SITE} PUBLIC_URL BASE_URL)
+	set(STATIC_SITE_BASEURL "${BASE_URL}")
 
 	add_custom_target(build
 		COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
@@ -192,6 +197,7 @@ if(DIR_NAME STREQUAL "build")
 		COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
 						-DTARGET_FRAMEWORK=${PROJECT_NAME}
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+						-DFRAMEWORK_BASE_URL=${STATIC_SITE_BASEURL}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Serve_PID_Framework.cmake
 		COMMENT "[PID] Serving the static site of the framework ${PROJECT_NAME} ..."
 		VERBATIM
@@ -310,7 +316,20 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/shar
 
 # 2) generate the data file containing general information about the framework (generated from a CMake pattern file)
 set(FRAMEWORK_NAME ${PROJECT_NAME})
-set(FRAMEWORK_SITE_URL ${${PROJECT_NAME}_FRAMEWORK_SITE})
+message("${PROJECT_NAME}_FRAMEWORK_SITE = ${${PROJECT_NAME}_FRAMEWORK_SITE}")
+if(${PROJECT_NAME}_FRAMEWORK_SITE)
+	get_Jekyll_URLs(${${PROJECT_NAME}_FRAMEWORK_SITE} PUBLIC_URL BASE_URL)
+	set(FRAMEWORK_SITE_URL ${PUBLIC_URL})
+	if(BASE_URL AND NOT BASE_URL STREQUAL "")
+		set(FRAMEWORK_SITE_BASE_FOLDER "/${BASE_URL}")
+	else()
+		set(FRAMEWORK_SITE_BASE_FOLDER)
+	endif()
+else()
+	set(FRAMEWORK_SITE_URL)
+	set(FRAMEWORK_SITE_BASE_FOLDER)
+endif()
+
 set(FRAMEWORK_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE})
 get_Formatted_Framework_Contact_String(${PROJECT_NAME} RES_STRING)
 set(FRAMEWORK_MAINTAINER_NAME ${RES_STRING})
@@ -350,6 +369,7 @@ if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 endif()
 
 # 4) generate the configuration file for jekyll generation
+
 configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
 
 endfunction(generate_Framework_Data)

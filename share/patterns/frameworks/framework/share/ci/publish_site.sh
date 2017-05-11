@@ -9,4 +9,3 @@ fi
 
 cp -R ./build/generated/* ./public/
 
-

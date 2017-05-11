@@ -6,11 +6,11 @@
   <title>{% if page.title %}{{ page.title  | escape }} - {{ site.framework_name  | escape }}{% else %}{{ site.framework_name  | escape }}{% endif %}</title>
   <meta name="description" content="{% if page.excerpt %}{{ page.excerpt | strip_html | strip_newlines | truncate: 160 }}{% else %}{{ site.description }}{% endif %}">
 
-  <link rel="stylesheet" href="{{ "/assets/css/code_syntax.css" | prepend: site.framework_url }}" />
-  <link rel="stylesheet" href="{{ "/assets/css/site.css" | prepend: site.framework_url }}" />
-  <link rel="stylesheet" href="{{ "/assets/css/main.css" | prepend: site.framework_url }}" />
-  <link rel='stylesheet' href="{{ "/assets/css/mobile.css" | prepend: site.framework_url }}" media="screen and (max-width: 800px)" />
-  <link rel="canonical" href="{{ page.url | replace:'index.html','' | prepend: site.framework_url | prepend: site.framework_url }}">
-  <link rel="alternate" type="application/rss+xml" title="{{ site.framework_url }}" href="{{ "/feed.xml" | prepend: site.framework_url | prepend: site.url }}">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/code_syntax.css" />
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/site.css" />
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/main.css" />
+  <link rel='stylesheet' href="{{ site.baseurl }}/assets/css/mobile.css" media="screen and (max-width: 800px)" />
+  <link rel="canonical" href="{{ page.url | replace:'index.html','' | prepend: site.baseurl | prepend: site.url }}">
+  <link rel="alternate" type="application/rss+xml" title="{{ site.name }}" href="{{ "/feed.xml" | prepend: site.baseurl | prepend: site.url }}">
 
 </head>
