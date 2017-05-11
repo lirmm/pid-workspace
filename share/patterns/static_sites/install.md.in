@@ -4,13 +4,13 @@ title: Install
 package: @PACKAGE_NAME@
 ---
 
-@PACKAGE_NAME@ can be deployed as any other native PID package. To know more about PID methodology simply follow [this link](https://gite.lirmm.fr/pid/pid-workspace/wikis/home).
+@PACKAGE_NAME@ can be deployed as any other native PID package. To know more about PID methodology simply follow [this link](http://pid.lirmm.net/pid-framework).
 
 PID provides different alternatives to install a package:
 
 ## Automatic install by dependencies declaration
 
-The package @PACKAGE_NAME@ will be installed automatically if it is a direct or undirect dependency of one of the packages you are developing. See [import section](#import).
+The package @PACKAGE_NAME@ will be installed automatically if it is a direct or undirect dependency of one of the packages you are developing. See [how to import](use.html).
 
 ## Manual install using PID command
 
