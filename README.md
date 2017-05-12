@@ -5,7 +5,7 @@ PID is a development methodology used to standardize and automate the developmen
 
 This project defines a **workspace** where users put their C/C++ projects and the workspace repository is used to share references on existing projects, in order to deploy them on users workstations.
 
-PID is also a framwork, made of various C/C++ packages, that are helpful for developping C/C++ code. For deeper understanding and learning of PID readers can refer to [this website](http://pid.gite.lirmm.io/pid-framework)
+PID is also a framwork, made of various C/C++ packages, that are helpful for developping C/C++ code. For deeper understanding and learning of PID readers can refer to [this website](http://pid.lirmm.net/pid-framework)
 
 # Install
 
@@ -21,7 +21,7 @@ Then to install PID you have to clone this repository or (preferably) to clone a
 > cd pid-workspace/pid
 > cmake ..
 ```
-Please refer to [PID framework website](http://pid.gite.lirmm.io/pid-framework) to get the complete install procedure.
+Please refer to [PID framework website](http://pid.lirmm.net/pid-framework) to get the complete install procedure.
 
 # Contact
 
