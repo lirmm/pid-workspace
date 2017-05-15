@@ -7,7 +7,7 @@ cache:
 
 stages:
  - configure
- - compile
+ - build
  - deploy
  - cleanup
 
@@ -32,7 +32,7 @@ configure_workspace:
 
 ### build the static site (using jekyll) 
 compile_site:
-  stage: compile
+  stage: build
   script:
    - chmod 700 ./share/ci/build_site.sh
    - ./share/ci/build_site.sh
@@ -60,9 +60,8 @@ pages:
 cleanup_build:
   stage: cleanup
   script:
-     - cd build && rm -Rf * && cd ..
-     - cd binaries && rm -Rf * && cd ..
-     - rm -Rf public
+   - chmod 700 ./share/ci/cleanup.sh
+   - ./share/ci/cleanup.sh
   when: always
   only:
     - master
