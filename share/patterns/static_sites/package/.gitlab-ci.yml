@@ -34,7 +34,8 @@ configure_workspace:
 compile_site:
   stage: compile
   script:
-    - cd build && cmake --build . --target build && cd ..
+   - chmod 700 ./share/ci/build_site.sh
+   - ./share/ci/build_site.sh
   only:
     - master
   tags:
