@@ -448,7 +448,7 @@ set(PACKAGE_NAME ${package})
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binaries.md.in ${CMAKE_SOURCE_DIR}/src/_packages/${package}/pages/binaries.md @ONLY)
 endfunction(generate_Package_Page_Binaries_In_Framework)
 
-### create the file for presenting an exetrnal package and listing its binaries in the framework
+### create the file for presenting an external package and listing its binaries in the framework
 function(generate_External_Page_In_Framework package)
 set(PATH_TO_PAGE ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
 set(PATH_TO_REFERENCE_FILE ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${package}.cmake)
@@ -599,7 +599,7 @@ if(ALL_VERSIONS)
 				foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version
 					# now referencing the binaries
 					list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
-					if(ALL_BINARIES) #do not check for binary archive name since it may differ from standard regarding platform (king of generic platform name may be used instead of the symink one)
+					if(ALL_BINARIES) #do not check for binary archive name since it may differ from standard regarding platform (kind of generic platform name may be used instead of the symink one)
 						set(RELEASE_BINARY)
 						set(DEBUG_BINARY)
 						foreach(binary IN ITEMS ${ALL_BINARIES})
@@ -618,10 +618,10 @@ if(ALL_VERSIONS)
 							set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version}) #adding the version
 							set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform}) #adding the platform
 
-							set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${ref_platform}/${package}-${ref_version}-${RELEASE_BINARY}.tar.gz)
+							set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${RELEASE_BINARY}/${package}-${ref_version}-${RELEASE_BINARY}.tar.gz)
 							set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${package}-${ref_version}-${RELEASE_BINARY})
 							if(DEBUG_BINARY)
-								set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${DEBUG_BINARY}.tar.gz)
+								set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${DEBUG_BINARY}/${package}-${ref_version}-dbg-${DEBUG_BINARY}.tar.gz)
 								set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${package}-${ref_version}-dbg-${DEBUG_BINARY})
 
 							endif()

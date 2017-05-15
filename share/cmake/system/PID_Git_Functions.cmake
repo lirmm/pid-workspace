@@ -631,7 +631,7 @@ if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${framework} AND IS_DIRECTORY ${WORK
 else()
 	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${framework}-framework AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}-framework)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${WORKSPACE_DIR}/sites/frameworks/${framework}-framework ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs fetch origin master)#fetching master branch to get most up to date archives
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs pull origin master)#fetching master branch to get most up to date archives
 		set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
 
 	else()
@@ -652,7 +652,7 @@ endfunction(init_Framework_Repository)
 ###
 function(update_Framework_Repository framework)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs fetch origin master)#fetching master branch to get most up to date archives
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs pull origin master)#fetching master branch to get most up to date archives
 endfunction(update_Framework_Repository)
 
 ###
@@ -725,7 +725,7 @@ if(EXISTS ${WORKSPACE_DIR}/sites/packages/${package} AND IS_DIRECTORY ${WORKSPAC
 		AND EXISTS ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt)
 		set(${IS_INITIALIZED} TRUE PARENT_SCOPE)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs fetch origin master)#fetching master branch to get most up to date archives
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs pull origin master)#fetching master branch to get most up to date archives
 		
 	else() # the site's repository appear to be non existing
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package} OUTPUT_QUIET ERROR_QUIET) #just in case of
@@ -764,7 +764,7 @@ endfunction(init_Static_Site_Repository)
 ###
 function(update_Static_Site_Repository package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git pull origin master OUTPUT_QUIET ERROR_QUIET)# pulling master branch of origin (in case of) => merge can take place
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs fetch origin master)# pulling master branch of origin (in case of) => merge can take place
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs pull origin master)# pulling master branch of origin (in case of) => merge can take place
 endfunction(update_Static_Site_Repository)
 
 ###
@@ -772,6 +772,6 @@ function(publish_Static_Site_Repository package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git add -A OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git commit -m "publising ${package} static site" OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs fetch origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git push origin master OUTPUT_QUIET ERROR_QUIET)#pushing the package site by pushing to master branch of origin => will induce an automatic management of artefact generation/publication to finally publish the resulting web site
 endfunction(publish_Static_Site_Repository)
