@@ -1,6 +1,6 @@
 Software license for the software named : pid-workspace
 
-Software description : pid-workspace is the project simplementing the core of the PID development methodology.
+Software description : pid-workspace is the project implementing the core of the PID development methodology.
 
 Copyright (C) 2017  Robin Passama (LIRMM laboratory, CNRS/University of Montepellier)
 
