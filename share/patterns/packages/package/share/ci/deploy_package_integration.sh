@@ -1,14 +1,28 @@
 
 #!/bin/bash
 
+
 cd build
 
-# generating the coverage report of the package if there are tests on libraries
-if [ "$PACKAGE_HAS_TESTS" = true ] && [ "$PACKAGE_HAS_LIBRARIES" = true ]; then
-    #using && operator allows for failure to be fatal in shell execution 
-    cmake --build . --target coverage && cd debug/share && cmake -E tar cvz coverage.tgz coverage_report/ && cd ../.. 
+# build/debug/share/coverage.tgz
+# build/release/share/staticchecks.tgz
+if [ -d release/share/developper_info]
+  cd release/share/developper_info && rm -Rf * && cd ../../..
+else
+  cd release/share && mkdir developper_info && cd ../..
 fi
 
-cmake --build . --target staticchecks && cd release/share && cmake -E tar cvz staticchecks.tgz static_checks_report/ && cd ../..
+cp release/share/dependencies.txt release/share/developper_info
+
+if [ "$PACKAGE_HAS_LIBRARIES" = true ] ; then
+
+  if [ "$PACKAGE_HAS_TESTS" = true ] ; then
+      # generating the coverage report of the package if there are tests on libraries
+      cd debug/share && cmake -E tar cvz coverage.tgz coverage_report/ && mv coverage.tgz ../../release/share/developper_info && cd ../..
+  fi
+
+  cd release/share && cmake -E tar cvz staticchecks.tgz static_checks_report/ && mv staticchecks.tgz developper_info && cd ../..
+
+fi
 
 cd ..

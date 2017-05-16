@@ -133,10 +133,11 @@ macro(declare_PID_Documentation)
 	message("[PID] WARNING : the declare_PID_Documentation is deprecated and is no more used in PID version 2. To define a documentation site please use declare_PID_Deployment function. Skipping documentation generation phase.")
 endmacro(declare_PID_Documentation)
 
+### API : declare_PID_Deployment()
 macro(declare_PID_Deployment)
-set(optionArgs PUBLISH_BINARIES)
+set(optionArgs PUBLISH_BINARIES PUBLISH_DEVELOPMENT_INFO)
 set(oneValueArgs PROJECT FRAMEWORK GIT PAGE ADVANCED TUTORIAL LOGO)
-set(multiValueArgs DESCRIPTION)
+set(multiValueArgs DESCRIPTION ALLOWED_PLATFORMS)
 cmake_parse_arguments(DECLARE_PID_DEPLOYMENT "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_DEPLOYMENT_PROJECT)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the project page of the official package repository using PROJECT keyword.")
@@ -155,10 +156,24 @@ else()#DECLARE_PID_DEPLOYMENT_HOME
 endif()
 
 #manage publication of binaries
+if(DECLARE_PID_DEPLOYMENT_ALLOWED_PLATFORMS)
+	foreach(platform IN ITEMS ${DECLARE_PID_DEPLOYMENT_ALLOWED_PLATFORMS})
+		restrict_CI(${platform})
+	endforeach()
+endif()
+
+#manage publication of binaries
 if(DECLARE_PID_DEPLOYMENT_PUBLISH_BINARIES)
 	publish_Binaries(TRUE)
 else()
 	publish_Binaries(FALSE)
+endif()
+
+#manage publication of information for developpers
+if(DECLARE_PID_DEPLOYMENT_PUBLISH_DEVELOPMENT_INFO)
+	publish_Development_Info(TRUE)
+else()
+	publish_Development_Info(FALSE)
 endif()
 
 #user defined doc
@@ -224,10 +239,10 @@ if(CHECK_PID_PLATFORM_NAME)
 	check_Platform_Constraints(RESULT IS_CURRENT "" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}") #no type as it was not managed with PID v1
 	set(${CHECK_PID_PLATFORM_NAME} ${IS_CURRENT})
 	if(IS_CURRENT AND NOT RESULT)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint cannot be satisfied !")	
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint cannot be satisfied !")
 	endif()
-	
-else()	
+
+else()
 	if(NOT CHECK_PID_PLATFORM_CONFIGURATION)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must use the CONFIGURATION keyword to describe the set of configuration constraints that apply to the current platform.")
 	endif()

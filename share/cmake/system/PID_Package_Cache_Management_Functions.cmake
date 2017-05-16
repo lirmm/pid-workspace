@@ -346,6 +346,7 @@ function(reset_Documentation_Info)
 	set(${PROJECT_NAME}_SITE_GIT_ADDRESS CACHE INTERNAL "")
 	set(${PROJECT_NAME}_SITE_INTRODUCTION CACHE INTERNAL "")
 	set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DEV_INFO_AUTOMATIC_PUBLISHING CACHE INTERNAL "")
 endfunction(reset_Documentation_Info)
 
 
@@ -403,7 +404,7 @@ endfunction(add_Category)
 
 ## check if a platform name match a platform defined in workspace
 function(platform_Exist IS_DEFINED platform)
-if(platform AND NOT platform STREQUAL "") 
+if(platform AND NOT platform STREQUAL "")
 	list(FIND WORKSPACE_ALL_PLATFORMS "${platform}" INDEX)
 	if(INDEX EQUAL -1)
 		set(${IS_DEFINED} FALSE PARENT_SCOPE)
@@ -494,6 +495,8 @@ endfunction(reset_References_Info)
 
 ### reset variables describing platforms constraints
 function(reset_Platforms_Variables)
+
+	set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS CACHE INTERNAL "")
 	if(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX}) # reset all configurations satisfied by current platform
 		set(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	endif()
@@ -709,6 +712,16 @@ endfunction(reset_Project_Description_Cached_Variables)
 function(publish_Binaries true_or_false)
 set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERNAL "")
 endfunction(publish_Binaries)
+
+###
+function(publish_Development_Info true_or_false)
+set(${PROJECT_NAME}_DEV_INFO_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERNAL "")
+endfunction(publish_Development_Info)
+
+### restrict CI to a limited set of platforms using this function
+function(restrict_CI platform)
+	set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS} ${platform} CACHE INTERNAL "")
+endfunction(restrict_CI)
 
 ###
 function(init_Component_Description component description usage)
