@@ -518,7 +518,11 @@ endfunction(reset_Platforms_Variables)
 
 ### define a set of configuration constraints that applies to all platforms with specific condition specified by type arch os and abi
 function(add_Platform_Constraint_Set type arch os abi constraints)
-	set(CURRENT_INDEX ${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}}) #current index is the current number of all constraint sets
+	if(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX})
+		set(CURRENT_INDEX ${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}}) #current index is the current number of all constraint sets
+	else()
+		set(CURRENT_INDEX 0) #current index is the current number of all constraint sets
+	endif()
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_TYPE${USE_MODE_SUFFIX} ${type} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ARCH${USE_MODE_SUFFIX} ${arch} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_OS${USE_MODE_SUFFIX} ${os} CACHE INTERNAL "")
@@ -548,7 +552,7 @@ function (configure_Install_Variables component export include_dirs dep_defs exp
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(	NOT dep_defs STREQUAL ""
 		OR NOT exported_defs  STREQUAL "")
-		set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
+		set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
 			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}}
 			${exported_defs} ${dep_defs}
 			CACHE INTERNAL "")
