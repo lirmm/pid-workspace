@@ -56,9 +56,9 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using common find modules of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
 
-configure_Git(${PROJECT_NAME})
+configure_Git()
 set(${PROJECT_NAME}_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL "")#to keep compatibility with PID v1 released package versions
-initialize_Platform_Variables() #initialize platform related variables usefull for other end-user API functions  
+initialize_Platform_Variables() #initialize platform related variables usefull for other end-user API functions
 
 #################################################
 ############ MANAGING build mode ################
@@ -88,7 +88,7 @@ elseif(DIR_NAME STREQUAL "build/debug")
 		return()
 	endif()
 elseif(DIR_NAME STREQUAL "build")
-	declare_Global_Cache_Options() #first of all declaring global options so that the package is preconfigured with default options values and adequate comments for each variable 
+	declare_Global_Cache_Options() #first of all declaring global options so that the package is preconfigured with default options values and adequate comments for each variable
 
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt "")
@@ -223,7 +223,7 @@ elseif(DIR_NAME STREQUAL "build")
 	if(${PROJECT_NAME}_ADDRESS)
 	add_dependencies(build check-repository) #checking if remote addrr needs to be changed
 	endif()
-	
+
 	add_custom_target(global_main ALL
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
@@ -540,11 +540,11 @@ if(NOT SKIP AND constraints)
 			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform and install it if possible
 			if(NOT CHECK_${config}_RESULT)
 				message("[PID] ERROR : current platform does not satisfy configuration constraint ${config}.")
-				set(${RESULT} FALSE PARENT_SCOPE) 
+				set(${RESULT} FALSE PARENT_SCOPE)
 			endif()
 		else()
 			message("[PID] INFO : when checking constraints on current platform, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${config}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config} to manage this configuration.")
-			set(${RESULT} FALSE PARENT_SCOPE) 
+			set(${RESULT} FALSE PARENT_SCOPE)
 		endif()
 	endforeach()
 	#from here OK all configuration constraints are satisfied

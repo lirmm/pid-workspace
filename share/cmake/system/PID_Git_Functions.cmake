@@ -22,8 +22,8 @@
 ######################################################################
 
 ###
-function(configure_Git package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git --version OUTPUT_VARIABLE version_string)
+function(configure_Git)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git --version OUTPUT_VARIABLE version_string)
 string(REGEX REPLACE "^[^0-9]*([0-9]+\\.[0-9]+\\.[0-9]+).*$" "\\1" VERSION ${version_string})
 if(VERSION STREQUAL ${version_string})
 	message("[PID] WARNING : cannot determine version of git")
@@ -726,7 +726,7 @@ if(EXISTS ${WORKSPACE_DIR}/sites/packages/${package} AND IS_DIRECTORY ${WORKSPAC
 		set(${IS_INITIALIZED} TRUE PARENT_SCOPE)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs pull origin master)#fetching master branch to get most up to date archives
-		
+
 	else() # the site's repository appear to be non existing
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package} OUTPUT_QUIET ERROR_QUIET) #just in case of
 		set(${IS_INITIALIZED} FALSE PARENT_SCOPE)
