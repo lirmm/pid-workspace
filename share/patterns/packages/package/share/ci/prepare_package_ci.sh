@@ -6,6 +6,8 @@
 
 # Print Git version
 git --version
+path=($pwd)
+name=$(basename $path)
 
 ############################################################################################
 #  --  initializing the folder where dependencies and installed artefacts will be put  --  #
@@ -22,3 +24,7 @@ if [ ! -d "./binaries/pid-workspace" ]; then
 else
   cd binaries/pid-workspace/pid && git pull -f official master && cmake .. && cd ../../..
 fi
+
+# previous to an execution we need to set a link into the workspace that point to the current package
+echo "creating link into binaries/pid-workspace/packages/$name"
+cd binaries/pid-workspace/packages && ln -s $path $name && cd ../../..

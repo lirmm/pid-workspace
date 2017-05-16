@@ -857,7 +857,7 @@ if(GENERATE_INSTALLER)
 					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			endif(BUILD_API_DOC)
-		endif(BUILD_AND_RUN_TESTS)
+		endif()
 	else()#debug
 		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG AND PROJECT_RUN_TESTS)  #if tests are not run then remove the coverage or test target
 			if(BUILD_COVERAGE_REPORT)
