@@ -810,6 +810,8 @@ endfunction(static_Site_Project_Exists)
 ### copying documentation content to the site repository
 function(produce_Static_Site_Content package framework version platform include_api_doc include_coverage include_staticchecks include_installer force) # copy everything needed
 #### preparing the copy depending on the target: lone static site or framework ####
+#TODO REMOVE AFTER DEBUG
+message("produce_Static_Site_Content \npackage=${package} \nframework=${framework} \nversion=${version} \nplatform=${platform} \ninclude_api_doc=${include_api_doc} \ninclude_coverage=${include_coverage} \ninclude_staticchecks=${include_staticchecks} \ninclude_installer=${include_installer} \nforce=${force}")
 if(framework AND NOT framework STREQUAL "")
 	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_packages/${package})
 	set(TARGET_APIDOC_PATH ${TARGET_PACKAGE_PATH}/api_doc)

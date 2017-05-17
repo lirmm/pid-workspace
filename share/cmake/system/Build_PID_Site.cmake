@@ -69,7 +69,7 @@ if(DEFINED TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL "")) # the packag
 	#1) find or install the framework in the workspace
 	load_Framework(LOADED ${TARGET_FRAMEWORK})
 	if(NOT LOADED)
-		message("[PID] CRITICAL ERROR: cannot build package site because the required framework ${TARGET_FRAMEWORK} cannot be found locally or online. This may be due to a lack of a reference file for this framework in the workspace, ask the author of the framework to provide one and update your workspace before launching again this command.")
+		message("[PID] ERROR: cannot build package site because the required framework ${TARGET_FRAMEWORK} cannot be found locally or online. This may be due to a lack of a reference file for this framework in the workspace, ask the author of the framework to provide one and update your workspace before launching again this command.")
 		return()
 	endif()
 
@@ -90,7 +90,6 @@ elseif(DEFINED SITE_GIT AND (NOT SITE_GIT STREQUAL ""))# the package site is put
 	else()
 		update_Local_Static_Site_Project(${TARGET_PACKAGE} ${project_url} ${site_url}) # update static site repository, to ensure its synchronization
 	endif()
-
 else()
 	message("[PID] CRITICAL ERROR: cannot build package site due to bad arguments. This situation should never appear so you may face a BUG in PID. Please contact PID developers.")
 endif()
@@ -104,12 +103,26 @@ build_Static_Site(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}")
 #4) if required push to static site official repository
 if(push_site)
 	if(DEFINED TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
-		publish_Framework_Repository(${TARGET_FRAMEWORK})
-		message("[PID] INFO : framework ${TARGET_FRAMEWORK} repository has been updated on server with new content from package ${TARGET_PACKAGE}.")
+		publish_Framework_Repository(${TARGET_FRAMEWORK} PUBLISHED)
+		if(PUBLISHED)
+			message("[PID] INFO : framework ${TARGET_FRAMEWORK} repository has been updated on server with new content from package ${TARGET_PACKAGE}.")
+		else()
+			message("[PID] WARNING : framework ${TARGET_FRAMEWORK} repository has NOT been updated on server with content from package ${TARGET_PACKAGE}.")
+		endif()
 	else()
-		publish_Static_Site_Repository(${TARGET_PACKAGE})
-		message("[PID] INFO : static site repository of ${TARGET_PACKAGE} has been updated on server.")
+		publish_Static_Site_Repository(${TARGET_PACKAGE} PUBLISHED)
+		if(PUBLISHED)
+			message("[PID] INFO : static site repository of ${TARGET_PACKAGE} has been updated on server.")
+		else()
+			message("[PID] WARNING : static site repository of ${TARGET_PACKAGE} has been updated on server.")
+		endif()
 	endif()
 else()
-	message("[PID] INFO : static site of ${TARGET_PACKAGE} has been updated locally.")
+	#debug code
+	if(DEFINED TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
+		message("[PID] INFO : framework ${TARGET_FRAMEWORK} has been updated locally with info from ${TARGET_PACKAGE}.")
+	else()
+		message("[PID] INFO : static site of ${TARGET_PACKAGE} has been updated locally.")
+	endif()
+
 endif()
