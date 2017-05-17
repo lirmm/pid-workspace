@@ -659,13 +659,15 @@ endfunction(update_Framework_Repository)
 function(publish_Framework_Repository framework PUBLISHED)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git status --porcelain OUTPUT_VARIABLE res)
 #TODO REMOVE AFTER DEBUG
-message("publish_Framework_Repository framework=${framework}")
+message("publish_Framework_Repository framework=${framework} res=${res}")
 if(res AND NOT res STREQUAL "")
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git add -A OUTPUT_QUIET ERROR_QUIET)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git commit -m "publishing new version of framework" ERROR_QUIET)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master)#pushing to master branch of origin
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push --porcelain origin master OUTPUT_VARIABLE out_push)#pushing to master branch of origin
+
+	message("publish_Framework_Repository framework=${framework} output of push=${out_push}")
 	set(${PUBLISHED} TRUE PARENT_SCOPE)
 else()
 	set(${PUBLISHED} FALSE PARENT_SCOPE)
