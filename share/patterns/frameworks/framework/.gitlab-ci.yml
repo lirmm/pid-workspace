@@ -1,5 +1,5 @@
 
-cache:  
+cache:
   key: "$CI_BUILD_REF/$CI_BUILD_REF_NAME"
   paths:
    - binaries/
@@ -11,13 +11,7 @@ stages:
  - deploy
  - cleanup
 
-before_script:
-  - eval $(ssh-agent -s)
-  - ssh-add <(echo "$SSH_PRIVATE_KEY")
-  - mkdir -p ~/.ssh
-  - '[[ -f /.dockerenv ]] && echo "$SSH_SERVER_HOSTKEYS" > ~/.ssh/known_hosts'
-
-### configure (CMake project configuration) 
+### configure (CMake project configuration)
 configure_workspace:
   stage: configure
   script:
@@ -30,7 +24,7 @@ configure_workspace:
   tags:
     - pid
 
-### build the static site (using jekyll) 
+### build the static site (using jekyll)
 compile_site:
   stage: build
   script:
@@ -67,4 +61,3 @@ cleanup_build:
     - master
   tags:
     - pid
-
