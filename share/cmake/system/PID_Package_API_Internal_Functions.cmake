@@ -149,6 +149,7 @@ elseif(DIR_NAME STREQUAL "build")
 	# checking that the build takes place on integration
 	add_custom_target(check-branch
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DGIT_REPOSITORY=${CMAKE_SOURCE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DFORCE_RELEASE_BUILD=$(force)
 						-P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Branch.cmake

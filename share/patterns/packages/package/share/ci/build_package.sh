@@ -1,4 +1,4 @@
 
 #!/bin/bash
 
-cd build && cmake --build . --target build && cd ..
+cd build && cmake --build . --target build -- force=true && cd ..
