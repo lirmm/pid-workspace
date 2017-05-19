@@ -117,7 +117,8 @@ execute_process(COMMAND git rev-parse --abbrev-ref HEAD
 if(current_branch
 	AND NOT current_branch STREQUAL ""
 AND NOT current_branch MATCHES HEAD)
-	set(${BRANCH_NAME} ${current_branch} PARENT_SCOPE)
+	string(REGEX REPLACE "^[ \t\n]*([^ \t\n]+)[ \t\n]*$" "\\1" RES_BRANCH ${current_branch})
+	set(${BRANCH_NAME} ${RES_BRANCH} PARENT_SCOPE)
 endif()
 endfunction(get_Repository_Current_Branch)
 
