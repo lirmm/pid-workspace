@@ -787,7 +787,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		)
 	endif()
 
-	# adding an uninstall command (uninstall the whole installed version)
+	# adding an uninstall command (uninstall the whole installed version currently built)
 	add_custom_target(uninstall
 		COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
 		COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
