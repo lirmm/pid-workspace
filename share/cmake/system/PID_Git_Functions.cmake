@@ -324,11 +324,21 @@ endif()
 endfunction(publish_Repository_Version)
 
 ###
+function(test_Remote_Connection CONNECTED package remote)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote show ${remote} OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE res)
+if(res EQUAL 0)
+	set(${CONNECTED} TRUE PARENT_SCOPE)
+else()
+	set(${CONNECTED} FALSE PARENT_SCOPE)
+endif()
+endfunction(test_Remote_Connection)
+
+###
 function(update_Repository_Versions RESULT package)
 go_To_Master(${package})
 is_Package_Connected(CONNECTED ${package} official)
+get_Package_Repository_Address(${package} URL)
 if(NOT CONNECTED)#no official remote (due to old package style or due to a misuse of git command within a package)
-	get_Package_Repository_Address(${package} URL)
 	if(NOT URL STREQUAL "")
 		message("[PID] WARNING : package ${package} has no official remote defined (malformed package), set it to ${URL}.")
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${URL} ERROR_QUIET OUTPUT_QUIET)
@@ -336,6 +346,35 @@ if(NOT CONNECTED)#no official remote (due to old package style or due to a misus
 		set(${RESULT} FALSE PARENT_SCOPE)
 		return()
 	endif()
+elseif(NOT URL STREQUAL "") # official package is connected but the address of official is not the same as the one specified in the package description
+	get_Remotes_Address(${package} RES_OFFICIAL RES_ORIGIN)#get the adress of the official git remote
+	if(NOT RES_OFFICIAL STREQUAL URL)
+		message("[PID] WARNING : local package ${package} official remote defined in package description (${URL}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in pakage descrition !")
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${URL} ERROR_QUIET OUTPUT_QUIET)
+	else()#package remotes are consistent, but this can be an old version of the package before a migration occurred
+		test_Remote_Connection(CONNECTED ${package} official)
+		if(NOT CONNECTED) #problem if not connected a migration occurred, we have to update everything
+			include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake OPTIONAL RESULT_VARIABLE res)
+			if(res STREQUAL NOTFOUND) #reference not founs, may mean the package has been removed
+				message("[PID] WARNING : local package ${package} cannot update from its official remote and is not know into workspace, aborting its update ! Please check that the package still exists or try upgrading your workspace.")
+				set(${RESULT} FALSE PARENT_SCOPE) #simply exitting
+				return()
+			endif()
+			#from here the package is known and its reference related variables have been updated
+			if (${package}_ADDRESS STREQUAL RES_OFFICIAL)#OK so no problem detected but cannot interact with the remote repository
+				message("[PID] WARNING : local package ${package} cannot be update from its official remote, aborting its update ! Please check your connection.")
+				set(${RESULT} FALSE PARENT_SCOPE) #simply exitting
+				return()
+			else() #for now only updating the official remote address so that update can occur
+				message("[PID] WARNING : local package ${package} official remote defined in workspace (${${package}_ADDRESS}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in workspace !")
+				execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${${package}_ADDRESS} ERROR_QUIET OUTPUT_QUIET)
+				# once the update will be done the official address in description should have changed accordingly
+			endif()
+		endif()
+	endif()
+else() # PROBLEM: no URL defined in description !!
+	message("[PID] WARNING : local package ${package} has no official remote defined while an official remote is defined by git ! This is an uncoherent package state !")
+	set(${RESULT} FALSE PARENT_SCOPE)
 endif()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags  OUTPUT_QUIET ERROR_QUIET)#getting new tags
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull --ff-only official master RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)#pulling master branch of official
