@@ -239,7 +239,7 @@ endfunction(register_Repository_Address)
 function(register_Repository_Version package version_string)
 go_To_Integration(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add CMakeLists.txt)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "start new version ${version_string}")
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "[skip ci] start new version ${version_string}")
 endfunction(register_Repository_Version)
 
 #############################################################################
