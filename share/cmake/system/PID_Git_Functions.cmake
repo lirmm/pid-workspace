@@ -111,18 +111,14 @@ endfunction(normalize_Version_Tags)
 ###
 function(get_Repository_Current_Branch BRANCH_NAME repo)
 set(${BRANCH_NAME} PARENT_SCOPE)
-execute_process(COMMAND git branch
+execute_process(COMMAND git rev-parse --abbrev-ref HEAD
 		WORKING_DIRECTORY ${repo}
-		OUTPUT_VARIABLE current_branches ERROR_QUIET)
-string(REPLACE "\n" ";" GIT_BRANCHES "${current_branches}")
-
-foreach(branch IN ITEMS ${GIT_BRANCHES})
-	string(REGEX REPLACE "^\\* (.*)$" "\\1" A_BRANCH ${branch})
-	if(NOT "${branch}" STREQUAL "${A_BRANCH}")#i.e. match found (this is the current branch)
-		set(${BRANCH_NAME} ${A_BRANCH} PARENT_SCOPE)
-		break()
-	endif()
-endforeach()
+		OUTPUT_VARIABLE current_branch ERROR_QUIET)
+if(current_branch
+	AND NOT current_branch STREQUAL ""
+AND NOT current_branch MATCHES HEAD)
+	set(${BRANCH_NAME} ${current_branch} PARENT_SCOPE)
+endif()
 endfunction(get_Repository_Current_Branch)
 
 
