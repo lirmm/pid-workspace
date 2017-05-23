@@ -1322,12 +1322,12 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/)
 include(${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
 #using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
-if(${res} STREQUAL NOTFOUND)
+if(res STREQUAL NOTFOUND)
 	# no platform usage file => nothing to do
 	return()
 endif()
 unset(${package}_CURR_DIR)
-# checking platforms
+# checking platforms constraints
 set(CONFIGS_TO_CHECK)
 if(${package}_PLATFORM_CONFIGURATIONS)
 	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})#there are configuration constraints in PID v2 style

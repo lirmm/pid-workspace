@@ -747,6 +747,7 @@ if(CHECK_EXTERNAL_PID_PLATFORM_PACKAGE
 	set(${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_PLATFORM_CONFIGURATIONS ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION}  CACHE INTERNAL "")
 else()
 	message("[PID] WARNING: Bad usage of function check_PID_External_Package_Platform: PACKAGE (value: ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}), PLATFORM (value: ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM}) and CONFIGURATION (value: ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION}) keywords must be used !")
+	return() #return will exit from current Use file included (because we are in a macro)
 endif()
 endmacro(check_PID_External_Package_Platform)
 
@@ -770,9 +771,11 @@ macro(declare_PID_External_Package_Dependency)
 			set(${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE}_EXTERNAL_DEPENDENCY_${DECLARE_PID_EXTERNAL_DEPENDENCY_EXTERNAL}_VERSION_EXACT ${exact} CACHE INTERNAL "")
 		else()
 				message("[PID] WARNING: Bad usage of function declare_PID_External_Package_Dependency: package ${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE} already declares a dependency to external package ${DECLARE_PID_EXTERNAL_DEPENDENCY_EXTERNAL} with version ${DECLARE_PID_EXTERNAL_DEPENDENCY_VERSION} has already been defined !")
+				return() #return will exit from current Use file included (because we are in a macro)
 		endif()
 	else()
 		message("[PID] WARNING: Bad usage of function declare_PID_External_Package_Dependency: PACKAGE (value: ${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE}), EXTERNAL (value: ${DECLARE_PID_EXTERNAL_DEPENDENCY_EXTERNAL}) and VERSION (value: ${DECLARE_PID_EXTERNAL_DEPENDENCY_VERSION}) keywords must be used !")
+		return() #return will exit from current Use file included (because we are in a macro)
 	endif()
 endmacro(declare_PID_External_Package_Dependency)
 
@@ -783,67 +786,57 @@ macro(declare_PID_External_Component)
 	set(multiValueArgs INCLUDES LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
 
 	cmake_parse_arguments(DECLARE_PID_EXTERNAL_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-	if(DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE
-		AND DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT)
-		set(${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE}_COMPONENTS ${${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE}_COMPONENTS} ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT} CACHE INTERNAL "")
-		#manage include folders
-		if(${DECLARE_PID_EXTERNAL_COMPONENT_INCLUDES})
-			set(incs)
-			foreach(an_include IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_INCLUDES})
-				if(an_include MATCHES "^<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>")
-					list(APPEND incs ${an_include})
-				else()
-					list(APPEND incs "<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>/${an_include}")# prepend the external package name
-				endif()
-			endforeach()
-			set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_INC_DIRS ${incs} CACHE INTERNAL "")
-		else()
-			set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_INC_DIRS CACHE INTERNAL "")
-		endif()
-		#manage compile options
-		if(${DECLARE_PID_EXTERNAL_COMPONENT_COMPILER_OPTIONS})
-			set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_OPTS ${DECLARE_PID_EXTERNAL_COMPONENT_COMPILER_OPTIONS} CACHE INTERNAL "")
-		else()
-			set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_OPTS CACHE INTERNAL "")
-		endif()
-		#manage definitions
-		if(${DECLARE_PID_EXTERNAL_COMPONENT_DEFINITIONS})
-			set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_DEFS ${DECLARE_PID_EXTERNAL_COMPONENT_DEFINITIONS} CACHE INTERNAL "")
-		else()
-			set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_DEFS CACHE INTERNAL "")
-		endif()
-		#manage links
-		if(${DECLARE_PID_EXTERNAL_COMPONENT_LINKS})
-			set(links)
-			foreach(a_link IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_LINKS})
-				if(a_link MATCHES "^<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>")
-					list(APPEND links ${a_link})
-				else()
-					list(APPEND links "<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>/${a_link}")# prepend the external package name
-				endif()
-			endforeach()
-			set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_LINKS ${a_link} CACHE INTERNAL "")
-		else()
-			set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_LINKS CACHE INTERNAL "")
-		endif()
-
-		#manage runtime resources
-		if(${DECLARE_PID_EXTERNAL_COMPONENT_RUNTIME_RESOURCES})
-			set(resources)
-			foreach(a_resource IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_RUNTIME_RESOURCES})
-				if(a_resource MATCHES "^<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>")
-					list(APPEND resources ${a_resource})
-				else()
-					list(APPEND resources "<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>/${a_resource}")# prepend the external package name
-				endif()
-			endforeach()
-			set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_RUNTIME_RESOURCES ${resources} CACHE INTERNAL "")
-		else()
-			set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_RUNTIME_RESOURCES CACHE INTERNAL "")
-		endif()
-
-	else()
+	if(NOT DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE OR NOT DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT)
 		message("[PID] WARNING: Bad usage of function declare_PID_External_Component: you must define the PACKAGE (value: ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}) and the name of the component using COMPONENT keyword (value: ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}).")
+		return()#return will exit from current Use file included (because we are in a macro)
+	endif()
+	set(${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE}_COMPONENTS ${${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE}_COMPONENTS} ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT} CACHE INTERNAL "")
+	#manage include folders
+	if(${DECLARE_PID_EXTERNAL_COMPONENT_INCLUDES})
+		set(incs)
+		foreach(an_include IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_INCLUDES})
+			if(an_include MATCHES "^<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>")
+				list(APPEND incs ${an_include})
+			else()
+				list(APPEND incs "<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>/${an_include}")# prepend the external package name
+			endif()
+		endforeach()
+		set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_INC_DIRS ${incs} CACHE INTERNAL "")
+	else()
+		set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_INC_DIRS CACHE INTERNAL "")
+	endif()
+	#manage compile options
+	set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_OPTS ${DECLARE_PID_EXTERNAL_COMPONENT_COMPILER_OPTIONS} CACHE INTERNAL "")
+	#manage definitions
+	set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_DEFS ${DECLARE_PID_EXTERNAL_COMPONENT_DEFINITIONS} CACHE INTERNAL "")
+	#manage links
+	if(${DECLARE_PID_EXTERNAL_COMPONENT_LINKS})
+		set(links)
+		foreach(a_link IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_LINKS})
+			if(a_link MATCHES "^<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>")
+				list(APPEND links ${a_link})
+			else()
+				list(APPEND links "<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>/${a_link}")# prepend the external package name
+			endif()
+		endforeach()
+		set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_LINKS ${a_link} CACHE INTERNAL "")
+	else()
+		set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_LINKS CACHE INTERNAL "")
+	endif()
+
+	#manage runtime resources
+	if(${DECLARE_PID_EXTERNAL_COMPONENT_RUNTIME_RESOURCES})
+		set(resources)
+		foreach(a_resource IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_RUNTIME_RESOURCES})
+			if(a_resource MATCHES "^<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>")
+				list(APPEND resources ${a_resource})
+			else()
+				list(APPEND resources "<${DECLARE_PID_EXTERNAL_COMPONENT_EXTERNAL}>/${a_resource}")# prepend the external package name
+			endif()
+		endforeach()
+		set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_RUNTIME_RESOURCES ${resources} CACHE INTERNAL "")
+	else()
+		set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}_RUNTIME_RESOURCES CACHE INTERNAL "")
 	endif()
 endmacro(declare_PID_External_Component)
 
@@ -852,37 +845,133 @@ endmacro(declare_PID_External_Component)
 ### if EXTERNAL is used it may be use with a component name (using EXPORT or DEPENDS) or without (and so will directly use keywords: INCLUDES LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
 macro(declare_PID_External_Component_Dependency)
 	set(options)
-	set(oneValueArgs PACKAGE COMPONENT EXTERNAL EXPORT DEPENDS)
+	set(oneValueArgs PACKAGE COMPONENT EXTERNAL EXPORT USE)
 	set(multiValueArgs INCLUDES LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
 	cmake_parse_arguments(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-	if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE
-		AND DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT
-		AND DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL)
-		list(FIND ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}_COMPONENTS ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT} INDEX)
-		if(NOT INDEX EQUAL -1)
-			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: component ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT}) not defined in package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}.")
-		else()
-				set(DIRECT FALSE)
-				if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXPORT)
-						set(${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}_${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT})
-						set(export TRUE)
-						set(DIRECT TRUE)
-				elseif(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_DEPENDS)
-						set(export FALSE)
-						set(DIRECT TRUE)
-				endif()
+	if(NOT DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE OR NOT DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT)
+		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: you must define the PACKAGE (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}) and the name of the component using COMPONENT keyword (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT}).")
+		return()
+	endif()
+	set(LOCAL_PACKAGE ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE})
+	set(LOCAL_COMPONENT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT})
+	set(TARGET_COMPONENT)
+	set(EXPORT_TARGET FALSE)
 
+	#checking that the component is defined locally
+	list(FIND ${LOCAL_PACKAGE}_COMPONENTS ${LOCAL_COMPONENT} INDEX)
+	if(INDEX EQUAL -1)
+		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE}) does not define component ${LOCAL_COMPONENT}.")
+		return()
+	endif()
 
-
-				# TODO define the
-
-
+	#configuraing target package
+	if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL)
+		if(NOT ${LOCAL_PACKAGE}_DEPENDENCY_${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL}_VERSION)
+			# the external package is using the dependent package
+			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL}) not defined as a dependency of external package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}.")
+			return()
 		endif()
-	else()
-		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: you must define the PACKAGE (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}) and the name of the component using COMPONENT keyword (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT}). You must also define the target external package using EXTERNAL keyword.")
+		set(TARGET_PACKAGE)
+		#in that case a component is not mandatory defined we can just target the libraries inside the depdendency packages
+
+	else() #if not an external component it means it is an internal one
+		#in that case the component must be defined
+		set(TARGET_PACKAGE ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE})#internal means the local is the dependency
+	endif()
+
+	#configuring target component
+	if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_USE)
+		if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXPORT)
+			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: in package ${LOCAL_PACKAGE} you must use either USE OR EXPORT keywords not both.")
+			return()
+		endif()
+		set(TARGET_COMPONENT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_USE})
+	elseif(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXPORT)
+		set(TARGET_COMPONENT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXPORT})
+		set(EXPORT_TARGET TRUE)
+	endif()
+
+	if(TARGET_COMPONENT AND NOT TARGET_PACKAGE) #this is a link to a component locally defined
+		list(FIND ${LOCAL_PACKAGE}_COMPONENTS ${TARGET_COMPONENT} INDEX)
+		if(INDEX EQUAL -1)
+			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE}) does not define component ${TARGET_COMPONENT} used as a dependency for ${LOCAL_COMPONENT}.")
+			return()
+		endif()
+	endif()
+
+
+	# more checks
+	if(TARGET_COMPONENT)
+		if(NOT TARGET_PACKAGE)
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_DEPENDENCIES ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_DEPENDENCIES} ${TARGET_COMPONENT} CACHE INTERNAL "")
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_EXPORT_${TARGET_COMPONENT} ${EXPORT_TARGET} CACHE INTERNAL "")
+		else()
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEPENDENCIES} ${TARGET_PACKAGE} CACHE INTERNAL "")
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCY_${TARGET_PACKAGE}_COMPONENTS ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCY_${TARGET_PACKAGE}_COMPONENTS} ${TARGET_COMPONENT} CACHE INTERNAL "")
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_EXPORT_${TARGET_PACKAGE}_${TARGET_COMPONENT} ${EXPORT_TARGET} CACHE INTERNAL "")
+		endif()
+	else() #otherwise this is a direct reference to external package content
+		set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES} ${TARGET_PACKAGE} CACHE INTERNAL "")
+		#this previous line is used to tell the system that path inside this component's variables have to be resolved again that external package
+		if(NOT TARGET_PACKAGE) #check that we really target an external package
+			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: a target external package name must be defined when a component dependency is defined with no target component (use the EXTERNAL KEYWORD).")
+			return()
+		endif()
+
+		#manage include folders
+		if(${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES})
+			set(incs)
+			foreach(an_include IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES})
+				if(an_include MATCHES "^<${TARGET_PACKAGE}>")
+					list(APPEND incs ${an_include})
+				else()
+					list(APPEND incs "<${TARGET_PACKAGE}>/${an_include}")# prepend the external package name
+				endif()
+			endforeach()
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS ${incs} CACHE INTERNAL "")
+		else()
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS CACHE INTERNAL "")
+		endif()
+		#manage compile options
+		set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPILER_OPTIONS} CACHE INTERNAL "")
+		#manage definitions
+		set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_DEFINITIONS} CACHE INTERNAL "")
+		#manage links
+		if(${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_LINKS})
+			set(links)
+			foreach(a_link IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_LINKS})
+				if(a_link MATCHES "^<${TARGET_PACKAGE}>")
+					list(APPEND links ${a_link})
+				else()
+					list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
+				endif()
+			endforeach()
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_LINKS ${a_link} CACHE INTERNAL "")
+		else()
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_LINKS CACHE INTERNAL "")
+		endif()
+
+		#manage runtime resources
+		if(${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES})
+			set(resources)
+			foreach(a_resource IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES})
+				if(a_resource MATCHES "^<${TARGET_PACKAGE}>")
+					list(APPEND resources ${a_resource})
+				else()
+					list(APPEND resources "<${TARGET_PACKAGE}>/${a_resource}")# prepend the external package name
+				endif()
+			endforeach()
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES ${resources} CACHE INTERNAL "")
+		else()
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES CACHE INTERNAL "")
+		endif()
 	endif()
 endmacro(declare_PID_External_Component_Dependency)
 
+
+#############################################################################################
+###########################Other functions of the API #######################################
+#############################################################################################
 
 ### API : external_PID_Package_Path (NAME external_package PATH result)
 function(external_PID_Package_Path)
