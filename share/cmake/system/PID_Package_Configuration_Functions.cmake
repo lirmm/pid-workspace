@@ -29,7 +29,7 @@ set(RES "${${package}_ROOT_DIR}/include/${${package}_${component}_HEADER_DIR_NAM
 #additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
 if(${package}_${component}_INC_DIRS${mode_suffix})
 	resolve_External_Includes_Path(RES_INCLUDES ${package} "${${package}_${component}_INC_DIRS${VAR_SUFFIX}}" ${mode})
-	set(RES ${RES} ${RES_INCLUDES})
+	list(APPEND RES ${RES_INCLUDES})
 endif()
 set(${INCLUDES} ${RES} PARENT_SCOPE)
 endfunction(list_Public_Includes)

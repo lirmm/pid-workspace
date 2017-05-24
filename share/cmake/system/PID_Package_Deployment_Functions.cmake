@@ -78,7 +78,7 @@ endfunction(generate_Reference_File)
 ### resolving dependencies means that each dependency of teh package finally targets a given package located in the workspace. This can lead to the install of packages either direct or undirect dependencies of the target package.
 function(resolve_Package_Dependencies package mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-################## external packages ##################
+################## management of external packages : for both external and native packages ##################
 
 # 1) managing external package dependencies (the list of dependent packages is defined as ${package}_EXTERNAL_DEPENDENCIES)
 # - locating dependent external packages in the workspace and configuring their build variables recursively
@@ -106,6 +106,10 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 			resolve_External_Package_Dependency(${package} ${installed} ${mode})
 			if(NOT ${installed}_FOUND)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find installed external package ${installed}. This is an internal bug maybe due to a bad find file.")
+				return()
+			endif()
+			if(${installed}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
+				resolve_Package_Dependencies(${installed} ${mode})#recursion : resolving dependencies for each external package dependency
 			endif()
 		endforeach()
 	else()
@@ -114,7 +118,7 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 	endif()
 endif()
 
-################## native packages ##################
+################## for native packages only ##################
 
 # 1) managing package dependencies (the list of dependent packages is defined as ${package}_DEPENDENCIES)
 # - locating dependent packages in the workspace and configuring their build variables recursively
@@ -1039,7 +1043,6 @@ else()#specific version(s) required (common case)
 				set(${selected_version} PARENT_SCOPE)
 				return()
 			endif()
-
 		else()
 			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX})
 				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})
@@ -1327,6 +1330,7 @@ if(res STREQUAL NOTFOUND)
 	return()
 endif()
 unset(${package}_CURR_DIR)
+
 # checking platforms constraints
 set(CONFIGS_TO_CHECK)
 if(${package}_PLATFORM_CONFIGURATIONS)
@@ -1357,6 +1361,12 @@ if(CONFIGS_TO_CHECK)#arch and OS are not checked as they are supposed to be alre
 	endforeach()
 endif() #otherwise no configuration for this platform is supposed to be necessary
 
+# Manage external package dependencies => need to deploy other external packages
+#if(${package}_EXTERNAL_DEPENDENCIES) #the external package has external dependencies
+#	foreach(dep_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES}) #recursive call for deployment of dependencies
+#		deploy_External_Package_Version(DEPLOYED ${dep_pack} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION})
+#	endforeach()
+#endif()
 endfunction(configure_External_Package)
 
 #############################################################################################

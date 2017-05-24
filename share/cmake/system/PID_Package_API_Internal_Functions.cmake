@@ -1488,3 +1488,70 @@ else()
 endif()
 
 endfunction(declare_External_Component_Dependency)
+
+
+function(collect_Links_And_Flags_For_External_Component dep_package dep_component RES_INCS RES_DEFS RES_OPTS RES_STATIC RES_SHARED RES_RUNTIME)
+set(RES_INCS PARENT_SCOPE)
+set(RES_DEFS PARENT_SCOPE)
+set(RES_OPTS PARENT_SCOPE)
+set(RES_STATIC PARENT_SCOPE)
+set(RES_SHARED PARENT_SCOPE)
+set(RES_RUNTIME PARENT_SCOPE)
+
+#1. Manage dependencies of the component
+# TODO
+
+#2. Manage the component properties
+
+
+endfunction(collect_Links_And_Flags_For_External_Component)
+
+### declare external structured dependancy (whose descirption has been provided by the providers) between components of current and a component belonging to an external package.
+### details: declare an external dependancy that CREATES new targets, it directly configure the "component" with adequate flags coming from "dep_package". Should be used prior to system dependencies for all dependencies that are not true system dependencies, even if installed in default systems folders).
+### export : if true the component export the external depenancy in its interface (export is always false if component is an application)
+### dep_package: the external package
+### dep_component: the component belonging to that external package
+function(declare_External_Wrapper_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
+	will_be_Built(COMP_WILL_BE_BUILT ${component})
+	if(NOT COMP_WILL_BE_BUILT)
+		return()
+	endif()
+	will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
+
+	if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
+		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} is not defined !")
+	else()
+
+	#guarding depending type of involved components
+	is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
+	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+
+	#FROM HERE TODO
+	# HERE I need to manage external defined component is a different way
+	#I need first to collect (recursively) all links and flags using the adequate variables (same as for native or close).
+	collect_Links_And_Flags_For_External_Component(${dep_package} ${dep_component} RES_INCS RES_DEFS RES_OPTS RES_STATIC RES_SHARED RES_RUNTIME)
+	set(TARGET_LINKS ${RES_STATIC} ${RES_SHARED})
+
+	if (IS_HF_COMP)
+		if(COMP_WILL_BE_INSTALLED)
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_SHARED}" "${RES_RUNTIME}")
+		endif()
+		# setting compile definitions for the target
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${RES_INCS}" "${TARGET_LINKS}")
+	elseif(IS_BUILT_COMP)
+		#prepare the dependancy export
+		configure_Install_Variables(${component} ${export} "${RES_INCS}" "${dep_defs}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_STATIC}" "${RES_SHARED}" "${runtime_resources}")
+		# setting compile definitions for the target
+		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${RES_INCS}" "${TARGET_LINKS}")
+	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+		#prepare the dependancy export
+		configure_Install_Variables(${component} TRUE "${RES_INCS}" "${dep_defs}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_STATIC}" "${RES_SHARED}" "${runtime_resources}") #export is necessarily true for a pure header library
+
+		# setting compile definitions for the "fake" target
+		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${RES_INCS}" "${TARGET_LINKS}")
+	else()
+		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
+	endif()
+endif()
+
+endfunction(declare_External_Wrapper_Component_Dependency)
