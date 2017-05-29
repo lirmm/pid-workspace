@@ -592,7 +592,7 @@ else() # otherwise no need to register them since no more useful
 			${exported_defs}
 			CACHE INTERNAL "")
 	endif()
-	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared lib (otherwise they simply disappear)
+	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared or module lib (otherwise they simply disappear)
 		if (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER"
 			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
 		)

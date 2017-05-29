@@ -653,18 +653,31 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 
 elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 
-	declare_External_Component_Dependency(
-				${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
-				${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}
-				${export}
-				"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
-				"${comp_defs}"
-				"${comp_exp_defs}"
-				"${dep_defs}"
-				"${compiler_options}"
-				"${static_links}"
-				"${shared_links}"
-				"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
+	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE)
+		declare_External_Wrapper_Component_Dependency(
+					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
+					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
+					${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}
+					${export}
+					"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
+					"${comp_defs}"
+					"${comp_exp_defs}"
+					"${dep_defs}")
+
+	else()
+		declare_External_Component_Dependency(
+					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
+					${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}
+					${export}
+					"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
+					"${comp_defs}"
+					"${comp_exp_defs}"
+					"${dep_defs}"
+					"${compiler_options}"
+					"${static_links}"
+					"${shared_links}"
+					"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
+	endif()
 else()#system dependency
 
 	declare_System_Component_Dependency(
@@ -790,7 +803,7 @@ macro(declare_PID_External_Component)
 		message("[PID] WARNING: Bad usage of function declare_PID_External_Component: you must define the PACKAGE (value: ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}) and the name of the component using COMPONENT keyword (value: ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}).")
 		return()#return will exit from current Use file included (because we are in a macro)
 	endif()
-	set(${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE}_COMPONENTS ${${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE}_COMPONENTS} ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT} CACHE INTERNAL "")
+	set(${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_COMPONENTS ${${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_COMPONENTS} ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT} CACHE INTERNAL "")
 	#manage include folders
 	if(${DECLARE_PID_EXTERNAL_COMPONENT_INCLUDES})
 		set(incs)

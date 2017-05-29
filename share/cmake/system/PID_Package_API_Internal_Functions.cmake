@@ -1347,7 +1347,6 @@ elseif(IS_BUILT_COMP)
 		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
-
 	else()	#the dependency has a build interface
 		if(export)#prepare the dependancy export
 			set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "")
@@ -1490,27 +1489,124 @@ endif()
 endfunction(declare_External_Component_Dependency)
 
 
-function(collect_Links_And_Flags_For_External_Component dep_package dep_component RES_INCS RES_DEFS RES_OPTS RES_STATIC RES_SHARED RES_RUNTIME)
-set(RES_INCS PARENT_SCOPE)
-set(RES_DEFS PARENT_SCOPE)
-set(RES_OPTS PARENT_SCOPE)
-set(RES_STATIC PARENT_SCOPE)
-set(RES_SHARED PARENT_SCOPE)
-set(RES_RUNTIME PARENT_SCOPE)
+function(collect_Links_And_Flags_For_External_Component dep_package dep_component RES_INCS RES_DEFS RES_OPTS RES_LINKS RES_RUNTIME)
+set(INCS_RESULT)
+set(DEFS_RESULT)
+set(OPTS_RESULT)
+set(LINKS_RESULT)
+set(RUNTIME_RESULT)
 
 #1. Manage dependencies of the component
-# TODO
+if(${dep_package}_EXTERNAL_DEPENDENCIES) #if the external package has dependencies we have to resolve those needed by the component
+	#some checks to verify the validity of the declaration
+	if(NOT ${dep_package}_COMPONENTS)
+		message (FATAL_ERROR "[PID] CRITICAL ERROR declaring dependency to ${dep_component} in package ${dep_package} : component ${dep_component} is unknown in ${dep_package}.")
+		return()
+	endif()
+	list(FIND ${dep_package}_COMPONENTS ${dep_component} INDEX)
+	if(INDEX EQUAL -1)
+		message (FATAL_ERROR "[PID] CRITICAL ERROR declaring dependency to ${dep_component} in package ${dep_package} : component ${dep_component} is unknown in ${dep_package}.")
+		return()
+	endif()
 
-#2. Manage the component properties
+	## collecting internal dependencies (recursive call on internal dependencies first)
+	if(${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES)
+		foreach(comp IN ITEMS ${${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES})
+			collect_Links_And_Flags_For_External_Component(${dep_package} ${comp} INCS DEFS OPTS LINKS RUNTIME_RES)
+			if(${dep_package}_${dep_component}_INTERNAL_EXPORT_${comp})
+				if(INCS)
+					list (APPEND INCS_RESULT ${INCS})
+				endif()
+				if(DEFS)
+					list (APPEND DEFS_RESULT ${DEFS})
+				endif()
+			endif()
 
+			if(OPTS)
+				list (APPEND OPTS_RESULT ${OPTS})
+			endif()
+
+			if(LINKS)
+				list (APPEND LINKS_RESULT ${LINKS})
+			endif()
+
+			if(RUNTIME_RES)
+				list (APPEND RUNTIME_RESULT ${RUNTIME_RES})
+			endif()
+		endforeach()
+	endif()
+
+	## collecting external dependencies (recursive call on external dependencies - the corresponding external package must exist)
+if(${dep_package}_${dep_component}_EXTERNAL_DEPENDENCIES)
+	foreach(dep IN ITEMS ${${dep_package}_${dep_component}_EXTERNAL_DEPENDENCIES})
+		if(${dep_package}_${dep_component}_EXTERNAL_DEPENDENCY_${dep}_COMPONENTS)
+			foreach(comp IN ITEMS ${${dep_package}_${dep_component}_EXTERNAL_DEPENDENCY_${dep}_COMPONENTS})
+				collect_Links_And_Flags_For_External_Component(${dep} ${dep} INCS DEFS OPTS LINKS RUNTIME_RES)
+				if(${dep_package}_${dep_component}_EXTERNAL_EXPORT_${dep}_${comp})
+					if(INCS)
+						list (APPEND INCS_RESULT ${INCS})
+					endif()
+					if(DEFS)
+						list (APPEND DEFS_RESULT ${DEFS})
+					endif()
+				endif()
+				if(OPTS)
+					list (APPEND OPTS_RESULT ${OPTS})
+				endif()
+				if(LINKS)
+					list (APPEND LINKS_RESULT ${LINKS})
+				endif()
+				if(RUNTIME_RES)
+					list (APPEND RUNTIME_RESULT ${RUNTIME_RES})
+				endif()
+			endforeach()
+		endif() #if no component defined this is not an errror !
+	endforeach()
+endif()
+
+#2. Manage the component properties and return the result
+if(${dep_package}_${dep_component}_INC_DIRS)
+	list(APPEND INCS_RESULT ${${dep_package}_${dep_component}_INC_DIRS})
+endif()
+if(${dep_package}_${dep_component}_DEFS)
+	list(APPEND DEFS_RESULT ${${dep_package}_${dep_component}_DEFS})
+endif()
+if(${dep_package}_${dep_component}_OPTS)
+	list(APPEND OPTS_RESULT ${${dep_package}_${dep_component}_OPTS})
+endif()
+if(${dep_package}_${dep_component}_LINKS)
+	list(APPEND LINKS_RESULT ${${dep_package}_${dep_component}_LINKS})
+endif()
+if(${dep_package}_${dep_component}_RUNTIME_RESOURCES)
+	list(APPEND RUNTIME_RESULT ${${dep_package}_${dep_component}_RUNTIME_RESOURCES})
+endif()
+
+
+#3. clearing the lists
+list(REMOVE_DUPLICATES INCS_RESULT)
+list(REMOVE_DUPLICATES DEFS_RESULT)
+list(REMOVE_DUPLICATES OPTS_RESULT)
+list(REMOVE_DUPLICATES LINKS_RESULT)
+list(REMOVE_DUPLICATES RUNTIME_RESULT)
+
+#4. return the values
+set(RES_INCS ${INCS_RESULT} PARENT_SCOPE)
+set(RES_DEFS ${DEFS_RESULT} PARENT_SCOPE)
+set(RES_OPTS ${OPTS_RESULT} PARENT_SCOPE)
+set(RES_LINKS ${LINKS_RESULT} PARENT_SCOPE)
+set(RES_RUNTIME ${RUNTIME_RESULT} PARENT_SCOPE)
 
 endfunction(collect_Links_And_Flags_For_External_Component)
 
-### declare external structured dependancy (whose descirption has been provided by the providers) between components of current and a component belonging to an external package.
+### declare external structured dependancy (whose  has been provided) between components of current component and a component belonging to an external package.
+### detail: external structured dependancy are expressed quite like native ones. This requires that the external package is provided with a PID like description using dedicated API
 ### details: declare an external dependancy that CREATES new targets, it directly configure the "component" with adequate flags coming from "dep_package". Should be used prior to system dependencies for all dependencies that are not true system dependencies, even if installed in default systems folders).
-### export : if true the component export the external depenancy in its interface (export is always false if component is an application)
 ### dep_package: the external package
 ### dep_component: the component belonging to that external package
+### export : if true the component export the external depenancy in its interface (export is always false if component is an application)
+### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of ${dep_component}, if any => definitions are exported
+### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of ${dep_component}, if any => definitions are not exported
+### dep_defs  : definitions in the interface of ${dep_component} that must be defined when ${component} uses ${dep_component}, if any => definitions are exported if dep_component is exported
 function(declare_External_Wrapper_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
 	will_be_Built(COMP_WILL_BE_BUILT ${component})
 	if(NOT COMP_WILL_BE_BUILT)
@@ -1522,33 +1618,35 @@ function(declare_External_Wrapper_Component_Dependency component dep_package dep
 		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} is not defined !")
 	else()
 
-	#guarding depending type of involved components
+	#guarding depending on type of involved components
 	is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 
-	#FROM HERE TODO
 	# HERE I need to manage external defined component is a different way
 	#I need first to collect (recursively) all links and flags using the adequate variables (same as for native or close).
-	collect_Links_And_Flags_For_External_Component(${dep_package} ${dep_component} RES_INCS RES_DEFS RES_OPTS RES_STATIC RES_SHARED RES_RUNTIME)
-	set(TARGET_LINKS ${RES_STATIC} ${RES_SHARED})
+	collect_Links_And_Flags_For_External_Component(${dep_package} ${dep_component} RES_INCS RES_DEFS RES_OPTS RES_LINKS RES_RUNTIME)
+
+	set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
 
 	if (IS_HF_COMP)
 		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_SHARED}" "${RES_RUNTIME}")
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_LINKS}" "${RES_RUNTIME}")
 		endif()
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${RES_INCS}" "${TARGET_LINKS}")
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LINKS}")
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
-		configure_Install_Variables(${component} ${export} "${RES_INCS}" "${dep_defs}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_STATIC}" "${RES_SHARED}" "${runtime_resources}")
+		set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
+		configure_Install_Variables(${component} ${export} "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS}" "" "${runtime_resources}")
+
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${RES_INCS}" "${TARGET_LINKS}")
+		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LINKS}")
 	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#prepare the dependancy export
-		configure_Install_Variables(${component} TRUE "${RES_INCS}" "${dep_defs}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_STATIC}" "${RES_SHARED}" "${runtime_resources}") #export is necessarily true for a pure header library
+		configure_Install_Variables(${component} TRUE "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS}" "" "${runtime_resources}") #export is necessarily true for a pure header library
 
 		# setting compile definitions for the "fake" target
-		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${RES_INCS}" "${TARGET_LINKS}")
+		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LINKS}")
 	else()
 		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 	endif()
