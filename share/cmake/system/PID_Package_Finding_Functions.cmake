@@ -817,6 +817,18 @@ endif()
 endmacro(finding_Package)
 
 
+# include the definition for all external components, if any.
+function (load_External_Description DEPENDENT_PACKAGES package_name package_version path_to_package_version)
+include(${path_to_package_version}/share/Use${package_name}-${package_version}.cmake  OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
+if(	${res} STREQUAL NOTFOUND) #if there is no component defined for the package there is an error
+	set(DEPENDENT_PACKAGES PARENT_SCOPE)
+	return()
+endif()
+if(${package_name}_EXTERNAL_DEPENDENCIES)
+	set(DEPENDENT_PACKAGES ${${package_name}_EXTERNAL_DEPENDENCIES} PARENT_SCOPE)
+endif()
+endfunction (load_External_Description)
+
 ##find script for external packages
 # requires ${package}_PID_KNOWN_VERSION to be defined before calling this macro, set with at least one exact version (MAJOR.MINOR.PATCH)
 # optionnaly ${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO can be set to define which version (MAJOR.MINOR.PATCH) is no more compatible with ${version}. Can be done for any version defined as "known".
@@ -846,8 +858,15 @@ if(EXIST)
 	endif()
 	if(VERSION_TO_USE)#a good version of the package has been found
 		set(${package}_FOUND TRUE CACHE INTERNAL "")
+		load_External_Description(DEPENDENT_PACKAGES ${package} ${VERSION_TO_USE} ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH}/${VERSION_TO_USE})
 		set(${package}_ROOT_DIR ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH}/${VERSION_TO_USE} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES} ${package} CACHE INTERNAL "")
+		#add the undirectly used packages as well
+		set(LIST_OF_EXTS ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES} ${package} ${DEPENDENT_PACKAGES})
+		if(LIST_OF_EXTS)
+			list(REMOVE_DUPLICATES LIST_OF_EXTS)
+		endif()
+		set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES ${LIST_OF_EXTS} CACHE INTERNAL "")
+
 		if(${package}_FIND_VERSION)
 			if(${package}_FIND_VERSION_EXACT)
 				set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version

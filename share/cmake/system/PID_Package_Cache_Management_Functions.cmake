@@ -621,6 +621,7 @@ endfunction(configure_Install_Variables)
 
 ### reset components related cached variables
 function(reset_Component_Cached_Variables component)
+	
 # resetting package dependencies
 foreach(a_dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}})
 	foreach(a_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${USE_MODE_SUFFIX}})
