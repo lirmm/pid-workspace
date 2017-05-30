@@ -623,6 +623,15 @@ if(INSTALL_REQUIRED)
 	endif()
 endif()
 
+#resolving external dependencies for project external dependencies
+if(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+	# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
+	# we get the set of all packages undirectly required
+	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
+ 		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
+ 	endforeach()
+endif()
+
 if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 1) resolving dependencies of required packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
@@ -1489,19 +1498,19 @@ endif()
 endfunction(declare_External_Component_Dependency)
 
 
-function(collect_Links_And_Flags_For_External_Component dep_package dep_component RES_INCS RES_DEFS RES_OPTS RES_LINKS RES_RUNTIME)
+function(collect_Links_And_Flags_For_External_Component dep_package dep_component RES_INCS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_RUNTIME)
 set(INCS_RESULT)
 set(DEFS_RESULT)
 set(OPTS_RESULT)
-set(LINKS_RESULT)
+set(STATIC_LINKS_RESULT)
+set(SHARED_LINKS_RESULT)
 set(RUNTIME_RESULT)
 
 ## collecting internal dependencies (recursive call on internal dependencies first)
-message("${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES=${${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES}")
-if(${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES)
-	foreach(comp IN ITEMS ${${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES})
-		collect_Links_And_Flags_For_External_Component(${dep_package} ${comp} INCS DEFS OPTS LINKS RUNTIME_RES)
-		if(${dep_package}_${dep_component}_INTERNAL_EXPORT_${comp})
+if(${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+	foreach(comp IN ITEMS ${${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
+		collect_Links_And_Flags_For_External_Component(${dep_package} ${comp} INCS DEFS OPTS LINKS_ST LINKS_SH RUNTIME_RES)
+		if(${dep_package}_${dep_component}_INTERNAL_EXPORT_${comp}${USE_MODE_SUFFIX})
 			if(INCS)
 				list (APPEND INCS_RESULT ${INCS})
 			endif()
@@ -1514,8 +1523,12 @@ if(${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES)
 			list (APPEND OPTS_RESULT ${OPTS})
 		endif()
 
-		if(LINKS)
-			list (APPEND LINKS_RESULT ${LINKS})
+		if(LINKS_ST)
+			list (APPEND STATIC_LINKS_RESULT ${LINKS_ST})
+		endif()
+
+		if(LINKS_SH)
+			list (APPEND SHARED_LINKS_RESULT ${LINKS_SH})
 		endif()
 
 		if(RUNTIME_RES)
@@ -1525,25 +1538,25 @@ if(${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES)
 endif()
 
 #1. Manage dependencies of the component
-if(${dep_package}_EXTERNAL_DEPENDENCIES) #if the external package has dependencies we have to resolve those needed by the component
+if(${dep_package}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #if the external package has dependencies we have to resolve those needed by the component
 	#some checks to verify the validity of the declaration
-	if(NOT ${dep_package}_COMPONENTS)
+	if(NOT ${dep_package}_COMPONENTS${USE_MODE_SUFFIX})
 		message (FATAL_ERROR "[PID] CRITICAL ERROR declaring dependency to ${dep_component} in package ${dep_package} : component ${dep_component} is unknown in ${dep_package}.")
 		return()
 	endif()
-	list(FIND ${dep_package}_COMPONENTS ${dep_component} INDEX)
+	list(FIND ${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${dep_component} INDEX)
 	if(INDEX EQUAL -1)
 		message (FATAL_ERROR "[PID] CRITICAL ERROR declaring dependency to ${dep_component} in package ${dep_package} : component ${dep_component} is unknown in ${dep_package}.")
 		return()
 	endif()
 
 	## collecting external dependencies (recursive call on external dependencies - the corresponding external package must exist)
-	if(${dep_package}_${dep_component}_EXTERNAL_DEPENDENCIES)
-		foreach(dep IN ITEMS ${${dep_package}_${dep_component}_EXTERNAL_DEPENDENCIES})
-			if(${dep_package}_${dep_component}_EXTERNAL_DEPENDENCY_${dep}_COMPONENTS)
-				foreach(comp IN ITEMS ${${dep_package}_${dep_component}_EXTERNAL_DEPENDENCY_${dep}_COMPONENTS})
-					collect_Links_And_Flags_For_External_Component(${dep} ${comp} INCS DEFS OPTS LINKS RUNTIME_RES)
-					if(${dep_package}_${dep_component}_EXTERNAL_EXPORT_${dep}_${comp})
+	if(${dep_package}_${dep_component}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+		foreach(dep IN ITEMS ${${dep_package}_${dep_component}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
+			if(${dep_package}_${dep_component}_EXTERNAL_DEPENDENCY_${dep}_COMPONENTS${USE_MODE_SUFFIX}) # the package requires component defined in this external package
+				foreach(comp IN ITEMS ${${dep_package}_${dep_component}_EXTERNAL_DEPENDENCY_${dep}_COMPONENTS${USE_MODE_SUFFIX}})
+					collect_Links_And_Flags_For_External_Component(${dep} ${comp} INCS DEFS OPTS LINKS_ST LINKS_SH RUNTIME_RES)
+					if(${dep_package}_${dep_component}_EXTERNAL_EXPORT_${dep}_${comp}${USE_MODE_SUFFIX})
 						if(INCS)
 							list (APPEND INCS_RESULT ${INCS})
 						endif()
@@ -1551,12 +1564,19 @@ if(${dep_package}_EXTERNAL_DEPENDENCIES) #if the external package has dependenci
 							list (APPEND DEFS_RESULT ${DEFS})
 						endif()
 					endif()
+
 					if(OPTS)
 						list (APPEND OPTS_RESULT ${OPTS})
 					endif()
-					if(LINKS)
-						list (APPEND LINKS_RESULT ${LINKS})
+
+					if(LINKS_ST)
+						list (APPEND STATIC_LINKS_RESULT ${LINKS_ST})
 					endif()
+
+					if(LINKS_SH)
+						list (APPEND SHARED_LINKS_RESULT ${LINKS_SH})
+					endif()
+
 					if(RUNTIME_RES)
 						list (APPEND RUNTIME_RESULT ${RUNTIME_RES})
 					endif()
@@ -1567,20 +1587,23 @@ if(${dep_package}_EXTERNAL_DEPENDENCIES) #if the external package has dependenci
 endif()
 
 #2. Manage the component properties and return the result
-if(${dep_package}_${dep_component}_INC_DIRS)
-	list(APPEND INCS_RESULT ${${dep_package}_${dep_component}_INC_DIRS})
+if(${dep_package}_${dep_component}_INC_DIRS${USE_MODE_SUFFIX})
+	list(APPEND INCS_RESULT ${${dep_package}_${dep_component}_INC_DIRS${USE_MODE_SUFFIX}})
 endif()
-if(${dep_package}_${dep_component}_DEFS)
-	list(APPEND DEFS_RESULT ${${dep_package}_${dep_component}_DEFS})
+if(${dep_package}_${dep_component}_DEFS${USE_MODE_SUFFIX})
+	list(APPEND DEFS_RESULT ${${dep_package}_${dep_component}_DEFS${USE_MODE_SUFFIX}})
 endif()
-if(${dep_package}_${dep_component}_OPTS)
-	list(APPEND OPTS_RESULT ${${dep_package}_${dep_component}_OPTS})
+if(${dep_package}_${dep_component}_OPTS${USE_MODE_SUFFIX})
+	list(APPEND OPTS_RESULT ${${dep_package}_${dep_component}_OPTS${USE_MODE_SUFFIX}})
 endif()
-if(${dep_package}_${dep_component}_LINKS)
-	list(APPEND LINKS_RESULT ${${dep_package}_${dep_component}_LINKS})
+if(${dep_package}_${dep_component}_STATIC_LINKS${USE_MODE_SUFFIX})
+	list(APPEND STATIC_LINKS_RESULT ${${dep_package}_${dep_component}_STATIC_LINKS${USE_MODE_SUFFIX}})
 endif()
-if(${dep_package}_${dep_component}_RUNTIME_RESOURCES)
-	list(APPEND RUNTIME_RESULT ${${dep_package}_${dep_component}_RUNTIME_RESOURCES})
+if(${dep_package}_${dep_component}_SHARED_LINKS${USE_MODE_SUFFIX})
+	list(APPEND SHARED_LINKS_RESULT ${${dep_package}_${dep_component}_SHARED_LINKS${USE_MODE_SUFFIX}})
+endif()
+if(${dep_package}_${dep_component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX})
+	list(APPEND RUNTIME_RESULT ${${dep_package}_${dep_component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX}})
 endif()
 
 #3. clearing the lists
@@ -1593,8 +1616,11 @@ endif()
 if(OPTS_RESULT)
 	list(REMOVE_DUPLICATES OPTS_RESULT)
 endif()
-if(LINKS_RESULT)
-	list(REMOVE_DUPLICATES LINKS_RESULT)
+if(STATIC_LINKS_RESULT)
+	list(REMOVE_DUPLICATES STATIC_LINKS_RESULT)
+endif()
+if(SHARED_LINKS_RESULT)
+	list(REMOVE_DUPLICATES SHARED_LINKS_RESULT)
 endif()
 if(RUNTIME_RESULT)
 	list(REMOVE_DUPLICATES RUNTIME_RESULT)
@@ -1604,7 +1630,8 @@ endif()
 set(${RES_INCS} ${INCS_RESULT} PARENT_SCOPE)
 set(${RES_DEFS} ${DEFS_RESULT} PARENT_SCOPE)
 set(${RES_OPTS} ${OPTS_RESULT} PARENT_SCOPE)
-set(${RES_LINKS} ${LINKS_RESULT} PARENT_SCOPE)
+set(${RES_LINKS_STATIC} ${STATIC_LINKS_RESULT} PARENT_SCOPE)
+set(${RES_LINKS_SHARED} ${SHARED_LINKS_RESULT} PARENT_SCOPE)
 set(${RES_RUNTIME} ${RUNTIME_RESULT} PARENT_SCOPE)
 
 endfunction(collect_Links_And_Flags_For_External_Component)
@@ -1633,30 +1660,32 @@ function(declare_External_Wrapper_Component_Dependency component dep_package dep
 	is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 
-	# HERE I need to manage external defined component is a different way
 	#I need first to collect (recursively) all links and flags using the adequate variables (same as for native or close).
-	collect_Links_And_Flags_For_External_Component(${dep_package} ${dep_component} RES_INCS RES_DEFS RES_OPTS RES_LINKS RES_RUNTIME)
+	collect_Links_And_Flags_For_External_Component(${dep_package} ${dep_component} RES_INCS RES_DEFS RES_OPTS RES_LINKS_ST RES_LINKS_SH RES_RUNTIME)
+	#message("AFTER collect_Links_And_Flags_For_External_Component for ${dep_component} of package ${dep_package}:\n RES_INCS=${RES_INCS}\n RES_DEFS=${RES_DEFS}\n RES_OPTS=${RES_OPTS}\n RES_LINKS=${RES_LINKS}\n RES_RUNTIME=${RES_RUNTIME}")
 	set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
+	set(ALL_LINKS ${RES_LINKS_ST} ${RES_LINKS_SH})
 
 	if (IS_HF_COMP)
 		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_LINKS}" "${RES_RUNTIME}")
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_LINKS_SH}" "${RES_RUNTIME}")
 		endif()
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LINKS}")
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
 	elseif(IS_BUILT_COMP)
+		#configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
 		#prepare the dependancy export
 		set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
-		configure_Install_Variables(${component} ${export} "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS}" "" "${runtime_resources}")
+		configure_Install_Variables(${component} ${export} "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${runtime_resources}")
 
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LINKS}")
+		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
 	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#prepare the dependancy export
-		configure_Install_Variables(${component} TRUE "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS}" "" "${runtime_resources}") #export is necessarily true for a pure header library
+		configure_Install_Variables(${component} TRUE "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${runtime_resources}") #export is necessarily true for a pure header library
 
 		# setting compile definitions for the "fake" target
-		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LINKS}")
+		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
 	else()
 		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 	endif()
