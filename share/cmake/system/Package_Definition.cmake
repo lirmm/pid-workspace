@@ -949,15 +949,15 @@ macro(declare_PID_External_Component_Dependency)
 	#checking that the component is defined locally
 	list(FIND ${LOCAL_PACKAGE}_COMPONENTS ${LOCAL_COMPONENT} INDEX)
 	if(INDEX EQUAL -1)
-		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE}) does not define component ${LOCAL_COMPONENT}.")
+		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE} does not define component ${LOCAL_COMPONENT}.")
 		return()
 	endif()
 
 	#configuraing target package
 	if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL)
-		if(NOT ${LOCAL_PACKAGE}_DEPENDENCY_${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL}_VERSION)
+		if(NOT ${LOCAL_PACKAGE}_EXTERNAL_DEPENDENCY_${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL}_VERSION)
 			# the external package is using the dependent package
-			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL}) not defined as a dependency of external package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}.")
+			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL} not defined as a dependency of external package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}.")
 			return()
 		endif()
 		set(TARGET_PACKAGE ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL})
@@ -983,11 +983,11 @@ macro(declare_PID_External_Component_Dependency)
 	if(TARGET_COMPONENT AND NOT TARGET_PACKAGE) #this is a link to a component locally defined
 		list(FIND ${LOCAL_PACKAGE}_COMPONENTS ${TARGET_COMPONENT} INDEX)
 		if(INDEX EQUAL -1)
-			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE}) does not define component ${TARGET_COMPONENT} used as a dependency for ${LOCAL_COMPONENT}.")
+			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE} does not define component ${TARGET_COMPONENT} used as a dependency for ${LOCAL_COMPONENT}.")
 			return()
 		endif()
 	endif()
-
+	
 	# more checks
 	if(TARGET_COMPONENT)
 		if(NOT TARGET_PACKAGE)
