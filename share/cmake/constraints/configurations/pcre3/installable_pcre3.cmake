@@ -17,18 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libpng12/installable_libpng12.cmake)
-if(libpng12_INSTALLABLE)
-	message("[PID] INFO : trying to install libpng12...")
-	execute_process(COMMAND sudo apt-get install libpng12-dev)
-	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libpng12/find_libpng12.cmake)
-	if(libpng12_FOUND)
-		message("[PID] INFO : libpng12 installed !")
-		set(libpng12_INSTALLED TRUE)
-	else()
-		set(libpng12_INSTALLED FALSE)
-		message("[PID] INFO : install of libpng12 has failed !")
-	endif()
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	set(pcre3_INSTALLABLE TRUE)
 else()
-	set(libpng12_INSTALLED FALSE)
+	set(pcre3_INSTALLABLE FALSE)
 endif()
+

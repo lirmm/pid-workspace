@@ -1,6 +1,6 @@
 #########################################################################################
 #       This file is part of the program PID                                            #
-#       Program description : build system supportting the PID methodology              #
+#       Program description : build system supporting the PID methodology              	#
 #       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
 #       et de Microelectronique de Montpellier). All Right reserved.                    #
 #                                                                                       #
@@ -17,18 +17,18 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libpng12/installable_libpng12.cmake)
-if(libpng12_INSTALLABLE)
-	message("[PID] INFO : trying to install libpng12...")
-	execute_process(COMMAND sudo apt-get install libpng12-dev)
-	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libpng12/find_libpng12.cmake)
-	if(libpng12_FOUND)
-		message("[PID] INFO : libpng12 installed !")
-		set(libpng12_INSTALLED TRUE)
+if(NOT pcre3_FOUND) #any linux or macosx is zlib ...
+	set(pcre3_COMPILE_OPTIONS CACHE INTERNAL "")
+	set(pcre3_INCLUDE_DIRS CACHE INTERNAL "")
+	set(pcre3_LINK_OPTIONS CACHE INTERNAL "")
+	set(pcre3_RPATH CACHE INTERNAL "")
+	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/pcre3/find_pcre3.cmake)
+	if(pcre3_FOUND)
+		set(pcre3_LINK_OPTIONS ${pcre3_LIBRARIES} CACHE INTERNAL "") #simply adding all zlib standard libraries
+		set(CHECK_pcre3_RESULT TRUE)
 	else()
-		set(libpng12_INSTALLED FALSE)
-		message("[PID] INFO : install of libpng12 has failed !")
+		set(CHECK_pcre3_RESULT FALSE)
 	endif()
 else()
-	set(libpng12_INSTALLED FALSE)
+	set(CHECK_pcre3_RESULT TRUE)
 endif()
