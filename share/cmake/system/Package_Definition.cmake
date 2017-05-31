@@ -1,20 +1,20 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
 
@@ -44,7 +44,7 @@ if(DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS)
 endif()
 
 declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${DECLARE_PID_PACKAGE_MAIL}"
-			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}" 
+			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}"
 			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_DESCRIPTION}")
 endmacro(declare_PID_Package)
 
@@ -95,11 +95,27 @@ if(NOT ADD_PID_PACKAGE_REFERENCE_VERSION)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to input a target version number (with major and minor values, optionnaly you can also set a patch value which is considered as 0 if not set) using VERSION keyword.")
 else()
 	get_Version_String_Numbers(${ADD_PID_PACKAGE_REFERENCE_VERSION} MAJOR MINOR PATCH)
-	if(NOT PATCH)
-		add_Reference("${MAJOR}.${MINOR}.0" "${ADD_PID_PACKAGE_REFERENCE_PLATFORM}" "${URL_REL}" "${URL_DBG}")
+	#manage PID v1 API way of doing
+	platform_Exist(IS_EXISTING ${ADD_PID_PACKAGE_REFERENCE_PLATFORM})
+	if (NOT IS_EXISTING)
+		platform_Exist(IS_EXISTING "${${ADD_PID_PACKAGE_REFERENCE_PLATFORM}}")#take the value of the name instead of the direct name
+		if (NOT IS_EXISTING)
+			message("[PID] WARNING: unknown target platform ${ADD_PID_PACKAGE_REFERENCE_PLATFORM} when adding reference. Please look into ${WORKSPACE_DIR}/share/cmake/platforms/ to find all predefined platforms or eventually create your own new one and place it in this folder. The references to binaries using ${platform} will be ignored.") #just do this as a warning to enable compatiblity with V1 style references
+			set(TARGET_PLATFORM_FOR_REFERENCE)
+		else()
+			set(TARGET_PLATFORM_FOR_REFERENCE ${${ADD_PID_PACKAGE_REFERENCE_PLATFORM}})
+		endif()
 	else()
-		add_Reference("${MAJOR}.${MINOR}.${PATCH}" "${ADD_PID_PACKAGE_REFERENCE_PLATFORM}" "${URL_REL}" "${URL_DBG}")
+		set(TARGET_PLATFORM_FOR_REFERENCE ${ADD_PID_PACKAGE_REFERENCE_PLATFORM})
 	endif()
+
+	if(TARGET_PLATFORM_FOR_REFERENCE)#target platform cannot be determined
+		if(NOT PATCH)
+			add_Reference("${MAJOR}.${MINOR}.0" "${TARGET_PLATFORM_FOR_REFERENCE}" "${URL_REL}" "${URL_DBG}")
+		else()
+			add_Reference("${MAJOR}.${MINOR}.${PATCH}" "${TARGET_PLATFORM_FOR_REFERENCE}" "${URL_REL}" "${URL_DBG}")
+		endif()
+	endif()#otherwise simply do not add the reference, cannot resolve with new platform naming standard
 endif()
 endmacro(add_PID_Package_Reference)
 
@@ -111,50 +127,208 @@ endif()
 add_Category("${ARGV0}")
 endmacro(add_PID_Package_Category)
 
+
 ### API : declare_PID_Documentation()
 macro(declare_PID_Documentation)
-set(oneValueArgs GIT_ADDRESS HOME_PAGE FRAMEWORK_NAME FRAMEWORK_PAGE SPECIFIC_CONTENT)
-set(multiValueArgs DESCRIPTION)
-cmake_parse_arguments(DECLARE_PID_WIKI "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-if(NOT DECLARE_PID_WIKI_GIT_ADDRESS)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the repository address for the project wiki using GIT_ADDRESS keyword.")
-endif()
-if(NOT DECLARE_PID_WIKI_HOME_PAGE)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the http address of the home page of this wiki using HOME_PAGE keyword.")
-endif()
-define_Wiki("${DECLARE_PID_WIKI_GIT_ADDRESS}" "${DECLARE_PID_WIKI_HOME_PAGE}" "${DECLARE_PID_WIKI_FRAMEWORK_NAME}" "${DECLARE_PID_WIKI_FRAMEWORK_PAGE}" "${DECLARE_PID_WIKI_SPECIFIC_CONTENT}" "${DECLARE_PID_WIKI_DESCRIPTION}")
+	message("[PID] WARNING : the declare_PID_Documentation is deprecated and is no more used in PID version 2. To define a documentation site please use declare_PID_Publishing function. Skipping documentation generation phase.")
 endmacro(declare_PID_Documentation)
 
-### API: check_PID_Platform(	NAME resulting_name
-#				OS osname
-#				ARCH 32 OR 64
+### API : declare_PID_Publishing()
+macro(declare_PID_Publishing)
+set(optionArgs PUBLISH_BINARIES PUBLISH_DEVELOPMENT_INFO)
+set(oneValueArgs PROJECT FRAMEWORK GIT PAGE ADVANCED TUTORIAL LOGO)
+set(multiValueArgs DESCRIPTION ALLOWED_PLATFORMS)
+cmake_parse_arguments(DECLARE_PID_DEPLOYMENT "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+if(NOT DECLARE_PID_DEPLOYMENT_PROJECT)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the project page of the official package repository using PROJECT keyword.")
+endif()
+
+if(NOT DECLARE_PID_DEPLOYMENT_FRAMEWORK AND NOT DECLARE_PID_DEPLOYMENT_GIT)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell either where to find the repository of the package's static site (using GIT keyword) or to which framework the package contributes to (using FRAMEWORK keyword).")
+endif()
+if(DECLARE_PID_DEPLOYMENT_FRAMEWORK)
+	define_Framework_Contribution("${DECLARE_PID_DEPLOYMENT_FRAMEWORK}" "${DECLARE_PID_DEPLOYMENT_PROJECT}" "${DECLARE_PID_DEPLOYMENT_DESCRIPTION}")
+else()#DECLARE_PID_DEPLOYMENT_HOME
+	if(NOT DECLARE_PID_DEPLOYMENT_PAGE)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the index page for the static site of the package (using PAGE keyword).")
+	endif()
+	define_Static_Site_Contribution("${DECLARE_PID_DEPLOYMENT_PROJECT}" "${DECLARE_PID_DEPLOYMENT_GIT}" "${DECLARE_PID_DEPLOYMENT_PAGE}" "${DECLARE_PID_DEPLOYMENT_DESCRIPTION}")
+endif()
+
+#manage publication of binaries
+if(DECLARE_PID_DEPLOYMENT_ALLOWED_PLATFORMS)
+	foreach(platform IN ITEMS ${DECLARE_PID_DEPLOYMENT_ALLOWED_PLATFORMS})
+		restrict_CI(${platform})
+	endforeach()
+endif()
+
+#manage publication of binaries
+if(DECLARE_PID_DEPLOYMENT_PUBLISH_BINARIES)
+	publish_Binaries(TRUE)
+else()
+	publish_Binaries(FALSE)
+endif()
+
+#manage publication of information for developpers
+if(DECLARE_PID_DEPLOYMENT_PUBLISH_DEVELOPMENT_INFO)
+	publish_Development_Info(TRUE)
+else()
+	publish_Development_Info(FALSE)
+endif()
+
+#user defined doc
+if(DECLARE_PID_DEPLOYMENT_ADVANCED)
+	define_Documentation_Content(advanced "${DECLARE_PID_DEPLOYMENT_ADVANCED}")
+else()
+	define_Documentation_Content(advanced FALSE)
+endif()
+if(DECLARE_PID_DEPLOYMENT_TUTORIAL)
+	define_Documentation_Content(tutorial "${DECLARE_PID_DEPLOYMENT_TUTORIAL}")
+else()
+	define_Documentation_Content(tutorial FALSE)
+endif()
+if(DECLARE_PID_DEPLOYMENT_LOGO)
+	define_Documentation_Content(logo "${DECLARE_PID_DEPLOYMENT_LOGO}")
+else()
+	define_Documentation_Content(logo FALSE)
+endif()
+endmacro(declare_PID_Publishing)
+
+### API : declare_PID_Component_Documentation()
+macro(declare_PID_Component_Documentation)
+set(oneValueArgs COMPONENT FILE)
+cmake_parse_arguments(DECLARE_PID_COMPONENT_DOCUMENTATION "" "${oneValueArgs}" "" ${ARGN} )
+if(NOT DECLARE_PID_COMPONENT_DOCUMENTATION_FILE)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the file or folder that contains specific documentation content for the project using FILE keyword.")
+endif()
+if(NOT DECLARE_PID_COMPONENT_DOCUMENTATION_COMPONENT)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define a component name for this content using COMPONENT keyword.")
+endif()
+#user defined doc for a given component
+define_Component_Documentation_Content(${DECLARE_PID_COMPONENT_DOCUMENTATION_COMPONENT} "${DECLARE_PID_COMPONENT_DOCUMENTATION_FILE}")
+endmacro(declare_PID_Component_Documentation)
+
+### API: check_PID_Platform(	[NAME resulting_name] is obsolete
+#				[TYPE x86 or arm]
+#				[OS osname]
+#				[ARCH 16 OR 32 OR 64]
 #				[ABI CXX or CXX11]
-#				[CONFIGURATION ...])
+#				CONFIGURATION ...)
 macro(check_PID_Platform)
-set(oneValueArgs NAME OS ARCH ABI)
+set(oneValueArgs NAME OS ARCH ABI TYPE)
 set(multiValueArgs CONFIGURATION)
 cmake_parse_arguments(CHECK_PID_PLATFORM "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-if(NOT CHECK_PID_PLATFORM_NAME)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the name you will use to manage your platform using NAME keyword.")
-endif()
-if(NOT CHECK_PID_PLATFORM_OS)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the target OS of your platform using OS keyword.")
-elseif((NOT CHECK_PID_PLATFORM_OS STREQUAL linux) AND (NOT CHECK_PID_PLATFORM_OS STREQUAL macosx))
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown operating system ${CHECK_PID_PLATFORM_OS} (see OS argument).")
+if(CHECK_PID_PLATFORM_NAME)
+	message("[PID] WARNING : NAME is a deprecated argument. Platforms are now defined at workspace level and this macro now check if the current platform satisfies configuration constraints according to the optionnal conditions specified by TYPE, ARCH, OS and ABI. The only constraints that will be checked are those for which the current platform satisfies the conditions.")
+	if(NOT CHECK_PID_PLATFORM_OS)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must define at least an OS when using the deprecated NAME keyword")
+	else()
+		list(FIND WORKSPACE_ALL_OS ${CHECK_PID_PLATFORM_OS} INDEX)
+		if(INDEX EQUAL -1)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${CHECK_PID_PLATFORM_OS} is a bad value for argument OS. Use a valid operating system description string like xenomai, linux or macosx.")
+		endif()
+	endif()
+	if(NOT CHECK_PID_PLATFORM_ARCH)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must define at least an ARCH when using the deprecated NAME keyword")
+	else()
+		list(FIND WORKSPACE_ALL_ARCH ${CHECK_PID_PLATFORM_ARCH} INDEX)
+		if(INDEX EQUAL -1)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${CHECK_PID_PLATFORM_ARCH} is a bad value for argument ARCH. Use a value like 16, 32 or 64.")
+		endif()
+	endif()
+	check_Platform_Constraints(RESULT IS_CURRENT "" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}") #no type as it was not managed with PID v1
+	set(${CHECK_PID_PLATFORM_NAME} ${IS_CURRENT})
+	if(IS_CURRENT AND NOT RESULT)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint cannot be satisfied !")
+	endif()
+
+else()
+	if(NOT CHECK_PID_PLATFORM_CONFIGURATION)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must use the CONFIGURATION keyword to describe the set of configuration constraints that apply to the current platform.")
+	endif()
+	if(CHECK_PID_PLATFORM_TYPE)
+		list(FIND WORKSPACE_ALL_TYPE ${CHECK_PID_PLATFORM_TYPE} INDEX)
+		if(INDEX EQUAL -1)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${CHECK_PID_PLATFORM_TYPE} is a bad value for argument TYPE. Use a valid processor type like x86 or arm.")
+		endif()
+	endif()
+	if(CHECK_PID_PLATFORM_OS)
+		list(FIND WORKSPACE_ALL_OS ${CHECK_PID_PLATFORM_OS} INDEX)
+		if(INDEX EQUAL -1)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${CHECK_PID_PLATFORM_OS} is a bad value for argument OS. Use a valid operating system description string like xenomai, linux or macosx.")
+		endif()
+	endif()
+	if(CHECK_PID_PLATFORM_ARCH)
+		list(FIND WORKSPACE_ALL_ARCH ${CHECK_PID_PLATFORM_ARCH} INDEX)
+		if(INDEX EQUAL -1)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${CHECK_PID_PLATFORM_ARCH} is a bad value for argument ARCH. Use a value like 16, 32 or 64.")
+		endif()
+	endif()
+	if(CHECK_PID_PLATFORM_ABI)
+		list(FIND WORKSPACE_ALL_ABI ${CHECK_PID_PLATFORM_ABI} INDEX)
+		if(INDEX EQUAL -1)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${CHECK_PID_PLATFORM_ABI} is a bad value for argument ABI. Use a value like CXX or CXX11.")
+		endif()
+	endif()
+	#checking the constraints
+	check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}")
+	if(NOT RESULT)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint cannot be satisfied !")
+	endif()
 endif()
 
-if((NOT CHECK_PID_PLATFORM_ARCH) OR (NOT CHECK_PID_PLATFORM_ARCH EQUAL 32 AND NOT CHECK_PID_PLATFORM_ARCH EQUAL 64))
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the target architecture (32 or 64) using ARCH keyword.")
-endif()
 
-check_Platform_Constraints(${CHECK_PID_PLATFORM_NAME} "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}")
 endmacro(check_PID_Platform)
 
-### API: check_All_PID_Default_Platforms([CONFIGURATION list of system constraints])
+### API: get_PID_Platform_Info([TYPE res_type] [OS res_os] [ARCH res_arch] [ABI res_abi])
+function(get_PID_Platform_Info)
+set(oneValueArgs NAME OS ARCH ABI TYPE)
+set(multiValueArgs CONFIGURATION)
+cmake_parse_arguments(GET_PID_PLATFORM_INFO "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+set(OK FALSE)
+if(GET_PID_PLATFORM_INFO_NAME)
+	set(OK TRUE)
+	set(${GET_PID_PLATFORM_INFO_NAME} ${CURRENT_PLATFORM} PARENT_SCOPE)
+endif()
+if(GET_PID_PLATFORM_INFO_TYPE)
+	set(OK TRUE)
+	set(${GET_PID_PLATFORM_INFO_TYPE} ${CURRENT_PLATFORM_TYPE} PARENT_SCOPE)
+endif()
+if(GET_PID_PLATFORM_INFO_OS)
+	set(OK TRUE)
+	set(${GET_PID_PLATFORM_INFO_OS} ${CURRENT_PLATFORM_OS} PARENT_SCOPE)
+endif()
+if(GET_PID_PLATFORM_INFO_ARCH)
+	set(OK TRUE)
+	set(${GET_PID_PLATFORM_INFO_ARCH} ${CURRENT_PLATFORM_ARCH} PARENT_SCOPE)
+endif()
+if(GET_PID_PLATFORM_INFO_ABI)
+	set(OK TRUE)
+	set(${GET_PID_PLATFORM_INFO_ABI} ${CURRENT_PLATFORM_ABI} PARENT_SCOPE)
+endif()
+if(NOT OK)
+	message("[PID] ERROR : you must use one or more of the NAME, TYPE, ARCH, OS or ABI keywords together with corresponding variables that will contain the resulting property of the current platform in use.")
+endif()
+endfunction(get_PID_Platform_Info)
+
+### API: check_All_PID_Default_Platforms([CONFIGURATION] list of system constraints). Same as previously but without any condition
 macro(check_All_PID_Default_Platforms)
 set(multiValueArgs CONFIGURATION)
-cmake_parse_arguments(CHECK_ALL_PID_DEFAULT_PLATFORM "" "" "${multiValueArgs}" ${ARGN} )
-create_Default_Platforms_Set("${CHECK_ALL_PID_DEFAULT_PLATFORM_CONFIGURATION}")
+message("[PID] WARNING : the check_All_PID_Default_Platforms function is deprecated as check_PID_Platform will now do the job equaly well.")
+
+check_PID_Platform(NAME linux64 OS linux ARCH 64 ABI CXX)
+check_PID_Platform(NAME linux32 OS linux ARCH 32 ABI CXX)
+check_PID_Platform(NAME linux64cxx11 OS linux ARCH 64 ABI CXX11)
+check_PID_Platform(NAME macosx64 OS macosx ARCH 64 ABI CXX)
+
+cmake_parse_arguments(CHECK_PID_PLATFORM "" "" "${multiValueArgs}" ${ARGN} )
+
+if(CHECK_PID_PLATFORM_CONFIGURATION)
+	check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${CHECK_PID_PLATFORM_CONFIGURATION}")
+	if(NOT RESULT)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling check_All_PID_Default_Platforms, the current platform dos not satisfy configuration constraints.")
+	endif()
+endif()
 endmacro(check_All_PID_Default_Platforms)
 
 ### API : build_PID_Package()
@@ -165,11 +339,11 @@ endif()
 build_Package()
 endmacro(build_PID_Package)
 
-### API : declare_PID_Component(NAME name 
-#				DIRECTORY dirname 
-#				<STATIC_LIB|SHARED_LIB|MODULE_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION> 
-#				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [COMPILER_OPTIONS ...] [LINKS link ...] ] 
-#				[EXPORTED [DEFINITIONS def ...] [COMPILER_OPTIONS ...] [LINKS link ...] 
+### API : declare_PID_Component(NAME name
+#				DIRECTORY dirname
+#				<STATIC_LIB|SHARED_LIB|MODULE_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION>
+#				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [COMPILER_OPTIONS ...] [LINKS link ...] ]
+#				[EXPORTED [DEFINITIONS def ...] [COMPILER_OPTIONS ...] [LINKS link ...]
 #				[RUNTIME_RESOURCES <some path to files in the share/resources dir>]
 #				[DESCRIPTION short description of the utility of this component]
 #				[USAGE includes...])
@@ -276,22 +450,22 @@ if(DECLARE_PID_COMPONENT_RUNTIME_RESOURCES)
 endif()
 
 if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
-	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME} 
-					${DECLARE_PID_COMPONENT_DIRECTORY} 
-					${type} 
-					"${internal_inc_dirs}" 
-					"${internal_defs}" 
+	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME}
+					${DECLARE_PID_COMPONENT_DIRECTORY}
+					${type}
+					"${internal_inc_dirs}"
+					"${internal_defs}"
 					"${internal_compiler_options}"
 					"${internal_link_flags}"
 					"${runtime_resources}")
 else() #it is a library
-	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME} 
-					${DECLARE_PID_COMPONENT_DIRECTORY} 
-					${type} 
+	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME}
+					${DECLARE_PID_COMPONENT_DIRECTORY}
+					${type}
 					"${internal_inc_dirs}"
 					"${internal_defs}"
 					"${internal_compiler_options}"
-					"${exported_defs}" 
+					"${exported_defs}"
 					"${exported_compiler_options}"
 					"${internal_link_flags}"
 					"${exported_link_flags}"
@@ -302,7 +476,7 @@ if(NOT "${DECLARE_PID_COMPONENT_DESCRIPTION}" STREQUAL "")
 endif()
 endmacro(declare_PID_Component)
 
-### API : declare_PID_Package_Dependency (	PACKAGE name 
+### API : declare_PID_Package_Dependency (	PACKAGE name
 #						<EXTERNAL VERSION version_string [EXACT] | NATIVE [VERSION major[.minor] [EXACT]]] >
 #						[COMPONENTS component ...])
 macro(declare_PID_Package_Dependency)
@@ -323,7 +497,7 @@ elseif(DECLARE_PID_DEPENDENCY_EXTERNAL)
 		set(multiValueArgs COMPONENTS)
 		cmake_parse_arguments(DECLARE_PID_DEPENDENCY_EXTERNAL "${options}" "${oneValueArgs}" "${multiValueArgs}" ${DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS})
 		if(DECLARE_PID_DEPENDENCY_EXTERNAL_EXACT)
-			set(exact TRUE)			
+			set(exact TRUE)
 			if(NOT DECLARE_PID_DEPENDENCY_EXTERNAL_VERSION)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must use the EXACT keyword together with the VERSION keyword.")
 			endif()
@@ -360,7 +534,7 @@ elseif(DECLARE_PID_DEPENDENCY_NATIVE)
 					get_Version_String_Numbers(${DECLARE_PID_DEPENDENCY_NATIVE_VERSION} MAJOR MINOR PATCH)
 					set(VERS_NUMB "${MAJOR}.${MINOR}")
 				endif()
-				
+
 			else()
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to input a major and a minor number.")
 			endif()
@@ -371,7 +545,7 @@ elseif(DECLARE_PID_DEPENDENCY_NATIVE)
 		else()
 			set(VERS_NUMB "")
 		endif()
-	
+
 		if(DECLARE_PID_DEPENDENCY_NATIVE_COMPONENTS)
 			list(LENGTH DECLARE_PID_DEPENDENCY_NATIVE_COMPONENTS SIZE)
 			if(SIZE LESS 1)
@@ -382,19 +556,19 @@ elseif(DECLARE_PID_DEPENDENCY_NATIVE)
 	else()# no specific version defined
 		declare_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "" FALSE "")
 	endif()
-	
+
 endif()
 endmacro(declare_PID_Package_Dependency)
 
 
 ### API : declare_PID_Component_Dependency (	COMPONENT name
-#						[EXPORT] 
-#						<DEPEND|NATIVE dep_component [PACKAGE dep_package] 
+#						[EXPORT]
+#						<DEPEND|NATIVE dep_component [PACKAGE dep_package]
 #						| [EXTERNAL ext_package INCLUDE_DIRS dir ... RUNTIME_RESOURCES ...] LINKS [STATIC link ...] [SHARED link ...]>
 #						[INTERNAL_DEFINITIONS def ...]
 #						[IMPORTED_DEFINITIONS def ...]
 #						[EXPORTED_DEFINITIONS def ...]
-#						
+#
 #						)
 macro(declare_PID_Component_Dependency)
 set(options EXPORT)
@@ -460,20 +634,20 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 	endif()
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE)#package dependency
 		declare_Package_Component_Dependency(
-					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT} 
-					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} 
+					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
+					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
 					${target_component}
 					${export}
-					"${comp_defs}" 
+					"${comp_defs}"
 					"${comp_exp_defs}"
 					"${dep_defs}"
 					)
 	else()#internal dependency
 		declare_Internal_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
-					${target_component} 
+					${target_component}
 					${export}
-					"${comp_defs}" 
+					"${comp_defs}"
 					"${comp_exp_defs}"
 					"${dep_defs}"
 					)
@@ -483,10 +657,10 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 
 	declare_External_Component_Dependency(
 				${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
-				${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} 
-				${export} 
+				${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}
+				${export}
 				"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
-				"${comp_defs}" 
+				"${comp_defs}"
 				"${comp_exp_defs}"
 				"${dep_defs}"
 				"${compiler_options}"
@@ -499,7 +673,7 @@ else()#system dependency
 			${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 			${export}
 			"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
-			"${comp_defs}" 
+			"${comp_defs}"
 			"${comp_exp_defs}"
 			"${dep_defs}"
 			"${compiler_options}"
@@ -512,12 +686,14 @@ endmacro(declare_PID_Component_Dependency)
 
 ### API : run_PID_Test (NAME 			test_name
 #			<EXE name | COMPONENT 	name [PACKAGE name]>
+#			PRIVILEGED
 #			ARGUMENTS	 	list_of_args
 #			)
 macro(run_PID_Test)
+set(options PRIVILEGED)
 set(oneValueArgs NAME EXE COMPONENT PACKAGE)
 set(multiValueArgs ARGUMENTS)
-cmake_parse_arguments(RUN_PID_TEST "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+cmake_parse_arguments(RUN_PID_TEST "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(RUN_PID_TEST_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
 endif()
@@ -533,15 +709,24 @@ if(RUN_PID_TEST_EXE AND RUN_PID_TEST_COMPONENT)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must use either a system executable (using EXE keyword) OR a PID application component (using COMPONENT keyword).")
 endif()
 
+if(NOT PID_CROSSCOMPILATION)
+	set(PROJECT_RUN_TESTS TRUE CACHE INTERNAL "")
+endif()
+
+if(RUN_PID_TEST_PRIVILEGED)
+	if(NOT RUN_TESTS_WITH_PRIVILEGES)
+		set(RUN_TESTS_WITH_PRIVILEGES TRUE CACHE INTERNAL "")
+	endif()
+endif()
+
 if(RUN_PID_TEST_EXE)
 	add_test("${RUN_PID_TEST_NAME}" "${RUN_PID_TEST_EXE}" ${RUN_PID_TEST_ARGUMENTS})
 else()#RUN_PID_TEST_COMPONENT
 	if(RUN_PID_TEST_PACKAGE)#component coming from another PID package
-		set(target_of_test ${RUN_PID_TEST_PACKAGE}-${RUN_PID_TEST_COMPONENT})
+		set(target_of_test ${RUN_PID_TEST_PACKAGE}-${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX})
 		add_test(${RUN_PID_TEST_NAME} ${target_of_test} ${RUN_PID_TEST_ARGUMENTS})
 	else()#internal component
-		
-		add_test(${RUN_PID_TEST_NAME} ${RUN_PID_TEST_COMPONENT} ${RUN_PID_TEST_ARGUMENTS})
+		add_test(${RUN_PID_TEST_NAME} ${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX} ${RUN_PID_TEST_ARGUMENTS})
 	endif()
 endif()
 
@@ -549,16 +734,19 @@ endmacro(run_PID_Test)
 
 
 ### API : external_PID_Package_Path (NAME external_package PATH result)
-macro(external_PID_Package_Path)
+function(external_PID_Package_Path)
 set(oneValueArgs NAME PATH)
 cmake_parse_arguments(EXT_PACKAGE_PATH "" "${oneValueArgs}" "" ${ARGN} )
 if(NOT EXT_PACKAGE_PATH_NAME OR NOT EXT_PACKAGE_PATH_PATH)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name of an external package must be provided with name and a variable containing the resulting path must be set with PATH keyword.")
 endif()
-set(${EXT_PACKAGE_PATH_PATH})
-is_External_Package_Defined(${PROJECT_NAME} "${EXT_PACKAGE_PATH_NAME}" ${CMAKE_BUILD_TYPE} ${EXT_PACKAGE_PATH_PATH})
-
-endmacro(external_PID_Package_Path)
+is_External_Package_Defined(${PROJECT_NAME} "${EXT_PACKAGE_PATH_NAME}" ${CMAKE_BUILD_TYPE} PATHTO)
+if(PATHTO STREQUAL NOTFOUND)
+	set(${EXT_PACKAGE_PATH_PATH} NOTFOUND PARENT_SCOPE)
+else()
+	set(${EXT_PACKAGE_PATH_PATH} ${PATHTO} PARENT_SCOPE)
+endif()
+endfunction(external_PID_Package_Path)
 
 
 ### API : create_PID_Install_Symlink (PATH where_to_create NAME symlink_name TARGET target_of_symlink)
@@ -577,4 +765,3 @@ add_custom_target(install_symlink_${link} ALL
 	COMMAND ${CMAKE_COMMAND} -E chdir ${FULL_INSTALL_PATH} ${CMAKE_COMMAND} -E  create_symlink ${target} ${link})
 
 endmacro(create_PID_Install_Symlink)
-

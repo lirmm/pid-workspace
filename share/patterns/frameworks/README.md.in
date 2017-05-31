@@ -1,0 +1,27 @@
+
+Overview
+=========
+
+This repository is used to manage the lifecycle of @FRAMEWORK_NAME@ framework. 
+
+@README_OVERVIEW@
+
+
+This repository has been used to generate the static site of the framework. 
+
+Please visit @FRAMEWORK_SITE@ to view the result and get more information.
+
+License
+=========
+
+@LICENSE_FOR_README@
+
+
+About authors
+=====================
+
+@FRAMEWORK_NAME@ is maintained by the following contributors: @README_AUTHORS_LIST@
+
+Please contact @README_CONTACT_AUTHOR@ for more information or questions.
+
+

@@ -1,3 +1,22 @@
+#########################################################################################
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
+#########################################################################################
+
 ##################################################################
 ######## CMake License file description : ModifiedBSD ############
 ##################################################################
@@ -7,15 +26,15 @@ set(LICENSE_FULLNAME "BSD 3 Clause License")
 set(LICENSE_VERSION "1")
 set(LICENSE_AUTHORS "the University of California Berkeley")
 
-set(	LICENSE_HEADER_FILE_DESCRIPTION 
-"/*	File: @PROJECT_FILENAME@ 	
+set(	LICENSE_HEADER_FILE_DESCRIPTION
+"/*	File: @PROJECT_FILENAME@
 *	This file is part of the program ${PROJECT_NAME}
 *  	Program description : ${${PROJECT_NAME}_DESCRIPTION}
 *  	Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_LIST}. All Right reserved.
 *
 *	This software is free software: you can redistribute it and/or modify
 *	it under the terms of the ${LICENSE_NAME} license as published by
-*	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} 
+*	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION}
 *	of the License, or (at your option) any later version.
 *	This software is distributed in the hope that it will be useful,
 *	but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -35,15 +54,20 @@ Software description : ${${PROJECT_NAME}_DESCRIPTION}
 Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_LIST}
 
 This software is free software: you can redistribute it and/or modify it under the terms of the ${LICENSE_NAME} license as published by
-${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software 
-is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software
+is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 Information about license applying to this software:
+
 License : ${LICENSE_NAME}
-Official name of the license : ${LICENSE_FULLNAME} 
+
+Official name of the license : ${LICENSE_FULLNAME}
+
 Version of the license : ${LICENSE_VERSION}
+
 License authors : ${LICENSE_AUTHORS}
+
 Additionnal information can be found on the official website of the GNU licenses family (http://www.gnu.org/licenses/)
 
 Legal terms of the license are reproduced below:
@@ -55,13 +79,13 @@ modification, are permitted provided that the following conditions are
 met:
 
     (1) Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer. 
+    notice, this list of conditions and the following disclaimer.
 
     (2) Redistributions in binary form must reproduce the above copyright
     notice, this list of conditions and the following disclaimer in
     the documentation and/or other materials provided with the
-    distribution.  
-    
+    distribution.
+
     (3)The name of the author may not be used to
     endorse or promote products derived from this software without
     specific prior written permission.
@@ -78,4 +102,3 @@ STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 ")
-

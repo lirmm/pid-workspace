@@ -1,0 +1,50 @@
+<nav class="navbar navbar-fixed-top">
+  <div class="container">
+  {% if site.data.framework.framework_logo != "" %}
+  <div class="navbar-logo">
+  <a id="logo" class="navbar-brand" href="{{ site.baseurl }}/index.html">
+  <img src="{{ site.baseurl }}/assets/{{site.data.framework.framework_logo}}" style="width:40px;height:40px;" />
+  </a>
+  </div>
+  {% endif %}
+  <div class="navbar-header">
+      <a id="main-name" class="navbar-brand" href="{{ site.baseurl }}/index.html">
+	{{site.data.framework.framework_name}}
+      </a>
+  </div><!-- /.navbar-header -->
+   <div class="navbar-collapse collapse" id="mobile-navigation" aria-expanded="false">
+      <ul class="nav navbar-nav">
+        <li class="dropdown {% if page.nav-hl == 'documentation' %}active{% endif %}">
+          <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Documentation<i class="fa fa-caret-down"></i></a>
+          <ul class="dropdown-menu animated slideInDown">
+            <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/introduction.html" class="sub menu-item">Introduction</a>
+            </li>
+            <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/install.html" class="sub menu-item">Install</a>
+            </li>
+	    <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/tutorial.html" class="sub menu-item">Tutorial</a>
+            </li>
+	    <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/more.html" class="sub menu-item">Advanced Topics</a>
+            </li>
+          </ul>
+        </li>
+	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/pages/activity.html" class="menu-item">Activity</a></li>
+	<li class="dropdown {% if page.nav-hl == 'about' %}active{% endif %}">
+          <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">About<i class="fa fa-caret-down"></i></a>
+          <ul class="dropdown-menu animated slideInDown">
+            <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/contact.html" class="sub menu-item">Contact</a>
+            </li>
+            <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/help.html" class="sub menu-item">Help</a>
+            </li>
+          </ul>
+        </li>
+
+      </ul>
+    </div><!-- /.navbar-collapse -->
+    </div><!-- /container -->
+</nav>

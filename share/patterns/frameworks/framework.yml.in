@@ -1,0 +1,9 @@
+framework_name: "@FRAMEWORK_NAME@"
+framework_url: "@FRAMEWORK_SITE_URL@/@FRAMEWORK_SITE_BASE_FOLDER@"
+framework_git_project: "@FRAMEWORK_PROJECT_REPOSITORY_PAGE@"
+framework_contact_name: "@FRAMEWORK_MAINTAINER_NAME@"
+framework_contact_mail: "@FRAMEWORK_MAINTAINER_MAIL@"
+framework_description: "@FRAMEWORK_DESCRIPTION@"
+framework_banner_image: "@FRAMEWORK_BANNER@"
+framework_logo: "@FRAMEWORK_LOGO@"
+

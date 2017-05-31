@@ -1,0 +1,72 @@
+<nav class="navbar navbar-fixed-top">
+  <div class="container">
+  {% if site.data.package.package_logo != "" %}
+  <div class="navbar-logo">
+  <a id="logo" class="navbar-brand" href="{{ site.baseurl }}/index.html">
+  <img src="/pages/{{site.data.package.package_logo}}" style="width:40px;height:40px;" />
+  </a>
+  </div>
+  {% endif %}
+  <div class="navbar-header">
+      <a id="main-name" class="navbar-brand" href="{{ site.baseurl }}/index.html">
+	{{site.data.package.package_name}}
+      </a>
+  </div><!-- /.navbar-header -->
+   <div class="navbar-collapse collapse" id="mobile-navigation" aria-expanded="false">
+      <ul class="nav navbar-nav">
+	<li class="dropdown {% if page.nav-hl == 'documentation' %}active{% endif %}">
+          <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Documentation<i class="fa fa-caret-down"></i></a>
+          <ul class="dropdown-menu animated slideInDown">
+	   <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/introduction.html" class="sub menu-item">Introduction</a>
+            </li>
+	    <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/install.html" class="sub menu-item">Install</a>
+            </li>
+	    <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/use.html" class="sub menu-item">Use</a>
+            </li>
+	   {% if site.data.package.tutorial != "" %}
+	    <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/{{ site.data.package.tutorial }}.html" class="sub menu-item">Tutorial</a>
+            </li>
+  	    {% endif %}
+	    {% if site.data.package.details != "" %}
+	    <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/{{ site.data.package.details }}.html" class="sub menu-item">Advanced Topics</a>
+            </li>
+  	    {% endif %}
+
+          </ul>
+        </li>
+	<li class="dropdown {% if page.nav-hl == 'documentation' %}active{% endif %}">
+          <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Developpers<i class="fa fa-caret-down"></i></a>
+          <ul class="dropdown-menu animated slideInDown">
+		{% if site.data.package.has_apidoc %}
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/api_doc" target="_blank" class="menu-item">API</a></li>
+		{% endif %}
+		{% if site.data.package.has_checks %}
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/static_checks" target="_blank" class="menu-item">StaticChecks</a></li>
+		{% endif %}
+		{% if site.data.package.has_coverage %}
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/coverage" target="_blank" class="menu-item">Coverage</a></li>
+		{% endif %}
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/pages/binaries.html" class="menu-item">Binaries</a></li>
+	   </ul>
+	</li>
+	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/pages/activity.html" class="menu-item">Activity</a></li>
+	<li class="dropdown {% if page.nav-hl == 'documentation' %}active{% endif %}">
+          <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">About<i class="fa fa-caret-down"></i></a>
+	  <ul class="dropdown-menu animated slideInDown">
+            <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/contact.html" class="sub menu-item">Contact</a>
+            </li>
+            <li role="presentation">
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/pages/help.html" class="sub menu-item">Help</a>
+            </li>
+          </ul>
+       </li>
+       </ul>
+    </div><!-- /.navbar-collapse -->
+    </div><!-- /container -->
+</nav>

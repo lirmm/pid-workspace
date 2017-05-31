@@ -1,0 +1,17 @@
+
+# Site settings
+
+url: "@PACKAGE_SITE_URL@" # the base hostname & protocol for your site
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+excerpt_separator: ""
+
+port:    4000
+host:    localhost
+baseurl: "@PACKAGE_SITE_BASE_FOLDER@"
+
+collections:
+ binaries:
+    output: false

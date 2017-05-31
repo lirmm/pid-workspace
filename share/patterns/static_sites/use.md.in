@@ -1,0 +1,31 @@
+---
+layout: package
+title: Usage
+package: @PACKAGE_NAME@
+---
+
+## Import the package
+
+You can import @PACKAGE_NAME@ as usual with PID. In the root CMakelists.txt file of your package, after the package declaration you have to write something like:
+
+{% highlight cmake %}
+find_package (@PACKAGE_NAME@ REQUIRED)
+declare_PID_Package_Dependency(PACKAGE @PACKAGE_NAME@ NATIVE)
+{% endhighlight %}
+
+It will try to install last version of the package.
+
+If you want a specific version (recommended), for instance the currently last released version:
+
+{% highlight cmake %}
+# finding package with classic CMake command, use a version number
+find_package (@PACKAGE_NAME@ @PACKAGE_LAST_VERSION_WITH_PATCH@ REQUIRED)
+# register the package dependency before using it in components
+declare_PID_Package_Dependency(PACKAGE @PACKAGE_NAME@ NATIVE VERSION @PACKAGE_LAST_VERSION_WITHOUT_PATCH@)
+{% endhighlight %}
+
+Notice that PID will automatically install the last available patch version of the package when configuring the project with the option `REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD` to **ON** (default value).
+
+## Components
+
+@PACKAGE_COMPONENTS_DESCRIPTION@

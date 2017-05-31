@@ -1,3 +1,22 @@
+#########################################################################################
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
+#########################################################################################
+
 ##################################################################
 ########## CMake License file description : GNU LGPL V3 ##########
 ##################################################################
@@ -7,23 +26,23 @@ set(	LICENSE_VERSION			"3")
 set(	LICENSE_FULLNAME 		"GNU Lesser General Public License version 3")
 set(	LICENSE_AUTHORS			"the Free Software Foundation")
 
-set(	LICENSE_HEADER_FILE_DESCRIPTION 
-"/* 	File: @PROJECT_FILENAME@ 	
+set(	LICENSE_HEADER_FILE_DESCRIPTION
+"/* 	File: @PROJECT_FILENAME@
 *	This file is part of the program ${PROJECT_NAME}
 *  	Program description : ${${PROJECT_NAME}_DESCRIPTION}
 *  	Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_LIST}. All Right reserved.
 *
 *	This software is free software: you can redistribute it and/or modify
 *	it under the terms of the ${LICENSE_NAME} license as published by
-*	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} 
+*	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION}
 *	of the License, or (at your option) any later version.
 *	This software is distributed in the hope that it will be useful,
 *	but WITHOUT ANY WARRANTY; without even the implied warranty of
 *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 *	${LICENSE_NAME} License for more details.
 *
-*	You should have received a copy of the ${LICENSE_FULLNAME} and the 
-*	General Public License version 3 along with this program. 
+*	You should have received a copy of the ${LICENSE_FULLNAME} and the
+*	General Public License version 3 along with this program.
 *	If not, see <http://www.gnu.org/licenses/>.
 */
 ")
@@ -34,18 +53,24 @@ set(	LICENSE_LEGAL_TERMS
 Software license for the software named : ${PROJECT_NAME}
 
 Software description : ${${PROJECT_NAME}_DESCRIPTION}
+
 Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_LIST}
 
 This software is free software: you can redistribute it and/or modify it under the terms of the ${LICENSE_NAME} license as published by
- ${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software 
-is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ ${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software
+is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 Information about license applying to this software:
+
 License : ${LICENSE_NAME}
-Official name of the license : ${LICENSE_FULLNAME} 
+
+Official name of the license : ${LICENSE_FULLNAME}
+
 Version of the license : ${LICENSE_VERSION}
+
 License authors : ${LICENSE_AUTHORS}
+
 Additionnal information can be found on the official website of the GNU licenses family (http://www.gnu.org/licenses/)
 
 Legal terms of GNU Lesser General Public License version 3 are reproduced together with legal terms of the GNU General Public License version 3 it relies on:

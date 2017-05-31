@@ -1,23 +1,21 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
-
 
 ########################################################################
 ############ inclusion of required macros and functions ################
@@ -26,6 +24,7 @@ include(PID_Set_Policies NO_POLICY_SCOPE)
 
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
+include(PID_Version_Management_Functions NO_POLICY_SCOPE)
 include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
@@ -33,6 +32,9 @@ include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
+include(PID_Package_Coding_Support NO_POLICY_SCOPE)
+include(PID_Package_Continuous_Integration_Functions NO_POLICY_SCOPE)
+include(PID_Package_Plugins_Management NO_POLICY_SCOPE)
 
 ##################################################################################
 #################### package management public functions and macros ##############
@@ -43,6 +45,8 @@ include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
 ##################################################################################
 macro(declare_Package author institution mail year license address description)
 
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
+
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 #################################################
 ############ Managing options ###################
@@ -51,24 +55,20 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmak
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using common find modules of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
-declare_Mode_Cache_Options()
-manage_Parrallel_Build_Option()
+
+configure_Git()
+set(${PROJECT_NAME}_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL "")#to keep compatibility with PID v1 released package versions
+initialize_Platform_Variables() #initialize platform related variables usefull for other end-user API functions
+
 #################################################
 ############ MANAGING build mode ################
 #################################################
-set(${PROJECT_NAME}_ARCH CACHE INTERNAL "")#Deprecated but necessary: keeping arch as a cache variable to maintain compatibility with old style packages
-if(${CMAKE_SIZEOF_VOID_P} EQUAL 2)
-	set(${PROJECT_NAME}_ARCH 16 CACHE INTERNAL "")
-elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-	set(${PROJECT_NAME}_ARCH 32 CACHE INTERNAL "")
-elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-	set(${PROJECT_NAME}_ARCH 64 CACHE INTERNAL "")
-endif()
 
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 if(DIR_NAME STREQUAL "build/release")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
-
+	manage_Parrallel_Build_Option()
+	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
 	set (INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
 	set (USE_MODE_SUFFIX "" CACHE INTERNAL "")
@@ -76,10 +76,10 @@ if(DIR_NAME STREQUAL "build/release")
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
 		return()
 	endif()
-	
 elseif(DIR_NAME STREQUAL "build/debug")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
-	
+	manage_Parrallel_Build_Option()
+	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
 	set(INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
 	set(USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "")
@@ -87,11 +87,12 @@ elseif(DIR_NAME STREQUAL "build/debug")
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
 		return()
 	endif()
-	
 elseif(DIR_NAME STREQUAL "build")
+	declare_Global_Cache_Options() #first of all declaring global options so that the package is preconfigured with default options values and adequate comments for each variable
+
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt "")
-	
+
 	################################################################################################
 	################################ General purpose targets #######################################
 	################################################################################################
@@ -101,8 +102,7 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						 -DPACKAGE_NAME=${PROJECT_NAME}
 						 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/release/share/Info${PROJECT_NAME}.cmake
-						 -DUSE_MAKE_TOOL=${CMAKE_MAKE_PROGRAM}
-						 -P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Modification.cmake		
+						 -P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Modification.cmake
 			COMMENT "[PID] Checking for modified source tree ..."
     	)
 
@@ -112,46 +112,23 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMAND ${CMAKE_COMMAND} -E touch ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
 			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources
 			COMMENT "[PID] Reconfiguring the package ..."
-    	)	
-	add_custom_target(reconfigure
-			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt			
     	)
-	
+	add_custom_target(reconfigure
+			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
+    	)
+
 	add_dependencies(reconfigure checksources)
-	
-	
-	# update target (update the package from upstream git repository) 
+
+
+	# update target (update the package from upstream git repository)
 	add_custom_target(update
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DPACKAGE_BINARY_INSTALL_DIR=${WORKSPACE_DIR}/install
-						-DEXTERNAL_PACKAGE_BINARY_INSTALL_DIR=${WORKSPACE_DIR}/external
-						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-						-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}					
-						-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-						-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-						-DCMAKE_COMPILER_IS_GNUCXX=${CMAKE_COMPILER_IS_GNUCXX}
-						-DCMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID}
-						-DCMAKE_CXX_COMPILER_VERSION=${CMAKE_CXX_COMPILER_VERSION}
-						-DCMAKE_LINKER=${CMAKE_LINKER}
-						-DCMAKE_RANLIB=${CMAKE_RANLIB}
-						-DCMAKE_NM=${CMAKE_NM}
-						-DCMAKE_AR=${CMAKE_AR}
-						-DCMAKE_OBJDUMP=${CMAKE_OBJDUMP}
-						-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
-						-DCMAKE_SYSTEM_PROGRAM_PATH="${CMAKE_SYSTEM_PROGRAM_PATH}"
-						-DCMAKE_SYSTEM_INCLUDE_PATH="${CMAKE_SYSTEM_INCLUDE_PATH}"
-						-DCMAKE_SYSTEM_LIBRARY_PATH="${CMAKE_SYSTEM_LIBRARY_PATH}"
-						-DCMAKE_FIND_LIBRARY_PREFIXES="${CMAKE_FIND_LIBRARY_PREFIXES}"
-						-DCMAKE_FIND_LIBRARY_SUFFIXES="${CMAKE_FIND_LIBRARY_SUFFIXES}"
-						-DCMAKE_SYSTEM_PREFIX_PATH="${CMAKE_SYSTEM_PREFIX_PATH}"
-						-DCMAKE_LIBRARY_ARCHITECTURE=${CMAKE_LIBRARY_ARCHITECTURE}
-						-DCURRENT_DISTRIBUTION=${CURRENT_DISTRIBUTION}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Update_PID_Package.cmake
 		COMMENT "[PID] Updating the package ..."
 		VERBATIM
 	)
-	
+
 	add_custom_target(integrate
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
@@ -169,33 +146,42 @@ elseif(DIR_NAME STREQUAL "build")
 		COMMENT "[PID] Synchronizing the package version with workspace current version..."
 	)
 
-	# checking that the build takes place on integration 
+	# checking that the build takes place on integration
 	add_custom_target(check-branch
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DGIT_REPOSITORY=${CMAKE_SOURCE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DFORCE_RELEASE_BUILD=$(force)
 						-P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Branch.cmake
 		COMMENT "[PID] Checking branch..."
 	)
 
+
 	# checking that the official has not been modified (migration)
+	if(${PROJECT_NAME}_ADDRESS) #only if there is an official address spefified
 	add_custom_target(check-repository
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Check_PID_Package_Official_Repository.cmake
-		COMMENT "[PID] Checking official repository consitency..."
+		COMMENT "[PID] Checking official repository consistency..."
 	)
+	endif()
 
 	################################################################################################
 	############ creating custom targets to delegate calls to mode specific targets ################
 	################################################################################################
-	
+
+	if(RUN_TESTS_WITH_PRIVILEGES)
+		set(SUDOER_PRIVILEGES sudo)
+	else()
+		set(SUDOER_PRIVILEGES)
+	endif()
 	# global build target
 	if(BUILD_RELEASE_ONLY)
 		add_custom_target(build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Building package (Release mode only) ..."
+			COMMENT "[PID] Building package (Release mode only) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 	else()
@@ -203,41 +189,46 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Building package (Debug and Release modes) ..."
+			COMMENT "[PID] Building package (Debug and Release modes) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		#mode specific build commands
 		add_custom_target(build_release
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
-			COMMENT "[PID] Release build..."
+			COMMENT "[PID] Release build for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_dependencies(build_release reconfigure) #checking if reconfiguration is necessary before build
 		add_dependencies(build_release sync-version)#checking if PID version synchronizing needed before build
 		add_dependencies(build_release check-branch)#checking if not built on master branch or released tag
+		if(${PROJECT_NAME}_ADDRESS)
 		add_dependencies(build_release check-repository) #checking if remote addrr needs to be changed
-		
+		endif()
 		add_custom_target(build_debug
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
-			COMMENT "[PID] Debug build..."
+			COMMENT "[PID] Debug build for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_dependencies(build_debug reconfigure) #checking if reconfiguration is necessary before build
 		add_dependencies(build_debug sync-version)#checking if PID version synchronizing needed before build
 		add_dependencies(build_debug check-branch)#checking if not built on master branch or released tag
+		if(${PROJECT_NAME}_ADDRESS)
 		add_dependencies(build_debug check-repository) #checking if remote addrr needs to be changed
+	  endif()
 	endif()
-	
+
 
 	add_dependencies(build reconfigure) #checking if reconfiguration is necessary before build
 	add_dependencies(build sync-version)#checking if PID version synchronizing needed before build
 	add_dependencies(build check-branch)#checking if not built on master branch or released tag
+	if(${PROJECT_NAME}_ADDRESS)
 	add_dependencies(build check-repository) #checking if remote addrr needs to be changed
+	endif()
 
 	add_custom_target(global_main ALL
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-		COMMENT "[PID] Compiling and linking package (Debug and Release modes) ..."	
+		COMMENT "[PID] Compiling and linking package (Debug and Release modes) ..."
 		VERBATIM
 	)
 
@@ -265,8 +256,8 @@ elseif(DIR_NAME STREQUAL "build")
 		COMMENT "[PID] Installing the package ..."
 		VERBATIM
 	)
-	
-	# uninstall target (cleaning the install tree) 
+
+	# uninstall target (cleaning the install tree)
 	add_custom_target(uninstall
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} uninstall
 		COMMENT "[PID] Uninstalling the package ..."
@@ -274,50 +265,70 @@ elseif(DIR_NAME STREQUAL "build")
 	)
 
 
-	if(BUILD_AND_RUN_TESTS)
+	# site target (generation of a static site documenting the project)
+	add_custom_target(site
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} site
+		COMMENT "[PID] Creating/Updating web pages of the project ..."
+		VERBATIM
+	)
+
+	if(BUILD_AND_RUN_TESTS AND NOT PID_CROSSCOMPILATION)
 		# test target (launch test units)
 		if(BUILD_TESTS_IN_DEBUG)
 			add_custom_target(test
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} test
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} test
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests ..."
 				VERBATIM
 			)
 		else()
 			add_custom_target(test
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} test
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests ..."
 				VERBATIM
 			)
 		endif()
+		if(BUILD_COVERAGE_REPORT)
+			add_custom_target(coverage
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES}${CMAKE_MAKE_PROGRAM} coverage
+				COMMENT "[PID] Generating coverage report for tests ..."
+				VERBATIM
+			)
+			add_dependencies(site coverage)
+		endif()
+	endif()
+
+
+	if(BUILD_STATIC_CODE_CHECKING_REPORT)
+		add_custom_target(staticchecks
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} staticchecks
+			COMMENT "[PID] Generating static checks report ..."
+			VERBATIM
+		)
+		add_dependencies(site staticchecks)
 	endif()
 
 	if(BUILD_API_DOC)
-		# doc target (generation of API documentation) 
+		# doc target (generation of API documentation)
 		add_custom_target(doc
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} doc
 			COMMENT "[PID] Generating API documentation ..."
 			VERBATIM
 		)
-		# wiki target (generation of a wiki documenting the project) 
-		add_custom_target(wiki
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} wiki
-			COMMENT "[PID] Creating/Updating wiki of the project ..."
-			VERBATIM
-		)
-		add_dependencies(wiki doc)
+		add_dependencies(site doc)
 	endif()
 
 	if(GENERATE_INSTALLER)
-		# package target (generation and install of a UNIX binary packet) 
+		# package target (generation and install of a UNIX binary packet)
 		add_custom_target(package
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package_install
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package_install			
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package_install
 			COMMENT "[PID] Generating and installing system binary package ..."
 			VERBATIM
 		)
+		add_dependencies(site package)
 	endif()
 
 	if(NOT "${license}" STREQUAL "")
@@ -353,13 +364,13 @@ elseif(DIR_NAME STREQUAL "build")
 	if(NOT EXISTS ${CMAKE_BINARY_DIR}/release OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/release)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory release WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 	endif()
-	
+
 	#getting global options (those set by the user)
 	set_Mode_Specific_Options_From_Global()
-	
-	#calling cmake for each build mode (continue package configuration for Release and Debug Modes 
-	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
-	execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
+
+	#calling cmake for each build mode (continue package configuration for Release and Debug Modes
+	execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
+	execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
 
 	#now getting options specific to debug and release modes
 	set_Global_Options_From_Mode_Specific()
@@ -373,7 +384,7 @@ endif()
 #################################################
 ######## Initializing cache variables ###########
 #################################################
-reset_All_Component_Cached_Variables()
+reset_Project_Description_Cached_Variables()
 init_PID_Version_Variable()
 init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}")
 check_For_Remote_Respositories("${address}")
@@ -382,23 +393,98 @@ begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a g
 endmacro(declare_Package)
 
 
-############################################################################
-################## setting info on Wiki ####################################
-############################################################################
-macro(define_Wiki wiki_repo_addr wiki_home_page package_framework wiki_parent_page wiki_content_file description)
-init_Wiki_Info_Cache_Variables("${wiki_repo_addr}" "${wiki_home_page}" "${package_framework}" "${wiki_parent_page}" "${wiki_content_file}" "${description}")
-if(	${CMAKE_BUILD_TYPE} MATCHES Release) # the wiki can be build is release mode only
-	
-	add_custom_target(wiki
+#####################################################################################
+################## setting info on documentation ####################################
+#####################################################################################
+### defining a framework static site the package belongs to
+macro(define_Framework_Contribution framework url description)
+if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
+	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
+	return()
+elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
+	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a framework !")
+	return()
+endif()
+init_Documentation_Info_Cache_Variables("${framework}" "${url}" "" "" "${description}")
+endmacro(define_Framework_Contribution)
+
+### defining a lone static site for the package
+macro(define_Static_Site_Contribution url git_repository homepage description)
+if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
+	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a static site !")
+	return()
+elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
+	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a new one !")
+	return()
+endif()
+init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${homepage}" "${description}")
+
+endif()
+endmacro(define_Static_Site_Contribution)
+
+##
+function(create_Documentation_Target)
+if(NOT ${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
+	return()
+endif()
+
+#general information
+get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+
+# management of binaries publication
+if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING AND GENERATE_INSTALLER)
+	set(INCLUDING_BINARIES TRUE)
+else()
+	set(INCLUDING_BINARIES FALSE)
+endif()
+
+#checking for coverage generation
+if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
+	set(INCLUDING_COVERAGE TRUE)
+else()
+	set(INCLUDING_COVERAGE FALSE)
+endif()
+
+
+if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done within a lone static site
+
+	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DREMOVED_CONTENT="${wiki_content_file}"
-						-DWIKI_ADDRESS="${wiki_repo_addr}"
-						-DSYNCHRO_WIKI=$(synchro)
-			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Package_Wiki.cmake
+						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
+						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
+						-DCMAKE_COMMAND=${CMAKE_COMMAND}
+						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+						-DINCLUDES_API_DOC=${BUILD_API_DOC}
+						-DINCLUDES_COVERAGE=${INCLUDING_COVERAGE}
+						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
+						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
+						-DSYNCHRO=$(synchro)
+						-DFORCED_UPDATE=$(force)
+						-DSITE_GIT="${${PROJECT_NAME}_SITE_GIT_ADDRESS}"
+						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
+						-DPACKAGE_SITE_URL="${${PROJECT_NAME}_SITE_ROOT_PAGE}"
+			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake)
+elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done with a framework
+
+	add_custom_target(site
+		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
+						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
+						-DCMAKE_COMMAND=${CMAKE_COMMAND}
+						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}
+						-DINCLUDES_API_DOC=${BUILD_API_DOC}
+						-DINCLUDES_COVERAGE=${INCLUDING_COVERAGE}
+						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
+						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
+						-DSYNCHRO=$(synchro)
+						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
+			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake
 	)
 endif()
-endmacro(define_Wiki)
+endfunction(create_Documentation_Target)
 
 ############################################################################
 ################## setting currently developed version number ##############
@@ -411,120 +497,70 @@ endfunction(set_Current_Version)
 #####################################################################################################
 ################## checking that the platfoprm description match the current platform ###############
 #####################################################################################################
-function(check_Platform_Constraints RES_NAME os arch abi constraints)
-set(${RES_NAME} FALSE PARENT_SCOPE)
+function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints)
 set(SKIP FALSE)
-#testing OS
-set(TEST_OS ${os})
-include(CheckOS)
-if(NOT CHECK_OS_RESULT)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${os} operating system.")
-	endif()	
-	set(SKIP TRUE)
+#The check of compatibility between the target platform and the constraints is immediate using platform configuration information (platform files) + additionnal global information (distribution for instance) coming from the workspace
+
+#1) checking the conditions to know if the configuration concerns the platform currently in use
+if(type AND NOT type STREQUAL "") # a processor type is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_TYPE STREQUAL ${type})
+		set(SKIP TRUE)
+	endif()
 endif()
 
-set(TEST_ARCH ${arch})
-include(CheckARCH)
+if(NOT SKIP AND arch AND NOT arch STREQUAL "") # a processor architecture is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_ARCH STREQUAL ${arch})
+		set(SKIP TRUE)
+	endif()
+endif()
 
-if(abi)
-	set(TEST_ABI ${abi})
+if(NOT SKIP AND os AND NOT os STREQUAL "") # an operating system is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_OS STREQUAL ${os})
+		set(SKIP TRUE)
+	endif()
+endif()
+
+if(NOT SKIP AND abi AND NOT abi STREQUAL "") # an operating system is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_ABI STREQUAL ${abi})
+		set(SKIP TRUE)
+	endif()
+endif()
+
+#2) testing configuration constraints if the platform currently in use satisfies conditions
+#
+set(${RESULT} TRUE PARENT_SCOPE)
+if(SKIP)
+	set(${IS_CURRENT} PARENT_SCOPE)
 else()
-	set(TEST_ABI ANY)#no ABI check (not used for referencing a binary package)
-endif()
-include(CheckABI)
-
-
-#testing architecture
-if(NOT SKIP AND NOT CHECK_ARCH_RESULT)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : when checking platform ${RES_NAME}, not a ${arch} bits architecture.")
-	endif()	
-	set(SKIP TRUE)
+	set(${IS_CURRENT} ${CURRENT_PLATFORM} PARENT_SCOPE)
 endif()
 
-if(NOT SKIP)
-	# testing configuration
-	if(constraints)
-		foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
-			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform and install it if possible
-				if(NOT CHECK_${config}_RESULT)
-					if(ADDITIONNAL_DEBUG_INFO)
-						message("[PID] INFO : when checking platform ${RES_NAME}, ${config} constraint not satisfied.")
-					endif()
-					set(SKIP TRUE)					
-					break()
-				endif()
-			else()
-				message(FATAL_ERROR "[PID] INFO : when checking platform ${RES_NAME}, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${RES_NAME}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${RES_NAME} to manage this configuration.")
-				return()
+if(NOT SKIP AND constraints)
+	foreach(config IN ITEMS ${constraints}) ## all constraints must be satisfied
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform and install it if possible
+			if(NOT CHECK_${config}_RESULT)
+				message("[PID] ERROR : current platform does not satisfy configuration constraint ${config}.")
+				set(${RESULT} FALSE PARENT_SCOPE)
 			endif()
-		endforeach()
-	endif()
-endif()
-
-if(NOT SKIP AND NOT CHECK_ABI_RESULT)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : when checking platform ${RES_NAME}, ABI is not adequate (not a ${abi} ABI).")
-	endif()	
-	set(SKIP TRUE)
-endif()
-
-if(abi)
-	set(using_ABI ${abi})
-else()
-	set(using_ABI ${CURRENT_ABI}) #the current ABI is in use
-endif()
-
-if(NOT SKIP)
-	platform_Selected(SELECTED)
-	if(NOT SELECTED) #no platform registered yet
-		add_Platform(TRUE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
-		set(${RES_NAME} TRUE PARENT_SCOPE)
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : platform selected : ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.")
+		else()
+			message("[PID] INFO : when checking constraints on current platform, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${config}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config} to manage this configuration.")
+			set(${RESULT} FALSE PARENT_SCOPE)
 		endif()
-	else()
-		add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] WARNING : more than one possible platform configuration has been detected. Platform ${RES_NAME} is eligible but only the first found, ${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}} is selected.")
-		endif()	
-	endif()
-else()
-	add_Platform(FALSE ${RES_NAME} ${os} ${arch} "${using_ABI}" "${constraints}")#simply registering the configuration but do not select it
+	endforeach()
+	#from here OK all configuration constraints are satisfied
+	add_Configuration_To_Platform("${constraints}")
 endif()
 
+# whatever the result the constraint is registered
+add_Platform_Constraint_Set("${type}" "${arch}" "${os}" "${abi}" "${constraints}")
 endfunction(check_Platform_Constraints)
-
-###
-function(create_Default_Platforms_Set common_configuration) #default set without consfiguration constraints
-	check_Platform_Constraints(linux64cxx11 linux 64 CXX11 "${common_configuration}")
-	set(linux64cxx11 ${linux64cxx11} PARENT_SCOPE)
-	check_Platform_Constraints(linux64 linux 64 CXX "${common_configuration}")
-	set(linux64 ${linux64} PARENT_SCOPE)
-	check_Platform_Constraints(linux32 linux 32 CXX "${common_configuration}")
-	set(linux32 ${linux32} PARENT_SCOPE)
-	check_Platform_Constraints(macosx64 macosx 64 CXX "${common_configuration}")
-	set(macosx64 ${macosx64} PARENT_SCOPE)
-endfunction(create_Default_Platforms_Set)
 
 ##################################################################################
 ################################### building the package #########################
 ##################################################################################
 macro(build_Package)
-### checking platform constraints
-platform_Available(AVAILABLE)
-if(NOT AVAILABLE)
-	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : No check for platform, this code may be built for all default platforms as soon as its dependencies can. Automatically building a platform configuration from current environment ...")
-	endif()
-	create_Default_Platforms_Set("") #in case the user did not define any platform check
-endif()
-platform_Selected(SELECTED)
-if(NOT SELECTED) # a platform (even a default one) must be selected or we can just not build the project 
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : No platform configuration matches the current environment.")
-endif()
+get_System_Variables(CURRENT_PLATFORM_NAME PACKAGE_SYSTEM_STRING)
 
 ### configuring RPATH management in CMake
 set(CMAKE_SKIP_BUILD_RPATH FALSE) # don't skip the full RPATH for the build tree
@@ -533,7 +569,7 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install
 
 if(APPLE)
         set(CMAKE_MACOSX_RPATH TRUE)
-	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to @loader_path to enable easy package relocation
+	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal librari	es managed by default), name is relative to @loader_path to enable easy package relocation
 elseif (UNIX)
 	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
 endif()
@@ -551,7 +587,7 @@ if(INSTALL_REQUIRED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} try to resolve required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}.")
 		endif()
-		set(INSTALLED_PACKAGES "")	
+		set(INSTALLED_PACKAGES "")
 		install_Required_External_Packages("${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} has automatically installed the following external packages : ${INSTALLED_PACKAGES}.")
@@ -569,7 +605,7 @@ if(INSTALL_REQUIRED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} try to solve required native package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}")
 		endif()
-		set(INSTALLED_PACKAGES "")	
+		set(INSTALLED_PACKAGES "")
 		install_Required_Packages("${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES NOT_INSTALLED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} has automatically installed the following native packages : ${INSTALLED_PACKAGES}")
@@ -604,29 +640,36 @@ endif()
 #################################################
 ############ MANAGING the BUILD #################
 #################################################
-# recursive call into subdirectories to build/install/test the package
+
+# recursive call into subdirectories to build, install, test the package
 add_subdirectory(src)
 add_subdirectory(apps)
+
 if(BUILD_AND_RUN_TESTS)
- 	if(	${CMAKE_BUILD_TYPE} MATCHES Release 
-		OR (${CMAKE_BUILD_TYPE} MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
+ 	if(	CMAKE_BUILD_TYPE MATCHES Release
+		OR (CMAKE_BUILD_TYPE MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
 		enable_testing()
-		add_subdirectory(test)
+
 	endif()
 endif()
+add_subdirectory(test)
 add_subdirectory(share)
 ##########################################################
 ############ MANAGING non source files ###################
 ##########################################################
-generate_Readme_File() # generating and putting into source directory the readme file used by gitlab
+generate_Readme_Files() # generating and putting into source directory the readme file used by gitlab + in build tree the api doc welcome page (contain the same information)
 generate_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Find_File() # generating/installing the generic cmake find file for the package
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
-configure_Wiki_Pages() # generating the home page markdown file for the project wiki
 generate_API() #generating the API documentation configuration file and the rule to launch doxygen and install the doc
-clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed  
-generate_Info_File() #generating a cmake "info" file containing info about source code of components 
+clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed
+generate_Info_File() #generating a cmake "info" file containing info about source code of components
 generate_Dependencies_File() #generating a cmake "dependencies" file containing information about dependencies
+generate_Coverage() #generating a coverage report in debug mode
+generate_Static_Checks() #generating a static check report in release mode, if tests are enabled then static check test are automatically generated
+create_Documentation_Target() # create target for generating documentation
+configure_Pages() # generating the markdown files for the project web pages
+generate_CI_Config_File() #generating the CI config file in the project
 
 #installing specific folders of the share sub directory
 if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)
@@ -644,8 +687,8 @@ if(NOT EXISTS ${CMAKE_BINARY_DIR}/.rpath)
 	file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath)
 endif()
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED" 
-	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE" 
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
+	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
@@ -689,7 +732,7 @@ endforeach()
 # both release and debug packages are built and both must be generated+upoaded / downloaded+installed in the same time
 if(GENERATE_INSTALLER)
 	include(InstallRequiredSystemLibraries)
-	#common infos	
+	#common infos
 	set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
 	generate_Contact_String("${${PROJECT_NAME}_MAIN_AUTHOR}" "${${PROJECT_NAME}_CONTACT_MAIL}" RES_CONTACT)
 	set(CPACK_PACKAGE_CONTACT "${RES_CONTACT}")
@@ -704,14 +747,16 @@ if(GENERATE_INSTALLER)
 	set(CPACK_PACKAGE_VERSION "${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}")
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
 	list(APPEND CPACK_GENERATOR TGZ)
-	get_System_Variables(OS_STRING ARCH_STRING ABI_STRING PACKAGE_SYSTEM_STRING)
+
+	set(PACKAGE_SOURCE_NAME ${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${PACKAGE_SYSTEM_STRING}.tar.gz)
+	set(PACKAGE_TARGET_NAME ${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${CURRENT_PLATFORM_NAME}.tar.gz) #we use specific PID platform name instead of CMake default one to avoid troubles (because it is not really discrimant)
 
 	if(PACKAGE_SYSTEM_STRING)
 		add_custom_target(	package_install
-					COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${PACKAGE_SYSTEM_STRING}.tar.gz
-					${${PROJECT_NAME}_INSTALL_PATH}/installers/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.tar.gz
-					COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${${PROJECT_NAME}_PLATFORM${USE_MODE_SUFFIX}}.tar.gz in ${${PROJECT_NAME}_INSTALL_PATH}/installers"
-				)
+					COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
+					COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
+					COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+
 		include(CPack)
 	endif()
 endif(GENERATE_INSTALLER)
@@ -721,16 +766,16 @@ endif(GENERATE_INSTALLER)
 ###############################################################################
 
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	
+
 	#copy the reference file of the package into the "references" folder of the workspace
 	add_custom_target(referencing
 		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
 		COMMAND ${CMAKE_COMMAND} -E echo "Package references have been registered into the worskpace"
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}	
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
-	
-	#licensing all files of the project 
-	if(	DEFINED ${PROJECT_NAME}_LICENSE 
+
+	#licensing all files of the project
+	if(	DEFINED ${PROJECT_NAME}_LICENSE
 		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
 		add_custom_target(licensing
 			COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
@@ -742,22 +787,24 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		)
 	endif()
 
-	# adding an uninstall command (uninstall the whole installed version)
+	# adding an uninstall command (uninstall the whole installed version currently built)
 	add_custom_target(uninstall
 		COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
-		COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
+		COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
 		VERBATIM
 	)
-	
+
 endif()
 
 add_custom_target(list_dependencies
 	COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 					-DPROJECT_NAME=${PROJECT_NAME}
+					-DPROJECT_VERSION=${${PROJECT_NAME}_VERSION}
 					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
 					-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-DFLAT_PRESENTATION="$(flat)"
+					-DWRITE_TO_FILE="$(write_file)"
 					-P ${WORKSPACE_DIR}/share/cmake/system/Listing_PID_Package_Dependencies.cmake
 	VERBATIM
 )
@@ -766,119 +813,141 @@ add_custom_target(list_dependencies
 ######### creating build target for easy sequencing all make commands #########
 ###############################################################################
 
+if(RUN_TESTS_WITH_PRIVILEGES)
+	set(SUDOER_PRIVILEGES sudo)
+else()
+	set(SUDOER_PRIVILEGES)
+endif()
 
 #creating a global build command
 if(GENERATE_INSTALLER)
 	if(CMAKE_BUILD_TYPE MATCHES Release)
-		
-		if(BUILD_AND_RUN_TESTS)
+		if(BUILD_AND_RUN_TESTS AND PROJECT_RUN_TESTS)#if tests are not run then remove the test target
 			if(BUILD_API_DOC)
 				add_custom_target(build
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
 					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			else(BUILD_API_DOC)
-				add_custom_target(build 
+				add_custom_target(build
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
 					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
-			endif(BUILD_API_DOC) 
-		else(BUILD_AND_RUN_TESTS)
+			endif(BUILD_API_DOC)
+		else()
 			if(BUILD_API_DOC)
-				add_custom_target(build 
+				add_custom_target(build
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
 					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			else(BUILD_API_DOC)
-				add_custom_target(build 
+				add_custom_target(build
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 					COMMAND ${CMAKE_MAKE_PROGRAM} package
 					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 				)
 			endif(BUILD_API_DOC)
-		endif(BUILD_AND_RUN_TESTS)
+		endif()
 	else()#debug
-		if(BUILD_AND_RUN_TESTS AND BUILD_DEBUG_TESTS)
-			add_custom_target(build 
+		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG AND PROJECT_RUN_TESTS)  #if tests are not run then remove the coverage or test target
+			if(BUILD_COVERAGE_REPORT)
+				add_custom_target(build
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${SUDOER_PRIVILEGES} coverage ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+				)
+			else()
+				add_custom_target(build
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+					COMMAND ${CMAKE_MAKE_PROGRAM} package
+					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+				)
+			endif()
+		else()
+			add_custom_target(build
 				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 				COMMAND ${CMAKE_MAKE_PROGRAM} install
 				COMMAND ${CMAKE_MAKE_PROGRAM} package
 				COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 			)
-		else()
-			add_custom_target(build 
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
-				COMMAND ${CMAKE_MAKE_PROGRAM} package
-				COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-			) 
 		endif()
 	endif()
 
-else(GENERATE_INSTALLER)
+else(GENERATE_INSTALLER) #do not generate an installer
 	if(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS)
+		if(BUILD_AND_RUN_TESTS AND PROJECT_RUN_TESTS) #if tests are not run then remove the test target
 			if(BUILD_API_DOC)
-				add_custom_target(build 
+				add_custom_target(build
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			else(BUILD_API_DOC)
-				add_custom_target(build 
+				add_custom_target(build
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
-			endif(BUILD_API_DOC) 
-		else(BUILD_AND_RUN_TESTS)
+			endif(BUILD_API_DOC)
+		else()
 			if(BUILD_API_DOC)
-				add_custom_target(build 
+				add_custom_target(build
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc 
+					COMMAND ${CMAKE_MAKE_PROGRAM} doc
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
-			else(BUILD_API_DOC) 
-				add_custom_target(build 
+			else(BUILD_API_DOC)
+				add_custom_target(build
 					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 					COMMAND ${CMAKE_MAKE_PROGRAM} install
 				)
 			endif(BUILD_API_DOC)
 		endif()
 	else()#debug
-		if(BUILD_AND_RUN_TESTS AND BUILD_DEBUG_TESTS)
-			add_custom_target(build 
+		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG AND PROJECT_RUN_TESTS)  #if tests are not run then remove the coverage or test target
+			if(BUILD_COVERAGE_REPORT)
+				add_custom_target(build
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+				)
+			else()
+				add_custom_target(build
+					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+					COMMAND ${CMAKE_MAKE_PROGRAM} install
+				)
+			endif()
+		else()
+			add_custom_target(build
 				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 				COMMAND ${CMAKE_MAKE_PROGRAM} install
 			)
-		else()
-			add_custom_target(build 
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
-			) 
 		endif()
 	endif()
 endif(GENERATE_INSTALLER)
 
 #retrieving dependencies on sources packages
-if(	BUILD_DEPENDENT_PACKAGES 
-	AND 	(${CMAKE_BUILD_TYPE} MATCHES Debug 
+if(	BUILD_DEPENDENT_PACKAGES
+	AND 	(${CMAKE_BUILD_TYPE} MATCHES Debug
 		OR (${CMAKE_BUILD_TYPE} MATCHES Release AND BUILD_RELEASE_ONLY)))
-	#only necessary to do dependent build one time, so we do it in debug mode or release if debug not built (i.e. first mode built)	
+	#only necessary to do dependent build one time, so we do it in debug mode or release if debug not built (i.e. first mode built)
 	set(DEPENDENT_SOURCE_PACKAGES)
 	list_All_Source_Packages_In_Workspace(RESULT_PACKAGES)
 	if(RESULT_PACKAGES)
@@ -886,7 +955,7 @@ if(	BUILD_DEPENDENT_PACKAGES
 			list(FIND RESULT_PACKAGES ${dep_pack} id)
 			if(NOT id LESS "0")#the package is a dependent source package
 				list(APPEND DEPENDENT_SOURCE_PACKAGES ${dep_pack})
-			endif() 
+			endif()
 		endforeach()
 	endif()
 	if(DEPENDENT_SOURCE_PACKAGES)#there are some dependency managed with source package
@@ -924,16 +993,23 @@ endif()
 #########################################################################################################################
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	if(${PROJECT_NAME}_ADDRESS)
-		generate_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake) 
+		generate_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake)
 	endif()
 
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD AND GLOBAL_PROGRESS_VAR)
-		message("------------------------------------------------------------------")
-		message("Packages updated or installed furing ${PROJECT_NAME} configuration :")
-		print_Deployed_Packages()
+		some_Packages_Deployed_Last_Time(DEPLOYED)
+		if(DEPLOYED)
+			message("------------------------------------------------------------------")
+			message("Packages updated or installed during ${PROJECT_NAME} configuration :")
+			print_Deployed_Packages()
+			message("------------------------------------------------------------------")
+		endif()
 	endif()
 endif()
 #print_Component_Variables()
+
+# dealing with plugins at the end of the configuration process
+manage_Plugins()
 reset_Removed_Examples_Build_Option()
 finish_Progress(${GLOBAL_PROGRESS_VAR}) #managing the build from a global point of view
 endmacro(build_Package)
@@ -944,7 +1020,7 @@ endmacro(build_Package)
 # internal_defs : definitions that affects the implementation of the library component
 # exported_defs : definitions that affects the interface of the library component
 # internal_inc_dirs : additionnal include dirs (internal to package, that contains header files, e.g. like common definition between package components, that don't have to be exported since not in the interface)
-# internal_links : only for module or shared libs some internal linker flags used to build the component 
+# internal_links : only for module or shared libs some internal linker flags used to build the component
 # exported_links : only for static and shared libs : some linker flags (not a library inclusion, e.g. -l<li> or full path to a lib) that must be used when linking with the component
 #runtime resources: for all, path to file relative to and present in share/resources folder
 function(declare_Library_Component c_name dirname type internal_inc_dirs internal_defs internal_compiler_options exported_defs exported_compiler_options internal_links exported_links runtime_resources)
@@ -953,7 +1029,7 @@ is_Declared(${c_name} DECLARED)
 if(DECLARED)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring the library ${c_name} : a component with the same name is already defined.")
 	return()
-endif()	
+endif()
 #indicating that the component has been declared and need to be completed
 if(type STREQUAL "HEADER"
 OR type STREQUAL "STATIC"
@@ -987,11 +1063,11 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 
 	## 1) collect info about the sources for registration purpose
 	#register the source dir
-	if(${CMAKE_BUILD_TYPE} MATCHES Release)	
+	if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
 		get_All_Sources_Relative(${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 		set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
-		
+
 	endif()
 	## 2) collect sources for build process
 	get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
@@ -1015,7 +1091,7 @@ endif()
 # registering exported flags for all kinds of libs
 init_Component_Cached_Variables_For_Export(${c_name} "${exported_defs}" "${exported_compiler_options}" "${exported_links}" "${runtime_resources}")
 
-#updating global variables of the CMake process	
+#updating global variables of the CMake process
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS "${${PROJECT_NAME}_COMPONENTS_LIBS};${c_name}" CACHE INTERNAL "")
 # global variable to know that the component has been declared (must be reinitialized at each run of cmake)
@@ -1029,7 +1105,7 @@ endfunction(declare_Library_Component)
 # internal_defs : definitions that affects the implementation of the application component
 # internal_link_flags : additionnal linker flags that affects required to link the application component
 # internal_inc_dirs : additionnal include dirs (internal to project, that contains header files, e.g. common definition between components that don't have to be exported)
-# internal_compiler_options : additionnal compiler options to use when building the executable 
+# internal_compiler_options : additionnal compiler options to use when building the executable
 function(declare_Application_Component c_name dirname type internal_inc_dirs internal_defs internal_compiler_options internal_link_flags runtime_resources)
 set(DECLARED FALSE)
 is_Declared(${c_name} DECLARED)
@@ -1038,33 +1114,33 @@ if(DECLARED)
 	return()
 endif()
 
-if(	type STREQUAL "TEST" 
+if(	type STREQUAL "TEST"
 	OR type STREQUAL "APP"
 	OR type STREQUAL "EXAMPLE")
 	set(${PROJECT_NAME}_${c_name}_TYPE ${type} CACHE INTERNAL "")
 else() #a simple application by default
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : you have to set a type name (TEST, APP, EXAMPLE) for the application component ${c_name}")
 	return()
-endif()	
+endif()
 
 #managing sources for the application
 if(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP"
-	OR ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")	
+	OR ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")
 	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/apps/${dirname} CACHE INTERNAL "")
 elseif(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
 	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/test/${dirname} CACHE INTERNAL "")
 endif()
 
-# specifically managing examples 	
-if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE") 
+# specifically managing examples
+if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")
 	build_Option_For_Example(${c_name})
-	add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced		
-	if(NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${c_name}) #examples are not built / installed / exported so no need to continue => can be specific to a given 
-		mark_As_Declared(${c_name})		
+	add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced
+	if(NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${c_name}) #examples are not built so no need to continue
+		mark_As_Declared(${c_name})
 		return()
 	endif()
 elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
-	if(NOT ${BUILD_AND_RUN_TESTS}) #tests are not built so no need to continue
+	if(NOT BUILD_AND_RUN_TESTS) #tests are not built so no need to continue
 		mark_As_Declared(${c_name})
 		return()
 	endif()
@@ -1093,7 +1169,7 @@ endif()
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
 init_Component_Cached_Variables_For_Export(${c_name} "" "" "" "${runtime_resources}")
 
-#updating global variables of the CMake process	
+#updating global variables of the CMake process
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name}" CACHE INTERNAL "")
 # global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
@@ -1103,12 +1179,12 @@ endfunction(declare_Application_Component)
 ##################################################################################
 ####### specifying a dependency between the current package and another one ######
 ### global dependencies between packages (the system package is considered #######
-###### as external but requires no additionnal info (default system folders) ##### 
+###### as external but requires no additionnal info (default system folders) #####
 ### these functions are to be used after a find_package command. #################
 ##################################################################################
 function(declare_Package_Dependency dep_package version exact list_of_components)
 # ${PROJECT_NAME}_DEPENDENCIES				# packages required by current package
-# ${PROJECT_NAME}__DEPENDENCY_${dep_package}_VERSION		# version constraint for package ${dep_package}   required by ${PROJECT_NAME}  
+# ${PROJECT_NAME}__DEPENDENCY_${dep_package}_VERSION		# version constraint for package ${dep_package}   required by ${PROJECT_NAME}
 # ${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT	# TRUE if exact version is required
 # ${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS	# list of composants of ${dep_package} used by current package
 	# the package is necessarily required at that time
@@ -1117,8 +1193,8 @@ function(declare_Package_Dependency dep_package version exact list_of_components
 
  	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${list_of_components} CACHE INTERNAL "")
-	
-	# managing automatic install process if needed 	
+
+	# managing automatic install process if needed
 	if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
 		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#testing if there is automatic install activated
 			list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${dep_package} INDEX)
@@ -1138,17 +1214,17 @@ endfunction(declare_Package_Dependency)
 function(declare_External_Package_Dependency dep_package version exact components_list)
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
-	
+
 	#HERE new way of managing external packages
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${components_list} CACHE INTERNAL "")
-	
+
 endfunction(declare_External_Package_Dependency)
 
 
 ##################################################################################
-################# local dependencies between components ########################## 
-### these functions are to be used after a find_package command and after ######## 
+################# local dependencies between components ##########################
+### these functions are to be used after a find_package command and after ########
 ### the declaration of internal components (otherwise will not work) #############
 ##################################################################################
 
@@ -1171,7 +1247,7 @@ if(NOT DECLARED)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : component ${dep_component} is not defined in current package ${PROJECT_NAME}.")
 endif()
 #guarding depending type of involved components
-is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})	
+is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 is_HeaderFree_Component(IS_HF_DEP ${PROJECT_NAME} ${dep_component})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
@@ -1186,7 +1262,7 @@ if (IS_HF_COMP)
 		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
 
-	endif()	
+	endif()
 elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
@@ -1204,11 +1280,11 @@ elseif(IS_BUILT_COMP)
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
-	endif()	
+	endif()
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	if(IS_HF_DEP)
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
-		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "" "${comp_exp_defs}"  "")	
+		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "" "${comp_exp_defs}"  "")
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
 	else()
@@ -1224,9 +1300,9 @@ else()
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} of package ${PROJECT_NAME}.")
 	return()
 endif()
-# include directories and links do not require to be added 
+# include directories and links do not require to be added
 # declare the internal dependency
-set(	${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} 
+set(	${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}
 	${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_component}
 	CACHE INTERNAL "")
 endfunction(declare_Internal_Component_Dependency)
@@ -1252,15 +1328,15 @@ endif()
 
 set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} FALSE CACHE INTERNAL "")
 #guarding depending type of involved components
-is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})	
+is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 is_HeaderFree_Component(IS_HF_DEP ${dep_package} ${dep_component})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 if (IS_HF_COMP)
 	# setting compile definitions for configuring the target
-	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency		
+	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
 		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "")
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
-	else()	#the dependency has a build interface			
+	else()	#the dependency has a build interface
 		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
 	#do not export anything
@@ -1272,7 +1348,7 @@ elseif(IS_BUILT_COMP)
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
 
-	else()	#the dependency has a build interface			
+	else()	#the dependency has a build interface
 		if(export)#prepare the dependancy export
 			set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "")
 		endif()
@@ -1290,7 +1366,7 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 
 		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "" "${comp_exp_defs}" "")#=> no build export
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
-	else()	#the dependency has a build interface			
+	else()	#the dependency has a build interface
 
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
@@ -1305,14 +1381,14 @@ else()
 	return()
 endif()
 
-#links and include directories do not require to be added (will be found automatically)	
-set(	${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX} 
+#links and include directories do not require to be added (will be found automatically)
+set(	${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}
 	${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}}
-	${dep_package} 
+	${dep_package}
 	CACHE INTERNAL "")
-set(	${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}  
+set(	${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}
 	${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}}
-	${dep_component} 
+	${dep_component}
 	CACHE INTERNAL "")
 
 endfunction(declare_Package_Component_Dependency)
@@ -1326,7 +1402,7 @@ endfunction(declare_Package_Component_Dependency)
 ### inc_dirs : include directories to add to target component in order to build (these include dirs are expressed with absolute path)
 ### links : links defined by the system dependancy, will be exported in any case (except by executables components). shared or static links should always be in a default system path (e.g. /usr/lib) or retrieved by LD_LIBRARY_PATH for shared. Otherwise (not recommended) all path to libraries should be absolute.
 ### compiler_options: compiler options used when compiling with system dependency. if the system dependency is exported, these options will be exported too.
-### runtime_resources: for executable runtime resources, they should always be in the PATH environment variable. For modules libraries they should always be in a default system path (e.g. /usr/lib) or retrieved by LD_LIBRARY_PATH. Otherwise (not recommended) they should be referenced with absolute path. For file resources absolute paths must be used. 
+### runtime_resources: for executable runtime resources, they should always be in the PATH environment variable. For modules libraries they should always be in a default system path (e.g. /usr/lib) or retrieved by LD_LIBRARY_PATH. Otherwise (not recommended) they should be referenced with absolute path. For file resources absolute paths must be used.
 function(declare_System_Component_Dependency component export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links runtime_resources)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
@@ -1342,7 +1418,7 @@ set(TARGET_LINKS ${static_links} ${shared_links})
 if (IS_HF_COMP)
 	if(COMP_WILL_BE_INSTALLED)
 		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${runtime_resources}")
-	endif()	
+	endif()
 	# setting compile definitions for the target
 	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 elseif(IS_BUILT_COMP)
@@ -1363,8 +1439,8 @@ endif()
 endfunction(declare_System_Component_Dependency)
 
 
-### declare external (add-hoc) dependancy between components of current and an external package.  
-### details: declare an external dependancy that does not create new targets, it directly configure the "component" with adequate flags coming from "dep_package". Should be used prior to system dependencies for all dependencies that are not true system dependencies, even if installed in default systems folders). 
+### declare external (add-hoc) dependancy between components of current and an external package.
+### details: declare an external dependancy that does not create new targets, it directly configure the "component" with adequate flags coming from "dep_package". Should be used prior to system dependencies for all dependencies that are not true system dependencies, even if installed in default systems folders).
 ### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of the exported dependancy, if any  => definitions are exported
 ### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of external dependancy, if any => definitions are not exported
 ### dep_defs  : definitions in the interface of the external dependancy that must be defined when using this external dependancy, if any => definitions are exported if dependancy is exported
@@ -1372,7 +1448,7 @@ endfunction(declare_System_Component_Dependency)
 ### inc_dirs : include directories to add to target component in order to build (these include dirs are expressed relatively) to the reference path to the external dependancy root dir
 ### links : links defined by the system dependancy, will be exported in any case (except by executables components). shared or static links must always be given relative to the dep_package root dir.
 ### compiler_options: compiler options used when compiling with external dependency. if the external dependency is exported, these options will be exported too.
-### runtime_resources: resources used at runtime (module libs, executable or files). They must always be specified according to the dep_package root dir. 
+### runtime_resources: resources used at runtime (module libs, executable or files). They must always be specified according to the dep_package root dir.
 function(declare_External_Component_Dependency component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links runtime_resources)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
@@ -1388,12 +1464,12 @@ else()
 	is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 	set(TARGET_LINKS ${static_links} ${shared_links})
-	
+
 	if (IS_HF_COMP)
 		if(COMP_WILL_BE_INSTALLED)
 			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${shared_links}" "${runtime_resources}")
-		endif()		
-		# setting compile definitions for the target		
+		endif()
+		# setting compile definitions for the target
 		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
@@ -1412,4 +1488,3 @@ else()
 endif()
 
 endfunction(declare_External_Component_Dependency)
-

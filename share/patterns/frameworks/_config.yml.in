@@ -1,0 +1,34 @@
+
+# Site settings
+
+url: "@FRAMEWORK_SITE_URL@" # the base hostname & protocol for the site
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+excerpt_separator: ""
+
+port:    4000
+host:    localhost
+baseurl: "@FRAMEWORK_SITE_BASE_FOLDER@" # the base folder for the site
+
+
+collections:
+ packages:
+    output: true
+ external:
+    output: true
+
+defaults:
+  - scope:
+      path: ""
+      type: packages
+    values:
+      layout: package
+
+defaults:
+  - scope:
+      path: ""
+      type: external
+    values:
+      layout: external

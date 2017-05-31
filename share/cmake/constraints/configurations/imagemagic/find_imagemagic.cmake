@@ -1,20 +1,20 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
 #---------------------------------------------------------------------
@@ -94,7 +94,7 @@ if (UNIX)
 		      )
 		    LIST(REMOVE_DUPLICATES ImageMagick_INCLUDE_DIRS)
 		ENDIF()
-	
+
 	  ELSEIF(component STREQUAL "Magick++")
 	    FIND_IMAGEMAGICK_API(Magick++ Magick++.h Magick++ Magick++-6 Magick++-6.Q16 CORE_RL_Magick++_)
 	  ELSEIF(component STREQUAL "MagickWand")
@@ -116,10 +116,8 @@ if (UNIX)
 	pkg_check_modules(LIBX264 x264)
 	IF(NOT LIBX264_FOUND)
 		SET(IS_FOUND FALSE)
-	ENDIF()	
+	ENDIF()
   	set(imagemagic_FOUND ${IS_FOUND} CACHE INTERNAL "")
 	set(imagemagic_INCLUDE_DIRS ${ImageMagick_INCLUDE_DIRS} ${LIBX264_INCLUDE_DIRS} CACHE INTERNAL "")
 	set(imagemagic_LINK_OPTIONS ${ImageMagick_LIBRARIES} ${LIBX264_LDFLAGS} CACHE INTERNAL "")
 endif ()
-
-

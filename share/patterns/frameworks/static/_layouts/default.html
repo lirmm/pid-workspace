@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+
+  {% include head.html %}
+  <body class="{% if page.path == "index.html" %}homepage{% endif %}">
+
+  <div class="outer">
+	{% include header.html %}
+	<div class="main-body">
+		{% include sidebar.html %}
+		<div class="article-container docs">
+			{{ content }}
+		</div><!-- .article-container -->
+	</div><!-- .main-body -->
+        {% include footer.html %}
+  </div><!-- .outter -->
+
+  </body>
+
+</html>

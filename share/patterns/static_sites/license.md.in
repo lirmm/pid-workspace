@@ -1,0 +1,7 @@
+---
+layout: package
+title: License
+package: @PACKAGE_NAME@
+---
+
+@PACKAGE_LICENSE_TEXT_IN_SITE@

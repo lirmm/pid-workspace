@@ -1,0 +1,65 @@
+<a href="#" id="nav-button">NAV</a>
+<nav class="sidebar">
+	<ul class="list-unstyled">
+	{% capture sidebar %}
+
+	{% if site.data.categories %}
+		{% for category in site.data.categories %}
+			{% assign category_packages = 0 %}
+			{% for package in site.packages %}
+			  {% if package.path contains 'index' %}
+			  {% if package.categories contains category.index %}
+			      {% assign category_packages = 1 %}
+			  {% endif %}
+			  {% endif %}
+			{% endfor %}
+			{% if category_packages != 1 %}
+			{% for package in site.external %}
+			  {% if package.path contains 'index' %}
+			  {% if package.categories contains category.index %}
+			      {% assign category_packages = 1 %}
+			  {% endif %}
+			  {% endif %}
+			{% endfor %}
+			{% endif %}
+			{% if category_packages != 0 %}
+			<li>{{ category.name }}
+				<ul class="list-unstyled">
+				{% for package in site.packages %}
+					{% if package.path contains 'index' %}
+					{% if (package.categories contains category.index) %}
+						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="{{ site.baseurl }}{{ package.url }}">{{ package.package }}</a></li>
+					{% endif %}
+					{% endif %}
+				{% endfor %}
+				{% for package in site.external %}
+					{% if package.path contains 'index' %}
+					{% if (package.categories contains category.index) %}
+						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="{{ site.baseurl }}{{ package.url }}">{{ package.package }}</a></li>
+					{% endif %}
+					{% endif %}
+				{% endfor %}
+				</ul>
+			{% endif %}
+		{% endfor %}
+	{% endif %}
+
+	<li> All packages
+	<ul class="list-unstyled">
+	{% for package in site.packages %}
+		{% if package.path contains 'index' %}
+		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="{{ site.baseurl }}{{ package.url }}">{{ package.package }}</a></li>
+		{% endif %}
+	{% endfor %}
+	{% for package in site.external %}
+		{% if package.path contains 'index' %}
+		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="{{ site.baseurl }}{{ package.url }}">{{ package.package }}</a></li>
+		{% endif %}
+	{% endfor %}
+	</ul>
+	</li>
+
+	{% endcapture %}
+	{{ sidebar | strip_newlines }}
+	</ul>
+</nav>

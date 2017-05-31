@@ -1,0 +1,35 @@
+---
+layout: default
+---
+
+{% if site.data.framework.framework_banner_image != "" %}
+
+<center>
+<img src="{{site.baseurl}}/assets/{{site.data.framework.framework_banner_image}}" />
+</center>
+
+{% endif %}
+
+<h2>Welcome to {{site.data.framework.framework_name}} framework !</h2>
+
+<br>
+
+{{site.data.framework.framework_description}}
+
+<br><br><br><br>
+
+<h2>First steps</h2>
+
+If your are a new user, you can start reading <a href="{{ site.baseurl }}/pages/introduction.html">introduction section</a> and <a href="{{ site.baseurl }}/pages/install.html">installation instructions</a>.
+
+<br>
+<br>
+
+If your are more familiar with the workspace you can start navigating to packages pages by using the side bar.
+
+<br>
+<br>
+
+To lean more about this site and how it is managed you can refer to <a href="{{ site.baseurl }}/pages/help.html">this help page</a>.
+
+<br><br><br><br>

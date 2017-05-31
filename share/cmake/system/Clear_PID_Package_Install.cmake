@@ -1,28 +1,29 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-function(remove_Installed_Component component package install_version workspace)
-	set(PATH_TO_INSTALL_DIR ${workspace}/install/${package}/${install_version})
+function(remove_Installed_Component component package install_version platform workspace)
+	set(PATH_TO_INSTALL_DIR ${workspace}/install/${platform}/${package}/${install_version})
 
 	if(	${INSTALLED_${component}_TYPE} STREQUAL "HEADER")
 		if(${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE} EQUAL 1)
@@ -63,12 +64,12 @@ function(remove_Installed_Component component package install_version workspace)
 endfunction(remove_Installed_Component)
 
 
-function(check_Headers_Modifications all_components_to_check package install_version workspace)
-set(PATH_TO_INSTALL_DIR ${workspace}/install/${package}/${install_version})
+function(check_Headers_Modifications all_components_to_check package install_version platform workspace)
+set(PATH_TO_INSTALL_DIR ${workspace}/install/${platform}/${package}/${install_version})
 
 foreach(component IN ITEMS ${all_components_to_check}) #for each remaining existing component
 	#component exists, check for header files/folders suppression/changes
-	if(	"${INSTALLED_${component}_TYPE}" STREQUAL "HEADER" 
+	if(	"${INSTALLED_${component}_TYPE}" STREQUAL "HEADER"
 		OR "${INSTALLED_${component}_TYPE}" STREQUAL "STATIC"
 		OR "${INSTALLED_${component}_TYPE}" STREQUAL "SHARED")#if component is a library its header folder still exist at this step (not removed by previous function)
 		# checking header folder modification/suppression
@@ -104,9 +105,9 @@ endfunction(check_Headers_Modifications)
 ########### NEW_USE_FILE
 #################################################################################################
 
-if(EXISTS ${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_INSTALL_VERSION}/share/Use${PACKAGE_NAME}-${PACKAGE_VERSION}.cmake)
+if(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${PACKAGE_NAME}/${PACKAGE_INSTALL_VERSION}/share/Use${PACKAGE_NAME}-${PACKAGE_VERSION}.cmake)
 	#first step getting infos from already installed package version
-	include(${WORKSPACE_DIR}/install/${PACKAGE_NAME}/${PACKAGE_INSTALL_VERSION}/share/Use${PACKAGE_NAME}-${PACKAGE_VERSION}.cmake)
+	include(${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${PACKAGE_NAME}/${PACKAGE_INSTALL_VERSION}/share/Use${PACKAGE_NAME}-${PACKAGE_VERSION}.cmake)
 else()
 	return()
 endif()
@@ -137,8 +138,8 @@ foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
 		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NUMBER_OF_USAGES})
 
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})
-		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME}) 
-		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
+		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
+		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG})
 
 	elseif( "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "SHARED")
 		set(INSTALLED_${component}_TYPE SHARED)
@@ -149,21 +150,21 @@ foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
 
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
-		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
+		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG})
 	elseif( "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "MODULE")
 		set(INSTALLED_${component}_TYPE MODULE)
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
-		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
+		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG})
 
 	elseif(	"${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "EXAMPLE")
 		set(INSTALLED_${component}_TYPE EXAMPLE)
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
-		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
+		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG})
 
 	elseif( "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "APP")
 		set(INSTALLED_${component}_TYPE APP)
 		set(INSTALLED_${component}_BINARY_NAME ${${PACKAGE_NAME}_${component}_BINARY_NAME})
-		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG}) 
+		set(INSTALLED_${component}_BINARY_NAME_DEBUG ${${PACKAGE_NAME}_${component}_BINARY_NAME_DEBUG})
 	endif()
 endforeach()
 
@@ -173,12 +174,12 @@ set(TO_CHECK_COMPONENTS ${INSTALLED_COMPONENTS})
 foreach(component IN ITEMS ${INSTALLED_COMPONENTS}) #for each existing component
 	list(FIND ${PACKAGE_NAME}_COMPONENTS ${component} FIND_INDEX)
 	if(FIND_INDEX EQUAL -1)#component no more exists => remove corresponding files if necessary
-		remove_Installed_Component(${component} ${PACKAGE_NAME} ${PACKAGE_INSTALL_VERSION} ${WORKSPACE_DIR})
+		remove_Installed_Component(${component} ${PACKAGE_NAME} ${PACKAGE_INSTALL_VERSION} ${CURRENT_PLATFORM} ${WORKSPACE_DIR})
 		list(REMOVE_ITEM TO_CHECK_COMPONENTS ${component})
 	endif()
 endforeach()
 
 #component exists, check for header files/folders suppression/changes
 if(TO_CHECK_COMPONENTS)
-	check_Headers_Modifications("${TO_CHECK_COMPONENTS}" ${PACKAGE_NAME} ${PACKAGE_INSTALL_VERSION} ${WORKSPACE_DIR})
+	check_Headers_Modifications("${TO_CHECK_COMPONENTS}" ${PACKAGE_NAME} ${PACKAGE_INSTALL_VERSION} ${CURRENT_PLATFORM} ${WORKSPACE_DIR})
 endif()

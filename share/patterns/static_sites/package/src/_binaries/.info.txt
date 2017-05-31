@@ -1,0 +1,1 @@
+This folder contains binairies of the package, organized by platform and version

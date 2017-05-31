@@ -1,27 +1,27 @@
 #########################################################################################
-#	This file is part of the program PID						#
-#  	Program description : build system supportting the PID methodology  		#
-#  	Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique 	#
-#	et de Microelectronique de Montpellier). All Right reserved.			#
-#											#
-#	This software is free software: you can redistribute it and/or modify		#
-#	it under the terms of the CeCILL-C license as published by			#
-#	the CEA CNRS INRIA, either version 1						#
-#	of the License, or (at your option) any later version.				#
-#	This software is distributed in the hope that it will be useful,		#
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of			#
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			#
-#	CeCILL-C License for more details.						#
-#											#
-#	You can find the complete license description on the official website 		#
-#	of the CeCILL licenses family (http://www.cecill.info/index.en.html)		#
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
+
 #############################################################
 ########### general utilities for build management ##########
 #############################################################
 
-###
+### getting suffixes related to target mode (common accessor usefull in many places)
 function(get_Mode_Variables TARGET_SUFFIX VAR_SUFFIX mode)
 if(mode MATCHES Release)
 	set(${TARGET_SUFFIX} PARENT_SCOPE)
@@ -32,35 +32,10 @@ else()
 endif()
 endfunction(get_Mode_Variables)
 
-###
-function(get_System_Variables OS_STRING ARCH_STRING ABI_STRING PACKAGE_STRING)
-if(APPLE)
-	set(${OS_STRING} macosx PARENT_SCOPE)
-	set(${PACKAGE_STRING} Darwin PARENT_SCOPE)
-elseif(UNIX)
-	set(${OS_STRING} linux PARENT_SCOPE)
-	set(${PACKAGE_STRING} Linux PARENT_SCOPE)
-else()
-	message(SEND_ERROR "[PID] ERROR : unsupported system (Not UNIX or OSX) !")
-	return()
-endif()
-if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-	set(${ARCH_STRING} 32 PARENT_SCOPE)
-elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-	set(${ARCH_STRING} 64 PARENT_SCOPE)
-else()
-	message(SEND_ERROR "[PID] ERROR : unsupported architecture (Not 32 or 64 bits) !")
-	return()
-endif()
-
-set(TEST_ABI CXX11)
-include(CheckABI)
-
-if(NOT CHECK_ABI_RESULT)
-	set(${ABI_STRING} "CXX" PARENT_SCOPE)
-else()
-	set(${ABI_STRING} "CXX11" PARENT_SCOPE)
-endif()
+### getting basic system variables related to current platform (common accessor usefull in many places)
+function(get_System_Variables PLATFORM_NAME PACKAGE_STRING)
+set(${PLATFORM_NAME} ${CURRENT_PLATFORM} PARENT_SCOPE)
+set(${PACKAGE_STRING} ${CURRENT_PACKAGE_STRING} PARENT_SCOPE)
 endfunction(get_System_Variables)
 
 ###
@@ -93,6 +68,15 @@ string(REPLACE "_" ";" res "${name_with_underscores}")
 set(${all_words_in_list} ${res} PARENT_SCOPE)
 endfunction()
 
+
+###
+function(extract_All_Words_From_Path name_with_slash all_words_in_list)
+set(res "")
+string(REPLACE "/" ";" res "${name_with_slash}")
+set(${all_words_in_list} ${res} PARENT_SCOPE)
+endfunction(extract_All_Words_From_Path)
+
+
 ###
 function(fill_List_Into_String input_list res_string)
 set(res "")
@@ -101,7 +85,38 @@ foreach(element IN ITEMS ${input_list})
 endforeach()
 string(STRIP "${res}" res_finished)
 set(${res_string} ${res_finished} PARENT_SCOPE)
-endfunction()
+endfunction(fill_List_Into_String)
+
+###
+function(extract_Package_Namespace_From_SSH_URL url package NAMESPACE SERVER_ADDRESS EXTENSION)
+string (REGEX REPLACE "^([^@]+@[^:]+):([^/]+)/${package}(\\.site|-site|\\.pages|-pages)?\\.git$" "\\2;\\1" RESULT ${url})
+if(NOT RESULT STREQUAL "${url}") #match found
+	list(GET RESULT 0 NAMESPACE_NAME)
+	set(${NAMESPACE} ${NAMESPACE_NAME} PARENT_SCOPE)
+	list(GET RESULT 1 ACCOUNT_ADDRESS)
+	set(${SERVER_ADDRESS} ${ACCOUNT_ADDRESS} PARENT_SCOPE)
+
+	string (REGEX REPLACE "^[^@]+@[^:]+:[^/]+/${package}(\\.site|-site|\\.pages|-pages)\\.git$" "\\1" RESULT ${url})
+	if(NOT RESULT STREQUAL "${url}") #match found
+		set(${EXTENSION} ${RESULT} PARENT_SCOPE)
+	else()
+		set(${EXTENSION} PARENT_SCOPE)
+	endif()
+
+else()
+	set(${NAMESPACE} PARENT_SCOPE)
+	set(${SERVER_ADDRESS} PARENT_SCOPE)
+	set(${EXTENSION} PARENT_SCOPE)
+endif()
+endfunction(extract_Package_Namespace_From_SSH_URL)
+
+
+###
+function(format_PID_Identifier_Into_Markdown_Link RES_LINK function_name)
+string(REPLACE "_" "" RES_STR ${function_name})#simply remove underscores
+string(REPLACE " " "-" FINAL_STR ${RES_STR})#simply remove underscores
+set(${RES_LINK} ${FINAL_STR} PARENT_SCOPE)
+endfunction(format_PID_Identifier_Into_Markdown_Link)
 
 #############################################################
 ################ filesystem management utilities ############
@@ -149,7 +164,7 @@ endfunction(install_Rpath_Symlink)
 
 ###
 function (check_Directory_Exists is_existing path)
-if(	EXISTS "${path}" 
+if(	EXISTS "${path}"
 	AND IS_DIRECTORY "${path}"
   )
 	set(${is_existing} TRUE PARENT_SCOPE)
@@ -212,7 +227,7 @@ else()#testing with only two elements
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : corrupted version string ${version_string}.")
 		endif()
 	endif()
-endif()	
+endif()
 endfunction(get_Version_String_Numbers)
 
 ###
@@ -220,13 +235,64 @@ function(list_Version_Subdirectories result curdir)
 	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
 	set(dirlist "")
 	foreach(child ${children})
+		if(IS_DIRECTORY ${curdir}/${child} AND "${child}" MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
+			list(APPEND dirlist ${child})
+		endif()
+	endforeach()
+	set(${result} ${dirlist} PARENT_SCOPE)
+endfunction(list_Version_Subdirectories)
+
+###
+function(list_Platform_Symlinks result curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+	foreach(child ${children})
+		if(IS_SYMLINK ${curdir}/${child} AND "${child}" MATCHES "^[^_]+_[^_]+_[^_]+_[^_]+$")
+			list(APPEND dirlist ${child})
+		endif()
+	endforeach()
+	set(${result} ${dirlist} PARENT_SCOPE)
+endfunction(list_Platform_Symlinks)
+
+
+###
+function(list_Platform_Subdirectories result curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+	foreach(child ${children})
+		if(IS_DIRECTORY ${curdir}/${child}
+			AND NOT IS_SYMLINK ${curdir}/${child}
+			AND "${child}" MATCHES "^[^_]+_[^_]+_[^_]+_[^_]+$")
+			list(APPEND dirlist ${child})
+		endif()
+	endforeach()
+	set(${result} ${dirlist} PARENT_SCOPE)
+endfunction(list_Platform_Subdirectories)
+
+###
+function(list_Subdirectories result curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+	foreach(child ${children})
 		if(IS_DIRECTORY ${curdir}/${child})
 			list(APPEND dirlist ${child})
 		endif()
 	endforeach()
-	list(REMOVE_ITEM dirlist "installers")
 	set(${result} ${dirlist} PARENT_SCOPE)
-endfunction(list_Version_Subdirectories)
+endfunction(list_Subdirectories)
+
+
+###
+function(list_Regular_Files result curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(filelist "")
+	foreach(child ${children})
+		if(NOT IS_DIRECTORY ${curdir}/${child} AND NOT IS_SYMLINK ${curdir}/${child})
+			list(APPEND filelist ${child})
+		endif()
+	endforeach()
+	set(${result} ${filelist} PARENT_SCOPE)
+endfunction(list_Regular_Files)
 
 
 ###
@@ -240,15 +306,22 @@ endif()
 set(${is_compatible} TRUE PARENT_SCOPE)
 endfunction(is_Compatible_Version)
 
+
 #############################################################
 ################ Information about authors ##################
 #############################################################
 
 ###
 function(generate_Full_Author_String author RES_STRING)
-string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
-list(GET author_institution 0 AUTHOR_NAME)
-list(GET author_institution 1 INSTITUTION_NAME)
+string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]+)\\)$" "\\1;\\2" author_institution "${author}")
+if(author_institution STREQUAL "${author}")
+	string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
+	list(GET author_institution 0 AUTHOR_NAME)
+	set(INSTITUTION_NAME)
+else()
+	list(GET author_institution 0 AUTHOR_NAME)
+	list(GET author_institution 1 INSTITUTION_NAME)
+endif()
 extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
 extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
@@ -323,15 +396,36 @@ else()
 endif()
 endfunction(get_Formatted_Package_Contact_String)
 
+###
+function(get_Formatted_Framework_Contact_String framework RES_STRING)
+extract_All_Words("${${framework}_FRAMEWORK_MAIN_AUTHOR}" AUTHOR_ALL_WORDS)
+extract_All_Words("${${framework}_FRAMEWORK_MAIN_INSTITUTION}" INSTITUTION_ALL_WORDS)
+fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+if(NOT INSTITUTION_STRING STREQUAL "")
+	if(${framework}_FRAMEWORK_CONTACT_MAIL)
+		set(${RES_STRING} "${AUTHOR_STRING} (${${framework}_FRAMEWORK_CONTACT_MAIL}) - ${INSTITUTION_STRING}" PARENT_SCOPE)
+	else()
+		set(${RES_STRING} "${AUTHOR_STRING} - ${INSTITUTION_STRING}" PARENT_SCOPE)
+	endif()
+else()
+	if(${package}_FRAMEWORK_CONTACT_MAIL)
+		set(${RES_STRING} "${AUTHOR_STRING} (${${framework}_FRAMEWORK_CONTACT_MAIL})" PARENT_SCOPE)
+	else()
+		set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+	endif()
+endif()
+endfunction(get_Formatted_Framework_Contact_String)
+
 #############################################################
 ################ Source file management #####################
 #############################################################
 
 ###
 function(get_All_Sources_Relative RESULT dir)
-file(	GLOB_RECURSE 
+file(	GLOB_RECURSE
 	RES
-	RELATIVE ${dir} 
+	RELATIVE ${dir}
 	"${dir}/*.c"
 	"${dir}/*.cc"
 	"${dir}/*.cpp"
@@ -340,15 +434,18 @@ file(	GLOB_RECURSE
 	"${dir}/*.hpp"
 	"${dir}/*.hh"
 	"${dir}/*.hxx"
+	"${dir}/*.s"
+	"${dir}/*.S"
+	"${dir}/*.asm"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Relative)
 
 ###
 function(get_All_Sources_Absolute RESULT dir)
-file(	GLOB_RECURSE 
+file(	GLOB_RECURSE
 	RES
-	${dir} 
+	${dir}
 	"${dir}/*.c"
 	"${dir}/*.cc"
 	"${dir}/*.cpp"
@@ -357,15 +454,18 @@ file(	GLOB_RECURSE
 	"${dir}/*.hpp"
 	"${dir}/*.hh"
 	"${dir}/*.hxx"
+	"${dir}/*.s"
+	"${dir}/*.S"
+	"${dir}/*.asm"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Absolute)
 
 ###
 function(get_All_Headers_Relative RESULT dir)
-file(	GLOB_RECURSE 
+file(	GLOB_RECURSE
 	RES
-	RELATIVE ${dir} 
+	RELATIVE ${dir}
 	"${dir}/*.h"
 	"${dir}/*.hpp"
 	"${dir}/*.hh"
@@ -376,9 +476,9 @@ endfunction(get_All_Headers_Relative)
 
 ###
 function(get_All_Headers_Absolute RESULT dir)
-file(	GLOB_RECURSE 
+file(	GLOB_RECURSE
 	RES
-	${dir} 
+	${dir}
 	"${dir}/*.h"
 	"${dir}/*.hpp"
 	"${dir}/*.hh"
@@ -410,23 +510,36 @@ endif()
 endfunction(is_Shared_Lib_With_Path)
 
 ###
-function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
-
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(EXT_PACKAGE-NOTFOUND PARENT_SCOPE)
-if(DEFINED ${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX})
-	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/external/${ext_package}/${${ref_package}_EXTERNAL_DEPENDENCY_${ext_package}_VERSION${VAR_SUFFIX}} PARENT_SCOPE)
-	return()
-elseif(${ref_package}_DEPENDENCIES${mode_suffix}) #the external dependency may be issued from a third party native package
-	foreach(dep_pack IN ITEMS ${${ref_package}_DEPENDENCIES${VAR_SUFFIX}})
-		is_External_Package_Defined(${dep_pack} ${ext_package} ${mode} PATHTO)
-		if(NOT EXT_PACKAGE-NOTFOUND)
-			set(${RES_PATH_TO_PACKAGE} ${PATHTO} PARENT_SCOPE)
-			return()
-		endif()
-	endforeach()
+function(get_Link_Type RES_TYPE input_link)
+get_filename_component(LIB_TYPE ${input_link} EXT)
+if(LIB_TYPE)
+        if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
+		set(${RES_TYPE} SHARED PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib (MACOSX)
+		set(${RES_TYPE} SHARED PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.a$")#found static lib (C)
+		set(${RES_TYPE} STATIC PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.la$")#found static lib (pkg-config)
+		set(${RES_TYPE} STATIC PARENT_SCOPE)
+	else()#unknown extension => linker option
+		set(${RES_TYPE} OPTION PARENT_SCOPE)
+	endif()
+else()
+	# no extension => a possibly strange linker option
+	set(${RES_TYPE} OPTION PARENT_SCOPE)
 endif()
-set(EXT_PACKAGE-NOTFOUND TRUE PARENT_SCOPE)
+endfunction(get_Link_Type)
+
+### function used to retrieve the adequate version to an external package
+function(is_External_Package_Defined ref_package ext_package mode RES_PATH_TO_PACKAGE)
+get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(${RES_PATH_TO_PACKAGE} NOTFOUND PARENT_SCOPE)
+if(${ext_package}_FOUND)
+	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${ext_package}/${${ext_package}_VERSION_STRING} PARENT_SCOPE)
+else()
+	set(${RES_PATH_TO_PACKAGE} PARENT_SCOPE)
+endif()
 endfunction(is_External_Package_Defined)
 
 
@@ -439,13 +552,12 @@ foreach(link IN ITEMS ${ext_links})
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
-		unset(EXT_PACKAGE-NOTFOUND)
 		is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
-		if(DEFINED EXT_PACKAGE-NOTFOUND)
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")		
+		if(PATHTO STREQUAL NOTFOUND)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
 		else()
 			set(fullpath ${PATHTO}${relative_path})
-			list(APPEND res_links ${fullpath})				
+			list(APPEND res_links ${fullpath})
 		endif()
 	else() # this may be a link with a prefix (like -L<path>) that need replacement
 		string(REGEX REPLACE "^([^<]+)<([^>]+)>(.*)" "\\1;\\2;\\3" RES_WITH_PREFIX ${link})
@@ -453,14 +565,14 @@ foreach(link IN ITEMS ${ext_links})
 			list(GET RES_WITH_PREFIX 0 link_prefix)
 			list(GET RES_WITH_PREFIX 1 ext_package_name)
 			is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
-			if(EXT_PACKAGE-NOTFOUND)
+			if(PATHTO STREQUAL NOTFOUND)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!!")
 			endif()
 			liST(LENGTH RES_WITH_PREFIX SIZE)
 			if(SIZE EQUAL 3)
 				list(GET RES_WITH_PREFIX 2 relative_path)
 				set(fullpath ${link_prefix}${PATHTO}/${relative_path})
-			else()	
+			else()
 				set(fullpath ${link_prefix}${PATHTO})
 			endif()
 			list(APPEND res_links ${fullpath})
@@ -480,7 +592,7 @@ foreach(include_dir IN ITEMS ${ext_inc_dirs})
 	if(NOT RES STREQUAL ${include_dir})# a replacement has taken place => this is a full path to an incude dir of an external package
 		list(GET RES 0 ext_package_name)
 		is_External_Package_Defined(${package_context} ${ext_package_name} ${mode} PATHTO)
-		if(EXT_PACKAGE-NOTFOUND)
+		if(PATHTO STREQUAL NOTFOUND)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 		endif()
 		liST(LENGTH RES SIZE)
@@ -497,18 +609,18 @@ foreach(include_dir IN ITEMS ${ext_inc_dirs})
 			list(GET RES_WITH_PREFIX 1 relative_path)
 			list(GET RES_WITH_PREFIX 0 ext_package_name)
 			is_External_Package_Defined(${package_context} ${ext_package_name} ${mode} PATHTO)
-			if(EXT_PACKAGE-NOTFOUND)
+			if(PATHTO STREQUAL NOTFOUND)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 			endif()
 			set(fullpath ${PATHTO}${relative_path})
 			list(APPEND res_includes ${fullpath})
 		else()#this is an include dir that does not require any replacement ! (should be avoided)
-			string(REGEX REPLACE "^-I(.+)" "\\1" RES_WITHOUT_PREFIX ${include_dir})			
+			string(REGEX REPLACE "^-I(.+)" "\\1" RES_WITHOUT_PREFIX ${include_dir})
 			if(NOT RES_WITHOUT_PREFIX STREQUAL ${include_dir})
 				list(APPEND res_includes ${RES_WITHOUT_PREFIX})
 			else()
 				list(APPEND res_includes ${include_dir}) #for absolute path or system dependencies simply copying the path
-			endif()				
+			endif()
 		endif()
 	endif()
 endforeach()
@@ -525,16 +637,15 @@ foreach(resource IN ITEMS ${ext_resources})
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
-		unset(EXT_PACKAGE-NOTFOUND)		
 		is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
-		if(DEFINED EXT_PACKAGE-NOTFOUND)
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for resource ${resource}!! Please set the path to this external package.")		
+		if(PATHTO STREQUAL NOTFOUND)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for resource ${resource}!! Please set the path to this external package.")
 		else()
 			set(fullpath ${PATHTO}${relative_path})
-			list(APPEND res_resources ${fullpath})				
+			list(APPEND res_resources ${fullpath})
 		endif()
 	else()
-		list(APPEND res_resources ${resource})	#for  relative path or system dependencies (absolute path) simply copying the path	
+		list(APPEND res_resources ${resource})	#for  relative path or system dependencies (absolute path) simply copying the path
 	endif()
 endforeach()
 set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
@@ -548,7 +659,7 @@ endfunction(resolve_External_Resources_Path)
 ###
 function(set_Package_Repository_Address package git_url)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REGEX REPLACE  "([ \t\n])YEAR" "\\1 ADDRESS ${git_url}\n YEAR" NEW_CONTENT ${CONTENT})
+	string(REGEX REPLACE  "([ \t\n])YEAR" "\\1 ADDRESS ${git_url}\n\\1 YEAR" NEW_CONTENT ${CONTENT})
 	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
 endfunction(set_Package_Repository_Address)
 
@@ -583,17 +694,18 @@ endfunction(list_All_Source_Packages_In_Workspace)
 
 ###
 function(list_All_Binary_Packages_In_Workspace NATIVE_PACKAGES EXTERNAL_PACKAGES)
-file(GLOB bin_pakages RELATIVE ${WORKSPACE_DIR}/install ${WORKSPACE_DIR}/install/*)
+get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+file(GLOB bin_pakages RELATIVE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME} ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/*)
 foreach(a_file IN ITEMS ${bin_pakages})
-	if(EXISTS ${WORKSPACE_DIR}/install/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${a_file})
+	if(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${a_file})
 		list(APPEND result ${a_file})
 	endif()
 endforeach()
 set(${NATIVE_PACKAGES} ${result} PARENT_SCOPE)
 set(result)
-file(GLOB ext_pakages RELATIVE ${WORKSPACE_DIR}/external ${WORKSPACE_DIR}/external/*)
+file(GLOB ext_pakages RELATIVE ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME} ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/*)
 foreach(a_file IN ITEMS ${ext_pakages})
-	if(EXISTS ${WORKSPACE_DIR}/external/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${a_file})
+	if(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${a_file})
 		list(APPEND result ${a_file})
 	endif()
 endforeach()
@@ -603,11 +715,12 @@ endfunction(list_All_Binary_Packages_In_Workspace)
 
 
 ###
-function(package_Already_Built answer package reference_package)
-set(${answer} FALSE PARENT_SCOPE)
+function(package_Already_Built ANSWER package reference_package)
+set(${ANSWER} TRUE PARENT_SCOPE)
 if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build/build_process)
 	if(${WORKSPACE_DIR}/packages/${package}/build/build_process IS_NEWER_THAN ${WORKSPACE_DIR}/packages/${reference_package}/build/build_process)
-		set(${answer} TRUE PARENT_SCOPE)
+		message("package ${package} is newer than package ${reference_package}")
+		set(${ANSWER} FALSE PARENT_SCOPE)
 	endif()
 endif()
 endfunction(package_Already_Built)
@@ -619,6 +732,179 @@ set(${result} FALSE PARENT_SCOPE)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build/release ${build_tool} cmake_check_build_system OUTPUT_VARIABLE NEED_UPDATE)
 if(NOT NEED_UPDATE STREQUAL "")
 	set(${result} TRUE PARENT_SCOPE)
-endif() 
+endif()
 endfunction(test_Modified_Components)
 
+
+###
+function(get_Version_Number_And_Repo_From_Package package NUMBER STRING_NUMBER ADDRESS)
+set(${ADDRESS} PARENT_SCOPE)
+file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
+foreach(line IN ITEMS ${PACKAGE_METADATA})
+	string(REGEX REPLACE "^.*set_PID_Package_Version\\(([0-9]+)(\\ +)([0-9]+)(\\ *)([0-9]*)(\\ *)\\).*$" "\\1;\\3;\\5" A_VERSION ${line})
+	if(NOT "${line}" STREQUAL "${A_VERSION}")
+		set(VERSION_COMMAND ${A_VERSION})#only taking the last instruction since it shadows previous ones
+	endif()
+	string(REGEX REPLACE "^.*ADDRESS[\\ \\\t]+([^\\ \\\t]+\\.git).*$" "\\1" AN_ADDRESS ${line})
+	if(NOT "${line}" STREQUAL "${AN_ADDRESS}")
+		set(${ADDRESS} ${AN_ADDRESS} PARENT_SCOPE)#an address had been found
+	endif()
+endforeach()
+if(VERSION_COMMAND)
+	#from here we are sure there is at least 2 digits
+	list(GET VERSION_COMMAND 0 MAJOR)
+	list(GET VERSION_COMMAND 1 MINOR)
+	list(LENGTH VERSION_COMMAND size_of_version)
+	if(NOT size_of_version GREATER 2)
+		set(PATCH 0)
+		list(APPEND VERSION_COMMAND 0)
+	else()
+		list(GET VERSION_COMMAND 2 PATCH)
+	endif()
+	set(${STRING_NUMBER} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
+else()
+	set(${STRING_NUMBER} "" PARENT_SCOPE)
+endif()
+
+set(${NUMBER} ${VERSION_COMMAND} PARENT_SCOPE)
+endfunction(get_Version_Number_And_Repo_From_Package)
+
+###
+function(set_Version_Number_To_Package package major minor patch)
+
+file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
+string(REGEX REPLACE "^(.*)set_PID_Package_Version\\(([0-9]+)(\\ +)([0-9]+)(\\ *)([0-9]*)(\\ *)\\)(.*)$" "\\1;\\8" PACKAGE_METADATA_WITHOUT_VERSION ${PACKAGE_METADATA})
+
+list(GET PACKAGE_METADATA_WITHOUT_VERSION 0 BEGIN)
+list(GET PACKAGE_METADATA_WITHOUT_VERSION 1 END)
+
+set(TO_WRITE "${BEGIN}set_PID_Package_Version(${major} ${minor} ${patch})${END}")
+file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${TO_WRITE}) #getting global info on the package
+
+endfunction(set_Version_Number_To_Package)
+
+###
+function(is_Binary_Package_Version_In_Development RESULT package version)
+set(${RESULT} FALSE PARENT_SCOPE)
+get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+set(USE_FILE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${version}/share/Use${package}-${version}.cmake)
+if(EXISTS ${USE_FILE}) #file does not exists means the target version is not in development
+	set(PID_VERSION_FILE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${version}/share/cmake/${package}_PID_Version.cmake)
+	if(EXISTS ${PID_VERSION_FILE})
+		include(${PID_VERSION_FILE})
+		PID_Package_Is_With_Development_Info_In_Use_Files(RES ${package})
+		if(RES)
+			include(${USE_FILE})#include the definitions
+			if(${package}_DEVELOPMENT_STATE STREQUAL "development") #this binary package has been built from a development branch
+				set(${RESULT} TRUE PARENT_SCOPE)
+			endif()
+		endif()
+	endif()
+endif()
+endfunction(is_Binary_Package_Version_In_Development)
+
+
+################################################################
+################ Frameworks Life cycle management ##############
+################################################################
+
+###
+function(set_Framework_Repository_Address framework git_url)
+	file(READ ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE  "([ \t\n])YEAR" "\\1 ADDRESS ${git_url}\n\\1 YEAR" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(set_Framework_Repository_Address)
+
+###
+function(reset_Framework_Repository_Address framework new_git_url)
+	file(READ ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "([ \t\n])ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1 ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(reset_Framework_Repository_Address)
+
+###
+function(get_Framework_Repository_Address framework RES_URL)
+	file(READ ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
+	if(url STREQUAL "${CONTENT}")#no match
+		set(${RES_URL} "" PARENT_SCOPE)
+		return()
+	endif()
+	set(${RES_URL} ${url} PARENT_SCOPE)
+endfunction(get_Framework_Repository_Address)
+
+### function used to extract information used by jekyll to adequately configure the site
+function(get_Jekyll_URLs full_url PUBLIC_URL BASE_URL)
+	string(REGEX REPLACE "^(http[s]?://[^/]+)/(.+)$" "\\1;\\2" all_urls ${full_url})
+	if(NOT (all_urls STREQUAL ${full_url}))#it matches
+		list(GET all_urls 0 pub)
+		list(GET all_urls 1 base)
+		set(PUBLIC_URL ${pub} PARENT_SCOPE)
+		set(BASE_URL ${base} PARENT_SCOPE)
+	else()
+		string(REGEX REPLACE "^(http[s]?://[^/]+)/?$" "\\1" pub_url ${full_url})
+		set(PUBLIC_URL ${pub_url} PARENT_SCOPE)
+		set(BASE_URL PARENT_SCOPE)
+	endif()
+endfunction(get_Jekyll_URLs)
+
+################################################################
+################ Markdown file management ######################
+################################################################
+
+function(test_Site_Content_File FILE_NAME EXTENSION file_name)
+set(FILE_NAME PARENT_SCOPE)
+set(EXTENSION PARENT_SCOPE)
+
+#get the name and extension of the file
+string(REGEX REPLACE "^([^\\.]+)\\.(.+)$" "\\1;\\2" RESULTING_FILE ${file_name})
+if(NOT RESULTING_FILE STREQUAL ${file_name}) #it matches
+	list(GET RESULTING_FILE 1 RES_EXT)
+	list(APPEND POSSIBLE_EXTS markdown mkdown mkdn mkd md htm html jpg png gif bmp)
+	list(FIND POSSIBLE_EXTS ${RES_EXT} INDEX)
+	if(INDEX GREATER -1)
+		list(GET RESULTING_FILE 0 RES_NAME)
+		set(FILE_NAME ${RES_NAME} PARENT_SCOPE)
+		set(EXTENSION ${RES_EXT} PARENT_SCOPE)
+	endif()
+endif()
+endfunction(test_Site_Content_File)
+
+#########################################################################
+################ text files manipulation utilities ######################
+#########################################################################
+
+### testing is two regular files have same content
+function(test_Same_File_Content file1_path file2_path ARE_SAME)
+file(READ ${file1_path} FILE_1_CONTENT)
+file(READ ${file2_path} FILE_2_CONTENT)
+if("${FILE_1_CONTENT}" STREQUAL "${FILE_2_CONTENT}")
+	set(${ARE_SAME} TRUE PARENT_SCOPE)
+else()
+	set(${ARE_SAME} FALSE PARENT_SCOPE)
+endif()
+endfunction(test_Same_File_Content)
+
+### testing is two directory have exact same content (even their contained files have same content)
+function(test_Same_Directory_Content dir1_path dir2_path ARE_SAME)
+file(GLOB_RECURSE ALL_FILES_DIR1 RELATIVE ${dir1_path} ${dir1_path}/*)
+file(GLOB_RECURSE ALL_FILES_DIR2 RELATIVE ${dir2_path} ${dir2_path}/*)
+foreach(a_file IN ITEMS ${ALL_FILES_DIR1})
+	list(FIND ALL_FILES_DIR2 ${a_file} INDEX)
+	if(INDEX EQUAL -1)#if file not found -> not same content
+		set(${ARE_SAME} FALSE PARENT_SCOPE)
+		return()
+	else()
+		if(NOT IS_DIRECTORY ${dir1_path}/${a_file} AND NOT IS_SYMLINK ${dir1_path}/${a_file})
+			set(SAME FALSE)
+			test_Same_File_Content(${dir1_path}/${a_file} ${dir2_path}/${a_file} SAME)
+			if(NOT SAME)#file content is different
+
+				set(${ARE_SAME} FALSE PARENT_SCOPE)
+				return()
+			endif()
+		endif()
+	endif()
+endforeach()
+set(${ARE_SAME} TRUE PARENT_SCOPE)
+endfunction(test_Same_Directory_Content)

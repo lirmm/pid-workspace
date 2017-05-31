@@ -1,0 +1,35 @@
+---
+layout: package
+title: Introduction
+package: @PACKAGE_NAME@
+---
+
+@PACKAGE_DESCRIPTION@
+
+# General Information
+
+## Authors
+
+Package manager: @PACKAGE_CONTACT@
+
+Authors of this package: 
+@PACKAGE_ALL_AUTHORS@
+
+## License
+
+The license of the current release version of knowbotics package is : **@PACKAGE_LICENSE_FOR_SITE@**. It applies to the whole package content.
+
+For more details see [license file](license.html).
+
+## Version
+
+Current version (for which this documentation has been generated) : @PACKAGE_LAST_VERSION_WITH_PATCH@.
+
+## Categories
+
+@PACKAGE_CATEGORIES_LIST@
+
+# Dependencies
+
+@PACKAGE_DEPENDENCIES_DESCRIPTION@
+

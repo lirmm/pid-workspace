@@ -1,0 +1,24 @@
+
+Overview
+=========
+
+@README_OVERVIEW@
+
+@PACKAGE_LICENSE_FOR_README@
+
+Installation and Usage
+=======================
+
+@INSTALL_USE_IN_README@
+
+
+About authors
+=====================
+
+@PROJECT_NAME@ has been developped by following authors: @README_AUTHORS_LIST@
+
+Please contact @README_CONTACT_AUTHOR@ for more information or questions.
+
+
+@PACKAGE_SITE_REF_IN_README@
+
