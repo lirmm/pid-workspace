@@ -17,20 +17,7 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(CURRENT_TYPE CACHE INTERNAL "")
-
-#test of processor type is based on system variables affected by cross compilation
-#So it adapts to the current development environment in use
-
-if("${CMAKE_SYSTEM_PROCESSOR}" MATCHES arm)
-	set(CURRENT_TYPE arm CACHE INTERNAL "")
-elseif(	"${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x64
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i686
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i386
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i486
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86_32
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86_64
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL amd64)
-	set(CURRENT_TYPE x86 CACHE INTERNAL "")
-endif()# Note: add more check to test other processor architectures
+set(PLATFORM_arm_32_linux_abi98_TYPE "arm" CACHE INTERNAL "")
+set(PLATFORM_arm_32_linux_abi98_ARCH "32" CACHE INTERNAL "")
+set(PLATFORM_arm_32_linux_abi98_OS "linux" CACHE INTERNAL "")
+set(PLATFORM_arm_32_linux_abi98_ABI "CXX" CACHE INTERNAL "")
