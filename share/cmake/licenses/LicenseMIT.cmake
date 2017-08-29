@@ -21,10 +21,11 @@
 ######## CMake License file description : MIT ####################
 ##################################################################
 
-set(LICENSE_NAME "MIT")
-set(LICENSE_FULLNAME "The MIT license")
-set(LICENSE_VERSION "1")
-set(LICENSE_AUTHORS "Massachusetts Institute of Technology ")
+set(	LICENSE_NAME 			"MIT")
+set(	LICENSE_FULLNAME 		"The MIT license")
+set(	LICENSE_VERSION 		"1")
+set(	LICENSE_AUTHORS 		"Massachusetts Institute of Technology ")
+set(	LICENSE_IS_OPEN_SOURCE 		TRUE)
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION
 

@@ -25,6 +25,7 @@ set(LICENSE_NAME "FreeBSD")
 set(LICENSE_FULLNAME "BSD 2 Clause License")
 set(LICENSE_VERSION "1")
 set(LICENSE_AUTHORS "the University of California Berkeley")
+set(LICENSE_IS_OPEN_SOURCE 		TRUE)
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION
 "/* 	TFile: @PROJECT_FILENAME@

@@ -25,6 +25,7 @@ set(	LICENSE_NAME 			"CeCILL")
 set(	LICENSE_VERSION			"2.1")
 set(	LICENSE_FULLNAME 		"Contrat de license de logiciel libre CeCILL")
 set(	LICENSE_AUTHORS 		"the CEA CNRS INRIA")
+set(	LICENSE_IS_OPEN_SOURCE 		TRUE)
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION
 "/* 	File: @PROJECT_FILENAME@

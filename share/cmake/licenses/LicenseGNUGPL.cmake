@@ -25,7 +25,7 @@ set(	LICENSE_NAME 			"GPL")
 set(	LICENSE_VERSION			"3")
 set(	LICENSE_FULLNAME 		"GNU General Public License version 3")
 set(	LICENSE_AUTHORS 		"the Free Software Foundation")
-
+set(	LICENSE_IS_OPEN_SOURCE 		TRUE)
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION
 "/* 	File: @PROJECT_FILENAME@

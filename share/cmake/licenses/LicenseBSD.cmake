@@ -21,10 +21,11 @@
 ######## CMake License file description : ModifiedBSD ############
 ##################################################################
 
-set(LICENSE_NAME "ModifiedBSD")
-set(LICENSE_FULLNAME "BSD 3 Clause License")
-set(LICENSE_VERSION "1")
-set(LICENSE_AUTHORS "the University of California Berkeley")
+set(	LICENSE_NAME 		"ModifiedBSD")
+set(	LICENSE_FULLNAME 	"BSD 3 Clause License")
+set(	LICENSE_VERSION 	"1")
+set(	LICENSE_AUTHORS 	"the University of California Berkeley")
+set(	LICENSE_IS_OPEN_SOURCE 	TRUE)
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION
 "/*	File: @PROJECT_FILENAME@
