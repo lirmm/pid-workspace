@@ -88,6 +88,7 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "update -- updating a source or binary package using package=*name of the package* argument. The last available version is deployed in the workspace. If *all* is used for name, all source and binary packages will be updated."
 	COMMAND ${CMAKE_COMMAND} -E echo "upgrade -- upgrading the workspace: install the more recent version of the PID API and references to packages. You can use the optionnal official= argument to use a non official repository to update the workspace, by default official=ON which means the official remote is used. The argument update may be set ON or OFF -optionnal, default to OFF- to update all packages once the upgrade has been done."
 	COMMAND ${CMAKE_COMMAND} -E echo "configure -- configuring development environment in use. You have to set the environment name using environment=*name of the environment to use*."
+	COMMAND ${CMAKE_COMMAND} -E echo "hard_clean -- deep cleaning of packages build folder, may be usefull after compiler changes for instance. You have to set the package name using package=*name of the package to clean* or all to hard clean all packages."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -175,6 +176,13 @@ add_custom_target(clear
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+## clearing a package install directory
+add_custom_target(hard_clean
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
+					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Hard_Clean_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
 
 ## completely remove a package from workspace
 add_custom_target(remove

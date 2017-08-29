@@ -18,23 +18,29 @@
 #########################################################################################
 
 include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
-
-
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system) # using systems scripts the workspace
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-if(TARGET_PACKAGE AND TARGET_VERSION)
-	if(	EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE})
-		clear_PID_Package(	${TARGET_PACKAGE}
-					${TARGET_VERSION})
-	elseif(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_PACKAGE}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_PACKAGE})
-		clear_PID_Package(	${TARGET_PACKAGE}
-					${TARGET_VERSION})
-	else()
-		message("[PID] ERROR : there is no package named ${TARGET_PACKAGE} installed.")
-	endif()
+if(TARGET_PACKAGE AND NOT TARGET_PACKAGE STREQUAL "")
+  if(TARGET_PACKAGE STREQUAL all)
+    list_All_Source_Packages_In_Workspace(ALL_SOURCE_PACKAGES)
+    if(ALL_SOURCE_PACKAGES)
+    foreach(sub IN ITEMS ${ALL_SOURCE_PACKAGES})
+      hard_Clean_Package(${sub})
+    endforeach()
+    foreach(sub IN ITEMS ${ALL_SOURCE_PACKAGES})
+      reconfigure_Package_Build(${sub})
+    endforeach()
+    endif()
+    message("[PID] INFO : all packages have been hard cleaned.")
+  elseif(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
+    hard_Clean_Package(${TARGET_PACKAGE})
+    reconfigure_Package_Build(${TARGET_PACKAGE})
+    message("[PID] INFO : the package ${TARGET_PACKAGE} has been hard cleaned.")
+  else()
+    message("[PID] ERROR : the name ${TARGET_PACKAGE} does not refer to any known package in the workspace.")
+  endif()
 else()
-	message("[PID] ERROR : you must specify the name of the package to clear using package=<name of package> argument and a version using version=<type or number of the  version>")
+	message("[PID] ERROR : you must specify the name of the package to hard clean using package=<name of package> argument or use all to target all packages")
 endif()

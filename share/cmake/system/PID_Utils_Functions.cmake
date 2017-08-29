@@ -804,6 +804,71 @@ endif()
 endfunction(is_Binary_Package_Version_In_Development)
 
 
+### hard clean consist in cleaning the build folder in an aggressive way
+function(hard_Clean_Package package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
+file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
+if(thefiles)
+foreach(a_file IN ITEMS ${thefiles})
+	if(NOT a_file STREQUAL ".gitignore")
+		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
+		else()#it is a regular file or symlink
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
+		endif()
+	endif()
+endforeach()
+endif()
+endfunction(hard_Clean_Package)
+
+function(hard_Clean_Package_Debug package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
+file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
+if(thefiles)
+foreach(a_file IN ITEMS ${thefiles})
+	if(NOT a_file STREQUAL ".gitignore")
+		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
+		else()#it is a regular file or symlink
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
+		endif()
+	endif()
+endforeach()
+endif()
+endfunction(hard_Clean_Package_Debug)
+
+function(hard_Clean_Package_Release package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
+file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
+if(thefiles)
+foreach(a_file IN ITEMS ${thefiles})
+	if(NOT a_file STREQUAL ".gitignore")
+		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
+		else()#it is a regular file or symlink
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
+		endif()
+	endif()
+endforeach()
+endif()
+endfunction(hard_Clean_Package_Release)
+
+### reconfiguring a package
+function(reconfigure_Package_Build package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
+endfunction(reconfigure_Package_Build)
+
+function(reconfigure_Package_Build_Debug package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
+endfunction(reconfigure_Package_Build_Debug)
+
+function(reconfigure_Package_Build_Release package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
+endfunction(reconfigure_Package_Build_Release)
+
 ################################################################
 ################ Frameworks Life cycle management ##############
 ################################################################

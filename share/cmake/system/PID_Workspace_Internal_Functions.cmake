@@ -869,10 +869,11 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pa
 endfunction(remove_PID_Package)
 
 
-###  removing consists in removing the framework repository from the workspace
+###  removing consists in removing the git repository of the framework from the workspace
 function(remove_PID_Framework framework)
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/frameworks/${framework})
 endfunction(remove_PID_Framework)
+
 
 ##################################################
 ############ registering deployment units ########
@@ -1048,7 +1049,7 @@ list_All_Source_Packages_In_Workspace(SOURCE_PACKAGES)
 if(SOURCE_PACKAGES)
 	if(NATIVES)
 		list(REMOVE_ITEM NATIVES ${SOURCE_PACKAGES})
-	endif()	
+	endif()
 	foreach(package IN ITEMS ${SOURCE_PACKAGES})
 		update_PID_Source_Package(${package})
 	endforeach()
@@ -1121,7 +1122,7 @@ endfunction()
 ######################## Platforms management ##########################
 ########################################################################
 
-## subsidiary function that put sinto cmake variable description of available platforms
+## subsidiary function that puts into cmake variables the description of available platforms
 function(detect_Current_Platform)
 	# Now detect the current platform maccording to host environemnt selection (call to script for platform detection)
 	include(CheckTYPE)

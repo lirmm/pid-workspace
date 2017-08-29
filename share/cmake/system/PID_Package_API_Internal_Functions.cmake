@@ -45,7 +45,9 @@ include(PID_Package_Plugins_Management NO_POLICY_SCOPE)
 ##################################################################################
 macro(declare_Package author institution mail year license address description)
 
-include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
+file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+
+load_Current_Platform(${DIR_NAME}) #loading the current platform configuration and perform adequate actions if any changes
 
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 #################################################
@@ -63,8 +65,6 @@ initialize_Platform_Variables() #initialize platform related variables usefull f
 #################################################
 ############ MANAGING build mode ################
 #################################################
-
-file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 if(DIR_NAME STREQUAL "build/release")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
 	manage_Parrallel_Build_Option()
