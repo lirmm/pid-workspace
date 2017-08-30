@@ -62,11 +62,11 @@ endfunction(is_A_System_Reference_Path)
 #############################################################
 
 ###
-function(extract_All_Words name_with_underscores all_words_in_list)
+function(extract_All_Words the_string separator all_words_in_list)
 set(res "")
-string(REPLACE "_" ";" res "${name_with_underscores}")
+string(REPLACE "${separator}" ";" res "${the_string}")
 set(${all_words_in_list} ${res} PARENT_SCOPE)
-endfunction()
+endfunction(extract_All_Words)
 
 
 ###
@@ -117,6 +117,25 @@ string(REPLACE "_" "" RES_STR ${function_name})#simply remove underscores
 string(REPLACE " " "-" FINAL_STR ${RES_STR})#simply remove underscores
 set(${RES_LINK} ${FINAL_STR} PARENT_SCOPE)
 endfunction(format_PID_Identifier_Into_Markdown_Link)
+
+
+###
+function(normalize_Version_String INPUT_VERSION_STRING NORMALIZED_OUTPUT_VERSION_STRING)
+	get_Version_String_Numbers(${INPUT_VERSION_STRING} major minor patch)
+	set(VERSION_STR "${major}.")
+	if(minor)
+		set(VERSION_STR "${VERSION_STR}${minor}.")
+	else()
+		set(VERSION_STR "${VERSION_STR}0.")
+	endif()
+	if(patch)
+		set(VERSION_STR "${VERSION_STR}${patch}")
+	else()
+		set(VERSION_STR "${VERSION_STR}0")
+	endif()
+	set(${NORMALIZED_OUTPUT_VERSION_STRING} ${VERSION_STR} PARENT_SCOPE)
+endfunction(normalize_Version_String)
+
 
 #############################################################
 ################ filesystem management utilities ############
@@ -322,8 +341,8 @@ else()
 	list(GET author_institution 0 AUTHOR_NAME)
 	list(GET author_institution 1 INSTITUTION_NAME)
 endif()
-extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
-extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
+extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
+extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
@@ -335,7 +354,7 @@ endfunction()
 
 ###
 function(generate_Contact_String author mail RES_STRING)
-extract_All_Words("${author}" AUTHOR_ALL_WORDS)
+extract_All_Words("${author}" "_" AUTHOR_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 if(mail AND NOT mail STREQUAL "")
 	set(${RES_STRING} "${AUTHOR_STRING} (${mail})" PARENT_SCOPE)
@@ -346,7 +365,7 @@ endfunction()
 
 ###
 function(generate_Formatted_String input RES_STRING)
-extract_All_Words("${input}" INPUT_ALL_WORDS)
+extract_All_Words("${input}" "_" INPUT_ALL_WORDS)
 fill_List_Into_String("${INPUT_ALL_WORDS}" INPUT_STRING)
 set(${RES_STRING} "${INPUT_STRING}" PARENT_SCOPE)
 endfunction(generate_Formatted_String)
@@ -358,13 +377,13 @@ list(LENGTH author_institution SIZE)
 if(${SIZE} EQUAL 2)
 list(GET author_institution 0 AUTHOR_NAME)
 list(GET author_institution 1 INSTITUTION_NAME)
-extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
-extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
+extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
+extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 elseif(${SIZE} EQUAL 1)
 list(GET author_institution 0 AUTHOR_NAME)
-extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
+extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 set(INSTITUTION_STRING "")
 endif()
@@ -377,8 +396,8 @@ endfunction(get_Formatted_Author_String)
 
 ###
 function(get_Formatted_Package_Contact_String package RES_STRING)
-extract_All_Words("${${package}_MAIN_AUTHOR}" AUTHOR_ALL_WORDS)
-extract_All_Words("${${package}_MAIN_INSTITUTION}" INSTITUTION_ALL_WORDS)
+extract_All_Words("${${package}_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
+extract_All_Words("${${package}_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
@@ -398,8 +417,8 @@ endfunction(get_Formatted_Package_Contact_String)
 
 ###
 function(get_Formatted_Framework_Contact_String framework RES_STRING)
-extract_All_Words("${${framework}_FRAMEWORK_MAIN_AUTHOR}" AUTHOR_ALL_WORDS)
-extract_All_Words("${${framework}_FRAMEWORK_MAIN_INSTITUTION}" INSTITUTION_ALL_WORDS)
+extract_All_Words("${${framework}_FRAMEWORK_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
+extract_All_Words("${${framework}_FRAMEWORK_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
@@ -868,6 +887,67 @@ function(reconfigure_Package_Build_Release package)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
 endfunction(reconfigure_Package_Build_Release)
+
+### checking package dependencies (i.e. if their version specified in the CMakeLists.txt of the package is released)
+function(check_For_Dependencies_Version BAD_DEPS package)
+set(${BAD_DEPS} PARENT_SCOPE)
+set(list_of_bad_deps)
+#check that the files describing the dependencies are existing
+if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake
+OR NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
+	message("[PID] ERROR : no dependency description found in package ${package} ! cannot check version of its dependencies.")
+	return()
+endif()
+# loading variables describing dependencies
+include(${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake)
+include(${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
+# now check that target dependencies
+#debug
+if(TARGET_NATIVE_DEPENDENCIES_DEBUG)
+	foreach(dep IN ITEMS ${TARGET_NATIVE_DEPENDENCIES_DEBUG})
+		if(EXISTS ${WORKSPACE_DIR}/packages/${dep})#checking that the user may use a version generated by a source package
+				# step 1: get all versions for that package
+				get_Repository_Version_Tags(AVAILABLE_VERSIONS ${dep})
+				set(VERSION_NUMBERS)
+				if(AVAILABLE_VERSIONS)
+					normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
+				endif()
+
+				# step 2: checking that the version specified in the CMakeLists really exist
+				normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
+
+				list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
+				if(INDEX EQUAL -1)
+						list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG}")#using # instead of _ since names of package can contain _
+				endif()
+		endif()
+	endforeach()
+endif()
+#release
+if(TARGET_NATIVE_DEPENDENCIES)
+	foreach(dep IN ITEMS ${TARGET_NATIVE_DEPENDENCIES})
+		if(EXISTS ${WORKSPACE_DIR}/packages/${dep})#checking that the user may use a version generated by a source package
+				# step 1: get all versions for that package
+				get_Repository_Version_Tags(AVAILABLE_VERSIONS ${dep})
+				set(VERSION_NUMBERS)
+				if(AVAILABLE_VERSIONS)
+					normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
+				endif()
+				
+				# step 2: checking that the version specified in the CMakeLists really exist
+				normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
+				list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
+				if(INDEX EQUAL -1)
+						list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION}")#using # instead of _ since names of package can contain _
+				endif()
+		endif()
+	endforeach()
+endif()
+if(list_of_bad_deps)#guard to avoid troubles with CMake complaining that the list does not exist
+	list(REMOVE_DUPLICATES list_of_bad_deps)
+	set(${BAD_DEPS} ${list_of_bad_deps} PARENT_SCOPE)#need of guillemet to preserve the list structure
+endif()
+endfunction(check_For_Dependencies_Version)
 
 ################################################################
 ################ Frameworks Life cycle management ##############

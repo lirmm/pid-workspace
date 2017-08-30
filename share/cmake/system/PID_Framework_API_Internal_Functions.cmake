@@ -354,12 +354,12 @@ configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/framework.yml.in ${CMA
 file(WRITE ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "")
 if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 	foreach(cat IN ITEMS ${${PROJECT_NAME}_FRAMEWORK_CATEGORIES})
-		extract_All_Words_From_Path(${cat} LIST_OF_NAMES)
+		extract_All_Words_From_Path(${cat} "_" LIST_OF_NAMES)
 		list(LENGTH LIST_OF_NAMES SIZE)
 		set(FINAL_NAME "")
 		if(SIZE GREATER 1)# there are subcategories
 			foreach(name IN ITEMS ${LIST_OF_NAMES})
-				extract_All_Words(${name} NEW_NAMES)# replace underscores with spaces
+				extract_All_Words(${name} "_" NEW_NAMES)# replace underscores with spaces
 
 				fill_List_Into_String("${NEW_NAMES}" RES_STRING)
 				set(FINAL_NAME "${FINAL_NAME} ${RES_STRING}")
@@ -371,7 +371,7 @@ if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 			endforeach()
 			file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
 		else()
-			extract_All_Words(${cat} NEW_NAMES)# replace underscores with spaces
+			extract_All_Words(${cat} "_" NEW_NAMES)# replace underscores with spaces
 			fill_List_Into_String("${NEW_NAMES}" RES_STRING)
 			set(FINAL_NAME "${RES_STRING}")
 			file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
