@@ -913,9 +913,7 @@ endfunction(is_Externally_Usable)
 
 ### registering the binary name of a component
 function(register_Component_Binary c_name)
-	get_target_property(BIN_LOC ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
-	get_filename_component(BIN_NAME ${BIN_LOC} NAME)
-	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${BIN_NAME} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} "$<TARGET_FILE_NAME:${c_name}${INSTALL_NAME_SUFFIX}>" CACHE INTERNAL "")
 endfunction(register_Component_Binary)
 
 
@@ -1208,7 +1206,7 @@ endfunction(write_Use_File)
 
 function(create_Use_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode
-	set(file ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake)
+	set(file ${CMAKE_BINARY_DIR}/share/UseReleaseTemp)
 else()
 	set(file ${CMAKE_BINARY_DIR}/share/UseDebugTemp)
 endif()
@@ -1219,10 +1217,16 @@ write_Use_File(${file} ${PROJECT_NAME} ${CMAKE_BUILD_TYPE})
 
 #finalizing release mode by agregating info from the debug mode
 if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode
-	if(EXISTS ${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp)
-		file(READ ${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp DEBUG_CONTENT)
+	if(EXISTS ${CMAKE_BINARY_DIR}/../debug/share/UseDebugGen) #checking that the debug generated file exists
+		file(READ ${CMAKE_BINARY_DIR}/../debug/share/UseDebugGen DEBUG_CONTENT)
 		file(APPEND ${file} "${DEBUG_CONTENT}")
 	endif()
+	#removing debug files
+	file(REMOVE ${CMAKE_BINARY_DIR}/../debug/share/UseDebugGen)
+	file(REMOVE ${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp)
+	file (GENERATE OUTPUT ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake INPUT ${file})
+else() #this step is required to generate info containing generator expression
+	file (GENERATE OUTPUT ${CMAKE_BINARY_DIR}/share/UseDebugGen INPUT ${file})
 endif()
 endfunction(create_Use_File)
 
