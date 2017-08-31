@@ -156,6 +156,7 @@ endif()
 endif()
 endfunction(generate_API)
 
+
 ############ function used to create the license.txt file of the package  ###########
 function(generate_License_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
@@ -878,14 +879,18 @@ endif()
 set(NEW_POST_CONTENT_BINARY FALSE)
 if(	include_installer
 	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
-	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
 	AND NOT EXISTS ${TARGET_BINARIES_PATH})
 	# update the site content only if necessary
 	file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder
 
 	file(COPY ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
 	${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
-	DESTINATION  ${TARGET_BINARIES_PATH})#copy the binaries
+	DESTINATION  ${TARGET_BINARIES_PATH})#copy the release archive
+
+	if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz)#copy debug archive if it exist
+			file(COPY ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
+			DESTINATION  ${TARGET_BINARIES_PATH})#copy the binaries
+	endif()
 	# configure the file used to reference the binary in jekyll
 	set(BINARY_PACKAGE ${package})
 	set(BINARY_VERSION ${version})

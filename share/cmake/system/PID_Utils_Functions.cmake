@@ -436,6 +436,22 @@ else()
 endif()
 endfunction(get_Formatted_Framework_Contact_String)
 
+
+### checking that the license applying to teh package is closed source or not
+function(package_License_Is_Closed_Source CLOSED package)
+	include(${WORKSPACE_DIR}/share/cmake/licenses/License${${package}_LICENSE}.cmake RESULT_VARIABLE res)
+	if(res MATCHES NOTFOUND)
+		set(${CLOSED} TRUE PARENT_SCOPE)
+		message("[PID] ERROR : cannot find descirption file for license ${${package}_LICENSE}, specified for package ${package}. Package is supposed to be closed source.")
+		return()
+	endif()
+	if(LICENSE_IS_OPEN_SOURCE)
+		set(${CLOSED} FALSE PARENT_SCOPE)
+	else()
+		set(${CLOSED} TRUE PARENT_SCOPE)
+	endif()
+endfunction(package_License_Is_Closed_Source)
+
 #############################################################
 ################ Source file management #####################
 #############################################################
@@ -933,7 +949,7 @@ if(TARGET_NATIVE_DEPENDENCIES)
 				if(AVAILABLE_VERSIONS)
 					normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
 				endif()
-				
+
 				# step 2: checking that the version specified in the CMakeLists really exist
 				normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
 				list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)

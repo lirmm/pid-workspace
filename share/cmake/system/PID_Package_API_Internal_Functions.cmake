@@ -273,7 +273,7 @@ elseif(DIR_NAME STREQUAL "build")
 	)
 
 	if(BUILD_AND_RUN_TESTS AND NOT PID_CROSSCOMPILATION)
-		# test target (launch test units)
+		# test target (launch test units, redefinition of tests)
 		if(BUILD_TESTS_IN_DEBUG)
 			add_custom_target(test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
@@ -428,23 +428,29 @@ if(NOT ${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in 
 	return()
 endif()
 
-#general information
+package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME})
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+set(INCLUDING_BINARIES FALSE)
+set(INCLUDING_COVERAGE FALSE)
+set(INCLUDING_STATIC_CHECKS FALSE)
+if(NOT CLOSED)#check if project is closed source or not
 
-# management of binaries publication
-if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING AND GENERATE_INSTALLER)
-	set(INCLUDING_BINARIES TRUE)
-else()
-	set(INCLUDING_BINARIES FALSE)
+	# management of binaries publication
+	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING AND GENERATE_INSTALLER)
+		set(INCLUDING_BINARIES TRUE)
+	endif()
+
+	#checking for coverage generation
+	if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
+		set(INCLUDING_COVERAGE TRUE)
+	endif()
+
+	#checking for coverage generation
+	if(BUILD_STATIC_CODE_CHECKING_REPORT AND NOT CLOSED)
+		set(INCLUDING_STATIC_CHECKS TRUE)
+	endif()
+
 endif()
-
-#checking for coverage generation
-if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
-	set(INCLUDING_COVERAGE TRUE)
-else()
-	set(INCLUDING_COVERAGE FALSE)
-endif()
-
 
 if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done within a lone static site
 
@@ -457,7 +463,7 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DINCLUDES_API_DOC=${BUILD_API_DOC}
 						-DINCLUDES_COVERAGE=${INCLUDING_COVERAGE}
-						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
+						-DINCLUDES_STATIC_CHECKS=${INCLUDING_STATIC_CHECKS}
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
 						-DSYNCHRO=$(synchro)
 						-DFORCED_UPDATE=$(force)
@@ -477,7 +483,7 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}
 						-DINCLUDES_API_DOC=${BUILD_API_DOC}
 						-DINCLUDES_COVERAGE=${INCLUDING_COVERAGE}
-						-DINCLUDES_STATIC_CHECKS=${BUILD_STATIC_CODE_CHECKING_REPORT}
+						-DINCLUDES_STATIC_CHECKS=${INCLUDING_STATIC_CHECKS}
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
 						-DSYNCHRO=$(synchro)
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
@@ -761,11 +767,28 @@ if(GENERATE_INSTALLER)
 	set(PACKAGE_TARGET_NAME ${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${CURRENT_PLATFORM_NAME}.tar.gz) #we use specific PID platform name instead of CMake default one to avoid troubles (because it is not really discrimant)
 
 	if(PACKAGE_SYSTEM_STRING)
-		add_custom_target(	package_install
-					COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
-					COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
-					COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+		if(	DEFINED ${PROJECT_NAME}_LICENSE
+			AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL ""
+			AND NOT LICENSE_IS_OPEN_SOURCE)
+				#if the license is not open source then we do not generate a package with debug info
+				#this requires two step -> first consists in renaming adequately the generated artifcats, second in installing a package with adequate name
+				if(CMAKE_BUILD_TYPE MATCHES Release)#release => generate two packages with two different names but with same content
+					add_custom_target(	package_install
+								COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
+								COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
+								COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+				else()#debug => do not install the package
+					add_custom_target(	package_install
+								COMMAND ${CMAKE_COMMAND} -E echo ""
+							COMMENT "[PID] debug package not installed in ${${PROJECT_NAME}_INSTALL_PATH}/installers due to license restriction")
+				endif()
 
+		else()#license is open source, do as usual
+			add_custom_target(	package_install
+						COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
+						COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
+						COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+		endif()
 		include(CPack)
 	endif()
 endif(GENERATE_INSTALLER)
