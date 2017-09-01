@@ -678,7 +678,6 @@ generate_License_File() # generating and putting into source directory the file 
 generate_Find_File() # generating/installing the generic cmake find file for the package
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
 generate_API() #generating the API documentation configuration file and the rule to launch doxygen and install the doc
-clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed
 generate_Info_File() #generating a cmake "info" file containing info about source code of components
 generate_Dependencies_File() #generating a cmake "dependencies" file containing information about dependencies
 generate_Coverage() #generating a coverage report in debug mode
@@ -1027,6 +1026,8 @@ if(	BUILD_DEPENDENT_PACKAGES
 else()
 	set(DEPENDENT_SOURCE_PACKAGES)
 endif()
+
+clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed (do this only in release mode)
 
 #########################################################################################################################
 ######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########

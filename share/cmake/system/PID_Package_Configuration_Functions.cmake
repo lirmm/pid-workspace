@@ -629,15 +629,21 @@ function(clean_Install_Dir)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 if(	${CMAKE_BUILD_TYPE} MATCHES Release
 	AND EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH}
-	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH})# if package is already installed
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} #if package is already installed
+)
 	# calling a script that will do the job in its own context (to avoid problem when including cmake scripts that would redefine critic variables)
-	execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
+	add_custom_target(cleaning_install
+							COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						 -DPACKAGE_NAME=${PROJECT_NAME}
 						 -DCURRENT_PLATFORM=${CURRENT_PLATFORM_NAME}
 						 -DPACKAGE_INSTALL_VERSION=${${PROJECT_NAME}_DEPLOY_PATH}
 						 -DPACKAGE_VERSION=${${PROJECT_NAME}_VERSION}
-						 -DNEW_USE_FILE=${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake
+						 -DNEW_USE_FILE=${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake #this file does not exist at configruation time (only after generation phase)
 						 -P ${WORKSPACE_DIR}/share/cmake/system/Clear_PID_Package_Install.cmake
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+						 COMMENT "[PID] INFO : Cleaning install tree ..."
+						 VERBATIM
+	)
+	add_dependencies(build cleaning_install) #removing built files in install tree that have been deleted with new configuration
+
 endif()
 endfunction(clean_Install_Dir)
