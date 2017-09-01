@@ -15,6 +15,29 @@ The basic idea is to formalize as far as possible (using a CMake API) all aspect
 
 People that can be interested in using PID are project managers that want to enforce a way to ease sharing and integration of code in their team or institution, but it may be also useful for lone programmers that simply want a clean method for developping their code.
 
+# Key Features
+
++ Fully based on CMake and git.
++ Management of C/C++ projects in a common an standardized way (same basic commands and options to manage the build process for all projects).
++ Management of source and binary packages in a common way.
++ Management of external binary packages and OS dependencies.
++ Formalization of packages dependencies and versions, automating deployment of dependencies (either binary or source). 
++ Installation of packages is local (no modification of OS configuration, as far as possible).
++ Standardizing and Automating of the release, publishing and deployment process of packages.
++ Standardizing the continuous integration process (based on gitlab ci)
++ Standardizing and Automating online documentation generation (based on gitlab pages, jekyll, doxygen, cppchecks and lcov).
++ Management of repositories for binaries (based on gitlab pages).
++ Standardizing and Automating license management (applying liecnse information everywhere needed), as well as other meta information about the package (authors, contact, etc.).
++ Plugin mechanism to provide addintionnal functionalities to manage external tools (typically IDE). For instance a plugin used to configure `atom-clang-complete` plugin in Atom IDE. 
++ Standardization and management of build environments and target platforms, to allow the management of many execution targets for the same code and easily change the build environment to use (for instance changing the compiler in use for all packages). These features can be used to manage crosscompilation. 
+
+
+# About the license
+
+pid-workspace and PID base packages are licensed with the CeCILL-C open source license. A copy of the license is available in the file license.txt. 
+
+CeCILL-C is an open source software license equivalent to and compatible with LGPL. The difference is that it is governed by French law and disagreements or disputes shall be referred to the Paris Courts having jurisdiction.
+
 
 # Install
 
