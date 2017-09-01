@@ -21,6 +21,30 @@
 ####################### new API => configure the package with dependencies  #####################
 #################################################################################################
 
+function (list_Closed_Source_Dependency_Packages)
+include (${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
+set(CLOSED_PACKS)
+if(CURRENT_NATIVE_DEPENDENCIES)
+	foreach(pack IN ITEMS ${CURRENT_NATIVE_DEPENDENCIES})
+		package_License_Is_Closed_Source(CLOSED ${pack})
+		if(CLOSED)
+			list(APPEND CLOSED_PACKS ${pack})
+		endif()
+	endforeach()
+	list(REMOVE_DUPLICATES CLOSED_PACKS)
+endif()
+set(CLOSED_SOURCE_DEPENDENCIES ${CLOSED_PACKS} CACHE INTERNAL "")
+endfunction(list_Closed_Source_Dependency_Packages)
+
+function(is_Closed_Source_Dependency_Package CLOSED package)
+list(FIND CLOSED_SOURCE_DEPENDENCIES ${package} INDEX)
+if(INDEX EQUAL -1)
+	set(${CLOSED} FALSE PARENT_SCOPE)
+else()#package found in closed source packs => it is closed source
+	set(${CLOSED} TRUE PARENT_SCOPE)
+endif()
+endfunction(is_Closed_Source_Dependency_Package)
+
 ### list all public headers of a component
 function(list_Public_Includes INCLUDES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})

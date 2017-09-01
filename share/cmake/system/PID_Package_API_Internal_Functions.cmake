@@ -652,6 +652,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 		resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
 	endforeach()
 endif()
+
 #################################################
 ############ MANAGING the BUILD #################
 #################################################
@@ -685,6 +686,13 @@ generate_Static_Checks() #generating a static check report in release mode, if t
 create_Documentation_Target() # create target for generating documentation
 configure_Pages() # generating the markdown files for the project web pages
 generate_CI_Config_File() #generating the CI config file in the project
+
+# listing closed source packages, info to be used in targets managements
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+	list_Closed_Source_Dependency_Packages()
+else()
+	set(CLOSED_SOURCE_DEPENDENCIES CACHE INTERNAL "")
+endif()
 
 #installing specific folders of the share sub directory
 if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)

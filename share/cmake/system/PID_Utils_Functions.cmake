@@ -437,19 +437,26 @@ endif()
 endfunction(get_Formatted_Framework_Contact_String)
 
 
-### checking that the license applying to teh package is closed source or not
+### checking that the license applying to the package is closed source or not (set the variable CLOSED to TRUE or FALSE adequately)
 function(package_License_Is_Closed_Source CLOSED package)
-	include(${WORKSPACE_DIR}/share/cmake/licenses/License${${package}_LICENSE}.cmake RESULT_VARIABLE res)
-	if(res MATCHES NOTFOUND)
-		set(${CLOSED} TRUE PARENT_SCOPE)
-		message("[PID] ERROR : cannot find descirption file for license ${${package}_LICENSE}, specified for package ${package}. Package is supposed to be closed source.")
-		return()
+	list(FIND KNOWN_LICENSES ${${package}_LICENSE} INDEX)
+	if(INDEX EQUAL -1) #license has never been loaded so do not know if open or closed source
+		include(${WORKSPACE_DIR}/share/cmake/licenses/License${${package}_LICENSE}.cmake RESULT_VARIABLE res)
+		if(res MATCHES NOTFOUND)
+			set(${CLOSED} TRUE PARENT_SCOPE)
+			message("[PID] ERROR : cannot find description file for license ${${package}_LICENSE}, specified for package ${package}. Package is supposed to be closed source.")
+			return()
+		endif()
+		set(KNOWN_LICENSES ${KNOWN_LICENSES} ${${package}_LICENSE}} CACHE INTERNAL "")#adding the license to known licenses
+		if(LICENSE_IS_OPEN_SOURCE)
+			set(KNOWN_LICENSE_${${package}_LICENSE}_CLOSED FALSE CACHE INTERNAL "")
+		else()
+			set(KNOWN_LICENSE_${${package}_LICENSE}_CLOSED TRUE CACHE INTERNAL "")
+		endif()
 	endif()
-	if(LICENSE_IS_OPEN_SOURCE)
-		set(${CLOSED} FALSE PARENT_SCOPE)
-	else()
-		set(${CLOSED} TRUE PARENT_SCOPE)
-	endif()
+	# here the license is already known, simply checking for the registered values
+	# this memorization is to optimize configuration time as License file may be long to load
+	set(${CLOSED} ${KNOWN_LICENSE_${${package}_LICENSE}_CLOSED} PARENT_SCOPE)
 endfunction(package_License_Is_Closed_Source)
 
 #############################################################

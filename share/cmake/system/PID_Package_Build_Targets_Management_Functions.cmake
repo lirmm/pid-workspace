@@ -314,7 +314,7 @@ endfunction(create_External_Dependency_Target)
 
 function (create_Dependency_Target dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(NOT TARGET 	${dep_package}-${dep_component}${TARGET_SUFFIX})#check that this target does not exist, otherwise naming conflict
+if(NOT TARGET ${dep_package}-${dep_component}${TARGET_SUFFIX})#check that this target does not exist, otherwise naming conflict
 #create the dependent target (#may produce recursion to build undirect dependencies of targets
 	if(${dep_package}_${dep_component}_TYPE STREQUAL "APP"
 		OR ${dep_package}_${dep_component}_TYPE STREQUAL "EXAMPLE")
@@ -380,9 +380,24 @@ endif()
 
 endfunction(manage_Additional_Imported_Component_Flags)
 
-function(create_Imported_Header_Library_Target package component mode)
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-	add_library(${package}-${component}${TARGET_SUFFIX} INTERFACE IMPORTED GLOBAL)
+#function used to define which mode to use depending on the build mode in build (Release=release Debug= Debug or Release if Closed source and no debug binary available)
+function(get_Imported_Target_Mode MODE_TO_IMPORT imported_package imported_binary_location build_mode)
+	if(mode MATCHES Debug)
+			is_Closed_Source_Dependency_Package(CLOSED ${imported_package})
+			if(CLOSED AND NOT EXISTS ${imported_binary_location})#if package is closed source and no debug code available (this is a normal case)
+				set(${MODE_TO_IMPORT} Release PARENT_SCOPE) #we must use the Release code
+			else() #use default mode
+				set(${MODE_TO_IMPORT} Debug PARENT_SCOPE)
+			endif()
+	else() #use default mode
+				set(${MODE_TO_IMPORT} Release PARENT_SCOPE)
+	endif()
+endfunction(get_Imported_Target_Mode)
+
+# imported target, by definition, do not belog to the currently build package
+function(create_Imported_Header_Library_Target package component mode) #header libraries are never closed by definition
+	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
+	add_library(${package}-${component}${TARGET_SUFFIX} INTERFACE IMPORTED GLOBAL)#suffix used only for target name
 	list_Public_Includes(INCLUDES ${package} ${component} ${mode})
 	list_Public_Links(LINKS ${package} ${component} ${mode})
 	list_Public_Definitions(DEFS ${package} ${component} ${mode})
@@ -391,51 +406,72 @@ function(create_Imported_Header_Library_Target package component mode)
 endfunction(create_Imported_Header_Library_Target)
 
 function(create_Imported_Static_Library_Target package component mode)
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-	add_library(${package}-${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL)
+	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode}) #get variables related to the current build mode
+	add_library(${package}-${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL) #create the target for the imported library
 
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")
+	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
+	if(NOT MODE_TO_IMPORT MATCHES mode)
+		get_Binary_Location(LOCATION_RES ${package} ${component} ${MODE_TO_IMPORT})#find the adequate release binary
+	endif()
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
 
-	list_Public_Includes(INCLUDES ${package} ${component} ${mode})
-	list_Public_Links(LINKS ${package} ${component} ${mode})
-	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${mode})
-	list_Public_Definitions(DEFS ${package} ${component} ${mode})
-	list_Public_Options(OPTS ${package} ${component} ${mode})
+	list_Public_Includes(INCLUDES ${package} ${component} ${MODE_TO_IMPORT})
+	list_Public_Links(LINKS ${package} ${component} ${MODE_TO_IMPORT})
+	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${MODE_TO_IMPORT})
+	list_Public_Definitions(DEFS ${package} ${component} ${MODE_TO_IMPORT})
+	list_Public_Options(OPTS ${package} ${component} ${MODE_TO_IMPORT})
+
 	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}")
 endfunction(create_Imported_Static_Library_Target)
 
 function(create_Imported_Shared_Library_Target package component mode)
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-	add_library(${package}-${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)
+	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
+	add_library(${package}-${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)#create the target for the imported library
 
-	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")
+	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})#find the binary to use depending on build mode
+	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
+	if(NOT MODE_TO_IMPORT MATCHES mode)
+		get_Binary_Location(LOCATION_RES ${package} ${component} ${MODE_TO_IMPORT})#find the adequate release binary
+	endif()
 
-	list_Public_Includes(INCLUDES ${package} ${component} ${mode})
-	list_Public_Links(LINKS ${package} ${component} ${mode})
-	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${mode})
-	list_Public_Definitions(DEFS ${package} ${component} ${mode})
-	list_Public_Options(OPTS ${package} ${component} ${mode})
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
+
+	list_Public_Includes(INCLUDES ${package} ${component} ${MODE_TO_IMPORT})
+	list_Public_Links(LINKS ${package} ${component} ${MODE_TO_IMPORT})
+	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${MODE_TO_IMPORT})
+	list_Public_Definitions(DEFS ${package} ${component} ${MODE_TO_IMPORT})
+	list_Public_Options(OPTS ${package} ${component} ${MODE_TO_IMPORT})
+
 	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}")
 endfunction(create_Imported_Shared_Library_Target)
 
 function(create_Imported_Module_Library_Target package component mode)
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-	add_library(${package}-${component}${TARGET_SUFFIX} MODULE IMPORTED GLOBAL)
+	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
+	add_library(${package}-${component}${TARGET_SUFFIX} MODULE IMPORTED GLOBAL)#create the target for the imported library
 
-	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode} ${${package}_ROOT_DIR})
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")
+	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})#find the binary to use depending on build mode
+	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
+	if(NOT MODE_TO_IMPORT MATCHES mode)
+		get_Binary_Location(LOCATION_RES ${package} ${component} ${MODE_TO_IMPORT})#find the adequate release binary
+	endif()
+
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
 	#no need to do more, a module is kind of an executable in this case
 endfunction(create_Imported_Module_Library_Target)
 
 
 function(create_Imported_Executable_Target package component mode)
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-	add_executable(${package}-${component}${TARGET_SUFFIX} IMPORTED GLOBAL)
+	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
+	add_executable(${package}-${component}${TARGET_SUFFIX} IMPORTED GLOBAL)#create the target for the imported executable
 
-	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode} ${${package}_ROOT_DIR})
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")
+	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
+	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
+	if(NOT MODE_TO_IMPORT MATCHES mode)
+		get_Binary_Location(LOCATION_RES ${package} ${component} ${MODE_TO_IMPORT})#find the adequate release binary
+	endif()
+
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
 endfunction(create_Imported_Executable_Target)
 
 function(bind_Target component dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)

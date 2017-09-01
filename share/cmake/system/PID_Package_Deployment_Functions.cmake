@@ -894,7 +894,7 @@ file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
 list(GET res-dbg 0 numeric_error_dbg)
 list(GET res-dbg 1 status_dbg)
 if(NOT numeric_error_dbg EQUAL 0)#there is an error
-	package_License_Is_Closed_Source(CLOSED ${package})
+	package_License_Is_Closed_Source(CLOSED ${package})#limit this high cost function when an error occurs
 	if(NOT CLOSED) #generate an error if the package is not closed source (there is a missing archive)
 		set(${INSTALLED} FALSE PARENT_SCOPE)
 		message("[PID] ERROR : problem when downloading binary version ${version_string} of package ${package} (debug binaries) from address ${download_url_dbg} : ${status_dbg}.")
