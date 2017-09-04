@@ -47,22 +47,26 @@ foreach(a_file IN ITEMS ${all_files})
 		#header comment must be updated or created
 		string(LENGTH "/* 	File: ${PROJECT_FILENAME}" beginning_of_header_size)
 		math(EXPR beginning_of_header_size "${beginning_of_header_size}+1")
-		file(READ ${a_file} first_line_of_file LIMIT ${beginning_of_header_size})
-		file(READ ${a_file} full_content)
-		if("${first_line_of_file}" STREQUAL "/* 	File: ${PROJECT_FILENAME}\n") #the file already has a license comment
+		file(READ ${a_file} first_line_of_file LIMIT ${beginning_of_header_size})#getting as many characters as counted previously
+		file(READ ${a_file} full_content)#getting the whole filecontent
+		string(REPLACE "." "\\." MATCHABLE_FILENAME " ${PROJECT_FILENAME}")
+		set(COMPARISON_PATTERN "/*File:${PROJECT_FILENAME}")
+		string(REGEX REPLACE "^[ \t\n]*/\\*[ \t\n]*File:[ \t\n]+${MATCHABLE_FILENAME}[ \t\n]*$" "${COMPARISON_PATTERN}" FORMATTED ${first_line_of_file})
+		if(NOT  FORMATTED STREQUAL COMPARISON_PATTERN) #the file already has a license comment
 			#this comment must be suppressed first
-			string(FIND "${full_content}" "*/" position_of_first_comment_ending)
+			string(FIND "${full_content}" "*/" position_of_first_comment_ending)#getting the size of the license comment
 			math(EXPR thelength "${position_of_first_comment_ending}+2")
-			string(SUBSTRING "${full_content}" ${thelength} -1 res_file_content)
+			string(SUBSTRING "${full_content}" ${thelength} -1 res_file_content)#remove this first license comment
 			set(full_content ${res_file_content})#now only code and user defined header comments (e.g. for doxygen) are part of the new file content
-			#message("RESULT = ${full_content}")
+			message("[PID] INFO : replacing license header of file ${a_file}.")
+		else()
+			message("[PID] INFO : adding license header to file ${a_file}.")
 		endif()
 
 		# now adding the newly created header to the file
 		set(RES "${configured_header}")
 		set(RES "${RES}${full_content}")
 		file(WRITE ${a_file} "${RES}")
-		message("[PID] INFO : license header added to file ${a_file}.")
 	else()
 		message("[PID] INFO : file ${a_file} ALREADY contains a license header.")
 	endif()
