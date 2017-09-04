@@ -59,9 +59,12 @@ Software description : ${${PROJECT_NAME}_DESCRIPTION}
 
 Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_LIST}
 
-This software is free software: you can redistribute it and/or modify it under the terms of the ${LICENSE_NAME} license as published by
- ${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software
-is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+This software is proprietary and confidential: Unauthorized copying, modification, redistribution of this 
+file or its resulting binary code, via any medium is strictly prohibited, except exceptions as defined under  
+the terms of the ${LICENSE_NAME} license as published by ${LICENSE_AUTHORS}, either version ${LICENSE_VERSION}
+of the License, or (at your option) any later version.
+
+This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 Information about license applying to this software:
@@ -74,7 +77,7 @@ Version of the license : ${LICENSE_VERSION}
 
 License authors : ${LICENSE_AUTHORS}
 
-Legal terms of the license are reproduced below (french and english versions are provided):
+Legal terms of the license are reproduced below:
 
 -------------------------------ENGLISH VERSION -------------------------------
 

@@ -37,22 +37,25 @@ foreach(a_file IN ITEMS ${all_files})
 	get_filename_component(file_name ${a_file} NAME)
 	set(PROJECT_FILENAME ${file_name})
 	file(READ ${CONFIG_FILE} raw_header)
-	string(CONFIGURE ${raw_header} configured_header @ONLY)
+	string(CONFIGURE ${raw_header} configured_header @ONLY)# raw_header contains the header corresponding to the license, configured with project information
 
 	#getting appropriate corresponding characters in the source file
 	string(LENGTH "${configured_header}" header_size)
+
 	file(READ ${a_file} beginning_of_file LIMIT ${header_size})
 	# comparing header of the source with configured header
 	if(NOT "${beginning_of_file}" STREQUAL "${configured_header}")#headers are not matching !!
-		#header comment must be updated or created
-		string(LENGTH "/* 	File: ${PROJECT_FILENAME}" beginning_of_header_size)
-		math(EXPR beginning_of_header_size "${beginning_of_header_size}+1")
-		file(READ ${a_file} first_line_of_file LIMIT ${beginning_of_header_size})#getting as many characters as counted previously
-		file(READ ${a_file} full_content)#getting the whole filecontent
-		string(REPLACE "." "\\." MATCHABLE_FILENAME " ${PROJECT_FILENAME}")
-		set(COMPARISON_PATTERN "/*File:${PROJECT_FILENAME}")
+		#=> header comment must be either updated or created
+		string(LENGTH "/* 	File: ${PROJECT_FILENAME}" first_header_line_size)
+		math(EXPR first_header_line_size "${first_header_line_size} + 1")
+
+		file(READ ${a_file} first_line_of_file LIMIT ${first_header_line_size})#getting as many characters as counted previously
+		file(READ ${a_file} full_content)#getting the whole file content
+		string(REPLACE "." "\\." MATCHABLE_FILENAME "${PROJECT_FILENAME}")#create the regex pattern from file name
+		set(COMPARISON_PATTERN "/*File:${PROJECT_FILENAME}") # creating the formatted string used for coparison of headers
 		string(REGEX REPLACE "^[ \t\n]*/\\*[ \t\n]*File:[ \t\n]+${MATCHABLE_FILENAME}[ \t\n]*$" "${COMPARISON_PATTERN}" FORMATTED ${first_line_of_file})
-		if(NOT  FORMATTED STREQUAL COMPARISON_PATTERN) #the file already has a license comment
+		if(	NOT FORMATTED STREQUAL first_line_of_file #there is a match
+				AND FORMATTED STREQUAL COMPARISON_PATTERN) #the file already has a license comment
 			#this comment must be suppressed first
 			string(FIND "${full_content}" "*/" position_of_first_comment_ending)#getting the size of the license comment
 			math(EXPR thelength "${position_of_first_comment_ending}+2")
