@@ -23,12 +23,12 @@ People that can be interested in using PID are project managers that want to enf
 + Management of external binary packages and OS dependencies.
 + Formalization of packages dependencies and versions, automating deployment of dependencies (either binary or source). 
 + Installation of packages is local (no modification of OS configuration, as far as possible).
-+ Standardizing and Automating of the release, publishing and deployment process of packages.
++ Standardizing and Automating the release, publishing and deployment process of packages.
 + Standardizing the continuous integration process (based on gitlab ci)
 + Standardizing and Automating online documentation generation (based on gitlab pages, jekyll, doxygen, cppchecks and lcov).
 + Management of repositories for binaries (based on gitlab pages).
 + Standardizing and Automating license management (applying liecnse information everywhere needed), as well as other meta information about the package (authors, contact, etc.).
-+ Plugin mechanism to provide addintionnal functionalities to manage external tools (typically IDE). For instance a plugin used to configure `atom-clang-complete` plugin in Atom IDE. 
++ Plugin mechanism to provide additionnal functionalities to manage external tools (typically IDE). For instance a plugin used to configure `atom-clang-complete` plugin in Atom IDE. 
 + Standardization and management of build environments and target platforms, to allow the management of many execution targets for the same code and easily change the build environment to use (for instance changing the compiler in use for all packages). These features can be used to manage crosscompilation. 
 
 
@@ -52,58 +52,59 @@ Installing the PID framework is a simple task, as soon as you have adequate depe
 
 + fork this repository and/or clone it into your own repository server. For instance we use a private instance of gitlab in my laboratory and our official pid-workspace is a specific project in this server. The fork is usefull if you want to provide your modifications (contributions to PID or referencing of your packages) to other teams and people around the world. Indeed the current repository may be used as the global "marketplace" for everyone (this is mainly interesting for open source projects) .
 
-+ clone the forked repository in your workstation
+For now let's call the the pid-workspace you just fork "**your team official repository**".
 
++ clone **your team official repository** in your workstation
 
 ```bash
-> git clone <adress of the pid-workspace official repository given by your team leader>
+> git clone **your team official repository**
 ```
 
 + configure your local repository:
 
 ```bash
 > cd pid-workspace/pid
-> cmake ..
+> cmake -DPID_OFFICIAL_REMOTE_ADDRESS=**your team official repository** .. #or use cmake gui to set this variable
 ```
 
-+ edit the CMakeLists.txt file by setting the variable `PID_OFFICIAL_REMOTE_ADDRESS` to the address of your official workspace. Then commit/push, that's it your team can start working in an isolated environment. This action ensures that you will not be affected by modifications of this repository unless you specifically decide it (using a dedicated git remote pointing to the current repository).
+That's it your team can start working in an isolated environment. This action ensures that you will not be affected by modifications of this current repository unless you specifically decide it (using a dedicated git remote pointing to the current repository).
 
 
-## if you are member of a team with a specific official repository
+## if you are member of a team with a specific team official repository
 
-+ fork the official repository your team leader has put in place:
++ fork **your team official repository** (the address should be given by your team leader). The forked repository is your **private repository**, it will be usefull to share your contributions with other members of the team.
 
-+ clone this forked repository:
++ clone your **private repository** on your workstation(s):
 
 ```bash
-> git clone <adress of the pid-workspace official repository given by your team leader>
+> git clone **private repository**
 ```
 
 + configure your local repository:
 
 ```bash
 > cd pid-workspace/pid
-> cmake ..
+> cmake -DPID_OFFICIAL_REMOTE_ADDRESS=**your team official repository** ..
 ```
 
 ## if you are a lone developper and want to contribute (for instance you want to publish open source packages)
 
-+ fork this repository so that you can use merge requests to provide your contributions. The forked repository becomes your official repository. 
++ fork this repository so that you can use merge requests to provide your contributions. The forked repository becomes **your official repository**. 
 
-+ clone the forked repository in your workstation:
++ clone**your official repository** in your workstation:
 
 ```bash
-> git clone <adress of the pid-workspace official repository given by your team leader>
+> git clone **your official repository**
 ```
 
 + configure your local repository:
 
 ```bash
 > cd pid-workspace/pid
-> cmake ..
+> cmake -DPID_OFFICIAL_REMOTE_ADDRESS=**your official repository** ..
 ```
 
-+ edit the CMakeLists.txt file by setting the variable `PID_OFFICIAL_REMOTE_ADDRESS` to the address of your official workspace. Then commit/push to master branch. That's it your team can start working in an isolated environment. This action ensures that you will not be affected by modifications of this repository unless you specifically decide it (using a dedicated git remote pointing to the current repository).
+That's it you can start working in an isolated environment. This action ensures that you will not be affected by modifications of this repository unless you specifically decide it (using a dedicated git remote pointing to the current repository).
 
 
 ## if you just want to use PID to install some packages provided by third-parties
@@ -111,12 +112,14 @@ Installing the PID framework is a simple task, as soon as you have adequate depe
 + simply clone the current repository into your workstation.
 
 ```bash
-> git clone <adress of the pid-workspace official repository given by your team leader>
+> git clone **this repository**
 ```
 + Then configure your workspace:
 
 ```bash
 > cd pid-workspace/pid
+> cmake -DPID_OFFICIAL_REMOTE_ADDRESS=**this repository** ..
+# or use the LIRMM official repository (recommended for LIRMM members)
 > cmake ..
 ```
 
