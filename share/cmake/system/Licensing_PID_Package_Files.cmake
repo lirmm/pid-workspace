@@ -50,10 +50,10 @@ foreach(a_file IN ITEMS ${all_files})
 	string(SUBSTRING "${input_text}" 0 ${header_size} beginning_of_file)#getting as many characters as counted previously
 	if(NOT "${beginning_of_file}" STREQUAL "${configured_header}")#headers are not matching !!
 		#=> header comment must be either updated or created
-		string(LENGTH "/* 	File: ${PROJECT_FILENAME}" first_header_line_size)
+		string(FIND "${beginning_of_file}" "\n" INDEX)
+		string(SUBSTRING "${beginning_of_file}" 0 ${INDEX} first_line_of_file)
+		string(LENGTH "${first_line_of_file}" first_header_line_size)
 		math(EXPR first_header_line_size "${first_header_line_size} + 1")
-
-		string(SUBSTRING "${input_text}" 0 ${first_header_line_size} first_line_of_file)#getting as many characters as counted previously
 
 		string(REPLACE "." "\\." MATCHABLE_FILENAME "${PROJECT_FILENAME}")#create the regex pattern from file name
 		set(COMPARISON_PATTERN "/*File:${PROJECT_FILENAME}") # creating the formatted string used for coparison of headers
