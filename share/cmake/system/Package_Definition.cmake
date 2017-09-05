@@ -758,7 +758,9 @@ macro(declare_PID_External_Package)
 	#reset all values
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 	set(package ${DECLARE_PID_EXTERNAL_PACKAGE_PACKAGE})
+	set(${package}_HAS_DESCRIPTION TRUE CACHE INTERNAL "")#variable to be used to test if the package is described with a wrapper (if this macro is used this is always TRUE)
 	if(NOT ${package}_DECLARED)
+		#reset all variables related to this external package
 		set(${package}_PLATFORM${VAR_SUFFIX}  CACHE INTERNAL "")
 		set(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}  CACHE INTERNAL "")
 		if(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
