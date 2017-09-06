@@ -140,6 +140,11 @@ PID has been designed to be usable on most of UNIX platforms, relying mainly on 
 
 -----
 
+For other UNIX system, there is nothing tested. Again most of fonctionnalities should work BUT new platforms have to be defined with adequate OS (Solaris or FreeBSD for instance) and no binary is available for these OS so you will have to generate your own. The previous remarks also applies for the following OS.
+
+
+-----
+
 Android is not specifically supported and I never test PID on such a system. Nevertheless Android having a linux kernel it should not be too difficult to provide a patch so that it would be fully managed as any linux distro. Of course it may only concern C/C++ development, PID is for now not supporting Java. I let those experts who would like to use PID to manage their packages make some proposals. 
 
 ----- 
