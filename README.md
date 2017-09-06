@@ -31,6 +31,13 @@ People that can be interested in using PID are project managers that want to enf
 + Plugin mechanism to provide additionnal functionalities to manage external tools (typically IDE). For instance a plugin used to configure `atom-clang-complete` plugin in Atom IDE. 
 + Standardization and management of build environments and target platforms, to allow the management of many execution targets for the same code and easily change the build environment to use (for instance changing the compiler in use for all packages). These features can be used to manage crosscompilation. 
 
+# Known limitations
+
++ The dependencies resolution algorithm is not capable to manage many binaries for the same version/same platform of a package. This is notably impacting the way we can deal with external dependencies. For instance boost versions are not compatible between each other if you consider binary libraries like the well known *filesystem* library, due to the fact that they include a restrictive **SO name**. If a package uses a given version of boost its resulting binaries will be bound to this version and you cannot change it. This way, all other codes depending on your package will also depends on this specific version of boost. In source package, you can of course manage the build with different versions of dependencies but when compiled, this code is bound to a given version and if no compatible version exist all packages using this binary are then bound to this version of external package.
++ considering CI, for now your can build the code for only one platform, not many. This problem is due to the fact that gitlab-ci for now manage only one pipeline and not many, and we hope this restriction will be relaxed in the future by gilab authors. 
++ management of build environments is now not as smart as it could be. It would be nice for instance to share environments more or less the same way has packages.
++ C/C++ standard in use is not managed so well as it is considered as any compiler option. This sometime can result in a problematic situation where many versions of the language are used in different packages and passed to the compiler of the user package, which is then simply listing all these options in the compile line. Theorically, only the last specified version should be used but you have no garanty that this situation happen. 
+
 
 # About the license
 
