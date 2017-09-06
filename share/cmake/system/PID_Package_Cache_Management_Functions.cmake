@@ -679,6 +679,8 @@ set(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE I
 #resetting all other variables
 set(${PROJECT_NAME}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_HEADERS CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_C_STANDARD CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_CXX_STANDARD CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -692,12 +694,14 @@ set(${PROJECT_NAME}_${component}_DESCRIPTION CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_USAGE_INCLUDES CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
 
-function(init_Component_Cached_Variables_For_Export component exported_defs exported_options exported_links runtime_resources)
+function(init_Component_Cached_Variables_For_Export component c_standard cxx_standard exported_defs exported_options exported_links runtime_resources)
 set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
 set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${exported_links}" CACHE INTERNAL "") #exported links
 set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories (not useful to set it there since they will be exported "manually")
 set(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} "${exported_options}" CACHE INTERNAL "") #exported compiler options
 set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} "${runtime_resources}" CACHE INTERNAL "")#runtime resources are exported by default
+set(${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX} "${c_standard}" CACHE INTERNAL "")#minimum C standard of the component interface
+set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} "${cxx_standard}" CACHE INTERNAL "")#minimum C++ standard of the component interface
 endfunction(init_Component_Cached_Variables_For_Export)
 
 ### resetting all internal cached variables that would cause some troubles
@@ -789,6 +793,30 @@ else()
 endif()
 
 endfunction(is_Declared)
+
+
+###
+function(is_Library_Type RES keyword)
+	if(keyword STREQUAL "HEADER"
+		OR keyword STREQUAL "STATIC"
+		OR keyword STREQUAL "SHARED"
+		OR keyword STREQUAL "MODULE")
+		set(${RES} TRUE PARENT_SCOPE)
+	else()
+		set(${RES} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Library_Type)
+
+###
+function(is_Application_Type RES keyword)
+	if(	keyword STREQUAL "TEST"
+		OR keyword STREQUAL "APP"
+		OR keyword STREQUAL "EXAMPLE")
+		set(${RES} TRUE PARENT_SCOPE)
+	else()
+		set(${RES} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Application_Type)
 
 ###
 function(reset_Declared)
@@ -1165,9 +1193,10 @@ foreach(a_component IN ITEMS ${${package}_COMPONENTS})
 		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} ${${package}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_C_STANDARD${MODE_SUFFIX} ${${package}_${a_component}_C_STANDARD${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_CXX_STANDARD${MODE_SUFFIX} ${${package}_${a_component}_CXX_STANDARD${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
 	file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX} ${${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-
 endforeach()
 
 # 4) package internal component dependencies

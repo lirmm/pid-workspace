@@ -347,11 +347,34 @@ endmacro(build_PID_Package)
 #				[USAGE includes...])
 macro(declare_PID_Component)
 set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
-set(oneValueArgs NAME DIRECTORY)
+set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}.")
+endif()
+
+if(DECLARE_PID_COMPONENT_C_STANDARD)
+	set(c_language_standard ${DECLARE_PID_COMPONENT_C_STANDARD})
+	if(	NOT c_language_standard EQUAL 90
+	AND NOT c_language_standard EQUAL 99
+	AND NOT c_language_standard EQUAL 11)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad C_STANDARD argument, the value used must be 90, 99 or 11.")
+	endif()
+else() #default language standard is first standard
+	set(c_language_standard 90)
+endif()
+
+if(DECLARE_PID_COMPONENT_CXX_STANDARD)
+	set(cxx_language_standard ${DECLARE_PID_COMPONENT_CXX_STANDARD})
+	if(	NOT cxx_language_standard EQUAL 98
+	AND NOT cxx_language_standard EQUAL 11
+	AND NOT cxx_language_standard EQUAL 14
+	AND NOT cxx_language_standard EQUAL 17 )
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad CXX_STANDARD argument, the value used must be 98, 11, 14 or 17.")
+	endif()
+else() #default language standard is first standard
+	set(cxx_language_standard 98)
 endif()
 
 if(NOT DECLARE_PID_COMPONENT_NAME)
@@ -447,10 +470,21 @@ if(DECLARE_PID_COMPONENT_RUNTIME_RESOURCES)
 	set(runtime_resources ${DECLARE_PID_COMPONENT_RUNTIME_RESOURCES})
 endif()
 
+#check unique names
+set(DECLARED FALSE)
+is_Declared(${DECLARE_PID_COMPONENT_NAME} DECLARED)
+if(DECLARED)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : a component with the same name than ${DECLARE_PID_COMPONENT_NAME} is already defined.")
+	return()
+endif()
+unset(DECLARED)
+
 if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME}
 					${DECLARE_PID_COMPONENT_DIRECTORY}
 					${type}
+					"${c_language_standard}"
+					"${cxx_language_standard}"
 					"${internal_inc_dirs}"
 					"${internal_defs}"
 					"${internal_compiler_options}"
@@ -460,6 +494,8 @@ else() #it is a library
 	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME}
 					${DECLARE_PID_COMPONENT_DIRECTORY}
 					${type}
+					"${c_language_standard}"
+					"${cxx_language_standard}"
 					"${internal_inc_dirs}"
 					"${internal_defs}"
 					"${internal_compiler_options}"

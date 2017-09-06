@@ -18,11 +18,89 @@
 #########################################################################################
 
 ############################################################################
+####################### Language standard management #######################
+############################################################################
+function(initialize_Build_System)
+	## create a property to deal with language standard in targets (created for compatibility with CMake 3.0.2)
+	if(CMAKE_VERSION VERSION_LESS 3.1)
+		define_property(TARGET PROPERTY CXX_STANDARD
+	                BRIEF_DOCS "Determine the C++ Language standard version to use"
+								 	FULL_DOCS "Determine the C++ Language standard version to use")
+		define_property(TARGET PROPERTY C_STANDARD
+	                BRIEF_DOCS "Determine the C Language standard version to use"
+								 	FULL_DOCS "Determine the C Language standard version to use")
+	endif()#otherwise these properties are already defined
+
+endfunction(initialize_Build_System)
+
+function(resolve_Component_Language component_target)
+	if(CMAKE_VERSION VERSION_LESS 3.1)#this is only usefll if CMake does not automatically deal with standard related properties
+		get_target_property(STD_C ${component_target} C_STANDARD)
+		get_target_property(STD_CXX ${component_target} CXX_STANDARD)
+
+		#managing c++
+		if(STD_CXX EQUAL 98)
+			target_compile_options(${component_target} PUBLIC "-std=c++98")
+		elseif(STD_CXX EQUAL 11)
+			target_compile_options(${component_target} PUBLIC "-std=c++11")
+		elseif(STD_CXX EQUAL 14)
+			target_compile_options(${component_target} PUBLIC "-std=c++14")
+		elseif(STD_CXX EQUAL 17)
+			target_compile_options(${component_target} PUBLIC "-std=c++17")
+		endif()
+
+		#managing c
+		if(STD_CXX EQUAL 90)
+			target_compile_options(${component_target} PUBLIC "-std=c90")
+		elseif(STD_CXX EQUAL 99)
+			target_compile_options(${component_target} PUBLIC "-std=c99")
+		elseif(STD_CXX EQUAL 14)
+			target_compile_options(${component_target} PUBLIC "-std=c11")
+		endif()
+
+	endif()
+endfunction(resolve_Component_Language)
+
+### global function that set compile option for all components that are build given some info not directly managed by CMake
+function(resolve_Compile_Options_For_Targets mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+
+if(CMAKE_VERSION VERSION_LESS 3.1)#created for compatibility with CMake 3.0.2 (automatically managed with CMake 3.1)
+foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+	resolve_Component_Language(${component}${TARGET_SUFFIX})
+endforeach()
+endif()
+endfunction(resolve_Compile_Options_For_Targets)
+
+############################################################################
 ############### API functions for internal targets management ##############
 ############################################################################
+###
+
+function(filter_Compiler_Options STD_C_OPT STDCXX_OPT FILTERED_OPTS opts)
+set(RES_FILTERED)
+if(opts AND NOT opts STREQUAL "")
+	foreach(opt IN ITEMS ${opts})
+		#checking for CXX_STANDARD
+		is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
+		if(STANDARD_NUMBER)
+			set(${STD_CXX_OPT} ${STANDARD_NUMBER} PARENT_SCOPE)
+		else()#checking for C_STANDARD
+			is_C_Standard_Option(STANDARD_NUMBER ${opt})
+			if(STANDARD_NUMBER)
+				set(${STD_C_OPT} ${STANDARD_NUMBER} PARENT_SCOPE)
+			else()
+				list(APPEND RES_FILTERED ${opt})#keep the option unchanged
+			endif()
+		endif()
+	endforeach()
+	set(${FILTERED_OPTS} ${RES_FILTERED} PARENT_SCOPE)
+endif()
+endfunction(filter_Compiler_Options)
+
 
 ###create a module lib target for a newly defined library
-function(create_Module_Lib_Target c_name sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
+function(create_Module_Lib_Target c_name c_standard c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} MODULE ${sources})
 	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
 		LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
@@ -33,11 +111,11 @@ function(create_Module_Lib_Target c_name sources internal_inc_dirs internal_defs
 	elseif(UNIX)
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	endif()
-	manage_Additional_Component_Internal_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 endfunction(create_Module_Lib_Target)
 
 ###create a shared lib target for a newly defined library
-function(create_Shared_Lib_Target c_name sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
+function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
 
 	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
@@ -53,12 +131,12 @@ function(create_Shared_Lib_Target c_name sources exported_inc_dirs internal_inc_
 	set(DEFS ${internal_defs} ${exported_defs})
 	set(LINKS ${exported_links} ${internal_links})
 	set(COMP_OPTS ${exported_compiler_options} ${internal_compiler_options})
-	manage_Additional_Component_Internal_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${INC_DIRS}" "${DEFS}" "${COMP_OPTS}" "${LINKS}")
+	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${INC_DIRS}" "${DEFS}" "${COMP_OPTS}" "${LINKS}")
 	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endfunction(create_Shared_Lib_Target)
 
 ###create a static lib target for a newly defined library
-function(create_Static_Lib_Target c_name sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links)
+function(create_Static_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${sources})
 	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
 		ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
@@ -66,21 +144,21 @@ function(create_Static_Lib_Target c_name sources exported_inc_dirs internal_inc_
 	set(INC_DIRS ${internal_inc_dirs} ${exported_inc_dirs})
 	set(DEFS ${internal_defs} ${exported_defs})
 	set(COMP_OPTS ${exported_compiler_options} ${internal_compiler_options})
-	manage_Additional_Component_Internal_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${INC_DIRS}" "${DEFS}" "${COMP_OPTS}" "")#no linking with static libraries so do not manage internal_flags
+	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${INC_DIRS}" "${DEFS}" "${COMP_OPTS}" "")#no linking with static libraries so do not manage internal_flags
 	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 
 endfunction(create_Static_Lib_Target)
 
 ###create a shared lib target for a newly defined library
-function(create_Header_Lib_Target c_name exported_inc_dirs exported_defs exported_compiler_options exported_links)
+function(create_Header_Lib_Target c_name c_standard cxx_standard exported_inc_dirs exported_defs exported_compiler_options exported_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} INTERFACE)
 	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endfunction(create_Header_Lib_Target)
 
 ###create an executable target for a newly defined application
-function(create_Executable_Target c_name sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
+function(create_Executable_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
-	manage_Additional_Component_Internal_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 	# adding the application to the list of installed components when make install is called (not for test applications)
 	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
 		RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
@@ -93,9 +171,9 @@ function(create_Executable_Target c_name sources internal_inc_dirs internal_defs
 	endif()
 endfunction(create_Executable_Target)
 
-function(create_TestUnit_Target c_name sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
+function(create_TestUnit_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
-	manage_Additional_Component_Internal_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 
 endfunction(create_TestUnit_Target)
 
@@ -118,7 +196,7 @@ endif()
 
 if(options AND NOT options STREQUAL "")
 	foreach(opt IN ITEMS ${options})
-		target_compile_options(${component_name}${mode_suffix} INTERFACE "${opt}")
+		target_compile_options(${component_name}${mode_suffix} INTERFACE "${opt}")#keep the option unchanged
 	endforeach()
 endif()
 
@@ -132,7 +210,7 @@ endfunction(manage_Additional_Component_Exported_Flags)
 
 
 ### configure the target with internal flags (cflags only)
-function(manage_Additional_Component_Internal_Flags component_name mode_suffix inc_dirs defs options links)
+function(manage_Additional_Component_Internal_Flags component_name c_standard cxx_standard mode_suffix inc_dirs defs options links)
 # managing compile time flags
 if(inc_dirs AND NOT inc_dirs STREQUAL "")
 	foreach(dir IN ITEMS ${inc_dirs})
@@ -158,6 +236,23 @@ if(links AND NOT links STREQUAL "")
 	foreach(link IN ITEMS ${links})
 		target_link_libraries(${component_name}${mode_suffix} PRIVATE ${link})
 	endforeach()
+endif()
+
+#management of standards (setting minimum standard at beginning)
+if(c_standard AND NOT c_standard STREQUAL "")
+	set_target_properties(${component_name}${mode_suffix} PROPERTIES
+			C_STANDARD ${c_standard}
+			CXX_STANDARD_REQUIRED YES
+    	CXX_EXTENSIONS NO
+	)#setting the standard in use locally
+endif()
+
+if(cxx_standard AND NOT cxx_standard STREQUAL "")
+	set_target_properties(${component_name}${mode_suffix} PROPERTIES
+			CXX_STANDARD ${cxx_standard}
+			CXX_STANDARD_REQUIRED YES
+    	CXX_EXTENSIONS NO
+	)#setting the standard in use locally
 endif()
 
 endfunction(manage_Additional_Component_Internal_Flags)
@@ -201,12 +296,12 @@ is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_component})
 if(NOT DEP_IS_HF)#the required internal component is a library
 	if(export)
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
-		manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_defs}" "")
+		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "${comp_defs}" "")
 		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${dep_component}${INSTALL_NAME_SUFFIX}")
 		manage_Additionnal_Component_Inherited_Flags(${component} ${dep_component} "${INSTALL_NAME_SUFFIX}" TRUE)
 	else()
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})
-		manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${dep_component}${INSTALL_NAME_SUFFIX}")
+		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${dep_component}${INSTALL_NAME_SUFFIX}")
 		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "")
 		manage_Additionnal_Component_Inherited_Flags(${component} ${dep_component} "${INSTALL_NAME_SUFFIX}" FALSE)
 	endif()
@@ -221,11 +316,11 @@ if(NOT DEP_IS_HF)#the required package component is a library
 
 	if(export)
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
-		manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_defs}" "")
+		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "${comp_defs}" "")
 		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "")
 	else()
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})
-		manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "")
+		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "")
 		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "")
 	endif()
 endif()	#else, it is an application or a module => runtime dependency declaration
@@ -256,14 +351,14 @@ endif()
 if(export)
 	if(NOT ${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
 		set(TEMP_DEFS ${comp_exp_defs} ${ext_defs} ${comp_defs})
-		manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "" "${EXT_LINKS}")
+		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "" "${EXT_LINKS}")
 	endif()
 	set(TEMP_DEFS ${comp_exp_defs} ${ext_defs})
 	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "" "${EXT_LINKS}")
 
 else()
 	set(TEMP_DEFS ${comp_defs} ${ext_defs} ${comp_defs})
-	manage_Additional_Component_Internal_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "" "${EXT_LINKS}")
+	manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "" "${EXT_LINKS}")
 	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "" "${EXT_LINKS}")
 endif()
 
@@ -350,7 +445,26 @@ endif()
 
 if(options AND NOT options STREQUAL "")
 	foreach(opt IN ITEMS ${options})
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "${opt}")
+		#checking for CXX_STANDARD
+		is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
+		if(STANDARD_NUMBER)
+			message("[PID] WARNING: directly using option -std=c++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+			if(NOT ${package}_${component}_CXX_STANDARD${VAR_SUFFIX}
+			OR ${package}_${component}_CXX_STANDARD${VAR_SUFFIX} LESS STANDARD_NUMBER)
+				set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+			endif()
+		else()#checking for C_STANDARD
+			is_C_Standard_Option(STANDARD_NUMBER ${opt})
+			if(STANDARD_NUMBER)
+				message("[PID] WARNING: directly using option -std=c${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+				if(NOT ${package}_${component}_C_STANDARD${VAR_SUFFIX}
+				OR ${package}_${component}_C_STANDARD${VAR_SUFFIX} LESS STANDARD_NUMBER)
+					set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+				endif()
+			else()
+				set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "${opt}")
+			endif()
+		endif()
 	endforeach()
 endif()
 
@@ -403,6 +517,10 @@ function(create_Imported_Header_Library_Target package component mode) #header l
 	list_Public_Definitions(DEFS ${package} ${component} ${mode})
 	list_Public_Options(OPTS ${package} ${component} ${mode})
 	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "")
+	# managing language standards (at imported target creation time, simply apply the standard specified locally in the dependency package)
+	get_Language_Standards(STD_C STD_CXX ${package} ${component} ${mode})
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES C_STANDARD "${STD_C}")
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES CXX_STANDARD "${STD_CXX}")
 endfunction(create_Imported_Header_Library_Target)
 
 function(create_Imported_Static_Library_Target package component mode)
@@ -423,6 +541,10 @@ function(create_Imported_Static_Library_Target package component mode)
 	list_Public_Options(OPTS ${package} ${component} ${MODE_TO_IMPORT})
 
 	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}")
+	# managing language standards (at imported target creation time, simply apply the standard specified locally in the dependency package)
+	get_Language_Standards(STD_C STD_CXX ${package} ${component} ${MODE_TO_IMPORT})
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES C_STANDARD "${STD_C}")
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES CXX_STANDARD "${STD_CXX}")
 endfunction(create_Imported_Static_Library_Target)
 
 function(create_Imported_Shared_Library_Target package component mode)
@@ -442,8 +564,12 @@ function(create_Imported_Shared_Library_Target package component mode)
 	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Public_Definitions(DEFS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Public_Options(OPTS ${package} ${component} ${MODE_TO_IMPORT})
-
 	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}")
+
+	# managing language standards (at imported target creation time, simply apply the standard specified locally in the dependency package)
+	get_Language_Standards(STD_C STD_CXX ${package} ${component} ${MODE_TO_IMPORT})
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES C_STANDARD "${STD_C}")
+	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES CXX_STANDARD "${STD_CXX}")
 endfunction(create_Imported_Shared_Library_Target)
 
 function(create_Imported_Module_Library_Target package component mode)
@@ -457,7 +583,7 @@ function(create_Imported_Module_Library_Target package component mode)
 	endif()
 
 	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
-	#no need to do more, a module is kind of an executable in this case
+	#no need to do more, a module is kind of an executable so it stops build recursion
 endfunction(create_Imported_Module_Library_Target)
 
 
@@ -472,8 +598,48 @@ function(create_Imported_Executable_Target package component mode)
 	endif()
 
 	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
+	#no need to do more, executable will not be linked in the build process (it stops build recursion)
 endfunction(create_Imported_Executable_Target)
 
+### resolving the standard to use depending on the standard used in dependency
+function(resolve_Standard_Before_Linking package component dep_package dep_component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+
+#getting good names for targets
+if(package STREQUAL ${PROJECT_NAME})
+	set(component_target ${component}${TARGET_SUFFIX})
+else()
+	set(component_target ${package}-${component}${TARGET_SUFFIX})
+endif()
+
+if(dep_package STREQUAL ${PROJECT_NAME})
+	set(dep_component_target ${dep_component}${TARGET_SUFFIX})
+else()
+	set(dep_component_target ${dep_package}-${dep_component}${TARGET_SUFFIX})
+endif()
+
+#get the languages standard in use for both components
+get_target_property(STD_C ${component_target} C_STANDARD)
+get_target_property(STD_CXX ${component_target} CXX_STANDARD)
+get_target_property(DEP_STD_C ${dep_component_target} C_STANDARD)
+get_target_property(DEP_STD_CXX ${dep_component_target} CXX_STANDARD)
+
+if(DEP_STD_C GREATER STD_C)
+	set_target_properties(${component_target} PROPERTIES C_STANDARD ${DEP_STD_C})
+	if(package STREQUAL ${PROJECT_NAME})# the property is set for a target that is built locally
+		set(${PROJECT_NAME}_${component}_C_STANDARD${VAR_SUFFIX} ${DEP_STD_C} CACHE INTERNAL "")#the minimal value in use file is set adequately
+	endif()
+endif()
+
+if(DEP_STD_CXX GREATER STD_CXX)
+	set_target_properties(${component_target} PROPERTIES CXX_STANDARD ${DEP_STD_CXX})
+	if(package STREQUAL ${PROJECT_NAME})# the property is set for a target that is built locally
+		set(${PROJECT_NAME}_${component}_CXX_STANDARD${VAR_SUFFIX} ${DEP_STD_CXX} CACHE INTERNAL "")#the minimal value in use file is set adequately
+	endif()
+endif()
+endfunction(resolve_Standard_Before_Linking)
+
+### bind a component build locally to a component belonging to another package
 function(bind_Target component dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
@@ -481,7 +647,7 @@ is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
 if(COMP_IS_BUILT)
 	#use definitions and links for building the target
 	set(internal_defs ${comp_defs} ${comp_exp_defs} ${dep_defs})
-	manage_Additional_Component_Internal_Flags(${component} "${TARGET_SUFFIX}" "" "${internal_defs}" "" "")
+	manage_Additional_Component_Internal_Flags(${component} "" "" "${TARGET_SUFFIX}" "" "${internal_defs}" "" "")
 
 	if(NOT DEP_IS_HF)
 		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_package}-${dep_component}${TARGET_SUFFIX})
@@ -518,10 +684,13 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 		endif()
 	endif()
 
+		# set adequately language standard for component depending on the value of dep_component
+		resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${mode})
 
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Target)
 
+### bind a component built locally with another component buit locally
 function(bind_Internal_Target component dep_component mode export comp_defs comp_exp_defs dep_defs)
 
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
@@ -531,7 +700,7 @@ is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_component})
 if(COMP_IS_BUILT)# interface library cannot receive PRIVATE PROPERTIES
 	#use definitions and links for building the target
 	set(internal_defs ${comp_defs} ${comp_exp_defs} ${dep_defs})
-	manage_Additional_Component_Internal_Flags(${component} "${TARGET_SUFFIX}" "" "${internal_defs}" "" "")
+	manage_Additional_Component_Internal_Flags(${component} "" "" "${TARGET_SUFFIX}" "" "${internal_defs}" "" "")
 
 	if(NOT DEP_IS_HF)#the dependency may export some things
 		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_component}${TARGET_SUFFIX})
@@ -572,10 +741,13 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 		#else non exported shared
 	endif()
 
+	# set adequately language standard for component depending on the value of dep_component
+	resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${mode})
+
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Internal_Target)
 
-
+### bind an imported target with another imported target
 function(bind_Imported_Target package component dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 export_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${mode})
@@ -603,7 +775,10 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 		endif()
 	endif()#exporting the linked libraries in any case
 
-endif()	#else, it is an application or a module => runtime dependency declaration only
+	# set adequately language standard for component depending on the value of dep_component
+	resolve_Standard_Before_Linking(${package} ${component} ${dep_package} ${dep_component} ${mode})
+
+endif()	#else, it is an application or a module => runtime dependency declaration only (build recursion is stopped)
 endfunction(bind_Imported_Target)
 
 

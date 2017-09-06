@@ -80,7 +80,27 @@ endfunction(list_Public_Definitions)
 function(list_Public_Options OPTS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${package}_${component}_OPTS${VAR_SUFFIX})
-	set(${OPTS} ${${package}_${component}_OPTS${VAR_SUFFIX}} PARENT_SCOPE)
+	#checking that no compiler option is used directly to set the standard
+	#remove the option and set the standard adequately instead
+	set(FILTERED_OPTS)
+	message("${package}-${component} options: ${${package}_${component}_OPTS${VAR_SUFFIX}}")
+	foreach(opt In ITEMS ${${package}_${component}_OPTS${VAR_SUFFIX}})
+		#checking for CXX_STANDARD
+		is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
+		if(STANDARD_NUMBER)
+			message("[PID] WARNING: directly using option -std=c++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+			set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+		else()#checking for C_STANDARD
+			is_C_Standard_Option(STANDARD_NUMBER ${opt})
+			if(STANDARD_NUMBER)
+				message("[PID] WARNING: directly using option -std=c${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+				set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+			else()
+				list(APPEND FILTERED_OPTS ${opt})#keep the option unchanged
+			endif()
+		endif()
+	endforeach()
+	set(${OPTS} ${FILTERED_OPTS} PARENT_SCOPE)
 endif()
 endfunction(list_Public_Options)
 
@@ -105,6 +125,21 @@ if(${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX})
 set(${PRIVATE_LINKS} "${RES_LINKS}" PARENT_SCOPE)
 endif()
 endfunction(list_Private_Links)
+
+###
+function(get_Language_Standards STD_C STD_CXX package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+if(${package}_${component}_C_STANDARD${VAR_SUFFIX})
+	set(${STD_C} ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
+else()
+	set(${STD_C} 90 PARENT_SCOPE)
+endif()
+if(${package}_${component}_CXX_STANDARD${VAR_SUFFIX})
+	set(${STD_CXX} ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
+else()
+	set(${STD_CXX} 98 PARENT_SCOPE)
+endif()
+endfunction(get_Language_Standards)
 
 ##################################################################################
 ###################### runtime dependencies management API #######################

@@ -61,6 +61,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms
 configure_Git()
 set(${PROJECT_NAME}_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL "")#to keep compatibility with PID v1 released package versions
 initialize_Platform_Variables() #initialize platform related variables usefull for other end-user API functions
+initialize_Build_System()#initializing PID specific settings for build
 
 #################################################
 ############ MANAGING build mode ################
@@ -657,6 +658,13 @@ endif()
 ############ MANAGING the BUILD #################
 #################################################
 
+# listing closed source packages, info to be used in targets managements
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+	list_Closed_Source_Dependency_Packages()
+else()
+	set(CLOSED_SOURCE_DEPENDENCIES CACHE INTERNAL "")
+endif()
+
 # recursive call into subdirectories to build, install, test the package
 add_subdirectory(src)
 add_subdirectory(apps)
@@ -670,6 +678,11 @@ if(BUILD_AND_RUN_TESTS)
 endif()
 add_subdirectory(test)
 add_subdirectory(share)
+
+# specific case : resolve which compile option to use to enable the adequate language standard (CMake version < 3.1 only)
+# may be use for other general purpose options in future versions of PID
+resolve_Compile_Options_For_Targets(${CMAKE_BUILD_TYPE})
+
 ##########################################################
 ############ MANAGING non source files ###################
 ##########################################################
@@ -686,12 +699,6 @@ create_Documentation_Target() # create target for generating documentation
 configure_Pages() # generating the markdown files for the project web pages
 generate_CI_Config_File() #generating the CI config file in the project
 
-# listing closed source packages, info to be used in targets managements
-if(CMAKE_BUILD_TYPE MATCHES Debug)
-	list_Closed_Source_Dependency_Packages()
-else()
-	set(CLOSED_SOURCE_DEPENDENCIES CACHE INTERNAL "")
-endif()
 
 #installing specific folders of the share sub directory
 if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)
@@ -1064,22 +1071,29 @@ endmacro(build_Package)
 # internal_links : only for module or shared libs some internal linker flags used to build the component
 # exported_links : only for static and shared libs : some linker flags (not a library inclusion, e.g. -l<li> or full path to a lib) that must be used when linking with the component
 #runtime resources: for all, path to file relative to and present in share/resources folder
-function(declare_Library_Component c_name dirname type internal_inc_dirs internal_defs internal_compiler_options exported_defs exported_compiler_options internal_links exported_links runtime_resources)
-set(DECLARED FALSE)
-is_Declared(${c_name} DECLARED)
-if(DECLARED)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring the library ${c_name} : a component with the same name is already defined.")
-	return()
-endif()
+function(declare_Library_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options exported_defs exported_compiler_options internal_links exported_links runtime_resources)
 #indicating that the component has been declared and need to be completed
-if(type STREQUAL "HEADER"
-OR type STREQUAL "STATIC"
-OR type STREQUAL "SHARED"
-OR type STREQUAL "MODULE")
+is_Library_Type(RES "${type}")
+if(RES)
 	set(${PROJECT_NAME}_${c_name}_TYPE ${type} CACHE INTERNAL "")
 else()
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : you must specify a type (HEADER, STATIC, SHARED or MODULE) for your library")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : you must specify a type (HEADER, STATIC, SHARED or MODULE) for library ${c_name}")
 	return()
+endif()
+
+filter_Compiler_Options(STD_C_OPT STDCXX_OPT FILTERED_INTERNAL_OPTS "${internal_compiler_options}")
+filter_Compiler_Options(STD_C_OPT STDCXX_OPT FILTERED_EXPORTED_OPTS "${exported_compiler_options}")
+if(STD_C_OPT)
+	message("[PID] WARNING:  when declaring library ${c_name},  directly using option -std=c${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+	if(c_standard LESS STD_C_OPT)
+		set(c_standard ${STD_C_OPT})
+	endif()
+endif()
+if(STDCXX_OPT)
+	message("[PID] WARNING: when declaring library ${c_name}, directly using option -std=c++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+	if(c_standard LESS STD_C_OPT)
+		set(cxx_standard ${STD_CXX_OPT})
+	endif()
 endif()
 
 ### managing headers ###
@@ -1116,21 +1130,21 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 	#defining shared and/or static targets for the library and
 	#adding the targets to the list of installed components when make install is called
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "STATIC") #a static library has no internal links (never trully linked)
-		create_Static_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${exported_compiler_options}" "${internal_compiler_options}" "${exported_links}")
+		create_Static_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}")
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
-		create_Shared_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${exported_compiler_options}" "${internal_compiler_options}" "${exported_links}" "${internal_links}")
+		create_Shared_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}" "${internal_links}")
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
-		create_Module_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+		create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 	endif()
 	register_Component_Binary(${c_name})
 else()#simply creating a "fake" target for header only library
-	create_Header_Lib_Target(${c_name} "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
+	create_Header_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}")
 endif()
 
 # registering exported flags for all kinds of libs
-init_Component_Cached_Variables_For_Export(${c_name} "${exported_defs}" "${exported_compiler_options}" "${exported_links}" "${runtime_resources}")
+init_Component_Cached_Variables_For_Export(${c_name} "${c_standard}" "${cxx_standard}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}" "${runtime_resources}")
 
 #updating global variables of the CMake process
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
@@ -1146,22 +1160,29 @@ endfunction(declare_Library_Component)
 # internal_defs : definitions that affects the implementation of the application component
 # internal_link_flags : additionnal linker flags that affects required to link the application component
 # internal_inc_dirs : additionnal include dirs (internal to project, that contains header files, e.g. common definition between components that don't have to be exported)
-# internal_compiler_options : additionnal compiler options to use when building the executable
-function(declare_Application_Component c_name dirname type internal_inc_dirs internal_defs internal_compiler_options internal_link_flags runtime_resources)
-set(DECLARED FALSE)
-is_Declared(${c_name} DECLARED)
-if(DECLARED)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : a component with the same name than ${c_name} is already defined.")
-	return()
-endif()
+# FILTERED_EXPORTED_OPTS : additionnal compiler options to use when building the executable
+function(declare_Application_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options internal_link_flags runtime_resources)
 
-if(	type STREQUAL "TEST"
-	OR type STREQUAL "APP"
-	OR type STREQUAL "EXAMPLE")
+is_Application_Type(RES "${type}")
+if(RES)
 	set(${PROJECT_NAME}_${c_name}_TYPE ${type} CACHE INTERNAL "")
 else() #a simple application by default
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : you have to set a type name (TEST, APP, EXAMPLE) for the application component ${c_name}")
 	return()
+endif()
+
+filter_Compiler_Options(STD_C_OPT STDCXX_OPT FILTERED_INTERNAL_OPTS "${internal_compiler_options}")
+if(STD_C_OPT)
+	message("[PID] WARNING:  when declaring library ${c_name},  directly using option -std=c${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+	if(c_standard LESS STD_C_OPT)
+		set(c_standard ${STD_C_OPT})
+	endif()
+endif()
+if(STDCXX_OPT)
+	message("[PID] WARNING: when declaring library ${c_name}, directly using option -std=c++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+	if(c_standard LESS STD_C_OPT)
+		set(cxx_standard ${STD_CXX_OPT})
+	endif()
 endif()
 
 #managing sources for the application
@@ -1192,12 +1213,12 @@ get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}
 #defining the target to build the application
 
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need to be relocatable since they are purely local
-	create_Executable_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_link_flags}")
+	create_Executable_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
 
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 	register_Component_Binary(${c_name})# resgistering name of the executable
 else()
-	create_TestUnit_Target(${c_name} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_link_flags}")
+	create_TestUnit_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
 endif()
 
 #registering source code for the component
@@ -1208,7 +1229,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
-init_Component_Cached_Variables_For_Export(${c_name} "" "" "" "${runtime_resources}")
+init_Component_Cached_Variables_For_Export(${c_name} "" "" "" "" "" "${runtime_resources}")
 
 #updating global variables of the CMake process
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
@@ -1295,12 +1316,10 @@ set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX}
 if (IS_HF_COMP)
 	if(IS_HF_DEP)
 		# setting compile definitions for configuring the target
-		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "" "")
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
 
 	else()
 		# setting compile definitions for configuring the target
-		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
 
 	endif()
@@ -1308,7 +1327,6 @@ elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
 		# setting compile definitions for configuring the target
-		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 
 	else()
@@ -1320,12 +1338,10 @@ elseif(IS_BUILT_COMP)
 
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
-		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 	endif()
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	if(IS_HF_DEP)
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
-		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} FALSE "" "${comp_exp_defs}"  "")
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
 	else()
@@ -1333,7 +1349,6 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "")
 		# setting compile definitions for configuring the "fake" target
-		#fill_Component_Target_With_Internal_Dependency(${component} ${dep_component} TRUE "" "${comp_exp_defs}"  "${dep_defs}")
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 
 	endif()
@@ -1375,17 +1390,14 @@ is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 if (IS_HF_COMP)
 	# setting compile definitions for configuring the target
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
-		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "")
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
 	else()	#the dependency has a build interface
-		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
 	#do not export anything
 	endif()
 elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
 		# setting compile definitions for configuring the target
-		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
 	else()	#the dependency has a build interface
@@ -1396,7 +1408,6 @@ elseif(IS_BUILT_COMP)
 
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
-		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 	endif()
 
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
@@ -1404,14 +1415,12 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
-		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} FALSE "" "${comp_exp_defs}" "")#=> no build export
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
 	else()	#the dependency has a build interface
 
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "")
-		# setting compile definitions for configuring the "fake" target
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 
 		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} TRUE "" "${comp_exp_defs}" "${dep_defs}")

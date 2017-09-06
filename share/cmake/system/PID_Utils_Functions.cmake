@@ -1076,3 +1076,24 @@ foreach(a_file IN ITEMS ${ALL_FILES_DIR1})
 endforeach()
 set(${ARE_SAME} TRUE PARENT_SCOPE)
 endfunction(test_Same_Directory_Content)
+
+
+######################################################################################
+################ compiler arguments test/manipulation functions ######################
+######################################################################################
+
+### check if the option passed to the compiler is used to set the language standard is use
+function(is_C_Standard_Option STANDARD_NUMBER opt)
+string(REGEX REPLACE "^[ \t]*-std=c(90|99|11)[ \t]*$" "\\1" OUTPUT_VAR_C ${opt})
+if(NOT OUTPUT_VAR_C STREQUAL opt)#it matches
+	set(${STANDARD_NUMBER} ${OUTPUT_VAR_C} PARENT_SCOPE)
+endif()
+endfunction(is_C_Standard_Option)
+
+### check if the option passed to the compiler is used to set the language standard is use
+function(is_CXX_Standard_Option STANDARD_NUMBER opt)
+string(REGEX REPLACE "^[ \t]*-std=c\\+\\+(98|11|14|17)[ \t]*$" "\\1" OUTPUT_VAR_CXX ${opt})
+if(NOT OUTPUT_VAR_CXX STREQUAL opt)#it matches
+	set(${STANDARD_NUMBER} ${OUTPUT_VAR_CXX} PARENT_SCOPE)
+endif()
+endfunction(is_CXX_Standard_Option)
