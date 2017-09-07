@@ -67,7 +67,10 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 if(CMAKE_VERSION VERSION_LESS 3.1)#created for compatibility with CMake 3.0.2 (automatically managed with CMake 3.1)
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-	resolve_Component_Language(${component}${TARGET_SUFFIX})
+	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+	if(IS_BUILT_COMP)
+		resolve_Component_Language(${component}${TARGET_SUFFIX})
+	endif()
 endforeach()
 endif()
 endfunction(resolve_Compile_Options_For_Targets)
@@ -518,10 +521,8 @@ function(create_Imported_Header_Library_Target package component mode) #header l
 	list_Public_Definitions(DEFS ${package} ${component} ${mode})
 	list_Public_Options(OPTS ${package} ${component} ${mode})
 	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "")
-	# managing language standards (at imported target creation time, simply apply the standard specified locally in the dependency package)
-	get_Language_Standards(STD_C STD_CXX ${package} ${component} ${mode})
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES C_STANDARD "${STD_C}")
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES CXX_STANDARD "${STD_CXX}")
+	# check that C/C++ languages are defined or defult them
+	manage_Language_Standards(${package} ${component} ${mode})
 endfunction(create_Imported_Header_Library_Target)
 
 function(create_Imported_Static_Library_Target package component mode)
@@ -542,10 +543,8 @@ function(create_Imported_Static_Library_Target package component mode)
 	list_Public_Options(OPTS ${package} ${component} ${MODE_TO_IMPORT})
 
 	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}")
-	# managing language standards (at imported target creation time, simply apply the standard specified locally in the dependency package)
-	get_Language_Standards(STD_C STD_CXX ${package} ${component} ${MODE_TO_IMPORT})
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES C_STANDARD "${STD_C}")
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES CXX_STANDARD "${STD_CXX}")
+	# check that C/C++ languages are defined or defult them
+	manage_Language_Standards(${package} ${component} ${mode})
 endfunction(create_Imported_Static_Library_Target)
 
 function(create_Imported_Shared_Library_Target package component mode)
@@ -567,10 +566,8 @@ function(create_Imported_Shared_Library_Target package component mode)
 	list_Public_Options(OPTS ${package} ${component} ${MODE_TO_IMPORT})
 	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}")
 
-	# managing language standards (at imported target creation time, simply apply the standard specified locally in the dependency package)
-	get_Language_Standards(STD_C STD_CXX ${package} ${component} ${MODE_TO_IMPORT})
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES C_STANDARD "${STD_C}")
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES CXX_STANDARD "${STD_CXX}")
+	# check that C/C++ languages are defined or defult them
+	manage_Language_Standards(${package} ${component} ${mode})
 endfunction(create_Imported_Shared_Library_Target)
 
 function(create_Imported_Module_Library_Target package component mode)
@@ -603,39 +600,25 @@ function(create_Imported_Executable_Target package component mode)
 endfunction(create_Imported_Executable_Target)
 
 ### resolving the standard to use depending on the standard used in dependency
-function(resolve_Standard_Before_Linking package component dep_package dep_component mode)
+function(resolve_Standard_Before_Linking package component dep_package dep_component mode configure_build)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-#getting good names for targets
-if(package STREQUAL ${PROJECT_NAME})
-	set(component_target ${component}${TARGET_SUFFIX})
-else()
-	set(component_target ${package}-${component}${TARGET_SUFFIX})
-endif()
-
-if(dep_package STREQUAL ${PROJECT_NAME})
-	set(dep_component_target ${dep_component}${TARGET_SUFFIX})
-else()
-	set(dep_component_target ${dep_package}-${dep_component}${TARGET_SUFFIX})
-endif()
-
 #get the languages standard in use for both components
-get_target_property(STD_C ${component_target} C_STANDARD)
-get_target_property(STD_CXX ${component_target} CXX_STANDARD)
-get_target_property(DEP_STD_C ${dep_component_target} C_STANDARD)
-get_target_property(DEP_STD_CXX ${dep_component_target} CXX_STANDARD)
+get_Language_Standards(STD_C STD_CXX ${package} ${component} ${mode})
+get_Language_Standards(DEP_STD_C DEP_STD_CXX ${dep_package} ${dep_component} ${mode})
 
-if(DEP_STD_C GREATER STD_C)
-	set_target_properties(${component_target} PROPERTIES C_STANDARD ${DEP_STD_C})
-	if(package STREQUAL ${PROJECT_NAME})# the property is set for a target that is built locally
-		set(${PROJECT_NAME}_${component}_C_STANDARD${VAR_SUFFIX} ${DEP_STD_C} CACHE INTERNAL "")#the minimal value in use file is set adequately
+if(DEP_STD_C GREATER STD_C)#dependency has greater level of standard required
+	set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${DEP_STD_C} CACHE INTERNAL "")
+
+	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
+		set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES C_STANDARD ${DEP_STD_C}) #the minimal value in use file is set adequately
 	endif()
 endif()
 
 if(DEP_STD_CXX GREATER STD_CXX)
-	set_target_properties(${component_target} PROPERTIES CXX_STANDARD ${DEP_STD_CXX})
-	if(package STREQUAL ${PROJECT_NAME})# the property is set for a target that is built locally
-		set(${PROJECT_NAME}_${component}_CXX_STANDARD${VAR_SUFFIX} ${DEP_STD_CXX} CACHE INTERNAL "")#the minimal value in use file is set adequately
+	set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${DEP_STD_CXX} CACHE INTERNAL "")#the minimal value in use file is set adequately
+	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
+		set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES CXX_STANDARD ${DEP_STD_CXX})
 	endif()
 endif()
 endfunction(resolve_Standard_Before_Linking)
@@ -661,6 +644,12 @@ if(COMP_IS_BUILT)
 		target_compile_options(${component}${TARGET_SUFFIX} PRIVATE
 			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
 	endif()
+
+	# set adequately language standard for component depending on the value of dep_component
+	resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${mode} TRUE)
+else()#for headers lib do not set the build property (othewise CMake complains on recent versions)
+	# set adequately language standard for component depending on the value of dep_component
+	resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${mode} FALSE)
 endif()
 
 if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
@@ -684,10 +673,6 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 			target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE  ${dep_package}-${dep_component}${TARGET_SUFFIX})
 		endif()
 	endif()
-
-		# set adequately language standard for component depending on the value of dep_component
-		resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${mode})
-
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Target)
 
@@ -715,6 +700,12 @@ if(COMP_IS_BUILT)# interface library cannot receive PRIVATE PROPERTIES
 		target_compile_options(${component}${TARGET_SUFFIX} PRIVATE
 			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
 	endif()
+
+		# set adequately language standard for component depending on the value of dep_component
+		resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${mode} TRUE)
+else() #for header lib do not set the build property to avoid troubles
+		# set adequately language standard for component depending on the value of dep_component
+		resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${mode} FALSE)
 endif()
 
 
@@ -741,9 +732,6 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 		endif()
 		#else non exported shared
 	endif()
-
-	# set adequately language standard for component depending on the value of dep_component
-	resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${mode})
 
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Internal_Target)
@@ -777,7 +765,7 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 	endif()#exporting the linked libraries in any case
 
 	# set adequately language standard for component depending on the value of dep_component
-	resolve_Standard_Before_Linking(${package} ${component} ${dep_package} ${dep_component} ${mode})
+	resolve_Standard_Before_Linking(${package} ${component} ${dep_package} ${dep_component} ${mode} FALSE)
 
 endif()	#else, it is an application or a module => runtime dependency declaration only (build recursion is stopped)
 endfunction(bind_Imported_Target)

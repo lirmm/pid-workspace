@@ -134,18 +134,20 @@ endfunction(list_Private_Links)
 ###
 function(get_Language_Standards STD_C STD_CXX package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(${package}_${component}_C_STANDARD${VAR_SUFFIX})
-	set(${STD_C} ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
-else()
-	set(${STD_C} 90 PARENT_SCOPE)
-endif()
-if(${package}_${component}_CXX_STANDARD${VAR_SUFFIX})
-	set(${STD_CXX} ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
-else()
-	set(${STD_CXX} 98 PARENT_SCOPE)
-endif()
+set(${STD_C} ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
+set(${STD_CXX} ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
 endfunction(get_Language_Standards)
 
+###
+function(manage_Language_Standards package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+if(NOT ${package}_${component}_C_STANDARD${VAR_SUFFIX})
+	set(${package}_${component}_C_STANDARD${VAR_SUFFIX} 90 CACHE INTERNAL "")
+endif()
+if(NOT ${package}_${component}_CXX_STANDARD${VAR_SUFFIX})
+	set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} 98 CACHE INTERNAL "")
+endif()
+endfunction(manage_Language_Standards)
 ##################################################################################
 ###################### runtime dependencies management API #######################
 ##################################################################################
