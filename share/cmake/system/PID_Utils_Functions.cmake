@@ -1077,14 +1077,51 @@ endforeach()
 set(${ARE_SAME} TRUE PARENT_SCOPE)
 endfunction(test_Same_Directory_Content)
 
-
 ######################################################################################
 ################ compiler arguments test/manipulation functions ######################
 ######################################################################################
 
+### compare 2 different C++ language standard version
+function(is_CXX_Version_Less IS_LESS first second)
+if(first EQUAL 98)
+	if(second EQUAL 98)
+		set(${IS_LESS} FALSE PARENT_SCOPE)
+	else()
+		set(${IS_LESS} TRUE PARENT_SCOPE)
+	endif()
+else()
+	if(second EQUAL 98)
+		set(${IS_LESS} FALSE PARENT_SCOPE)
+	else()# both number are comparable
+		if(first LESS second)
+			set(${IS_LESS} TRUE PARENT_SCOPE)
+		else()
+			set(${IS_LESS} FALSE PARENT_SCOPE)
+		endif()
+	endif()
+endif()
+endfunction(is_CXX_Version_Less)
+
+### compare 2 different C language standard version
+function(is_C_Version_Less IS_LESS first second)
+if(first EQUAL 11)#last version is 11 so never less
+	set(${IS_LESS} FALSE PARENT_SCOPE)
+else()
+	if(second EQUAL 11)
+		set(${IS_LESS} TRUE PARENT_SCOPE)
+	else()# both number are comparable (90 or 99)
+		if(first LESS second)
+			set(${IS_LESS} TRUE PARENT_SCOPE)
+		else()
+			set(${IS_LESS} FALSE PARENT_SCOPE)
+		endif()
+	endif()
+endif()
+endfunction(is_C_Version_Less)
+
 ### check if the option passed to the compiler is used to set the language standard is use
 function(is_C_Standard_Option STANDARD_NUMBER opt)
-string(REGEX REPLACE "^[ \t]*-std=c(90|99|11)[ \t]*$" "\\1" OUTPUT_VAR_C ${opt})
+string(REGEX REPLACE "^[ \t]*-std=(c|gnu)(90|99|11)[ \t]*$" "\\2" OUTPUT_VAR_C ${opt})
 if(NOT OUTPUT_VAR_C STREQUAL opt)#it matches
 	set(${STANDARD_NUMBER} ${OUTPUT_VAR_C} PARENT_SCOPE)
 endif()
@@ -1092,7 +1129,7 @@ endfunction(is_C_Standard_Option)
 
 ### check if the option passed to the compiler is used to set the language standard is use
 function(is_CXX_Standard_Option STANDARD_NUMBER opt)
-string(REGEX REPLACE "^[ \t]*-std=c\\+\\+(98|11|14|17)[ \t]*$" "\\1" OUTPUT_VAR_CXX ${opt})
+string(REGEX REPLACE "^[ \t]*-std=(c|gnu)\\+\\+(98|11|14|17)[ \t]*$" "\\2" OUTPUT_VAR_CXX ${opt})
 if(NOT OUTPUT_VAR_CXX STREQUAL opt)#it matches
 	set(${STANDARD_NUMBER} ${OUTPUT_VAR_CXX} PARENT_SCOPE)
 endif()

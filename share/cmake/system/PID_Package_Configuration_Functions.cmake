@@ -83,7 +83,6 @@ if(${package}_${component}_OPTS${VAR_SUFFIX})
 	#checking that no compiler option is used directly to set the standard
 	#remove the option and set the standard adequately instead
 	set(FILTERED_OPTS)
-	message("${package}-${component} options: ${${package}_${component}_OPTS${VAR_SUFFIX}}")
 	foreach(opt In ITEMS ${${package}_${component}_OPTS${VAR_SUFFIX}})
 		#checking for CXX_STANDARD
 		is_CXX_Standard_Option(STANDARD_NUMBER ${opt})

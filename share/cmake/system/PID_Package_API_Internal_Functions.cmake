@@ -1081,18 +1081,37 @@ else()
 	return()
 endif()
 
-filter_Compiler_Options(STD_C_OPT STDCXX_OPT FILTERED_INTERNAL_OPTS "${internal_compiler_options}")
-filter_Compiler_Options(STD_C_OPT STDCXX_OPT FILTERED_EXPORTED_OPTS "${exported_compiler_options}")
+# manage options and eventually adjust language standard in use
+set(c_standard_used ${c_standard})
+set(cxx_standard_used ${cxx_standard})
+filter_Compiler_Options(STD_C_OPT STD_CXX_OPT FILTERED_INTERNAL_OPTS "${internal_compiler_options}")
 if(STD_C_OPT)
-	message("[PID] WARNING:  when declaring library ${c_name},  directly using option -std=c${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
-	if(c_standard LESS STD_C_OPT)
-		set(c_standard ${STD_C_OPT})
+	message("[PID] WARNING:  when declaring library ${c_name},  directly using option -std=c${STD_C_OPT} or -std=gnu${STD_C_OPT} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+	is_C_Version_Less(IS_LESS ${c_standard_used} ${STD_C_OPT})
+	if(IS_LESS)
+		set(c_standard_used ${STD_C_OPT})
 	endif()
 endif()
-if(STDCXX_OPT)
-	message("[PID] WARNING: when declaring library ${c_name}, directly using option -std=c++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
-	if(c_standard LESS STD_C_OPT)
-		set(cxx_standard ${STD_CXX_OPT})
+if(STD_CXX_OPT)
+	message("[PID] WARNING: when declaring library ${c_name}, directly using option -std=c++${STD_CXX_OPT} or -std=gnu++${STD_CXX_OPT} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+	is_CXX_Version_Less(IS_LESS ${cxx_standard_used} ${STD_CXX_OPT})
+	if(IS_LESS)
+		set(cxx_standard_used ${STD_CXX_OPT})
+	endif()
+endif()
+filter_Compiler_Options(STD_C_OPT STD_CXX_OPT FILTERED_EXPORTED_OPTS "${exported_compiler_options}")
+if(STD_C_OPT)
+	message("[PID] WARNING:  when declaring library ${c_name},  directly using option -std=c${STD_C_OPT} or -std=gnu${STD_C_OPT} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+	is_C_Version_Less(IS_LESS ${c_standard_used} ${STD_C_OPT})
+	if(IS_LESS)
+		set(c_standard_used ${STD_C_OPT})
+	endif()
+endif()
+if(STD_CXX_OPT)
+	message("[PID] WARNING: when declaring library ${c_name}, directly using option -std=c++${STD_CXX_OPT} or -std=gnu++${STD_CXX_OPT} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+	is_CXX_Version_Less(IS_LESS ${cxx_standard_used} ${STD_CXX_OPT})
+	if(IS_LESS)
+		set(cxx_standard_used ${STD_CXX_OPT})
 	endif()
 endif()
 
@@ -1130,21 +1149,21 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 	#defining shared and/or static targets for the library and
 	#adding the targets to the list of installed components when make install is called
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "STATIC") #a static library has no internal links (never trully linked)
-		create_Static_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}")
+		create_Static_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}")
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
-		create_Shared_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}" "${internal_links}")
+		create_Shared_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}" "${internal_links}")
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
-		create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
+		create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 	endif()
 	register_Component_Binary(${c_name})
 else()#simply creating a "fake" target for header only library
-	create_Header_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}")
+	create_Header_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}")
 endif()
 
 # registering exported flags for all kinds of libs
-init_Component_Cached_Variables_For_Export(${c_name} "${c_standard}" "${cxx_standard}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}" "${runtime_resources}")
+init_Component_Cached_Variables_For_Export(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}" "${runtime_resources}")
 
 #updating global variables of the CMake process
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
@@ -1171,19 +1190,25 @@ else() #a simple application by default
 	return()
 endif()
 
-filter_Compiler_Options(STD_C_OPT STDCXX_OPT FILTERED_INTERNAL_OPTS "${internal_compiler_options}")
+# manage options and eventually adjust language standard in use
+set(c_standard_used ${c_standard})
+set(cxx_standard_used ${cxx_standard})
+filter_Compiler_Options(STD_C_OPT STD_CXX_OPT FILTERED_INTERNAL_OPTS "${internal_compiler_options}")
 if(STD_C_OPT)
-	message("[PID] WARNING:  when declaring library ${c_name},  directly using option -std=c${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
-	if(c_standard LESS STD_C_OPT)
-		set(c_standard ${STD_C_OPT})
+	message("[PID] WARNING:  when declaring library ${c_name},  directly using option -std=c${STD_C_OPT} or -std=gnu${STD_C_OPT} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+	is_C_Version_Less(IS_LESS ${c_standard_used} ${STD_C_OPT})
+	if(IS_LESS)
+		set(c_standard_used ${STD_C_OPT})
 	endif()
 endif()
-if(STDCXX_OPT)
-	message("[PID] WARNING: when declaring library ${c_name}, directly using option -std=c++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
-	if(c_standard LESS STD_C_OPT)
-		set(cxx_standard ${STD_CXX_OPT})
+if(STD_CXX_OPT)
+	message("[PID] WARNING: when declaring library ${c_name}, directly using option -std=c++${STD_CXX_OPT} or -std=gnu++${STD_CXX_OPT} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+	is_CXX_Version_Less(IS_LESS ${cxx_standard_used} ${STD_CXX_OPT})
+	if(IS_LESS)
+		set(cxx_standard_used ${STD_CXX_OPT})
 	endif()
 endif()
+
 
 #managing sources for the application
 if(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP"
@@ -1213,12 +1238,12 @@ get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}
 #defining the target to build the application
 
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need to be relocatable since they are purely local
-	create_Executable_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
+	create_Executable_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
 
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 	register_Component_Binary(${c_name})# resgistering name of the executable
 else()
-	create_TestUnit_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
+	create_TestUnit_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
 endif()
 
 #registering source code for the component

@@ -72,15 +72,12 @@ endforeach()
 endif()
 endfunction(resolve_Compile_Options_For_Targets)
 
-############################################################################
-############### API functions for internal targets management ##############
-############################################################################
-###
-
-function(filter_Compiler_Options STD_C_OPT STDCXX_OPT FILTERED_OPTS opts)
+### filter the options lines to get those options related to language standard in USE
+function(filter_Compiler_Options STD_C_OPT STD_CXX_OPT FILTERED_OPTS opts)
 set(RES_FILTERED)
 if(opts AND NOT opts STREQUAL "")
 	foreach(opt IN ITEMS ${opts})
+		unset(STANDARD_NUMBER)
 		#checking for CXX_STANDARD
 		is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
 		if(STANDARD_NUMBER)
@@ -97,6 +94,10 @@ if(opts AND NOT opts STREQUAL "")
 	set(${FILTERED_OPTS} ${RES_FILTERED} PARENT_SCOPE)
 endif()
 endfunction(filter_Compiler_Options)
+
+############################################################################
+############### API functions for internal targets management ##############
+############################################################################
 
 
 ###create a module lib target for a newly defined library
