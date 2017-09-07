@@ -83,17 +83,23 @@ if(${package}_${component}_OPTS${VAR_SUFFIX})
 	#checking that no compiler option is used directly to set the standard
 	#remove the option and set the standard adequately instead
 	set(FILTERED_OPTS)
-	foreach(opt In ITEMS ${${package}_${component}_OPTS${VAR_SUFFIX}})
+	foreach(opt IN ITEMS ${${package}_${component}_OPTS${VAR_SUFFIX}})
 		#checking for CXX_STANDARD
 		is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
 		if(STANDARD_NUMBER)
-			message("[PID] WARNING: directly using option -std=c++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
-			set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+			message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c++${STANDARD_NUMBER} or -std=gnu++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+			is_CXX_Version_Less(IS_LESS ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
+			if(IS_LESS)
+				set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+			endif()
 		else()#checking for C_STANDARD
 			is_C_Standard_Option(STANDARD_NUMBER ${opt})
 			if(STANDARD_NUMBER)
-				message("[PID] WARNING: directly using option -std=c${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
-				set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+				message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c${STANDARD_NUMBER} or -std=gnu${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+				is_C_Version_Less(IS_LESS ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
+				if(IS_LESS)
+					set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+				endif()
 			else()
 				list(APPEND FILTERED_OPTS ${opt})#keep the option unchanged
 			endif()
