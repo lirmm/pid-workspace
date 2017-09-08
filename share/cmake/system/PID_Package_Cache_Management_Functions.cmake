@@ -1105,6 +1105,11 @@ endfunction(need_Install_External_Packages)
 function(write_Use_File file package build_mode)
 set(MODE_SUFFIX "")
 if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode
+	file(APPEND ${file} "######### declaration of package meta info that can be usefull for other packages ########\n")
+	file(APPEND ${file} "set(${package}_LICENSE ${${package}_LICENSE} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_ADDRESS ${${package}_ADDRESS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_CATEGORIES ${${package}_CATEGORIES} CACHE INTERNAL \"\")\n")
+
 	file(APPEND ${file} "######### declaration of package web site info ########\n")
 	file(APPEND ${file} "set(${package}_FRAMEWORK ${${package}_FRAMEWORK} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_PROJECT_PAGE ${${package}_PROJECT_PAGE} CACHE INTERNAL \"\")\n")

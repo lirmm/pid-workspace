@@ -439,15 +439,34 @@ endfunction(get_Formatted_Framework_Contact_String)
 
 ### checking that the license applying to the package is closed source or not (set the variable CLOSED to TRUE or FALSE adequately)
 function(package_License_Is_Closed_Source CLOSED package)
-	list(FIND KNOWN_LICENSES ${${package}_LICENSE} INDEX)
-	if(INDEX EQUAL -1) #license has never been loaded so do not know if open or closed source
+	#first step determining if the dependent package provides its license in its use file (compatiblity with previous version of PID)
+	if(NOT ${package}_LICENSE)
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
+			include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake) #the reference file contains the license
+		else()#we consider the package as having an opensource license
+			set(${CLOSED} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+	set(found_license_description FALSE)
+	if(KNOWN_LICENSES)
+		list(FIND KNOWN_LICENSES ${${package}_LICENSE} INDEX)
+		if(NOT INDEX EQUAL -1)
+			set(found_license_description TRUE)
+		endif()#otherwise license has never been loaded so do not know if open or closed source
+	endif()#otherwise license is unknown for now
+	if(NOT found_license_description)
+		#trying to find that license
 		include(${WORKSPACE_DIR}/share/cmake/licenses/License${${package}_LICENSE}.cmake RESULT_VARIABLE res)
 		if(res MATCHES NOTFOUND)
 			set(${CLOSED} TRUE PARENT_SCOPE)
 			message("[PID] ERROR : cannot find description file for license ${${package}_LICENSE}, specified for package ${package}. Package is supposed to be closed source.")
 			return()
 		endif()
-		set(KNOWN_LICENSES ${KNOWN_LICENSES} ${${package}_LICENSE}} CACHE INTERNAL "")#adding the license to known licenses
+		set(temp_list ${KNOWN_LICENSES} ${${package}_LICENSE} CACHE INTERNAL "")
+		list(REMOVE_DUPLICATES temp_list)
+		set(KNOWN_LICENSES ${temp_list} CACHE INTERNAL "")#adding the license to known licenses
+
 		if(LICENSE_IS_OPEN_SOURCE)
 			set(KNOWN_LICENSE_${${package}_LICENSE}_CLOSED FALSE CACHE INTERNAL "")
 		else()
