@@ -1209,7 +1209,6 @@ if(STD_CXX_OPT)
 	endif()
 endif()
 
-
 #managing sources for the application
 if(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP"
 	OR ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")
@@ -1241,10 +1240,10 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need t
 	create_Executable_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
 
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
-	register_Component_Binary(${c_name})# resgistering name of the executable
 else()
 	create_TestUnit_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
 endif()
+register_Component_Binary(${c_name})# resgistering name of the executable
 
 #registering source code for the component
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
@@ -1254,7 +1253,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
-init_Component_Cached_Variables_For_Export(${c_name} "" "" "" "" "" "${runtime_resources}")
+init_Component_Cached_Variables_For_Export(${c_name} "${c_standard_used}" "${cxx_standard_used}" "" "" "" "${runtime_resources}")
 
 #updating global variables of the CMake process
 set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")

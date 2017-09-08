@@ -566,7 +566,7 @@ function(create_Imported_Shared_Library_Target package component mode)
 	list_Public_Options(OPTS ${package} ${component} ${MODE_TO_IMPORT})
 	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}")
 
-	# check that C/C++ languages are defined or defult them
+	# check that C/C++ languages are defined or default them
 	manage_Language_Standards(${package} ${component} ${mode})
 endfunction(create_Imported_Shared_Library_Target)
 
@@ -606,6 +606,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #get the languages standard in use for both components
 get_Language_Standards(STD_C STD_CXX ${package} ${component} ${mode})
 get_Language_Standards(DEP_STD_C DEP_STD_CXX ${dep_package} ${dep_component} ${mode})
+
 is_C_Version_Less(IS_LESS ${STD_C} ${DEP_STD_C})
 if( IS_LESS )#dependency has greater or equal level of standard required
 	set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${DEP_STD_C} CACHE INTERNAL "")
