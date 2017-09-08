@@ -606,8 +606,8 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #get the languages standard in use for both components
 get_Language_Standards(STD_C STD_CXX ${package} ${component} ${mode})
 get_Language_Standards(DEP_STD_C DEP_STD_CXX ${dep_package} ${dep_component} ${mode})
-
-if(DEP_STD_C GREATER STD_C)#dependency has greater level of standard required
+is_C_Version_Less(IS_LESS ${STD_C} ${DEP_STD_C})
+if( IS_LESS )#dependency has greater or equal level of standard required
 	set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${DEP_STD_C} CACHE INTERNAL "")
 
 	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
@@ -615,7 +615,8 @@ if(DEP_STD_C GREATER STD_C)#dependency has greater level of standard required
 	endif()
 endif()
 
-if(DEP_STD_CXX GREATER STD_CXX)
+is_CXX_Version_Less(IS_LESS ${STD_CXX} ${DEP_STD_CXX})
+if( IS_LESS )#dependency has greater or equal level of standard required
 	set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${DEP_STD_CXX} CACHE INTERNAL "")#the minimal value in use file is set adequately
 	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
 		set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES CXX_STANDARD ${DEP_STD_CXX})
@@ -647,7 +648,7 @@ if(COMP_IS_BUILT)
 
 	# set adequately language standard for component depending on the value of dep_component
 	resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${mode} TRUE)
-else()#for headers lib do not set the build property (othewise CMake complains on recent versions)
+else()#for headers lib do not set the language standard build property (othewise CMake complains on recent versions)
 	# set adequately language standard for component depending on the value of dep_component
 	resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${mode} FALSE)
 endif()
