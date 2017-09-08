@@ -22,10 +22,9 @@
 #################################################################################################
 
 function (list_Closed_Source_Dependency_Packages)
-include (${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 set(CLOSED_PACKS)
-if(CURRENT_NATIVE_DEPENDENCIES)
-	foreach(pack IN ITEMS ${CURRENT_NATIVE_DEPENDENCIES})
+if(${PROJECT_NAME}_ALL_USED_PACKAGES)
+	foreach(pack IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
 		package_License_Is_Closed_Source(CLOSED ${pack})
 		if(CLOSED)
 			list(APPEND CLOSED_PACKS ${pack})
