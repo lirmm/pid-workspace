@@ -755,7 +755,7 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 		endif()
 	endforeach()
 	if(NOT ${MAX_CURR_VERSION} STREQUAL 0.0.0)
-		deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION})
+		deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE)
 		if(NOT DEPLOYED)
 			message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive. Please contact the administrator of the package ${package}.")
 		endif()
@@ -764,7 +764,7 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 	endif()
 
 else()#deploying the target binary relocatable archive
-	deploy_External_Package_Version(DEPLOYED ${package} ${version})
+	deploy_External_Package_Version(DEPLOYED ${package} ${version} FALSE)
 	if(NOT DEPLOYED)
 		message("[PID] ERROR : cannot deploy ${package} binary archive version ${version}.")
 	endif()

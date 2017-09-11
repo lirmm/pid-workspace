@@ -1719,6 +1719,32 @@ function(declare_External_Wrapper_Component_Dependency component dep_package dep
 
 	if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
 		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} is not defined !")
+		return()
+	elseif(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
+		message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
+		memorize_External_Binary_References(RES ${dep_package})
+		if(NOT RES)
+			message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot find information about package !")
+			return()
+		endif()
+		deploy_External_Package_Version(DEPLOYED ${dep_package} ${${dep_package}_VERSION_STRING} TRUE) #second force reinstall the same package version
+		if(NOT DEPLOYED)
+			message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot redeploy package binary archive !")
+			return()
+		endif()
+		find_package(#configure again the package
+			${dep_package}
+			${${dep_package}_VERSION_STRING} #use the version already in use
+			EXACT
+			MODULE
+			REQUIRED
+		)
+		if(NOT ${dep_package}_HAS_DESCRIPTION)
+			#description still unavailable => fatal error
+			message (FATAL_ERROR "[PID] CRITICAL ERROR after reinstalling package ${dep_package} in ${PROJECT_NAME} : the project has no description of its content !")
+			return()
+		endif()
+		message ("[PID] INFO when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} now provides content description.")
 	else()
 
 	#guarding depending on type of involved components

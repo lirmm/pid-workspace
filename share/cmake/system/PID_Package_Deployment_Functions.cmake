@@ -1143,28 +1143,49 @@ endif()
 set(${selected_version} "${CURRENT_VERSION}" PARENT_SCOPE)
 endfunction(resolve_Required_External_Package_Version)
 
+### functio used to uninstall an external package from the workspace
+function(uninstall_External_Package package)
+set(version ${${package}_VERSION_STRING})
+get_System_Variables(PLATFORM_STRING PACKAGE_STRING)
+set(path_to_install_dir ${WORKSPACE_DIR}/external/${PLATFORM_STRING}/${package}/${version})
+if(EXISTS ${path_to_install_dir} AND IS_DIRECTORY ${path_to_install_dir})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory  ${path_to_install_dir}) #delete the external package version folder
+endif()
+endfunction(uninstall_External_Package)
 
-### function used to install a single external package. It leads to the resolution of the adequate package version and the deployment of that version. See: deploy_External_Package_Version and resolve_Required_External_Package_Version.
-function(install_External_Package INSTALL_OK package)
-
-# 0) test if reference of the external package exists in the workspace
+### function used to prepare the loading of external package references
+function(memorize_External_Binary_References RES package)
 set(IS_EXISTING FALSE)
 package_Reference_Exists_In_Workspace(IS_EXISTING External${package})
 if(NOT IS_EXISTING)
-	set(${INSTALL_OK} FALSE PARENT_SCOPE)
+	set(${RES} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : unknown external package ${package} : cannot find any reference of this package in the workspace. Cannot install this package.")
 	return()
 endif()
 
 include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
 if(${refer_path} STREQUAL NOTFOUND)
+	set(${RES} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : reference file not found for external package ${package}!! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
 	return()
 endif()
 
 load_Package_Binary_References(REFERENCES_OK ${package}) #getting the references (address of sites) where to download binaries for that package
 if(NOT REFERENCES_OK)
-	message("[PID] ERROR : cannot load the references to external package binaries ! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
+	set(${RES} FALSE PARENT_SCOPE)
+	message("[PID] ERROR : cannot load the references to binaries of external package ${package} ! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
+	return()
+endif()
+set(${RES} TRUE PARENT_SCOPE)
+endfunction(memorize_External_Binary_References)
+
+### function used to install a single external package. It leads to the resolution of the adequate package version and the deployment of that version. See: deploy_External_Package_Version and resolve_Required_External_Package_Version.
+function(install_External_Package INSTALL_OK package)
+
+# 0) test if reference of the external package exists in the workspace
+memorize_External_Binary_References(RES ${package})
+if(NOT RES)
+	set(${INSTALL_OK} FALSE PARENT_SCOPE)
 	return()
 endif()
 
@@ -1174,7 +1195,7 @@ resolve_Required_External_Package_Version(SELECTED ${package})
 if(SELECTED) # if there is ONE adequate reference, downloading and installing it
 	#2) installing package
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
-	deploy_External_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${SELECTED})
+	deploy_External_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${SELECTED} FALSE)
 	if(PACKAGE_BINARY_DEPLOYED)
 		message("[PID] INFO : external package ${package} (version ${SELECTED}) has been installed.")
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
@@ -1212,7 +1233,7 @@ endfunction(install_Required_External_Packages)
 
 
 ### deploy means download + install + configure the external package in the workspace so that it can be used by a third party package.
-function(deploy_External_Package_Version DEPLOYED package version)
+function(deploy_External_Package_Version DEPLOYED package version force)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
@@ -1227,7 +1248,13 @@ if(NOT PLATFORM)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
-check_Package_Version_State_In_Current_Process(${package} ${version} RES)
+if(NOT force)# forcing means reinstalling from scratch
+	check_Package_Version_State_In_Current_Process(${package} ${version} RES)
+else()
+	uninstall_External_Package(${package}) #if force then uninstall before reinstalling
+	set(RES "UNKNOWN")
+endif()
+
 if(RES STREQUAL "UNKNOWN")
 	download_And_Install_External_Package(INSTALLED ${package} ${version} ${PLATFORM})
 	if(INSTALLED)
@@ -1245,6 +1272,7 @@ if(RES STREQUAL "UNKNOWN")
 
 elseif(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be install during current process
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	return()
 endif()
 
 set(${DEPLOYED} TRUE PARENT_SCOPE)
