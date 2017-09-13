@@ -1298,7 +1298,8 @@ function(declare_Package_Dependency dep_package list_of_versions exact_versions 
 			endif()
 		else()#there are alternatives => there is a user cache variable specifying the alternative
 			list(GET list_of_versions 0 version) #by defaut this is the first element in the list
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} among ${list_of_versions}")
+			fill_List_Into_String("${list_of_versions}" available_versions)
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} among : ${available_versions}")
 
 			#check if the user input is not faulty (version is in the list)
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)
@@ -1391,7 +1392,8 @@ function(declare_External_Package_Dependency dep_package list_of_versions exact_
 			endif()
 		else()#there are alternatives => there is a user cache variable specifying the alternative
 			list(GET list_of_versions 0 version) #by defaut this is the first element in the list
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} among ${list_of_versions}")
+			fill_List_Into_String("${list_of_versions}" available_versions)
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} among : ${available_versions}")
 
 			#check if the user input is not faulty (version is in the list)
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)

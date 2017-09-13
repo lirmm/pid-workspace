@@ -510,7 +510,7 @@ if(NOT "${DECLARE_PID_COMPONENT_DESCRIPTION}" STREQUAL "")
 endif()
 endmacro(declare_PID_Component)
 
-function(parse_Package_Dependency_Version_Arguments args RES_VERSION RES_EXACT RES_UNPARSED)#TODO REDO
+function(parse_Package_Dependency_Version_Arguments args RES_VERSION RES_EXACT RES_UNPARSED)
 set(full_string)
 string(REGEX REPLACE "^(EXACT;VERSION;[^;]+;?).*$" "\\1" RES "${args}")
 if(RES STREQUAL "${args}")
@@ -521,11 +521,10 @@ if(RES STREQUAL "${args}")
 else()#there is a match => there is a version specified
 	set(full_string ${RES})
 endif()
-if(full_string)#version expression has been found
+if(full_string)#version expression has been found => parse it
 	set(options EXACT)
-	set(multiValueArgs VERSION) #the version may be described with independent digits or with a version string
-	cmake_parse_arguments(PARSE_PACKAGE_ARGS "${options}" "" "${multiValueArgs}" ${full_string})
-	message("parse_Package_Dependency_Version_Arguments -> RES_VERSION=${PARSE_PACKAGE_ARGS_VERSION} RES_EXACT =${PARSE_PACKAGE_ARGS_EXACT} RES_PARSE=${PARSE_PACKAGE_ARGS_UNPARSED_ARGUMENTS}")
+	set(oneValueArg VERSION)
+	cmake_parse_arguments(PARSE_PACKAGE_ARGS "${options}" "${oneValueArg}" "" ${full_string})
 	set(${RES_VERSION} ${PARSE_PACKAGE_ARGS_VERSION} PARENT_SCOPE)
 	set(${RES_EXACT} ${PARSE_PACKAGE_ARGS_EXACT} PARENT_SCOPE)
 
@@ -543,14 +542,8 @@ if(full_string)#version expression has been found
 else()
 	set(${RES_VERSION} PARENT_SCOPE)
 	set(${RES_EXACT} PARENT_SCOPE)
-	set(${RES_UNPARSED} PARENT_SCOPE)
+	set(${RES_UNPARSED} "${args}" PARENT_SCOPE)
 endif()
-
-
-
-	return()
-
-
 endfunction(parse_Package_Dependency_Version_Arguments)
 
 ### API : declare_PID_Package_Dependency (	PACKAGE name
@@ -575,17 +568,17 @@ else()
 	set(exact_versions)
 	if(DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS)
 		set(TO_PARSE "${DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS}")
-		while(TO_PARSE)
+		set(RES_VERSION TRUE)
+		while(TO_PARSE AND RES_VERSION)
 			parse_Package_Dependency_Version_Arguments("${TO_PARSE}" RES_VERSION RES_EXACT TO_PARSE)
-			if(RES_EXACT)
-				if(NOT RES_VERSION)
-					message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${DECLARE_PID_DEPENDENCY_PACKAGE}, you must use the EXACT keyword together with the VERSION keyword.")
+			if(RES_VERSION)
+				list(APPEND list_of_versions ${RES_VERSION})
+				if(RES_EXACT)
+					list(APPEND exact_versions ${RES_VERSION})
 				endif()
-				list(APPEND exact_versions ${RES_VERSION})
-			elseif(NOT RES_VERSION)
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${DECLARE_PID_DEPENDENCY_PACKAGE}, you must use the VERSION keyword to specify the version.")
+			elseif(RES_EXACT)
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${DECLARE_PID_DEPENDENCY_PACKAGE}, you must use the EXACT keyword together with the VERSION keyword.")
 			endif()
-			list(APPEND list_of_versions ${RES_VERSION})
 		endwhile()
 	endif()
 	set(list_of_components)
@@ -605,7 +598,6 @@ else()
 		endif()
 	endif()
 
-	message("${DECLARE_PID_DEPENDENCY_PACKAGE} list_of_versions=${list_of_versions} exact_versions=${exact_versions} list_of_components=${list_of_components}")
 	if(DECLARE_PID_DEPENDENCY_EXTERNAL)#external package
 		declare_External_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 	else()#native package
