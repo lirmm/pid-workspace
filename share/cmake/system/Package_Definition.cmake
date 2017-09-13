@@ -532,11 +532,13 @@ cmake_parse_arguments(DECLARE_PID_DEPENDENCY "${options}" "${oneValueArgs}" "" $
 if(NOT DECLARE_PID_DEPENDENCY_PACKAGE)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the required package using PACKAGE keywork.")
 endif()
-set(package )
+if(DECLARE_PID_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, package ${DECLARE_PID_DEPENDENCY_PACKAGE} cannot require itself !")
+endif()
 if(DECLARE_PID_DEPENDENCY_EXTERNAL AND DECLARE_PID_DEPENDENCY_NATIVE)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the type of the required package must be EXTERNAL or NATIVE, not both.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${DECLARE_PID_DEPENDENCY_PACKAGE}, the type of the required package must be EXTERNAL or NATIVE, not both.")
 elseif(NOT DECLARE_PID_DEPENDENCY_EXTERNAL AND NOT DECLARE_PID_DEPENDENCY_NATIVE)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the type of the required package must be EXTERNAL or NATIVE (use one of these KEYWORDS).")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${DECLARE_PID_DEPENDENCY_PACKAGE}, the type of the required package must be EXTERNAL or NATIVE (use one of these KEYWORDS).")
 else()
 	set(list_of_versions)
 	set(exact_versions)
@@ -546,7 +548,7 @@ else()
 			parse_Package_Dependency_Version_Arguments("${TO_PARSE}" RES_VERSION RES_EXACT TO_PARSE)
 			if(RES_EXACT)
 				if(NOT RES_VERSION)
-					message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must use the EXACT keyword together with the VERSION keyword.")
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${DECLARE_PID_DEPENDENCY_PACKAGE}, you must use the EXACT keyword together with the VERSION keyword.")
 				endif()
 				list(APPEND exact_versions ${RES_VERSION})
 			endif()
@@ -562,11 +564,11 @@ else()
 		if(DECLARE_PID_DEPENDENCY_MORE_COMPONENTS)
 			list(LENGTH DECLARE_PID_DEPENDENCY_MORE_COMPONENTS SIZE)
 			if(SIZE LESS 1)
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, at least one component dependency must be defined when using the COMPONENTS keyword.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${DECLARE_PID_DEPENDENCY_PACKAGE}, at least one component dependency must be defined when using the COMPONENTS keyword.")
 			endif()
 			set(list_of_components ${DECLARE_PID_DEPENDENCY_MORE_COMPONENTS})
 		else()
-			message(FATAL_ERROR "[PID] WARNING : unknown arguments used ${DECLARE_PID_DEPENDENCY_MORE_UNPARSED_ARGUMENTS}.")
+			message(FATAL_ERROR "[PID] WARNING : when declaring dependency to package ${DECLARE_PID_DEPENDENCY_PACKAGE}, unknown arguments used ${DECLARE_PID_DEPENDENCY_MORE_UNPARSED_ARGUMENTS}.")
 		endif()
 	endif()
 
@@ -594,11 +596,12 @@ set(options EXPORT)
 set(oneValueArgs COMPONENT DEPEND NATIVE PACKAGE EXTERNAL)
 set(multiValueArgs INCLUDE_DIRS LINKS COMPILER_OPTIONS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
-endif()
+
 if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the component that declare the dependency using COMPONENT keyword.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, a name must be given to the component that declare the dependency using COMPONENT keyword.")
+endif()
+if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
 endif()
 set(export FALSE)
 if(DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT)
@@ -626,7 +629,7 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS)
 	set(multiValueArgs STATIC SHARED)
 	cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS "" "" "${multiValueArgs}" ${DECLARE_PID_COMPONENT_DEPENDENCY_LINKS} )
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_UNPARSED_ARGUMENTS)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the LINKS option argument must be followed only by static and/or shared links.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the LINKS option argument must be followed only by static and/or shared links.")
 	endif()
 
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_STATIC)
@@ -644,14 +647,17 @@ endif()
 
 if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE)
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, keywords EXTERNAL (requiring an external package) and NATIVE (or DEPEND) (requiring a PID component) cannot be used simultaneously.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, keywords EXTERNAL (requiring an external package) and NATIVE (or DEPEND) (requiring a PID component) cannot be used simultaneously.")
 	endif()
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
 		set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND})
 	else()
 		set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE})
 	endif()
-	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE)#package dependency
+
+	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE
+		AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)#package dependency target package is not current project
+
 		declare_Package_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
@@ -662,6 +668,10 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 					"${dep_defs}"
 					)
 	else()#internal dependency
+		if(target_component STREQUAL DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component cannot depend on itself !")
+		endif()
+
 		declare_Internal_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${target_component}
@@ -675,6 +685,9 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE)
+		if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the target external package canoot be current project !")
+		endif()
 		declare_External_Wrapper_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
