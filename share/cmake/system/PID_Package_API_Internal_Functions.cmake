@@ -1312,7 +1312,7 @@ function(declare_Package_Dependency dep_package list_of_versions exact_versions 
 				return()
 			endif()
 
-			set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${${dep_package}_ALTERNATIVE_VERSION_USED} CACHE INTERNAL "")
 			if(exact_versions)
 				list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 				if(INDEX EQUAL -1)
@@ -1405,8 +1405,7 @@ function(declare_External_Package_Dependency dep_package list_of_versions exact_
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value for dependency ${dep_package}.")
 				return()
 			endif()
-
-			set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${${dep_package}_ALTERNATIVE_VERSION_USED} CACHE INTERNAL "")
 			if(exact_versions)
 				list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 				if(INDEX EQUAL -1)
