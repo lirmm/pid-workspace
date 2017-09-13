@@ -601,7 +601,7 @@ else()
 	if(DECLARE_PID_DEPENDENCY_EXTERNAL)#external package
 		declare_External_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 	else()#native package
-		declare_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${list_of_versions}" ${exact_versions} "${list_of_components}")
+		declare_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 	endif()
 endif()
 endmacro(declare_PID_Package_Dependency)
