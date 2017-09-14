@@ -95,7 +95,7 @@ endif()
 
 # 2) for not found package
 if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #download or clone of dependencies is automatic
 		set(INSTALLED_EXTERNAL_PACKAGES "")
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : package ${package} needs to install following packages : ${TO_INSTALL_EXTERNAL_DEPS}")

@@ -550,7 +550,7 @@ endfunction(parse_Package_Dependency_Version_Arguments)
 #						<EXTERNAL VERSION version_string [EXACT] | NATIVE [VERSION major[.minor] [EXACT]]] >
 #						[COMPONENTS component ...])
 macro(declare_PID_Package_Dependency)
-set(options EXTERNAL NATIVE)
+set(options EXTERNAL NATIVE OPTIONAL)
 set(oneValueArgs PACKAGE)
 cmake_parse_arguments(DECLARE_PID_DEPENDENCY "${options}" "${oneValueArgs}" "" ${ARGN} )
 if(NOT DECLARE_PID_DEPENDENCY_PACKAGE)
@@ -563,7 +563,7 @@ if(DECLARE_PID_DEPENDENCY_EXTERNAL AND DECLARE_PID_DEPENDENCY_NATIVE)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${DECLARE_PID_DEPENDENCY_PACKAGE}, the type of the required package must be EXTERNAL or NATIVE, not both.")
 elseif(NOT DECLARE_PID_DEPENDENCY_EXTERNAL AND NOT DECLARE_PID_DEPENDENCY_NATIVE)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${DECLARE_PID_DEPENDENCY_PACKAGE}, the type of the required package must be EXTERNAL or NATIVE (use one of these KEYWORDS).")
-else()
+else() #first checks OK now parsing version related arguments
 	set(list_of_versions)
 	set(exact_versions)
 	if(DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS)
@@ -599,13 +599,33 @@ else()
 	endif()
 
 	if(DECLARE_PID_DEPENDENCY_EXTERNAL)#external package
-		declare_External_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${list_of_versions}" "${exact_versions}" "${list_of_components}")
+		declare_External_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 	else()#native package
-		declare_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${list_of_versions}" "${exact_versions}" "${list_of_components}")
+		declare_Package_Dependency(${DECLARE_PID_DEPENDENCY_PACKAGE} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 	endif()
 endif()
 endmacro(declare_PID_Package_Dependency)
 
+function(used_Package_Dependency dep_package USED VERSION)
+list(FIND ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package} INDEX)
+if(INDEX EQUAL -1)
+	list(FIND ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package} INDEX)
+	if(INDEX EQUAL -1)
+		set(${USED} FALSE PARENT_SCOPE)
+		set(${VERSION} PARENT_SCOPE)#by definition no version used
+		return()
+	else()
+		set(IS_EXTERNAL TRUE)
+	endif()
+endif()
+#from here it has been found
+set(${USED} TRUE PARENT_SCOPE)
+if(IS_EXTERNAL)#it is an external package
+	set(${VERSION} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} PARENT_SCOPE)#by definition no version used
+else()#it is a native package
+	set(${VERSION} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} PARENT_SCOPE)#by definition no version used
+endif()
+endfunction(used_Package_Dependency dep_package)
 
 ### API : declare_PID_Component_Dependency (	COMPONENT name
 #						[EXPORT]

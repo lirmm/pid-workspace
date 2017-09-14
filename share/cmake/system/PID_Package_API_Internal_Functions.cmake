@@ -1268,98 +1268,128 @@ endfunction(declare_Application_Component)
 ###### as external but requires no additionnal info (default system folders) #####
 ### these functions are to be used after a find_package command. #################
 ##################################################################################
-function(declare_Package_Dependency dep_package list_of_versions exact_versions list_of_components)
+function(declare_Package_Dependency dep_package optional list_of_versions exact_versions list_of_components)
 # ${PROJECT_NAME}_DEPENDENCIES				# packages required by current package
 # ${PROJECT_NAME}__DEPENDENCY_${dep_package}_VERSION		# version constraint for package ${dep_package}   required by ${PROJECT_NAME}
 # ${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT	# TRUE if exact version is required
 # ${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS	# list of composants of ${dep_package} used by current package
-
-	# 1) the package is necessarily required at that time, also its list of components
-	set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${list_of_components} CACHE INTERNAL "")
-	list(REMOVE_DUPLICATES ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-	list(REMOVE_DUPLICATES ${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})
-
-	# 2) defining which version to use, if any
+	set(unused FALSE)
+	# 1) the package may be required at that time
+	# defining if there is either a specific version to use or not
 	if(NOT list_of_versions OR list_of_versions STREQUAL "")
-		#no version defined
-		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")#false by definition since no version constraint
-	else()#list of version is not empty
-		list(LENGTH list_of_versions SIZE)
-		if(SIZE EQUAL 1)#only one dependent version, this is the basic version of the function
-			# no option to set, since no alternative
-			list(GET list_of_versions 0 version)
-			set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
-			if(exact_versions)#if TRUE then it is exact
-				set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-			else()# no exact version required => not this one
-				set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+		if(optional)
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY")
+			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+				add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}") #set the dependency
+			else()
+				set(unused TRUE)
 			endif()
-		else()#there are alternatives => there is a user cache variable specifying the alternative
-			list(GET list_of_versions 0 version) #by defaut this is the first element in the list
+		else()
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+			add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
+		endif()#else no message since nohting to say to the user
+	else()#there are version specified
+		# defining which version to use, if any
+		list(LENGTH list_of_versions SIZE)
+		list(GET list_of_versions 0 version) #by defaut this is the first element in the list that is taken
+		if(SIZE EQUAL 1)#only one dependent version, this is the basic version of the function
+			if(optional)# this dependency is optional
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version by typing ANY")
+				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+					if(exact_versions)#if TRUE then it is exact
+						add_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
+					else()# no exact version required => not this one
+						add_Package_Dependency_To_Cache(${dep_package} "${version}" FALSE "${list_of_components}") #set the dependency
+					endif()
+				else()
+					set(unused TRUE)
+				endif()
+			else()# this dependency is NOT optional
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+				# no option to set, since no alternative or optional dependency => immediately create the dependency
+				if(exact_versions)#if TRUE then it is exact
+					add_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
+				else()# no exact version required => not this one
+					add_Package_Dependency_To_Cache(${dep_package} "${version}" FALSE "${list_of_components}") #set the dependency
+				endif()
+			endif()
+		else() #there are many possible versions
 			fill_List_Into_String("${list_of_versions}" available_versions)
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} among : ${available_versions}")
+			if(optional)
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be used (input NONE) ot choose among versions : ${available_versions}")
+			else()
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} to be used among versions : ${available_versions}")
+			endif()
 
 			#check if the user input is not faulty (version is in the list)
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : you did not define any version for dependency ${dep_package}.")
 				return()
 			endif()
-			list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-			if(INDEX EQUAL -1)
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value for dependency ${dep_package}.")
-				return()
+			if(NOT optional OR NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#it is not a deactivated optional dependency
+				list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+				if(INDEX EQUAL -1 )#no possible version found
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value for dependency ${dep_package}.")
+					return()
+				endif()
 			endif()
 
-			set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${${dep_package}_ALTERNATIVE_VERSION_USED} CACHE INTERNAL "")
-			if(exact_versions)
-				list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+			if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
+				set(unused TRUE)
+			else()#if a version if used, configrue it
+				if(exact_versions)
+					list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+					if(INDEX EQUAL -1)#selected version not found in the list of exact versions
+						add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE "${list_of_components}") #set the dependency
+					else()#if the target version belong to the list of exact version then ... it is exact ^^
+						add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" TRUE "${list_of_components}") #set the dependency
+					endif()
+				else()#by definition this is not an exact version selected
+					add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE "${list_of_components}") #set the dependency
+				endif()
+			endif()# used or not
+		endif() # many possible versions
+	endif()#version specified
+
+
+	if(NOT unused) #if the dependency is really used (in case it were optional and unselected by user)
+		# 3) try to find the adequate package version => it is necessarily required
+		if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
+			if(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
+				if(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX})#exact version is required
+					if(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})#check components
+						find_package(${dep_package} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} EXACT REQUIRED COMPONENTS ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}})
+					else()#do not check for components
+						find_package(${dep_package} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} EXACT REQUIRED)
+					endif()
+				else()#any compatible version
+					if(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})#check components
+						find_package(${dep_package} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} REQUIRED COMPONENTS ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}})
+					else()#do not check for components
+						find_package(${dep_package} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} REQUIRED)
+					endif()
+				endif()
+			else()#no version specified
+				if(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})#check components
+					find_package(${dep_package} REQUIRED COMPONENTS ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}})
+				else()#do not check for components
+					find_package(${dep_package} REQUIRED)
+				endif()
+			endif()
+		endif()#otherwise nothing more to do
+
+
+		# 4) managing automatic install process if needed
+		if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
+			if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#testing if there is automatic install activated
+				list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${dep_package} INDEX)
 				if(INDEX EQUAL -1)
-					set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
-				else()#if the target version belong to the list of exact version then ... it is exact ^^
-					set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-				endif()
-			endif()
-		endif()
-	endif()
-
-	# 3) try to find the adequate package version => it is necessarily required
-	if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
-		if(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
-			if(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX})#exact version is required
-				if(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})#check components
-					find_package(${dep_package} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} EXACT REQUIRED COMPONENTS ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}})
-				else()#do not check for components
-					find_package(${dep_package} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} EXACT REQUIRED)
-				endif()
-			else()#any compatible version
-				if(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})#check components
-					find_package(${dep_package} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} REQUIRED COMPONENTS ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}})
-				else()#do not check for components
-					find_package(${dep_package} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} REQUIRED)
-				endif()
-			endif()
-		else()#no version specified
-			if(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})#check components
-				find_package(${dep_package} REQUIRED COMPONENTS ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}})
-			else()#do not check for components
-				find_package(${dep_package} REQUIRED)
-			endif()
-		endif()
-	endif()#otherwise nothing more to do
-
-
-	# 4) managing automatic install process if needed
-	if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
-		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#testing if there is automatic install activated
-			list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${dep_package} INDEX)
-			if(INDEX EQUAL -1)
-				#if the package where not specified as REQUIRED in the find_package call, we face a case of conditional dependency => the package has not been registered as "to install" while now we know it must be installed
-				if(version)
-					add_To_Install_Package_Specification(${dep_package} "${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}" ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX}})
-				else()
-					add_To_Install_Package_Specification(${dep_package} "" FALSE)
+					#if the package where not specified as REQUIRED in the find_package call, we face a case of conditional dependency => the package has not been registered as "to install" while now we know it must be installed
+					if(version)
+						add_To_Install_Package_Specification(${dep_package} "${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}" ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX}})
+					else()
+						add_To_Install_Package_Specification(${dep_package} "" FALSE)
+					endif()
 				endif()
 			endif()
 		endif()
@@ -1367,56 +1397,87 @@ function(declare_Package_Dependency dep_package list_of_versions exact_versions 
 endfunction(declare_Package_Dependency)
 
 ### declare external dependancies
-function(declare_External_Package_Dependency dep_package list_of_versions exact_versions components_list)
-	# 1) the package is necessarily required at that time, also its list of components
-	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${components_list} CACHE INTERNAL "")
-	list(REMOVE_DUPLICATES ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-	list(REMOVE_DUPLICATES ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})
+function(declare_External_Package_Dependency dep_package optional list_of_versions exact_versions components_list)
 
-	# 2) defining which version to use, if any
-	if(NOT list_of_versions OR list_of_versions STREQUAL "")
-		#no version defined
-		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")#false by definition since no version constraint
-	else()#list of version is not empty
-		list(LENGTH list_of_versions SIZE)
-		if(SIZE EQUAL 1)#only one dependent version, this is the basic version of the function
-			# no option to set, since no alternative
-			list(GET list_of_versions 0 version)
-			set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+set(unused FALSE)
+# 1) the package may be required at that time
+# defining if there is either a specific version to use or not
+if(NOT list_of_versions OR list_of_versions STREQUAL "")
+	if(optional)
+		set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY")
+		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+			add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}") #set the dependency
+		else()
+			set(unused TRUE)
+		endif()
+	else()
+		set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+		add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
+	endif()#else no message since nohting to say to the user
+else()#there are version specified
+	# defining which version to use, if any
+	list(LENGTH list_of_versions SIZE)
+	list(GET list_of_versions 0 version) #by defaut this is the first element in the list that is taken
+	if(SIZE EQUAL 1)#only one dependent version, this is the basic version of the function
+		if(optional)# this dependency is optional
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version by typing ANY")
+			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+				if(exact_versions)#if TRUE then it is exact
+					add_External_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
+				else()# no exact version required => not this one
+					add_External_Package_Dependency_To_Cache(${dep_package} "${version}" FALSE "${list_of_components}") #set the dependency
+				endif()
+			else()
+				set(unused TRUE)
+			endif()
+		else()# this dependency is NOT optional
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+			# no option to set, since no alternative or optional dependency => immediately create the dependency
 			if(exact_versions)#if TRUE then it is exact
-				set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
+				add_External_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
 			else()# no exact version required => not this one
-				set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+				add_External_Package_Dependency_To_Cache(${dep_package} "${version}" FALSE "${list_of_components}") #set the dependency
 			endif()
-		else()#there are alternatives => there is a user cache variable specifying the alternative
-			list(GET list_of_versions 0 version) #by defaut this is the first element in the list
-			fill_List_Into_String("${list_of_versions}" available_versions)
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} among : ${available_versions}")
+		endif()
+	else() #there are many possible versions
+		fill_List_Into_String("${list_of_versions}" available_versions)
+		if(optional)
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be used (input NONE) ot choose among versions : ${available_versions}")
+		else()
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} to be used among versions : ${available_versions}")
+		endif()
 
-			#check if the user input is not faulty (version is in the list)
-			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : you did not define any version for dependency ${dep_package}.")
-				return()
-			endif()
+		#check if the user input is not faulty (version is in the list)
+		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : you did not define any version for dependency ${dep_package}.")
+			return()
+		endif()
+		if(NOT optional OR NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#it is not a deactivated optional dependency
 			list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-			if(INDEX EQUAL -1)
+			if(INDEX EQUAL -1 )#no possible version found
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value for dependency ${dep_package}.")
 				return()
 			endif()
-			set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${${dep_package}_ALTERNATIVE_VERSION_USED} CACHE INTERNAL "")
+		endif()
+
+		if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
+			set(unused TRUE)
+		else()#if a version if used, configrue it
 			if(exact_versions)
 				list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-				if(INDEX EQUAL -1)
-					set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+				if(INDEX EQUAL -1)#selected version not found in the list of exact versions
+					add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE "${list_of_components}") #set the dependency
 				else()#if the target version belong to the list of exact version then ... it is exact ^^
-					set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
+					add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" TRUE "${list_of_components}") #set the dependency
 				endif()
+			else()#by definition this is not an exact version selected
+				add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE "${list_of_components}") #set the dependency
 			endif()
-		endif()
-	endif()
+		endif()# used or not
+	endif() # many possible versions
+endif()#version specified
 
+if(NOT unused) #if the dependency is really used (in case it were optional and unselected by user)
 	# 3) try to find the adequate package version => it is necessarily required
 	if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
 		if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
@@ -1456,6 +1517,8 @@ function(declare_External_Package_Dependency dep_package list_of_versions exact_
 			endif()
 		endif()
 	endif()
+	
+endif()
 endfunction(declare_External_Package_Dependency)
 
 
