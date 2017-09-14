@@ -18,6 +18,62 @@
 #########################################################################################
 
 #############################################################################################
+#################### API functions for managing dependency constraints when building ########
+#############################################################################################
+
+###
+function(erase_Previous_Build_Constraint_From_Package package)
+#prepare the package constraints to be registered
+if(RECEIVED_CONSTRAINTS)
+	list(APPEND RECEIVED_CONSTRAINTS ${package})
+	list(REMOVE_DUPLICATES RECEIVED_CONSTRAINTS)
+	set(RECEIVED_CONSTRAINTS ${RECEIVED_CONSTRAINTS} CACHE INTERNAL "")
+else()
+	set(RECEIVED_CONSTRAINTS ${package}  CACHE INTERNAL "")
+endif()
+#reset all previous info from this package
+if(RECEIVED_CONSTRAINTS_${package})
+	foreach(dep IN ITEMS ${RECEIVED_CONSTRAINTS_${package}})
+		set(RECEIVED_CONSTRAINTS_${package}_${dep} CACHE INTERNAL "")
+		set(RECEIVED_CONSTRAINTS_${package}_${dep}_EXACT CACHE INTERNAL "")
+	endforeach()
+	set(RECEIVED_CONSTRAINTS_${package} CACHE INTERNAL "")
+endif()
+endfunction(erase_Previous_Build_Constraint_From_Package)
+
+###
+function(set_Build_Constraints_From_Package package)
+	#set the global memory adequatelu
+set(RECEIVED_CONSTRAINTS_${package} ${SET_BUILD_CONSTRAINTS_${package}} CACHE INTERNAL "")
+foreach(dep IN ITEMS ${RECEIVED_CONSTRAINTS_${package}})
+	set(RECEIVED_CONSTRAINTS_${package}_${dep} ${SET_BUILD_CONSTRAINTS_${package}_${dep}} CACHE INTERNAL "")
+	set(RECEIVED_CONSTRAINTS_${package}_${dep}_EXACT ${SET_BUILD_CONSTRAINTS_${package}_${dep}_EXACT} CACHE INTERNAL "")
+endforeach()
+endfunction(set_Build_Constraints_From_Package)
+
+###
+function(reset_Build_Constraint_Variables_For_Interaction package)
+set(SET_BUILD_CONSTRAINTS CACHE INTERNAL "")#reset the build constraints
+foreach(dep IN ITEMS ${SET_BUILD_CONSTRAINTS_${pachage}})#reset the build constraints passed by a given package
+	set(SET_BUILD_CONSTRAINTS_${pachage}_${dep} CACHE INTERNAL "")
+	set(SET_BUILD_CONSTRAINTS_${pachage}_${dep}_EXACT CACHE INTERNAL "")
+endforeach()
+set(SET_BUILD_CONSTRAINTS_${pachage} CACHE INTERNAL "")#reset the build constraints
+endfunction(reset_Build_Constraint_Variables_For_Interaction)
+
+###
+function(received_Build_Contraints)
+if(SET_BUILD_CONSTRAINTS)
+	erase_Previous_Build_Constraint_From_Package(${SET_BUILD_CONSTRAINTS})
+	set_Build_Constraints_From_Package(${SET_BUILD_CONSTRAINTS})
+	reset_Build_Constraint_Variables_For_Interaction(${SET_BUILD_CONSTRAINTS})
+endif()
+endfunction(received_Build_Contraints)
+
+### HERE TODO : use all the received constraints from one package to configrue dependency alternatives/option chosen
+
+
+#############################################################################################
 ############### API functions for managing platform description variables ###################
 #############################################################################################
 
