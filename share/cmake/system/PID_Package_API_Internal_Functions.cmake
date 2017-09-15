@@ -1400,20 +1400,27 @@ endfunction(declare_Package_Dependency)
 function(declare_External_Package_Dependency dep_package optional list_of_versions exact_versions components_list)
 
 set(unused FALSE)
+# 0) check if a version of this dependency is required by another package
+configured_With_Build_Constraints(REQUIRED_VERSION IS_EXACT ${dep_package})
+
 # 1) the package may be required at that time
 # defining if there is either a specific version to use or not
 if(NOT list_of_versions OR list_of_versions STREQUAL "")
-	if(optional)
-		set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY")
-		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
-			add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}") #set the dependency
-		else()
-			set(unused TRUE)
-		endif()
+	if(REQUIRED_VERSION)
+		#TODO
 	else()
-		set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
-		add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
-	endif()#else no message since nohting to say to the user
+		if(optional)
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY")
+			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+				add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}") #set the dependency
+			else()
+				set(unused TRUE)
+			endif()
+		else()
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+			add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
+		endif()#else no message since nohting to say to the user
+	endif()
 else()#there are version specified
 	# defining which version to use, if any
 	list(LENGTH list_of_versions SIZE)
@@ -1517,7 +1524,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 			endif()
 		endif()
 	endif()
-	
+
 endif()
 endfunction(declare_External_Package_Dependency)
 

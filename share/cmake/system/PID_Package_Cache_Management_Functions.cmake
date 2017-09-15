@@ -22,28 +22,24 @@
 #############################################################################################
 
 ###
-function(erase_Previous_Build_Constraint_From_Package package)
+function(erase_Previous_Build_Constraint_From_Package)
 #prepare the package constraints to be registered
-if(RECEIVED_CONSTRAINTS)
-	list(APPEND RECEIVED_CONSTRAINTS ${package})
-	list(REMOVE_DUPLICATES RECEIVED_CONSTRAINTS)
-	set(RECEIVED_CONSTRAINTS ${RECEIVED_CONSTRAINTS} CACHE INTERNAL "")
-else()
-	set(RECEIVED_CONSTRAINTS ${package}  CACHE INTERNAL "")
-endif()
-#reset all previous info from this package
-if(RECEIVED_CONSTRAINTS_${package})
-	foreach(dep IN ITEMS ${RECEIVED_CONSTRAINTS_${package}})
-		set(RECEIVED_CONSTRAINTS_${package}_${dep} CACHE INTERNAL "")
-		set(RECEIVED_CONSTRAINTS_${package}_${dep}_EXACT CACHE INTERNAL "")
-	endforeach()
-	set(RECEIVED_CONSTRAINTS_${package} CACHE INTERNAL "")
+if(RECEIVED_CONSTRAINTS) #there were constraints previously registered
+	#reset all previous info from this package
+	if(RECEIVED_CONSTRAINTS_${RECEIVED_CONSTRAINTS})
+		foreach(dep IN ITEMS ${RECEIVED_CONSTRAINTS_${RECEIVED_CONSTRAINTS}})
+			set(RECEIVED_CONSTRAINTS_${RECEIVED_CONSTRAINTS}_${dep} CACHE INTERNAL "")
+			set(RECEIVED_CONSTRAINTS_${RECEIVED_CONSTRAINTS}_${dep}_EXACT CACHE INTERNAL "")
+		endforeach()
+		set(RECEIVED_CONSTRAINTS_${RECEIVED_CONSTRAINTS} CACHE INTERNAL "")
+	endif()
 endif()
 endfunction(erase_Previous_Build_Constraint_From_Package)
 
 ###
 function(set_Build_Constraints_From_Package package)
-	#set the global memory adequatelu
+	#set the global memory adequately
+set(RECEIVED_CONSTRAINTS ${package} CACHE INTERNAL "")
 set(RECEIVED_CONSTRAINTS_${package} ${SET_BUILD_CONSTRAINTS_${package}} CACHE INTERNAL "")
 foreach(dep IN ITEMS ${RECEIVED_CONSTRAINTS_${package}})
 	set(RECEIVED_CONSTRAINTS_${package}_${dep} ${SET_BUILD_CONSTRAINTS_${package}_${dep}} CACHE INTERNAL "")
@@ -52,26 +48,41 @@ endforeach()
 endfunction(set_Build_Constraints_From_Package)
 
 ###
-function(reset_Build_Constraint_Variables_For_Interaction package)
-set(SET_BUILD_CONSTRAINTS CACHE INTERNAL "")#reset the build constraints
-foreach(dep IN ITEMS ${SET_BUILD_CONSTRAINTS_${pachage}})#reset the build constraints passed by a given package
-	set(SET_BUILD_CONSTRAINTS_${pachage}_${dep} CACHE INTERNAL "")
-	set(SET_BUILD_CONSTRAINTS_${pachage}_${dep}_EXACT CACHE INTERNAL "")
+function(reset_Build_Constraint_Variables_For_Interaction)
+foreach(dep IN ITEMS ${SET_BUILD_CONSTRAINTS_${SET_BUILD_CONSTRAINTS}})#reset the build constraints passed by a given package
+	set(SET_BUILD_CONSTRAINTS_${SET_BUILD_CONSTRAINTS}_${dep} CACHE INTERNAL "")
+	set(SET_BUILD_CONSTRAINTS_${SET_BUILD_CONSTRAINTS}_${dep}_EXACT CACHE INTERNAL "")
 endforeach()
-set(SET_BUILD_CONSTRAINTS_${pachage} CACHE INTERNAL "")#reset the build constraints
+set(SET_BUILD_CONSTRAINTS_${SET_BUILD_CONSTRAINTS} CACHE INTERNAL "")#reset the build constraints
+set(SET_BUILD_CONSTRAINTS CACHE INTERNAL "")#reset the build constraints
 endfunction(reset_Build_Constraint_Variables_For_Interaction)
 
 ###
 function(received_Build_Contraints)
-if(SET_BUILD_CONSTRAINTS)
-	erase_Previous_Build_Constraint_From_Package(${SET_BUILD_CONSTRAINTS})
+if(SET_BUILD_CONSTRAINTS)#if another set of constraints is provided then reconfigure, otherwise keep configuration "as is"
+	erase_Previous_Build_Constraint_From_Package()
 	set_Build_Constraints_From_Package(${SET_BUILD_CONSTRAINTS})
-	reset_Build_Constraint_Variables_For_Interaction(${SET_BUILD_CONSTRAINTS})
+	reset_Build_Constraint_Variables_For_Interaction() #need to reset before another package ask for specific constraints
 endif()
 endfunction(received_Build_Contraints)
 
-### HERE TODO : use all the received constraints from one package to configrue dependency alternatives/option chosen
-
+### HERE TODO : use all the received constraints from one package to configure dependency alternatives/option chosen
+function(configured_With_Build_Constraints VERSION IS_EXACT dep_package)
+if(RECEIVED_CONSTRAINTS)
+	set(package ${RECEIVED_CONSTRAINTS})
+	if(RECEIVED_CONSTRAINTS_${package})
+		list(FIND RECEIVED_CONSTRAINTS_${package} ${dep_package} INDEX)
+		if(NOT INDEX EQUAL -1)#the dependency is also used locally
+			set(${VERSION} ${RECEIVED_CONSTRAINTS_${package}_${dep_package}} PARENT_SCOPE)
+			set(${IS_EXACT} ${RECEIVED_CONSTRAINTS_${package}_${dep_package}_EXACT} PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+endif()
+#otherwise no constraint on version
+set(${VERSION} PARENT_SCOPE)
+set(${IS_EXACT} PARENT_SCOPE)
+endfunction(configured_With_Build_Constraints)
 
 #############################################################################################
 ############### API functions for managing platform description variables ###################
