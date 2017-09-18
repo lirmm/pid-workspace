@@ -1280,6 +1280,9 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 		if(optional)
 			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY")
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#manage change of dependency in user description
+					set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY" FORCE)
+				endif()
 				add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}") #set the dependency
 			else()
 				set(unused TRUE)
@@ -1294,8 +1297,11 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 		list(GET list_of_versions 0 version) #by defaut this is the first element in the list that is taken
 		if(SIZE EQUAL 1)#only one dependent version, this is the basic version of the function
 			if(optional)# this dependency is optional
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version by typing ANY")
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or use the only version by typing ANY")
 				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+					if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#manage change of dependency in user description
+						set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or use the only version by typing ANY" FORCE)
+					endif()
 					if(exact_versions)#if TRUE then it is exact
 						add_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
 					else()# no exact version required => not this one
@@ -1305,7 +1311,7 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 					set(unused TRUE)
 				endif()
 			else()# this dependency is NOT optional
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)
 				# no option to set, since no alternative or optional dependency => immediately create the dependency
 				if(exact_versions)#if TRUE then it is exact
 					add_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
@@ -1327,10 +1333,15 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 				return()
 			endif()
 			if(NOT optional OR NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#it is not a deactivated optional dependency
-				list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-				if(INDEX EQUAL -1 )#no possible version found
-					message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value for dependency ${dep_package}.")
-					return()
+				if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#special case where any version was specified
+					list(GET list_of_versions 0 VERSION_AUTOMATICALLY_SELECTED) #taking first version available
+					set(${dep_package}_ALTERNATIVE_VERSION_USED ${VERSION_AUTOMATICALLY_SELECTED} CACHE STRING "Select if ${dep_package} is to be used (input NONE) ot choose among versions : ${available_versions}" FORCE)
+				else()
+					list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+					if(INDEX EQUAL -1 )#no possible version found
+						message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value for dependency ${dep_package}.")
+						return()
+					endif()
 				endif()
 			endif()
 
@@ -1406,6 +1417,9 @@ if(NOT list_of_versions OR list_of_versions STREQUAL "")
 	if(optional)
 		set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY")
 		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#manage change of dependency in user description
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY" FORCE)
+			endif()
 			add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}") #set the dependency
 		else()
 			set(unused TRUE)
@@ -1422,6 +1436,9 @@ else()#there are version specified
 		if(optional)# this dependency is optional
 			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version by typing ANY")
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+				if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#manage change of dependency in user description
+					set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or use the only version by typing ANY" FORCE)
+				endif()
 				if(exact_versions)#if TRUE then it is exact
 					add_External_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
 				else()# no exact version required => not this one
@@ -1431,7 +1448,7 @@ else()#there are version specified
 				set(unused TRUE)
 			endif()
 		else()# this dependency is NOT optional
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)
 			# no option to set, since no alternative or optional dependency => immediately create the dependency
 			if(exact_versions)#if TRUE then it is exact
 				add_External_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
@@ -1453,16 +1470,21 @@ else()#there are version specified
 			return()
 		endif()
 		if(NOT optional OR NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#it is not a deactivated optional dependency
-			list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-			if(INDEX EQUAL -1 )#no possible version found
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value (${${dep_package}_ALTERNATIVE_VERSION_USED}) for dependency ${dep_package}.")
-				return()
+			if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#special case where any version was specified
+				list(GET list_of_versions 0 VERSION_AUTOMATICALLY_SELECTED) #taking first version available
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${VERSION_AUTOMATICALLY_SELECTED} CACHE STRING "Select if ${dep_package} is to be used (input NONE) ot choose among versions : ${available_versions}" FORCE)
+			else()
+				list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+				if(INDEX EQUAL -1 )#no possible version found
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value (${${dep_package}_ALTERNATIVE_VERSION_USED}) for dependency ${dep_package}.")
+					return()
+				endif()
 			endif()
 		endif()
 
 		if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 			set(unused TRUE)
-		else()#if a version if used, configrue it
+		else()#if a version is used, configure it
 			if(exact_versions)
 				list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 				if(INDEX EQUAL -1)#selected version not found in the list of exact versions
@@ -1517,7 +1539,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 			endif()
 		endif()
 	endif()
-	
+
 endif()
 endfunction(declare_External_Package_Dependency)
 
