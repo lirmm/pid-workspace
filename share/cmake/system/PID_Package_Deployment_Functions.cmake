@@ -742,17 +742,18 @@ set(${list_of_versions_with_platform} ${available_binary_package_version_with_pl
 endfunction(get_Available_Binary_Package_Versions)
 
 ### select the version passed as argument in the list of binary versions of a package
-function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_PLATFORM)
-
-foreach(bin IN ITEMS ${list_of_bin_with_platform})
-	string (REGEX REPLACE "^${version}/(.*)$" "\\1" RES ${bin})
-
-	if(NOT RES STREQUAL "${bin}") #match
-		set(${RES_PLATFORM} ${RES} PARENT_SCOPE)
-		return()
-	endif()
-endforeach()
-set(${RES_PLATFORM} PARENT_SCOPE)
+function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_FOR_PLATFORM)
+	message("select_Platform_Binary_For_Version = version =${version} list_of_bin_with_platform=${list_of_bin_with_platform}")
+if(list_of_bin_with_platform)
+	foreach(bin IN ITEMS ${list_of_bin_with_platform})
+		string (REGEX REPLACE "^${version}/(.*)$" "\\1" RES ${bin})
+		if(NOT RES STREQUAL "${bin}") #match
+			set(${RES_FOR_PLATFORM} ${RES} PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
+endif()
+set(${RES_FOR_PLATFORM} PARENT_SCOPE)
 endfunction(select_Platform_Binary_For_Version)
 
 ### deploying a binary package, if necessary. It means that last version is installed and configured in the workspace.  See: download_And_Install_Binary_Package. Constraints: package binary references must be loaded before.
@@ -1242,8 +1243,10 @@ if(NOT available_versions)
 	return()
 endif()
 #now getting the best platform for that version
-select_Platform_Binary_For_Version(${version} "${available_with_platform}" PLATFORM)
-if(NOT PLATFORM)
+message("version=${version} available_with_platform=${available_with_platform}")
+select_Platform_Binary_For_Version(${version} "${available_with_platform}" TARGET_PLATFORM)
+message("TARGET_PLATFORM=${TARGET_PLATFORM}")
+if(NOT TARGET_PLATFORM)
 	message("[PID] ERROR : cannot find the binary version ${version} of package ${package} compatible with current platform.")
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
@@ -1256,7 +1259,7 @@ else()
 endif()
 
 if(RES STREQUAL "UNKNOWN")
-	download_And_Install_External_Package(INSTALLED ${package} ${version} ${PLATFORM})
+	download_And_Install_External_Package(INSTALLED ${package} ${version} ${TARGET_PLATFORM})
 	if(INSTALLED)
 		add_Managed_Package_In_Current_Process(${package} ${version} "SUCCESS" TRUE)
 	else()
