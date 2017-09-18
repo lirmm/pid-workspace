@@ -782,26 +782,40 @@ if(GENERATE_INSTALLER)
 
 	if(PACKAGE_SYSTEM_STRING)
 		if(	DEFINED ${PROJECT_NAME}_LICENSE
-			AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL ""
-			AND NOT LICENSE_IS_OPEN_SOURCE)
-				#if the license is not open source then we do not generate a package with debug info
-				#this requires two step -> first consists in renaming adequately the generated artifcats, second in installing a package with adequate name
-				if(CMAKE_BUILD_TYPE MATCHES Release)#release => generate two packages with two different names but with same content
-					add_custom_target(	package_install
-								COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
-								COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
-								COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
-				else()#debug => do not install the package
-					add_custom_target(	package_install
-								COMMAND ${CMAKE_COMMAND} -E echo ""
-							COMMENT "[PID] debug package not installed in ${${PROJECT_NAME}_INSTALL_PATH}/installers due to license restriction")
-				endif()
+		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+			package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME})
+			if(CLOSED)
+					#if the license is not open source then we do not generate a package with debug info
+					#this requires two step -> first consists in renaming adequately the generated artifcats, second in installing a package with adequate name
+					if(CMAKE_BUILD_TYPE MATCHES Release)#release => generate two packages with two different names but with same content
+						add_custom_target(	package_install
+									COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
+									COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
+									COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+					else()#debug => do not install the package
+						add_custom_target(	package_install
+									COMMAND ${CMAKE_COMMAND} -E echo ""
+								COMMENT "[PID] debug package not installed in ${${PROJECT_NAME}_INSTALL_PATH}/installers due to license restriction")
+					endif()
 
-		else()#license is open source, do as usual
-			add_custom_target(	package_install
-						COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
-						COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
-						COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+			else()#license is open source, do as usual
+				message("${PROJECT_NAME}_LICENSE=${${PROJECT_NAME}_LICENSE} is OPEN")
+				add_custom_target(	package_install
+							COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
+							COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
+							COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+			endif()
+		else()#no license (should never happen) => package is supposed to be closed source
+			if(CMAKE_BUILD_TYPE MATCHES Release)#release => generate two packages with two different names but with same content
+				add_custom_target(	package_install
+							COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
+							COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
+							COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+			else()#debug => do not install the package
+				add_custom_target(	package_install
+							COMMAND ${CMAKE_COMMAND} -E echo ""
+						COMMENT "[PID] debug package not installed in ${${PROJECT_NAME}_INSTALL_PATH}/installers due to license restriction")
+			endif()
 		endif()
 		include(CPack)
 	endif()
@@ -1963,7 +1977,7 @@ function(declare_External_Wrapper_Component_Dependency component dep_package dep
 			message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot find information about package !")
 			return()
 		endif()
-		deploy_External_Package_Version(DEPLOYED ${dep_package} ${${dep_package}_VERSION_STRING} TRUE) #second force reinstall the same package version
+		deploy_External_Package_Version(DEPLOYED ${dep_package} "${${dep_package}_VERSION_STRING}" TRUE) #second force reinstall the same package version
 		if(NOT DEPLOYED)
 			message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot redeploy package binary archive !")
 			return()
