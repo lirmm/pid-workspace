@@ -92,10 +92,9 @@ if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
 		"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_HTML_DIR}")
 
 	# creating the doc target
-	get_target_property(DOC_TARGET doc TYPE)
-	if(NOT DOC_TARGET)
+	if(NOT TARGET doc)
 		add_custom_target(doc)
-	endif(NOT DOC_TARGET)
+	endif()
 
 	add_dependencies(doc doxygen)
 
