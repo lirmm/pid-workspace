@@ -1455,7 +1455,7 @@ else()#there are version specified
 		if(NOT optional OR NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#it is not a deactivated optional dependency
 			list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 			if(INDEX EQUAL -1 )#no possible version found
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value for dependency ${dep_package}.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value (${${dep_package}_ALTERNATIVE_VERSION_USED}) for dependency ${dep_package}.")
 				return()
 			endif()
 		endif()
