@@ -606,25 +606,48 @@ else() #first checks OK now parsing version related arguments
 endif()
 endmacro(declare_PID_Package_Dependency)
 
-function(used_Package_Dependency dep_package USED VERSION)
+### Get information about a dependency so that it can help the user configure the build
+function(used_Package_Dependency)
+set(oneValueArgs USED VERSION PACKAGE)
+cmake_parse_arguments(USED_PACKAGE_DEPENDENCY "" "${oneValueArgs}" "" ${ARGN} )
+
+if(NOT USED_PACKAGE_DEPENDENCY_PACKAGE)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling used_Package_Dependency you specified no dependency name using PACKAGE keyword")
+	return()
+endif()
+set(dep_package ${USED_PACKAGE_DEPENDENCY_PACKAGE})
+set(package_found TRUE)
 list(FIND ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package} INDEX)
 if(INDEX EQUAL -1)
 	list(FIND ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package} INDEX)
 	if(INDEX EQUAL -1)
-		set(${USED} FALSE PARENT_SCOPE)
-		set(${VERSION} PARENT_SCOPE)#by definition no version used
-		return()
+		set(package_found FALSE)
 	else()
 		set(IS_EXTERNAL TRUE)
 	endif()
 endif()
-#from here it has been found
-set(${USED} TRUE PARENT_SCOPE)
-if(IS_EXTERNAL)#it is an external package
-	set(${VERSION} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} PARENT_SCOPE)#by definition no version used
-else()#it is a native package
-	set(${VERSION} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} PARENT_SCOPE)#by definition no version used
+
+if(USED_PACKAGE_DEPENDENCY_USED)
+	if(package_found)
+		set(${USED_PACKAGE_DEPENDENCY_USED} TRUE PARENT_SCOPE)
+	else()
+		set(${USED_PACKAGE_DEPENDENCY_USED} FALSE PARENT_SCOPE)
+	endif()
 endif()
+
+if(USED_PACKAGE_DEPENDENCY_VERSION)
+	if(package_found)
+		#from here it has been found so it may have a version
+		if(IS_EXTERNAL)#it is an external package
+			set(${USED_PACKAGE_DEPENDENCY_VERSION} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} PARENT_SCOPE)#by definition no version used
+		else()#it is a native package
+			set(${USED_PACKAGE_DEPENDENCY_VERSION} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} PARENT_SCOPE)#by definition no version used
+		endif()
+	else()
+		set(${USED_PACKAGE_DEPENDENCY_VERSION} FALSE PARENT_SCOPE)
+	endif()
+endif()
+
 endfunction(used_Package_Dependency dep_package)
 
 ### API : declare_PID_Component_Dependency (	COMPONENT name
