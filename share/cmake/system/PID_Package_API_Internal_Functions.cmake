@@ -1975,7 +1975,6 @@ function(declare_External_Wrapper_Component_Dependency component dep_package dep
 		return()
 	endif()
 	will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
-	message("declare_External_Wrapper_Component_Dependency dep_package=${dep_package} ${dep_package}_HAS_DESCRIPTION=${${dep_package}_HAS_DESCRIPTION} version=${${dep_package}_VERSION_STRING}")
 	if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
 		message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
 		install_External_Package(INSTALL_OK ${dep_package} TRUE)#force the reinstall

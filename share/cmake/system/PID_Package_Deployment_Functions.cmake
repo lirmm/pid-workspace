@@ -747,7 +747,6 @@ endfunction(get_Available_Binary_Package_Versions)
 
 ### select the version passed as argument in the list of binary versions of a package
 function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_FOR_PLATFORM)
-	message("select_Platform_Binary_For_Version => version =${version} list_of_bin_with_platform=${list_of_bin_with_platform}")
 if(list_of_bin_with_platform)
 	foreach(bin IN ITEMS ${list_of_bin_with_platform})
 		string (REGEX REPLACE "^${version}/(.*)$" "\\1" RES ${bin})
@@ -1204,7 +1203,6 @@ if(SELECTED) # if there is ONE adequate reference, downloading and installing it
 	if(PACKAGE_BINARY_DEPLOYED)
 		message("[PID] INFO : external package ${package} (version ${SELECTED}) has been installed.")
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
-		message("install_External_Package package=${package} has description=${${package}_HAS_DESCRIPTION}")
 		return()
 	else()
 		message("[PID] ERROR : external package ${package} (version ${SELECTED}) cannot be deployed.")
