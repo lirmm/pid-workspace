@@ -100,7 +100,11 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : package ${package} needs to install following packages : ${TO_INSTALL_EXTERNAL_DEPS}")
 		endif()
-		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
+		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES NOT_INSTALLED_PACKAGES)
+		if(NOT_INSTALLED_PACKAGES)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external packages: ${NOT_INSTALLED_PACKAGES}. This is an internal bug maybe due to bad references on these packages.")
+			return()
+		endif()
 		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
 			resolve_External_Package_Dependency(${package} ${installed} ${mode})
 			if(NOT ${installed}_FOUND)
@@ -1063,10 +1067,10 @@ endfunction(download_And_Install_Binary_Package)
 #############################################################################################
 
 ### resolving the version to use for the external package according to current build constraints. Constraints: package binary references must be loaded before.
-function(resolve_Required_External_Package_Version selected_version package)
+function(resolve_Required_External_Package_Version SELECTED_VERSION package)
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
-	set(${selected_version} PARENT_SCOPE)
+	set(${SELECTED_VERSION} PARENT_SCOPE)
 	message("[PID] ERROR : impossible to find a version of external package ${package} that conforms to current platform constraints.")
 	return()
 endif()
@@ -1080,10 +1084,10 @@ if(NOT ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 				set(CURRENT_VERSION ${ref})
 			endif()
 		endforeach()
-		set(${selected_version} "${CURRENT_VERSION}" PARENT_SCOPE)
+		set(${SELECTED_VERSION} "${CURRENT_VERSION}" PARENT_SCOPE)
 		return()
 	else()
-		set(${selected_version} PARENT_SCOPE)
+		set(${SELECTED_VERSION} PARENT_SCOPE)
 		message("[PID] ERROR : impossible to find a valid reference to any version of external package ${package}.")
 		return()
 	endif()
@@ -1096,10 +1100,10 @@ else()#specific version(s) required (common case)
 	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}})
 		if(CURRENT_EXACT)
 			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX}) #impossible to find two different exact versions solution
-				set(${selected_version} PARENT_SCOPE)
+				set(${SELECTED_VERSION} PARENT_SCOPE)
 				return()
 			elseif(${version} VERSION_GREATER ${CURRENT_VERSION})#any not exact version that is greater than current exact one makes the solution impossible
-				set(${selected_version} PARENT_SCOPE)
+				set(${SELECTED_VERSION} PARENT_SCOPE)
 				return()
 			endif()
 		else()
@@ -1108,7 +1112,7 @@ else()#specific version(s) required (common case)
 					set(CURRENT_EXACT TRUE)
 					set(CURRENT_VERSION ${version})
 				else()# current version is greater than exact one currently required => impossible
-					set(${selected_version} PARENT_SCOPE)
+					set(${SELECTED_VERSION} PARENT_SCOPE)
 					return()
 				endif()
 
@@ -1126,7 +1130,7 @@ else()#specific version(s) required (common case)
 		if(NOT ${version} VERSION_EQUAL ${CURRENT_VERSION})
 			if(DEFINED ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO
 			AND NOT ${CURRENT_VERSION} VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
-				set(${selected_version} PARENT_SCOPE) #there is no solution
+				set(${SELECTED_VERSION} PARENT_SCOPE) #there is no solution
 				return()
 			endif()
 		endif()
@@ -1135,13 +1139,13 @@ else()#specific version(s) required (common case)
 	#3) testing if there is a binary package with adequate platform constraints for the current version
 	list(FIND available_versions ${CURRENT_VERSION} INDEX)
 	if(INDEX EQUAL -1) #a package binary for that version has not been found
-		set(${selected_version} PARENT_SCOPE) #there is no solution
+		set(${SELECTED_VERSION} PARENT_SCOPE) #there is no solution
 		return()
 	endif()
 
 endif()
 
-set(${selected_version} "${CURRENT_VERSION}" PARENT_SCOPE)
+set(${SELECTED_VERSION} "${CURRENT_VERSION}" PARENT_SCOPE)
 endfunction(resolve_Required_External_Package_Version)
 
 ### functio used to uninstall an external package from the workspace
@@ -1181,7 +1185,7 @@ set(${RES} TRUE PARENT_SCOPE)
 endfunction(memorize_External_Binary_References)
 
 ### function used to install a single external package. It leads to the resolution of the adequate package version and the deployment of that version. See: deploy_External_Package_Version and resolve_Required_External_Package_Version.
-function(install_External_Package INSTALL_OK package)
+function(install_External_Package INSTALL_OK package force)
 
 # 0) test if reference of the external package exists in the workspace
 memorize_External_Binary_References(RES ${package})
@@ -1196,10 +1200,11 @@ resolve_Required_External_Package_Version(SELECTED ${package})
 if(SELECTED) # if there is ONE adequate reference, downloading and installing it
 	#2) installing package
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
-	deploy_External_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${SELECTED} FALSE)
+	deploy_External_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${SELECTED} ${force})
 	if(PACKAGE_BINARY_DEPLOYED)
 		message("[PID] INFO : external package ${package} (version ${SELECTED}) has been installed.")
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
+		message("install_External_Package package=${package} has description=${${package}_HAS_DESCRIPTION}")
 		return()
 	else()
 		message("[PID] ERROR : external package ${package} (version ${SELECTED}) cannot be deployed.")
@@ -1212,12 +1217,12 @@ set(${INSTALL_OK} FALSE PARENT_SCOPE)
 endfunction(install_External_Package)
 
 ### function used to install a list of external packages. See : install_External_Package.
-function(install_Required_External_Packages list_of_packages_to_install INSTALLED_PACKAGES)
+function(install_Required_External_Packages list_of_packages_to_install INSTALLED_PACKAGES NOT_INSTALLED_PACKAGES)
 set(successfully_installed "")
 set(not_installed "")
 foreach(dep_package IN ITEMS ${list_of_packages_to_install}) #while there are still packages to install
 	set(INSTALL_OK FALSE)
-	install_External_Package(INSTALL_OK ${dep_package})
+	install_External_Package(INSTALL_OK ${dep_package} FALSE)
 	if(INSTALL_OK)
 		list(APPEND successfully_installed ${dep_package})
 	else()
@@ -1229,6 +1234,7 @@ if(successfully_installed)
 endif()
 if(not_installed)
 	message("[PID] ERROR : some of the required external packages cannot be installed : ${not_installed}.")
+	set(${NOT_INSTALLED_PACKAGES} ${not_installed} PARENT_SCOPE)
 endif()
 endfunction(install_Required_External_Packages)
 
@@ -1268,8 +1274,8 @@ if(RES STREQUAL "UNKNOWN")
 	endif()
 
 	#5) checking for platform constraints
-	configure_External_Package(${package} ${version} Debug)
-	configure_External_Package(${package} ${version} Release)
+	configure_External_Package(${package} ${version} ${TARGET_PLATFORM} Debug)
+	configure_External_Package(${package} ${version} ${TARGET_PLATFORM} Release)
 
 elseif(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be install during current process
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
@@ -1407,7 +1413,7 @@ endfunction(download_And_Install_External_Package)
 
 
 ### configure the external package, after it has been installed. It can lead to the install of OS related packages depending of its system configuration. See: deploy_External_Package_Version.
-function(configure_External_Package package version mode)
+function(configure_External_Package package version platform mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/)
 include(${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
@@ -1422,8 +1428,7 @@ unset(${package}_CURR_DIR)
 set(CONFIGS_TO_CHECK)
 if(${package}_PLATFORM_CONFIGURATIONS)
 	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})#there are configuration constraints in PID v2 style
-elseif(${package}_PLATFORM${VAR_SUFFIX}) # this case may be true if the package binary has been release in old PID v1 style
-	set(platform ${${package}_PLATFORM})
+elseif(${package}_PLATFORM${VAR_SUFFIX} STREQUAL ${platform}) # this case may be true if the package binary has been release in old PID v1 style
 	set(OLD_PLATFORM_CONFIG ${${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}})
 	if(OLD_PLATFORM_CONFIG) #there are required configurations in old style
 		set(CONFIGS_TO_CHECK ${OLD_PLATFORM_CONFIG})#there are configuration constraints in PID v1 style
