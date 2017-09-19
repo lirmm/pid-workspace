@@ -513,9 +513,9 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
 
 else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 	#find the framework in workspace
-	load_Framework(IS_LOADED ${${PROJECT_NAME}_FRAMEWORK})
-	if(NOT IS_LOADED)
-		message(FATAL_ERROR "[PID] ERROR : the framework you specified is unknown in the workspace.")
+	check_Framework(FRAMEWORK_OK ${${PROJECT_NAME}_FRAMEWORK})
+	if(NOT FRAMEWORK_OK)
+		message(FATAL_ERROR "[PID] ERROR : the framework you specified (${${PROJECT_NAME}_FRAMEWORK}) is unknown in the workspace.")
 		return()
 	endif()
 	generate_Package_Page_Index_In_Framework(${PATH_TO_SITE}) # create index page
@@ -1014,6 +1014,28 @@ endif()
 set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
 endfunction(framework_Project_Exists)
 
+### checking that the given framework exists
+function(check_Framework CHECK_OK framework)
+	framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
+	if(REF_EXIST)
+		include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
+		set(${CHECK_OK} TRUE PARENT_SCOPE)
+		return()
+	else()
+		framework_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${framework})
+		if(FOLDER_EXISTS)#generate the reference file on demand
+			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+			framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
+			if(REF_EXIST)
+				include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
+				set(${CHECK_OK} TRUE PARENT_SCOPE)
+				return()
+			endif()
+		endif()
+	endif()
+	set(${CHECK_OK} FALSE PARENT_SCOPE)
+endfunction(check_Framework)
+
 ### putting the framework repository into the workspace, or update it if it is already there
 function(load_Framework LOADED framework)
 	set(${LOADED} FALSE PARENT_SCOPE)
@@ -1025,6 +1047,7 @@ function(load_Framework LOADED framework)
 
 	framework_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${framework})
 	if(FOLDER_EXISTS)
+		message("[PID] INFO: updating framework ${framework} (this may take a long time)")
 		update_Framework_Repository(${framework}) #update the repository to be sure to work on last version
 		if(NOT REF_EXIST) #if reference file does not exist we use the project present in the workspace. This way we may force it to generate references
 			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
@@ -1037,6 +1060,7 @@ function(load_Framework LOADED framework)
 			set(${LOADED} TRUE PARENT_SCOPE)
 		endif()
 	elseif(REF_EXIST) #we can try to clone it if we know where to clone from
+		message("[PID] INFO: deploying framework ${framework} in workspace (this may take a long time)")
 		deploy_Framework_Repository(IS_DEPLOYED ${framework})
 		if(IS_DEPLOYED)
 			set(${LOADED} TRUE PARENT_SCOPE)
