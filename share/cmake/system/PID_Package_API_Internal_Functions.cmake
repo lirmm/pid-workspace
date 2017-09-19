@@ -600,6 +600,13 @@ if(INSTALL_REQUIRED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} has automatically installed the following external packages : ${INSTALLED_PACKAGES}.")
 		endif()
+		if(NOT_INSTALLED)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${PROJECT_NAME}, there are some unresolved required external package dependencies : ${NOT_INSTALLED}.")
+			return()
+		endif()
+		foreach(a_dep IN ITEMS ${INSTALLED_PACKAGES})
+			resolve_External_Package_Dependency(${PROJECT_NAME} ${a_dep} ${CMAKE_BUILD_TYPE})
+		endforeach()
 	else()
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option to install them automatically.")
 		return()
@@ -1968,22 +1975,15 @@ function(declare_External_Wrapper_Component_Dependency component dep_package dep
 		return()
 	endif()
 	will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
-
-	if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
-		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} is not defined !")
-		return()
-	elseif(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
+	message("declare_External_Wrapper_Component_Dependency dep_package=${dep_package} ${dep_package}_HAS_DESCRIPTION=${${dep_package}_HAS_DESCRIPTION} version=${${dep_package}_VERSION_STRING}")
+	if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
 		message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
-		memorize_External_Binary_References(RES ${dep_package})
-		if(NOT RES)
-			message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot find information about package !")
-			return()
-		endif()
-		deploy_External_Package_Version(DEPLOYED ${dep_package} "${${dep_package}_VERSION_STRING}" TRUE) #second force reinstall the same package version
-		if(NOT DEPLOYED)
+		install_External_Package(INSTALL_OK ${dep_package} TRUE)#force the reinstall
+		if(NOT INSTALL_OK)
 			message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot redeploy package binary archive !")
 			return()
 		endif()
+
 		find_package(#configure again the package
 			${dep_package}
 			${${dep_package}_VERSION_STRING} #use the version already in use
