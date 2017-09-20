@@ -1969,67 +1969,66 @@ endfunction(collect_Links_And_Flags_For_External_Component)
 ### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of ${dep_component}, if any => definitions are not exported
 ### dep_defs  : definitions in the interface of ${dep_component} that must be defined when ${component} uses ${dep_component}, if any => definitions are exported if dep_component is exported
 function(declare_External_Wrapper_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
-	will_be_Built(COMP_WILL_BE_BUILT ${component})
-	if(NOT COMP_WILL_BE_BUILT)
+
+will_be_Built(COMP_WILL_BE_BUILT ${component})
+if(NOT COMP_WILL_BE_BUILT)
+	return()
+endif()
+if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
+	message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
+	install_External_Package(INSTALL_OK ${dep_package} TRUE)#force the reinstall
+	if(NOT INSTALL_OK)
+		message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot redeploy package binary archive !")
 		return()
 	endif()
-	will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
-	if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
-		message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
-		install_External_Package(INSTALL_OK ${dep_package} TRUE)#force the reinstall
-		if(NOT INSTALL_OK)
-			message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot redeploy package binary archive !")
-			return()
-		endif()
 
-		find_package(#configure again the package
-			${dep_package}
-			${${dep_package}_VERSION_STRING} #use the version already in use
-			EXACT
-			MODULE
-			REQUIRED
-		)
-		if(NOT ${dep_package}_HAS_DESCRIPTION)
-			#description still unavailable => fatal error
-			message (FATAL_ERROR "[PID] CRITICAL ERROR after reinstalling package ${dep_package} in ${PROJECT_NAME} : the project has no description of its content !")
-			return()
-		endif()
-		message ("[PID] INFO when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} now provides content description.")
-	else()
-
-	#guarding depending on type of involved components
-	is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
-	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
-
-	#I need first to collect (recursively) all links and flags using the adequate variables (same as for native or close).
-	collect_Links_And_Flags_For_External_Component(${dep_package} ${dep_component} RES_INCS RES_DEFS RES_OPTS RES_LINKS_ST RES_LINKS_SH RES_RUNTIME)
-	#message("AFTER collect_Links_And_Flags_For_External_Component for ${dep_component} of package ${dep_package}:\n RES_INCS=${RES_INCS}\n RES_DEFS=${RES_DEFS}\n RES_OPTS=${RES_OPTS}\n RES_LINKS=${RES_LINKS}\n RES_RUNTIME=${RES_RUNTIME}")
-	set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
-	set(ALL_LINKS ${RES_LINKS_ST} ${RES_LINKS_SH})
-
-	if (IS_HF_COMP)
-		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_LINKS_SH}" "${RES_RUNTIME}")
-		endif()
-		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
-	elseif(IS_BUILT_COMP)
-		#configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
-		#prepare the dependancy export
-		set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
-		configure_Install_Variables(${component} ${export} "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${runtime_resources}")
-
-		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
-	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
-		#prepare the dependancy export
-		configure_Install_Variables(${component} TRUE "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${runtime_resources}") #export is necessarily true for a pure header library
-
-		# setting compile definitions for the "fake" target
-		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
-	else()
-		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
+	find_package(#configure again the package
+		${dep_package}
+		${${dep_package}_VERSION_STRING} #use the version already in use
+		EXACT
+		MODULE
+		REQUIRED
+	)
+	if(NOT ${dep_package}_HAS_DESCRIPTION)
+		#description still unavailable => fatal error
+		message (FATAL_ERROR "[PID] CRITICAL ERROR after reinstalling package ${dep_package} in ${PROJECT_NAME} : the project has no description of its content !")
+		return()
 	endif()
+	message ("[PID] INFO when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} now provides content description.")
+endif()
+
+will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
+#guarding depending on type of involved components
+is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
+is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+
+#I need first to collect (recursively) all links and flags using the adequate variables (same as for native or close).
+collect_Links_And_Flags_For_External_Component(${dep_package} ${dep_component} RES_INCS RES_DEFS RES_OPTS RES_LINKS_ST RES_LINKS_SH RES_RUNTIME)
+set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
+set(ALL_LINKS ${RES_LINKS_ST} ${RES_LINKS_SH})
+
+if (IS_HF_COMP)
+	if(COMP_WILL_BE_INSTALLED)
+		configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_LINKS_SH}" "${RES_RUNTIME}")
+	endif()
+	# setting compile definitions for the target
+	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
+elseif(IS_BUILT_COMP)
+	#configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
+	#prepare the dependancy export
+	set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
+	configure_Install_Variables(${component} ${export} "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${runtime_resources}")
+
+	# setting compile definitions for the target
+	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
+elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+	#prepare the dependancy export
+	configure_Install_Variables(${component} TRUE "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${runtime_resources}") #export is necessarily true for a pure header library
+
+	# setting compile definitions for the "fake" target
+	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
+else()
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()
 
 endfunction(declare_External_Wrapper_Component_Dependency)
