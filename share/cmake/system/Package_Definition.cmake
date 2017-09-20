@@ -971,7 +971,7 @@ endmacro(declare_PID_External_Package_Dependency)
 ### API: used to describe a component inside and external package
 macro(declare_PID_External_Component)
 	set(options)
-	set(oneValueArgs PACKAGE COMPONENT)
+	set(oneValueArgs PACKAGE COMPONENT C_STANDARD CXX_STANDARD)
 	set(multiValueArgs INCLUDES STATIC_LINKS SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
 
 	cmake_parse_arguments(DECLARE_PID_EXTERNAL_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -1009,6 +1009,33 @@ macro(declare_PID_External_Component)
 	set(${curr_ext_package}_${curr_ext_comp}_OPTS${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_COMPILER_OPTIONS} CACHE INTERNAL "")
 	#manage definitions
 	set(${curr_ext_package}_${curr_ext_comp}_DEFS${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_DEFINITIONS} CACHE INTERNAL "")
+
+	#manage C standard in USE
+	if(DECLARE_PID_EXTERNAL_COMPONENT_C_STANDARD)
+		set(c_language_standard ${DECLARE_PID_EXTERNAL_COMPONENT_C_STANDARD})
+		if(	NOT c_language_standard EQUAL 90
+		AND NOT c_language_standard EQUAL 99
+		AND NOT c_language_standard EQUAL 11)
+			message("[PID] ERROR : bad C_STANDARD argument for component ${curr_ext_comp} from external package ${curr_ext_package}, the value used must be 90, 99 or 11.")
+		endif()
+	else() #default language standard is first standard
+		set(c_language_standard 90)
+	endif()
+	set(${curr_ext_package}_${curr_ext_comp}_C_STANDARD${VAR_SUFFIX} ${c_language_standard} CACHE INTERNAL "")
+
+	if(DECLARE_PID_EXTERNAL_COMPONENT_CXX_STANDARD)
+		set(cxx_language_standard ${DECLARE_PID_EXTERNAL_COMPONENT_CXX_STANDARD})
+		if(	NOT cxx_language_standard EQUAL 98
+		AND NOT cxx_language_standard EQUAL 11
+		AND NOT cxx_language_standard EQUAL 14
+		AND NOT cxx_language_standard EQUAL 17 )
+		message(FATAL_ERROR "[PID] ERROR : bad CXX_STANDARD argument for component ${curr_ext_comp} from external package ${curr_ext_package}, the value used must be 98, 11, 14 or 17.")
+		endif()
+	else() #default language standard is first standard
+		set(cxx_language_standard 98)
+	endif()
+	#manage definitions
+	set(${curr_ext_package}_${curr_ext_comp}_CXX_STANDARD${VAR_SUFFIX} ${cxx_language_standard} CACHE INTERNAL "")
 
 	#manage links
 	set(links)
@@ -1093,9 +1120,10 @@ macro(declare_PID_External_Component_Dependency)
 
 	#configuraing target package
 	if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL)
-		if(NOT ${LOCAL_PACKAGE}_EXTERNAL_DEPENDENCY_${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL}_VERSION${VAR_SUFFIX})
+		list(FIND ${LOCAL_PACKAGE}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL} INDEX)
+		if(INDEX EQUAL -1)
 			# the external package is using the dependent package
-			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL} not defined as a dependency of external package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}.")
+			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL} is not defined as a dependency of external package ${LOCAL_PACKAGE}.")
 			return()
 		endif()
 		set(TARGET_PACKAGE ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL})
