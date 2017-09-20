@@ -1413,11 +1413,11 @@ endfunction(download_And_Install_External_Package)
 ### configure the external package, after it has been installed. It can lead to the install of OS related packages depending of its system configuration. See: deploy_External_Package_Version.
 function(configure_External_Package package version platform mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/)
-include(${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share)
+include(${${package}_CURR_DIR}/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
 #using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
 if(res STREQUAL NOTFOUND)
-	# no platform usage file => nothing to do
+	# no usage file => nothing to do
 	return()
 endif()
 unset(${package}_CURR_DIR)
