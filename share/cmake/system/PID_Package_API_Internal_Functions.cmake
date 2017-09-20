@@ -594,11 +594,19 @@ if(INSTALL_REQUIRED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} try to resolve required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}.")
 		endif()
-		set(INSTALLED_PACKAGES "")
-		install_Required_External_Packages("${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES)
+		set(INSTALLED_PACKAGES)
+		set(NOT_INSTALLED)
+		install_Required_External_Packages("${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES NOT_INSTALLED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} has automatically installed the following external packages : ${INSTALLED_PACKAGES}.")
 		endif()
+		if(NOT_INSTALLED)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${PROJECT_NAME}, there are some unresolved required external package dependencies : ${NOT_INSTALLED}.")
+			return()
+		endif()
+		foreach(a_dep IN ITEMS ${INSTALLED_PACKAGES})
+			resolve_External_Package_Dependency(${PROJECT_NAME} ${a_dep} ${CMAKE_BUILD_TYPE})
+		endforeach()
 	else()
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option to install them automatically.")
 		return()
@@ -612,7 +620,8 @@ if(INSTALL_REQUIRED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} try to solve required native package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}")
 		endif()
-		set(INSTALLED_PACKAGES "")
+		set(INSTALLED_PACKAGES)
+		set(NOT_INSTALLED)
 		install_Required_Packages("${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES NOT_INSTALLED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} has automatically installed the following native packages : ${INSTALLED_PACKAGES}")
@@ -640,7 +649,7 @@ if(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
 endif()
 
 if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-	# 1) resolving dependencies of required packages versions (different versions can be required at the same time)
+	# 1) resolving dependencies of required native packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
  		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
@@ -782,26 +791,39 @@ if(GENERATE_INSTALLER)
 
 	if(PACKAGE_SYSTEM_STRING)
 		if(	DEFINED ${PROJECT_NAME}_LICENSE
-			AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL ""
-			AND NOT LICENSE_IS_OPEN_SOURCE)
-				#if the license is not open source then we do not generate a package with debug info
-				#this requires two step -> first consists in renaming adequately the generated artifcats, second in installing a package with adequate name
-				if(CMAKE_BUILD_TYPE MATCHES Release)#release => generate two packages with two different names but with same content
-					add_custom_target(	package_install
-								COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
-								COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
-								COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
-				else()#debug => do not install the package
-					add_custom_target(	package_install
-								COMMAND ${CMAKE_COMMAND} -E echo ""
-							COMMENT "[PID] debug package not installed in ${${PROJECT_NAME}_INSTALL_PATH}/installers due to license restriction")
-				endif()
+		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+			package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME})
+			if(CLOSED)
+					#if the license is not open source then we do not generate a package with debug info
+					#this requires two step -> first consists in renaming adequately the generated artifcats, second in installing a package with adequate name
+					if(CMAKE_BUILD_TYPE MATCHES Release)#release => generate two packages with two different names but with same content
+						add_custom_target(	package_install
+									COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
+									COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
+									COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+					else()#debug => do not install the package
+						add_custom_target(	package_install
+									COMMAND ${CMAKE_COMMAND} -E echo ""
+								COMMENT "[PID] debug package not installed in ${${PROJECT_NAME}_INSTALL_PATH}/installers due to license restriction")
+					endif()
 
-		else()#license is open source, do as usual
-			add_custom_target(	package_install
-						COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
-						COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
-						COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+			else()#license is open source, do as usual
+				add_custom_target(	package_install
+							COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
+							COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
+							COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+			endif()
+		else()#no license (should never happen) => package is supposed to be closed source
+			if(CMAKE_BUILD_TYPE MATCHES Release)#release => generate two packages with two different names but with same content
+				add_custom_target(	package_install
+							COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
+							COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
+							COMMENT "[PID] installing ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} in ${${PROJECT_NAME}_INSTALL_PATH}/installers")
+			else()#debug => do not install the package
+				add_custom_target(	package_install
+							COMMAND ${CMAKE_COMMAND} -E echo ""
+						COMMENT "[PID] debug package not installed in ${${PROJECT_NAME}_INSTALL_PATH}/installers due to license restriction")
+			endif()
 		endif()
 		include(CPack)
 	endif()
@@ -1280,6 +1302,9 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 		if(optional)
 			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY")
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#manage change of dependency in user description
+					set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY" FORCE)
+				endif()
 				add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}") #set the dependency
 			else()
 				set(unused TRUE)
@@ -1294,8 +1319,11 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 		list(GET list_of_versions 0 version) #by defaut this is the first element in the list that is taken
 		if(SIZE EQUAL 1)#only one dependent version, this is the basic version of the function
 			if(optional)# this dependency is optional
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version by typing ANY")
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or use the only version by typing ANY")
 				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+					if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#manage change of dependency in user description
+						set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or use the only version by typing ANY" FORCE)
+					endif()
 					if(exact_versions)#if TRUE then it is exact
 						add_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
 					else()# no exact version required => not this one
@@ -1305,7 +1333,7 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 					set(unused TRUE)
 				endif()
 			else()# this dependency is NOT optional
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)
 				# no option to set, since no alternative or optional dependency => immediately create the dependency
 				if(exact_versions)#if TRUE then it is exact
 					add_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
@@ -1327,10 +1355,15 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 				return()
 			endif()
 			if(NOT optional OR NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#it is not a deactivated optional dependency
-				list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-				if(INDEX EQUAL -1 )#no possible version found
-					message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value for dependency ${dep_package}.")
-					return()
+				if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#special case where any version was specified
+					list(GET list_of_versions 0 VERSION_AUTOMATICALLY_SELECTED) #taking first version available
+					set(${dep_package}_ALTERNATIVE_VERSION_USED ${VERSION_AUTOMATICALLY_SELECTED} CACHE STRING "Select if ${dep_package} is to be used (input NONE) ot choose among versions : ${available_versions}" FORCE)
+				else()
+					list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+					if(INDEX EQUAL -1 )#no possible version found
+						message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value for dependency ${dep_package}.")
+						return()
+					endif()
 				endif()
 			endif()
 
@@ -1406,8 +1439,16 @@ configured_With_Build_Constraints(REQUIRED_VERSION IS_EXACT ${dep_package})
 # 1) the package may be required at that time
 # defining if there is either a specific version to use or not
 if(NOT list_of_versions OR list_of_versions STREQUAL "")
-	if(REQUIRED_VERSION)
-		#TODO
+	if(optional)
+		set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY")
+		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#manage change of dependency in user description
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY" FORCE)
+			endif()
+			add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}") #set the dependency
+		else()
+			set(unused TRUE)
+		endif()
 	else()
 		if(optional)
 			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version is to be used by typing ANY")
@@ -1429,6 +1470,9 @@ else()#there are version specified
 		if(optional)# this dependency is optional
 			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or any version by typing ANY")
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
+				if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#manage change of dependency in user description
+					set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select if ${dep_package} is to be NOT used by typing NONE or use the only version by typing ANY" FORCE)
+				endif()
 				if(exact_versions)#if TRUE then it is exact
 					add_External_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
 				else()# no exact version required => not this one
@@ -1438,7 +1482,7 @@ else()#there are version specified
 				set(unused TRUE)
 			endif()
 		else()# this dependency is NOT optional
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)
 			# no option to set, since no alternative or optional dependency => immediately create the dependency
 			if(exact_versions)#if TRUE then it is exact
 				add_External_Package_Dependency_To_Cache(${dep_package} "${version}" TRUE "${list_of_components}") #set the dependency
@@ -1460,16 +1504,21 @@ else()#there are version specified
 			return()
 		endif()
 		if(NOT optional OR NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#it is not a deactivated optional dependency
-			list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-			if(INDEX EQUAL -1 )#no possible version found
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value for dependency ${dep_package}.")
-				return()
+			if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#special case where any version was specified
+				list(GET list_of_versions 0 VERSION_AUTOMATICALLY_SELECTED) #taking first version available
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${VERSION_AUTOMATICALLY_SELECTED} CACHE STRING "Select if ${dep_package} is to be used (input NONE) ot choose among versions : ${available_versions}" FORCE)
+			else()
+				list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+				if(INDEX EQUAL -1 )#no possible version found
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value (${${dep_package}_ALTERNATIVE_VERSION_USED}) for dependency ${dep_package}.")
+					return()
+				endif()
 			endif()
 		endif()
 
 		if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 			set(unused TRUE)
-		else()#if a version if used, configrue it
+		else()#if a version is used, configure it
 			if(exact_versions)
 				list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 				if(INDEX EQUAL -1)#selected version not found in the list of exact versions
@@ -1937,22 +1986,14 @@ function(declare_External_Wrapper_Component_Dependency component dep_package dep
 		return()
 	endif()
 	will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
-
-	if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
-		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} is not defined !")
-		return()
-	elseif(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
+	if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
 		message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
-		memorize_External_Binary_References(RES ${dep_package})
-		if(NOT RES)
-			message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot find information about package !")
-			return()
-		endif()
-		deploy_External_Package_Version(DEPLOYED ${dep_package} ${${dep_package}_VERSION_STRING} TRUE) #second force reinstall the same package version
-		if(NOT DEPLOYED)
+		install_External_Package(INSTALL_OK ${dep_package} TRUE)#force the reinstall
+		if(NOT INSTALL_OK)
 			message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot redeploy package binary archive !")
 			return()
 		endif()
+
 		find_package(#configure again the package
 			${dep_package}
 			${${dep_package}_VERSION_STRING} #use the version already in use
