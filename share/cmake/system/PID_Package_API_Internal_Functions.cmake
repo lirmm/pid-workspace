@@ -808,7 +808,6 @@ if(GENERATE_INSTALLER)
 					endif()
 
 			else()#license is open source, do as usual
-				message("${PROJECT_NAME}_LICENSE=${${PROJECT_NAME}_LICENSE} is OPEN")
 				add_custom_target(	package_install
 							COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/${PACKAGE_SOURCE_NAME} ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME}
 							COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PACKAGE_TARGET_NAME} ${${PROJECT_NAME}_INSTALL_PATH}/installers/${PACKAGE_TARGET_NAME}
