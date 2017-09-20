@@ -1,4 +1,2 @@
 set(yaml-cpp_PID_KNOWN_VERSION 0.5.1 0.5.3)
-set(yaml-cpp_PID_KNOWN_VERSION_0.5.1_GREATER_VERSIONS_COMPATIBLE_UP_TO 0.6)
-set(yaml-cpp_PID_KNOWN_VERSION_0.5.3_GREATER_VERSIONS_COMPATIBLE_UP_TO 0.6)
 finding_External_Package(yaml-cpp)
