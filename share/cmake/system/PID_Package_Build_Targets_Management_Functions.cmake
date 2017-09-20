@@ -353,15 +353,15 @@ endif()
 
 # setting compile/linkage definitions for the component target
 if(export)
-	if(NOT ${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")
+	if(NOT ${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")#if component is a not header, everything is used to build
 		set(TEMP_DEFS ${comp_exp_defs} ${ext_defs} ${comp_defs})
 		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "" "${EXT_LINKS}")
 	endif()
-	set(TEMP_DEFS ${comp_exp_defs} ${ext_defs})
+	set(TEMP_DEFS ${comp_exp_defs} ${ext_defs})#only definitions belonging to interfaces are exported (interface of current component + interface of exported component)
 	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "" "${EXT_LINKS}")
 
-else()
-	set(TEMP_DEFS ${comp_defs} ${ext_defs} ${comp_defs})
+else()#otherwise only definitions for interface of the current component is exported
+	set(TEMP_DEFS ${comp_defs} ${ext_defs} ${comp_defs})#everything define for building current component
 	manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "" "${EXT_LINKS}")
 	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "" "${EXT_LINKS}")
 endif()

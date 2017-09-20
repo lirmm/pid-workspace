@@ -761,7 +761,6 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}
 					${export}
-					"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
 					"${comp_defs}"
 					"${comp_exp_defs}"
 					"${dep_defs}")
