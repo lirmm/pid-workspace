@@ -45,6 +45,7 @@ file(APPEND ${file} "set(${PROJECT_NAME}_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTI
 file(APPEND ${file} "set(${PROJECT_NAME}_YEARS ${${PROJECT_NAME}_YEARS} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_ADDRESS ${${PROJECT_NAME}_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_PUBLIC_ADDRESS ${${PROJECT_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_CATEGORIES)
 file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES \"${${PROJECT_NAME}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 else()
@@ -459,7 +460,14 @@ if(${package}_ADDRESS)
 	if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : cloning the repository of source package ${package}...")
 	endif()
-	clone_Repository(DEPLOYED ${package} ${${package}_ADDRESS})
+	if(${package}_PUBLIC_ADDRESS)#there is a public address where to fetch (without any )
+		clone_Repository(DEPLOYED ${package} ${${package}_PUBLIC_ADDRESS}) #we clone from public address
+		if(DEPLOYED)
+			initialize_Git_Repository_Push_Address(${package} ${${package}_ADDRESS})#the push address is modified accordingly
+		endif()
+	else() #basic case where package deployment requires identification : push/fetch address are the same
+		clone_Repository(DEPLOYED ${package} ${${package}_ADDRESS})
+	endif()
 	if(DEPLOYED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : repository of source package ${package} has been cloned.")

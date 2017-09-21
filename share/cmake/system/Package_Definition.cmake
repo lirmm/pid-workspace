@@ -23,7 +23,7 @@ include(CMakeParseArguments)
 
 ### API : declare_PID_Package(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... LICENSE license [ADDRESS address] DESCRIPTION ...)
 macro(declare_PID_Package)
-set(oneValueArgs LICENSE ADDRESS MAIL)
+set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
 cmake_parse_arguments(DECLARE_PID_PACKAGE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_PACKAGE_AUTHOR)
@@ -43,9 +43,14 @@ if(DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS}.")
 endif()
 
+if(NOT DECLARE_PID_PACKAGE_ADDRESS AND DECLARE_PID_PACKAGE_PUBLIC_ADDRESS)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the package must have an adress if a public access adress is declared.")
+endif()
+
 declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${DECLARE_PID_PACKAGE_MAIL}"
 			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}"
-			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_DESCRIPTION}")
+			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_PUBLIC_ADDRESS}"
+			"${DECLARE_PID_PACKAGE_DESCRIPTION}")
 endmacro(declare_PID_Package)
 
 ### API : set_PID_Package_Version(major minor [patch])

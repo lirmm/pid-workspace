@@ -727,19 +727,28 @@ endfunction(set_Package_Repository_Address)
 ###
 function(reset_Package_Repository_Address package new_git_url)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REGEX REPLACE "([ \t\n])ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1 ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
-	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
+	string(REGEX REPLACE "([ \t\n]+)ADDRESS([ \t\n]+)([^ \t\n]+)([ \t\n]+)" "\\1ADDRESS\\2${new_git_url}\\4" NEW_CONTENT ${CONTENT})
+	string(REGEX REPLACE "([ \t\n]+)PUBLIC_ADDRESS([ \t\n]+)([^ \t\n]+)([ \t\n]+)" "\\1PUBLIC_ADDRESS\\2${new_git_url}\\4" FINAL_CONTENT ${NEW_CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${FINAL_CONTENT})
 endfunction(reset_Package_Repository_Address)
 
 ###
-function(get_Package_Repository_Address package RES_URL)
+function(get_Package_Repository_Address package RES_URL RES_PUBLIC_URL)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
+	#checking for restricted address
 	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
 	if(url STREQUAL "${CONTENT}")#no match
-		set(${RES_URL} "" PARENT_SCOPE)
-		return()
+		set(${RES_URL} PARENT_SCOPE)
+	else()
+		set(${RES_URL} ${url} PARENT_SCOPE)
 	endif()
-	set(${RES_URL} ${url} PARENT_SCOPE)
+	#checking for public (fetch only) address
+	string(REGEX REPLACE "^.+[ \t\n]PUBLIC_ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
+	if(url STREQUAL "${CONTENT}")#no match
+		set(${RES_PUBLIC_URL} PARENT_SCOPE)
+	else()
+		set(${RES_PUBLIC_URL} ${url} PARENT_SCOPE)
+	endif()
 endfunction(get_Package_Repository_Address)
 
 ###
