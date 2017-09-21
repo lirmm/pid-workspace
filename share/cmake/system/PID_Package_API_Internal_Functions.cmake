@@ -43,7 +43,7 @@ include(PID_Package_Plugins_Management NO_POLICY_SCOPE)
 ##################################################################################
 ###########################  declaration of the package ##########################
 ##################################################################################
-macro(declare_Package author institution mail year license address description)
+macro(declare_Package author institution mail year license address public_address description)
 
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
@@ -387,7 +387,7 @@ endif()
 #################################################
 reset_Project_Description_Cached_Variables()
 init_PID_Version_Variable()
-init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}")
+init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}")
 check_For_Remote_Respositories("${address}")
 init_Standard_Path_Cache_Variables()
 begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
