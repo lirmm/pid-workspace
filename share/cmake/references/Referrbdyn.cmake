@@ -12,5 +12,6 @@ set(rbdyn_DESCRIPTION PID;version;of;RBDyn:;https://github.com/jrl-umi3218/RBDyn
 set(rbdyn_YEARS 2017 CACHE INTERNAL "")
 set(rbdyn_LICENSE GNULGPL CACHE INTERNAL "")
 set(rbdyn_ADDRESS git@gite.lirmm.fr:rob-miscellaneous/rbdyn.git CACHE INTERNAL "")
+set(rbdyn_PUBLIC_ADDRESS https://gite.lirmm.fr/rob-miscellaneous/rbdyn.git CACHE INTERNAL "")
 set(rbdyn_CATEGORIES CACHE INTERNAL "")
 set(rbdyn_REFERENCES  CACHE INTERNAL "")
