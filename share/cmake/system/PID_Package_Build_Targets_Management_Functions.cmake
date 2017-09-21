@@ -104,7 +104,7 @@ endfunction(filter_Compiler_Options)
 
 
 ###create a module lib target for a newly defined library
-function(create_Module_Lib_Target c_name c_standard c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
+function(create_Module_Lib_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} MODULE ${sources})
 	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
 		LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
