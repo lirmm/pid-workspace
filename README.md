@@ -35,7 +35,8 @@ People that can be interested in using PID are project managers that want to enf
 
 + The dependencies resolution algorithm is not capable to manage many binaries for the same version/same platform of a package. This is notably impacting the way we can deal with external dependencies. For instance boost versions are not compatible between each other if you consider binary libraries like the well known *filesystem* library, due to the fact that they include a restrictive **SO name**. If a package uses a given version of boost its resulting binaries will be bound to this version and you cannot change it (and maybe it would be risky to do this). This way, all other codes depending on your package will also depends on this specific version of boost. In source package, you can of course manage the build with different versions of dependencies but when compiled, this code is bound to a given version and if no compatible version exist all packages using this binary are then bound to this version of external package.
 + considering CI, for now your can build the code for only one platform, not many in parallel. This problem is due to the fact that gitlab-ci for now manage only one pipeline and not many, and we hope this restriction will be relaxed in the future by gilab authors.
-+ management of build environments is not as smart as it could be yet. It would be nice for instance to share environments more or less the same way has packages (with also given platform configuration).
++ management of build environments is not as smart as it could be yet. It would be nice for instance to share environments more or less the same way as packages (with also given platform configuration).
++ management of external packages suffer the same problems, there is nothing to automate the process of building/publishing/describing these packages (but their deployment is automatically managed). Future improvements will manage "wrappers" for external package in order to automate the process as for native packages. 
 
 
 # About the license
@@ -135,11 +136,11 @@ I recommend to read the documentation in this [website](http://pid.lirmm.net/pid
 
 # Remarks about OS portability
 
-PID has been designed to be usable on most of UNIX platforms, relying mainly on a cross platform CMake API. Nevertheless, it has been tested for linux and notably with Ubuntu and Linux Mint. Most of linux distros should work, but some specific codes should be improved to support other distributions (when for instance you want to automatically deploy system packages with other package managers than apt). Except for this aspect, PID should work well in any case.
+PID has been designed to be usable on most of UNIX platforms, relying mainly on a cross platform CMake API. Nevertheless, it has been tested for linux and notably with Ubuntu, Arch Linux and Linux Mint. Most of linux distros should work, but some specific codes should be improved to support other distributions (when for instance you want to automatically deploy system packages with other package managers than apt). Except for this aspect, PID should work well in any case.
 
 -----
 
-For other UNIX system, there is nothing tested. Again most of fonctionnalities should work BUT new platforms have to be defined with adequate OS (Solaris or FreeBSD for instance) and no binary is available for these OS so you will have to generate your own. The previous remarks also applies for the following OS.
+For other UNIX system, there is nothing tested. Again most of functionnalities should work BUT new platforms have to be defined with adequate OS (Solaris or FreeBSD for instance) and no binary is available for these OS so you will have to generate your own. The previous remarks also applies for the following OS.
 
 
 -----
@@ -157,7 +158,7 @@ Any contribution for this popular OS is welcome, being it patch for the PID syst
 
 ----- 
 
-iOS also suffers from the same disadvantage as OSX and the same answer apply here.
+iOS also suffers from the same disadvantage as OSX and the same answer applies here.
 
 ----- 
 
@@ -170,16 +171,21 @@ Anyway any contribution that would make PID work on Windows would be very apprec
 As told previously, any contribution is welcome:
 
 - new functionalities
+- adaptation to new OS
 - patches for BUGS
 - rewriting of comments
 - better documentation (like new tutorials)
 - etc. 
 
-To provide a contribution simply use the pull/merge request mechanism.
+To provide a contribution to the pid-workspace simply use the pull/merge request mechanism. 
+
+If you want to contribute to packages consituting the pid framework that cannot be forked from online repository, simply ask me I will provide them on your favorite online repository hosting service.
+
+If you want to contribute to the documentation of overall pid framework, or to contribute to binary package referencing, I can do the same for the repository describing this framework. 
 
 # Contact
 
-If you have any question, remark, proposal about PID, please contact me using the **issues** of the project. 
+If you have any question, remark, proposal about PID, please contact me using the **issues** of the project.
 
 
 
