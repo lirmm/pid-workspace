@@ -12,5 +12,6 @@ set(open-phri_DESCRIPTION OpenPHRI: a generic framework to easily and safely con
 set(open-phri_YEARS 2017 CACHE INTERNAL "")
 set(open-phri_LICENSE GNULGPL CACHE INTERNAL "")
 set(open-phri_ADDRESS git@github.com:BenjaminNavarro/open-phri.git CACHE INTERNAL "")
+set(open-phri_PUBLIC_ADDRESS https://github.com/BenjaminNavarro/open-phri.git CACHE INTERNAL "")
 set(open-phri_CATEGORIES CACHE INTERNAL "")
 set(open-phri_REFERENCES  CACHE INTERNAL "")
