@@ -12,5 +12,6 @@ set(space-vec-alg_DESCRIPTION PID;version;of;SpaceVecAlg:;https://github.com/jrl
 set(space-vec-alg_YEARS 2017 CACHE INTERNAL "")
 set(space-vec-alg_LICENSE GNULGPL CACHE INTERNAL "")
 set(space-vec-alg_ADDRESS git@gite.lirmm.fr:rob-miscellaneous/space-vec-alg.git CACHE INTERNAL "")
+set(space-vec-alg_PUBLIC_ADDRESS https://gite.lirmm.fr/rob-miscellaneous/space-vec-alg.git CACHE INTERNAL "")
 set(space-vec-alg_CATEGORIES "math/linear_algebra" CACHE INTERNAL "")
 set(space-vec-alg_REFERENCES  CACHE INTERNAL "")
