@@ -24,6 +24,9 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
+include(Package_Definition NO_POLICY_SCOPE) # to be able to interpret description of external components
+set(CMAKE_BUILD_TYPE Release)
+
 # needed to parse adequately CMAKe variables passed to the script
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_INCLUDE_PATH)

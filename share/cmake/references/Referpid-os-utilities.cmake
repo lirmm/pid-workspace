@@ -12,5 +12,6 @@ set(pid-os-utilities_DESCRIPTION Pure C++ utilities used to abstract or simplify
 set(pid-os-utilities_YEARS 2016-2017 CACHE INTERNAL "")
 set(pid-os-utilities_LICENSE CeCILL CACHE INTERNAL "")
 set(pid-os-utilities_ADDRESS git@gite.lirmm.fr:pid/pid-os-utilities.git CACHE INTERNAL "")
+set(pid-os-utilities_PUBLIC_ADDRESS https://gite.lirmm.fr/pid/pid-os-utilities.git CACHE INTERNAL "")
 set(pid-os-utilities_CATEGORIES "programming/operating_system" CACHE INTERNAL "")
 set(pid-os-utilities_REFERENCES  CACHE INTERNAL "")

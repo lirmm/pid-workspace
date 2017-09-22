@@ -25,25 +25,26 @@ set(	LICENSE_NAME 			"LGPL")
 set(	LICENSE_VERSION			"3")
 set(	LICENSE_FULLNAME 		"GNU Lesser General Public License version 3")
 set(	LICENSE_AUTHORS			"the Free Software Foundation")
+set(	LICENSE_IS_OPEN_SOURCE 		TRUE)
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION
-"/* 	File: @PROJECT_FILENAME@
-*	This file is part of the program ${PROJECT_NAME}
-*  	Program description : ${${PROJECT_NAME}_DESCRIPTION}
-*  	Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_LIST}. All Right reserved.
+"/*      File: @PROJECT_FILENAME@
+*       This file is part of the program ${PROJECT_NAME}
+*       Program description : ${${PROJECT_NAME}_DESCRIPTION}
+*       Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_LIST}. All Right reserved.
 *
-*	This software is free software: you can redistribute it and/or modify
-*	it under the terms of the ${LICENSE_NAME} license as published by
-*	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION}
-*	of the License, or (at your option) any later version.
-*	This software is distributed in the hope that it will be useful,
-*	but WITHOUT ANY WARRANTY; without even the implied warranty of
-*	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*	${LICENSE_NAME} License for more details.
+*       This software is free software: you can redistribute it and/or modify
+*       it under the terms of the ${LICENSE_NAME} license as published by
+*       ${LICENSE_AUTHORS}, either version ${LICENSE_VERSION}
+*       of the License, or (at your option) any later version.
+*       This software is distributed in the hope that it will be useful,
+*       but WITHOUT ANY WARRANTY; without even the implied warranty of
+*       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+*       ${LICENSE_NAME} License for more details.
 *
-*	You should have received a copy of the ${LICENSE_FULLNAME} and the
-*	General Public License version 3 along with this program.
-*	If not, see <http://www.gnu.org/licenses/>.
+*       You should have received a copy of the ${LICENSE_FULLNAME} and the
+*       General Public License version 3 along with this program.
+*       If not, see <http://www.gnu.org/licenses/>.
 */
 ")
 

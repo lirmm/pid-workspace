@@ -334,41 +334,62 @@ else()
 endif()
 endfunction(test_Remote_Connection)
 
-###
+### DONE here manage PUBLIC ACCESS repositories
 function(update_Repository_Versions RESULT package)
 go_To_Master(${package})
-is_Package_Connected(CONNECTED ${package} official)
-get_Package_Repository_Address(${package} URL)
+is_Package_Connected(CONNECTED ${package} official) #check if the package has a repository URL defined (fetch)
+get_Package_Repository_Address(${package} URL PUBLIC_URL)
 if(NOT CONNECTED)#no official remote (due to old package style or due to a misuse of git command within a package)
-	if(NOT URL STREQUAL "")
-		message("[PID] WARNING : package ${package} has no official remote defined (malformed package), set it to ${URL}.")
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${URL} ERROR_QUIET OUTPUT_QUIET)
+	if(URL AND NOT URL STREQUAL "")
+		if(PUBLIC_URL AND NOT PUBLIC_URL STREQUAL "")#the package has a public address where anyone can get it
+			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${PUBLIC_URL} ERROR_QUIET OUTPUT_QUIET)
+			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${URL} ERROR_QUIET OUTPUT_QUIET)
+			message("[PID] WARNING : package ${package} has no official remote defined (malformed package), set it to ${URL} (for push) and ${PUBLIC_URL} (for fetch).")
+		else() #default situation
+			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${URL} ERROR_QUIET OUTPUT_QUIET)
+			message("[PID] WARNING : package ${package} has no official remote defined (malformed package), set it to ${URL}.")
+		endif()
 	else() #no official repository and no URL defined for the package => the package has never been connected (normal situation)
 		set(${RESULT} FALSE PARENT_SCOPE)
 		return()
 	endif()
-elseif(NOT URL STREQUAL "") # official package is connected but the address of official is not the same as the one specified in the package description
+elseif(URL AND NOT URL STREQUAL "") # official package is connected
 	get_Remotes_Address(${package} RES_OFFICIAL RES_ORIGIN)#get the adress of the official git remote
-	if(NOT RES_OFFICIAL STREQUAL URL)
-		message("[PID] WARNING : local package ${package} official remote defined in package description (${URL}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in pakage descrition !")
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${URL} ERROR_QUIET OUTPUT_QUIET)
+	if(NOT RES_OFFICIAL STREQUAL URL AND NOT RES_OFFICIAL STREQUAL PUBLIC_URL) #the address of official is not the same as the one specified in the package description
+		if(PUBLIC_URL AND NOT PUBLIC_URL STREQUAL "")#the package has a public address where anyone can get it
+			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${PUBLIC_URL} ERROR_QUIET OUTPUT_QUIET)
+			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${URL} ERROR_QUIET OUTPUT_QUIET)
+			message("[PID] WARNING : local package ${package} official remote defined in package description (push=${URL} fetch=${PUBLIC_URL}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in pakage description !")
+		else() #default situation
+			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${URL} ERROR_QUIET OUTPUT_QUIET)
+			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${URL} ERROR_QUIET OUTPUT_QUIET)
+			message("[PID] WARNING : local package ${package} official remote defined in package description (${URL}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in pakage description !")
+		endif()
 	else()#package remotes are consistent, but this can be an old version of the package before a migration occurred
 		test_Remote_Connection(CONNECTED ${package} official)
 		if(NOT CONNECTED) #problem if not connected a migration occurred, we have to update everything
 			include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake OPTIONAL RESULT_VARIABLE res)
-			if(res STREQUAL NOTFOUND) #reference not founs, may mean the package has been removed
+			if(res STREQUAL NOTFOUND) #reference not found, may mean the package has been removed
 				message("[PID] WARNING : local package ${package} cannot update from its official remote and is not know into workspace, aborting its update ! Please check that the package still exists or try upgrading your workspace.")
 				set(${RESULT} FALSE PARENT_SCOPE) #simply exitting
 				return()
 			endif()
 			#from here the package is known and its reference related variables have been updated
-			if (${package}_ADDRESS STREQUAL RES_OFFICIAL)#OK so no problem detected but cannot interact with the remote repository
+			if (${package}_PUBLIC_ADDRESS STREQUAL RES_OFFICIAL
+				OR ${package}_ADDRESS STREQUAL RES_OFFICIAL)#OK so no problem detected but cannot interact with the remote repository
 				message("[PID] WARNING : local package ${package} cannot be update from its official remote, aborting its update ! Please check your connection.")
 				set(${RESULT} FALSE PARENT_SCOPE) #simply exitting
 				return()
 			else() #for now only updating the official remote address so that update can occur
-				message("[PID] WARNING : local package ${package} official remote defined in workspace (${${package}_ADDRESS}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in workspace !")
-				execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${${package}_ADDRESS} ERROR_QUIET OUTPUT_QUIET)
+				if(PUBLIC_URL AND NOT PUBLIC_URL STREQUAL "")#the package has a public address where anyone can get it
+					execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${${package}_PUBLIC_ADDRESS} ERROR_QUIET OUTPUT_QUIET)
+					execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${${package}_ADDRESS} ERROR_QUIET OUTPUT_QUIET)
+					message("[PID] WARNING : local package ${package} official remote defined in package description (push=${${package}_ADDRESS}, fetch=${${package}_PUBLIC_ADDRESS}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in pakage description !")
+				else() #default situation
+					execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${${package}_ADDRESS} ERROR_QUIET OUTPUT_QUIET)
+					execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${${package}_ADDRESS} ERROR_QUIET OUTPUT_QUIET)
+					message("[PID] WARNING : local package ${package} official remote defined in package description (${${package}_ADDRESS}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in pakage description !")
+				endif()
 				# once the update will be done the official address in description should have changed accordingly
 			endif()
 		endif()
@@ -430,6 +451,7 @@ set(${RESULT} FALSE PARENT_SCOPE)
 endfunction(check_For_New_Commits_To_Release)
 
 ### to know whether a package as a remote or not
+## the connection is tested only on fetch address
 function(is_Package_Connected CONNECTED package remote)
 	git_Provides_GETURL(RESULT)
 	if(RESULT)
@@ -472,6 +494,10 @@ else()
 endif()
 endfunction(clone_Repository)
 
+function(initialize_Git_Repository_Push_Address package url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push origin ${url})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${url})
+endfunction(initialize_Git_Repository_Push_Address)
 
 ### testing if the repository is inialized (from git point of view) according to PID standard (basically it has an integration branch)
 function(test_Remote_Initialized package url INITIALIZED)
@@ -544,6 +570,7 @@ endfunction(connect_Repository)
 ### rare use function: when official repository has moved
 function(reconnect_Repository package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${url})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${url})
 go_To_Master(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull official master)#updating master
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags  OUTPUT_QUIET ERROR_QUIET)
@@ -552,8 +579,14 @@ endfunction(reconnect_Repository)
 
 
 ###
-function(reconnect_Repository_Remote package url remote_name)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url ${remote_name} ${url})
+function(reconnect_Repository_Remote package url public_url remote_name)
+	if(public_url AND NOT public_url STREQUAL "") #if there is a public URL the package is clonable from a public address
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url ${remote_name} ${public_url})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push ${remote_name} ${url})
+	else()#default case => same push and fetch address for remote
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url ${remote_name} ${url})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push ${remote_name} ${url})
+	endif()
 endfunction(reconnect_Repository_Remote)
 
 ### set the origin remote to a completely new address

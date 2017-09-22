@@ -32,5 +32,3 @@ file(COPY ${PATH_TO_FRAMEWORK_SRC}/assets ${PATH_TO_FRAMEWORK_SRC}/_packages ${P
 #2) build site with jekyll
 
 execute_process(COMMAND ${JEKYLL_EXECUTABLE} build -d ${PATH_TO_FRAMEWORK_RESULT} WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_JEKYLL})
-
-

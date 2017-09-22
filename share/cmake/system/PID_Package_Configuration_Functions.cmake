@@ -21,6 +21,31 @@
 ####################### new API => configure the package with dependencies  #####################
 #################################################################################################
 
+function (list_Closed_Source_Dependency_Packages)
+set(CLOSED_PACKS)
+if(${PROJECT_NAME}_ALL_USED_PACKAGES)
+	foreach(pack IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
+		package_License_Is_Closed_Source(CLOSED ${pack})
+		if(CLOSED)
+			list(APPEND CLOSED_PACKS ${pack})
+		endif()
+	endforeach()
+	if(CLOSED_PACKS)
+		list(REMOVE_DUPLICATES CLOSED_PACKS)
+	endif()
+endif()
+set(CLOSED_SOURCE_DEPENDENCIES ${CLOSED_PACKS} CACHE INTERNAL "")
+endfunction(list_Closed_Source_Dependency_Packages)
+
+function(is_Closed_Source_Dependency_Package CLOSED package)
+list(FIND CLOSED_SOURCE_DEPENDENCIES ${package} INDEX)
+if(INDEX EQUAL -1)
+	set(${CLOSED} FALSE PARENT_SCOPE)
+else()#package found in closed source packs => it is closed source
+	set(${CLOSED} TRUE PARENT_SCOPE)
+endif()
+endfunction(is_Closed_Source_Dependency_Package)
+
 ### list all public headers of a component
 function(list_Public_Includes INCLUDES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
@@ -29,7 +54,7 @@ set(RES "${${package}_ROOT_DIR}/include/${${package}_${component}_HEADER_DIR_NAM
 #additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
 if(${package}_${component}_INC_DIRS${mode_suffix})
 	resolve_External_Includes_Path(RES_INCLUDES ${package} "${${package}_${component}_INC_DIRS${VAR_SUFFIX}}" ${mode})
-	set(RES ${RES} ${RES_INCLUDES})
+	list(APPEND RES ${RES_INCLUDES})
 endif()
 set(${INCLUDES} ${RES} PARENT_SCOPE)
 endfunction(list_Public_Includes)
@@ -56,7 +81,32 @@ endfunction(list_Public_Definitions)
 function(list_Public_Options OPTS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${package}_${component}_OPTS${VAR_SUFFIX})
-	set(${OPTS} ${${package}_${component}_OPTS${VAR_SUFFIX}} PARENT_SCOPE)
+	#checking that no compiler option is used directly to set the standard
+	#remove the option and set the standard adequately instead
+	set(FILTERED_OPTS)
+	foreach(opt IN ITEMS ${${package}_${component}_OPTS${VAR_SUFFIX}})
+		#checking for CXX_STANDARD
+		is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
+		if(STANDARD_NUMBER)
+			message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c++${STANDARD_NUMBER} or -std=gnu++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+			is_CXX_Version_Less(IS_LESS ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
+			if(IS_LESS)
+				set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+			endif()
+		else()#checking for C_STANDARD
+			is_C_Standard_Option(STANDARD_NUMBER ${opt})
+			if(STANDARD_NUMBER)
+				message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c${STANDARD_NUMBER} or -std=gnu${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+				is_C_Version_Less(IS_LESS ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
+				if(IS_LESS)
+					set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+				endif()
+			else()
+				list(APPEND FILTERED_OPTS ${opt})#keep the option unchanged
+			endif()
+		endif()
+	endforeach()
+	set(${OPTS} ${FILTERED_OPTS} PARENT_SCOPE)
 endif()
 endfunction(list_Public_Options)
 
@@ -82,6 +132,23 @@ set(${PRIVATE_LINKS} "${RES_LINKS}" PARENT_SCOPE)
 endif()
 endfunction(list_Private_Links)
 
+###
+function(get_Language_Standards STD_C STD_CXX package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(${STD_C} ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
+set(${STD_CXX} ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
+endfunction(get_Language_Standards)
+
+###
+function(manage_Language_Standards package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+if(NOT ${package}_${component}_C_STANDARD${VAR_SUFFIX})
+	set(${package}_${component}_C_STANDARD${VAR_SUFFIX} 90 CACHE INTERNAL "")
+endif()
+if(NOT ${package}_${component}_CXX_STANDARD${VAR_SUFFIX})
+	set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} 98 CACHE INTERNAL "")
+endif()
+endfunction(manage_Language_Standards)
 ##################################################################################
 ###################### runtime dependencies management API #######################
 ##################################################################################
@@ -605,15 +672,21 @@ function(clean_Install_Dir)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 if(	${CMAKE_BUILD_TYPE} MATCHES Release
 	AND EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH}
-	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH})# if package is already installed
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} #if package is already installed
+)
 	# calling a script that will do the job in its own context (to avoid problem when including cmake scripts that would redefine critic variables)
-	execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
+	add_custom_target(cleaning_install
+							COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						 -DPACKAGE_NAME=${PROJECT_NAME}
 						 -DCURRENT_PLATFORM=${CURRENT_PLATFORM_NAME}
 						 -DPACKAGE_INSTALL_VERSION=${${PROJECT_NAME}_DEPLOY_PATH}
 						 -DPACKAGE_VERSION=${${PROJECT_NAME}_VERSION}
-						 -DNEW_USE_FILE=${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake
+						 -DNEW_USE_FILE=${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake #this file does not exist at configruation time (only after generation phase)
 						 -P ${WORKSPACE_DIR}/share/cmake/system/Clear_PID_Package_Install.cmake
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+						 COMMENT "[PID] INFO : Cleaning install tree ..."
+						 VERBATIM
+	)
+	add_dependencies(build cleaning_install) #removing built files in install tree that have been deleted with new configuration
+
 endif()
 endfunction(clean_Install_Dir)

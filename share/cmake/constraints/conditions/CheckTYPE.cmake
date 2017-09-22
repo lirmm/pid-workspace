@@ -22,7 +22,7 @@ set(CURRENT_TYPE CACHE INTERNAL "")
 #test of processor type is based on system variables affected by cross compilation
 #So it adapts to the current development environment in use
 
-if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL arm)
+if("${CMAKE_SYSTEM_PROCESSOR}" MATCHES arm)
 	set(CURRENT_TYPE arm CACHE INTERNAL "")
 elseif(	"${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86
 	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x64

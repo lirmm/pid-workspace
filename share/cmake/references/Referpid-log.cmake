@@ -12,5 +12,6 @@ set(pid-log_DESCRIPTION A package that defines libraries to easily manage loggin
 set(pid-log_YEARS 2014 CACHE INTERNAL "")
 set(pid-log_LICENSE CeCILL-C CACHE INTERNAL "")
 set(pid-log_ADDRESS git@gite.lirmm.fr:pid/pid-log.git CACHE INTERNAL "")
+set(pid-log_PUBLIC_ADDRESS https://gite.lirmm.fr/pid/pid-log.git CACHE INTERNAL "")
 set(pid-log_CATEGORIES "programming/logging" CACHE INTERNAL "")
 set(pid-log_REFERENCES  CACHE INTERNAL "")

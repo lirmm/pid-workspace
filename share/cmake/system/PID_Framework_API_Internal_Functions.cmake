@@ -88,25 +88,22 @@ if(ALL_VERSIONS)
 				# now referencing the binaries
 				list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
 				if(	ALL_BINARIES
-					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz
-					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz)# both release and binary versions have to exist
+				AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz)#release version must exist in any case
 
 					if(NOT VERSION_REGISTERED)  # the version is registered only if there are binaries inside (sanity check)
 					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} ${ref_version} CACHE INTERNAL \"\")\n") # the version is registered
 					set(VERSION_REGISTERED TRUE)
 					endif()
 					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} ${ref_platform} CACHE INTERNAL \"\")\n") # the platform is registered only if there are binaries inside (sanity check)
-
 					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
-
-					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
-
+					if(EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz)# binary versions for debug may exist
+						file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
+					endif()
 				endif()
 			endforeach()
 		endif()
 	endforeach()
 endif()
-
 endfunction(generate_Site_Binary_References)
 
 
@@ -259,7 +256,6 @@ endfunction(add_Framework_Category)
 ############################### building the framework ###########################
 ##################################################################################
 
-
 ############ function used to create the README.md file of the framework  ###########
 function(generate_Framework_Readme_File)
 set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/frameworks/README.md.in)
@@ -354,12 +350,12 @@ configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/framework.yml.in ${CMA
 file(WRITE ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "")
 if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 	foreach(cat IN ITEMS ${${PROJECT_NAME}_FRAMEWORK_CATEGORIES})
-		extract_All_Words_From_Path(${cat} LIST_OF_NAMES)
+		extract_All_Words_From_Path(${cat} "_" LIST_OF_NAMES)
 		list(LENGTH LIST_OF_NAMES SIZE)
 		set(FINAL_NAME "")
 		if(SIZE GREATER 1)# there are subcategories
 			foreach(name IN ITEMS ${LIST_OF_NAMES})
-				extract_All_Words(${name} NEW_NAMES)# replace underscores with spaces
+				extract_All_Words(${name} "_" NEW_NAMES)# replace underscores with spaces
 
 				fill_List_Into_String("${NEW_NAMES}" RES_STRING)
 				set(FINAL_NAME "${FINAL_NAME} ${RES_STRING}")
@@ -371,7 +367,7 @@ if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 			endforeach()
 			file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
 		else()
-			extract_All_Words(${cat} NEW_NAMES)# replace underscores with spaces
+			extract_All_Words(${cat} "_" NEW_NAMES)# replace underscores with spaces
 			fill_List_Into_String("${NEW_NAMES}" RES_STRING)
 			set(FINAL_NAME "${RES_STRING}")
 			file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
@@ -573,12 +569,14 @@ if(ALL_VERSIONS)
 				if(ALL_BINARIES) # check to avoid problem is the binaries have been badly released
 
 					# the version is registered only if there are binaries inside (sanity check)
-					if(native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz
-						  AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)# both release and binary versions have to exist for native packages
+					if(native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
 						set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
 						set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
-						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
-						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
+						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)# release version must exist for native packages
+
+						if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)# debug version may no exist for native packages
+							set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
+						endif()
 					elseif(NOT NATIVE AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) #at least a release version is required for external packages
 
 						set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
@@ -648,7 +646,7 @@ if(ALL_VERSIONS)
 				endif()
 
 				#debug binary referencing
-				if(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG) #always true for native packages, may be true for native packages
+				if(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG) #always true for open source native packages, may be true for external packages, never true for close source native packages
 					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG} CACHE INTERNAL \"\")\n")#reference on the debug binary
 					if(NOT native)
 						file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG} CACHE INTERNAL \"\")\n")#name of the folder contained in the archive

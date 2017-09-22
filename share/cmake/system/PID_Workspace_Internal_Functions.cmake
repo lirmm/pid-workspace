@@ -755,7 +755,7 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 		endif()
 	endforeach()
 	if(NOT ${MAX_CURR_VERSION} STREQUAL 0.0.0)
-		deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION})
+		deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE)
 		if(NOT DEPLOYED)
 			message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive. Please contact the administrator of the package ${package}.")
 		endif()
@@ -764,7 +764,7 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 	endif()
 
 else()#deploying the target binary relocatable archive
-	deploy_External_Package_Version(DEPLOYED ${package} ${version})
+	deploy_External_Package_Version(DEPLOYED ${package} ${version} FALSE)
 	if(NOT DEPLOYED)
 		message("[PID] ERROR : cannot deploy ${package} binary archive version ${version}.")
 	endif()
@@ -869,10 +869,11 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pa
 endfunction(remove_PID_Package)
 
 
-###  removing consists in removing the framework repository from the workspace
+###  removing consists in removing the git repository of the framework from the workspace
 function(remove_PID_Framework framework)
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/frameworks/${framework})
 endfunction(remove_PID_Framework)
+
 
 ##################################################
 ############ registering deployment units ########
@@ -956,6 +957,19 @@ endforeach()
 check_For_New_Commits_To_Release(COMMITS_AVAILABLE ${package})
 if(NOT COMMITS_AVAILABLE)
 	message("[PID] ERROR : cannot release package ${package} because integration branch has no commits to contribute to new version.")
+	return()
+endif()
+
+# check that version of dependencies exist
+check_For_Dependencies_Version(BAD_VERSION_OF_DEPENDENCIES ${package})
+if(BAD_VERSION_OF_DEPENDENCIES)
+	message("[PID] ERROR : cannot release package ${package} because of invalid version of dependencies:")
+	foreach(dep IN ITEMS "${BAD_VERSION_OF_DEPENDENCIES}")
+		extract_All_Words(${dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
+		list(GET RES_LIST 0 DEP_PACKAGE)
+		list(GET RES_LIST 1 DEP_VERSION)
+		message("- dependency ${DEP_PACKAGE} has unknown version ${DEP_VERSION}")
+	endforeach()
 	return()
 endif()
 
@@ -1048,7 +1062,7 @@ list_All_Source_Packages_In_Workspace(SOURCE_PACKAGES)
 if(SOURCE_PACKAGES)
 	if(NATIVES)
 		list(REMOVE_ITEM NATIVES ${SOURCE_PACKAGES})
-	endif()	
+	endif()
 	foreach(package IN ITEMS ${SOURCE_PACKAGES})
 		update_PID_Source_Package(${package})
 	endforeach()
@@ -1121,7 +1135,7 @@ endfunction()
 ######################## Platforms management ##########################
 ########################################################################
 
-## subsidiary function that put sinto cmake variable description of available platforms
+## subsidiary function that puts into cmake variables the description of available platforms
 function(detect_Current_Platform)
 	# Now detect the current platform maccording to host environemnt selection (call to script for platform detection)
 	include(CheckTYPE)
