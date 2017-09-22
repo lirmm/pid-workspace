@@ -21,22 +21,22 @@
 ####################### Language standard management #######################
 ############################################################################
 function(initialize_Build_System)
-	## create a property to deal with language standard in targets (created for compatibility with CMake 3.0.2)
-	if(CMAKE_VERSION VERSION_LESS 3.1)
-		define_property(TARGET PROPERTY CXX_STANDARD
+
+	## create a property to deal with language standard in targets (created for compatibility with CMake 3.0.2 and CMake version < 3.8 when c++17 is used)
+	define_property(TARGET PROPERTY PID_CXX_STANDARD
 	                BRIEF_DOCS "Determine the C++ Language standard version to use"
 								 	FULL_DOCS "Determine the C++ Language standard version to use")
-		define_property(TARGET PROPERTY C_STANDARD
-	                BRIEF_DOCS "Determine the C Language standard version to use"
-								 	FULL_DOCS "Determine the C Language standard version to use")
-	endif()#otherwise these properties are already defined
+	#standard for C
+	define_property(TARGET PROPERTY PID_C_STANDARD
+              BRIEF_DOCS "Determine the C Language standard version to use"
+						 	FULL_DOCS "Determine the C Language standard version to use")
 
 endfunction(initialize_Build_System)
 
 function(resolve_Component_Language component_target)
 	if(CMAKE_VERSION VERSION_LESS 3.1)#this is only usefll if CMake does not automatically deal with standard related properties
-		get_target_property(STD_C ${component_target} C_STANDARD)
-		get_target_property(STD_CXX ${component_target} CXX_STANDARD)
+		get_target_property(STD_C ${component_target} PID_C_STANDARD)
+		get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
 
 		#managing c++
 		if(STD_CXX EQUAL 98)
@@ -50,29 +50,51 @@ function(resolve_Component_Language component_target)
 		endif()
 
 		#managing c
-		if(STD_CXX EQUAL 90)
+		if(STD_C EQUAL 90)
 			target_compile_options(${component_target} PUBLIC "-std=c90")
-		elseif(STD_CXX EQUAL 99)
+		elseif(STD_C EQUAL 99)
 			target_compile_options(${component_target} PUBLIC "-std=c99")
-		elseif(STD_CXX EQUAL 14)
+		elseif(STD_C EQUAL 11)
 			target_compile_options(${component_target} PUBLIC "-std=c11")
 		endif()
+		return()
 
+	elseif(CMAKE_VERSION VERSION_LESS 3.8)#if cmake version is less than 3.8 than the c++ 17 language is unknown
+		get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
+		is_CXX_Version_Less(IS_LESS ${STD_CXX} 17)
+		if(NOT IS_LESS)#cxx standard 17 or more
+			target_compile_options(${component_target} PUBLIC "-std=c++17")
+			return()
+		endif()
 	endif()
+
+	#default case that can be managed directly by CMake
+	get_target_property(STD_C ${component_target} PID_C_STANDARD)
+	get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
+
+	set_target_properties(${component_target} PROPERTIES
+			C_STANDARD ${STD_C}
+			C_STANDARD_REQUIRED YES
+			C_EXTENSIONS NO
+	)#setting the standard in use locally
+
+	set_target_properties(${component_target} PROPERTIES
+			CXX_STANDARD ${STD_CXX}
+			CXX_STANDARD_REQUIRED YES
+			CXX_EXTENSIONS NO
+	)#setting the standard in use locally
+
 endfunction(resolve_Component_Language)
 
 ### global function that set compile option for all components that are build given some info not directly managed by CMake
 function(resolve_Compile_Options_For_Targets mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-
-if(CMAKE_VERSION VERSION_LESS 3.1)#created for compatibility with CMake 3.0.2 (automatically managed with CMake 3.1)
 foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 	if(IS_BUILT_COMP)
 		resolve_Component_Language(${component}${TARGET_SUFFIX})
 	endif()
 endforeach()
-endif()
 endfunction(resolve_Compile_Options_For_Targets)
 
 ### filter the options lines to get those options related to language standard in USE
@@ -178,7 +200,6 @@ endfunction(create_Executable_Target)
 function(create_TestUnit_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
-
 endfunction(create_TestUnit_Target)
 
 ### configure the target with exported flags (cflags and ldflags)
@@ -244,19 +265,11 @@ endif()
 
 #management of standards (setting minimum standard at beginning)
 if(c_standard AND NOT c_standard STREQUAL "")
-	set_target_properties(${component_name}${mode_suffix} PROPERTIES
-			C_STANDARD ${c_standard}
-			CXX_STANDARD_REQUIRED YES
-    	CXX_EXTENSIONS NO
-	)#setting the standard in use locally
+	set_target_properties(${component_name}${mode_suffix} PROPERTIES PID_C_STANDARD ${c_standard})
 endif()
 
 if(cxx_standard AND NOT cxx_standard STREQUAL "")
-	set_target_properties(${component_name}${mode_suffix} PROPERTIES
-			CXX_STANDARD ${cxx_standard}
-			CXX_STANDARD_REQUIRED YES
-    	CXX_EXTENSIONS NO
-	)#setting the standard in use locally
+	set_target_properties(${component_name}${mode_suffix} PROPERTIES PID_CXX_STANDARD ${cxx_standard})
 endif()
 
 endfunction(manage_Additional_Component_Internal_Flags)
@@ -610,9 +623,8 @@ get_Language_Standards(DEP_STD_C DEP_STD_CXX ${dep_package} ${dep_component} ${m
 is_C_Version_Less(IS_LESS ${STD_C} ${DEP_STD_C})
 if( IS_LESS )#dependency has greater or equal level of standard required
 	set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${DEP_STD_C} CACHE INTERNAL "")
-
 	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
-		set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES C_STANDARD ${DEP_STD_C}) #the minimal value in use file is set adequately
+		set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES PID_C_STANDARD ${DEP_STD_C}) #the minimal value in use file is set adequately
 	endif()
 endif()
 
@@ -620,7 +632,7 @@ is_CXX_Version_Less(IS_LESS ${STD_CXX} ${DEP_STD_CXX})
 if( IS_LESS )#dependency has greater or equal level of standard required
 	set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${DEP_STD_CXX} CACHE INTERNAL "")#the minimal value in use file is set adequately
 	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
-		set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES CXX_STANDARD ${DEP_STD_CXX})
+		set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES PID_CXX_STANDARD ${DEP_STD_CXX})
 	endif()
 endif()
 endfunction(resolve_Standard_Before_Linking)
