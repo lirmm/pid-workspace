@@ -964,7 +964,7 @@ endif()
 check_For_Dependencies_Version(BAD_VERSION_OF_DEPENDENCIES ${package})
 if(BAD_VERSION_OF_DEPENDENCIES)
 	message("[PID] ERROR : cannot release package ${package} because of invalid version of dependencies:")
-	foreach(dep IN ITEMS "${BAD_VERSION_OF_DEPENDENCIES}")
+	foreach(dep IN ITEMS ${BAD_VERSION_OF_DEPENDENCIES})
 		extract_All_Words(${dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
 		list(GET RES_LIST 0 DEP_PACKAGE)
 		list(GET RES_LIST 1 DEP_VERSION)
