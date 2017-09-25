@@ -367,7 +367,7 @@ if(DECLARE_PID_COMPONENT_C_STANDARD)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad C_STANDARD argument, the value used must be 90, 99 or 11.")
 	endif()
 else() #default language standard is first standard
-	set(c_language_standard 90)
+	set(c_language_standard 99)
 endif()
 
 if(DECLARE_PID_COMPONENT_CXX_STANDARD)
