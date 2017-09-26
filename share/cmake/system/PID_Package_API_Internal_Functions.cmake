@@ -44,7 +44,7 @@ include(PID_Package_Plugins_Management NO_POLICY_SCOPE)
 ###########################  declaration of the package ##########################
 ##################################################################################
 macro(declare_Package author institution mail year license address public_address description readme_file)
-
+activate_Adequate_Languages()
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
 load_Current_Platform(${DIR_NAME}) #loading the current platform configuration and perform adequate actions if any changes
@@ -1168,6 +1168,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 	## 2) collect sources for build process
 	get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 	list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_ALL_HEADERS})
+
 	#defining shared and/or static targets for the library and
 	#adding the targets to the list of installed components when make install is called
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "STATIC") #a static library has no internal links (never trully linked)

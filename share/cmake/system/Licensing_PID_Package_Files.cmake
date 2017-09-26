@@ -26,9 +26,9 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 #getting the file that contains the license info into C code comment
 set(CONFIG_FILE ${BINARY_DIR}/share/file_header_comment.txt.in)
 
-file(GLOB_RECURSE all_libraries_sources ${SOURCE_DIR}/src/*.c ${SOURCE_DIR}/src/*.cpp ${SOURCE_DIR}/src/*.cxx ${SOURCE_DIR}/src/*.cc ${SOURCE_DIR}/src/*.h ${SOURCE_DIR}/src/*.hh ${SOURCE_DIR}/src/*.hpp ${SOURCE_DIR}/src/*.hx)
+file(GLOB_RECURSE all_libraries_sources ${SOURCE_DIR}/src/*.c ${SOURCE_DIR}/src/*.cpp ${SOURCE_DIR}/src/*.cxx ${SOURCE_DIR}/src/*.cc ${SOURCE_DIR}/src/*.s ${SOURCE_DIR}/src/*.S ${SOURCE_DIR}/src/*.asm ${SOURCE_DIR}/src/*.f ${SOURCE_DIR}/src/*.h ${SOURCE_DIR}/src/*.hh ${SOURCE_DIR}/src/*.hpp ${SOURCE_DIR}/src/*.hx)
 file(GLOB_RECURSE all_libraries_headers ${SOURCE_DIR}/include/*.h ${SOURCE_DIR}/include/*.hh ${SOURCE_DIR}/include/*.hpp ${SOURCE_DIR}/include/*.hxx)
-file(GLOB_RECURSE all_apps_sources ${SOURCE_DIR}/apps/*.c ${SOURCE_DIR}/apps/*.cc ${SOURCE_DIR}/apps/*.cpp ${SOURCE_DIR}/apps/*.cxx ${SOURCE_DIR}/apps/*.h ${SOURCE_DIR}/apps/*.hh ${SOURCE_DIR}/apps/*.hpp ${SOURCE_DIR}/apps/*.hx)
+file(GLOB_RECURSE all_apps_sources ${SOURCE_DIR}/apps/*.c ${SOURCE_DIR}/apps/*.cc ${SOURCE_DIR}/apps/*.cpp ${SOURCE_DIR}/apps/*.cxx ${SOURCE_DIR}/src/*.s ${SOURCE_DIR}/src/*.S ${SOURCE_DIR}/src/*.asm ${SOURCE_DIR}/src/*.f ${SOURCE_DIR}/apps/*.h ${SOURCE_DIR}/apps/*.hh ${SOURCE_DIR}/apps/*.hpp ${SOURCE_DIR}/apps/*.hx)
 list(APPEND all_files ${all_libraries_sources} ${all_libraries_headers} ${all_apps_sources})
 
 foreach(a_file IN ITEMS ${all_files})
@@ -61,7 +61,7 @@ foreach(a_file IN ITEMS ${all_files})
 				AND FORMATTED STREQUAL COMPARISON_PATTERN) #the file already has a license comment
 			#this comment must be suppressed first
 			string(FIND "${input_text}" "*/" position_of_first_comment_ending)#getting the size of the license comment
-			math(EXPR thelength "${position_of_first_comment_ending}+3")#+3 for : * and / characters followed by a \n 
+			math(EXPR thelength "${position_of_first_comment_ending}+3")#+3 for : * and / characters followed by a \n
 			string(SUBSTRING "${input_text}" ${thelength} -1 res_file_content)#remove this first license comment
 			set(input_text "${res_file_content}")#now only code and user defined header comments (e.g. for doxygen) are part of the new file content
 			message("[PID] INFO : replacing license header of file ${a_file}.")

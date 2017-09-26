@@ -482,6 +482,29 @@ endfunction(package_License_Is_Closed_Source)
 ################ Source file management #####################
 #############################################################
 
+### used to activate adequate languages depending on source file used in the project
+macro(activate_Adequate_Languages)
+get_All_Sources_Absolute(list_of_files ${CMAKE_SOURCE_DIR})#list all source files
+get_property(USED_LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES) #getting all languages already in use
+
+foreach(source_file IN ITEMS ${list_of_files})
+		get_filename_component(EXTENSION ${source_file} EXT)
+		if(EXTENSION STREQUAL ".f")#we have a fortran file
+				list(FIND USED_LANGUAGES Fortran INDEX)
+				if(INDEX EQUAL -1)#fortran is not in use already
+					enable_language(Fortran)#use fortran
+					list(APPEND USED_LANGUAGES Fortran)
+				endif()
+		elseif(EXTENSION STREQUAL ".asm" OR EXTENSION STREQUAL ".s" OR EXTENSION STREQUAL ".S" )#we have an assembler file
+				list(FIND USED_LANGUAGES ASM INDEX)
+				if(INDEX EQUAL -1)#assembler is not in use already
+					enable_language(ASM)#use assembler
+					list(APPEND USED_LANGUAGES ASM)
+				endif()
+		endif()
+endforeach()
+endmacro(activate_Adequate_Languages)
+
 ###
 function(get_All_Sources_Relative RESULT dir)
 file(	GLOB_RECURSE
@@ -498,6 +521,7 @@ file(	GLOB_RECURSE
 	"${dir}/*.s"
 	"${dir}/*.S"
 	"${dir}/*.asm"
+	"${dir}/*.f"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Relative)
@@ -518,6 +542,7 @@ file(	GLOB_RECURSE
 	"${dir}/*.s"
 	"${dir}/*.S"
 	"${dir}/*.asm"
+	"${dir}/*.f"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Absolute)
