@@ -351,12 +351,45 @@ endmacro(build_PID_Package)
 #				[DESCRIPTION short description of the utility of this component]
 #				[USAGE includes...])
 macro(declare_PID_Component)
-set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
+set(options PYTHON_SCRIPT STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}.")
+endif()
+
+#check for the name argument
+if(NOT DECLARE_PID_COMPONENT_NAME)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the component using NAME keyword.")
+endif()
+
+#check unique names
+set(DECLARED FALSE)
+is_Declared(${DECLARE_PID_COMPONENT_NAME} DECLARED)
+if(DECLARED)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : a component with the same name than ${DECLARE_PID_COMPONENT_NAME} is already defined.")
+	return()
+endif()
+unset(DECLARED)
+
+#check for directory argument
+if(NOT DECLARE_PID_COMPONENT_DIRECTORY)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword.")
+endif()
+#checking that the repository exists
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${DECLARE_PID_COMPONENT_DIRECTORY} OR NOT IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${DECLARE_PID_COMPONENT_DIRECTORY})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring ${DECLARE_PID_COMPONENT_NAME}, the source directory ${DECLARE_PID_COMPONENT_DIRECTORY} cannot be found in ${CMAKE_CURRENT_SOURCE_DIR}.")
+endif()
+
+#specific case, managing constraints on python scripts
+if(DECLARE_PID_COMPONENT_PYTHON_SCRIPT)
+	if(DECLARE_PID_COMPONENT_C_STANDARD OR DECLARE_PID_COMPONENT_CXX_STANDARD)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a python script cannot be associated to a C or CXX standard.")
+	endif()
+	if(DECLARE_PID_COMPONENT_INTERNAL OR DECLARE_PID_COMPONENT_EXPORTED)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a python script has no INTERNAL or EXPORTED options.")
+	endif()
 endif()
 
 if(DECLARE_PID_COMPONENT_C_STANDARD)
@@ -382,13 +415,11 @@ else() #default language standard is first standard
 	set(cxx_language_standard 98)
 endif()
 
-if(NOT DECLARE_PID_COMPONENT_NAME)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the component using NAME keyword.")
-endif()
-if(NOT DECLARE_PID_COMPONENT_DIRECTORY)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword.")
-endif()
 set(nb_options 0)
+if(DECLARE_PID_COMPONENT_PYTHON_SCRIPT)
+	math(EXPR nb_options "${nb_options}+1")
+	set(type "PYTHON")
+endif()
 if(DECLARE_PID_COMPONENT_STATIC_LIB)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "STATIC")
@@ -418,7 +449,7 @@ if(DECLARE_PID_COMPONENT_TEST_APPLICATION)
 	set(type "TEST")
 endif()
 if(NOT nb_options EQUAL 1)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION|TEST_APPLICATION) must be given for the component.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION, TEST_APPLICATION, or PYTHON_SCRIPT) must be given for the component.")
 endif()
 
 set(internal_defs "")
@@ -475,16 +506,11 @@ if(DECLARE_PID_COMPONENT_RUNTIME_RESOURCES)
 	set(runtime_resources ${DECLARE_PID_COMPONENT_RUNTIME_RESOURCES})
 endif()
 
-#check unique names
-set(DECLARED FALSE)
-is_Declared(${DECLARE_PID_COMPONENT_NAME} DECLARED)
-if(DECLARED)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : a component with the same name than ${DECLARE_PID_COMPONENT_NAME} is already defined.")
-	return()
-endif()
-unset(DECLARED)
-
-if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
+if(type MATCHES "PYTHON")
+	declare_Python_Component(	${DECLARE_PID_COMPONENT_NAME}
+					${DECLARE_PID_COMPONENT_DIRECTORY}
+					"${runtime_resources}")
+elseif(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME}
 					${DECLARE_PID_COMPONENT_DIRECTORY}
 					${type}

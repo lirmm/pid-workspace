@@ -1205,7 +1205,7 @@ endfunction(declare_Library_Component)
 # FILTERED_EXPORTED_OPTS : additionnal compiler options to use when building the executable
 function(declare_Application_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options internal_link_flags runtime_resources)
 
-is_Application_Type(RES "${type}")
+is_Application_Type(RES "${type}")#double check, for internal use only (purpose: simplify PID code debugging)
 if(RES)
 	set(${PROJECT_NAME}_${c_name}_TYPE ${type} CACHE INTERNAL "")
 else() #a simple application by default
@@ -1284,6 +1284,28 @@ set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name
 # global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
 mark_As_Declared(${c_name})
 endfunction(declare_Application_Component)
+
+
+##################################################################################
+################# declaration of a python package component #######################
+##################################################################################
+function(declare_Python_Component c_name dirname runtime_resources)
+set(${PROJECT_NAME}_${c_name}_TYPE PYTHON CACHE INTERNAL "")
+#registering source code for the component
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	get_All_Sources_Relative(${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
+	set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
+endif()
+
+create_Python_Target(${c_name} ${${PROJECT_NAME}_${c_name}_SOURCE_DIR} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE}")
+
+#updating global variables of the CMake process
+set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_COMPONENTS_SCRIPTS "${${PROJECT_NAME}_COMPONENTS_SCRIPTS};${c_name}" CACHE INTERNAL "")
+# global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
+mark_As_Declared(${c_name})
+endfunction(declare_Python_Component)
 
 ##################################################################################
 ####### specifying a dependency between the current package and another one ######

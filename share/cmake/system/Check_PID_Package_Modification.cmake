@@ -136,6 +136,8 @@ foreach(component IN ITEMS ${${PACKAGE_NAME}_COMPONENTS})
 			set(current_dir ${path_to_package}/src/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
 		elseif(${PACKAGE_NAME}_${component}_TYPE STREQUAL "TEST")
 			set(current_dir ${path_to_package}/test/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
+		elseif(${PACKAGE_NAME}_${component}_TYPE STREQUAL "PYTHON")
+			set(current_dir ${path_to_package}/share/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
 		else() #otherwise this is an example or standard application
 			set(current_dir ${path_to_package}/apps/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
 		endif()
@@ -153,7 +155,8 @@ foreach(component IN ITEMS ${${PACKAGE_NAME}_COMPONENTS})
 			"${current_dir}/*.s"
 			"${current_dir}/*.S"
 			"${current_dir}/*.asm"
-			"${current_dir}/*.f")
+			"${current_dir}/*.f"
+			"${current_dir}/*.py")
 		Find_Unique_Elements(	"${${PACKAGE_NAME}_${component}_SOURCE_CODE}"	#registered sources
 					"${FILE_PACKAGE_SOURCES}" 			#really existing sources
 					TO_REMOVE

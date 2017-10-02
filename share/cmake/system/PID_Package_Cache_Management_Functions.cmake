@@ -322,6 +322,7 @@ macro(print_Component_Variables)
 	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
 	message("libraries : " ${${PROJECT_NAME}_COMPONENTS_LIBS})
 	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
+	message("scripts : " ${${PROJECT_NAME}_COMPONENTS_SCRIPTS})
 
 	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		print_Component(${component} FALSE)
@@ -753,6 +754,7 @@ reset_Declared()
 set(${PROJECT_NAME}_COMPONENTS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
+set(${PROJECT_NAME}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
 
 #unsetting all root variables usefull to the find/configuration mechanism
 foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
@@ -876,6 +878,7 @@ if (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${package}_${component}_TYPE STREQUAL "TEST"
 	OR ${package}_${component}_TYPE STREQUAL "MODULE"
+	OR ${package}_${component}_TYPE STREQUAL "PYTHON"
 	)
 	set(${ret_var} TRUE PARENT_SCOPE)
 else()
@@ -1153,6 +1156,7 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${${package}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS_SCRIPTS ${${package}_COMPONENTS_SCRIPTS} CACHE INTERNAL \"\")\n")
 
 	file(APPEND ${file} "####### internal specs of package components #######\n")
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_LIBS})
@@ -1163,6 +1167,9 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 		endif()
 	endforeach()
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
+		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
+	endforeach()
+	foreach(a_component IN ITEMS ${${package}_COMPONENTS_SCRIPTS})
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
 	endforeach()
 else()

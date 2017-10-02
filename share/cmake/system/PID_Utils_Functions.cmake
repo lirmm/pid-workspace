@@ -522,6 +522,7 @@ file(	GLOB_RECURSE
 	"${dir}/*.S"
 	"${dir}/*.asm"
 	"${dir}/*.f"
+	"${dir}/*.py"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Relative)
@@ -543,6 +544,7 @@ file(	GLOB_RECURSE
 	"${dir}/*.S"
 	"${dir}/*.asm"
 	"${dir}/*.f"
+	"${dir}/*.py"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Absolute)
