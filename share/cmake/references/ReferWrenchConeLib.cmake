@@ -12,6 +12,6 @@ set(WrenchConeLib_DESCRIPTION "This library implements the Contact Wrench Cone a
 set(WrenchConeLib_YEARS 2017 CACHE INTERNAL "")
 set(WrenchConeLib_LICENSE CeCILL-C CACHE INTERNAL "")
 set(WrenchConeLib_ADDRESS git@github.com:vsamy/WrenchConeLib.git CACHE INTERNAL "")
-set(WrenchConeLib_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(WrenchConeLib_PUBLIC_ADDRESS https://github.com/vsamy/WrenchConeLib.git CACHE INTERNAL "")
 set(WrenchConeLib_CATEGORIES CACHE INTERNAL "")
 set(WrenchConeLib_REFERENCES  CACHE INTERNAL "")
