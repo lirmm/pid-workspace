@@ -12,6 +12,6 @@ set(eigen-cdd_DESCRIPTION "Small Eigen Wrapper of cdd. Based on Fukuda's library
 set(eigen-cdd_YEARS 2017;2017 CACHE INTERNAL "")
 set(eigen-cdd_LICENSE CeCILL-C CACHE INTERNAL "")
 set(eigen-cdd_ADDRESS git@github.com:vsamy/eigen-cdd.git CACHE INTERNAL "")
-set(eigen-cdd_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(eigen-cdd_PUBLIC_ADDRESS https://github.com/vsamy/eigen-cdd.git CACHE INTERNAL "")
 set(eigen-cdd_CATEGORIES CACHE INTERNAL "")
 set(eigen-cdd_REFERENCES  CACHE INTERNAL "")

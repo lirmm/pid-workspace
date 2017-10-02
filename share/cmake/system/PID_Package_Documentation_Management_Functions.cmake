@@ -200,7 +200,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(PACKAGE_SITE_REF_IN_README "")
 
 		# simplified install section
-		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is based on the [PID](https://gite.lirmm.fr/pid/pid-workspace/wikis/home) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is based on the [PID](http://pid.lirmm.net/pid-framework/pages/install.html) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
 	else()
 		# intro
 		generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
