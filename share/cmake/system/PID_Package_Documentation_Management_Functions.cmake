@@ -211,7 +211,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		endif()
 
 		# install procedure
-		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called [PID](http://pid.lirmm.net/pid-framework/pages/install.html). Just follow and read the links to understand how to install, use and call its API and/or applications.")
 
 		# reference to site page
 		set(PACKAGE_SITE_REF_IN_README "[package_site]: ${ADDRESS} \"${PROJECT_NAME} package\"

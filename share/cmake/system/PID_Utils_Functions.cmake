@@ -154,32 +154,32 @@ execute_process(
 endfunction(create_Symlink)
 
 ###
-function(create_Rpath_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
+function(create_Runtime_Symlink path_to_target path_to_container_folder rpath_sub_folder)
 #first creating the path where to put symlinks if it does not exist
-set(FULL_RPATH_DIR ${path_to_rpath_folder}/.rpath/${rpath_sub_folder})
-file(MAKE_DIRECTORY ${FULL_RPATH_DIR})
+set(RUNTIME_DIR ${path_to_container_folder}/${rpath_sub_folder})
+file(MAKE_DIRECTORY ${RUNTIME_DIR})
 get_filename_component(A_FILE ${path_to_target} NAME)
 #second creating the symlink
-create_Symlink(${path_to_target} ${FULL_RPATH_DIR}/${A_FILE})
-endfunction(create_Rpath_Symlink)
+create_Symlink(${path_to_target} ${RUNTIME_DIR}/${A_FILE})
+endfunction(create_Runtime_Symlink)
 
 ###
-function(install_Rpath_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
-get_filename_component(A_FILE "${path_to_target}" NAME)
-set(FULL_RPATH_DIR ${path_to_rpath_folder}/.rpath/${rpath_sub_folder})
-install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
-install(CODE "
-        if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
-				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-	endif()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
-                                WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-	message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
+	get_filename_component(A_FILE "${path_to_target}" NAME)
+	set(FULL_RPATH_DIR ${path_to_rpath_folder}/${rpath_sub_folder})
+	install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
+	install(CODE "
+	              if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
+									execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
+									                 WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+		            endif()
+		            execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
+	                              WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+		            message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+	")# creating links "on the fly" when installing
 
-")# creating links "on the fly" when installing
+endfunction(install_Runtime_Symlink)
 
-endfunction(install_Rpath_Symlink)
 
 ###
 function (check_Directory_Exists is_existing path)
@@ -527,7 +527,7 @@ file(	GLOB_RECURSE
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Relative)
 
-###
+### absolute sources do not take into account python files as they will not be part of a build process
 function(get_All_Sources_Absolute RESULT dir)
 file(	GLOB_RECURSE
 	RES
@@ -544,10 +544,15 @@ file(	GLOB_RECURSE
 	"${dir}/*.S"
 	"${dir}/*.asm"
 	"${dir}/*.f"
-	"${dir}/*.py"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Absolute)
+
+### to know wether the folder contains some python script
+function(contains_Python_Code HAS_PYTHON dir)
+file(GLOB_RECURSE HAS_PYTHON_CODE ${dir} "${dir}/*.py")
+set(${HAS_PYTHON} ${HAS_PYTHON_CODE} PARENT_SCOPE)
+endfunction(contains_Python_Code)
 
 ###
 function(get_All_Headers_Relative RESULT dir)

@@ -575,10 +575,10 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE) #do not use any link time info when
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install RPATH already
 
 if(APPLE)
-        set(CMAKE_MACOSX_RPATH TRUE)
-	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal librari	es managed by default), name is relative to @loader_path to enable easy package relocation
+	set(CMAKE_MACOSX_RPATH TRUE)
+	set(CMAKE_INSTALL_RPATH "@loader_path/../lib;@loader_path") #the default install rpath is the library folder of the installed package (internal librari	es managed by default), name is relative to @loader_path to enable easy package relocation
 elseif (UNIX)
-	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
+	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib;\$ORIGIN") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
 endif()
 
 #################################################################################
@@ -685,8 +685,8 @@ if(BUILD_AND_RUN_TESTS)
 
 	endif()
 endif()
-add_subdirectory(test)
 add_subdirectory(share)
+add_subdirectory(test)
 
 # specific case : resolve which compile option to use to enable the adequate language standard (CMake version < 3.1 only)
 # may be use for other general purpose options in future versions of PID
@@ -740,8 +740,8 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	endif()
 endforeach()
 
-#resolving link time dependencies for executables
-foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
+#resolving link time dependencies for executables and modules
+foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	will_be_Built(RES ${component})
 	if(RES)
 		resolve_Source_Component_Linktime_Dependencies(${component} ${CMAKE_BUILD_TYPE} ${component}_THIRD_PARTY_LINKS)
@@ -1173,14 +1173,33 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 	#adding the targets to the list of installed components when make install is called
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "STATIC") #a static library has no internal links (never trully linked)
 		create_Static_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}")
+		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
 		create_Shared_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}" "${internal_links}")
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
-		create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
+		contains_Python_Code(HAS_WRAPPER ${CMAKE_CURRENT_SOURCE_DIR}/${dirname})
+		if(HAS_WRAPPER)
+			if(NOT CURRENT_PYTHON)#we cannot build the module as there is no python module
+				return()
+			endif()
+			#adding adequate path to pyhton librairies
+			list(APPEND INCLUDE_DIRS_WITH_PYTHON ${internal_inc_dirs} ${CURRENT_PYTHON_INCLUDE_DIRS})
+			list(APPEND LIBRARIES_WITH_PYTHON ${internal_links} ${CURRENT_PYTHON_LIBRARIES})
+			create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${INCLUDE_DIRS_WITH_PYTHON}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${LIBRARIES_WITH_PYTHON}")
+		else()
+			create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
+		endif()
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+		register_Component_Binary(${c_name})#need to register before calling manage python
+		if(HAS_WRAPPER)
+			manage_Python_Scripts(${c_name} ${dirname})#specific case to manage, python scripts must be installed in a share/script subfolder
+			set(${PROJECT_NAME}_${c_name}_HAS_PYTHON_WRAPPER TRUE CACHE INTERNAL "")
+		else()
+			set(${PROJECT_NAME}_${c_name}_HAS_PYTHON_WRAPPER FALSE CACHE INTERNAL "")
+		endif()
 	endif()
-	register_Component_Binary(${c_name})
 else()#simply creating a "fake" target for header only library
 	create_Header_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}")
 endif()
@@ -1284,28 +1303,6 @@ set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name
 # global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
 mark_As_Declared(${c_name})
 endfunction(declare_Application_Component)
-
-
-##################################################################################
-################# declaration of a python package component #######################
-##################################################################################
-function(declare_Python_Component c_name dirname runtime_resources)
-set(${PROJECT_NAME}_${c_name}_TYPE PYTHON CACHE INTERNAL "")
-#registering source code for the component
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	get_All_Sources_Relative(${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
-	set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
-endif()
-
-create_Python_Target(${c_name} ${${PROJECT_NAME}_${c_name}_SOURCE_DIR} "${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE}")
-
-#updating global variables of the CMake process
-set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_COMPONENTS_SCRIPTS "${${PROJECT_NAME}_COMPONENTS_SCRIPTS};${c_name}" CACHE INTERNAL "")
-# global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
-mark_As_Declared(${c_name})
-endfunction(declare_Python_Component)
 
 ##################################################################################
 ####### specifying a dependency between the current package and another one ######
@@ -1613,21 +1610,23 @@ is_Declared(${dep_component} DECLARED)
 if(NOT DECLARED)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : component ${dep_component} is not defined in current package ${PROJECT_NAME}.")
 endif()
+check_If_Python_Module_Exists(IS_EXISTING ${component})
+if(NOT IS_EXISTING)
+	return()
+endif()
 #guarding depending type of involved components
 is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 is_HeaderFree_Component(IS_HF_DEP ${PROJECT_NAME} ${dep_component})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
-set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
 if (IS_HF_COMP)
-	if(IS_HF_DEP)
-		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
-
-	else()
-		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
-
-	endif()
+		if(IS_HF_DEP)
+			# setting compile definitions for configuring the target
+			fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
+		else()
+			# setting compile definitions for configuring the target
+			fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
+		endif()
 elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
@@ -1685,6 +1684,11 @@ endif()
 
 if( NOT ${dep_package}_${dep_component}_TYPE)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : ${dep_component} in package ${dep_package} is not defined.")
+endif()
+
+check_If_Python_Module_Exists(IS_EXISTING ${component})
+if(NOT IS_EXISTING)
+	return()
 endif()
 
 set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} FALSE CACHE INTERNAL "")
@@ -1763,6 +1767,10 @@ if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
 will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
+check_If_Python_Module_Exists(IS_EXISTING ${component})
+if(NOT IS_EXISTING)
+	return()
+endif()
 
 #guarding depending type of involved components
 is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
@@ -1770,11 +1778,16 @@ is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 set(TARGET_LINKS ${static_links} ${shared_links})
 
 if (IS_HF_COMP)
-	if(COMP_WILL_BE_INSTALLED)
-		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${runtime_resources}")
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")#specific case of python components
+		list(APPEND ALL_WRAPPED_FILES ${shared_links} ${runtime_resources})
+		create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
+	else()
+		if(COMP_WILL_BE_INSTALLED)
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${runtime_resources}")
+		endif()
+		# setting compile definitions for the target
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 	endif()
-	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
 	configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${runtime_resources}")
@@ -1809,6 +1822,10 @@ if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
 will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
+check_If_Python_Module_Exists(IS_EXISTING ${component})
+if(NOT IS_EXISTING)
+	return()
+endif()
 
 if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} is not defined !")
@@ -1820,11 +1837,16 @@ else()
 	set(TARGET_LINKS ${static_links} ${shared_links})
 
 	if (IS_HF_COMP)
-		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${shared_links}" "${runtime_resources}")
+		if(${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")#specific case of python components
+			list(APPEND ALL_WRAPPED_FILES ${shared_links} ${runtime_resources})
+			create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
+		else()
+			if(COMP_WILL_BE_INSTALLED)
+				configure_Install_Variables(${component} FALSE "" "" "" "" "" "${shared_links}" "${runtime_resources}")
+			endif()
+			# setting compile definitions for the target
+			fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 		endif()
-		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
 		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${runtime_resources}")
@@ -1997,6 +2019,11 @@ will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
+check_If_Python_Module_Exists(IS_EXISTING ${component})
+if(NOT IS_EXISTING)
+	return()
+endif()
+
 if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
 	message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
 	install_External_Package(INSTALL_OK ${dep_package} TRUE)#force the reinstall
@@ -2031,11 +2058,16 @@ set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
 set(ALL_LINKS ${RES_LINKS_ST} ${RES_LINKS_SH})
 
 if (IS_HF_COMP)
-	if(COMP_WILL_BE_INSTALLED)
-		configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_LINKS_SH}" "${RES_RUNTIME}")
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")#specific case of python components
+		list(APPEND ALL_WRAPPED_FILES ${RES_LINKS_SH} ${RES_RUNTIME})
+		create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
+	else()
+		if(COMP_WILL_BE_INSTALLED)
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_LINKS_SH}" "${RES_RUNTIME}")
+		endif()
+		# setting compile definitions for the target
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
 	endif()
-	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
 elseif(IS_BUILT_COMP)
 	#configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
 	#prepare the dependancy export

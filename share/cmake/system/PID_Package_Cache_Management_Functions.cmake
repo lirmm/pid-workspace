@@ -322,7 +322,6 @@ macro(print_Component_Variables)
 	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
 	message("libraries : " ${${PROJECT_NAME}_COMPONENTS_LIBS})
 	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
-	message("scripts : " ${${PROJECT_NAME}_COMPONENTS_SCRIPTS})
 
 	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		print_Component(${component} FALSE)
@@ -400,6 +399,7 @@ function(set_Install_Cache_Variables)
 	set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_SCRIPT_PATH ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/script CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_RPATH_DIR ${${PROJECT_NAME}_DEPLOY_PATH}/.rpath CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_ROOT_DIR ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} CACHE INTERNAL "")
@@ -588,6 +588,28 @@ endfunction(add_Configuration_To_Platform)
 ############### API functions for setting components related cache variables ################
 #############################################################################################
 
+### to know wehether a module is a python wrapped module
+function(is_Python_Module IS_PYTHON package component)
+	if(${package}_${component}_TYPE STREQUAL "MODULE")
+		set(${IS_PYTHON} ${${package}_${component}_HAS_PYTHON_WRAPPER} PARENT_SCOPE)
+	else()
+		set(${IS_PYTHON} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Python_Module)
+
+### to know wehether a module is a python wrapped module and is really compilable
+function(check_If_Python_Module_Exists IS_EXISTING component)
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")
+		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
+		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#wthe module as there is no python module
+			set(${IS_EXISTING} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+	set(${IS_EXISTING} TRUE PARENT_SCOPE)
+endfunction(check_If_Python_Module_Exists)
+
+
 ### configure variables exported by component that will be used to generate the package cmake use file
 function (configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
 
@@ -754,7 +776,6 @@ reset_Declared()
 set(${PROJECT_NAME}_COMPONENTS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
-set(${PROJECT_NAME}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
 
 #unsetting all root variables usefull to the find/configuration mechanism
 foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
@@ -888,6 +909,20 @@ endfunction(is_HeaderFree_Component)
 
 
 ### to know if the component is an application
+function(is_Runtime_Component ret_var package component)
+if (	${package}_${component}_TYPE STREQUAL "APP"
+	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
+	OR ${package}_${component}_TYPE STREQUAL "TEST"
+	OR ${package}_${component}_TYPE STREQUAL "SHARED"
+	OR ${package}_${component}_TYPE STREQUAL "MODULE"
+	)
+	set(${ret_var} TRUE PARENT_SCOPE)
+else()
+	set(${ret_var} FALSE PARENT_SCOPE)
+endif()
+endfunction(is_Runtime_Component)
+
+### to know if the component is an application
 function(is_Executable_Component ret_var package component)
 if (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
@@ -968,7 +1003,6 @@ endfunction(is_Externally_Usable)
 function(register_Component_Binary c_name)
 	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} "$<TARGET_FILE_NAME:${c_name}${INSTALL_NAME_SUFFIX}>" CACHE INTERNAL "")
 endfunction(register_Component_Binary)
-
 
 #resolving dependencies
 function(is_Bin_Component_Exporting_Other_Components RESULT package component mode)
@@ -1156,7 +1190,6 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${${package}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package}_COMPONENTS_SCRIPTS ${${package}_COMPONENTS_SCRIPTS} CACHE INTERNAL \"\")\n")
 
 	file(APPEND ${file} "####### internal specs of package components #######\n")
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_LIBS})
@@ -1167,9 +1200,6 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 		endif()
 	endforeach()
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
-		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
-	endforeach()
-	foreach(a_component IN ITEMS ${${package}_COMPONENTS_SCRIPTS})
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
 	endforeach()
 else()

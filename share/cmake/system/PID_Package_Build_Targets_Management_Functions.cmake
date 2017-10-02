@@ -123,7 +123,32 @@ endfunction(filter_Compiler_Options)
 ############################################################################
 ############### API functions for internal targets management ##############
 ############################################################################
+###create a fake target for a python component
+function(manage_Python_Scripts c_name dirname)
+	set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES PREFIX "")#specific requirement for python, not lib prefix at beginning of the module
 
+	# simply copy directory containing script at install time into a specific folder, but select only python script
+	# Important notice: the trailing / at end of DIRECTORY argument is to allow the renaming of the directory into c_name
+	install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${dirname}/
+					DESTINATION ${${PROJECT_NAME}_INSTALL_SCRIPT_PATH}/${c_name}
+					FILES_MATCHING PATTERN "*.py")
+
+	#get_Binary_Location(RES_LOC ${PROJECT_NAME} ${c_name} Release) should be used but not usable due to a bug in install(CODE ...) avoiding to use generator expressions
+	install(#install symlinks that target the python module either in install directory and (undirectly) in the python install dir
+			CODE
+			"execute_process(
+					COMMAND ${CMAKE_COMMAND}
+					-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+					-DCMAKE_COMMAND=${CMAKE_COMMAND}
+					-DWORKSPACE_DIR=${WORKSPACE_DIR}
+					-DTARGET_PACKAGE=${PROJECT_NAME}
+					-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
+					-DTARGET_MODULE=${c_name}
+					-P ${WORKSPACE_DIR}/share/cmake/system/Install_PID_Python_Script.cmake
+			)
+			"
+	)
+endfunction(manage_Python_Scripts)
 
 ###create a module lib target for a newly defined library
 function(create_Module_Lib_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)

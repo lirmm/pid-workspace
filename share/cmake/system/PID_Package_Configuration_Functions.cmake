@@ -113,7 +113,6 @@ endfunction(list_Public_Options)
 ### get the location of a given component resulting binary on the filesystem
 function( get_Binary_Location LOCATION_RES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-
 is_Executable_Component(IS_EXE ${package} ${component})
 if(IS_EXE)
 	set(${LOCATION_RES} "${${package}_ROOT_DIR}/bin/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}}" PARENT_SCOPE)
@@ -279,6 +278,19 @@ set(${RES_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_Resources_Dependencies)
 
 ###
+function(get_Bin_Component_Direct_Internal_Runtime_Dependencies RES_RESOURCES package component mode prefix_path suffix_ext)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(RES)
+foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+	is_Runtime_Component(IS_RUNTIME ${package} ${int_dep})
+	if(IS_RUNTIME)
+		list(APPEND RES ${prefix_path}${int_dep}${TARGET_SUFFIX}${suffix_ext})
+	endif()
+endforeach()
+set(${RES_RESOURCES} ${RES} PARENT_SCOPE)
+endfunction(get_Bin_Component_Direct_Internal_Runtime_Dependencies)
+
+###
 function(get_Bin_Component_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
@@ -394,7 +406,7 @@ foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 endforeach()
 
 # 3) adding internal components dependencies
-        foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 	if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")
 		get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
 		if(INT_DEP_RUNTIME_RESOURCES)
@@ -427,11 +439,14 @@ endfunction(get_Bin_Component_Runtime_Dependencies)
 function(resolve_Source_Component_Linktime_Dependencies component mode THIRD_PARTY_LINKS)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-is_Executable_Component(COMP_IS_EXEC ${PROJECT_NAME} ${component})
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 
-if(	NOT COMP_IS_EXEC
-	OR NOT COMP_WILL_BE_BUILT)#special case for executables that need rpath link to be specified (due to system shared libraries linking system)-> the linker must resolve all target links (even shared libs) transitively
+if(NOT COMP_WILL_BE_BUILT)#special case for executables that need rpath link to be specified (due to system shared libraries linking system)-> the linker must resolve all target links (even shared libs) transitively
+	return()
+endif()
+
+is_Runtime_Component(COMP_IS_RUNTIME ${PROJECT_NAME} ${component})
+if(NOT COMP_IS_RUNTIME)
 	return()
 endif()
 
@@ -524,6 +539,26 @@ if(	${package}_${component}_TYPE STREQUAL "SHARED"
 	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${package} ${component} ${mode})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
 	create_Bin_Component_Symlinks(${package} ${component} ${mode} "${ALL_RUNTIME_DEPS}")
+	if(${package}_${component}_TYPE STREQUAL "MODULE"
+			AND ${package}_${component}_HAS_PYTHON_WRAPPER #this is a python wrapper => python needs additionnal configuration to work properly
+			AND CURRENT_PYTHON)#python is activated
+		# getting path to internal targets dependecies that produce a runtime code (not used for rpath but required for python modules)
+
+		#cannot use the generator expression due to generator expression not evaluated in install(CODE) -> CMake BUG
+		if(CURRENT_PLATFORM_OS STREQUAL "macosx")
+		    set(suffix_ext .dylib)
+		else()
+		    set(suffix_ext .so)
+		endif()
+		#we need to reference also internal libraries for creating adequate symlinks for python
+		set(prefix_path ${${package}_ROOT_DIR}/lib/lib)
+		get_Bin_Component_Direct_Internal_Runtime_Dependencies(RES_DEPS ${package} ${component} ${CMAKE_BUILD_TYPE} ${prefix_path} ${suffix_ext})
+		list(APPEND ALL_RUNTIME_DEPS ${RES_DEPS})
+		#finally we need to reference also the module binary itself
+		get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
+		list(APPEND ALL_RUNTIME_DEPS ${LOCATION_RES})
+		create_Bin_Component_Python_Symlinks(${package} ${component} ${CMAKE_BUILD_TYPE} "${ALL_RUNTIME_DEPS}")
+	endif()
 endif()
 endfunction(resolve_Bin_Component_Runtime_Dependencies)
 
@@ -533,24 +568,36 @@ function(create_Bin_Component_Symlinks bin_package bin_component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #creatings symbolic links
 foreach(resource IN ITEMS ${resources})
-	create_Rpath_Symlink("${resource}" "${${bin_package}_ROOT_DIR}" ${bin_component}${TARGET_SUFFIX})
+	create_Runtime_Symlink("${resource}" "${${bin_package}_ROOT_DIR}/.rpath" ${bin_component}${TARGET_SUFFIX})
 endforeach()
 endfunction(create_Bin_Component_Symlinks)
+
+function(create_Bin_Component_Python_Symlinks bin_package bin_component mode resources)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+foreach(resource IN ITEMS ${resources})
+	create_Runtime_Symlink("${resource}" "${${bin_package}_ROOT_DIR}/share/script" ${bin_component})#installing Debug and Release modes links in the same script folder
+endforeach()
+endfunction(create_Bin_Component_Python_Symlinks)
 
 ##################################################################################
 ################### source package run time dependencies in install tree #########
 ##################################################################################
-
+function(create_Source_Component_Python_Symlinks component mode targets)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+foreach(target IN ITEMS ${targets})
+	install_Runtime_Symlink(${target} "${${PROJECT_NAME}_DEPLOY_PATH}/share/script" ${component})#installing Debug and Release modes links in the same script folder
+endforeach()
+endfunction(create_Source_Component_Python_Symlinks)
 
 ### configuring source components (currently built) runtime paths (links to libraries, executable, modules, files, etc.)
 function(create_Source_Component_Symlinks component mode targets)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(target IN ITEMS ${targets})
-	install_Rpath_Symlink(${target} ${${PROJECT_NAME}_DEPLOY_PATH} ${component}${TARGET_SUFFIX})
+	install_Runtime_Symlink(${target} "${${PROJECT_NAME}_DEPLOY_PATH}/.rpath" ${component}${TARGET_SUFFIX})
 endforeach()
+###
 endfunction(create_Source_Component_Symlinks)
 
-###
 function(resolve_Source_Component_Runtime_Dependencies component mode THIRD_PARTY_LIBS)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
@@ -559,7 +606,6 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" )
 	# 1) getting all public runtime dependencies (including inherited ones)
 	get_Bin_Component_Runtime_Dependencies(ALL_RUNTIME_DEPS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
-
 	# 2) adding direct private external dependencies
 	get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_PRIVATE_LINKS})
@@ -567,10 +613,27 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
 	# 3) in case of an executable component add third party (undirect) links
-        if(THIRD_PARTY_LIBS)
+  if(THIRD_PARTY_LIBS)
 		list(APPEND ALL_RUNTIME_DEPS ${THIRD_PARTY_LIBS})
-        endif()
+  endif()
+
 	create_Source_Component_Symlinks(${component} ${CMAKE_BUILD_TYPE} "${ALL_RUNTIME_DEPS}")
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE"
+			AND ${PROJECT_NAME}_${component}_HAS_PYTHON_WRAPPER #this is a python wrapper => python needs additionnal configuration to work properly
+			AND CURRENT_PYTHON)#python is activated
+		# getting path to internal targets dependecies that produce a runtime code (not used for rpath but required for python modules)
+
+		#cannot use the generator expression due to generator expression not evaluated in install(CODE) -> CMake BUG
+		if(CURRENT_PLATFORM_OS STREQUAL "macosx")
+		    set(suffix_ext .dylib)
+		else()
+		    set(suffix_ext .so)
+		endif()
+		set(prefix_path ${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_DEPLOY_PATH}/lib/lib)
+		get_Bin_Component_Direct_Internal_Runtime_Dependencies(RES_DEPS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE} ${prefix_path} ${suffix_ext})
+		list(APPEND ALL_RUNTIME_DEPS ${RES_DEPS})
+		create_Source_Component_Python_Symlinks(${component} ${CMAKE_BUILD_TYPE} "${ALL_RUNTIME_DEPS}")
+	endif()
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
 
@@ -645,7 +708,7 @@ function(create_Source_Component_Symlinks_Build_Tree component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(NOT "${resources}" STREQUAL "")
 	foreach(resource IN ITEMS ${resources})
-		create_Rpath_Symlink(${resource} ${CMAKE_BINARY_DIR} ${component}${TARGET_SUFFIX})
+		create_Runtime_Symlink(${resource} ${CMAKE_BINARY_DIR}/.rpath ${component}${TARGET_SUFFIX})
 	endforeach()
 endif()
 endfunction(create_Source_Component_Symlinks_Build_Tree)

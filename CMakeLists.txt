@@ -27,7 +27,7 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 PROJECT(pid-workspace)
 
-manage_Platforms() # define the current platform in use and provide to the user some options to control finally targetted platform
+manage_Platforms(${CMAKE_SOURCE_DIR}) # define the current platform in use and provide to the user some options to control finally targetted platform
 
 manage_Plugins() # define available plugins and plugins in use
 
@@ -87,7 +87,7 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "rebuild -- force the rebuild of target source packages in the workspace. You can use the optionnal argument package=*name of the package* to define which package will be build or use the default value *all* to target all source packages."
 	COMMAND ${CMAKE_COMMAND} -E echo "update -- updating a source or binary package using package=*name of the package* argument. The last available version is deployed in the workspace. If *all* is used for name, all source and binary packages will be updated."
 	COMMAND ${CMAKE_COMMAND} -E echo "upgrade -- upgrading the workspace: install the more recent version of the PID API and references to packages. You can use the optionnal official= argument to use a non official repository to update the workspace, by default official=ON which means the official remote is used. The argument update may be set ON or OFF -optionnal, default to OFF- to update all packages once the upgrade has been done."
-	COMMAND ${CMAKE_COMMAND} -E echo "configure -- configuring development environment in use. You have to set the environment name using environment=*name of the environment to use*."
+	COMMAND ${CMAKE_COMMAND} -E echo "configure -- configuring development environment in use. You have to set the environment name using environment=*name of the environment to use*. You may use the value python to configure python, you then also need to set the target python version with version=*version* or use the value default to go back to default OS version of python."
 	COMMAND ${CMAKE_COMMAND} -E echo "hard_clean -- deep cleaning of packages build folder, may be usefull after compiler changes for instance. You have to set the package name using package=*name of the package to clean* or all to hard clean all packages."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -234,6 +234,7 @@ add_custom_target(upgrade
 ## configuring the workspace
 add_custom_target(configure
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_ENVIRONMENT=$(environment)
+					-DTARGET_VERSION=$(version)
 					-DCURRENT_ENVIRONMENT=${CURRENT_ENVIRONMENT}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Configure_PID_Environment.cmake
