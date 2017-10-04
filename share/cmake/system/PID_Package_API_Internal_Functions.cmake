@@ -1304,6 +1304,24 @@ set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name
 mark_As_Declared(${c_name})
 endfunction(declare_Application_Component)
 
+
+function(declare_Python_Component	c_name dirname)
+set(${PROJECT_NAME}_${c_name}_TYPE "PYTHON" CACHE INTERNAL "")
+#registering source code for the component
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/share/script/${dirname} CACHE INTERNAL "")
+	get_All_Sources_Relative(${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
+	set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
+endif()
+manage_Python_Scripts(${c_name} ${dirname})
+#updating global variables of the CMake process
+set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_COMPONENTS_SCRIPTS "${${PROJECT_NAME}_COMPONENTS_SCRIPTS};${c_name}" CACHE INTERNAL "")
+# global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
+mark_As_Declared(${c_name})
+endfunction(declare_Python_Component)
+
 ##################################################################################
 ####### specifying a dependency between the current package and another one ######
 ### global dependencies between packages (the system package is considered #######

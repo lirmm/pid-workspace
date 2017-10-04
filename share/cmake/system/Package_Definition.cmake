@@ -359,7 +359,7 @@ endmacro(build_PID_Package)
 #				[DESCRIPTION short description of the utility of this component]
 #				[USAGE includes...])
 macro(declare_PID_Component)
-set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
+set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION PYTHON_PACK)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -386,7 +386,8 @@ if(NOT DECLARE_PID_COMPONENT_DIRECTORY)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword.")
 endif()
 #checking that the repository exists
-if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${DECLARE_PID_COMPONENT_DIRECTORY} OR NOT IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${DECLARE_PID_COMPONENT_DIRECTORY})
+if((NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${DECLARE_PID_COMPONENT_DIRECTORY} OR NOT IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${DECLARE_PID_COMPONENT_DIRECTORY})
+AND (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/script/${DECLARE_PID_COMPONENT_DIRECTORY} OR NOT IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/script/${DECLARE_PID_COMPONENT_DIRECTORY}))
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring ${DECLARE_PID_COMPONENT_NAME}, the source directory ${DECLARE_PID_COMPONENT_DIRECTORY} cannot be found in ${CMAKE_CURRENT_SOURCE_DIR}.")
 endif()
 
@@ -441,6 +442,10 @@ endif()
 if(DECLARE_PID_COMPONENT_TEST_APPLICATION)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "TEST")
+endif()
+if(DECLARE_PID_COMPONENT_PYTHON_PACK)
+	math(EXPR nb_options "${nb_options}+1")
+	set(type "PYTHON")
 endif()
 if(NOT nb_options EQUAL 1)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION or TEST_APPLICATION) must be given for the component.")
@@ -511,6 +516,8 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 					"${internal_compiler_options}"
 					"${internal_link_flags}"
 					"${runtime_resources}")
+elseif(type MATCHES "PYTHON")#declare a python package
+	declare_Python_Component(${DECLARE_PID_COMPONENT_NAME} ${DECLARE_PID_COMPONENT_DIRECTORY})
 else() #it is a library
 	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME}
 					${DECLARE_PID_COMPONENT_DIRECTORY}
