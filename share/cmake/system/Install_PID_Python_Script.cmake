@@ -46,8 +46,11 @@ if(TARGET_COMPONENT_TYPE STREQUAL "MODULE")#this is a binary module for wrapping
 endif()
 
 # 2) now in python folder creating a symlink pointing to the module script folder
-if(NOT EXISTS path_to_python_install)
-  file(MAKE_DIRECTORY ${path_to_python_install})
+contains_Python_Package_Description(IS_PYTHON_PACK ${path_to_module_python_wrapper})
+if(IS_PYTHON_PACK)
+  if(NOT EXISTS path_to_python_install)
+    file(MAKE_DIRECTORY ${path_to_python_install})
+  endif()
+  create_Symlink(${path_to_module_python_wrapper} ${path_to_python_install}/${TARGET_MODULE}${TARGET_SUFFIX})#generate the symlink used
+  message("-- Installing: ${path_to_python_install}/${TARGET_MODULE}${TARGET_SUFFIX}")
 endif()
-create_Symlink(${path_to_module_python_wrapper} ${path_to_python_install}/${TARGET_MODULE}${TARGET_SUFFIX})#generate the symlink used
-message("-- Installing: ${path_to_python_install}/${TARGET_MODULE}${TARGET_SUFFIX}")

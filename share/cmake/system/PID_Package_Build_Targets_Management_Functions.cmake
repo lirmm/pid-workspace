@@ -18,6 +18,211 @@
 #########################################################################################
 
 ############################################################################
+####################### build command creation auxiliary function ##########
+############################################################################
+
+function(create_Global_Build_Command privileges gen_install gen_build gen_package gen_doc gen_test_or_cover)
+if(gen_install)
+	if(gen_build) #build package
+		if(gen_package) #generate and install a binary package
+			if(gen_doc) # documentation generated
+				#this is the complete scenario
+				if(NOT gen_test_or_cover)
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+						add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				endif()
+			else() # no documentation generated
+				#this is the complete scenario without documentation
+				if(NOT gen_test_or_cover)
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				endif()
+			endif()
+		else()#no binary package
+			if(gen_doc) # documentation generated
+				if(NOT gen_test_or_cover)#no test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				endif()
+			else() # no documentation generated
+				if(NOT gen_test_or_cover)
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				endif()
+			endif()
+		endif()
+	else()#package not built !!
+		if(gen_package)#package binary archive is built
+			if(gen_doc)#documentation is built
+				if(NOT gen_test_or_cover) # no test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				endif()
+			else()#no documentation generated
+				if(NOT gen_test_or_cover)
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				endif()
+			endif()
+		else()#no package binary generated
+			if(gen_doc) #but with doc
+				if(NOT gen_test_or_cover) #without test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				endif()
+			else()#no doc
+				if(NOT gen_test_or_cover) #without test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				endif()
+			endif()
+		endif()
+	endif()
+else()
+	add_custom_target(build
+		COMMAND ${CMAKE_COMMAND} -E echo "[PID] Nothing to be done. Build process aborted."
+	)
+endif()
+endfunction(create_Global_Build_Command)
+
+
+############################################################################
 ####################### Language standard management #######################
 ############################################################################
 function(initialize_Build_System)

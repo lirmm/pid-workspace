@@ -594,6 +594,35 @@ endfunction(add_Configuration_To_Platform)
 ############### API functions for setting components related cache variables ################
 #############################################################################################
 
+### to know wehether a package has something to build
+function(package_Has_Nothing_To_Build NOTHING_BUILT)
+	if(${PROJECT_NAME}_COMPONENTS)
+		foreach(comp IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+			will_be_Built(RES ${comp})
+			if(RES)
+				set(${NOTHING_BUILT} FALSE PARENT_SCOPE)
+				return()
+			endif()
+		endforeach()
+	endif()
+	set(${NOTHING_BUILT} TRUE PARENT_SCOPE)
+endfunction(package_Has_Nothing_To_Build)
+
+### to know whether a package has something to install
+function(package_Has_Nothing_To_Install NOTHING_INSTALLED)
+	if(${PROJECT_NAME}_COMPONENTS)
+		foreach(comp IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+			will_be_Installed(RES ${comp})
+			if(RES)
+				set(${NOTHING_INSTALLED} FALSE PARENT_SCOPE)
+				return()
+			endif()
+		endforeach()
+	endif()
+	set(${NOTHING_INSTALLED} TRUE PARENT_SCOPE)
+endfunction(package_Has_Nothing_To_Install)
+
+
 ### to know wehether a module is a python wrapped module
 function(is_Python_Module IS_PYTHON package component)
 	if(${package}_${component}_TYPE STREQUAL "MODULE")
@@ -603,17 +632,6 @@ function(is_Python_Module IS_PYTHON package component)
 	endif()
 endfunction(is_Python_Module)
 
-### to know wehether a module is a python wrapped module and is really compilable
-function(check_If_Python_Module_Exists IS_EXISTING component)
-	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")
-		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
-		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#wthe module as there is no python module
-			set(${IS_EXISTING} FALSE PARENT_SCOPE)
-			return()
-		endif()
-	endif()
-	set(${IS_EXISTING} TRUE PARENT_SCOPE)
-endfunction(check_If_Python_Module_Exists)
 
 
 ### configure variables exported by component that will be used to generate the package cmake use file
@@ -981,7 +999,15 @@ if((${PROJECT_NAME}_${component}_TYPE STREQUAL "SCRIPT") #python scripts are nev
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
 	set(${result} FALSE PARENT_SCOPE)
+	return()
 else()
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")### to know wehether a module is a python wrapped module and is really compilable
+		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
+		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#wthe module will not be built as there is no python configuration
+			set(${result} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
 	set(${result} TRUE PARENT_SCOPE)
 endif()
 endfunction(will_be_Built)
@@ -992,6 +1018,13 @@ if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
 	set(${result} FALSE PARENT_SCOPE)
 else()
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")### to know wehether a module is a python wrapped module and is really compilable
+		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
+		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#wthe module will not be installed as there is no python configuration
+			set(${result} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
 	set(${result} TRUE PARENT_SCOPE)
 endif()
 endfunction(will_be_Installed)

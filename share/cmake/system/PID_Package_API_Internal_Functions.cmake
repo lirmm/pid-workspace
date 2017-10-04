@@ -888,128 +888,37 @@ else()
 endif()
 
 #creating a global build command
-if(GENERATE_INSTALLER)
-	if(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS AND PROJECT_RUN_TESTS)#if tests are not run then remove the test target
-			if(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			else(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			endif(BUILD_API_DOC)
-		else()
-			if(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			else(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			endif(BUILD_API_DOC)
-		endif()
-	else()#debug
-		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG AND PROJECT_RUN_TESTS)  #if tests are not run then remove the coverage or test target
-			if(BUILD_COVERAGE_REPORT)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${SUDOER_PRIVILEGES} coverage ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			else()
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			endif()
-		else()
-			add_custom_target(build
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
-				COMMAND ${CMAKE_MAKE_PROGRAM} package
-				COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-			)
-		endif()
-	endif()
 
-else(GENERATE_INSTALLER) #do not generate an installer
+
+package_Has_Nothing_To_Install(NOTHING_INSTALLED)
+if(NOTHING_INSTALLED) #if nothing to install, it means that there is nothing to generate... so do nothing
+	create_Global_Build_Command("${SUDOER_PRIVILEGES}" FALSE FALSE FALSE FALSE FALSE)
+else()
+	package_Has_Nothing_To_Build(NOTHING_BUILT)
+	if(NOTHING_BUILT)
+		set(BUILD_CODE FALSE)
+	else()
+		set(BUILD_CODE TRUE)
+	endif()
 	if(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS AND PROJECT_RUN_TESTS) #if tests are not run then remove the test target
-			if(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
-			else(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
-			endif(BUILD_API_DOC)
-		else()
-			if(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
-			else(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
-			endif(BUILD_API_DOC)
+		if(BUILD_AND_RUN_TESTS AND PROJECT_RUN_TESTS)
+			create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" "${BUILD_API_DOC}" "test")
+		else()#if tests are not run then remove the test target
+			create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" "${BUILD_API_DOC}" "")
 		endif()
-	else()#debug
+	else()#debug => never build api doc in debug mode
 		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG AND PROJECT_RUN_TESTS)  #if tests are not run then remove the coverage or test target
-			if(BUILD_COVERAGE_REPORT)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
-			else()
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
+			if(BUILD_COVERAGE_REPORT) #covergae report must be generated with debug symbols activated
+				create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" FALSE "coverage")
+			else() #simple tests
+				create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" FALSE "test")
 			endif()
 		else()
-			add_custom_target(build
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
-			)
+			create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" FALSE "")
 		endif()
 	endif()
-endif(GENERATE_INSTALLER)
+endif()
+
 
 #retrieving dependencies on sources packages
 if(	BUILD_DEPENDENT_PACKAGES
@@ -1628,10 +1537,6 @@ is_Declared(${dep_component} DECLARED)
 if(NOT DECLARED)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : component ${dep_component} is not defined in current package ${PROJECT_NAME}.")
 endif()
-check_If_Python_Module_Exists(IS_EXISTING ${component})
-if(NOT IS_EXISTING)
-	return()
-endif()
 #guarding depending type of involved components
 is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 is_HeaderFree_Component(IS_HF_DEP ${PROJECT_NAME} ${dep_component})
@@ -1697,15 +1602,6 @@ function(declare_Package_Component_Dependency component dep_package dep_componen
 #message("declare_Package_Component_Dependency : component = ${component}, dep_package = ${dep_package}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
-	return()
-endif()
-
-if( NOT ${dep_package}_${dep_component}_TYPE)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : ${dep_component} in package ${dep_package} is not defined.")
-endif()
-
-check_If_Python_Module_Exists(IS_EXISTING ${component})
-if(NOT IS_EXISTING)
 	return()
 endif()
 
@@ -1785,10 +1681,6 @@ if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
 will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
-check_If_Python_Module_Exists(IS_EXISTING ${component})
-if(NOT IS_EXISTING)
-	return()
-endif()
 
 #guarding depending type of involved components
 is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
@@ -1840,10 +1732,6 @@ if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
 will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
-check_If_Python_Module_Exists(IS_EXISTING ${component})
-if(NOT IS_EXISTING)
-	return()
-endif()
 
 if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} is not defined !")
@@ -2035,10 +1923,6 @@ function(declare_External_Wrapper_Component_Dependency component dep_package dep
 
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
-	return()
-endif()
-check_If_Python_Module_Exists(IS_EXISTING ${component})
-if(NOT IS_EXISTING)
 	return()
 endif()
 

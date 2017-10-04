@@ -554,6 +554,13 @@ file(GLOB_RECURSE HAS_PYTHON_CODE ${dir} "${dir}/*.py")
 set(${HAS_PYTHON} ${HAS_PYTHON_CODE} PARENT_SCOPE)
 endfunction(contains_Python_Code)
 
+### to know wether the folder is a python package
+function(contains_Python_Package_Description IS_PYTHON_PACK dir)
+	file(GLOB PY_PACK_FILE RELATIVE ${dir} "${dir}/__init__.py")
+	set(${IS_PYTHON_PACK} ${PY_PACK_FILE} PARENT_SCOPE)
+endfunction(contains_Python_Package_Description)
+
+
 ###
 function(get_All_Headers_Relative RESULT dir)
 file(	GLOB_RECURSE
