@@ -824,6 +824,14 @@ endif()
 endmacro(declare_PID_Component_Dependency)
 
 
+function(wrap_CTest_Call name command args)
+	if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do if on tests before this version
+		add_test(NAME ${name} COMMAND ${command} ${args})
+	else()
+		add_test(${name} ${command} ${args})
+	endif()
+endfunction(wrap_CTest_Call)
+
 ### API : run_PID_Test (NAME 			test_name
 #			<EXE name | COMPONENT 	name [PACKAGE name]>
 #			PRIVILEGED
@@ -839,9 +847,13 @@ if(RUN_PID_TEST_UNPARSED_ARGUMENTS)
 endif()
 if(NOT RUN_PID_TEST_NAME)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, a name must be given to the test (using NAME <name> syntax) !")
-elseif(TEST ${RUN_PID_TEST_NAME})
-	message("[PID] WARNING : bad arguments for the test ${RUN_PID_TEST_NAME}, this test unit is already defined. Skipping new definition !")
-	return()
+else()
+	if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do call if(TEST) before this version, the default behavior (without using NAME and COMMAND will overwrite the rprevious test with same name)
+		if(TEST ${RUN_PID_TEST_NAME})
+			message("[PID] WARNING : bad arguments for the test ${RUN_PID_TEST_NAME}, this test unit is already defined. Skipping new definition !")
+			return()
+		endif()
+	endif()
 endif()
 
 if(NOT RUN_PID_TEST_EXE AND NOT RUN_PID_TEST_COMPONENT AND NOT RUN_PID_TEST_PYTHON)
@@ -889,16 +901,16 @@ if(RUN_PID_TEST_PRIVILEGED)
 endif()
 
 if(RUN_PID_TEST_EXE)
-	add_test(NAME ${RUN_PID_TEST_NAME} COMMAND "${RUN_PID_TEST_EXE}" ${RUN_PID_TEST_ARGUMENTS})
+	wrap_CTest_Call(${RUN_PID_TEST_NAME} "${RUN_PID_TEST_EXE}" "${RUN_PID_TEST_ARGUMENTS}")
 elseif(RUN_PID_TEST_COMPONENT)# run test by executing a PID component
 	if(RUN_PID_TEST_PACKAGE)#component coming from another PID package
 		set(target_of_test ${RUN_PID_TEST_PACKAGE}-${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX})
-		add_test(NAME ${RUN_PID_TEST_NAME} COMMAND ${target_of_test} ${RUN_PID_TEST_ARGUMENTS})
+		wrap_CTest_Call(${RUN_PID_TEST_NAME} "${target_of_test}" "${RUN_PID_TEST_ARGUMENTS}")
 	else()#internal component
-		add_test(NAME ${RUN_PID_TEST_NAME} COMMAND ${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX} ${RUN_PID_TEST_ARGUMENTS})
+		wrap_CTest_Call(${RUN_PID_TEST_NAME} "${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX}" "${RUN_PID_TEST_ARGUMENTS}")
 	endif()
 elseif(RUN_PID_TEST_PYTHON)#run PID test with python
-	add_test(NAME ${RUN_PID_TEST_NAME} COMMAND ${CURRENT_PYTHON_EXECUTABLE} ${PATH_TO_PYTHON_FILE})
+	wrap_CTest_Call(${RUN_PID_TEST_NAME} "${CURRENT_PYTHON_EXECUTABLE}" "${PATH_TO_PYTHON_FILE}")
 	#setting the python path automatically for this test
 	set_tests_properties(${RUN_PID_TEST_NAME} PROPERTIES ENVIRONMENT "PYTHONPATH=${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}")
 endif()
