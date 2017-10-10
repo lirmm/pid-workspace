@@ -385,11 +385,6 @@ unset(DECLARED)
 if(NOT DECLARE_PID_COMPONENT_DIRECTORY)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword.")
 endif()
-#checking that the repository exists
-if((NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${DECLARE_PID_COMPONENT_DIRECTORY} OR NOT IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${DECLARE_PID_COMPONENT_DIRECTORY})
-AND (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/script/${DECLARE_PID_COMPONENT_DIRECTORY} OR NOT IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/script/${DECLARE_PID_COMPONENT_DIRECTORY}))
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring ${DECLARE_PID_COMPONENT_NAME}, the source directory ${DECLARE_PID_COMPONENT_DIRECTORY} cannot be found in ${CMAKE_CURRENT_SOURCE_DIR}.")
-endif()
 
 if(DECLARE_PID_COMPONENT_C_STANDARD)
 	set(c_language_standard ${DECLARE_PID_COMPONENT_C_STANDARD})
@@ -449,6 +444,11 @@ if(DECLARE_PID_COMPONENT_PYTHON_PACK)
 endif()
 if(NOT nb_options EQUAL 1)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION or TEST_APPLICATION) must be given for the component.")
+endif()
+#checking that the required directories exist
+check_Required_Directories_Exist(PROBLEM ${type} ${DECLARE_PID_COMPONENT_DIRECTORY})
+if(PROBLEM)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring ${DECLARE_PID_COMPONENT_NAME}, the source directory ${DECLARE_PID_COMPONENT_DIRECTORY} cannot be found in ${CMAKE_CURRENT_SOURCE_DIR} (${PROBLEM}).")
 endif()
 
 set(internal_defs "")

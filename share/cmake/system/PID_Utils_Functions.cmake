@@ -193,6 +193,34 @@ set(${is_existing} FALSE PARENT_SCOPE)
 endfunction(check_Directory_Exists)
 
 
+###
+function (check_Required_Directories_Exist PROBLEM type folder)
+	#checking directory containing headers
+	set(${PROBLEM} PARENT_SCOPE)
+	if(type STREQUAL "STATIC" OR type STREQUAL "SHARED" OR type STREQUAL "HEADER")
+		check_Directory_Exists(EXIST  ${CMAKE_SOURCE_DIR}/include/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in the include folder of the project" PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+	if(type STREQUAL "STATIC" OR type STREQUAL "SHARED" OR type STREQUAL "MODULE"
+		OR type STREQUAL "APP" OR type STREQUAL "EXAMPLE" OR type STREQUAL "TEST")
+		check_Directory_Exists(EXIST  ${CMAKE_CURRENT_SOURCE_DIR}/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in folder ${CMAKE_CURRENT_SOURCE_DIR}" PARENT_SCOPE)
+			return()
+		endif()
+	elseif(type STREQUAL "PYTHON")
+		check_Directory_Exists(EXIST ${CMAKE_CURRENT_SOURCE_DIR}/script/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in folder ${CMAKE_CURRENT_SOURCE_DIR}/script" PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+endfunction(check_Required_Directories_Exist)
+
+
 #############################################################
 ################ Management of version information ##########
 #############################################################
