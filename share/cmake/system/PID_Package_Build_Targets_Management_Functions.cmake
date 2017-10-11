@@ -242,28 +242,11 @@ function(resolve_Component_Language component_target)
 	if(CMAKE_VERSION VERSION_LESS 3.1)#this is only usefll if CMake does not automatically deal with standard related properties
 		get_target_property(STD_C ${component_target} PID_C_STANDARD)
 		get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
-
-		#managing c++
-		if(STD_CXX EQUAL 98)
-			target_compile_options(${component_target} PUBLIC "-std=c++98")
-		elseif(STD_CXX EQUAL 11)
-			target_compile_options(${component_target} PUBLIC "-std=c++11")
-		elseif(STD_CXX EQUAL 14)
-			target_compile_options(${component_target} PUBLIC "-std=c++14")
-		elseif(STD_CXX EQUAL 17)
-			target_compile_options(${component_target} PUBLIC "-std=c++17")
-		endif()
-
-		#managing c
-		if(STD_C EQUAL 90)
-			target_compile_options(${component_target} PUBLIC "-std=c90")
-		elseif(STD_C EQUAL 99)
-			target_compile_options(${component_target} PUBLIC "-std=c99")
-		elseif(STD_C EQUAL 11)
-			target_compile_options(${component_target} PUBLIC "-std=c11")
-		endif()
+		translate_Standard_Into_Option(RES_C_STD_OPT RES_CXX_STD_OPT ${STD_C} ${STD_CXX})
+		#direclty setting the option, without using CMake mechanism as it is not available for these versions
+		target_compile_options(${component_target} PUBLIC "${RES_CXX_STD_OPT}")
+		target_compile_options(${component_target} PUBLIC "${RES_C_STD_OPT}")
 		return()
-
 	elseif(CMAKE_VERSION VERSION_LESS 3.8)#if cmake version is less than 3.8 than the c++ 17 language is unknown
 		get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
 		is_CXX_Version_Less(IS_LESS ${STD_CXX} 17)

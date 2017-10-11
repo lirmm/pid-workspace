@@ -61,6 +61,22 @@ else()
 	set(COMPONENT_OPT_FLAGS $<TARGET_PROPERTY:${target_component},COMPILE_OPTIONS>)
 endif()
 
+if(NOT CMAKE_VERSION VERSION_LESS 3.1)#starting 3.1 the C and CXX standards are managed the good way by CMake (with target properties)
+	set(USE_CMAKE_TARGETS TRUE)
+	if(CMAKE_VERSION VERSION_LESS 3.8)#starting for 3.8, if standard is 17 or more we use the old way to do (CMake does not know this standard, so it has been translated into a compile option by PID)
+		get_target_property(STD_CXX ${target_component} PID_CXX_STANDARD)
+		is_CXX_Version_Less(IS_LESS ${STD_CXX} 17)
+		if(NOT IS_LESS)#if version of the standard is more or equal than 17 then use the classical way of doing (PID has generate compile options already)
+			set(USE_CMAKE_TARGETS FALSE)# do not used information from target in that specific case as it has already been translated
+		endif()
+	endif()
+
+	if(USE_CMAKE_TARGETS)# we have to extract information from the CMake property
+		get_target_property(STD_C ${target_component} C_STANDARD)
+		get_target_property(STD_CXX ${target_component} CXX_STANDARD)
+		translate_Standard_Into_Option(C_LANGUAGE_OPT CXX_LANGUAGE_OPT ${STD_C} ${STD_CXX})
+	endif()
+endif()
 
 #preparing test expression -> getting generator expression resolved content (remove the list to get only one appended element) and test if there is any element
 set(OPT_CONTENT_EXIST $<BOOL:$<JOIN:${COMPONENT_OPT_FLAGS},>>)#deal with empty list
@@ -69,6 +85,10 @@ set(INC_CONTENT_EXIST $<BOOL:$<JOIN:${COMPONENT_INC_FLAGS},>>)#deal with empty l
 
 #merging all flags together to put them in a file
 set(ALL_OPTS_LINES $<${OPT_CONTENT_EXIST}:$<JOIN:${COMPONENT_OPT_FLAGS},\n>>)
+if(USE_CMAKE_TARGETS)
+	set(ALL_OPTS_LINES "${ALL_OPTS_LINES}\n${CXX_LANGUAGE_OPT}\n${C_LANGUAGE_OPT}")
+endif()
+
 set(ALL_DEFS_LINES $<${DEF_CONTENT_EXIST}:$<${OPT_CONTENT_EXIST}:\n>-D$<JOIN:${COMPONENT_DEF_FLAGS},\n-D>>)
 set(ALL_INCS_LINES $<${INC_CONTENT_EXIST}:$<$<OR:${OPT_CONTENT_EXIST},${DEF_CONTENT_EXIST}>:\n>-I$<JOIN:${COMPONENT_INC_FLAGS},\n-I>>)
 

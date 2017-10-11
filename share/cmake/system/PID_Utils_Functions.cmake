@@ -1176,6 +1176,30 @@ endfunction(test_Same_Directory_Content)
 ################ compiler arguments test/manipulation functions ######################
 ######################################################################################
 
+function(translate_Standard_Into_Option RES_C_STD_OPT RES_CXX_STD_OPT c_std_number cxx_std_number)
+
+	#managing c++
+	if(cxx_std_number EQUAL 98)
+		set(${RES_CXX_STD_OPT} "-std=c++98" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 11)
+		set(${RES_CXX_STD_OPT} "-std=c++11" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 14)
+		set(${RES_CXX_STD_OPT} "-std=c++14" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 17)
+		set(${RES_CXX_STD_OPT} "-std=c++17" PARENT_SCOPE)
+	endif()
+
+	#managing c
+	if(c_std_number EQUAL 90)
+		set(${RES_C_STD_OPT} "-std=c90" PARENT_SCOPE)
+	elseif(c_std_number EQUAL 99)
+		set(${RES_C_STD_OPT} "-std=c99" PARENT_SCOPE)
+	elseif(c_std_number EQUAL 11)
+		set(${RES_C_STD_OPT} "-std=c11" PARENT_SCOPE)
+	endif()
+
+endfunction(translate_Standard_Into_Option)
+
 ### compare 2 different C++ language standard version
 function(is_CXX_Version_Less IS_LESS first second)
 if(first EQUAL 98)
