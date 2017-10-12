@@ -12,6 +12,6 @@ set(pygen-converter_DESCRIPTION "This is an header only library that provides li
 set(pygen-converter_YEARS 2017 CACHE INTERNAL "")
 set(pygen-converter_LICENSE CeCILL-C CACHE INTERNAL "")
 set(pygen-converter_ADDRESS git@github.com:vsamy/pygen-converter.git CACHE INTERNAL "")
-set(pygen-converter_PUBLIC_ADDRESS https://github.com:vsamy/pygen-converter.git CACHE INTERNAL "")
+set(pygen-converter_PUBLIC_ADDRESS https://github.com/vsamy/pygen-converter.git CACHE INTERNAL "")
 set(pygen-converter_CATEGORIES CACHE INTERNAL "")
 set(pygen-converter_REFERENCES  CACHE INTERNAL "")
