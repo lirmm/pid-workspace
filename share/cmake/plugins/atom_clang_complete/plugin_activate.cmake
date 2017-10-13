@@ -62,20 +62,18 @@ else()
 endif()
 
 if(NOT CMAKE_VERSION VERSION_LESS 3.1)#starting 3.1 the C and CXX standards are managed the good way by CMake (with target properties)
-	set(USE_CMAKE_TARGETS TRUE)
-	if(CMAKE_VERSION VERSION_LESS 3.8)#starting for 3.8, if standard is 17 or more we use the old way to do (CMake does not know this standard, so it has been translated into a compile option by PID)
-		get_target_property(STD_CXX ${target_component} PID_CXX_STANDARD)
-		is_CXX_Version_Less(IS_LESS ${STD_CXX} 17)
-		if(NOT IS_LESS)#if version of the standard is more or equal than 17 then use the classical way of doing (PID has generate compile options already)
-			set(USE_CMAKE_TARGETS FALSE)# do not used information from target in that specific case as it has already been translated
-		endif()
-	endif()
+    set(ALREADY_IN_COMPILE_OPTIONS FALSE)
+    if(CMAKE_VERSION VERSION_LESS 3.8)#starting for 3.8, if standard is 17 or more we use the old way to do (CMake does not know this standard, so it has been translated into a compile option by PID)
+        get_target_property(STD_CXX ${target_component} PID_CXX_STANDARD)
+        is_CXX_Version_Less(IS_LESS ${STD_CXX} 17)
+        if(NOT IS_LESS)#if version of the standard is more or equal than 17 then use the classical way of doing (PID has generate compile options already)
+            set(ALREADY_IN_COMPILE_OPTIONS TRUE)# do not used information from target in that specific case as it has already been translated
+        endif()
+    endif()
 
-	if(USE_CMAKE_TARGETS)# we have to extract information from the CMake property
-		get_target_property(STD_C ${target_component} C_STANDARD)
-		get_target_property(STD_CXX ${target_component} CXX_STANDARD)
-		translate_Standard_Into_Option(C_LANGUAGE_OPT CXX_LANGUAGE_OPT ${STD_C} ${STD_CXX})
-	endif()
+    if(NOT ALREADY_IN_COMPILE_OPTIONS)# we have to extract information from the CMake property
+        translate_Standard_Into_Option(C_LANGUAGE_OPT CXX_LANGUAGE_OPT ${${PROJECT_NAME}_${target_component}_C_STANDARD} ${${PROJECT_NAME}_${target_component}_CXX_STANDARD})
+    endif()
 endif()
 
 #preparing test expression -> getting generator expression resolved content (remove the list to get only one appended element) and test if there is any element
