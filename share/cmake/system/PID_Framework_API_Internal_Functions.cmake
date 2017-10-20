@@ -49,6 +49,19 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/to_generate)
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/static ${CMAKE_BINARY_DIR}/to_generate)
 
 #2) generating the global configuration file for package site
+if(${PROJECT_NAME}_SITE_PAGE)
+	get_Jekyll_URLs(${${PROJECT_NAME}_SITE_PAGE} PUBLIC_URL BASE_URL)
+	set(PACKAGE_SITE_URL ${PUBLIC_URL})
+	if(BASE_URL AND NOT BASE_URL STREQUAL "")
+		set(PACKAGE_SITE_BASE_FOLDER "/${BASE_URL}")
+	else()
+		set(PACKAGE_SITE_BASE_FOLDER)
+	endif()
+else()
+	set(PACKAGE_SITE_URL)
+	set(PACKAGE_SITE_BASE_FOLDER)
+endif()
+
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
 
 endfunction(generate_Site_Data)
@@ -75,25 +88,22 @@ if(ALL_VERSIONS)
 				# now referencing the binaries
 				list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
 				if(	ALL_BINARIES
-					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz
-					AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz)# both release and binary versions have to exist
+				AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz)#release version must exist in any case
 
 					if(NOT VERSION_REGISTERED)  # the version is registered only if there are binaries inside (sanity check)
 					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} ${ref_version} CACHE INTERNAL \"\")\n") # the version is registered
 					set(VERSION_REGISTERED TRUE)
 					endif()
 					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} ${ref_platform} CACHE INTERNAL \"\")\n") # the platform is registered only if there are binaries inside (sanity check)
-
 					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
-
-					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
-
+					if(EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz)# binary versions for debug may exist
+						file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
+					endif()
 				endif()
 			endforeach()
 		endif()
 	endforeach()
 endif()
-
 endfunction(generate_Site_Binary_References)
 
 
@@ -112,7 +122,8 @@ if(DIR_NAME STREQUAL "build")
 	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searching for the jekyll executable in standard paths
 
 	if(JEKYLL_EXECUTABLE)
-
+	get_Jekyll_URLs(${${PROJECT_NAME}_PROJECT_PAGE} PUBLIC_URL BASE_URL)
+	set(STATIC_SITE_BASEURL "${BASE_URL}")
 	add_custom_target(build
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
@@ -126,6 +137,7 @@ if(DIR_NAME STREQUAL "build")
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+						-DSITE_BASE_URL=${STATIC_SITE_BASEURL}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Serve_PID_Package_Site.cmake
 		COMMENT "[PID] Serving the static site of the package ..."
 		VERBATIM
@@ -178,22 +190,25 @@ if(DIR_NAME STREQUAL "build")
 	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
 
 	if(JEKYLL_EXECUTABLE)
+	get_Jekyll_URLs(${${PROJECT_NAME}_FRAMEWORK_SITE} PUBLIC_URL BASE_URL)
+	set(STATIC_SITE_BASEURL "${BASE_URL}")
 
 	add_custom_target(build
-		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+		COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
 						-DTARGET_FRAMEWORK=${PROJECT_NAME}
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Framework.cmake
-		COMMENT "[PID] Building framework ..."
+		COMMENT "[PID] Building framework ${PROJECT_NAME} ..."
 		VERBATIM
 	)
 
 	add_custom_target(serve
-		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+		COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
 						-DTARGET_FRAMEWORK=${PROJECT_NAME}
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+						-DFRAMEWORK_BASE_URL=${STATIC_SITE_BASEURL}
 						-P ${WORKSPACE_DIR}/share/cmake/system/Serve_PID_Framework.cmake
-		COMMENT "[PID] Serving the static site of the framework ..."
+		COMMENT "[PID] Serving the static site of the framework ${PROJECT_NAME} ..."
 		VERBATIM
 	)
 
@@ -240,7 +255,6 @@ endfunction(add_Framework_Category)
 ##################################################################################
 ############################### building the framework ###########################
 ##################################################################################
-
 
 ############ function used to create the README.md file of the framework  ###########
 function(generate_Framework_Readme_File)
@@ -310,7 +324,19 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/shar
 
 # 2) generate the data file containing general information about the framework (generated from a CMake pattern file)
 set(FRAMEWORK_NAME ${PROJECT_NAME})
-set(FRAMEWORK_SITE_URL ${${PROJECT_NAME}_FRAMEWORK_SITE})
+if(${PROJECT_NAME}_FRAMEWORK_SITE)
+	get_Jekyll_URLs(${${PROJECT_NAME}_FRAMEWORK_SITE} PUBLIC_URL BASE_URL)
+	set(FRAMEWORK_SITE_URL ${PUBLIC_URL})
+	if(BASE_URL AND NOT BASE_URL STREQUAL "")
+		set(FRAMEWORK_SITE_BASE_FOLDER "/${BASE_URL}")
+	else()
+		set(FRAMEWORK_SITE_BASE_FOLDER)
+	endif()
+else()
+	set(FRAMEWORK_SITE_URL)
+	set(FRAMEWORK_SITE_BASE_FOLDER)
+endif()
+
 set(FRAMEWORK_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE})
 get_Formatted_Framework_Contact_String(${PROJECT_NAME} RES_STRING)
 set(FRAMEWORK_MAINTAINER_NAME ${RES_STRING})
@@ -324,12 +350,12 @@ configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/framework.yml.in ${CMA
 file(WRITE ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "")
 if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 	foreach(cat IN ITEMS ${${PROJECT_NAME}_FRAMEWORK_CATEGORIES})
-		extract_All_Words_From_Path(${cat} LIST_OF_NAMES)
+		extract_All_Words_From_Path(${cat} "_" LIST_OF_NAMES)
 		list(LENGTH LIST_OF_NAMES SIZE)
 		set(FINAL_NAME "")
 		if(SIZE GREATER 1)# there are subcategories
 			foreach(name IN ITEMS ${LIST_OF_NAMES})
-				extract_All_Words(${name} NEW_NAMES)# replace underscores with spaces
+				extract_All_Words(${name} "_" NEW_NAMES)# replace underscores with spaces
 
 				fill_List_Into_String("${NEW_NAMES}" RES_STRING)
 				set(FINAL_NAME "${FINAL_NAME} ${RES_STRING}")
@@ -341,7 +367,7 @@ if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 			endforeach()
 			file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
 		else()
-			extract_All_Words(${cat} NEW_NAMES)# replace underscores with spaces
+			extract_All_Words(${cat} "_" NEW_NAMES)# replace underscores with spaces
 			fill_List_Into_String("${NEW_NAMES}" RES_STRING)
 			set(FINAL_NAME "${RES_STRING}")
 			file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
@@ -350,6 +376,7 @@ if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 endif()
 
 # 4) generate the configuration file for jekyll generation
+
 configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
 
 endfunction(generate_Framework_Data)
@@ -417,7 +444,7 @@ set(PACKAGE_NAME ${package})
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binaries.md.in ${CMAKE_SOURCE_DIR}/src/_packages/${package}/pages/binaries.md @ONLY)
 endfunction(generate_Package_Page_Binaries_In_Framework)
 
-### create the file for presenting an exetrnal package and listing its binaries in the framework
+### create the file for presenting an external package and listing its binaries in the framework
 function(generate_External_Page_In_Framework package)
 set(PATH_TO_PAGE ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
 set(PATH_TO_REFERENCE_FILE ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${package}.cmake)
@@ -542,12 +569,14 @@ if(ALL_VERSIONS)
 				if(ALL_BINARIES) # check to avoid problem is the binaries have been badly released
 
 					# the version is registered only if there are binaries inside (sanity check)
-					if(native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz
-						  AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)# both release and binary versions have to exist for native packages
+					if(native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
 						set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
 						set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
-						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
-						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
+						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)# release version must exist for native packages
+
+						if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)# debug version may no exist for native packages
+							set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
+						endif()
 					elseif(NOT NATIVE AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) #at least a release version is required for external packages
 
 						set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
@@ -568,7 +597,7 @@ if(ALL_VERSIONS)
 				foreach(ref_platform IN ITEMS ${ALL_PLATFORMS})#for each platform of this version
 					# now referencing the binaries
 					list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
-					if(ALL_BINARIES) #do not check for binary archive name since it may differ from standard regarding platform (king of generic platform name may be used instead of the symink one)
+					if(ALL_BINARIES) #do not check for binary archive name since it may differ from standard regarding platform (kind of generic platform name may be used instead of the symink one)
 						set(RELEASE_BINARY)
 						set(DEBUG_BINARY)
 						foreach(binary IN ITEMS ${ALL_BINARIES})
@@ -587,10 +616,10 @@ if(ALL_VERSIONS)
 							set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version}) #adding the version
 							set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform}) #adding the platform
 
-							set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${ref_platform}/${package}-${ref_version}-${RELEASE_BINARY}.tar.gz)
+							set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${RELEASE_BINARY}/${package}-${ref_version}-${RELEASE_BINARY}.tar.gz)
 							set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${package}-${ref_version}-${RELEASE_BINARY})
 							if(DEBUG_BINARY)
-								set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${DEBUG_BINARY}.tar.gz)
+								set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${DEBUG_BINARY}/${package}-${ref_version}-dbg-${DEBUG_BINARY}.tar.gz)
 								set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${package}-${ref_version}-dbg-${DEBUG_BINARY})
 
 							endif()
@@ -617,7 +646,7 @@ if(ALL_VERSIONS)
 				endif()
 
 				#debug binary referencing
-				if(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG) #always true for native packages, may be true for native packages
+				if(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG) #always true for open source native packages, may be true for external packages, never true for close source native packages
 					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG} CACHE INTERNAL \"\")\n")#reference on the debug binary
 					if(NOT native)
 						file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG} CACHE INTERNAL \"\")\n")#name of the folder contained in the archive

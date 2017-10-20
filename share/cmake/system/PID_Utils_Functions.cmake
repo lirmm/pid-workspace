@@ -62,11 +62,11 @@ endfunction(is_A_System_Reference_Path)
 #############################################################
 
 ###
-function(extract_All_Words name_with_underscores all_words_in_list)
+function(extract_All_Words the_string separator all_words_in_list)
 set(res "")
-string(REPLACE "_" ";" res "${name_with_underscores}")
+string(REPLACE "${separator}" ";" res "${the_string}")
 set(${all_words_in_list} ${res} PARENT_SCOPE)
-endfunction()
+endfunction(extract_All_Words)
 
 
 ###
@@ -118,6 +118,25 @@ string(REPLACE " " "-" FINAL_STR ${RES_STR})#simply remove underscores
 set(${RES_LINK} ${FINAL_STR} PARENT_SCOPE)
 endfunction(format_PID_Identifier_Into_Markdown_Link)
 
+
+###
+function(normalize_Version_String INPUT_VERSION_STRING NORMALIZED_OUTPUT_VERSION_STRING)
+	get_Version_String_Numbers(${INPUT_VERSION_STRING} major minor patch)
+	set(VERSION_STR "${major}.")
+	if(minor)
+		set(VERSION_STR "${VERSION_STR}${minor}.")
+	else()
+		set(VERSION_STR "${VERSION_STR}0.")
+	endif()
+	if(patch)
+		set(VERSION_STR "${VERSION_STR}${patch}")
+	else()
+		set(VERSION_STR "${VERSION_STR}0")
+	endif()
+	set(${NORMALIZED_OUTPUT_VERSION_STRING} ${VERSION_STR} PARENT_SCOPE)
+endfunction(normalize_Version_String)
+
+
 #############################################################
 ################ filesystem management utilities ############
 #############################################################
@@ -135,32 +154,32 @@ execute_process(
 endfunction(create_Symlink)
 
 ###
-function(create_Rpath_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
+function(create_Runtime_Symlink path_to_target path_to_container_folder rpath_sub_folder)
 #first creating the path where to put symlinks if it does not exist
-set(FULL_RPATH_DIR ${path_to_rpath_folder}/.rpath/${rpath_sub_folder})
-file(MAKE_DIRECTORY ${FULL_RPATH_DIR})
+set(RUNTIME_DIR ${path_to_container_folder}/${rpath_sub_folder})
+file(MAKE_DIRECTORY ${RUNTIME_DIR})
 get_filename_component(A_FILE ${path_to_target} NAME)
 #second creating the symlink
-create_Symlink(${path_to_target} ${FULL_RPATH_DIR}/${A_FILE})
-endfunction(create_Rpath_Symlink)
+create_Symlink(${path_to_target} ${RUNTIME_DIR}/${A_FILE})
+endfunction(create_Runtime_Symlink)
 
 ###
-function(install_Rpath_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
-get_filename_component(A_FILE "${path_to_target}" NAME)
-set(FULL_RPATH_DIR ${path_to_rpath_folder}/.rpath/${rpath_sub_folder})
-install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
-install(CODE "
-        if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
-				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-	endif()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
-                                WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-	message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
+	get_filename_component(A_FILE "${path_to_target}" NAME)
+	set(FULL_RPATH_DIR ${path_to_rpath_folder}/${rpath_sub_folder})
+	install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
+	install(CODE "
+	              if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
+									execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
+									                 WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+		            endif()
+		            execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
+	                              WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+		            message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+	")# creating links "on the fly" when installing
 
-")# creating links "on the fly" when installing
+endfunction(install_Runtime_Symlink)
 
-endfunction(install_Rpath_Symlink)
 
 ###
 function (check_Directory_Exists is_existing path)
@@ -172,6 +191,34 @@ if(	EXISTS "${path}"
 endif()
 set(${is_existing} FALSE PARENT_SCOPE)
 endfunction(check_Directory_Exists)
+
+
+###
+function (check_Required_Directories_Exist PROBLEM type folder)
+	#checking directory containing headers
+	set(${PROBLEM} PARENT_SCOPE)
+	if(type STREQUAL "STATIC" OR type STREQUAL "SHARED" OR type STREQUAL "HEADER")
+		check_Directory_Exists(EXIST  ${CMAKE_SOURCE_DIR}/include/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in the include folder of the project" PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+	if(type STREQUAL "STATIC" OR type STREQUAL "SHARED" OR type STREQUAL "MODULE"
+		OR type STREQUAL "APP" OR type STREQUAL "EXAMPLE" OR type STREQUAL "TEST")
+		check_Directory_Exists(EXIST  ${CMAKE_CURRENT_SOURCE_DIR}/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in folder ${CMAKE_CURRENT_SOURCE_DIR}" PARENT_SCOPE)
+			return()
+		endif()
+	elseif(type STREQUAL "PYTHON")
+		check_Directory_Exists(EXIST ${CMAKE_CURRENT_SOURCE_DIR}/script/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in folder ${CMAKE_CURRENT_SOURCE_DIR}/script" PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+endfunction(check_Required_Directories_Exist)
 
 
 #############################################################
@@ -322,8 +369,8 @@ else()
 	list(GET author_institution 0 AUTHOR_NAME)
 	list(GET author_institution 1 INSTITUTION_NAME)
 endif()
-extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
-extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
+extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
+extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
@@ -335,7 +382,7 @@ endfunction()
 
 ###
 function(generate_Contact_String author mail RES_STRING)
-extract_All_Words("${author}" AUTHOR_ALL_WORDS)
+extract_All_Words("${author}" "_" AUTHOR_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 if(mail AND NOT mail STREQUAL "")
 	set(${RES_STRING} "${AUTHOR_STRING} (${mail})" PARENT_SCOPE)
@@ -346,7 +393,7 @@ endfunction()
 
 ###
 function(generate_Formatted_String input RES_STRING)
-extract_All_Words("${input}" INPUT_ALL_WORDS)
+extract_All_Words("${input}" "_" INPUT_ALL_WORDS)
 fill_List_Into_String("${INPUT_ALL_WORDS}" INPUT_STRING)
 set(${RES_STRING} "${INPUT_STRING}" PARENT_SCOPE)
 endfunction(generate_Formatted_String)
@@ -358,13 +405,13 @@ list(LENGTH author_institution SIZE)
 if(${SIZE} EQUAL 2)
 list(GET author_institution 0 AUTHOR_NAME)
 list(GET author_institution 1 INSTITUTION_NAME)
-extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
-extract_All_Words("${INSTITUTION_NAME}" INSTITUTION_ALL_WORDS)
+extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
+extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 elseif(${SIZE} EQUAL 1)
 list(GET author_institution 0 AUTHOR_NAME)
-extract_All_Words("${AUTHOR_NAME}" AUTHOR_ALL_WORDS)
+extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 set(INSTITUTION_STRING "")
 endif()
@@ -377,8 +424,8 @@ endfunction(get_Formatted_Author_String)
 
 ###
 function(get_Formatted_Package_Contact_String package RES_STRING)
-extract_All_Words("${${package}_MAIN_AUTHOR}" AUTHOR_ALL_WORDS)
-extract_All_Words("${${package}_MAIN_INSTITUTION}" INSTITUTION_ALL_WORDS)
+extract_All_Words("${${package}_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
+extract_All_Words("${${package}_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
@@ -398,8 +445,8 @@ endfunction(get_Formatted_Package_Contact_String)
 
 ###
 function(get_Formatted_Framework_Contact_String framework RES_STRING)
-extract_All_Words("${${framework}_FRAMEWORK_MAIN_AUTHOR}" AUTHOR_ALL_WORDS)
-extract_All_Words("${${framework}_FRAMEWORK_MAIN_INSTITUTION}" INSTITUTION_ALL_WORDS)
+extract_All_Words("${${framework}_FRAMEWORK_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
+extract_All_Words("${${framework}_FRAMEWORK_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
 fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
@@ -417,9 +464,74 @@ else()
 endif()
 endfunction(get_Formatted_Framework_Contact_String)
 
+
+### checking that the license applying to the package is closed source or not (set the variable CLOSED to TRUE or FALSE adequately)
+function(package_License_Is_Closed_Source CLOSED package)
+	#first step determining if the dependent package provides its license in its use file (compatiblity with previous version of PID)
+	if(NOT ${package}_LICENSE)
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
+			include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake) #the reference file contains the license
+		else()#we consider the package as having an opensource license
+			set(${CLOSED} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+	set(found_license_description FALSE)
+	if(KNOWN_LICENSES)
+		list(FIND KNOWN_LICENSES ${${package}_LICENSE} INDEX)
+		if(NOT INDEX EQUAL -1)
+			set(found_license_description TRUE)
+		endif()#otherwise license has never been loaded so do not know if open or closed source
+	endif()#otherwise license is unknown for now
+	if(NOT found_license_description)
+		#trying to find that license
+		include(${WORKSPACE_DIR}/share/cmake/licenses/License${${package}_LICENSE}.cmake RESULT_VARIABLE res)
+		if(res MATCHES NOTFOUND)
+			set(${CLOSED} TRUE PARENT_SCOPE)
+			message("[PID] ERROR : cannot find description file for license ${${package}_LICENSE}, specified for package ${package}. Package is supposed to be closed source.")
+			return()
+		endif()
+		set(temp_list ${KNOWN_LICENSES} ${${package}_LICENSE} CACHE INTERNAL "")
+		list(REMOVE_DUPLICATES temp_list)
+		set(KNOWN_LICENSES ${temp_list} CACHE INTERNAL "")#adding the license to known licenses
+
+		if(LICENSE_IS_OPEN_SOURCE)
+			set(KNOWN_LICENSE_${${package}_LICENSE}_CLOSED FALSE CACHE INTERNAL "")
+		else()
+			set(KNOWN_LICENSE_${${package}_LICENSE}_CLOSED TRUE CACHE INTERNAL "")
+		endif()
+	endif()
+	# here the license is already known, simply checking for the registered values
+	# this memorization is to optimize configuration time as License file may be long to load
+	set(${CLOSED} ${KNOWN_LICENSE_${${package}_LICENSE}_CLOSED} PARENT_SCOPE)
+endfunction(package_License_Is_Closed_Source)
+
 #############################################################
 ################ Source file management #####################
 #############################################################
+
+### used to activate adequate languages depending on source file used in the project
+macro(activate_Adequate_Languages)
+get_All_Sources_Absolute(list_of_files ${CMAKE_SOURCE_DIR})#list all source files
+get_property(USED_LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES) #getting all languages already in use
+
+foreach(source_file IN ITEMS ${list_of_files})
+		get_filename_component(EXTENSION ${source_file} EXT)
+		if(EXTENSION STREQUAL ".f")#we have a fortran file
+				list(FIND USED_LANGUAGES Fortran INDEX)
+				if(INDEX EQUAL -1)#fortran is not in use already
+					enable_language(Fortran)#use fortran
+					list(APPEND USED_LANGUAGES Fortran)
+				endif()
+		elseif(EXTENSION STREQUAL ".asm" OR EXTENSION STREQUAL ".s" OR EXTENSION STREQUAL ".S" )#we have an assembler file
+				list(FIND USED_LANGUAGES ASM INDEX)
+				if(INDEX EQUAL -1)#assembler is not in use already
+					enable_language(ASM)#use assembler
+					list(APPEND USED_LANGUAGES ASM)
+				endif()
+		endif()
+endforeach()
+endmacro(activate_Adequate_Languages)
 
 ###
 function(get_All_Sources_Relative RESULT dir)
@@ -437,11 +549,13 @@ file(	GLOB_RECURSE
 	"${dir}/*.s"
 	"${dir}/*.S"
 	"${dir}/*.asm"
+	"${dir}/*.f"
+	"${dir}/*.py"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Relative)
 
-###
+### absolute sources do not take into account python files as they will not be part of a build process
 function(get_All_Sources_Absolute RESULT dir)
 file(	GLOB_RECURSE
 	RES
@@ -457,9 +571,23 @@ file(	GLOB_RECURSE
 	"${dir}/*.s"
 	"${dir}/*.S"
 	"${dir}/*.asm"
+	"${dir}/*.f"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Absolute)
+
+### to know wether the folder contains some python script
+function(contains_Python_Code HAS_PYTHON dir)
+file(GLOB_RECURSE HAS_PYTHON_CODE ${dir} "${dir}/*.py")
+set(${HAS_PYTHON} ${HAS_PYTHON_CODE} PARENT_SCOPE)
+endfunction(contains_Python_Code)
+
+### to know wether the folder is a python package
+function(contains_Python_Package_Description IS_PYTHON_PACK dir)
+	file(GLOB PY_PACK_FILE RELATIVE ${dir} "${dir}/__init__.py")
+	set(${IS_PYTHON_PACK} ${PY_PACK_FILE} PARENT_SCOPE)
+endfunction(contains_Python_Package_Description)
+
 
 ###
 function(get_All_Headers_Relative RESULT dir)
@@ -666,19 +794,28 @@ endfunction(set_Package_Repository_Address)
 ###
 function(reset_Package_Repository_Address package new_git_url)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REGEX REPLACE "([ \t\n])ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1 ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
-	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
+	string(REGEX REPLACE "([ \t\n]+)ADDRESS([ \t\n]+)([^ \t\n]+)([ \t\n]+)" "\\1ADDRESS\\2${new_git_url}\\4" NEW_CONTENT ${CONTENT})
+	string(REGEX REPLACE "([ \t\n]+)PUBLIC_ADDRESS([ \t\n]+)([^ \t\n]+)([ \t\n]+)" "\\1PUBLIC_ADDRESS\\2${new_git_url}\\4" FINAL_CONTENT ${NEW_CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${FINAL_CONTENT})
 endfunction(reset_Package_Repository_Address)
 
 ###
-function(get_Package_Repository_Address package RES_URL)
+function(get_Package_Repository_Address package RES_URL RES_PUBLIC_URL)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
+	#checking for restricted address
 	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
 	if(url STREQUAL "${CONTENT}")#no match
-		set(${RES_URL} "" PARENT_SCOPE)
-		return()
+		set(${RES_URL} PARENT_SCOPE)
+	else()
+		set(${RES_URL} ${url} PARENT_SCOPE)
 	endif()
-	set(${RES_URL} ${url} PARENT_SCOPE)
+	#checking for public (fetch only) address
+	string(REGEX REPLACE "^.+[ \t\n]PUBLIC_ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
+	if(url STREQUAL "${CONTENT}")#no match
+		set(${RES_PUBLIC_URL} PARENT_SCOPE)
+	else()
+		set(${RES_PUBLIC_URL} ${url} PARENT_SCOPE)
+	endif()
 endfunction(get_Package_Repository_Address)
 
 ###
@@ -804,6 +941,132 @@ endif()
 endfunction(is_Binary_Package_Version_In_Development)
 
 
+### hard clean consist in cleaning the build folder in an aggressive way
+function(hard_Clean_Package package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
+file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
+if(thefiles)
+foreach(a_file IN ITEMS ${thefiles})
+	if(NOT a_file STREQUAL ".gitignore")
+		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
+		else()#it is a regular file or symlink
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
+		endif()
+	endif()
+endforeach()
+endif()
+endfunction(hard_Clean_Package)
+
+function(hard_Clean_Package_Debug package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
+file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
+if(thefiles)
+foreach(a_file IN ITEMS ${thefiles})
+	if(NOT a_file STREQUAL ".gitignore")
+		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
+		else()#it is a regular file or symlink
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
+		endif()
+	endif()
+endforeach()
+endif()
+endfunction(hard_Clean_Package_Debug)
+
+function(hard_Clean_Package_Release package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
+file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
+if(thefiles)
+foreach(a_file IN ITEMS ${thefiles})
+	if(NOT a_file STREQUAL ".gitignore")
+		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
+		else()#it is a regular file or symlink
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
+		endif()
+	endif()
+endforeach()
+endif()
+endfunction(hard_Clean_Package_Release)
+
+### reconfiguring a package
+function(reconfigure_Package_Build package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
+endfunction(reconfigure_Package_Build)
+
+function(reconfigure_Package_Build_Debug package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
+endfunction(reconfigure_Package_Build_Debug)
+
+function(reconfigure_Package_Build_Release package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
+endfunction(reconfigure_Package_Build_Release)
+
+### checking package dependencies (i.e. if their version specified in the CMakeLists.txt of the package is released)
+function(check_For_Dependencies_Version BAD_DEPS package)
+set(${BAD_DEPS} PARENT_SCOPE)
+set(list_of_bad_deps)
+#check that the files describing the dependencies are existing
+if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake
+OR NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
+	message("[PID] ERROR : no dependency description found in package ${package} ! cannot check version of its dependencies.")
+	return()
+endif()
+# loading variables describing dependencies
+include(${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake)
+include(${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
+# now check that target dependencies
+#debug
+if(TARGET_NATIVE_DEPENDENCIES_DEBUG)
+	foreach(dep IN ITEMS ${TARGET_NATIVE_DEPENDENCIES_DEBUG})
+		if(EXISTS ${WORKSPACE_DIR}/packages/${dep})#checking that the user may use a version generated by a source package
+				# step 1: get all versions for that package
+				get_Repository_Version_Tags(AVAILABLE_VERSIONS ${dep})
+				set(VERSION_NUMBERS)
+				if(AVAILABLE_VERSIONS)
+					normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
+				endif()
+
+				# step 2: checking that the version specified in the CMakeLists really exist
+				normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
+
+				list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
+				if(INDEX EQUAL -1)
+						list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG}")#using # instead of _ since names of package can contain _
+				endif()
+		endif()
+	endforeach()
+endif()
+#release
+if(TARGET_NATIVE_DEPENDENCIES)
+	foreach(dep IN ITEMS ${TARGET_NATIVE_DEPENDENCIES})
+		if(EXISTS ${WORKSPACE_DIR}/packages/${dep})#checking that the user may use a version generated by a source package
+				# step 1: get all versions for that package
+				get_Repository_Version_Tags(AVAILABLE_VERSIONS ${dep})
+				set(VERSION_NUMBERS)
+				if(AVAILABLE_VERSIONS)
+					normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
+				endif()
+
+				# step 2: checking that the version specified in the CMakeLists really exist
+				normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
+				list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
+				if(INDEX EQUAL -1)
+						list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION}")#using # instead of _ since names of package can contain _
+				endif()
+		endif()
+	endforeach()
+endif()
+if(list_of_bad_deps)#guard to avoid troubles with CMake complaining that the list does not exist
+	list(REMOVE_DUPLICATES list_of_bad_deps)
+	set(${BAD_DEPS} ${list_of_bad_deps} PARENT_SCOPE)#need of guillemet to preserve the list structure
+endif()
+endfunction(check_For_Dependencies_Version)
+
 ################################################################
 ################ Frameworks Life cycle management ##############
 ################################################################
@@ -832,6 +1095,21 @@ function(get_Framework_Repository_Address framework RES_URL)
 	endif()
 	set(${RES_URL} ${url} PARENT_SCOPE)
 endfunction(get_Framework_Repository_Address)
+
+### function used to extract information used by jekyll to adequately configure the site
+function(get_Jekyll_URLs full_url PUBLIC_URL BASE_URL)
+	string(REGEX REPLACE "^(http[s]?://[^/]+)/(.+)$" "\\1;\\2" all_urls ${full_url})
+	if(NOT (all_urls STREQUAL ${full_url}))#it matches
+		list(GET all_urls 0 pub)
+		list(GET all_urls 1 base)
+		set(PUBLIC_URL ${pub} PARENT_SCOPE)
+		set(BASE_URL ${base} PARENT_SCOPE)
+	else()
+		string(REGEX REPLACE "^(http[s]?://[^/]+)/?$" "\\1" pub_url ${full_url})
+		set(PUBLIC_URL ${pub_url} PARENT_SCOPE)
+		set(BASE_URL PARENT_SCOPE)
+	endif()
+endfunction(get_Jekyll_URLs)
 
 ################################################################
 ################ Markdown file management ######################
@@ -893,3 +1171,85 @@ foreach(a_file IN ITEMS ${ALL_FILES_DIR1})
 endforeach()
 set(${ARE_SAME} TRUE PARENT_SCOPE)
 endfunction(test_Same_Directory_Content)
+
+######################################################################################
+################ compiler arguments test/manipulation functions ######################
+######################################################################################
+
+function(translate_Standard_Into_Option RES_C_STD_OPT RES_CXX_STD_OPT c_std_number cxx_std_number)
+
+	#managing c++
+	if(cxx_std_number EQUAL 98)
+		set(${RES_CXX_STD_OPT} "-std=c++98" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 11)
+		set(${RES_CXX_STD_OPT} "-std=c++11" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 14)
+		set(${RES_CXX_STD_OPT} "-std=c++14" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 17)
+		set(${RES_CXX_STD_OPT} "-std=c++17" PARENT_SCOPE)
+	endif()
+
+	#managing c
+	if(c_std_number EQUAL 90)
+		set(${RES_C_STD_OPT} "-std=c90" PARENT_SCOPE)
+	elseif(c_std_number EQUAL 99)
+		set(${RES_C_STD_OPT} "-std=c99" PARENT_SCOPE)
+	elseif(c_std_number EQUAL 11)
+		set(${RES_C_STD_OPT} "-std=c11" PARENT_SCOPE)
+	endif()
+
+endfunction(translate_Standard_Into_Option)
+
+### compare 2 different C++ language standard version
+function(is_CXX_Version_Less IS_LESS first second)
+if(first EQUAL 98)
+	if(second EQUAL 98)
+		set(${IS_LESS} FALSE PARENT_SCOPE)
+	else()
+		set(${IS_LESS} TRUE PARENT_SCOPE)
+	endif()
+else()
+	if(second EQUAL 98)
+		set(${IS_LESS} FALSE PARENT_SCOPE)
+	else()# both number are comparable
+		if(first LESS second)
+			set(${IS_LESS} TRUE PARENT_SCOPE)
+		else()
+			set(${IS_LESS} FALSE PARENT_SCOPE)
+		endif()
+	endif()
+endif()
+endfunction(is_CXX_Version_Less)
+
+### compare 2 different C language standard version
+function(is_C_Version_Less IS_LESS first second)
+if(first EQUAL 11)#last version is 11 so never less
+	set(${IS_LESS} FALSE PARENT_SCOPE)
+else()
+	if(second EQUAL 11)
+		set(${IS_LESS} TRUE PARENT_SCOPE)
+	else()# both number are comparable (90 or 99)
+		if(first LESS second)
+			set(${IS_LESS} TRUE PARENT_SCOPE)
+		else()
+			set(${IS_LESS} FALSE PARENT_SCOPE)
+		endif()
+	endif()
+endif()
+endfunction(is_C_Version_Less)
+
+### check if the option passed to the compiler is used to set the language standard is use
+function(is_C_Standard_Option STANDARD_NUMBER opt)
+string(REGEX REPLACE "^[ \t]*-std=(c|gnu)(90|99|11)[ \t]*$" "\\2" OUTPUT_VAR_C ${opt})
+if(NOT OUTPUT_VAR_C STREQUAL opt)#it matches
+	set(${STANDARD_NUMBER} ${OUTPUT_VAR_C} PARENT_SCOPE)
+endif()
+endfunction(is_C_Standard_Option)
+
+### check if the option passed to the compiler is used to set the language standard is use
+function(is_CXX_Standard_Option STANDARD_NUMBER opt)
+string(REGEX REPLACE "^[ \t]*-std=(c|gnu)\\+\\+(98|11|14|17)[ \t]*$" "\\2" OUTPUT_VAR_CXX ${opt})
+if(NOT OUTPUT_VAR_CXX STREQUAL opt)#it matches
+	set(${STANDARD_NUMBER} ${OUTPUT_VAR_CXX} PARENT_SCOPE)
+endif()
+endfunction(is_CXX_Standard_Option)

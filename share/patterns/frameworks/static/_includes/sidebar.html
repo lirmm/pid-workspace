@@ -3,9 +3,9 @@
 	<ul class="list-unstyled">
 	{% capture sidebar %}
 
-	{% if site.data.categories %}		
+	{% if site.data.categories %}
 		{% for category in site.data.categories %}
-			{% assign category_packages = 0 %} 
+			{% assign category_packages = 0 %}
 			{% for package in site.packages %}
 			  {% if package.path contains 'index' %}
 			  {% if package.categories contains category.index %}
@@ -23,21 +23,21 @@
 			{% endfor %}
 			{% endif %}
 			{% if category_packages != 0 %}
-			<li>{{ category.name }} 
+			<li>{{ category.name }}
 				<ul class="list-unstyled">
 				{% for package in site.packages %}
 					{% if package.path contains 'index' %}
 					{% if (package.categories contains category.index) %}
-						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="{{ package.url }}">{{ package.package }}</a></li>
+						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="{{ site.baseurl }}{{ package.url }}">{{ package.package }}</a></li>
 					{% endif %}
-					{% endif %}					
+					{% endif %}
 				{% endfor %}
 				{% for package in site.external %}
 					{% if package.path contains 'index' %}
 					{% if (package.categories contains category.index) %}
-						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="{{ package.url }}">{{ package.package }}</a></li>
+						<li class="{% if page.path contains doc.url %}active{% endif %}"><a href="{{ site.baseurl }}{{ package.url }}">{{ package.package }}</a></li>
 					{% endif %}
-					{% endif %}					
+					{% endif %}
 				{% endfor %}
 				</ul>
 			{% endif %}
@@ -48,17 +48,17 @@
 	<ul class="list-unstyled">
 	{% for package in site.packages %}
 		{% if package.path contains 'index' %}
-		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="{{ package.url }}">{{ package.package }}</a></li>
+		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="{{ site.baseurl }}{{ package.url }}">{{ package.package }}</a></li>
 		{% endif %}
 	{% endfor %}
 	{% for package in site.external %}
 		{% if package.path contains 'index' %}
-		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="{{ package.url }}">{{ package.package }}</a></li>
+		<li class="{% if page.path contains package.url %}active{% endif %}"><a href="{{ site.baseurl }}{{ package.url }}">{{ package.package }}</a></li>
 		{% endif %}
 	{% endfor %}
 	</ul>
 	</li>
-	
+
 	{% endcapture %}
 	{{ sidebar | strip_newlines }}
 	</ul>

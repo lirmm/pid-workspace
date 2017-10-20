@@ -92,10 +92,9 @@ if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
 		"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_HTML_DIR}")
 
 	# creating the doc target
-	get_target_property(DOC_TARGET doc TYPE)
-	if(NOT DOC_TARGET)
+	if(NOT TARGET doc)
 		add_custom_target(doc)
-	endif(NOT DOC_TARGET)
+	endif()
 
 	add_dependencies(doc doxygen)
 
@@ -156,6 +155,7 @@ endif()
 endif()
 endfunction(generate_API)
 
+
 ############ function used to create the license.txt file of the package  ###########
 function(generate_License_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
@@ -200,7 +200,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(PACKAGE_SITE_REF_IN_README "")
 
 		# simplified install section
-		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is based on the [PID](https://gite.lirmm.fr/pid/pid-workspace/wikis/home) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is based on the [PID](http://pid.lirmm.net/pid-framework/pages/install.html) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
 	else()
 		# intro
 		generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
@@ -211,7 +211,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		endif()
 
 		# install procedure
-		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called [PID](http://pid.lirmm.net/pid-framework/pages/install.html). Just follow and read the links to understand how to install, use and call its API and/or applications.")
 
 		# reference to site page
 		set(PACKAGE_SITE_REF_IN_README "[package_site]: ${ADDRESS} \"${PROJECT_NAME} package\"
@@ -223,6 +223,12 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 
 	else()
 		set(PACKAGE_LICENSE_FOR_README "The package has no license defined yet.")
+	endif()
+
+	set(README_USER_CONTENT "")
+	if(${PROJECT_NAME}_USER_README_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE})
+		file(READ ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE} CONTENT_ODF_README)
+		set(README_USER_CONTENT "${CONTENT_ODF_README}")
 	endif()
 
 	set(README_AUTHORS_LIST "")
@@ -513,9 +519,9 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
 
 else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 	#find the framework in workspace
-	load_Framework(IS_LOADED ${${PROJECT_NAME}_FRAMEWORK})
-	if(NOT IS_LOADED)
-		message(FATAL_ERROR "[PID] ERROR : the framework you specified is unknown in the workspace.")
+	check_Framework(FRAMEWORK_OK ${${PROJECT_NAME}_FRAMEWORK})
+	if(NOT FRAMEWORK_OK)
+		message(FATAL_ERROR "[PID] ERROR : the framework you specified (${${PROJECT_NAME}_FRAMEWORK}) is unknown in the workspace.")
 		return()
 	endif()
 	generate_Package_Page_Index_In_Framework(${PATH_TO_SITE}) # create index page
@@ -626,7 +632,7 @@ if(${PROJECT_NAME}_${component}_SITE_CONTENT_FILE)
 test_Site_Content_File(FILE_NAME EXTENSION ${${PROJECT_NAME}_${component}_SITE_CONTENT_FILE})
 	if(FILE_NAME)
 		set(RES "${RES}### Details\n")
-		set(RES "${RES}Please look at [this page](${FILE_NAME}) to get more information.\n")
+		set(RES "${RES}Please look at [this page](${FILE_NAME}.html) to get more information.\n")
 		set(RES "${RES}\n")
 	endif()
 endif()
@@ -677,7 +683,7 @@ if(NOT IS_HF)
 		endforeach()
 	endif()
 
-	if(EXPORTS_SOMETHING) #defines those dependencies taht are exported
+	if(EXPORTS_SOMETHING) #defines those dependencies that are exported
 		set(RES "${RES}\n### exported dependencies:\n")
 		if(INT_EXPORTED_DEPS)
 			set(RES "${RES}+ from this package:\n")
@@ -705,7 +711,7 @@ if(NOT IS_HF)
 				foreach(a_dep IN ITEMS ${EXPORTED_DEP_${a_pack}})
 					if(TARGET_PAGE)# the package to which the component belong has a static site defined
 						format_PID_Identifier_Into_Markdown_Link(RES_STR "${a_dep}")
-						set(RES "${RES}\t* [${a_dep}](${TARGET_PAGE}/pages/use#${RES_STR})\n")
+						set(RES "${RES}\t* [${a_dep}](${TARGET_PAGE}/pages/use.html#${RES_STR})\n")
 					else()
 						set(RES "${RES}\t* ${a_dep}\n")
 					endif()
@@ -878,14 +884,18 @@ endif()
 set(NEW_POST_CONTENT_BINARY FALSE)
 if(	include_installer
 	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
-	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
 	AND NOT EXISTS ${TARGET_BINARIES_PATH})
 	# update the site content only if necessary
 	file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder
 
 	file(COPY ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
 	${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
-	DESTINATION  ${TARGET_BINARIES_PATH})#copy the binaries
+	DESTINATION  ${TARGET_BINARIES_PATH})#copy the release archive
+
+	if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz)#copy debug archive if it exist
+			file(COPY ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
+			DESTINATION  ${TARGET_BINARIES_PATH})#copy the binaries
+	endif()
 	# configure the file used to reference the binary in jekyll
 	set(BINARY_PACKAGE ${package})
 	set(BINARY_VERSION ${version})
@@ -1010,6 +1020,28 @@ endif()
 set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
 endfunction(framework_Project_Exists)
 
+### checking that the given framework exists
+function(check_Framework CHECK_OK framework)
+	framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
+	if(REF_EXIST)
+		include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
+		set(${CHECK_OK} TRUE PARENT_SCOPE)
+		return()
+	else()
+		framework_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${framework})
+		if(FOLDER_EXISTS)#generate the reference file on demand
+			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+			framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
+			if(REF_EXIST)
+				include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
+				set(${CHECK_OK} TRUE PARENT_SCOPE)
+				return()
+			endif()
+		endif()
+	endif()
+	set(${CHECK_OK} FALSE PARENT_SCOPE)
+endfunction(check_Framework)
+
 ### putting the framework repository into the workspace, or update it if it is already there
 function(load_Framework LOADED framework)
 	set(${LOADED} FALSE PARENT_SCOPE)
@@ -1021,6 +1053,7 @@ function(load_Framework LOADED framework)
 
 	framework_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${framework})
 	if(FOLDER_EXISTS)
+		message("[PID] INFO: updating framework ${framework} (this may take a long time)")
 		update_Framework_Repository(${framework}) #update the repository to be sure to work on last version
 		if(NOT REF_EXIST) #if reference file does not exist we use the project present in the workspace. This way we may force it to generate references
 			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
@@ -1033,6 +1066,7 @@ function(load_Framework LOADED framework)
 			set(${LOADED} TRUE PARENT_SCOPE)
 		endif()
 	elseif(REF_EXIST) #we can try to clone it if we know where to clone from
+		message("[PID] INFO: deploying framework ${framework} in workspace (this may take a long time)")
 		deploy_Framework_Repository(IS_DEPLOYED ${framework})
 		if(IS_DEPLOYED)
 			set(${LOADED} TRUE PARENT_SCOPE)

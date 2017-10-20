@@ -25,25 +25,26 @@ set(	LICENSE_NAME 			"CeCILL-C")
 set(	LICENSE_VERSION			"1")
 set(	LICENSE_FULLNAME 		"Contrat de license de logiciel libre CeCILL-C")
 set(	LICENSE_AUTHORS			"the CEA CNRS INRIA")
+set(	LICENSE_IS_OPEN_SOURCE 		TRUE)
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION
-"/* 	File: @PROJECT_FILENAME@
-*	This file is part of the program ${PROJECT_NAME}
-*  	Program description : ${${PROJECT_NAME}_DESCRIPTION}
-*  	Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_LIST}. All Right reserved.
+"/*      File: @PROJECT_FILENAME@
+*       This file is part of the program ${PROJECT_NAME}
+*       Program description : ${${PROJECT_NAME}_DESCRIPTION}
+*       Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_LIST}. All Right reserved.
 *
-*	This software is free software: you can redistribute it and/or modify
-*	it under the terms of the ${LICENSE_NAME} license as published by
-*	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION}
-*	of the License, or (at your option) any later version.
-*	This software is distributed in the hope that it will be useful,
-*	but WITHOUT ANY WARRANTY; without even the implied warranty of
-*	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*	${LICENSE_NAME} License for more details.
+*       This software is free software: you can redistribute it and/or modify
+*       it under the terms of the ${LICENSE_NAME} license as published by
+*       ${LICENSE_AUTHORS}, either version ${LICENSE_VERSION}
+*       of the License, or (at your option) any later version.
+*       This software is distributed in the hope that it will be useful,
+*       but WITHOUT ANY WARRANTY; without even the implied warranty of
+*       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+*       ${LICENSE_NAME} License for more details.
 *
-*	You should have received a copy of the ${LICENSE_NAME} License
-*	along with this software. If not, it can be found on the official website
-*	of the CeCILL licenses family (http://www.cecill.info/index.en.html).
+*       You should have received a copy of the ${LICENSE_NAME} License
+*       along with this software. If not, it can be found on the official website
+*       of the CeCILL licenses family (http://www.cecill.info/index.en.html).
 */
 ")
 

@@ -1,7 +1,7 @@
 
 # Site settings
 
-url: "@${PROJECT_NAME}_FRAMEWORK_SITE@" # the base hostname & protocol for your site
+url: "@FRAMEWORK_SITE_URL@" # the base hostname & protocol for the site
 
 # Build settings
 markdown: kramdown
@@ -9,8 +9,8 @@ highlighter: rouge
 excerpt_separator: ""
 
 port:    4000
-host:    127.0.0.1
-baseurl: ""
+host:    localhost
+baseurl: "@FRAMEWORK_SITE_BASE_FOLDER@" # the base folder for the site
 
 
 collections:

@@ -1,5 +1,5 @@
 
-cache:  
+cache:
   key: "$CI_BUILD_REF/$CI_BUILD_REF_NAME"
   paths:
    - binaries/
@@ -7,28 +7,29 @@ cache:
 
 stages:
  - configure
- - compile
+ - build
  - deploy
  - cleanup
 
-### configure (CMake project configuration) 
+### configure (CMake project configuration)
 configure_workspace:
   stage: configure
   script:
     - chmod 700 ./share/ci/prepare_workspace.sh
-    - chmod 700 ./share/ci/publish_site.sh
+    - chmod 700 ./share/ci/configure_framework.sh
     - ./share/ci/prepare_workspace.sh
-    - cd build/ && cmake .. && cd ..
+    - ./share/ci/configure_framework.sh
   only:
     - master
   tags:
     - pid
 
-### build the static site (using jekyll) 
+### build the static site (using jekyll)
 compile_site:
-  stage: compile
+  stage: build
   script:
-    - cd build && cmake --build . && cd ..
+   - chmod 700 ./share/ci/build_site.sh
+   - ./share/ci/build_site.sh
   only:
     - master
   tags:
@@ -38,6 +39,7 @@ compile_site:
 pages:
   stage: deploy
   script:
+   - chmod 700 ./share/ci/publish_site.sh
    - ./share/ci/publish_site.sh
   artifacts:
     paths:
@@ -52,12 +54,10 @@ pages:
 cleanup_build:
   stage: cleanup
   script:
-     - cd build && rm -Rf * && cd ..
-     - cd binaries && rm -Rf * && cd ..
-     - rm -Rf public
+   - chmod 700 ./share/ci/cleanup.sh
+   - ./share/ci/cleanup.sh
   when: always
   only:
     - master
   tags:
     - pid
-

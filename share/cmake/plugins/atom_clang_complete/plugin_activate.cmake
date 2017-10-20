@@ -61,6 +61,17 @@ else()
 	set(COMPONENT_OPT_FLAGS $<TARGET_PROPERTY:${target_component},COMPILE_OPTIONS>)
 endif()
 
+set(ALREADY_IN_COMPILE_OPTIONS FALSE)
+if(CMAKE_VERSION VERSION_LESS 3.8)
+	if(CMAKE_VERSION VERSION_LESS 3.1)#starting 3.1 the C and CXX standards are managed the good way by CMake (with target properties)
+		set(ALREADY_IN_COMPILE_OPTIONS TRUE)# with version < 3.1 the standard properties are already transformed into an equivalent compilation option by PID
+	else()#starting for 3.8, if standard is 17 or more we use the old way to do (CMake does not know this standard, so it has been translated into a compile option by PID)
+		is_CXX_Version_Less(IS_LESS ${${PROJECT_NAME}_${target_component}_CXX_STANDARD} 17)
+		if(NOT IS_LESS)#if version of the standard is more or equal than 17 then use the classical way of doing (PID has generate compile options already)
+				set(ALREADY_IN_COMPILE_OPTIONS TRUE)# do not used information from target in that specific case as it has already been translated
+		endif()
+	endif()
+endif()#not already in compile options for a greater version of cmake
 
 #preparing test expression -> getting generator expression resolved content (remove the list to get only one appended element) and test if there is any element
 set(OPT_CONTENT_EXIST $<BOOL:$<JOIN:${COMPONENT_OPT_FLAGS},>>)#deal with empty list
@@ -69,6 +80,11 @@ set(INC_CONTENT_EXIST $<BOOL:$<JOIN:${COMPONENT_INC_FLAGS},>>)#deal with empty l
 
 #merging all flags together to put them in a file
 set(ALL_OPTS_LINES $<${OPT_CONTENT_EXIST}:$<JOIN:${COMPONENT_OPT_FLAGS},\n>>)
+if(NOT ALREADY_IN_COMPILE_OPTIONS)
+	translate_Standard_Into_Option(C_LANGUAGE_OPT CXX_LANGUAGE_OPT ${${PROJECT_NAME}_${target_component}_C_STANDARD} ${${PROJECT_NAME}_${target_component}_CXX_STANDARD})
+	set(ALL_OPTS_LINES "${ALL_OPTS_LINES}\n${CXX_LANGUAGE_OPT}\n${C_LANGUAGE_OPT}\n")
+endif()
+
 set(ALL_DEFS_LINES $<${DEF_CONTENT_EXIST}:$<${OPT_CONTENT_EXIST}:\n>-D$<JOIN:${COMPONENT_DEF_FLAGS},\n-D>>)
 set(ALL_INCS_LINES $<${INC_CONTENT_EXIST}:$<$<OR:${OPT_CONTENT_EXIST},${DEF_CONTENT_EXIST}>:\n>-I$<JOIN:${COMPONENT_INC_FLAGS},\n-I>>)
 

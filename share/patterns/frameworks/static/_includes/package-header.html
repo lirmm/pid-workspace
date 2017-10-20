@@ -11,7 +11,7 @@
 <nav class="navbar navbar-package-fixed-top">
  <div class="container">
    <div class="navbar-package-header">
-      <a id="main-package-name" class="navbar-brand" href="/packages/{{ page.package }}">
+      <a id="main-package-name" class="navbar-brand" href="{{ site.baseurl }}/packages/{{ page.package }}">
 	{{page.package}}
       </a>
   </div><!-- /.navbar-header -->
@@ -21,22 +21,22 @@
           <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Documentation<i class="fa fa-caret-down"></i></a>
            <ul class="dropdown-menu animated slideInDown">
 	   <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="/packages/{{ page.package }}/pages/introduction" class="sub menu-item">Introduction</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/introduction.html" class="sub menu-item">Introduction</a>
             </li>
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="/packages/{{ page.package }}/pages/install" class="sub menu-item">Install</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/install.html" class="sub menu-item">Install</a>
             </li>
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="/packages/{{ page.package }}/pages/use" class="sub menu-item">Use</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/use.html" class="sub menu-item">Use</a>
             </li>
 	   {% if package_tutorial %}
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="/packages/{{ page.package }}/pages/{{ package_tutorial }}" class="sub menu-item">Tutorial</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/{{ package_tutorial }}.html" class="sub menu-item">Tutorial</a>
             </li>
   	    {% endif %}
 	    {% if package_details %}
 	    <li role="presentation">
-              <a role="menuitem" tabindex="-1" href="/packages/{{ page.package }}/pages/{{ package_details }}" class="sub menu-item">Advanced Topics</a>
+              <a role="menuitem" tabindex="-1" href="{{ site.baseurl }}/packages/{{ page.package }}/pages/{{ package_details }}.html" class="sub menu-item">Advanced Topics</a>
             </li>
   	    {% endif %}
           </ul>
@@ -45,24 +45,21 @@
           <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Developpers<i class="fa fa-caret-down"></i></a>
           <ul class="dropdown-menu animated slideInDown">
 		{% if package_has_apidoc %}
-		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{ page.package }}/api_doc" target="_blank" class="menu-item">API</a></li>
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/packages/{{ page.package }}/api_doc" target="_blank" class="menu-item">API</a></li>
 		{% endif %}
 		{% if package_has_checks %}
-		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{ page.package }}/static_checks" target="_blank" class="menu-item">Static Checks</a></li>
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/packages/{{ page.package }}/static_checks" target="_blank" class="menu-item">Static Checks</a></li>
 		{% endif %}
 		{% if package_has_coverage %}
-		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{ page.package }}/coverage" target="_blank" class="menu-item">Coverage</a></li>
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/packages/{{ page.package }}/coverage" target="_blank" class="menu-item">Coverage</a></li>
 		{% endif %}
-		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="/packages/{{ page.package }}/pages/binaries" class="menu-item">Binaries</a></li>
+		<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/packages/{{ page.package }}/pages/binaries.html" class="menu-item">Binaries</a></li>
 	   </ul>
 	</li>
 	<li class="{% if page.nav-hl == 'contact' %}active{% endif %}">
-		<a href="/packages/{{ page.package }}/pages/contact" class="menu-item">Contact</a>
+		<a href="{{ site.baseurl }}/packages/{{ page.package }}/pages/contact.html" class="menu-item">Contact</a>
 	</li>
       </ul>
-    </div><!-- /.navbar-collapse --> 
+    </div><!-- /.navbar-collapse -->
  </div><!-- /.container -->
 </nav>
-
-
-

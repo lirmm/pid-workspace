@@ -20,7 +20,7 @@ If you want a specific version (recommended), for instance the currently last re
 {% highlight cmake %}
 # finding package with classic CMake command, use a version number
 find_package (@PACKAGE_NAME@ @PACKAGE_LAST_VERSION_WITH_PATCH@ REQUIRED)
-# register the package dependency before using it in components 
+# register the package dependency before using it in components
 declare_PID_Package_Dependency(PACKAGE @PACKAGE_NAME@ NATIVE VERSION @PACKAGE_LAST_VERSION_WITHOUT_PATCH@)
 {% endhighlight %}
 
@@ -29,5 +29,3 @@ Notice that PID will automatically install the last available patch version of t
 ## Components
 
 @PACKAGE_COMPONENTS_DESCRIPTION@
-
-

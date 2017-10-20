@@ -19,11 +19,15 @@
 
 ### script used to server the framework static site using jekyll
 
-set(PATH_TO_FRAMEWORK ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
+set(PATH_TO_FRAMEWORK ${FRAMEWORK_PATH})
 set(PATH_TO_FRAMEWORK_RESULT ${PATH_TO_FRAMEWORK}/build/generated)
 
 if(EXISTS ${PATH_TO_FRAMEWORK_RESULT} AND IS_DIRECTORY ${PATH_TO_FRAMEWORK_RESULT})
-	execute_process(COMMAND ${JEKYLL_EXECUTABLE} serve WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_RESULT})
+	if(FRAMEWORK_BASE_URL)
+		execute_process(COMMAND ${JEKYLL_EXECUTABLE} serve --baseurl /${FRAMEWORK_BASE_URL} WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_RESULT})
+	else()
+		execute_process(COMMAND ${JEKYLL_EXECUTABLE} serve WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_RESULT})
+	endif()
 else()
 	message("[PID] ERROR: nothing to serve, no static site found !")
 endif()

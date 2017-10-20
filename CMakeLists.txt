@@ -27,7 +27,7 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 PROJECT(pid-workspace)
 
-manage_Platforms() # define the current platform in use and provide to the user some options to control finally targetted platform
+manage_Platforms(${CMAKE_SOURCE_DIR}) # define the current platform in use and provide to the user some options to control finally targetted platform
 
 manage_Plugins() # define available plugins and plugins in use
 
@@ -78,8 +78,8 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive, or a framework. Use only package=*name of a package* argument to deploy source repository or use in addition version=VERSION to deploy the specific binary version. If you want to deploy an external package use external=*name of an external package* argument instead and you must define a version. Otherwise, if you want to deploy a framework use framework=*name of a framework* argument instead."
 	COMMAND ${CMAKE_COMMAND} -E echo "resolve -- resolving runtime dependencies of an already installed package. Use package=*name of a package* and version=*a version number* arguments to specify the target binary package."
 	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package or a new framework. Use package=*name of a package* to specify the name of the new package. If you want to create a framework use the framework=*name of a framework* argument instead. Other optional arguments are: author, affiliation, license, and url. If url is used, the connection with a remote repository is established the same way as calling the connect command. If a framework is created you may use the site=*framework web site url* argument."
-	COMMAND ${CMAKE_COMMAND} -E echo "connect -- synchronize local repository with an empty remote one. Required arguments are : package -to specify the name of the package- or framework -same for a framework- and url to specify the url of the remote repository."
-	COMMAND ${CMAKE_COMMAND} -E echo "clear -- Clearing the whole install directory of a package using name=*name of package*, version=*all* or version=*a valid number* arguments."
+	COMMAND ${CMAKE_COMMAND} -E echo "connect -- synchronize local repository with a remote one. Required arguments are : package -to specify the name of the package- or framework -same for a framework-. Other arguments are official or origin to specify the url of the remote repository to set. official is the default one, and can only be set on an empty remote repository except if the argument force=true is used to force the update of the official repository. "
+	COMMAND ${CMAKE_COMMAND} -E echo "clear -- Clearing the whole install directory of a package using package=*name of package*, version=*all* or version=*a valid number* arguments."
 	COMMAND ${CMAKE_COMMAND} -E echo "remove -- Removing the target package or framework from the workspace. To remove a package use argument package=*name of the package*. To remove a framework use framework=*name of the framework*."
 	COMMAND ${CMAKE_COMMAND} -E echo "register -- Registering the target package in the workspace using package=*name of the package* argument. To register a framework in the workspace use the framework=*name of the framework* argument instead. The package or framework is published so that people with adequate rights can now deploy it."
 	COMMAND ${CMAKE_COMMAND} -E echo "release -- Releasing the target package using package=*name of the package* argument and nextversion=*MAJOR* or *MINOR* or *PATCH* to indicate how to increase version number. The release mainly consists in good tagging of branches and publication to the server."
@@ -87,7 +87,8 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "rebuild -- force the rebuild of target source packages in the workspace. You can use the optionnal argument package=*name of the package* to define which package will be build or use the default value *all* to target all source packages."
 	COMMAND ${CMAKE_COMMAND} -E echo "update -- updating a source or binary package using package=*name of the package* argument. The last available version is deployed in the workspace. If *all* is used for name, all source and binary packages will be updated."
 	COMMAND ${CMAKE_COMMAND} -E echo "upgrade -- upgrading the workspace: install the more recent version of the PID API and references to packages. You can use the optionnal official= argument to use a non official repository to update the workspace, by default official=ON which means the official remote is used. The argument update may be set ON or OFF -optionnal, default to OFF- to update all packages once the upgrade has been done."
-	COMMAND ${CMAKE_COMMAND} -E echo "configure -- configuring development environment in use. You have to set the environment name using environment=*name of the environment to use*."
+	COMMAND ${CMAKE_COMMAND} -E echo "configure -- configuring development environment in use. You have to set the environment name using environment=*name of the environment to use*. You may use the value python to configure python, you then also need to set the target python version with version=*version* or use the value default to go back to default OS version of python."
+	COMMAND ${CMAKE_COMMAND} -E echo "hard_clean -- deep cleaning of packages build folder, may be usefull after compiler changes for instance. You have to set the package name using package=*name of the package to clean* or all to hard clean all packages."
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -175,6 +176,13 @@ add_custom_target(clear
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+## clearing a package install directory
+add_custom_target(hard_clean
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
+					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Hard_Clean_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
 
 ## completely remove a package from workspace
 add_custom_target(remove
@@ -226,6 +234,7 @@ add_custom_target(upgrade
 ## configuring the workspace
 add_custom_target(configure
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_ENVIRONMENT=$(environment)
+					-DTARGET_VERSION=$(version)
 					-DCURRENT_ENVIRONMENT=${CURRENT_ENVIRONMENT}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Configure_PID_Environment.cmake

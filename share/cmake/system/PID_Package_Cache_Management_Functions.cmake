@@ -17,11 +17,50 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(CMakeDependentOption)
+#############################################################################################
+############### API functions for managing platform description variables ###################
+#############################################################################################
+
+macro(load_Current_Platform build_folder)
+	if(build_folder STREQUAL build)
+		if(CURRENT_PLATFORM AND NOT CURRENT_PLATFORM STREQUAL "")# a current platform is already defined
+			#if any of the following variable changed, the cache of the CMake project needs to be regenerated from scratch
+			set(TEMP_PLATFORM ${CURRENT_PLATFORM})
+			set(TEMP_C_COMPILER ${CMAKE_C_COMPILER})
+			set(TEMP_CXX_COMPILER ${CMAKE_CXX_COMPILER})
+			set(TEMP_CMAKE_LINKER ${CMAKE_LINKER})
+			set(TEMP_CMAKE_RANLIB ${CMAKE_RANLIB})
+			set(TEMP_CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID})
+			set(TEMP_CMAKE_CXX_COMPILER_VERSION ${CMAKE_CXX_COMPILER_VERSION})
+		endif()
+	endif()
+	include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
+
+	if(build_folder STREQUAL build)
+		if(TEMP_PLATFORM)
+			if( (NOT TEMP_PLATFORM STREQUAL CURRENT_PLATFORM) #the current platform has changed to we need to regenerate
+					OR (NOT TEMP_C_COMPILER STREQUAL CMAKE_C_COMPILER)
+					OR (NOT TEMP_CXX_COMPILER STREQUAL CMAKE_CXX_COMPILER)
+					OR (NOT TEMP_CMAKE_LINKER STREQUAL CMAKE_LINKER)
+					OR (NOT TEMP_CMAKE_RANLIB STREQUAL CMAKE_RANLIB)
+					OR (NOT TEMP_CMAKE_CXX_COMPILER_ID STREQUAL CMAKE_CXX_COMPILER_ID)
+					OR (NOT TEMP_CMAKE_CXX_COMPILER_VERSION STREQUAL CMAKE_CXX_COMPILER_VERSION)
+				)
+				message("[PID] INFO : cleaning the build folder after major environment change")
+				hard_Clean_Package_Debug(${PROJECT_NAME})
+				hard_Clean_Package_Release(${PROJECT_NAME})
+				reconfigure_Package_Build_Debug(${PROJECT_NAME})#force reconfigure before running the build
+				reconfigure_Package_Build_Release(${PROJECT_NAME})#force reconfigure before running the build
+			endif()
+		endif()
+	endif()
+endmacro(load_Current_Platform)
+
 
 #############################################################################################
 ############### API functions for managing user options cache variables #####################
 #############################################################################################
+include(CMakeDependentOption)
 
 ###
 macro(declare_Global_Cache_Options)
@@ -260,22 +299,27 @@ endfunction(first_Called_Build_Mode)
 
 ### printing variables for components in the package ################
 macro(print_Component component imported)
-	message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX}")
-	message("INTERFACE : ")
-	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
-	message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
-	message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_LINK_LIBRARIES)
-	message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-	if(NOT ${imported} AND NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
-		message("IMPLEMENTATION :")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
+	if(NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")
+		message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX}")
+		message("INTERFACE : ")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
 		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
 		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_LINK_LIBRARIES)
 		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+
+		if(NOT ${imported} AND NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+			message("IMPLEMENTATION :")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
+			message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
+			message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
+			message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		endif()
+	else()
+		message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX} IS PYTHON SCRIPT")
 	endif()
 endmacro(print_Component)
 
@@ -283,13 +327,14 @@ macro(print_Component_Variables)
 	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
 	message("libraries : " ${${PROJECT_NAME}_COMPONENTS_LIBS})
 	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
+	message("applications : " ${${PROJECT_NAME}_COMPONENTS_SCRIPTS})
 
 	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		print_Component(${component} FALSE)
 	endforeach()
 endmacro(print_Component_Variables)
 
-function(init_Package_Info_Cache_Variables author institution mail description year license address)
+function(init_Package_Info_Cache_Variables author institution mail description year license address public_address readme_file)
 set(res_string)
 foreach(string_el IN ITEMS ${author})
 	set(res_string "${res_string}_${string_el}")
@@ -309,7 +354,9 @@ set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
 set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
+set(${PROJECT_NAME}_PUBLIC_ADDRESS ${public_address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
+set(${PROJECT_NAME}_USER_README_FILE ${readme_file} CACHE INTERNAL "")
 endif()
 reset_References_Info()
 reset_Version_Cache_Variables()
@@ -346,6 +393,8 @@ function(reset_Documentation_Info)
 	set(${PROJECT_NAME}_SITE_GIT_ADDRESS CACHE INTERNAL "")
 	set(${PROJECT_NAME}_SITE_INTRODUCTION CACHE INTERNAL "")
 	set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DEV_INFO_AUTOMATIC_PUBLISHING CACHE INTERNAL "")
+	set(${PROJECT_NAME}_USER_README_FILE CACHE INTERNAL "")
 endfunction(reset_Documentation_Info)
 
 
@@ -356,6 +405,7 @@ function(set_Install_Cache_Variables)
 	set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_SCRIPT_PATH ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/script CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_RPATH_DIR ${${PROJECT_NAME}_DEPLOY_PATH}/.rpath CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_ROOT_DIR ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} CACHE INTERNAL "")
@@ -403,7 +453,7 @@ endfunction(add_Category)
 
 ## check if a platform name match a platform defined in workspace
 function(platform_Exist IS_DEFINED platform)
-if(platform AND NOT platform STREQUAL "") 
+if(platform AND NOT platform STREQUAL "")
 	list(FIND WORKSPACE_ALL_PLATFORMS "${platform}" INDEX)
 	if(INDEX EQUAL -1)
 		set(${IS_DEFINED} FALSE PARENT_SCOPE)
@@ -494,6 +544,8 @@ endfunction(reset_References_Info)
 
 ### reset variables describing platforms constraints
 function(reset_Platforms_Variables)
+
+	set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS CACHE INTERNAL "")
 	if(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX}) # reset all configurations satisfied by current platform
 		set(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	endif()
@@ -515,7 +567,11 @@ endfunction(reset_Platforms_Variables)
 
 ### define a set of configuration constraints that applies to all platforms with specific condition specified by type arch os and abi
 function(add_Platform_Constraint_Set type arch os abi constraints)
-	set(CURRENT_INDEX ${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}}) #current index is the current number of all constraint sets
+	if(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX})
+		set(CURRENT_INDEX ${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}}) #current index is the current number of all constraint sets
+	else()
+		set(CURRENT_INDEX 0) #current index is the current number of all constraint sets
+	endif()
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_TYPE${USE_MODE_SUFFIX} ${type} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ARCH${USE_MODE_SUFFIX} ${arch} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_OS${USE_MODE_SUFFIX} ${os} CACHE INTERNAL "")
@@ -538,6 +594,46 @@ endfunction(add_Configuration_To_Platform)
 ############### API functions for setting components related cache variables ################
 #############################################################################################
 
+### to know wehether a package has something to build
+function(package_Has_Nothing_To_Build NOTHING_BUILT)
+	if(${PROJECT_NAME}_COMPONENTS)
+		foreach(comp IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+			will_be_Built(RES ${comp})
+			if(RES)
+				set(${NOTHING_BUILT} FALSE PARENT_SCOPE)
+				return()
+			endif()
+		endforeach()
+	endif()
+	set(${NOTHING_BUILT} TRUE PARENT_SCOPE)
+endfunction(package_Has_Nothing_To_Build)
+
+### to know whether a package has something to install
+function(package_Has_Nothing_To_Install NOTHING_INSTALLED)
+	if(${PROJECT_NAME}_COMPONENTS)
+		foreach(comp IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+			will_be_Installed(RES ${comp})
+			if(RES)
+				set(${NOTHING_INSTALLED} FALSE PARENT_SCOPE)
+				return()
+			endif()
+		endforeach()
+	endif()
+	set(${NOTHING_INSTALLED} TRUE PARENT_SCOPE)
+endfunction(package_Has_Nothing_To_Install)
+
+
+### to know wehether a module is a python wrapped module
+function(is_Python_Module IS_PYTHON package component)
+	if(${package}_${component}_TYPE STREQUAL "MODULE")
+		set(${IS_PYTHON} ${${package}_${component}_HAS_PYTHON_WRAPPER} PARENT_SCOPE)
+	else()
+		set(${IS_PYTHON} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Python_Module)
+
+
+
 ### configure variables exported by component that will be used to generate the package cmake use file
 function (configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
 
@@ -545,7 +641,7 @@ function (configure_Install_Variables component export include_dirs dep_defs exp
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(	NOT dep_defs STREQUAL ""
 		OR NOT exported_defs  STREQUAL "")
-		set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
+		set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
 			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}}
 			${exported_defs} ${dep_defs}
 			CACHE INTERNAL "")
@@ -585,7 +681,7 @@ else() # otherwise no need to register them since no more useful
 			${exported_defs}
 			CACHE INTERNAL "")
 	endif()
-	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared lib (otherwise they simply disappear)
+	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared or module lib (otherwise they simply disappear)
 		if (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER"
 			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
 		)
@@ -611,9 +707,29 @@ if(NOT runtime_resources STREQUAL "")#runtime resources are exported in any case
 endif()
 endfunction(configure_Install_Variables)
 
+### set cached variable for packages dependency
+function(add_Package_Dependency_To_Cache dep_package version exact list_of_components)
+	set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${list_of_components} CACHE INTERNAL "")
+	list(REMOVE_DUPLICATES ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
+	list(REMOVE_DUPLICATES ${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
+endfunction(add_Package_Dependency_To_Cache)
+
+### set cached variable for external packages dependency
+function(add_External_Package_Dependency_To_Cache dep_package version exact list_of_components)
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${list_of_components} CACHE INTERNAL "")
+	list(REMOVE_DUPLICATES ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+	list(REMOVE_DUPLICATES ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
+endfunction(add_External_Package_Dependency_To_Cache)
 
 ### reset components related cached variables
 function(reset_Component_Cached_Variables component)
+
 # resetting package dependencies
 foreach(a_dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}})
 	foreach(a_dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${USE_MODE_SUFFIX}})
@@ -632,6 +748,8 @@ set(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE I
 #resetting all other variables
 set(${PROJECT_NAME}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_HEADERS CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_C_STANDARD CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_CXX_STANDARD CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -645,12 +763,14 @@ set(${PROJECT_NAME}_${component}_DESCRIPTION CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_USAGE_INCLUDES CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
 
-function(init_Component_Cached_Variables_For_Export component exported_defs exported_options exported_links runtime_resources)
+function(init_Component_Cached_Variables_For_Export component c_standard cxx_standard exported_defs exported_options exported_links runtime_resources)
 set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
 set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${exported_links}" CACHE INTERNAL "") #exported links
 set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories (not useful to set it there since they will be exported "manually")
 set(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} "${exported_options}" CACHE INTERNAL "") #exported compiler options
 set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} "${runtime_resources}" CACHE INTERNAL "")#runtime resources are exported by default
+set(${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX} "${c_standard}" CACHE INTERNAL "")#minimum C standard of the component interface
+set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} "${cxx_standard}" CACHE INTERNAL "")#minimum C++ standard of the component interface
 endfunction(init_Component_Cached_Variables_For_Export)
 
 ### resetting all internal cached variables that would cause some troubles
@@ -680,6 +800,7 @@ reset_Declared()
 set(${PROJECT_NAME}_COMPONENTS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
+set(${PROJECT_NAME}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
 
 #unsetting all root variables usefull to the find/configuration mechanism
 foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
@@ -711,6 +832,16 @@ set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERN
 endfunction(publish_Binaries)
 
 ###
+function(publish_Development_Info true_or_false)
+set(${PROJECT_NAME}_DEV_INFO_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERNAL "")
+endfunction(publish_Development_Info)
+
+### restrict CI to a limited set of platforms using this function
+function(restrict_CI platform)
+	set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS} ${platform} CACHE INTERNAL "")
+endfunction(restrict_CI)
+
+###
 function(init_Component_Description component description usage)
 generate_Formatted_String("${description}" RES_STRING)
 set(${PROJECT_NAME}_${component}_DESCRIPTION "${RES_STRING}" CACHE INTERNAL "")
@@ -732,6 +863,30 @@ else()
 endif()
 
 endfunction(is_Declared)
+
+
+###
+function(is_Library_Type RES keyword)
+	if(keyword STREQUAL "HEADER"
+		OR keyword STREQUAL "STATIC"
+		OR keyword STREQUAL "SHARED"
+		OR keyword STREQUAL "MODULE")
+		set(${RES} TRUE PARENT_SCOPE)
+	else()
+		set(${RES} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Library_Type)
+
+###
+function(is_Application_Type RES keyword)
+	if(	keyword STREQUAL "TEST"
+		OR keyword STREQUAL "APP"
+		OR keyword STREQUAL "EXAMPLE")
+		set(${RES} TRUE PARENT_SCOPE)
+	else()
+		set(${RES} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Application_Type)
 
 ###
 function(reset_Declared)
@@ -769,6 +924,7 @@ if (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${package}_${component}_TYPE STREQUAL "TEST"
 	OR ${package}_${component}_TYPE STREQUAL "MODULE"
+	OR ${package}_${component}_TYPE STREQUAL "PYTHON"
 	)
 	set(${ret_var} TRUE PARENT_SCOPE)
 else()
@@ -776,6 +932,20 @@ else()
 endif()
 endfunction(is_HeaderFree_Component)
 
+
+### to know if the component is an application
+function(is_Runtime_Component ret_var package component)
+if (	${package}_${component}_TYPE STREQUAL "APP"
+	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
+	OR ${package}_${component}_TYPE STREQUAL "TEST"
+	OR ${package}_${component}_TYPE STREQUAL "SHARED"
+	OR ${package}_${component}_TYPE STREQUAL "MODULE"
+	)
+	set(${ret_var} TRUE PARENT_SCOPE)
+else()
+	set(${ret_var} FALSE PARENT_SCOPE)
+endif()
+endfunction(is_Runtime_Component)
 
 ### to know if the component is an application
 function(is_Executable_Component ret_var package component)
@@ -800,7 +970,7 @@ if (	${package}_${component}_TYPE STREQUAL "APP"
 )
 	set(${ret_var} TRUE PARENT_SCOPE)
 else()
-	set(${ret_var} FALSE PARENT_SCOPE)
+	set(${ret_var} FALSE PARENT_SCOPE)#scripts and headers libraries are not built
 endif()
 endfunction(is_Built_Component)
 
@@ -825,10 +995,19 @@ endfunction(reset_Removed_Examples_Build_Option)
 
 ###
 function(will_be_Built result component)
-if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
+if((${PROJECT_NAME}_${component}_TYPE STREQUAL "SCRIPT") #python scripts are never built
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
 	set(${result} FALSE PARENT_SCOPE)
+	return()
 else()
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")### to know wehether a module is a python wrapped module and is really compilable
+		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
+		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#wthe module will not be built as there is no python configuration
+			set(${result} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
 	set(${result} TRUE PARENT_SCOPE)
 endif()
 endfunction(will_be_Built)
@@ -839,6 +1018,13 @@ if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
 	set(${result} FALSE PARENT_SCOPE)
 else()
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")### to know wehether a module is a python wrapped module and is really compilable
+		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
+		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#wthe module will not be installed as there is no python configuration
+			set(${result} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
 	set(${result} TRUE PARENT_SCOPE)
 endif()
 endfunction(will_be_Installed)
@@ -856,11 +1042,8 @@ endfunction(is_Externally_Usable)
 
 ### registering the binary name of a component
 function(register_Component_Binary c_name)
-	get_target_property(BIN_LOC ${c_name}${INSTALL_NAME_SUFFIX} LOCATION)
-	get_filename_component(BIN_NAME ${BIN_LOC} NAME)
-	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} ${BIN_NAME} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} "$<TARGET_FILE_NAME:${c_name}${INSTALL_NAME_SUFFIX}>" CACHE INTERNAL "")
 endfunction(register_Component_Binary)
-
 
 #resolving dependencies
 function(is_Bin_Component_Exporting_Other_Components RESULT package component mode)
@@ -1022,6 +1205,12 @@ endfunction(need_Install_External_Packages)
 function(write_Use_File file package build_mode)
 set(MODE_SUFFIX "")
 if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode
+	file(APPEND ${file} "######### declaration of package meta info that can be usefull for other packages ########\n")
+	file(APPEND ${file} "set(${package}_LICENSE ${${package}_LICENSE} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_ADDRESS ${${package}_ADDRESS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_PUBLIC_ADDRESS ${${package}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_CATEGORIES ${${package}_CATEGORIES} CACHE INTERNAL \"\")\n")
+
 	file(APPEND ${file} "######### declaration of package web site info ########\n")
 	file(APPEND ${file} "set(${package}_FRAMEWORK ${${package}_FRAMEWORK} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_PROJECT_PAGE ${${package}_PROJECT_PAGE} CACHE INTERNAL \"\")\n")
@@ -1042,6 +1231,7 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${${package}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS_SCRIPTS ${${package}_COMPONENTS_SCRIPTS} CACHE INTERNAL \"\")\n")
 
 	file(APPEND ${file} "####### internal specs of package components #######\n")
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_LIBS})
@@ -1052,6 +1242,9 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 		endif()
 	endforeach()
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
+		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
+	endforeach()
+	foreach(a_component IN ITEMS ${${package}_COMPONENTS_SCRIPTS})
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
 	endforeach()
 else()
@@ -1110,9 +1303,10 @@ foreach(a_component IN ITEMS ${${package}_COMPONENTS})
 		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} ${${package}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_C_STANDARD${MODE_SUFFIX} ${${package}_${a_component}_C_STANDARD${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_CXX_STANDARD${MODE_SUFFIX} ${${package}_${a_component}_CXX_STANDARD${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
 	file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX} ${${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-
 endforeach()
 
 # 4) package internal component dependencies
@@ -1151,7 +1345,7 @@ endfunction(write_Use_File)
 
 function(create_Use_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode
-	set(file ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake)
+	set(file ${CMAKE_BINARY_DIR}/share/UseReleaseTemp)
 else()
 	set(file ${CMAKE_BINARY_DIR}/share/UseDebugTemp)
 endif()
@@ -1162,10 +1356,16 @@ write_Use_File(${file} ${PROJECT_NAME} ${CMAKE_BUILD_TYPE})
 
 #finalizing release mode by agregating info from the debug mode
 if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode
-	if(EXISTS ${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp)
-		file(READ ${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp DEBUG_CONTENT)
+	if(EXISTS ${CMAKE_BINARY_DIR}/../debug/share/UseDebugGen) #checking that the debug generated file exists
+		file(READ ${CMAKE_BINARY_DIR}/../debug/share/UseDebugGen DEBUG_CONTENT)
 		file(APPEND ${file} "${DEBUG_CONTENT}")
 	endif()
+	#removing debug files
+	file(REMOVE ${CMAKE_BINARY_DIR}/../debug/share/UseDebugGen)
+	file(REMOVE ${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp)
+	file (GENERATE OUTPUT ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake INPUT ${file})
+else() #this step is required to generate info containing generator expression
+	file (GENERATE OUTPUT ${CMAKE_BINARY_DIR}/share/UseDebugGen INPUT ${file})
 endif()
 endfunction(create_Use_File)
 

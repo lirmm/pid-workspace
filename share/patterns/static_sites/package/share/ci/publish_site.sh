@@ -7,6 +7,4 @@ else
   cd public && rm -Rf * && cd ..
 fi
 
-cp -R ./build/generated/* public 
-
-
+cp -R ./build/generated/* ./public/

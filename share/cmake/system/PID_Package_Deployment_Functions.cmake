@@ -41,10 +41,11 @@ foreach(auth IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
 endforeach()
 set(printed_authors "${res_string}")
 file(APPEND ${file} "set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS \"${res_string}\" CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_DESCRIPTION \"${${PROJECT_NAME}_DESCRIPTION}\" CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_YEARS ${${PROJECT_NAME}_YEARS} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_ADDRESS ${${PROJECT_NAME}_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_PUBLIC_ADDRESS ${${PROJECT_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_CATEGORIES)
 file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES \"${${PROJECT_NAME}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 else()
@@ -78,12 +79,11 @@ endfunction(generate_Reference_File)
 ### resolving dependencies means that each dependency of teh package finally targets a given package located in the workspace. This can lead to the install of packages either direct or undirect dependencies of the target package.
 function(resolve_Package_Dependencies package mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-################## external packages ##################
+################## management of external packages : for both external and native packages ##################
 
 # 1) managing external package dependencies (the list of dependent packages is defined as ${package}_EXTERNAL_DEPENDENCIES)
 # - locating dependent external packages in the workspace and configuring their build variables recursively
 set(TO_INSTALL_EXTERNAL_DEPS)
-
 if(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 		# 1) resolving direct dependencies
@@ -96,16 +96,24 @@ endif()
 
 # 2) for not found package
 if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #download or clone of dependencies is automatic
 		set(INSTALLED_EXTERNAL_PACKAGES "")
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : package ${package} needs to install following packages : ${TO_INSTALL_EXTERNAL_DEPS}")
 		endif()
-		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES)
+		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES NOT_INSTALLED_PACKAGES)
+		if(NOT_INSTALLED_PACKAGES)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external packages: ${NOT_INSTALLED_PACKAGES}. This is an internal bug maybe due to bad references on these packages.")
+			return()
+		endif()
 		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
 			resolve_External_Package_Dependency(${package} ${installed} ${mode})
 			if(NOT ${installed}_FOUND)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find installed external package ${installed}. This is an internal bug maybe due to a bad find file.")
+				return()
+			endif()
+			if(${installed}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
+				resolve_Package_Dependencies(${installed} ${mode})#recursion : resolving dependencies for each external package dependency
 			endif()
 		endforeach()
 	else()
@@ -114,7 +122,7 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 	endif()
 endif()
 
-################## native packages ##################
+################## for native packages only ##################
 
 # 1) managing package dependencies (the list of dependent packages is defined as ${package}_DEPENDENCIES)
 # - locating dependent packages in the workspace and configuring their build variables recursively
@@ -452,7 +460,14 @@ if(${package}_ADDRESS)
 	if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : cloning the repository of source package ${package}...")
 	endif()
-	clone_Repository(DEPLOYED ${package} ${${package}_ADDRESS})
+	if(${package}_PUBLIC_ADDRESS)#there is a public address where to fetch (without any )
+		clone_Repository(DEPLOYED ${package} ${${package}_PUBLIC_ADDRESS}) #we clone from public address
+		if(DEPLOYED)
+			initialize_Git_Repository_Push_Address(${package} ${${package}_ADDRESS})#the push address is modified accordingly
+		endif()
+	else() #basic case where package deployment requires identification : push/fetch address are the same
+		clone_Repository(DEPLOYED ${package} ${${package}_ADDRESS})
+	endif()
 	if(DEPLOYED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : repository of source package ${package} has been cloned.")
@@ -739,17 +754,17 @@ set(${list_of_versions_with_platform} ${available_binary_package_version_with_pl
 endfunction(get_Available_Binary_Package_Versions)
 
 ### select the version passed as argument in the list of binary versions of a package
-function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_PLATFORM)
-
-foreach(bin IN ITEMS ${list_of_bin_with_platform})
-	string (REGEX REPLACE "^${version}/(.*)$" "\\1" RES ${bin})
-
-	if(NOT RES STREQUAL "${bin}") #match
-		set(${RES_PLATFORM} ${RES} PARENT_SCOPE)
-		return()
-	endif()
-endforeach()
-set(${RES_PLATFORM} PARENT_SCOPE)
+function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_FOR_PLATFORM)
+if(list_of_bin_with_platform)
+	foreach(bin IN ITEMS ${list_of_bin_with_platform})
+		string (REGEX REPLACE "^${version}/(.*)$" "\\1" RES ${bin})
+		if(NOT RES STREQUAL "${bin}") #match
+			set(${RES_FOR_PLATFORM} ${RES} PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
+endif()
+set(${RES_FOR_PLATFORM} PARENT_SCOPE)
 endfunction(select_Platform_Binary_For_Version)
 
 ### deploying a binary package, if necessary. It means that last version is installed and configured in the workspace.  See: download_And_Install_Binary_Package. Constraints: package binary references must be loaded before.
@@ -891,9 +906,14 @@ file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
 list(GET res-dbg 0 numeric_error_dbg)
 list(GET res-dbg 1 status_dbg)
 if(NOT numeric_error_dbg EQUAL 0)#there is an error
-	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : problem when downloading binary version ${version_string} of package ${package} (debug binaries) from address ${download_url_dbg} : ${status_dbg}.")
-	return()
+	package_License_Is_Closed_Source(CLOSED ${package})#limit this high cost function when an error occurs
+	if(NOT CLOSED) #generate an error if the package is not closed source (there is a missing archive)
+		set(${INSTALLED} FALSE PARENT_SCOPE)
+		message("[PID] ERROR : problem when downloading binary version ${version_string} of package ${package} (debug binaries) from address ${download_url_dbg} : ${status_dbg}.")
+		return()
+	else()
+		set(MISSING_DEBUG_VERSION TRUE)
+	endif()
 endif()
 
 ######## installing the package ##########
@@ -909,30 +929,54 @@ if(ADDITIONNAL_DEBUG_INFO)
 	message("[PID] INFO : decompressing the binary package ${package}, please wait ...")
 endif()
 set(error_res "")
-if(ADDITIONNAL_DEBUG_INFO)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-		ERROR_VARIABLE error_res)
-else()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-		ERROR_VARIABLE error_res OUTPUT_QUIET)
-endif()
-
-if (error_res)
-	#try again
-	if(ADDITIONNAL_DEBUG_INFO)
+if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
+	if(MISSING_DEBUG_VERSION) #no debug archive to manage
 		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-		  	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 			ERROR_VARIABLE error_res)
 	else()
 		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-		  	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+	          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_VARIABLE error_res)
+		endif()
+else() #QUIET mode
+	if(MISSING_DEBUG_VERSION) #no debug archive to manage
+		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
 			ERROR_VARIABLE error_res OUTPUT_QUIET)
+	else()
+		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+	          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+			ERROR_VARIABLE error_res OUTPUT_QUIET)
+	endif()
+endif()
+
+if (error_res)
+	#try again
+	if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
+		if(MISSING_DEBUG_VERSION)  #no debug archive to manage
+			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+				ERROR_VARIABLE error_res)
+		else()
+			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+		          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+				ERROR_VARIABLE error_res)
+		endif()
+	else() #QUIET mode
+		if(MISSING_DEBUG_VERSION) #no debug archive to manage
+			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+				ERROR_VARIABLE error_res OUTPUT_QUIET)
+		else()
+			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
+		          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+				ERROR_VARIABLE error_res OUTPUT_QUIET)
+		endif()
 	endif()
 	if (error_res)
 		set(${INSTALLED} FALSE PARENT_SCOPE)
@@ -947,35 +991,65 @@ if(ADDITIONNAL_DEBUG_INFO)
 endif()
 
 set(error_res "")
-if(ADDITIONNAL_DEBUG_INFO)
-	execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
-)
-else()
-	execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
- 	ERROR_QUIET OUTPUT_QUIET)
+if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
+	if(MISSING_DEBUG_VERSION)  #no debug archive to manage
+		execute_process(
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+				)
+	else()
+		execute_process(
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+	        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+				)
+	endif()
+else()#QUIET mode
+	if(MISSING_DEBUG_VERSION)  #no debug archive to manage
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+			ERROR_QUIET OUTPUT_QUIET)
+
+	else()
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+	    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+	 		ERROR_QUIET OUTPUT_QUIET)
+	endif()
 endif()
 
 
 if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
 	#try again
-	if(ADDITIONNAL_DEBUG_INFO)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-		  	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_VARIABLE error_res)
-	else()
-		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-		  	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_VARIABLE error_res OUTPUT_QUIET)
+	if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
+		if(MISSING_DEBUG_VERSION)  #no debug archive to manage
+			execute_process(
+			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+					)
+		else()
+			execute_process(
+			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+		        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+					)
+		endif()
+	else()#QUIET mode
+		if(MISSING_DEBUG_VERSION)  #no debug archive to manage
+			execute_process(
+				COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+				ERROR_QUIET OUTPUT_QUIET)
+
+		else()
+			execute_process(
+				COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+		    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+		 		ERROR_QUIET OUTPUT_QUIET)
+		endif()
 	endif()
 	if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
 		set(${INSTALLED} FALSE PARENT_SCOPE)
-		message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}.")
+		if(MISSING_DEBUG_VERSION)  #no debug archive to manage
+			message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY}.")
+		else()
+			message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}.")
+		endif()
 		return()
 	endif()
 endif()
@@ -1000,10 +1074,10 @@ endfunction(download_And_Install_Binary_Package)
 #############################################################################################
 
 ### resolving the version to use for the external package according to current build constraints. Constraints: package binary references must be loaded before.
-function(resolve_Required_External_Package_Version selected_version package)
+function(resolve_Required_External_Package_Version SELECTED_VERSION package)
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
-	set(${selected_version} PARENT_SCOPE)
+	set(${SELECTED_VERSION} PARENT_SCOPE)
 	message("[PID] ERROR : impossible to find a version of external package ${package} that conforms to current platform constraints.")
 	return()
 endif()
@@ -1017,10 +1091,10 @@ if(NOT ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 				set(CURRENT_VERSION ${ref})
 			endif()
 		endforeach()
-		set(${selected_version} "${CURRENT_VERSION}" PARENT_SCOPE)
+		set(${SELECTED_VERSION} "${CURRENT_VERSION}" PARENT_SCOPE)
 		return()
 	else()
-		set(${selected_version} PARENT_SCOPE)
+		set(${SELECTED_VERSION} PARENT_SCOPE)
 		message("[PID] ERROR : impossible to find a valid reference to any version of external package ${package}.")
 		return()
 	endif()
@@ -1033,20 +1107,19 @@ else()#specific version(s) required (common case)
 	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}})
 		if(CURRENT_EXACT)
 			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX}) #impossible to find two different exact versions solution
-				set(${selected_version} PARENT_SCOPE)
+				set(${SELECTED_VERSION} PARENT_SCOPE)
 				return()
 			elseif(${version} VERSION_GREATER ${CURRENT_VERSION})#any not exact version that is greater than current exact one makes the solution impossible
-				set(${selected_version} PARENT_SCOPE)
+				set(${SELECTED_VERSION} PARENT_SCOPE)
 				return()
 			endif()
-
 		else()
 			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX})
 				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})
 					set(CURRENT_EXACT TRUE)
 					set(CURRENT_VERSION ${version})
 				else()# current version is greater than exact one currently required => impossible
-					set(${selected_version} PARENT_SCOPE)
+					set(${SELECTED_VERSION} PARENT_SCOPE)
 					return()
 				endif()
 
@@ -1064,7 +1137,7 @@ else()#specific version(s) required (common case)
 		if(NOT ${version} VERSION_EQUAL ${CURRENT_VERSION})
 			if(DEFINED ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO
 			AND NOT ${CURRENT_VERSION} VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
-				set(${selected_version} PARENT_SCOPE) #there is no solution
+				set(${SELECTED_VERSION} PARENT_SCOPE) #there is no solution
 				return()
 			endif()
 		endif()
@@ -1073,37 +1146,58 @@ else()#specific version(s) required (common case)
 	#3) testing if there is a binary package with adequate platform constraints for the current version
 	list(FIND available_versions ${CURRENT_VERSION} INDEX)
 	if(INDEX EQUAL -1) #a package binary for that version has not been found
-		set(${selected_version} PARENT_SCOPE) #there is no solution
+		set(${SELECTED_VERSION} PARENT_SCOPE) #there is no solution
 		return()
 	endif()
 
 endif()
 
-set(${selected_version} "${CURRENT_VERSION}" PARENT_SCOPE)
+set(${SELECTED_VERSION} "${CURRENT_VERSION}" PARENT_SCOPE)
 endfunction(resolve_Required_External_Package_Version)
 
+### functio used to uninstall an external package from the workspace
+function(uninstall_External_Package package)
+set(version ${${package}_VERSION_STRING})
+get_System_Variables(PLATFORM_STRING PACKAGE_STRING)
+set(path_to_install_dir ${WORKSPACE_DIR}/external/${PLATFORM_STRING}/${package}/${version})
+if(EXISTS ${path_to_install_dir} AND IS_DIRECTORY ${path_to_install_dir})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory  ${path_to_install_dir}) #delete the external package version folder
+endif()
+endfunction(uninstall_External_Package)
 
-### function used to install a single external package. It leads to the resolution of the adequate package version and the deployment of that version. See: deploy_External_Package_Version and resolve_Required_External_Package_Version.
-function(install_External_Package INSTALL_OK package)
-
-# 0) test if reference of the external package exists in the workspace
+### function used to prepare the loading of external package references
+function(memorize_External_Binary_References RES package)
 set(IS_EXISTING FALSE)
 package_Reference_Exists_In_Workspace(IS_EXISTING External${package})
 if(NOT IS_EXISTING)
-	set(${INSTALL_OK} FALSE PARENT_SCOPE)
+	set(${RES} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : unknown external package ${package} : cannot find any reference of this package in the workspace. Cannot install this package.")
 	return()
 endif()
 
 include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
 if(${refer_path} STREQUAL NOTFOUND)
+	set(${RES} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : reference file not found for external package ${package}!! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
 	return()
 endif()
 
 load_Package_Binary_References(REFERENCES_OK ${package}) #getting the references (address of sites) where to download binaries for that package
 if(NOT REFERENCES_OK)
-	message("[PID] ERROR : cannot load the references to external package binaries ! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
+	set(${RES} FALSE PARENT_SCOPE)
+	message("[PID] ERROR : cannot load the references to binaries of external package ${package} ! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
+	return()
+endif()
+set(${RES} TRUE PARENT_SCOPE)
+endfunction(memorize_External_Binary_References)
+
+### function used to install a single external package. It leads to the resolution of the adequate package version and the deployment of that version. See: deploy_External_Package_Version and resolve_Required_External_Package_Version.
+function(install_External_Package INSTALL_OK package force)
+
+# 0) test if reference of the external package exists in the workspace
+memorize_External_Binary_References(RES ${package})
+if(NOT RES)
+	set(${INSTALL_OK} FALSE PARENT_SCOPE)
 	return()
 endif()
 
@@ -1113,7 +1207,7 @@ resolve_Required_External_Package_Version(SELECTED ${package})
 if(SELECTED) # if there is ONE adequate reference, downloading and installing it
 	#2) installing package
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
-	deploy_External_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${SELECTED})
+	deploy_External_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${SELECTED} ${force})
 	if(PACKAGE_BINARY_DEPLOYED)
 		message("[PID] INFO : external package ${package} (version ${SELECTED}) has been installed.")
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
@@ -1129,12 +1223,12 @@ set(${INSTALL_OK} FALSE PARENT_SCOPE)
 endfunction(install_External_Package)
 
 ### function used to install a list of external packages. See : install_External_Package.
-function(install_Required_External_Packages list_of_packages_to_install INSTALLED_PACKAGES)
+function(install_Required_External_Packages list_of_packages_to_install INSTALLED_PACKAGES NOT_INSTALLED_PACKAGES)
 set(successfully_installed "")
 set(not_installed "")
 foreach(dep_package IN ITEMS ${list_of_packages_to_install}) #while there are still packages to install
 	set(INSTALL_OK FALSE)
-	install_External_Package(INSTALL_OK ${dep_package})
+	install_External_Package(INSTALL_OK ${dep_package} FALSE)
 	if(INSTALL_OK)
 		list(APPEND successfully_installed ${dep_package})
 	else()
@@ -1146,29 +1240,36 @@ if(successfully_installed)
 endif()
 if(not_installed)
 	message("[PID] ERROR : some of the required external packages cannot be installed : ${not_installed}.")
+	set(${NOT_INSTALLED_PACKAGES} ${not_installed} PARENT_SCOPE)
 endif()
 endfunction(install_Required_External_Packages)
 
 
 ### deploy means download + install + configure the external package in the workspace so that it can be used by a third party package.
-function(deploy_External_Package_Version DEPLOYED package version)
+function(deploy_External_Package_Version DEPLOYED package version force)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
-	message("[PID] ERROR : no available binary versions of package ${package}.")
+	message("[PID] ERROR : no available binary version of package ${package}.")
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
 #now getting the best platform for that version
-select_Platform_Binary_For_Version(${version} "${available_with_platform}" PLATFORM)
-if(NOT PLATFORM)
+select_Platform_Binary_For_Version("${version}" "${available_with_platform}" TARGET_PLATFORM)
+if(NOT TARGET_PLATFORM)
 	message("[PID] ERROR : cannot find the binary version ${version} of package ${package} compatible with current platform.")
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
-check_Package_Version_State_In_Current_Process(${package} ${version} RES)
+if(NOT force)# forcing means reinstalling from scratch
+	check_Package_Version_State_In_Current_Process(${package} ${version} RES)
+else()
+	uninstall_External_Package(${package}) #if force then uninstall before reinstalling
+	set(RES "UNKNOWN")
+endif()
+
 if(RES STREQUAL "UNKNOWN")
-	download_And_Install_External_Package(INSTALLED ${package} ${version} ${PLATFORM})
+	download_And_Install_External_Package(INSTALLED ${package} ${version} ${TARGET_PLATFORM})
 	if(INSTALLED)
 		add_Managed_Package_In_Current_Process(${package} ${version} "SUCCESS" TRUE)
 	else()
@@ -1179,11 +1280,12 @@ if(RES STREQUAL "UNKNOWN")
 	endif()
 
 	#5) checking for platform constraints
-	configure_External_Package(${package} ${version} Debug)
-	configure_External_Package(${package} ${version} Release)
+	configure_External_Package(${package} ${version} ${TARGET_PLATFORM} Debug)
+	configure_External_Package(${package} ${version} ${TARGET_PLATFORM} Release)
 
 elseif(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be install during current process
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	return()
 endif()
 
 set(${DEPLOYED} TRUE PARENT_SCOPE)
@@ -1317,22 +1419,22 @@ endfunction(download_And_Install_External_Package)
 
 
 ### configure the external package, after it has been installed. It can lead to the install of OS related packages depending of its system configuration. See: deploy_External_Package_Version.
-function(configure_External_Package package version mode)
+function(configure_External_Package package version platform mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/)
-include(${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share)
+include(${${package}_CURR_DIR}/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
 #using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
-if(${res} STREQUAL NOTFOUND)
-	# no platform usage file => nothing to do
+if(res STREQUAL NOTFOUND)
+	# no usage file => nothing to do
 	return()
 endif()
 unset(${package}_CURR_DIR)
-# checking platforms
+
+# checking platforms constraints
 set(CONFIGS_TO_CHECK)
 if(${package}_PLATFORM_CONFIGURATIONS)
 	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})#there are configuration constraints in PID v2 style
-elseif(${package}_PLATFORM${VAR_SUFFIX}) # this case may be true if the package binary has been release in old PID v1 style
-	set(platform ${${package}_PLATFORM})
+elseif(${package}_PLATFORM${VAR_SUFFIX} STREQUAL ${platform}) # this case may be true if the package binary has been release in old PID v1 style
 	set(OLD_PLATFORM_CONFIG ${${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}})
 	if(OLD_PLATFORM_CONFIG) #there are required configurations in old style
 		set(CONFIGS_TO_CHECK ${OLD_PLATFORM_CONFIG})#there are configuration constraints in PID v1 style
@@ -1357,6 +1459,12 @@ if(CONFIGS_TO_CHECK)#arch and OS are not checked as they are supposed to be alre
 	endforeach()
 endif() #otherwise no configuration for this platform is supposed to be necessary
 
+# Manage external package dependencies => need to deploy other external packages
+#if(${package}_EXTERNAL_DEPENDENCIES) #the external package has external dependencies
+#	foreach(dep_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES}) #recursive call for deployment of dependencies
+#		deploy_External_Package_Version(DEPLOYED ${dep_pack} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION})
+#	endforeach()
+#endif()
 endfunction(configure_External_Package)
 
 #############################################################################################

@@ -755,7 +755,7 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 		endif()
 	endforeach()
 	if(NOT ${MAX_CURR_VERSION} STREQUAL 0.0.0)
-		deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION})
+		deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE)
 		if(NOT DEPLOYED)
 			message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive. Please contact the administrator of the package ${package}.")
 		endif()
@@ -764,7 +764,7 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 	endif()
 
 else()#deploying the target binary relocatable archive
-	deploy_External_Package_Version(DEPLOYED ${package} ${version})
+	deploy_External_Package_Version(DEPLOYED ${package} ${version} FALSE)
 	if(NOT DEPLOYED)
 		message("[PID] ERROR : cannot deploy ${package} binary archive version ${version}.")
 	endif()
@@ -869,10 +869,11 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pa
 endfunction(remove_PID_Package)
 
 
-###  removing consists in removing the framework repository from the workspace
+###  removing consists in removing the git repository of the framework from the workspace
 function(remove_PID_Framework framework)
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/frameworks/${framework})
 endfunction(remove_PID_Framework)
+
 
 ##################################################
 ############ registering deployment units ########
@@ -956,6 +957,19 @@ endforeach()
 check_For_New_Commits_To_Release(COMMITS_AVAILABLE ${package})
 if(NOT COMMITS_AVAILABLE)
 	message("[PID] ERROR : cannot release package ${package} because integration branch has no commits to contribute to new version.")
+	return()
+endif()
+
+# check that version of dependencies exist
+check_For_Dependencies_Version(BAD_VERSION_OF_DEPENDENCIES ${package})
+if(BAD_VERSION_OF_DEPENDENCIES)
+	message("[PID] ERROR : cannot release package ${package} because of invalid version of dependencies:")
+	foreach(dep IN ITEMS ${BAD_VERSION_OF_DEPENDENCIES})
+		extract_All_Words(${dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
+		list(GET RES_LIST 0 DEP_PACKAGE)
+		list(GET RES_LIST 1 DEP_VERSION)
+		message("- dependency ${DEP_PACKAGE} has unknown version ${DEP_VERSION}")
+	endforeach()
 	return()
 endif()
 
@@ -1048,7 +1062,7 @@ list_All_Source_Packages_In_Workspace(SOURCE_PACKAGES)
 if(SOURCE_PACKAGES)
 	if(NATIVES)
 		list(REMOVE_ITEM NATIVES ${SOURCE_PACKAGES})
-	endif()	
+	endif()
 	foreach(package IN ITEMS ${SOURCE_PACKAGES})
 		update_PID_Source_Package(${package})
 	endforeach()
@@ -1121,13 +1135,14 @@ endfunction()
 ######################## Platforms management ##########################
 ########################################################################
 
-## subsidiary function that put sinto cmake variable description of available platforms
+## subsidiary function that puts into cmake variables the description of available platforms
 function(detect_Current_Platform)
 	# Now detect the current platform maccording to host environemnt selection (call to script for platform detection)
 	include(CheckTYPE)
 	include(CheckARCH)
 	include(CheckOS)
 	include(CheckABI)
+	include(CheckPython)
 	if(CURRENT_DISTRIBUTION STREQUAL "")
 		set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family = ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS}\n + compiler ABI= ${CURRENT_ABI}")
 	else()
@@ -1168,6 +1183,10 @@ function(detect_Current_Platform)
 		set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external/${CURRENT_PLATFORM} CACHE INTERNAL "")
 		set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install/${CURRENT_PLATFORM} CACHE INTERNAL "")
 		message("[PID] INFO : Target platform in use is ${CURRENT_PLATFORM}:\n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n")
+	endif()
+
+	if(CURRENT_PYTHON)
+		message("[PID] INFO : Python may be used, target python version in use is ${CURRENT_PYTHON}. To use python modules installed in workspace please set the PYTHONPATH to =${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}\n")
 	endif()
 endfunction(detect_Current_Platform)
 
@@ -1324,6 +1343,11 @@ if(CURRENT_ENVIRONMENT)
 else()
 	file(APPEND ${file} "set(CURRENT_ENVIRONMENT host CACHE INTERNAL \"\" FORCE)\n")
 endif()
+	#managing python
+	file(APPEND ${file} "set(CURRENT_PYTHON ${CURRENT_PYTHON} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PYTHON_EXECUTABLE ${CURRENT_PYTHON_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PYTHON_LIBRARIES ${CURRENT_PYTHON_LIBRARIES} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PYTHON_INCLUDE_DIRS ${CURRENT_PYTHON_INCLUDE_DIRS} CACHE INTERNAL \"\" FORCE)\n")
 endfunction(write_Platform_Description)
 
 ## subsidiary function for writing workspace configuration to a cmake file
@@ -1337,8 +1361,9 @@ file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_P
 endfunction(write_Current_Configuration)
 
 ### define the current platform in use and provide to the user some options to control finally targetted platform
-function(manage_Platforms)
+function(manage_Platforms path_to_workspace)
 
+set(WORKSPACE_DIR ${path_to_workspace} CACHE INTERNAL "")
 # listing all available platforms from platforms definitions cmake files found in the workspace
 register_Available_Platforms()
 

@@ -21,9 +21,8 @@ include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the curren
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 include(PID_Git_Functions NO_POLICY_SCOPE)
-
 if(NOT FORCE_RELEASE_BUILD OR NOT FORCE_RELEASE_BUILD STREQUAL "true")
-	get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
+	get_Repository_Current_Branch(BRANCH_NAME ${GIT_REPOSITORY})
 	if(NOT BRANCH_NAME OR BRANCH_NAME STREQUAL "master")
 		message(FATAL_ERROR "[PID] ERROR : ${TARGET_PACKAGE} must be built on a development branch (integration or feature specific branch).")
 	endif()

@@ -182,27 +182,30 @@ set(${VERSION_FOUND} PARENT_SCOPE)
 list_Version_Subdirectories(VERSION_DIRS ${search_path})
 if(VERSION_DIRS)
 	foreach(version_dir IN ITEMS ${VERSION_DIRS})
-		if(version_dir VERSION_EQUAL version OR version_dir VERSION_GREATER version)
-			if(highest_version)
-				if(version_dir VERSION_GREATER highest_version
-				AND version_dir VERSION_LESS "${${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO}")
+		if(version_dir VERSION_EQUAL version OR version_dir VERSION_GREATER version)#only greater or equal versions are feasible
+			if(DEFINED ${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO)#if not defined the version is compatible with nothing
+				if(	highest_version )#if a compatible highest version is already found
+						if(version_dir VERSION_GREATER highest_version #the new version must be greater to be interesting
+							AND version_dir VERSION_LESS "${${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO}")#but it also has to be compatible
+							set(highest_version ${version_dir})
+						endif()
+				elseif(version_dir VERSION_LESS "${${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO}")#if no highest compatible version found, simply check that the version is compatible
 					set(highest_version ${version_dir})
 				endif()
-			else()
-				set(highest_version ${version_dir})
+			elseif(version_dir VERSION_EQUAL version)#no compatible version defined, only the exact version can be used
+					set(highest_version ${version_dir})
 			endif()
 		endif()
-
 	endforeach()
 	if(highest_version)
 		set(${VERSION_FOUND} ${highest_version} PARENT_SCOPE)
 		document_External_Version_Strings(${package} ${highest_version})
 	endif()
 endif()
-endfunction()
+endfunction(check_External_Minimum_Version)
 
 ### check if the last version of the external package exists
-function(check_External_Last_Version VERSION_FOUND search_path)
+function(check_External_Last_Version VERSION_FOUND package search_path)
 set(${VERSION_FOUND} PARENT_SCOPE)
 list_Version_Subdirectories(VERSION_DIRS ${search_path})
 if(VERSION_DIRS)
@@ -224,7 +227,7 @@ endfunction()
 
 
 ### check if an exact major.minor.patch version of the external package exists
-function(check_External_Exact_Version VERSION_FOUND search_path version)
+function(check_External_Exact_Version VERSION_FOUND package search_path version)
 set(${VERSION_FOUND} PARENT_SCOPE)
 list_Version_Subdirectories(VERSION_DIRS ${search_path})
 if(VERSION_DIRS)
@@ -271,7 +274,8 @@ if(idx EQUAL -1)#the component is NOT an application
 		endif()
 		#now checking for binaries if necessary
 		if(	"${package_name}_${component_name}_TYPE" STREQUAL "STATIC"
-			OR "${package_name}_${component_name}_TYPE" STREQUAL "SHARED")
+			OR "${package_name}_${component_name}_TYPE" STREQUAL "SHARED"
+			OR "${package_name}_${component_name}_TYPE" STREQUAL "MODULE")
 			#checking release and debug binaries (at least one is required)
 			find_library(	PATH_TO_LIB
 					NAMES ${${package_name}_${component_name}_BINARY_NAME} ${${package_name}_${component_name}_BINARY_NAME_DEBUG}
@@ -837,17 +841,24 @@ if(EXIST)
 	#variables that will be filled by generic functions
 	if(${package}_FIND_VERSION)
 		if(${package}_FIND_VERSION_EXACT) #using a specific version
-			check_External_Exact_Version(VERSION_TO_USE ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}")
+			check_External_Exact_Version(VERSION_TO_USE ${package} ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}")
 		else() #using the best version as regard of version constraints
 			check_External_Minimum_Version(VERSION_TO_USE ${package} ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}")
 		endif()
 	else() #no specific version targetted using last available version (takes the last version available)
-		check_External_Last_Version(VERSION_TO_USE ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH})
+		check_External_Last_Version(VERSION_TO_USE ${package} ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH})
 	endif()
 	if(VERSION_TO_USE)#a good version of the package has been found
 		set(${package}_FOUND TRUE CACHE INTERNAL "")
 		set(${package}_ROOT_DIR ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH}/${VERSION_TO_USE} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES} ${package} CACHE INTERNAL "")
+		include(${${package}_ROOT_DIR}/share/Use${package}-${VERSION_TO_USE}.cmake  OPTIONAL)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
+		#add the undirectly used packages as well
+		set(LIST_OF_EXTS ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES} ${package})
+		if(LIST_OF_EXTS)
+			list(REMOVE_DUPLICATES LIST_OF_EXTS)
+		endif()
+		set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES ${LIST_OF_EXTS} CACHE INTERNAL "")
+
 		if(${package}_FIND_VERSION)
 			if(${package}_FIND_VERSION_EXACT)
 				set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version

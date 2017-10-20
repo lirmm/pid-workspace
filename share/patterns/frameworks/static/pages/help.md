@@ -7,7 +7,7 @@ title: Help
 
 This is the documentation site of the {{ site.data.framework.framework_name}} framework. A **framework** is a collection of libraries, executables and other software artifacts. 
 
-The site has been automatically generated using jenkins, configured using CMake and updated/published using gitlab, based on a dedicated development environment called **PID**. Technically, this site has been generated from [this source repository]({{site.data.framework.framework_git_project}}) (you may have no access to the repository project).
+The site has been automatically generated using jekyll, configured using CMake and updated/published using gitlab, based on a dedicated development environment called **PID**. Technically, this site has been generated from [this source repository]({{site.data.framework.framework_git_project}}) (you may have no access to the repository project).
 
 In **PID** environment **frameworks** are agregates of **packages**, each **package** containing any kind of software artifacts (libraries, executables, configuration files and more generally any kind of filesystem resources). They allow to put into a common place any information about these packages (either for developpers or end-users).
 
