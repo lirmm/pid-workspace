@@ -12,6 +12,6 @@ set(eigen-qp_DESCRIPTION "quadratic programming solvers through Eigen3 library, 
 set(eigen-qp_YEARS 2017 CACHE INTERNAL "")
 set(eigen-qp_LICENSE GNULGPL CACHE INTERNAL "")
 set(eigen-qp_ADDRESS git@gite.lirmm.fr:rob-miscellaneous/eigen-qp.git CACHE INTERNAL "")
-set(eigen-qp_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(eigen-qp_PUBLIC_ADDRESS https://gite.lirmm.fr/rob-miscellaneous/eigen-qp.git CACHE INTERNAL "")
 set(eigen-qp_CATEGORIES CACHE INTERNAL "")
 set(eigen-qp_REFERENCES  CACHE INTERNAL "")
