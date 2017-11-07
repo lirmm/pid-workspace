@@ -20,7 +20,7 @@
 include(PID_Utils_Functions)
 
 macro(add_Debug_Target component folder)
-	set(component_config "\"${component}\":\n\tpath: \"build/debug/${folder}/${component}-dbg\"\n\tcwd: \"build\"\n")
+	set(component_config "\"${component}\":\n\tpath: \"$<TARGET_FILE:${component}-dbg>\"\n\tcwd: \"build\"\n")
 	set(DEBUG_CONFIG "${DEBUG_CONFIG}${component_config}")
 endmacro()
 
