@@ -26,7 +26,7 @@ endmacro()
 
 ## main script
 if(CMAKE_BUILD_TYPE MATCHES Debug) #only generating in debug mode
-	set(DEBUG_CONFIG)
+	set(DEBUG_CONFIG "")
 
 	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		if(${PROJECT_NAME}_${component}_TYPE STREQUAL "APP")
@@ -38,9 +38,11 @@ if(CMAKE_BUILD_TYPE MATCHES Debug) #only generating in debug mode
 		endif()
 	endforeach()
 
-	set(path_to_file "${CMAKE_SOURCE_DIR}/.atom-dbg.cson")
-	if(EXISTS ${path_to_file})
-		file(REMOVE ${path_to_file})
+	if(NOT DEBUG_CONFIG STREQUAL "")
+		set(path_to_file "${CMAKE_SOURCE_DIR}/.atom-dbg.cson")
+		if(EXISTS ${path_to_file})
+			file(REMOVE ${path_to_file})
+		endif()
+		file(GENERATE OUTPUT ${path_to_file} CONTENT ${DEBUG_CONFIG})
 	endif()
-	file(GENERATE OUTPUT ${path_to_file} CONTENT ${DEBUG_CONFIG})
 endif()
