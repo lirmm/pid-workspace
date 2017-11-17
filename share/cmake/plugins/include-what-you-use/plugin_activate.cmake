@@ -17,10 +17,16 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-find_program(IWYU_PATH include-what-you-use)
-if(IWYU_PATH)
-	set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE ${IWYU_PATH} CACHE STRING "" FORCE)
-else()
-	unset(CMAKE_CXX_INCLUDE_WHAT_YOU_USE CACHE)
-	message("\n[IWYU] The include-what-you-use executable cannnot be found. Make sure it is in your PATH.\n")
+if(${CMAKE_MAJOR_VERSION} GREATER 2 AND ${CMAKE_MINOR_VERSION} GREATER 2)
+
+	find_program(IWYU_PATH include-what-you-use)
+	if(IWYU_PATH)
+		set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE ${IWYU_PATH} CACHE STRING "" FORCE)
+		set(CMAKE_C_INCLUDE_WHAT_YOU_USE ${IWYU_PATH} CACHE STRING "" FORCE)
+	else()
+		unset(CMAKE_CXX_INCLUDE_WHAT_YOU_USE CACHE)
+		unset(CMAKE_C_INCLUDE_WHAT_YOU_USE CACHE)
+		message("\n[IWYU] The include-what-you-use executable cannnot be found. Make sure it is in your PATH.\n")
+	endif()
+
 endif()
