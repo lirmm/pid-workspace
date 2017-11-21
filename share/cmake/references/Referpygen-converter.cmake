@@ -1,7 +1,7 @@
 #### referencing package pygen-converter mode ####
 set(pygen-converter_MAIN_AUTHOR _Vincent_Samy CACHE INTERNAL "")
 set(pygen-converter_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
-set(pygen-converter_CONTACT_MAIL vincent.samy@lirmm.fr CACHE INTERNAL "")
+set(pygen-converter_CONTACT_MAIL vsamy@outlook.fr CACHE INTERNAL "")
 set(pygen-converter_FRAMEWORK  CACHE INTERNAL "")
 set(pygen-converter_SITE_ROOT_PAGE  CACHE INTERNAL "")
 set(pygen-converter_PROJECT_PAGE  CACHE INTERNAL "")

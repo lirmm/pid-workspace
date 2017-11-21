@@ -1,7 +1,7 @@
 #### referencing package copra mode ####
 set(copra_MAIN_AUTHOR _Vincent_Samy CACHE INTERNAL "")
 set(copra_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
-set(copra_CONTACT_MAIL vincent.samy@lirmm.fr CACHE INTERNAL "")
+set(copra_CONTACT_MAIL vsamy@outlook.fr CACHE INTERNAL "")
 set(copra_FRAMEWORK  CACHE INTERNAL "")
 set(copra_SITE_ROOT_PAGE  CACHE INTERNAL "")
 set(copra_PROJECT_PAGE  CACHE INTERNAL "")
