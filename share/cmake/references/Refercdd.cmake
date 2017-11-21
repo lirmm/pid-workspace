@@ -1,7 +1,7 @@
 #### referencing package cdd mode ####
 set(cdd_MAIN_AUTHOR _vsamy CACHE INTERNAL "")
 set(cdd_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
-set(cdd_CONTACT_MAIL vincent.samy@lirmm.fr CACHE INTERNAL "")
+set(cdd_CONTACT_MAIL vsamy@outlook.fr CACHE INTERNAL "")
 set(cdd_FRAMEWORK  CACHE INTERNAL "")
 set(cdd_SITE_ROOT_PAGE  CACHE INTERNAL "")
 set(cdd_PROJECT_PAGE  CACHE INTERNAL "")
