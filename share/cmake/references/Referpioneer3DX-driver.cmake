@@ -12,6 +12,6 @@ set(pioneer3DX-driver_DESCRIPTION "Driver software for Pioneer 3DX robot" CACHE 
 set(pioneer3DX-driver_YEARS 2017 CACHE INTERNAL "")
 set(pioneer3DX-driver_LICENSE CeCILL-C CACHE INTERNAL "")
 set(pioneer3DX-driver_ADDRESS git@gite.lirmm.fr:pioneer3DX/pioneer3DX-driver.git CACHE INTERNAL "")
-set(pioneer3DX-driver_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(pioneer3DX-driver_PUBLIC_ADDRESS https://gite.lirmm.fr/pioneer3DX/pioneer3DX-driver.git CACHE INTERNAL "")
 set(pioneer3DX-driver_CATEGORIES CACHE INTERNAL "")
 set(pioneer3DX-driver_REFERENCES  CACHE INTERNAL "")
