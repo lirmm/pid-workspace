@@ -12,6 +12,6 @@ set(hokuyo-driver_DESCRIPTION "a little library that wraps URG library to manage
 set(hokuyo-driver_YEARS 2015 CACHE INTERNAL "")
 set(hokuyo-driver_LICENSE CeCILL-C CACHE INTERNAL "")
 set(hokuyo-driver_ADDRESS git@gite.lirmm.fr:rob-vision-devices/hokuyo-driver.git CACHE INTERNAL "")
-set(hokuyo-driver_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(hokuyo-driver_PUBLIC_ADDRESS https://gite.lirmm.fr/rob-vision-devices/hokuyo-driver.git CACHE INTERNAL "")
 set(hokuyo-driver_CATEGORIES "laser-scanners/driver" CACHE INTERNAL "")
 set(hokuyo-driver_REFERENCES  CACHE INTERNAL "")
