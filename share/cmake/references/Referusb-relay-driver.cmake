@@ -12,6 +12,6 @@ set(usb-relay-driver_DESCRIPTION "driver library for USB relay" CACHE INTERNAL "
 set(usb-relay-driver_YEARS 2017 CACHE INTERNAL "")
 set(usb-relay-driver_LICENSE CeCILL-C CACHE INTERNAL "")
 set(usb-relay-driver_ADDRESS git@gite.lirmm.fr:rob-miscellaneous/usb-relay-driver.git CACHE INTERNAL "")
-set(usb-relay-driver_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(usb-relay-driver_PUBLIC_ADDRESS https://gite.lirmm.fr/rob-miscellaneous/usb-relay-driver.git CACHE INTERNAL "")
 set(usb-relay-driver_CATEGORIES CACHE INTERNAL "")
 set(usb-relay-driver_REFERENCES  CACHE INTERNAL "")
