@@ -12,6 +12,6 @@ set(kinect1-driver_DESCRIPTION "a little library that wraps freenect1 library to
 set(kinect1-driver_YEARS 2017 CACHE INTERNAL "")
 set(kinect1-driver_LICENSE CeCILL CACHE INTERNAL "")
 set(kinect1-driver_ADDRESS git@gite.lirmm.fr:rob-vision-devices/kinect1-driver.git CACHE INTERNAL "")
-set(kinect1-driver_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(kinect1-driver_PUBLIC_ADDRESS https://gite.lirmm.fr/rob-vision-devices/kinect1-driver.git CACHE INTERNAL "")
 set(kinect1-driver_CATEGORIES CACHE INTERNAL "")
 set(kinect1-driver_REFERENCES  CACHE INTERNAL "")
