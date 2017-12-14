@@ -18,6 +18,211 @@
 #########################################################################################
 
 ############################################################################
+####################### build command creation auxiliary function ##########
+############################################################################
+
+function(create_Global_Build_Command privileges gen_install gen_build gen_package gen_doc gen_test_or_cover)
+if(gen_install)
+	if(gen_build) #build package
+		if(gen_package) #generate and install a binary package
+			if(gen_doc) # documentation generated
+				#this is the complete scenario
+				if(NOT gen_test_or_cover)
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+						add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				endif()
+			else() # no documentation generated
+				#this is the complete scenario without documentation
+				if(NOT gen_test_or_cover)
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				endif()
+			endif()
+		else()#no binary package
+			if(gen_doc) # documentation generated
+				if(NOT gen_test_or_cover)#no test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				endif()
+			else() # no documentation generated
+				if(NOT gen_test_or_cover)
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				endif()
+			endif()
+		endif()
+	else()#package not built !!
+		if(gen_package)#package binary archive is built
+			if(gen_doc)#documentation is built
+				if(NOT gen_test_or_cover) # no test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				endif()
+			else()#no documentation generated
+				if(NOT gen_test_or_cover)
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${CMAKE_MAKE_PROGRAM} package
+						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
+					)
+				endif()
+			endif()
+		else()#no package binary generated
+			if(gen_doc) #but with doc
+				if(NOT gen_test_or_cover) #without test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} doc
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				endif()
+			else()#no doc
+				if(NOT gen_test_or_cover) #without test
+					add_custom_target(build
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				else()# basic test
+					add_custom_target(build
+						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_MAKE_PROGRAM} install
+					)
+				endif()
+			endif()
+		endif()
+	endif()
+else()
+	add_custom_target(build
+		COMMAND ${CMAKE_COMMAND} -E echo "[PID] Nothing to be done. Build process aborted."
+	)
+endif()
+endfunction(create_Global_Build_Command)
+
+
+############################################################################
 ####################### Language standard management #######################
 ############################################################################
 function(initialize_Build_System)
@@ -37,28 +242,11 @@ function(resolve_Component_Language component_target)
 	if(CMAKE_VERSION VERSION_LESS 3.1)#this is only usefll if CMake does not automatically deal with standard related properties
 		get_target_property(STD_C ${component_target} PID_C_STANDARD)
 		get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
-
-		#managing c++
-		if(STD_CXX EQUAL 98)
-			target_compile_options(${component_target} PUBLIC "-std=c++98")
-		elseif(STD_CXX EQUAL 11)
-			target_compile_options(${component_target} PUBLIC "-std=c++11")
-		elseif(STD_CXX EQUAL 14)
-			target_compile_options(${component_target} PUBLIC "-std=c++14")
-		elseif(STD_CXX EQUAL 17)
-			target_compile_options(${component_target} PUBLIC "-std=c++17")
-		endif()
-
-		#managing c
-		if(STD_C EQUAL 90)
-			target_compile_options(${component_target} PUBLIC "-std=c90")
-		elseif(STD_C EQUAL 99)
-			target_compile_options(${component_target} PUBLIC "-std=c99")
-		elseif(STD_C EQUAL 11)
-			target_compile_options(${component_target} PUBLIC "-std=c11")
-		endif()
+		translate_Standard_Into_Option(RES_C_STD_OPT RES_CXX_STD_OPT ${STD_C} ${STD_CXX})
+		#direclty setting the option, without using CMake mechanism as it is not available for these versions
+		target_compile_options(${component_target} PUBLIC "${RES_CXX_STD_OPT}")
+		target_compile_options(${component_target} PUBLIC "${RES_C_STD_OPT}")
 		return()
-
 	elseif(CMAKE_VERSION VERSION_LESS 3.8)#if cmake version is less than 3.8 than the c++ 17 language is unknown
 		get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
 		is_CXX_Version_Less(IS_LESS ${STD_CXX} 17)
@@ -123,7 +311,43 @@ endfunction(filter_Compiler_Options)
 ############################################################################
 ############### API functions for internal targets management ##############
 ############################################################################
+###create a fake target for a python component
+function(manage_Python_Scripts c_name dirname)
+	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES PREFIX "")#specific requirement for python, not lib prefix at beginning of the module
+		# simply copy directory containing script at install time into a specific folder, but select only python script
+		# Important notice: the trailing / at end of DIRECTORY argument is to allow the renaming of the directory into c_name
+		install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${dirname}/
+						DESTINATION ${${PROJECT_NAME}_INSTALL_SCRIPT_PATH}/${c_name}
+						FILES_MATCHING PATTERN "*.py"
+						PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+	else()
+		# simply copy directory containing script at install time into a specific folder, but select only python script
+		# Important notice: the trailing / at end of DIRECTORY argument is to allow the renaming of the directory into c_name
+		install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/script/${dirname}/
+						DESTINATION ${${PROJECT_NAME}_INSTALL_SCRIPT_PATH}/${c_name}
+						FILES_MATCHING PATTERN "*.py"
+						PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+	endif()
 
+
+	#get_Binary_Location(RES_LOC ${PROJECT_NAME} ${c_name} Release) should be used but not usable due to a bug in install(CODE ...) avoiding to use generator expressions
+	install(#install symlinks that target the python module either in install directory and (undirectly) in the python install dir
+			CODE
+			"execute_process(
+					COMMAND ${CMAKE_COMMAND}
+					-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+					-DCMAKE_COMMAND=${CMAKE_COMMAND}
+					-DWORKSPACE_DIR=${WORKSPACE_DIR}
+					-DTARGET_PACKAGE=${PROJECT_NAME}
+					-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
+					-DTARGET_MODULE=${c_name}
+					-DTARGET_COMPONENT_TYPE=${${PROJECT_NAME}_${c_name}_TYPE}
+					-P ${WORKSPACE_DIR}/share/cmake/system/Install_PID_Python_Script.cmake
+			)
+			"
+	)
+endfunction(manage_Python_Scripts)
 
 ###create a module lib target for a newly defined library
 function(create_Module_Lib_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)

@@ -299,22 +299,27 @@ endfunction(first_Called_Build_Mode)
 
 ### printing variables for components in the package ################
 macro(print_Component component imported)
-	message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX}")
-	message("INTERFACE : ")
-	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
-	message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
-	message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-	get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_LINK_LIBRARIES)
-	message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-	if(NOT ${imported} AND NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
-		message("IMPLEMENTATION :")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
+	if(NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")
+		message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX}")
+		message("INTERFACE : ")
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_INCLUDE_DIRECTORIES)
 		message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_COMPILE_DEFINITIONS)
 		message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
-		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
+		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_LINK_LIBRARIES)
 		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+
+		if(NOT ${imported} AND NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+			message("IMPLEMENTATION :")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
+			message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} COMPILE_DEFINITIONS)
+			message("defs of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} LINK_LIBRARIES)
+			message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
+		endif()
+	else()
+		message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX} IS PYTHON SCRIPT")
 	endif()
 endmacro(print_Component)
 
@@ -322,13 +327,14 @@ macro(print_Component_Variables)
 	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
 	message("libraries : " ${${PROJECT_NAME}_COMPONENTS_LIBS})
 	message("applications : " ${${PROJECT_NAME}_COMPONENTS_APPS})
+	message("applications : " ${${PROJECT_NAME}_COMPONENTS_SCRIPTS})
 
 	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 		print_Component(${component} FALSE)
 	endforeach()
 endmacro(print_Component_Variables)
 
-function(init_Package_Info_Cache_Variables author institution mail description year license address public_address)
+function(init_Package_Info_Cache_Variables author institution mail description year license address public_address readme_file)
 set(res_string)
 foreach(string_el IN ITEMS ${author})
 	set(res_string "${res_string}_${string_el}")
@@ -350,6 +356,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_PUBLIC_ADDRESS ${public_address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
+set(${PROJECT_NAME}_USER_README_FILE ${readme_file} CACHE INTERNAL "")
 endif()
 reset_References_Info()
 reset_Version_Cache_Variables()
@@ -387,6 +394,7 @@ function(reset_Documentation_Info)
 	set(${PROJECT_NAME}_SITE_INTRODUCTION CACHE INTERNAL "")
 	set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING CACHE INTERNAL "")
 	set(${PROJECT_NAME}_DEV_INFO_AUTOMATIC_PUBLISHING CACHE INTERNAL "")
+	set(${PROJECT_NAME}_USER_README_FILE CACHE INTERNAL "")
 endfunction(reset_Documentation_Info)
 
 
@@ -397,6 +405,7 @@ function(set_Install_Cache_Variables)
 	set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
+	set ( ${PROJECT_NAME}_INSTALL_SCRIPT_PATH ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/script CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_RPATH_DIR ${${PROJECT_NAME}_DEPLOY_PATH}/.rpath CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_ROOT_DIR ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} CACHE INTERNAL "")
@@ -585,6 +594,46 @@ endfunction(add_Configuration_To_Platform)
 ############### API functions for setting components related cache variables ################
 #############################################################################################
 
+### to know wehether a package has something to build
+function(package_Has_Nothing_To_Build NOTHING_BUILT)
+	if(${PROJECT_NAME}_COMPONENTS)
+		foreach(comp IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+			will_be_Built(RES ${comp})
+			if(RES)
+				set(${NOTHING_BUILT} FALSE PARENT_SCOPE)
+				return()
+			endif()
+		endforeach()
+	endif()
+	set(${NOTHING_BUILT} TRUE PARENT_SCOPE)
+endfunction(package_Has_Nothing_To_Build)
+
+### to know whether a package has something to install
+function(package_Has_Nothing_To_Install NOTHING_INSTALLED)
+	if(${PROJECT_NAME}_COMPONENTS)
+		foreach(comp IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+			will_be_Installed(RES ${comp})
+			if(RES)
+				set(${NOTHING_INSTALLED} FALSE PARENT_SCOPE)
+				return()
+			endif()
+		endforeach()
+	endif()
+	set(${NOTHING_INSTALLED} TRUE PARENT_SCOPE)
+endfunction(package_Has_Nothing_To_Install)
+
+
+### to know wehether a module is a python wrapped module
+function(is_Python_Module IS_PYTHON package component)
+	if(${package}_${component}_TYPE STREQUAL "MODULE")
+		set(${IS_PYTHON} ${${package}_${component}_HAS_PYTHON_WRAPPER} PARENT_SCOPE)
+	else()
+		set(${IS_PYTHON} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Python_Module)
+
+
+
 ### configure variables exported by component that will be used to generate the package cmake use file
 function (configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
 
@@ -751,6 +800,7 @@ reset_Declared()
 set(${PROJECT_NAME}_COMPONENTS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
+set(${PROJECT_NAME}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
 
 #unsetting all root variables usefull to the find/configuration mechanism
 foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
@@ -874,6 +924,7 @@ if (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${package}_${component}_TYPE STREQUAL "TEST"
 	OR ${package}_${component}_TYPE STREQUAL "MODULE"
+	OR ${package}_${component}_TYPE STREQUAL "PYTHON"
 	)
 	set(${ret_var} TRUE PARENT_SCOPE)
 else()
@@ -881,6 +932,20 @@ else()
 endif()
 endfunction(is_HeaderFree_Component)
 
+
+### to know if the component is an application
+function(is_Runtime_Component ret_var package component)
+if (	${package}_${component}_TYPE STREQUAL "APP"
+	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
+	OR ${package}_${component}_TYPE STREQUAL "TEST"
+	OR ${package}_${component}_TYPE STREQUAL "SHARED"
+	OR ${package}_${component}_TYPE STREQUAL "MODULE"
+	)
+	set(${ret_var} TRUE PARENT_SCOPE)
+else()
+	set(${ret_var} FALSE PARENT_SCOPE)
+endif()
+endfunction(is_Runtime_Component)
 
 ### to know if the component is an application
 function(is_Executable_Component ret_var package component)
@@ -905,7 +970,7 @@ if (	${package}_${component}_TYPE STREQUAL "APP"
 )
 	set(${ret_var} TRUE PARENT_SCOPE)
 else()
-	set(${ret_var} FALSE PARENT_SCOPE)
+	set(${ret_var} FALSE PARENT_SCOPE)#scripts and headers libraries are not built
 endif()
 endfunction(is_Built_Component)
 
@@ -930,10 +995,19 @@ endfunction(reset_Removed_Examples_Build_Option)
 
 ###
 function(will_be_Built result component)
-if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
+if((${PROJECT_NAME}_${component}_TYPE STREQUAL "SCRIPT") #python scripts are never built
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
 	set(${result} FALSE PARENT_SCOPE)
+	return()
 else()
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")### to know wehether a module is a python wrapped module and is really compilable
+		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
+		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#wthe module will not be built as there is no python configuration
+			set(${result} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
 	set(${result} TRUE PARENT_SCOPE)
 endif()
 endfunction(will_be_Built)
@@ -944,6 +1018,13 @@ if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
 	set(${result} FALSE PARENT_SCOPE)
 else()
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")### to know wehether a module is a python wrapped module and is really compilable
+		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
+		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#wthe module will not be installed as there is no python configuration
+			set(${result} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
 	set(${result} TRUE PARENT_SCOPE)
 endif()
 endfunction(will_be_Installed)
@@ -963,7 +1044,6 @@ endfunction(is_Externally_Usable)
 function(register_Component_Binary c_name)
 	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} "$<TARGET_FILE_NAME:${c_name}${INSTALL_NAME_SUFFIX}>" CACHE INTERNAL "")
 endfunction(register_Component_Binary)
-
 
 #resolving dependencies
 function(is_Bin_Component_Exporting_Other_Components RESULT package component mode)
@@ -1151,6 +1231,7 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${${package}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS_SCRIPTS ${${package}_COMPONENTS_SCRIPTS} CACHE INTERNAL \"\")\n")
 
 	file(APPEND ${file} "####### internal specs of package components #######\n")
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_LIBS})
@@ -1161,6 +1242,9 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 		endif()
 	endforeach()
 	foreach(a_component IN ITEMS ${${package}_COMPONENTS_APPS})
+		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
+	endforeach()
+	foreach(a_component IN ITEMS ${${package}_COMPONENTS_SCRIPTS})
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
 	endforeach()
 else()

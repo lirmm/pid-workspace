@@ -23,7 +23,7 @@ include(CMakeParseArguments)
 
 ### API : declare_PID_Package(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... LICENSE license [ADDRESS address] DESCRIPTION ...)
 macro(declare_PID_Package)
-set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS)
+set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
 cmake_parse_arguments(DECLARE_PID_PACKAGE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_PACKAGE_AUTHOR)
@@ -50,7 +50,7 @@ endif()
 declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${DECLARE_PID_PACKAGE_MAIL}"
 			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}"
 			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_PUBLIC_ADDRESS}"
-			"${DECLARE_PID_PACKAGE_DESCRIPTION}")
+		"${DECLARE_PID_PACKAGE_DESCRIPTION}" "${DECLARE_PID_PACKAGE_README}")
 endmacro(declare_PID_Package)
 
 ### API : set_PID_Package_Version(major minor [patch])
@@ -285,7 +285,7 @@ endmacro(check_PID_Platform)
 
 ### API: get_PID_Platform_Info([TYPE res_type] [OS res_os] [ARCH res_arch] [ABI res_abi])
 function(get_PID_Platform_Info)
-set(oneValueArgs NAME OS ARCH ABI TYPE)
+set(oneValueArgs NAME OS ARCH ABI TYPE PYTHON DISTRIBUTION)
 set(multiValueArgs CONFIGURATION)
 cmake_parse_arguments(GET_PID_PLATFORM_INFO "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 set(OK FALSE)
@@ -308,6 +308,14 @@ endif()
 if(GET_PID_PLATFORM_INFO_ABI)
 	set(OK TRUE)
 	set(${GET_PID_PLATFORM_INFO_ABI} ${CURRENT_PLATFORM_ABI} PARENT_SCOPE)
+endif()
+if(GET_PID_PLATFORM_INFO_PYTHON)
+		set(OK TRUE)
+		set(${GET_PID_PLATFORM_INFO_PYTHON} ${CURRENT_PYTHON} PARENT_SCOPE)
+endif()
+if(GET_PID_PLATFORM_INFO_DISTRIBUTION)
+		set(OK TRUE)
+		set(${GET_PID_PLATFORM_INFO_DISTRIBUTION} ${CURRENT_DISTRIBUTION} PARENT_SCOPE)
 endif()
 if(NOT OK)
 	message("[PID] ERROR : you must use one or more of the NAME, TYPE, ARCH, OS or ABI keywords together with corresponding variables that will contain the resulting property of the current platform in use.")
@@ -351,12 +359,31 @@ endmacro(build_PID_Package)
 #				[DESCRIPTION short description of the utility of this component]
 #				[USAGE includes...])
 macro(declare_PID_Component)
-set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
+set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION PYTHON_PACK)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}.")
+endif()
+
+#check for the name argument
+if(NOT DECLARE_PID_COMPONENT_NAME)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the component using NAME keyword.")
+endif()
+
+#check unique names
+set(DECLARED FALSE)
+is_Declared(${DECLARE_PID_COMPONENT_NAME} DECLARED)
+if(DECLARED)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : a component with the same name than ${DECLARE_PID_COMPONENT_NAME} is already defined.")
+	return()
+endif()
+unset(DECLARED)
+
+#check for directory argument
+if(NOT DECLARE_PID_COMPONENT_DIRECTORY)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword.")
 endif()
 
 if(DECLARE_PID_COMPONENT_C_STANDARD)
@@ -367,7 +394,7 @@ if(DECLARE_PID_COMPONENT_C_STANDARD)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad C_STANDARD argument, the value used must be 90, 99 or 11.")
 	endif()
 else() #default language standard is first standard
-	set(c_language_standard 90)
+	set(c_language_standard 99)
 endif()
 
 if(DECLARE_PID_COMPONENT_CXX_STANDARD)
@@ -382,12 +409,6 @@ else() #default language standard is first standard
 	set(cxx_language_standard 98)
 endif()
 
-if(NOT DECLARE_PID_COMPONENT_NAME)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the component using NAME keyword.")
-endif()
-if(NOT DECLARE_PID_COMPONENT_DIRECTORY)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword.")
-endif()
 set(nb_options 0)
 if(DECLARE_PID_COMPONENT_STATIC_LIB)
 	math(EXPR nb_options "${nb_options}+1")
@@ -417,8 +438,17 @@ if(DECLARE_PID_COMPONENT_TEST_APPLICATION)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "TEST")
 endif()
+if(DECLARE_PID_COMPONENT_PYTHON_PACK)
+	math(EXPR nb_options "${nb_options}+1")
+	set(type "PYTHON")
+endif()
 if(NOT nb_options EQUAL 1)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION|TEST_APPLICATION) must be given for the component.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION or TEST_APPLICATION) must be given for the component.")
+endif()
+#checking that the required directories exist
+check_Required_Directories_Exist(PROBLEM ${type} ${DECLARE_PID_COMPONENT_DIRECTORY})
+if(PROBLEM)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring ${DECLARE_PID_COMPONENT_NAME}, the source directory ${DECLARE_PID_COMPONENT_DIRECTORY} cannot be found in ${CMAKE_CURRENT_SOURCE_DIR} (${PROBLEM}).")
 endif()
 
 set(internal_defs "")
@@ -475,15 +505,6 @@ if(DECLARE_PID_COMPONENT_RUNTIME_RESOURCES)
 	set(runtime_resources ${DECLARE_PID_COMPONENT_RUNTIME_RESOURCES})
 endif()
 
-#check unique names
-set(DECLARED FALSE)
-is_Declared(${DECLARE_PID_COMPONENT_NAME} DECLARED)
-if(DECLARED)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : a component with the same name than ${DECLARE_PID_COMPONENT_NAME} is already defined.")
-	return()
-endif()
-unset(DECLARED)
-
 if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME}
 					${DECLARE_PID_COMPONENT_DIRECTORY}
@@ -495,6 +516,8 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 					"${internal_compiler_options}"
 					"${internal_link_flags}"
 					"${runtime_resources}")
+elseif(type MATCHES "PYTHON")#declare a python package
+	declare_Python_Component(${DECLARE_PID_COMPONENT_NAME} ${DECLARE_PID_COMPONENT_DIRECTORY})
 else() #it is a library
 	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME}
 					${DECLARE_PID_COMPONENT_DIRECTORY}
@@ -801,29 +824,70 @@ endif()
 endmacro(declare_PID_Component_Dependency)
 
 
+function(wrap_CTest_Call name command args)
+	if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do if on tests before this version
+		add_test(NAME ${name} COMMAND ${command} ${args})
+	else()
+		add_test(${name} ${command} ${args})
+	endif()
+endfunction(wrap_CTest_Call)
+
 ### API : run_PID_Test (NAME 			test_name
 #			<EXE name | COMPONENT 	name [PACKAGE name]>
 #			PRIVILEGED
 #			ARGUMENTS	 	list_of_args
 #			)
-macro(run_PID_Test)
-set(options PRIVILEGED)
+function(run_PID_Test)
+set(options PRIVILEGED PYTHON)
 set(oneValueArgs NAME EXE COMPONENT PACKAGE)
 set(multiValueArgs ARGUMENTS)
 cmake_parse_arguments(RUN_PID_TEST "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(RUN_PID_TEST_UNPARSED_ARGUMENTS)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
 endif()
 if(NOT RUN_PID_TEST_NAME)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the test (using NAME <name> syntax) !")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, a name must be given to the test (using NAME <name> syntax) !")
+else()
+	if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do call if(TEST) before this version, the default behavior (without using NAME and COMMAND will overwrite the rprevious test with same name)
+		if(TEST ${RUN_PID_TEST_NAME})
+			message("[PID] WARNING : bad arguments for the test ${RUN_PID_TEST_NAME}, this test unit is already defined. Skipping new definition !")
+			return()
+		endif()
+	endif()
 endif()
 
-if(NOT RUN_PID_TEST_EXE AND NOT RUN_PID_TEST_COMPONENT)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an executable must be defined. Using EXE you can use an executable present on your system or by using COMPONENT. In this later case you must specify a PID executable component. If the PACKAGE keyword is used then this component will be found in another package than the current one.")
+if(NOT RUN_PID_TEST_EXE AND NOT RUN_PID_TEST_COMPONENT AND NOT RUN_PID_TEST_PYTHON)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, an executable must be defined. Using EXE you can use an executable present on your system. By using COMPONENT you can specify a component built by the project. In this later case you must specify a PID executable component. If the PACKAGE keyword is used then this component will be found in another package than the current one. Finaly you can otherwise use the PYTHON keyword and pass the target python script file lying in your test folder as argument (path is relative to the test folder).")
 endif()
 
-if(RUN_PID_TEST_EXE AND RUN_PID_TEST_COMPONENT)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must use either a system executable (using EXE keyword) OR a PID application component (using COMPONENT keyword).")
+if((RUN_PID_TEST_EXE AND RUN_PID_TEST_COMPONENT)
+		OR (RUN_PID_TEST_EXE AND RUN_PID_TEST_PYTHON)
+		OR (RUN_PID_TEST_COMPONENT AND RUN_PID_TEST_PYTHON))
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, you must use either a system executable (using EXE keyword) OR a PID application component (using COMPONENT keyword) OR the python executable (using PYTHON keyword).")
+endif()
+
+if(RUN_PID_TEST_PYTHON)
+	if(NOT CURRENT_PYTHON)
+		return()
+	endif()
+	if(NOT RUN_PID_TEST_ARGUMENTS)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, you must define a path to a target python file using ARGUMENTS keyword.")
+	endif()
+	list(LENGTH  RUN_PID_TEST_ARGUMENTS SIZE)
+	if(NOT SIZE EQUAL 1)
+		message("[PID] WARNING : bad arguments for the test ${RUN_PID_TEST_NAME}, you must define a path to a UNIQUE target python file using ARGUMENTS keyword. First file is selected, others will be ignored.")
+	endif()
+	list(GET RUN_PID_TEST_ARGUMENTS 0 target_py_file)
+	if (NOT target_py_file MATCHES "^.*\\.py$")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, ${target_py_file} is not a python file.")
+	endif()
+	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target_py_file})#first check that the file exists in test folder
+		set(PATH_TO_PYTHON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${target_py_file})
+	elseif(EXISTS ${CMAKE_SOURCE_DIR}/share/script/${target_py_file})
+		set(PATH_TO_PYTHON_FILE ${CMAKE_SOURCE_DIR}/share/script/${target_py_file})
+	else()
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, ${target_py_file} cannot be found in either test or script folders.")
+	endif()
 endif()
 
 if(NOT PID_CROSSCOMPILATION)
@@ -837,17 +901,20 @@ if(RUN_PID_TEST_PRIVILEGED)
 endif()
 
 if(RUN_PID_TEST_EXE)
-	add_test("${RUN_PID_TEST_NAME}" "${RUN_PID_TEST_EXE}" ${RUN_PID_TEST_ARGUMENTS})
-else()#RUN_PID_TEST_COMPONENT
+	wrap_CTest_Call(${RUN_PID_TEST_NAME} "${RUN_PID_TEST_EXE}" "${RUN_PID_TEST_ARGUMENTS}")
+elseif(RUN_PID_TEST_COMPONENT)# run test by executing a PID component
 	if(RUN_PID_TEST_PACKAGE)#component coming from another PID package
 		set(target_of_test ${RUN_PID_TEST_PACKAGE}-${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX})
-		add_test(${RUN_PID_TEST_NAME} ${target_of_test} ${RUN_PID_TEST_ARGUMENTS})
+		wrap_CTest_Call(${RUN_PID_TEST_NAME} "${target_of_test}" "${RUN_PID_TEST_ARGUMENTS}")
 	else()#internal component
-		add_test(${RUN_PID_TEST_NAME} ${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX} ${RUN_PID_TEST_ARGUMENTS})
+		wrap_CTest_Call(${RUN_PID_TEST_NAME} "${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX}" "${RUN_PID_TEST_ARGUMENTS}")
 	endif()
+elseif(RUN_PID_TEST_PYTHON)#run PID test with python
+	wrap_CTest_Call(${RUN_PID_TEST_NAME} "${CURRENT_PYTHON_EXECUTABLE}" "${PATH_TO_PYTHON_FILE}")
+	#setting the python path automatically for this test
+	set_tests_properties(${RUN_PID_TEST_NAME} PROPERTIES ENVIRONMENT "PYTHONPATH=${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}")
 endif()
-
-endmacro(run_PID_Test)
+endfunction(run_PID_Test)
 
 ##################################################################################################
 #################### API to ease the description of external packages ############################

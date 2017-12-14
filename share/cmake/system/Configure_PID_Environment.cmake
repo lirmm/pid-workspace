@@ -33,7 +33,21 @@ endfunction(clean_Build_Tree)
 ### script used to configure the environment to another one
 
 if(NOT TARGET_ENVIRONMENT STREQUAL "") # checking if the target environment has to change
-	if(	TARGET_ENVIRONMENT STREQUAL "${CURRENT_ENVIRONMENT}"
+	if(TARGET_ENVIRONMENT STREQUAL "python")
+			# reconfigure the pid workspace
+			if(TARGET_VERSION)
+				if(TARGET_VERSION STREQUAL "default")
+					message("[PID] INFO : changing to default python version ... ")
+					execute_process(COMMAND ${CMAKE_COMMAND} -DUSE_PYTHON_VERSION= ${WORKSPACE_DIR}
+							WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+				else()
+					message("[PID] INFO : changing to python version ${TARGET_VERSION} ... ")
+					execute_process(COMMAND ${CMAKE_COMMAND} -DUSE_PYTHON_VERSION=${TARGET_VERSION} ${WORKSPACE_DIR}
+						WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+				endif()
+			endif()
+
+	elseif(	TARGET_ENVIRONMENT STREQUAL "${CURRENT_ENVIRONMENT}"
 		OR (NOT CURRENT_ENVIRONMENT AND TARGET_ENVIRONMENT STREQUAL "host"))
 		message("[PID] INFO : the target environment ${TARGET_ENVIRONMENT} is already the current environment of the workspace.")
 	elseif(TARGET_ENVIRONMENT STREQUAL "host") # going back to default environment
@@ -56,13 +70,10 @@ if(NOT TARGET_ENVIRONMENT STREQUAL "") # checking if the target environment has 
 		clean_Build_Tree(${WORKSPACE_DIR})
 
 		# reconfigure the pid workspace
-
 		execute_process(COMMAND ${CMAKE_COMMAND} -DCURRENT_ENVIRONMENT=${TARGET_ENVIRONMENT} -DCMAKE_TOOLCHAIN_FILE=${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/PID_Toolchain.cmake ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 	else()
 		message("[PID] ERROR : the target environment ${TARGET_ENVIRONMENT} does not refer to a known environment in the workspace.")
 	endif()
-
 else()
-	message("[PID] ERROR : you must set the name of the target environment using environment=*name of the environment folder in ${WORKSPACE_DIR}/environments/*")
-
+	message("[PID] ERROR : you must set the name of the target environment using environment=*name of the environment folder in ${WORKSPACE_DIR}/environments/*. You cas use the value python to set the python version (using version=) in use and/or the python path (using register=).")
 endif()

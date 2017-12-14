@@ -43,8 +43,8 @@ include(PID_Package_Plugins_Management NO_POLICY_SCOPE)
 ##################################################################################
 ###########################  declaration of the package ##########################
 ##################################################################################
-macro(declare_Package author institution mail year license address public_address description)
-
+macro(declare_Package author institution mail year license address public_address description readme_file)
+activate_Adequate_Languages()
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
 load_Current_Platform(${DIR_NAME}) #loading the current platform configuration and perform adequate actions if any changes
@@ -387,7 +387,7 @@ endif()
 #################################################
 reset_Project_Description_Cached_Variables()
 init_PID_Version_Variable()
-init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}")
+init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
 check_For_Remote_Respositories("${address}")
 init_Standard_Path_Cache_Variables()
 begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
@@ -575,10 +575,10 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE) #do not use any link time info when
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) # when building, don't use the install RPATH already
 
 if(APPLE)
-        set(CMAKE_MACOSX_RPATH TRUE)
-	set(CMAKE_INSTALL_RPATH "@loader_path/../lib") #the default install rpath is the library folder of the installed package (internal librari	es managed by default), name is relative to @loader_path to enable easy package relocation
+	set(CMAKE_MACOSX_RPATH TRUE)
+	set(CMAKE_INSTALL_RPATH "@loader_path/../lib;@loader_path") #the default install rpath is the library folder of the installed package (internal librari	es managed by default), name is relative to @loader_path to enable easy package relocation
 elseif (UNIX)
-	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
+	set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib;\$ORIGIN") #the default install rpath is the library folder of the installed package (internal libraries managed by default), name is relative to $ORIGIN to enable easy package relocation
 endif()
 
 #################################################################################
@@ -685,8 +685,8 @@ if(BUILD_AND_RUN_TESTS)
 
 	endif()
 endif()
-add_subdirectory(test)
 add_subdirectory(share)
+add_subdirectory(test)
 
 # specific case : resolve which compile option to use to enable the adequate language standard (CMake version < 3.1 only)
 # may be use for other general purpose options in future versions of PID
@@ -740,8 +740,8 @@ foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	endif()
 endforeach()
 
-#resolving link time dependencies for executables
-foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS_APPS})
+#resolving link time dependencies for executables and modules
+foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
 	will_be_Built(RES ${component})
 	if(RES)
 		resolve_Source_Component_Linktime_Dependencies(${component} ${CMAKE_BUILD_TYPE} ${component}_THIRD_PARTY_LINKS)
@@ -838,6 +838,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	#copy the reference file of the package into the "references" folder of the workspace
 	add_custom_target(referencing
 		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/find
 		COMMAND ${CMAKE_COMMAND} -E echo "Package references have been registered into the worskpace"
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
@@ -888,128 +889,37 @@ else()
 endif()
 
 #creating a global build command
-if(GENERATE_INSTALLER)
-	if(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS AND PROJECT_RUN_TESTS)#if tests are not run then remove the test target
-			if(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			else(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			endif(BUILD_API_DOC)
-		else()
-			if(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			else(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			endif(BUILD_API_DOC)
-		endif()
-	else()#debug
-		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG AND PROJECT_RUN_TESTS)  #if tests are not run then remove the coverage or test target
-			if(BUILD_COVERAGE_REPORT)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${SUDOER_PRIVILEGES} coverage ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			else()
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-					COMMAND ${CMAKE_MAKE_PROGRAM} package
-					COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-				)
-			endif()
-		else()
-			add_custom_target(build
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
-				COMMAND ${CMAKE_MAKE_PROGRAM} package
-				COMMAND ${CMAKE_MAKE_PROGRAM} package_install
-			)
-		endif()
-	endif()
 
-else(GENERATE_INSTALLER) #do not generate an installer
+
+package_Has_Nothing_To_Install(NOTHING_INSTALLED)
+if(NOTHING_INSTALLED) #if nothing to install, it means that there is nothing to generate... so do nothing
+	create_Global_Build_Command("${SUDOER_PRIVILEGES}" FALSE FALSE FALSE FALSE FALSE)
+else()
+	package_Has_Nothing_To_Build(NOTHING_BUILT)
+	if(NOTHING_BUILT)
+		set(BUILD_CODE FALSE)
+	else()
+		set(BUILD_CODE TRUE)
+	endif()
 	if(CMAKE_BUILD_TYPE MATCHES Release)
-		if(BUILD_AND_RUN_TESTS AND PROJECT_RUN_TESTS) #if tests are not run then remove the test target
-			if(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
-			else(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
-			endif(BUILD_API_DOC)
-		else()
-			if(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} doc
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
-			else(BUILD_API_DOC)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
-			endif(BUILD_API_DOC)
+		if(BUILD_AND_RUN_TESTS AND PROJECT_RUN_TESTS)
+			create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" "${BUILD_API_DOC}" "test")
+		else()#if tests are not run then remove the test target
+			create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" "${BUILD_API_DOC}" "")
 		endif()
-	else()#debug
+	else()#debug => never build api doc in debug mode
 		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG AND PROJECT_RUN_TESTS)  #if tests are not run then remove the coverage or test target
-			if(BUILD_COVERAGE_REPORT)
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
-			else()
-				add_custom_target(build
-					COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-					COMMAND ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-					COMMAND ${CMAKE_MAKE_PROGRAM} install
-				)
+			if(BUILD_COVERAGE_REPORT) #covergae report must be generated with debug symbols activated
+				create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" FALSE "coverage")
+			else() #simple tests
+				create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" FALSE "test")
 			endif()
 		else()
-			add_custom_target(build
-				COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-				COMMAND ${CMAKE_MAKE_PROGRAM} install
-			)
+			create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" FALSE "")
 		endif()
 	endif()
-endif(GENERATE_INSTALLER)
+endif()
+
 
 #retrieving dependencies on sources packages
 if(	BUILD_DEPENDENT_PACKAGES
@@ -1168,18 +1078,38 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 	## 2) collect sources for build process
 	get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 	list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_ALL_HEADERS})
+
 	#defining shared and/or static targets for the library and
 	#adding the targets to the list of installed components when make install is called
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "STATIC") #a static library has no internal links (never trully linked)
 		create_Static_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}")
+		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
 		create_Shared_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}" "${internal_links}")
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
-		create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
+		contains_Python_Code(HAS_WRAPPER ${CMAKE_CURRENT_SOURCE_DIR}/${dirname})
+		if(HAS_WRAPPER)
+			if(NOT CURRENT_PYTHON)#we cannot build the module as there is no python module
+				return()
+			endif()
+			#adding adequate path to pyhton librairies
+			list(APPEND INCLUDE_DIRS_WITH_PYTHON ${internal_inc_dirs} ${CURRENT_PYTHON_INCLUDE_DIRS})
+			list(APPEND LIBRARIES_WITH_PYTHON ${internal_links} ${CURRENT_PYTHON_LIBRARIES})
+			create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${INCLUDE_DIRS_WITH_PYTHON}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${LIBRARIES_WITH_PYTHON}")
+		else()
+			create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
+		endif()
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+		register_Component_Binary(${c_name})#need to register before calling manage python
+		if(HAS_WRAPPER)
+			manage_Python_Scripts(${c_name} ${dirname})#specific case to manage, python scripts must be installed in a share/script subfolder
+			set(${PROJECT_NAME}_${c_name}_HAS_PYTHON_WRAPPER TRUE CACHE INTERNAL "")
+		else()
+			set(${PROJECT_NAME}_${c_name}_HAS_PYTHON_WRAPPER FALSE CACHE INTERNAL "")
+		endif()
 	endif()
-	register_Component_Binary(${c_name})
 else()#simply creating a "fake" target for header only library
 	create_Header_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}")
 endif()
@@ -1204,7 +1134,7 @@ endfunction(declare_Library_Component)
 # FILTERED_EXPORTED_OPTS : additionnal compiler options to use when building the executable
 function(declare_Application_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options internal_link_flags runtime_resources)
 
-is_Application_Type(RES "${type}")
+is_Application_Type(RES "${type}")#double check, for internal use only (purpose: simplify PID code debugging)
 if(RES)
 	set(${PROJECT_NAME}_${c_name}_TYPE ${type} CACHE INTERNAL "")
 else() #a simple application by default
@@ -1283,6 +1213,24 @@ set(${PROJECT_NAME}_COMPONENTS_APPS "${${PROJECT_NAME}_COMPONENTS_APPS};${c_name
 # global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
 mark_As_Declared(${c_name})
 endfunction(declare_Application_Component)
+
+
+function(declare_Python_Component	c_name dirname)
+set(${PROJECT_NAME}_${c_name}_TYPE "PYTHON" CACHE INTERNAL "")
+#registering source code for the component
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/share/script/${dirname} CACHE INTERNAL "")
+	get_All_Sources_Relative(${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
+	set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
+endif()
+manage_Python_Scripts(${c_name} ${dirname})
+#updating global variables of the CMake process
+set(${PROJECT_NAME}_COMPONENTS "${${PROJECT_NAME}_COMPONENTS};${c_name}" CACHE INTERNAL "")
+set(${PROJECT_NAME}_COMPONENTS_SCRIPTS "${${PROJECT_NAME}_COMPONENTS_SCRIPTS};${c_name}" CACHE INTERNAL "")
+# global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
+mark_As_Declared(${c_name})
+endfunction(declare_Python_Component)
 
 ##################################################################################
 ####### specifying a dependency between the current package and another one ######
@@ -1594,17 +1542,15 @@ endif()
 is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 is_HeaderFree_Component(IS_HF_DEP ${PROJECT_NAME} ${dep_component})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
-set(${PROJECT_NAME}_${c_name}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
 if (IS_HF_COMP)
-	if(IS_HF_DEP)
-		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
-
-	else()
-		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
-
-	endif()
+		if(IS_HF_DEP)
+			# setting compile definitions for configuring the target
+			fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
+		else()
+			# setting compile definitions for configuring the target
+			fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
+		endif()
 elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)
 		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "")
@@ -1658,10 +1604,6 @@ function(declare_Package_Component_Dependency component dep_package dep_componen
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
-endif()
-
-if( NOT ${dep_package}_${dep_component}_TYPE)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : ${dep_component} in package ${dep_package} is not defined.")
 endif()
 
 set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} FALSE CACHE INTERNAL "")
@@ -1747,11 +1689,16 @@ is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 set(TARGET_LINKS ${static_links} ${shared_links})
 
 if (IS_HF_COMP)
-	if(COMP_WILL_BE_INSTALLED)
-		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${runtime_resources}")
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")#specific case of python components
+		list(APPEND ALL_WRAPPED_FILES ${shared_links} ${runtime_resources})
+		create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
+	else()
+		if(COMP_WILL_BE_INSTALLED)
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${runtime_resources}")
+		endif()
+		# setting compile definitions for the target
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 	endif()
-	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
 	configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${runtime_resources}")
@@ -1797,11 +1744,16 @@ else()
 	set(TARGET_LINKS ${static_links} ${shared_links})
 
 	if (IS_HF_COMP)
-		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${shared_links}" "${runtime_resources}")
+		if(${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")#specific case of python components
+			list(APPEND ALL_WRAPPED_FILES ${shared_links} ${runtime_resources})
+			create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
+		else()
+			if(COMP_WILL_BE_INSTALLED)
+				configure_Install_Variables(${component} FALSE "" "" "" "" "" "${shared_links}" "${runtime_resources}")
+			endif()
+			# setting compile definitions for the target
+			fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 		endif()
-		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}")
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
 		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${runtime_resources}")
@@ -1974,6 +1926,7 @@ will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
+
 if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
 	message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
 	install_External_Package(INSTALL_OK ${dep_package} TRUE)#force the reinstall
@@ -2008,11 +1961,16 @@ set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
 set(ALL_LINKS ${RES_LINKS_ST} ${RES_LINKS_SH})
 
 if (IS_HF_COMP)
-	if(COMP_WILL_BE_INSTALLED)
-		configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_LINKS_SH}" "${RES_RUNTIME}")
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")#specific case of python components
+		list(APPEND ALL_WRAPPED_FILES ${RES_LINKS_SH} ${RES_RUNTIME})
+		create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
+	else()
+		if(COMP_WILL_BE_INSTALLED)
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_LINKS_SH}" "${RES_RUNTIME}")
+		endif()
+		# setting compile definitions for the target
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
 	endif()
-	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}")
 elseif(IS_BUILT_COMP)
 	#configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
 	#prepare the dependancy export

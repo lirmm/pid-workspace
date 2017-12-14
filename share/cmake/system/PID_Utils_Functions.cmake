@@ -154,32 +154,32 @@ execute_process(
 endfunction(create_Symlink)
 
 ###
-function(create_Rpath_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
+function(create_Runtime_Symlink path_to_target path_to_container_folder rpath_sub_folder)
 #first creating the path where to put symlinks if it does not exist
-set(FULL_RPATH_DIR ${path_to_rpath_folder}/.rpath/${rpath_sub_folder})
-file(MAKE_DIRECTORY ${FULL_RPATH_DIR})
+set(RUNTIME_DIR ${path_to_container_folder}/${rpath_sub_folder})
+file(MAKE_DIRECTORY ${RUNTIME_DIR})
 get_filename_component(A_FILE ${path_to_target} NAME)
 #second creating the symlink
-create_Symlink(${path_to_target} ${FULL_RPATH_DIR}/${A_FILE})
-endfunction(create_Rpath_Symlink)
+create_Symlink(${path_to_target} ${RUNTIME_DIR}/${A_FILE})
+endfunction(create_Runtime_Symlink)
 
 ###
-function(install_Rpath_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
-get_filename_component(A_FILE "${path_to_target}" NAME)
-set(FULL_RPATH_DIR ${path_to_rpath_folder}/.rpath/${rpath_sub_folder})
-install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
-install(CODE "
-        if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
-				WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-	endif()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
-                                WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-	message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
+	get_filename_component(A_FILE "${path_to_target}" NAME)
+	set(FULL_RPATH_DIR ${path_to_rpath_folder}/${rpath_sub_folder})
+	install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
+	install(CODE "
+	              if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
+									execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
+									                 WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+		            endif()
+		            execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
+	                              WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+		            message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+	")# creating links "on the fly" when installing
 
-")# creating links "on the fly" when installing
+endfunction(install_Runtime_Symlink)
 
-endfunction(install_Rpath_Symlink)
 
 ###
 function (check_Directory_Exists is_existing path)
@@ -191,6 +191,34 @@ if(	EXISTS "${path}"
 endif()
 set(${is_existing} FALSE PARENT_SCOPE)
 endfunction(check_Directory_Exists)
+
+
+###
+function (check_Required_Directories_Exist PROBLEM type folder)
+	#checking directory containing headers
+	set(${PROBLEM} PARENT_SCOPE)
+	if(type STREQUAL "STATIC" OR type STREQUAL "SHARED" OR type STREQUAL "HEADER")
+		check_Directory_Exists(EXIST  ${CMAKE_SOURCE_DIR}/include/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in the include folder of the project" PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+	if(type STREQUAL "STATIC" OR type STREQUAL "SHARED" OR type STREQUAL "MODULE"
+		OR type STREQUAL "APP" OR type STREQUAL "EXAMPLE" OR type STREQUAL "TEST")
+		check_Directory_Exists(EXIST  ${CMAKE_CURRENT_SOURCE_DIR}/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in folder ${CMAKE_CURRENT_SOURCE_DIR}" PARENT_SCOPE)
+			return()
+		endif()
+	elseif(type STREQUAL "PYTHON")
+		check_Directory_Exists(EXIST ${CMAKE_CURRENT_SOURCE_DIR}/script/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in folder ${CMAKE_CURRENT_SOURCE_DIR}/script" PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+endfunction(check_Required_Directories_Exist)
 
 
 #############################################################
@@ -482,6 +510,29 @@ endfunction(package_License_Is_Closed_Source)
 ################ Source file management #####################
 #############################################################
 
+### used to activate adequate languages depending on source file used in the project
+macro(activate_Adequate_Languages)
+get_All_Sources_Absolute(list_of_files ${CMAKE_SOURCE_DIR})#list all source files
+get_property(USED_LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES) #getting all languages already in use
+
+foreach(source_file IN ITEMS ${list_of_files})
+		get_filename_component(EXTENSION ${source_file} EXT)
+		if(EXTENSION STREQUAL ".f")#we have a fortran file
+				list(FIND USED_LANGUAGES Fortran INDEX)
+				if(INDEX EQUAL -1)#fortran is not in use already
+					enable_language(Fortran)#use fortran
+					list(APPEND USED_LANGUAGES Fortran)
+				endif()
+		elseif(EXTENSION STREQUAL ".asm" OR EXTENSION STREQUAL ".s" OR EXTENSION STREQUAL ".S" )#we have an assembler file
+				list(FIND USED_LANGUAGES ASM INDEX)
+				if(INDEX EQUAL -1)#assembler is not in use already
+					enable_language(ASM)#use assembler
+					list(APPEND USED_LANGUAGES ASM)
+				endif()
+		endif()
+endforeach()
+endmacro(activate_Adequate_Languages)
+
 ###
 function(get_All_Sources_Relative RESULT dir)
 file(	GLOB_RECURSE
@@ -498,11 +549,13 @@ file(	GLOB_RECURSE
 	"${dir}/*.s"
 	"${dir}/*.S"
 	"${dir}/*.asm"
+	"${dir}/*.f"
+	"${dir}/*.py"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Relative)
 
-###
+### absolute sources do not take into account python files as they will not be part of a build process
 function(get_All_Sources_Absolute RESULT dir)
 file(	GLOB_RECURSE
 	RES
@@ -518,9 +571,23 @@ file(	GLOB_RECURSE
 	"${dir}/*.s"
 	"${dir}/*.S"
 	"${dir}/*.asm"
+	"${dir}/*.f"
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Absolute)
+
+### to know wether the folder contains some python script
+function(contains_Python_Code HAS_PYTHON dir)
+file(GLOB_RECURSE HAS_PYTHON_CODE ${dir} "${dir}/*.py")
+set(${HAS_PYTHON} ${HAS_PYTHON_CODE} PARENT_SCOPE)
+endfunction(contains_Python_Code)
+
+### to know wether the folder is a python package
+function(contains_Python_Package_Description IS_PYTHON_PACK dir)
+	file(GLOB PY_PACK_FILE RELATIVE ${dir} "${dir}/__init__.py")
+	set(${IS_PYTHON_PACK} ${PY_PACK_FILE} PARENT_SCOPE)
+endfunction(contains_Python_Package_Description)
+
 
 ###
 function(get_All_Headers_Relative RESULT dir)
@@ -1108,6 +1175,30 @@ endfunction(test_Same_Directory_Content)
 ######################################################################################
 ################ compiler arguments test/manipulation functions ######################
 ######################################################################################
+
+function(translate_Standard_Into_Option RES_C_STD_OPT RES_CXX_STD_OPT c_std_number cxx_std_number)
+
+	#managing c++
+	if(cxx_std_number EQUAL 98)
+		set(${RES_CXX_STD_OPT} "-std=c++98" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 11)
+		set(${RES_CXX_STD_OPT} "-std=c++11" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 14)
+		set(${RES_CXX_STD_OPT} "-std=c++14" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 17)
+		set(${RES_CXX_STD_OPT} "-std=c++17" PARENT_SCOPE)
+	endif()
+
+	#managing c
+	if(c_std_number EQUAL 90)
+		set(${RES_C_STD_OPT} "-std=c90" PARENT_SCOPE)
+	elseif(c_std_number EQUAL 99)
+		set(${RES_C_STD_OPT} "-std=c99" PARENT_SCOPE)
+	elseif(c_std_number EQUAL 11)
+		set(${RES_C_STD_OPT} "-std=c11" PARENT_SCOPE)
+	endif()
+
+endfunction(translate_Standard_Into_Option)
 
 ### compare 2 different C++ language standard version
 function(is_CXX_Version_Less IS_LESS first second)

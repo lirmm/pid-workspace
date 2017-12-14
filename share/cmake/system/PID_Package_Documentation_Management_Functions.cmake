@@ -200,7 +200,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(PACKAGE_SITE_REF_IN_README "")
 
 		# simplified install section
-		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is based on the [PID](https://gite.lirmm.fr/pid/pid-workspace/wikis/home) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is based on the [PID](http://pid.lirmm.net/pid-framework/pages/install.html) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
 	else()
 		# intro
 		generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
@@ -211,7 +211,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		endif()
 
 		# install procedure
-		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called [PID](http://pid.lirmm.net/pid-framework/pages/install.html). Just follow and read the links to understand how to install, use and call its API and/or applications.")
 
 		# reference to site page
 		set(PACKAGE_SITE_REF_IN_README "[package_site]: ${ADDRESS} \"${PROJECT_NAME} package\"
@@ -223,6 +223,12 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 
 	else()
 		set(PACKAGE_LICENSE_FOR_README "The package has no license defined yet.")
+	endif()
+
+	set(README_USER_CONTENT "")
+	if(${PROJECT_NAME}_USER_README_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE})
+		file(READ ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE} CONTENT_ODF_README)
+		set(README_USER_CONTENT "${CONTENT_ODF_README}")
 	endif()
 
 	set(README_AUTHORS_LIST "")

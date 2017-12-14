@@ -964,7 +964,7 @@ endif()
 check_For_Dependencies_Version(BAD_VERSION_OF_DEPENDENCIES ${package})
 if(BAD_VERSION_OF_DEPENDENCIES)
 	message("[PID] ERROR : cannot release package ${package} because of invalid version of dependencies:")
-	foreach(dep IN ITEMS "${BAD_VERSION_OF_DEPENDENCIES}")
+	foreach(dep IN ITEMS ${BAD_VERSION_OF_DEPENDENCIES})
 		extract_All_Words(${dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
 		list(GET RES_LIST 0 DEP_PACKAGE)
 		list(GET RES_LIST 1 DEP_VERSION)
@@ -1142,6 +1142,7 @@ function(detect_Current_Platform)
 	include(CheckARCH)
 	include(CheckOS)
 	include(CheckABI)
+	include(CheckPython)
 	if(CURRENT_DISTRIBUTION STREQUAL "")
 		set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family = ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS}\n + compiler ABI= ${CURRENT_ABI}")
 	else()
@@ -1182,6 +1183,10 @@ function(detect_Current_Platform)
 		set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external/${CURRENT_PLATFORM} CACHE INTERNAL "")
 		set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install/${CURRENT_PLATFORM} CACHE INTERNAL "")
 		message("[PID] INFO : Target platform in use is ${CURRENT_PLATFORM}:\n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n")
+	endif()
+
+	if(CURRENT_PYTHON)
+		message("[PID] INFO : Python may be used, target python version in use is ${CURRENT_PYTHON}. To use python modules installed in workspace please set the PYTHONPATH to =${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}\n")
 	endif()
 endfunction(detect_Current_Platform)
 
@@ -1338,6 +1343,11 @@ if(CURRENT_ENVIRONMENT)
 else()
 	file(APPEND ${file} "set(CURRENT_ENVIRONMENT host CACHE INTERNAL \"\" FORCE)\n")
 endif()
+	#managing python
+	file(APPEND ${file} "set(CURRENT_PYTHON ${CURRENT_PYTHON} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PYTHON_EXECUTABLE ${CURRENT_PYTHON_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PYTHON_LIBRARIES ${CURRENT_PYTHON_LIBRARIES} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PYTHON_INCLUDE_DIRS ${CURRENT_PYTHON_INCLUDE_DIRS} CACHE INTERNAL \"\" FORCE)\n")
 endfunction(write_Platform_Description)
 
 ## subsidiary function for writing workspace configuration to a cmake file
@@ -1351,8 +1361,9 @@ file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_P
 endfunction(write_Current_Configuration)
 
 ### define the current platform in use and provide to the user some options to control finally targetted platform
-function(manage_Platforms)
+function(manage_Platforms path_to_workspace)
 
+set(WORKSPACE_DIR ${path_to_workspace} CACHE INTERNAL "")
 # listing all available platforms from platforms definitions cmake files found in the workspace
 register_Available_Platforms()
 
