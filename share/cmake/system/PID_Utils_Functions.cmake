@@ -353,6 +353,16 @@ endif()
 set(${is_compatible} TRUE PARENT_SCOPE)
 endfunction(is_Compatible_Version)
 
+###
+function(is_Exact_Compatible_Version is_compatible reference_major reference_minor version_to_compare)
+set(${is_compatible} FALSE PARENT_SCOPE)
+get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)
+if(	NOT ${compare_major} EQUAL ${reference_major}
+		OR NOT ${compare_minor} EQUAL ${reference_minor})
+	return()#not compatible
+endif()
+set(${is_compatible} TRUE PARENT_SCOPE)
+endfunction(is_Exact_Compatible_Version)
 
 #############################################################
 ################ Information about authors ##################

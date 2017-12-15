@@ -379,7 +379,9 @@ function(is_Exact_Version_Compatible_With_Previous_Constraints
 set(${is_compatible} FALSE PARENT_SCOPE)
 set(${need_finding} FALSE PARENT_SCOPE)
 if(${package}_REQUIRED_VERSION_EXACT)
-	if(NOT ${${package}_REQUIRED_VERSION_EXACT} VERSION_EQUAL ${version_string})#not compatible if versions are not the same
+	get_Version_String_Numbers("${${package}_REQUIRED_VERSION_EXACT}.0" exact_major exact_minor exact_patch)
+	is_Exact_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_string})
+	if(NOT COMPATIBLE_VERSION)#not compatible if versions are not the same major.minor
 		return()
 	endif()
 	set(${is_compatible} TRUE PARENT_SCOPE)
