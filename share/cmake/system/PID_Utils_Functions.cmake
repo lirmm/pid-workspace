@@ -1042,12 +1042,14 @@ if(TARGET_NATIVE_DEPENDENCIES_DEBUG)
 				endif()
 
 				# step 2: checking that the version specified in the CMakeLists really exist
-				normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
+				if(TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG)
+					normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
 
-				list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
-				if(INDEX EQUAL -1)
-						list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG}")#using # instead of _ since names of package can contain _
-				endif()
+					list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
+					if(INDEX EQUAL -1)
+							list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG}")#using # instead of _ since names of package can contain _
+					endif()
+				endif()#else no version bound to dependency == no constraint
 		endif()
 	endforeach()
 endif()
@@ -1063,11 +1065,13 @@ if(TARGET_NATIVE_DEPENDENCIES)
 				endif()
 
 				# step 2: checking that the version specified in the CMakeLists really exist
-				normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
-				list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
-				if(INDEX EQUAL -1)
-						list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION}")#using # instead of _ since names of package can contain _
-				endif()
+				if(TARGET_NATIVE_DEPENDENCY_${dep}_VERSION)
+					normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
+					list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
+					if(INDEX EQUAL -1)
+							list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION}")#using # instead of _ since names of package can contain _
+					endif()
+				endif()#no version bound to dependency == no constraint
 		endif()
 	endforeach()
 endif()
