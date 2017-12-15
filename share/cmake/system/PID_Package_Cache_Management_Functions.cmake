@@ -707,6 +707,26 @@ if(NOT runtime_resources STREQUAL "")#runtime resources are exported in any case
 endif()
 endfunction(configure_Install_Variables)
 
+
+### test if a native or external package is a dependency of the current package
+function(is_Package_Dependency IS_DEPENDENCY dep_package)
+set(${IS_DEPENDENCY} FALSE PARENT_SCOPE)
+if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})#there are dependencies to sreach in
+	list(FIND ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package} INDEX)
+	if(NOT INDEX EQUAL -1) #package found in dependencies
+		set(${IS_DEPENDENCY} TRUE PARENT_SCOPE)
+		return()
+	endif()
+endif()
+if(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})#there are external dependencies to sreach in
+	list(FIND ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package} INDEX)
+	if(NOT INDEX EQUAL -1)#package found in dependencies
+		set(${IS_DEPENDENCY} TRUE PARENT_SCOPE)
+		return()
+	endif()
+endif()
+endfunction(is_Package_Dependency)
+
 ### set cached variable for packages dependency
 function(add_Package_Dependency_To_Cache dep_package version exact list_of_components)
 	set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")

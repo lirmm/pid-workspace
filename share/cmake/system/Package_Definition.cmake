@@ -754,6 +754,10 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE
 		AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)#package dependency target package is not current project
 
+		is_Package_Dependency(IS_DEPENDENCY "${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}")
+		if(NOT IS_DEPENDENCY)
+			message(WARNING "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} !")
+		endif()
 		declare_Package_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
@@ -784,6 +788,11 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 		if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the target external package canoot be current project !")
 		endif()
+		#check for package dependency using the PACKAGE name
+		is_Package_Dependency(IS_DEPENDENCY "${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}")
+		if(NOT IS_DEPENDENCY)
+			message(WARNING "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown external package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} !")
+		endif()
 		declare_External_Wrapper_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
@@ -794,6 +803,10 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 					"${dep_defs}")
 
 	else()
+		is_Package_Dependency(IS_DEPENDENCY "${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}")
+		if(NOT IS_DEPENDENCY)
+			message(WARNING "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown external package ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} !")
+		endif()
 		declare_External_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}
