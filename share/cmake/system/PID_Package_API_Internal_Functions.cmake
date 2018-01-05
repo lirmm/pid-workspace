@@ -677,16 +677,15 @@ endif()
 # recursive call into subdirectories to build, install, test the package
 add_subdirectory(src)
 add_subdirectory(apps)
+add_subdirectory(share)
 
 if(BUILD_AND_RUN_TESTS)
  	if(	CMAKE_BUILD_TYPE MATCHES Release
 		OR (CMAKE_BUILD_TYPE MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
 		enable_testing()
-
+		add_subdirectory(test)
 	endif()
 endif()
-add_subdirectory(share)
-add_subdirectory(test)
 
 # specific case : resolve which compile option to use to enable the adequate language standard (CMake version < 3.1 only)
 # may be use for other general purpose options in future versions of PID
