@@ -12,14 +12,16 @@ set(vimba_REFERENCES 1.3.0 CACHE INTERNAL "")
 set(vimba_REFERENCE_1.3.0 x86_64_linux_abi11 x86_32_linux_abi98 x86_64_linux_abi98 CACHE INTERNAL "")
 
 # x86_32_linux_abi98
-set(vimba_REFERENCE_1.3.0_x86_32_linux_abi98_URL https://gite.lirmm.fr/rob-vision-devices/ext-vimba/repository/archive.tar.gz?ref=linux-32-1.3.0 CACHE INTERNAL "")
-set(vimba_REFERENCE_1.3.0_x86_32_linux_abi98_FOLDER ext-vimba-linux-32-1.3.0-83564ee58dca03c61d0755fa03a5a1060f5276cc CACHE INTERNAL "")
+set(vimba_REFERENCE_1.3.0_x86_32_linux_abi98_URL https://gite.lirmm.fr/rob-vision-devices/ext-vimba/repository/linux-32-1.3.0/archive.tar.gz CACHE INTERNAL "")
+set(vimba_REFERENCE_1.3.0_x86_32_linux_abi98_FOLDER ext-vimba-linux-32-1.3.0-211b68c23102c1dec1d9c90ea83a29de6c395514 CACHE INTERNAL "")
 
 # x86_64_linux_abi98
-set(vimba_REFERENCE_1.3.0_x86_64_linux_abi98_URL https://gite.lirmm.fr/rob-vision-devices/ext-vimba/repository/archive.tar.gz?ref=linux-64-1.3.0 CACHE INTERNAL "")
-set(vimba_REFERENCE_1.3.0_x86_64_linux_abi98_FOLDER ext-vimba-linux-64-1.3.0-a21b70072d7cf8ecc38fe4e019929b3ff52470f2 CACHE INTERNAL "")
+set(vimba_REFERENCE_1.3.0_x86_64_linux_abi98_URL https://gite.lirmm.fr/rob-vision-devices/ext-vimba/repository/linux-64-1.3.0/archive.tar.gz CACHE INTERNAL "")
+set(vimba_REFERENCE_1.3.0_x86_64_linux_abi98_FOLDER ext-vimba-linux-64-1.3.0-7c17b5404398d08371283f93aadd427f8c81a44b CACHE INTERNAL "")
 
 # x86_64_linux_abi11
 
-set(vimba_REFERENCE_1.3.0_x86_64_linux_abi11_URL https://gite.lirmm.fr/rob-vision-devices/ext-vimba/repository/archive.tar.gz?ref=linux-64-cxx11-1.3.0 CACHE INTERNAL "")
-set(vimba_REFERENCE_1.3.0_x86_64_linux_abi11_FOLDER ext-vimba-linux-64-cxx11-1.3.0-a9d1ac106b45b9d1acff853ddbd7802a501ce991 CACHE INTERNAL "")
+set(vimba_REFERENCE_1.3.0_x86_64_linux_abi11_URL https://gite.lirmm.fr/rob-vision-devices/ext-vimba/repository/linux-64-cxx11-1.3.0/archive.tar.gz CACHE INTERNAL "")
+set(vimba_REFERENCE_1.3.0_x86_64_linux_abi11_FOLDER ext-vimba-linux-64-cxx11-1.3.0-b56031dbc0ceec540f6c8b637416d43d9eb68c17 CACHE INTERNAL "")
+
+
