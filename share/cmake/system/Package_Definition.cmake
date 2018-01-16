@@ -1021,8 +1021,8 @@ macro(declare_PID_External_Package_Dependency)
 	set(oneValueArgs PACKAGE EXTERNAL VERSION)
 	cmake_parse_arguments(DECLARE_PID_EXTERNAL_DEPENDENCY "${options}" "${oneValueArgs}" "" ${ARGN} )
 	if(DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE
-		AND DECLARE_PID_EXTERNAL_DEPENDENCY_EXTERNAL) #if everything not used then simply do nothing
-		if(NOT ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_DECLARED)
+		AND DECLARE_PID_EXTERNAL_DEPENDENCY_EXTERNAL) #if all keyword used
+		if(NOT ${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE}_DECLARED)#target external package has not been declared as a dependency
 			message("[PID] WARNING: Bad usage of function declare_PID_External_Package_Dependency: package ${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE} is unknown. Use macro declare_PID_External_Package to declare it")
 			return() #return will exit from current Use file included (because we are in a macro)
 		endif()

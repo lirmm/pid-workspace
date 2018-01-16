@@ -118,7 +118,7 @@ function(add_Static_Check component is_library)
 	if(NOT TARGET ${component})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target name ${component} when trying to cppcheck !")
 	endif()
-	set(ALL_SETTING "-I/usr/include/" "-I/usr/local/include/")
+	set(ALL_SETTING "-I/usr/include/" "-I/usr/local/include/")#TODO change with a CMake retrieved list of OS standard INCLUDE folders
 	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#header targets have no sources => list them by hand
 		set(SOURCES_TO_CHECK)
@@ -145,11 +145,11 @@ function(add_Static_Check component is_library)
 		add_test(NAME ${component}_staticcheck
 			 COMMAND ${CPPCHECK_EXECUTABLE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
 		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: ")
-	endif()
+	endif()#TODO also manage the language standard here (option -std=)!!
 
 	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
 	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions)
-		set(CPPCHECK_ARGS --enable=style –inconclusive --suppress=missingIncludeSystem)
+		set(CPPCHECK_ARGS --enable=style –inconclusive --suppress=missingIncludeSystem)#TODO remove --suppress when OS INCLUDE folders are well retrieved
 	else()
 		set(CPPCHECK_ARGS --enable=all –inconclusive --suppress=missingIncludeSystem)
 	endif()
