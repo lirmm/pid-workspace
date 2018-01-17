@@ -89,20 +89,6 @@ endif()
 add_Category("${ARGV0}")
 endmacro(add_PID_Wrapper_Category)
 
-### memorizing a new known version (the target folder that can be found in src folder contains the script used to install the project)
-macro(add_PID_Wrapper_Known_Version version)
-if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
-	return()
-endif()
-list(FIND ${PROJECT_NAME}_KNOWN_VERSIONS ${version} INDEX)
-if(NOT INDEX EQUAL -1)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, version \"${version}\" is already registered !")
-	return()
-endif()
-set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS} ${version} CACHE INTERNAL "")
-endmacro(add_PID_Wrapper_Known_Version)
-
 ### API : declare_PID_Publishing()
 macro(declare_PID_Wrapper_Publishing)
 set(optionArgs PUBLISH_BINARIES)
@@ -140,6 +126,20 @@ else()
 endif()
 endmacro(declare_PID_Wrapper_Publishing)
 
+#	memorizing a new known version (the target folder that can be found in src folder contains the script used to install the project)
+macro(add_PID_Wrapper_Known_Version version)
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
+	return()
+endif()
+list(FIND ${PROJECT_NAME}_KNOWN_VERSIONS ${version} INDEX)
+if(NOT INDEX EQUAL -1)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, version \"${version}\" is already registered !")
+	return()
+endif()
+set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS} ${version} CACHE INTERNAL "")
+endmacro(add_PID_Wrapper_Known_Version)
+
 ### build the wrapper ==> providing commands used to deploy a specific version of the external package
 ### make build version=1.55.0 (download, configure, compile and install the adequate version)
 macro(build_PID_Wrapper)
@@ -149,6 +149,9 @@ endif()
 build_Wrapped_Project()
 endmacro(build_PID_Wrapper)
 
+########################################################################################
+###############To be used in subfolders of the src folder ##############################
+########################################################################################
 
 ### dependency to another external package
 macro(declare_PID_Wrapper_External_Dependency target_version dependency_project dependency_version)

@@ -69,8 +69,13 @@ endfunction(hard_Clean_Wrapper)
 
 ###
 function(reset_Wrapper_Description_Cached_Variables)
-  #TODO reset description of versions
-  reset_Documentation_Info()
+if(${PROJECT_NAME}_KNOWN_VERSIONS)
+  foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
+
+	endforeach()
+set(${PROJECT_NAME}_KNOWN_VERSIONS CACHE INTERNAL "")
+endif()
+reset_Documentation_Info()
 endfunction(reset_Wrapper_Description_Cached_Variables)
 
 ###
@@ -232,11 +237,16 @@ endfunction(generate_Wrapper_License_File)
 
 ###
 function(generate_Wrapper_Find_File)
-#TODO
+	set(FIND_FILE_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS})
+	# generating/installing the generic cmake find file for the package
+	configure_file(${WORKSPACE_DIR}/share/patterns/wrappers/FindExternalPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
+	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
 endfunction(generate_Wrapper_Find_File)
 
 ###
 macro(build_Wrapped_Project)
+
+
 
 
 ################################################################################
