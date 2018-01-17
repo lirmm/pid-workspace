@@ -22,6 +22,7 @@
 ########################################################################
 include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 ###########################################################################
 ############ description of functions implementing the API ################
 ###########################################################################
@@ -232,7 +233,31 @@ endfunction(generate_Wrapper_Readme_Files)
 
 ###
 function(generate_Wrapper_License_File)
-#TODO
+if(	DEFINED ${PROJECT_NAME}_LICENSE
+	AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+
+	find_file(LICENSE_IN
+			"License${${PROJECT_NAME}_LICENSE}.cmake"
+			PATH "${WORKSPACE_DIR}/share/cmake/licenses"
+			NO_DEFAULT_PATH
+		)
+	if(LICENSE_IN STREQUAL LICENSE_IN-NOTFOUND)
+		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
+	else()
+
+		#prepare license generation
+		set(${PROJECT_NAME}_FOR_LICENSE "${PROJECT_NAME} PID Wrapper")
+		set(${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE ${${PROJECT_NAME}_DESCRIPTION})
+		set(${PROJECT_NAME}_YEARS_FOR_LICENSE ${${PROJECT_NAME}_YEARS})
+		foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
+			generate_Full_Author_String(${author} STRING_TO_APPEND)
+			set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
+		endforeach()
+
+		include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
+		file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
+	endif()
+endif()
 endfunction(generate_Wrapper_License_File)
 
 ###
