@@ -797,7 +797,7 @@ endfunction(resolve_External_Resources_Path)
 ###
 function(set_Package_Repository_Address package git_url)
 	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
-	string(REGEX REPLACE  "([ \t\n])YEAR" "\\1 ADDRESS ${git_url}\n\\1 YEAR" NEW_CONTENT ${CONTENT})
+	string(REGEX REPLACE  "([ \t\n]+)YEAR" "\\1ADDRESS ${git_url}\n\\1 YEAR" NEW_CONTENT ${CONTENT})
 	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
 endfunction(set_Package_Repository_Address)
 
@@ -1082,20 +1082,38 @@ endif()
 endfunction(check_For_Dependencies_Version)
 
 ################################################################
+################ Wrappers Life cycle management ################
+################################################################
+
+###
+function(set_Wrapper_Repository_Address wrapper git_url)
+	file(READ ${WORKSPACE_DIR}/wrappers/${wrapper}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE  "([ \t\n]+)YEAR" "\\1ADDRESS ${git_url}\n\\1YEAR" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/wrappers/${wrapper}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(set_Wrapper_Repository_Address)
+
+###
+function(reset_Wrapper_Repository_Address wrapper new_git_url)
+	file(READ ${WORKSPACE_DIR}/wrappers/${wrapper}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "([ \t\n]+)ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/wrappers/${wrapper}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(reset_Wrapper_Repository_Address)
+
+################################################################
 ################ Frameworks Life cycle management ##############
 ################################################################
 
 ###
 function(set_Framework_Repository_Address framework git_url)
 	file(READ ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt CONTENT)
-	string(REGEX REPLACE  "([ \t\n])YEAR" "\\1 ADDRESS ${git_url}\n\\1 YEAR" NEW_CONTENT ${CONTENT})
+	string(REGEX REPLACE  "([ \t\n]+)YEAR" "\\1ADDRESS ${git_url}\n\\1YEAR" NEW_CONTENT ${CONTENT})
 	file(WRITE ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt ${NEW_CONTENT})
 endfunction(set_Framework_Repository_Address)
 
 ###
 function(reset_Framework_Repository_Address framework new_git_url)
 	file(READ ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt CONTENT)
-	string(REGEX REPLACE "([ \t\n])ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1 ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
+	string(REGEX REPLACE "([ \t\n]+)ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
 	file(WRITE ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt ${NEW_CONTENT})
 endfunction(reset_Framework_Repository_Address)
 

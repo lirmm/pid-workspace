@@ -397,33 +397,8 @@ endmacro(declare_Package)
 #####################################################################################
 ################## setting info on documentation ####################################
 #####################################################################################
-### defining a framework static site the package belongs to
-macro(define_Framework_Contribution framework url description)
-if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
-	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
-	return()
-elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
-	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a framework !")
-	return()
-endif()
-init_Documentation_Info_Cache_Variables("${framework}" "${url}" "" "" "${description}")
-endmacro(define_Framework_Contribution)
 
-### defining a lone static site for the package
-macro(define_Static_Site_Contribution url git_repository homepage description)
-if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
-	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a static site !")
-	return()
-elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
-	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a new one !")
-	return()
-endif()
-init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${homepage}" "${description}")
-
-endif()
-endmacro(define_Static_Site_Contribution)
-
-##
+###
 function(create_Documentation_Target)
 if(NOT ${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
 	return()

@@ -619,6 +619,39 @@ endfunction(print_Framework_Info)
 ########################################################################
 
 ###
+function(create_PID_Wrapper wrapper author institution license)
+#copying the pattern folder into the package folder and renaming it
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/wrappers/package ${WORKSPACE_DIR}/wrappers/${wrapper} OUTPUT_QUIET ERROR_QUIET)
+
+#setting variables
+set(WRAPPER_NAME ${wrapper})
+if(author AND NOT author STREQUAL "")
+	set(WRAPPER_AUTHOR_NAME "${author}")
+else()
+	set(WRAPPER_AUTHOR_NAME "$ENV{USER}")
+endif()
+if(institution AND NOT institution STREQUAL "")
+	set(WRAPPER_AUTHOR_INSTITUTION "INSTITUTION	${institution}")
+else()
+	set(WRAPPER_AUTHOR_INSTITUTION "")
+endif()
+if(license AND NOT license STREQUAL "")
+	set(WRAPPER_LICENSE "${license}")
+else()
+	message("[PID] WARNING: no license defined so using the default CeCILL license.")
+	set(WRAPPER_LICENSE "CeCILL")#default license is CeCILL
+endif()
+set(WRAPPER_DESCRIPTION "TODO: input a short description of wrapper ${wrapper} utility here")
+string(TIMESTAMP date "%Y")
+set(WRAPPER_YEARS ${date})
+# generating the root CMakeLists.txt of the package
+configure_file(${WORKSPACE_DIR}/share/patterns/wrappers/CMakeLists.txt.in ../wrappers/${wrapper}/CMakeLists.txt @ONLY)
+#confuguring git repository
+init_Wrapper_Repository(${wrapper})
+endfunction(create_PID_Wrapper)
+
+
+###
 function(create_PID_Framework framework author institution license site)
 #copying the pattern folder into the package folder and renaming it
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/frameworks/framework ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET)
@@ -770,6 +803,23 @@ else()#deploying the target binary relocatable archive
 	endif()
 endif()
 endfunction(deploy_External_Package)
+
+### Configuring the official remote repository of current wrapper
+function(connect_PID_Wrapper wrapper git_url first_time)
+if(first_time)#first time this wrapper is connected because newly created
+	# set the address of the official repository in the CMakeLists.txt of the framework
+	set_Wrapper_Repository_Address(${wrapper} ${git_url})
+	register_Wrapper_Repository_Address(${wrapper})
+	# synchronizing with the "official" remote git repository
+	connect_Wrapper_Repository(${wrapper} ${git_url})
+else() #forced reconnection
+	# updating the address of the official repository in the CMakeLists.txt of the package
+	reset_Wrapper_Repository_Address(${wrapper} ${git_url})
+	register_Wrapper_Repository_Address(${wrapper})
+	# synchronizing with the new "official" remote git repository
+	reconnect_Wrapper_Repository(${wrapper} ${git_url})
+endif()
+endfunction(connect_PID_Wrapper)
 
 ### Configuring the official remote repository of current package
 function(connect_PID_Framework framework git_url first_time)

@@ -384,6 +384,32 @@ endif()
 set(${PROJECT_NAME}_SITE_INTRODUCTION "${introduction}" CACHE INTERNAL "")
 endfunction(init_Documentation_Info_Cache_Variables)
 
+### defining a framework static site the package belongs to
+macro(define_Framework_Contribution framework url description)
+if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
+	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
+	return()
+elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
+	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a framework !")
+	return()
+endif()
+init_Documentation_Info_Cache_Variables("${framework}" "${url}" "" "" "${description}")
+endmacro(define_Framework_Contribution)
+
+### defining a lone static site for the package
+macro(define_Static_Site_Contribution url git_repository homepage description)
+if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
+	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a static site !")
+	return()
+elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
+	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a new one !")
+	return()
+endif()
+init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${homepage}" "${description}")
+
+endif()
+endmacro(define_Static_Site_Contribution)
+
 
 ### reset all cache variables used in static web site based documentation
 function(reset_Documentation_Info)
@@ -396,7 +422,6 @@ function(reset_Documentation_Info)
 	set(${PROJECT_NAME}_DEV_INFO_AUTOMATIC_PUBLISHING CACHE INTERNAL "")
 	set(${PROJECT_NAME}_USER_README_FILE CACHE INTERNAL "")
 endfunction(reset_Documentation_Info)
-
 
 ### set cache variable for install
 function(set_Install_Cache_Variables)

@@ -500,7 +500,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 endfunction(initialize_Git_Repository_Push_Address)
 
 ### testing if the repository is inialized (from git point of view) according to PID standard (basically it has an integration branch)
-function(test_Remote_Initialized package url INITIALIZED)
+function(test_Package_Remote_Initialized package url INITIALIZED)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid git clone ${url} OUTPUT_QUIET ERROR_QUIET) #cloning in a temporary area
 
 execute_process(COMMAND git branch -a
@@ -523,24 +523,24 @@ else()
 	set(${INITIALIZED} FALSE PARENT_SCOPE)
 endif()
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${package} OUTPUT_QUIET ERROR_QUIET)
-endfunction(test_Remote_Initialized)
+endfunction(test_Package_Remote_Initialized)
 
 
 ### testing if the repository is inialized (from git point of view) according to PID standard (basically it has an integration branch)
-function(test_Framework_Initialized framework url INITIALIZED)
+function(test_Remote_Initialized repository url INITIALIZED)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid git clone ${url} OUTPUT_QUIET ERROR_QUIET) #cloning in a temporary area
 
 execute_process(COMMAND git branch -a
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/pid/${framework}
+		WORKING_DIRECTORY ${WORKSPACE_DIR}/pid/${repository}
 		OUTPUT_VARIABLE all_branches ERROR_QUIET)#getting all branches
 
-if(all_branches AND NOT all_branches STREQUAL "")
+if(all_branches AND NOT all_branches STREQUAL "")#the repository must have branches to be initialized
 	set(${INITIALIZED} TRUE PARENT_SCOPE)
 else()
 	set(${INITIALIZED} FALSE PARENT_SCOPE)
 endif()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${framework} OUTPUT_QUIET ERROR_QUIET)
-endfunction(test_Framework_Initialized)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${repository} OUTPUT_QUIET ERROR_QUIET)
+endfunction(test_Remote_Initialized)
 
 ### create a repository with no official remote specified (for now)
 function(init_Repository package)
@@ -683,6 +683,64 @@ if(RESULTING_REMOTES)
 endif()
 endfunction(get_Remotes_Address)
 
+##############################################################################
+############## wrappers repository related functions #########################
+##############################################################################
+
+###
+function(clone_Wrapper_Repository IS_DEPLOYED wrapper url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+
+#framework may be named by only by their name or with a -framework suffix
+if(EXISTS ${WORKSPACE_DIR}/wrappers/${wrapper} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper})
+	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
+else()
+	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
+	message("[PID] ERROR : impossible to clone the repository of external package wrapper ${wrapper} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this wrapper.")
+endif()
+endfunction(clone_Wrapper_Repository)
+
+
+###
+function(init_Wrapper_Repository wrapper)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git init)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git add -A)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git commit -m "initialization of wrapper")
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git lfs track "*.tar.gz" OUTPUT_QUIET ERROR_QUIET)
+endfunction(init_Wrapper_Repository)
+
+
+### registering the address means registering the CMakelists.txt
+function(register_Wrapper_Repository_Address wrapper)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git add CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git commit -m "adding repository address to the root CMakeLists.txt file")
+endfunction(register_Wrapper_Repository_Address)
+
+
+### first time the wrapper is connected after its creation
+function(connect_Wrapper_Repository wrapper url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git remote add origin ${url})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git push origin master OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git fetch origin)
+endfunction(connect_Wrapper_Repository)
+
+### rare use function: when official repository has moved
+function(reconnect_Wrapper_Repository wrapper url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git remote set-url origin ${url})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git pull origin master)#updating master
+endfunction(reconnect_Wrapper_Repository)
+
+
+### to know whether a wrapper as a remote or not
+function(is_Wrapper_Connected CONNECTED wrapper remote)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git remote show ${remote} OUTPUT_QUIET ERROR_VARIABLE res)
+	if(NOT res OR res STREQUAL "")
+		set(${CONNECTED} TRUE PARENT_SCOPE)
+	else()
+		set(${CONNECTED} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Wrapper_Connected)
 
 
 ##############################################################################
@@ -749,15 +807,14 @@ endfunction(register_Framework_Repository_Address)
 ### first time the framework is connected after its creation
 function(connect_Framework_Repository framework url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote add origin ${url})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote add official ${url})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git fetch official)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git fetch origin)
 endfunction(connect_Framework_Repository)
 
 ### rare use function: when official repository has moved
 function(reconnect_Framework_Repository framework url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote set-url official ${url})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull official master)#updating master
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote set-url origin ${url})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master)#updating master
 endfunction(reconnect_Framework_Repository)
 
 
