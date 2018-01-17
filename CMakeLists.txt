@@ -78,7 +78,7 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive, or a framework. Use only package=*name of a package* argument to deploy source repository or use in addition version=VERSION to deploy the specific binary version. If you want to deploy an external package use external=*name of an external package* argument instead and you must define a version. Otherwise, if you want to deploy a framework use framework=*name of a framework* argument instead."
 	COMMAND ${CMAKE_COMMAND} -E echo "resolve -- resolving runtime dependencies of an already installed package. Use package=*name of a package* and version=*a version number* arguments to specify the target binary package."
 	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package, framework or wrapper. Use package=*name of a package* to specify the name of the new package. If you want to create a framework use the framework=*name of a framework* argument instead. If you want to create a wrapper for an external package use the wrapper=*name of an external package* argument instead. Other optional arguments are: author, affiliation, license, and url. If url is used, the connection with a remote repository is established the same way as calling the connect command. If a framework is created you may use the site=*framework web site url* argument."
-	COMMAND ${CMAKE_COMMAND} -E echo "connect -- synchronize local repository with a remote one. Required arguments are : package -to specify the name of the package- or framework -same for a framework-. Other arguments are official or origin to specify the url of the remote repository to set. official is the default one, and can only be set on an empty remote repository except if the argument force=true is used to force the update of the official repository. "
+	COMMAND ${CMAKE_COMMAND} -E echo "connect -- synchronize local repository with a remote one. Required arguments are : package -to specify the name of the package- or framework -same for a framework- or wrapper -same for a wrapper-. Other arguments are official or origin to specify the url of the remote repository to set. official is the default one, and can only be set on an empty remote repository except if the argument force=true is used to force the update of the official repository. "
 	COMMAND ${CMAKE_COMMAND} -E echo "clear -- Clearing the whole install directory of a package using package=*name of package*, version=*all* or version=*a valid number* arguments."
 	COMMAND ${CMAKE_COMMAND} -E echo "remove -- Removing the target package or framework from the workspace. To remove a package use argument package=*name of the package*. To remove a framework use framework=*name of the framework*."
 	COMMAND ${CMAKE_COMMAND} -E echo "register -- Registering the target package in the workspace using package=*name of the package* argument. To register a framework in the workspace use the framework=*name of the framework* argument instead. The package or framework is published so that people with adequate rights can now deploy it."
@@ -158,12 +158,13 @@ add_custom_target(create
 add_custom_target(connect
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_FRAMEWORK=$(framework)
 					-DTARGET_PACKAGE=$(package)
+					-DTARGET_WRAPPER=$(wrapper)
 					-DOFFICIAL_GIT_URL=$(official)
 					-DORIGIN_GIT_URL=$(origin)
 					-DFORCED_RECONNECTION=$(force)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
-					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Connect_PID_Package.cmake
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Connect_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 

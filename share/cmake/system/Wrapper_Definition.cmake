@@ -143,7 +143,10 @@ endmacro(declare_PID_Wrapper_Publishing)
 ### build the wrapper ==> providing commands used to deploy a specific version of the external package
 ### make build version=1.55.0 (download, configure, compile and install the adequate version)
 macro(build_PID_Wrapper)
-	build_Wrapped_Project()
+if(${ARGC} GREATER 0)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Wrapper command requires no arguments.")
+endif()
+build_Wrapped_Project()
 endmacro(build_PID_Wrapper)
 
 
