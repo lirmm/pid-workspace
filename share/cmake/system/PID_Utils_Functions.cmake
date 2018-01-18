@@ -952,6 +952,23 @@ endfunction(is_Binary_Package_Version_In_Development)
 
 
 ### hard clean consist in cleaning the build folder in an aggressive way
+function(hard_Clean_Wrapper wrapper)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${wrapper}/build)
+file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
+if(thefiles)
+foreach(a_file IN ITEMS ${thefiles})
+	if(NOT a_file STREQUAL ".gitignore")
+		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
+		else()#it is a regular file or symlink
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
+		endif()
+	endif()
+endforeach()
+endif()
+endfunction(hard_Clean_Wrapper)
+
+### hard clean consist in cleaning the build folder in an aggressive way
 function(hard_Clean_Package package)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
 file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)

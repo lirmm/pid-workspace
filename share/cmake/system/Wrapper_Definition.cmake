@@ -127,7 +127,20 @@ endif()
 endmacro(declare_PID_Wrapper_Publishing)
 
 #	memorizing a new known version (the target folder that can be found in src folder contains the script used to install the project)
-macro(add_PID_Wrapper_Known_Version version)
+macro(add_PID_Wrapper_Known_Version)
+set(optionArgs)
+set(oneValueArgs VERSION SCRIPT COMPATIBILITY)
+set(multiValueArgs)
+cmake_parse_arguments(ADD_PID_WRAPPER_KNOWN_VERSION "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+if(NOT ADD_PID_WRAPPER_KNOWN_VERSION_VERSION)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the version number using the VERSION keyword.")
+endif()
+if(NOT ADD_PID_WRAPPER_KNOWN_VERSION_SCRIPT)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the build script to use using the SCRIPT keyword.")
+endif()
+
+#verify the version information
+set(version ${ADD_PID_WRAPPER_KNOWN_VERSION_VERSION})
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
 	return()
@@ -137,7 +150,32 @@ if(NOT INDEX EQUAL -1)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, version \"${version}\" is already registered !")
 	return()
 endif()
-set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS} ${version} CACHE INTERNAL "")
+#verify the script information
+set(script_file ${ADD_PID_WRAPPER_KNOWN_VERSION_SCRIPT})
+get_filename_component(RES_EXTENSION ${script_file} EXT)
+if(RES_EXTENSION MATCHES ".*\\.sh$")
+	set(script_type SHELL)
+elseif(RES_EXTENSION MATCHES ".*\\.cmake$")
+	set(script_type CMAKE)
+else()
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, type of script file ${script_file} cannot be deduced from its extension only .sh and .cmake extensions supported")
+	return()
+endif()
+
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version}/${script_file})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot find script file ${script_file} in folder src/${version}/.")
+	return()
+endif()
+
+if(ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY)
+	belongs_To_Known_Versions(PREVIOUS_VERSION_EXISTS ${ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY})
+	if(NOT PREVIOUS_VERSION_EXISTS)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : compatibility with previous version ${ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY} is impossible since this version is not wrapped.")
+		return()
+	endif()
+	set(compatible_with_version ${ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY})
+endif()
+add_Known_Version("${version}" "${script_type}" "${script_file}" "${compatible_with_version}")
 endmacro(add_PID_Wrapper_Known_Version)
 
 ### build the wrapper ==> providing commands used to deploy a specific version of the external package
@@ -152,9 +190,13 @@ endmacro(build_PID_Wrapper)
 ########################################################################################
 ###############To be used in subfolders of the src folder ##############################
 ########################################################################################
+### dependency to another external package
+macro(declare_PID_Wrapper_Platform_Constraint)
+
+endmacro(declare_PID_Wrapper_Platform_Constraint)
 
 ### dependency to another external package
-macro(declare_PID_Wrapper_External_Dependency target_version dependency_project dependency_version)
+macro(declare_PID_Wrapper_External_Dependency)
 
 endmacro(declare_PID_Wrapper_External_Dependency)
 
@@ -164,6 +206,6 @@ macro(declare_PID_Wrapper_Component)
 endmacro(declare_PID_Wrapper_Component)
 
 ### define a component
-macro(declare_PID_Wrapper_Component_Dependency)
+macro(declare_PID_Wrapper_Component_Dependency )
 
 endmacro(declare_PID_Wrapper_Component_Dependency)

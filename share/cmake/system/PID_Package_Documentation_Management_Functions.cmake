@@ -244,11 +244,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 
 	get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
 	set(README_CONTACT_AUTHOR "${RES_STRING}")
-	if(NOT ${PROJECT_NAME}_SITE_ADDRESS)
 
-	else()
-		set(PACKAGE_SITE_REF )
-	endif()
 	configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put the readme in the source dir
 	configure_file(${APIDOC_WELCOME_CONFIG_FILE} ${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md @ONLY)#put api doc welcome page in the build tree
 endif()

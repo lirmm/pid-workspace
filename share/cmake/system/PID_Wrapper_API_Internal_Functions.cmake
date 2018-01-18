@@ -23,6 +23,7 @@
 include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
+
 ###########################################################################
 ############ description of functions implementing the API ################
 ###########################################################################
@@ -52,7 +53,7 @@ set(${PROJECT_NAME}_USER_README_FILE ${readme_file} CACHE INTERNAL "")
 endfunction(init_Wrapper_Info_Cache_Variables)
 
 ###
-function(hard_Clean_Wrapper package)
+function(hard_Clean_Wrapper)
 set(TARGET_BUILD_FOLDER ${${PROJECT_NAME}_ROOT_DIR}/build)
 file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
 if(thefiles)
@@ -67,6 +68,12 @@ foreach(a_file IN ITEMS ${thefiles})
 endforeach()
 endif()
 endfunction(hard_Clean_Wrapper)
+
+### reconfiguring a wrapper
+function(reconfigure_Wrapper_Build)
+set(TARGET_BUILD_FOLDER ${${PROJECT_NAME}_ROOT_DIR}/build)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
+endfunction(reconfigure_Wrapper_Build)
 
 ###
 function(reset_Wrapper_Description_Cached_Variables)
@@ -107,6 +114,9 @@ if(CURRENT_PLATFORM AND NOT CURRENT_PLATFORM STREQUAL "")# a current platform is
   set(TEMP_CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID})
   set(TEMP_CMAKE_CXX_COMPILER_VERSION ${CMAKE_CXX_COMPILER_VERSION})
 endif()
+
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
+
 if(TEMP_PLATFORM) #check if any change occurred
   if( (NOT TEMP_PLATFORM STREQUAL CURRENT_PLATFORM) #the current platform has changed to we need to regenerate
       OR (NOT TEMP_C_COMPILER STREQUAL CMAKE_C_COMPILER)
@@ -117,7 +127,8 @@ if(TEMP_PLATFORM) #check if any change occurred
       OR (NOT TEMP_CMAKE_CXX_COMPILER_VERSION STREQUAL CMAKE_CXX_COMPILER_VERSION)
     )
     message("[PID] INFO : cleaning the build folder after major environment change")
-    hard_Clean_Wrapper(${PROJECT_NAME})
+    hard_Clean_Wrapper()
+		reconfigure_Wrapper_Build()
   endif()
 endif()
 
@@ -129,16 +140,15 @@ if(DIR_NAME STREQUAL "build")
 	add_custom_target(build
     ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
            -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-           -DDEPENDENT_PACKAGES=${DEPENDENT_SOURCE_PACKAGES}
            -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
-           -DTARGET_EXTERNAL_VERSION="${version}"
+           -DTARGET_EXTERNAL_VERSION=$(version)
            -DTARGET_PLATFORM="${CURRENT_PLATFORM}"
+					 -DTARGET_SCRIPT_FILE=${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE}
+					 -DTARGET_SCRIPT_TYPE=${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_TYPE}
            -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Wrapper.cmake
     COMMENT "[PID] Building external package for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
     VERBATIM
   )
-	add_dependencies(build install)#install the find file before the build
-
   # reference file generation target
   add_custom_target(referencing
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferExternal${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
@@ -227,9 +237,73 @@ endforeach()
 endif()
 endfunction(generate_Wrapper_Reference_File)
 
+
+### Get the root address of the wrapper page (either if it belongs to a framework or has its own lone static site)
+function(get_Wrapper_Site_Address SITE_ADDRESS wrapper)
+set(${SITE_ADDRESS} PARENT_SCOPE)
+if(${wrapper}_FRAMEWORK) #package belongs to a framework
+	if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${wrapper}_FRAMEWORK}.cmake)
+		include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${wrapper}_FRAMEWORK}.cmake)
+		set(${SITE_ADDRESS} ${${${wrapper}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${wrapper} PARENT_SCOPE)
+	endif()
+elseif(${wrapper}_SITE_GIT_ADDRESS AND ${wrapper}_SITE_ROOT_PAGE)
+	set(${SITE_ADDRESS} ${${wrapper}_SITE_ROOT_PAGE} PARENT_SCOPE)
+endif()
+endfunction(get_Wrapper_Site_Address)
+
 ###
 function(generate_Wrapper_Readme_Files)
-#TODO
+set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/wrappers/README.md.in)
+## introduction (more detailed description, if any)
+get_Wrapper_Site_Address(ADDRESS ${PROJECT_NAME})
+if(NOT ADDRESS)#no site description has been provided nor framework reference
+	# intro
+	set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site use the short one
+	# no reference to site page
+	set(WRAPPER_SITE_REF_IN_README "")
+
+	# simplified install section
+	set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} wrapper and for using its components is based on the [PID](http://pid.lirmm.net/pid-framework/pages/install.html) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+else()
+	# intro
+	generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
+	if("${RES_INTRO}" STREQUAL "")
+		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site description use the short one
+	else()
+		set(README_OVERVIEW "${RES_INTRO}") #otherwise use detailed one specific for site
+	endif()
+
+	# install procedure
+	set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} wrapper and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called [PID](http://pid.lirmm.net/pid-framework/pages/install.html). Just follow and read the links to understand how to install, use and call its API and/or applications.")
+
+	# reference to site page
+	set(WRAPPER_SITE_REF_IN_README "[package_site]: ${ADDRESS} \"${PROJECT_NAME} wrapper\"
+")
+endif()
+
+if(${PROJECT_NAME}_LICENSE)
+	set(WRAPPER_LICENSE_FOR_README "The license that applies to the PID wrapper content (Cmake files mostly) is **${${PROJECT_NAME}_LICENSE}**. Please look at the license.txt file at the root of this repository. The content generated by the wrapper being based on third party code it is subject to the licenses that apply for the ${PROJECT_NAME} project ")
+else()
+	set(WRAPPER_LICENSE_FOR_README "The wrapper has no license defined yet.")
+endif()
+
+set(README_USER_CONTENT "")
+if(${PROJECT_NAME}_USER_README_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE})
+	file(READ ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE} CONTENT_OF_README)
+	set(README_USER_CONTENT "${CONTENT_OF_README}")
+endif()
+
+set(README_AUTHORS_LIST "")
+foreach(author IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
+	generate_Full_Author_String(${author} STRING_TO_APPEND)
+	set(README_AUTHORS_LIST "${README_AUTHORS_LIST}\n+ ${STRING_TO_APPEND}")
+endforeach()
+
+get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
+set(README_CONTACT_AUTHOR "${RES_STRING}")
+
+configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put the readme in the source dir
+
 endfunction(generate_Wrapper_Readme_Files)
 
 ###
@@ -261,25 +335,97 @@ if(	DEFINED ${PROJECT_NAME}_LICENSE
 endif()
 endfunction(generate_Wrapper_License_File)
 
+function(check_External_Version_Compatibility IS_COMPATIBLE ref_version version_to_check)
+if(version_to_check VERSION_GREATER ref_version)#the version to check is greater to the reference version
+	# so we need to check the compatibility constraints of that version => recursive call
+	check_External_Version_Compatibility(IS_RECURSIVE_COMPATIBLE ${ref_version} ${${PROJECT_NAME}_${version_to_check}_COMPATIBLE_WITH})
+	set(${IS_COMPATIBLE} ${IS_RECURSIVE_COMPATIBLE} PARENT_SCOPE)
+else()#the version to check is compatible as it target a version lower or equal to the reference version
+	set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
+endif()
+endfunction(check_External_Version_Compatibility)
+
 ###
 function(generate_Wrapper_Find_File)
 	set(FIND_FILE_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS})
+	set(FIND_FILE_VERSIONS_COMPATIBLITY)
+	if(${PROJECT_NAME}_KNOWN_VERSIONS)
+		# first step verifying that at least a version defines its compatiblity
+		set(COMPATIBLE_VERSION_FOUND FALSE)
+		foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS} )
+			if(${PROJECT_NAME}_${version}_COMPATIBLE_WITH)
+				set(COMPATIBLE_VERSION_FOUND TRUE)
+				break()
+			endif()
+		endforeach()
+		# second step defines version compatibility at fine grain only if needed
+		if(COMPATIBLE_VERSION_FOUND)
+			foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS} )
+				set(FIRST_INCOMPATIBLE_VERSION)
+				set(COMPATIBLE_VERSION_FOUND FALSE)
+				foreach(other_version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
+					if(other_version VERSION_GREATER version)#the version is greater than the currenlty managed one
+						if(${PROJECT_NAME}_${other_version}_COMPATIBLE_WITH)
+							check_External_Version_Compatibility(IS_COMPATIBLE ${version} ${${PROJECT_NAME}_${other_version}_COMPATIBLE_WITH})
+							if(NOT IS_COMPATIBLE)#not compatible
+								if(NOT FIRST_INCOMPATIBLE_VERSION)
+									set(FIRST_INCOMPATIBLE_VERSION ${${PROJECT_NAME}_${other_version}_COMPATIBLE_WITH}) #memorize the lower incompatible version with ${version}
+								elseif(FIRST_INCOMPATIBLE_VERSION VERSION_GREATER ${PROJECT_NAME}_${other_version}_COMPATIBLE_WITH)
+									set(FIRST_INCOMPATIBLE_VERSION ${${PROJECT_NAME}_${other_version}_COMPATIBLE_WITH}) #memorize the lower incompatible version with ${version}
+								endif()
+							else()
+								set(COMPATIBLE_VERSION_FOUND TRUE) #at least a compatible version has been found
+							endif()
+						else()#this other version is compatible with nothing
+							if(NOT FIRST_INCOMPATIBLE_VERSION)
+								set(FIRST_INCOMPATIBLE_VERSION ${other_version}) #memorize the lower incompatible version with ${version}
+							elseif(FIRST_INCOMPATIBLE_VERSION VERSION_GREATER ${other_version})
+								set(FIRST_INCOMPATIBLE_VERSION ${other_version}) #memorize the lower incompatible version with ${version}
+							endif()
+						endif()
+					endif()
+				endforeach()
+				if(FIRST_INCOMPATIBLE_VERSION)#if there is a known incompatible version
+					set(FIND_FILE_VERSIONS_COMPATIBLITY "${FIND_FILE_VERSIONS_COMPATIBLITY}\nset(${PROJECT_NAME}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO ${FIRST_INCOMPATIBLE_VERSION})")
+			  elseif(COMPATIBLE_VERSION_FOUND)#at least one compatible version has been found but no incompatible versions defined
+					#we need to say that version are all compatible by specifying an "infinite version"
+					set(FIND_FILE_VERSIONS_COMPATIBLITY "${FIND_FILE_VERSIONS_COMPATIBLITY}\nset(${PROJECT_NAME}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO 100000.100000.100000)")
+				endif()
+			endforeach()
+		endif()
+	endif()
 	# generating/installing the generic cmake find file for the package
 	configure_file(${WORKSPACE_DIR}/share/patterns/wrappers/FindExternalPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
 	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
 endfunction(generate_Wrapper_Find_File)
 
 ###
+function(generate_Wrapper_Build_File path_to_file)
+file(WRITE ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS} CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_KNOWN_VERSIONS)
+foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_TYPE ${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_TYPE} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE ${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH} CACHE INTERNAL \"\")\n")
+endforeach()
+endif()
+endfunction(generate_Wrapper_Build_File)
+
+###
 macro(build_Wrapped_Project)
-
-
-
+# if(${PROJECT_NAME}_KNOWN_VERSIONS)
+# foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
+# 	set(CURRENT_MANAGED_VERSION ${version})
+# 	add_subdirectory(src/${version})
+# endforeach()
+# endif()
 
 ################################################################################
 ######## generating CMake configuration files used by PID ######################
 ################################################################################
+generate_Wrapper_Build_File(${CMAKE_BINARY_DIR}/Build${PROJECT_NAME}.cmake)
 generate_Wrapper_Reference_File(${CMAKE_BINARY_DIR}/share/ReferExternal${PROJECT_NAME}.cmake)
-generate_Wrapper_Readme_Files() # generating and putting into source directory the readme file used by gitlab + in build tree the api doc welcome page (contain the same information)
+generate_Wrapper_Readme_Files() # generating and putting into source directory the readme file used by gitlab
 generate_Wrapper_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Wrapper_Find_File() # generating/installing the generic cmake find file for the package
 
@@ -324,44 +470,54 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake
 	)
 endif()
-
-
-#################################################
-######## resolving dependencies #################
-#################################################
-set(INSTALL_REQUIRED FALSE)
-need_Install_External_Packages(INSTALL_REQUIRED)
-if(INSTALL_REQUIRED)
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : ${PROJECT_NAME} try to resolve required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}.")
-		endif()
-		set(INSTALLED_PACKAGES)
-		set(NOT_INSTALLED)
-		install_Required_External_Packages("${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES NOT_INSTALLED)
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : ${PROJECT_NAME} has automatically installed the following external packages : ${INSTALLED_PACKAGES}.")
-		endif()
-		if(NOT_INSTALLED)
-			message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${PROJECT_NAME}, there are some unresolved required external package dependencies : ${NOT_INSTALLED}.")
-			return()
-		endif()
-		foreach(a_dep IN ITEMS ${INSTALLED_PACKAGES})
-			resolve_External_Package_Dependency(${PROJECT_NAME} ${a_dep} ${CMAKE_BUILD_TYPE})
-		endforeach()
-	else()
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option to install them automatically.")
-		return()
-	endif()
-endif()
-
-#resolving external dependencies for project external dependencies
-if(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-	# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
-	# we get the set of all packages undirectly required
-	foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}})
- 		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
- 	endforeach()
-endif()
-
 endmacro(build_Wrapped_Project)
+
+###
+function(belongs_To_Known_Versions BELONGS_TO version)
+	list(FIND ${PROJECT_NAME}_KNOWN_VERSIONS ${version} INDEX)
+	if(INDEX EQUAL -1)
+		set(${BELONGS_TO} FALSE PARENT_SCOPE)
+	else()
+		set(${BELONGS_TO} TRUE PARENT_SCOPE)
+	endif()
+endfunction(belongs_To_Known_Versions)
+
+
+#	memorizing a new known version (the target folder that can be found in src folder contains the script used to install the project)
+function(add_Known_Version version script_type install_file_name compatible_with_version)
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
+	return()
+endif()
+list(FIND ${PROJECT_NAME}_KNOWN_VERSIONS ${version} INDEX)
+if(NOT INDEX EQUAL -1)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, version \"${version}\" is already registered !")
+	return()
+endif()
+set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS} ${version} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_TYPE ${script_type} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE ${install_file_name} CACHE INTERNAL "")
+if(compatible_with_version AND NOT compatible_with_version STREQUAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${compatible_with_version} CACHE INTERNAL "")
+endif()
+endfunction(add_Known_Version)
+
+### dependency to another external package
+macro(declare_Wrapper_Configuration platform configurations)
+
+endmacro(declare_Wrapper_Configuration)
+
+### dependency to another external package
+macro(declare_PID_Wrapper_External_Dependency dependency_project dependency_version)
+
+endmacro(declare_PID_Wrapper_External_Dependency)
+
+### define a component
+macro(declare_PID_Wrapper_Component component deploy_script shared_links static_links includes definitions)
+
+endmacro(declare_PID_Wrapper_Component)
+
+### define a component
+macro(declare_PID_Wrapper_Component_Dependency )
+
+endmacro(declare_PID_Wrapper_Component_Dependency)
