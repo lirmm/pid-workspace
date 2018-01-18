@@ -126,7 +126,7 @@ if(DIR_NAME STREQUAL "build")
   #################################################
   ######## create global targets ##################
   #################################################
-  add_custom_target(build
+	add_custom_target(build
     ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
            -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
            -DDEPENDENT_PACKAGES=${DEPENDENT_SOURCE_PACKAGES}
@@ -137,10 +137,11 @@ if(DIR_NAME STREQUAL "build")
     COMMENT "[PID] Building external package for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
     VERBATIM
   )
+	add_dependencies(build install)#install the find file before the build
 
   # reference file generation target
   add_custom_target(referencing
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferExternal${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
   	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/find
   	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "[PID] installing references to the wrapped external package into the workspace..."

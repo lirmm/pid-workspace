@@ -1,7 +1,8 @@
 #### referencing package the-testpack-a mode ####
-set(freetype2_PID_Package_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
-set(freetype2_PID_Package_INSTITUTION _LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr CACHE INTERNAL "")
-set(freetype2_PID_Package_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_CONTACT_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_CONTACT_INSTITUTION _LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
+
 set(freetype2_AUTHORS "http://www.freetype.org/" CACHE INTERNAL "")
 set(freetype2_LICENSES "GNU GPL" CACHE INTERNAL "")
 set(freetype2_DESCRIPTION external package for the freetype library, repackaged for PID CACHE INTERNAL "")
