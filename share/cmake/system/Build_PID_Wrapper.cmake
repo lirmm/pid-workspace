@@ -17,6 +17,14 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+#load everything required to execute this command
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration before executing the deploy script
+
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Wrapper_API_Internal_Functions NO_POLICY_SCOPE) # to be able to interpret description of external packages and generate the use files
+
+#checking that user input is coherent
 if(NOT TARGET_EXTERNAL_VERSION OR TARGET_EXTERNAL_VERSION STREQUAL "")
   message(FATAL_ERROR "[PID] CRITICAL ERROR: you must define the version to build and deploy using version= argument to the build command")
   return()
@@ -46,15 +54,13 @@ else()
   return()
 endif()
 
+
+# prepare script execution
 set(target_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_SCRIPT_FILE})
-set(target_script_type ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_SCRIPT_TYPE})
+message("[PID] INFO : Executing deployment script ${package_version_src_dir}/${target_script_file}...")
+set(TARGET_BUILD_DIR ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_VERSION})
+set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${TARGET_EXTERNAL_VERSION})
+include(${package_version_src_dir}/${target_script_file} NO_POLICY_SCOPE)#execute the script
 
-
-message("[PID] INFO : Executing install script ${package_version_src_dir}/${target_script_file}...")
-if(target_script_type STREQUAL SHELL)
-  execute_process(COMMAND ${package_version_src_dir}/${target_script_file}
-                WORKING_DIRECTORY ${package_version_build_dir})
-elseif(target_script_type STREQUAL CMAKE)
-  set(CURRENT_WORKING_DIRECTORY ${package_version_build_dir})
-  include(${package_version_src_dir}/${target_script_file} NO_POLICY_SCOPE)
-endif()
+# generate and install the use file
+generate_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION} ${CURRENT_PLATFORM})

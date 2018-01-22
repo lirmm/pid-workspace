@@ -1302,3 +1302,18 @@ if(NOT OUTPUT_VAR_CXX STREQUAL opt)#it matches
 	set(${STANDARD_NUMBER} ${OUTPUT_VAR_CXX} PARENT_SCOPE)
 endif()
 endfunction(is_CXX_Standard_Option)
+
+#################################################################################################
+################################### pure CMake utilities ########################################
+#################################################################################################
+
+function(append_Unique_In_Cache list_name element_value)
+	if(${list_name})
+		set(temp_list ${${list_name}})
+		list(APPEND temp_list ${element_value})
+		list(REMOVE_DUPLICATES temp_list)
+		set(${list_name} ${temp_list} CACHE INTERNAL "")
+	else()
+		set(${list_name} ${element_value} CACHE INTERNAL "")
+	endif()
+endfunction(append_Unique_In_Cache)

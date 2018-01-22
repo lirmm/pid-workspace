@@ -75,11 +75,79 @@ set(TARGET_BUILD_FOLDER ${${PROJECT_NAME}_ROOT_DIR}/build)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
 endfunction(reconfigure_Wrapper_Build)
 
-###
+### reset whole data from version description to ensure there is no faulty description due to content change
 function(reset_Wrapper_Description_Cached_Variables)
 if(${PROJECT_NAME}_KNOWN_VERSIONS)
   foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
+		#reset configurations
+		if(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS)
+			foreach(config IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS})
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config} CACHE INTERNAL "")
+			endforeach()
+		endif()
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS CACHE INTERNAL "")
+		#reset package dependencies
+		if(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES)
+			foreach(package IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES})
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package} CACHE INTERNAL "")
+			endforeach()
+		endif()
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES CACHE INTERNAL "")
+		#reset components
+		if(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS)
+			foreach(component IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS})
+				#reset information local to the component
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS CACHE INTERNAL "")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS CACHE INTERNAL "")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES CACHE INTERNAL "")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEFINITIONS CACHE INTERNAL "")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_OPTIONS CACHE INTERNAL "")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_STANDARD CACHE INTERNAL "")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_STANDARD CACHE INTERNAL "")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES CACHE INTERNAL "")
 
+				#reset information related to internal dependencies
+				if(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES)
+					foreach(dependency IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES})
+						set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency}_DEFINITIONS CACHE INTERNAL "")
+						set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency}_EXPORTED CACHE INTERNAL "")
+					endforeach()
+				endif()
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES CACHE INTERNAL "")
+
+				#reset information related to other external dependencies
+				if(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES)
+					foreach(package IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES})
+						#reset component level dependencies first
+						if(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package})
+							foreach(dependency IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}})
+								set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_${dependency}_DEFINITIONS CACHE INTERNAL "")
+								set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_${dependency}_EXPORTED CACHE INTERNAL "")
+							endforeach()
+						endif()
+						set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package} CACHE INTERNAL "")
+
+						#then reset direct package level dependencies of the component
+						set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_INCLUDES CACHE INTERNAL "")
+						set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_SHARED CACHE INTERNAL "")
+						set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_STATIC CACHE INTERNAL "")
+						set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_DEFINITIONS CACHE INTERNAL "")
+						set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_OPTIONS CACHE INTERNAL "")
+						set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_STANDARD CACHE INTERNAL "")
+						set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_STANDARD CACHE INTERNAL "")
+						set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_RUNTIME_RESOURCES CACHE INTERNAL "")
+					endforeach()
+				endif()
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES CACHE INTERNAL "")
+
+			endforeach()
+		endif()
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS CACHE INTERNAL "")
+
+		#reset current version general information
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE CACHE INTERNAL "")
 	endforeach()
 set(${PROJECT_NAME}_KNOWN_VERSIONS CACHE INTERNAL "")
 endif()
@@ -87,7 +155,7 @@ reset_Documentation_Info()
 endfunction(reset_Wrapper_Description_Cached_Variables)
 
 ###
-macro(declare_Wrapper author institution mail year license address public_address description readme_file)
+function(declare_Wrapper author institution mail year license address public_address description readme_file)
 
 set(${PROJECT_NAME}_ROOT_DIR ${WORKSPACE_DIR}/wrappers/${PROJECT_NAME} CACHE INTERNAL "")
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
@@ -132,6 +200,12 @@ if(TEMP_PLATFORM) #check if any change occurred
   endif()
 endif()
 
+initialize_Platform_Variables() #initialize platform related variables usefull for other end-user API functions
+
+#############################################################
+############ Managing build process #########################
+#############################################################
+
 if(DIR_NAME STREQUAL "build")
 
   #################################################
@@ -139,13 +213,10 @@ if(DIR_NAME STREQUAL "build")
   #################################################
 	add_custom_target(build
     ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-           -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
            -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
            -DTARGET_EXTERNAL_VERSION=$(version)
-           -DTARGET_PLATFORM="${CURRENT_PLATFORM}"
-					 -DTARGET_SCRIPT_FILE=${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE}
-					 -DTARGET_SCRIPT_TYPE=${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_TYPE}
-           -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Wrapper.cmake
+           -DTARGET_SCRIPT_FILE=${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE}
+					 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Wrapper.cmake
     COMMENT "[PID] Building external package for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
     VERBATIM
   )
@@ -169,14 +240,14 @@ else()
   message("[PID] ERROR : please run cmake in the build folder of the wrapper ${PROJECT_NAME}.")
   return()
 endif()
-endmacro(declare_Wrapper)
+endfunction(declare_Wrapper)
 
 ###
-macro(define_Wrapped_Project authors_references licenses original_project_url)
+function(define_Wrapped_Project authors_references licenses original_project_url)
 set(${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_AUTHORS ${authors_references} CACHE INTERNAL "")
 set(${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_LICENSES ${licenses} CACHE INTERNAL "")
 set(${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_SITE ${original_project_url} CACHE INTERNAL "")
-endmacro(define_Wrapped_Project)
+endfunction(define_Wrapped_Project)
 
 
 ### generate the reference file used to retrieve packages
@@ -353,7 +424,7 @@ function(generate_Wrapper_Find_File)
 		# first step verifying that at least a version defines its compatiblity
 		set(COMPATIBLE_VERSION_FOUND FALSE)
 		foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS} )
-			if(${PROJECT_NAME}_${version}_COMPATIBLE_WITH)
+			if(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH)
 				set(COMPATIBLE_VERSION_FOUND TRUE)
 				break()
 			endif()
@@ -365,13 +436,13 @@ function(generate_Wrapper_Find_File)
 				set(COMPATIBLE_VERSION_FOUND FALSE)
 				foreach(other_version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
 					if(other_version VERSION_GREATER version)#the version is greater than the currenlty managed one
-						if(${PROJECT_NAME}_${other_version}_COMPATIBLE_WITH)
-							check_External_Version_Compatibility(IS_COMPATIBLE ${version} ${${PROJECT_NAME}_${other_version}_COMPATIBLE_WITH})
+						if(${PROJECT_NAME}_KNOWN_VERSION_${other_version}_COMPATIBLE_WITH)
+							check_External_Version_Compatibility(IS_COMPATIBLE ${version} ${${PROJECT_NAME}_KNOWN_VERSION_${other_version}_COMPATIBLE_WITH})
 							if(NOT IS_COMPATIBLE)#not compatible
 								if(NOT FIRST_INCOMPATIBLE_VERSION)
-									set(FIRST_INCOMPATIBLE_VERSION ${${PROJECT_NAME}_${other_version}_COMPATIBLE_WITH}) #memorize the lower incompatible version with ${version}
-								elseif(FIRST_INCOMPATIBLE_VERSION VERSION_GREATER ${PROJECT_NAME}_${other_version}_COMPATIBLE_WITH)
-									set(FIRST_INCOMPATIBLE_VERSION ${${PROJECT_NAME}_${other_version}_COMPATIBLE_WITH}) #memorize the lower incompatible version with ${version}
+									set(FIRST_INCOMPATIBLE_VERSION ${${PROJECT_NAME}_KNOWN_VERSION_${other_version}_COMPATIBLE_WITH}) #memorize the lower incompatible version with ${version}
+								elseif(FIRST_INCOMPATIBLE_VERSION VERSION_GREATER ${${PROJECT_NAME}_KNOWN_VERSION_${other_version}_COMPATIBLE_WITH})
+									set(FIRST_INCOMPATIBLE_VERSION ${${PROJECT_NAME}_KNOWN_VERSION_${other_version}_COMPATIBLE_WITH}) #memorize the lower incompatible version with ${version}
 								endif()
 							else()
 								set(COMPATIBLE_VERSION_FOUND TRUE) #at least a compatible version has been found
@@ -404,21 +475,88 @@ function(generate_Wrapper_Build_File path_to_file)
 file(WRITE ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_KNOWN_VERSIONS)
 foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
-	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_TYPE ${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_TYPE} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE ${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME} CACHE INTERNAL \"\")\n")
+	#manage platform configuration description
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
+	if(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS)
+		foreach(config IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS})
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config} ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config}} CACHE INTERNAL \"\")\n")
+		endforeach()
+	endif()
+
+	#manage package dependencies
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES} CACHE INTERNAL \"\")\n")
+	if(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES)
+		foreach(package IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES})
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package} ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}} CACHE INTERNAL \"\")\n")
+		endforeach()
+	endif()
+
+	#manage components description
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS} CACHE INTERNAL \"\")\n")
+	if(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS)
+		foreach(component IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS})
+			#manage information local to the component
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEFINITIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEFINITIONS} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_OPTIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_OPTIONS} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_STANDARD} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_STANDARD} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
+
+			#manage information related to internal dependencies
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES} CACHE INTERNAL \"\")\n")
+			if(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES)
+				foreach(dependency IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES})
+					file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency}_DEFINITIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency}_DEFINITIONS} CACHE INTERNAL \"\")\n")
+					file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency}_EXPORTED ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency}_EXPORTED} CACHE INTERNAL \"\")\n")
+				endforeach()
+			endif()
+
+			#manage information related to other external dependencies
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES} CACHE INTERNAL \"\")\n")
+			if(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES)
+				foreach(package IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES})
+					#reset component level dependencies first
+					file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package} ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}} CACHE INTERNAL \"\")\n")
+					if(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package})
+						foreach(dependency IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}})
+							file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_${dependency}_DEFINITIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_${dependency}_DEFINITIONS} CACHE INTERNAL \"\")\n")
+							file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_${dependency}_EXPORTED ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_${dependency}_EXPORTED} CACHE INTERNAL \"\")\n")
+						endforeach()
+					endif()
+
+					#then reset direct package level dependencies of the component
+					file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_INCLUDES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_INCLUDES} CACHE INTERNAL \"\")\n")
+					file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_SHARED ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_SHARED} CACHE INTERNAL \"\")\n")
+					file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_STATIC ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_STATIC} CACHE INTERNAL \"\")\n")
+					file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_DEFINITIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_DEFINITIONS} CACHE INTERNAL \"\")\n")
+					file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_OPTIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_OPTIONS} CACHE INTERNAL \"\")\n")
+					file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_STANDARD} CACHE INTERNAL \"\")\n")
+					file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_STANDARD} CACHE INTERNAL \"\")\n")
+					file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_RUNTIME_RESOURCES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
+				endforeach()
+			endif()
+		endforeach()
+	endif()
+
 endforeach()
 endif()
 endfunction(generate_Wrapper_Build_File)
 
 ###
 macro(build_Wrapped_Project)
-# if(${PROJECT_NAME}_KNOWN_VERSIONS)
-# foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
-# 	set(CURRENT_MANAGED_VERSION ${version})
-# 	add_subdirectory(src/${version})
-# endforeach()
-# endif()
+
+list_Version_Subdirectories(VERSIONS_DIRS ${CMAKE_SOURCE_DIR}/src)
+if(VERSIONS_DIRS)
+	foreach(version IN ITEMS ${VERSIONS_DIRS})
+	 	add_subdirectory(src/${version})
+	endforeach()
+endif()
 
 ################################################################################
 ######## generating CMake configuration files used by PID ######################
@@ -482,9 +620,8 @@ function(belongs_To_Known_Versions BELONGS_TO version)
 	endif()
 endfunction(belongs_To_Known_Versions)
 
-
 #	memorizing a new known version (the target folder that can be found in src folder contains the script used to install the project)
-function(add_Known_Version version script_type install_file_name compatible_with_version)
+function(add_Known_Version version deploy_file_name compatible_with_version so_name)
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
 	return()
@@ -494,30 +631,86 @@ if(NOT INDEX EQUAL -1)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, version \"${version}\" is already registered !")
 	return()
 endif()
-set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS} ${version} CACHE INTERNAL "")
-set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_TYPE ${script_type} CACHE INTERNAL "")
-set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE ${install_file_name} CACHE INTERNAL "")
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${version})
+set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE ${deploy_file_name} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${so_name} CACHE INTERNAL "")
 if(compatible_with_version AND NOT compatible_with_version STREQUAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${compatible_with_version} CACHE INTERNAL "")
 endif()
+set(CURRENT_MANAGED_VERSION ${version} CACHE INTERNAL "")
 endfunction(add_Known_Version)
 
 ### dependency to another external package
-macro(declare_Wrapper_Configuration platform configurations)
+function(declare_Wrapped_Configuration platform configurations)
+# update the list of required configurations
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${configurations}")
 
-endmacro(declare_Wrapper_Configuration)
+if(platform AND NOT platform STREQUAL "")# if a platform constraint applies
+	foreach(config IN ITEMS ${configurations})
+		if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config}) # another platform constraint already applies
+			if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} STREQUAL "all")#the configuration has no constraint
+				# simply add it
+				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config}} ${platform} CACHE INTERNAL "")
+			endif()
+		else() #simply set the variable
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} ${platform} CACHE INTERNAL "")
+		endif()
+	endforeach()
+else()#no platform constraint applies => this platform configuration is adequate for all platforms
+	foreach(config IN ITEMS ${configurations})
+		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "all" CACHE INTERNAL "")
+	endforeach()
+endif()
+endfunction(declare_Wrapped_Configuration)
 
 ### dependency to another external package
-macro(declare_PID_Wrapper_External_Dependency dependency_project dependency_version)
-
-endmacro(declare_PID_Wrapper_External_Dependency)
-
-### define a component
-macro(declare_PID_Wrapper_Component component deploy_script shared_links static_links includes definitions)
-
-endmacro(declare_PID_Wrapper_Component)
+function(declare_Wrapped_External_Dependency dependency_project dependency_versions)
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCIES ${dependency_project})
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dependency_project}_VERSIONS "${dependency_versions}")
+endfunction(declare_Wrapped_External_Dependency)
 
 ### define a component
-macro(declare_PID_Wrapper_Component_Dependency )
+function(declare_Wrapped_Component component shared_links static_links includes definitions options c_standard cxx_standard runtime_resources)
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENTS ${component})
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SHARED_LINKS ${shared_links} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_STATIC_LINKS ${static_links} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_INCLUDES ${includes} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEFINITIONS ${definitions} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_OPTIONS ${options} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_C_STANDARD ${c_standard} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_CXX_STANDARD ${cxx_standard} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_RUNTIME_RESOURCES ${runtime_resources} CACHE INTERNAL "")
+endfunction(declare_Wrapped_Component)
 
-endmacro(declare_PID_Wrapper_Component_Dependency)
+### define a component
+function(declare_Wrapped_Component_Dependency_To_Explicit_Component component package dependency_component exported definitions)
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCIES ${package})
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package} ${dependency_component})
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_${dependency_component}_DEFINITIONS "${definitions}")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_${dependency_component}_EXPORTED ${exported} CACHE INTERNAL "")
+endfunction(declare_Wrapped_Component_Dependency_To_Explicit_Component)
+
+### define a component
+function(declare_Wrapped_Component_Dependency_To_Implicit_Components component package includes shared static definitions options c_standard cxx_standard runtime_resources)
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCIES ${package})
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_INCLUDES "${includes}")
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_SHARED "${shared}")
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_STATIC "${static}")
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_DEFINITIONS "${definitions}")
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_OPTIONS "${options}")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_STANDARD "${c_standard}")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_STANDARD "${cxx_standard}")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_RUNTIME_RESOURCES "${runtime_resources}")
+endfunction(declare_Wrapped_Component_Dependency_To_Implicit_Components)
+
+###
+function(declare_Wrapped_Component_Internal_Dependency component dependency_component exported definitions)
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_INTERNAL_DEPENDENCIES ${dependency_component})
+append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency_component}_DEFINITIONS "${definitions}")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency_component}_EXPORTED ${exported} CACHE INTERNAL "")
+endfunction(declare_Wrapped_Component_Internal_Dependency)
+
+###
+function(generate_Use_File_For_Version package version platform)
+
+endfunction(generate_Use_File_For_Version)
