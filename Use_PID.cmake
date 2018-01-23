@@ -53,7 +53,7 @@ include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
 include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
-include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
+include(PID_Deployment_Functions NO_POLICY_SCOPE)
 
 include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
 

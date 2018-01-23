@@ -28,7 +28,7 @@ include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
-include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
+include(PID_Deployment_Functions NO_POLICY_SCOPE)
 
 ########################################################################
 ########## Categories (classification of packages) management ##########
@@ -562,7 +562,8 @@ endfunction(print_Package_Binaries)
 
 ### Constraint: the binary references of the package must be loaded before this call.
 ## subsidiary function to check if a given version of the package exists
-function(exact_Version_Exists package version RESULT)
+function(exact_Version_Archive_Exists package version RESULT)
+if(${package}_REFERENCES)
 	list(FIND ${package}_REFERENCES ${version} INDEX)
 	if(INDEX EQUAL -1)
 		set(${RESULT} FALSE PARENT_SCOPE)
@@ -576,7 +577,26 @@ function(exact_Version_Exists package version RESULT)
 			set(${RESULT} TRUE PARENT_SCOPE)
 		endif()
 	endif()
-endfunction(exact_Version_Exists)
+endif()
+endfunction(exact_Version_Archive_Exists)
+
+
+### Constraint: the binary references of the package must be loaded before this call.
+## subsidiary function to check if a given version of the package exists
+function(greatest_Version_Archive package RES_VERSION)
+if(${package}_REFERENCES)
+		get_Available_Binary_Package_Versions(${package} list_of_versions list_of_versions_with_platform)
+		if(list_of_versions)
+			set(curr_max_version 0.0.0)
+			foreach(version IN ITEMS ${list_of_versions})
+				if(version VERSION_GREATER curr_max_version)
+					set(curr_max_version ${version})
+				endif()
+			endforeach()
+			set(${RES_VERSION} ${curr_max_version} PARENT_SCOPE)
+		endif()
+endif()
+endfunction(greatest_Version_Archive)
 
 ## subsidiary function to print all binaries of a package for a given platform
 function(print_Platform_Compatible_Binary package version platform)
@@ -739,7 +759,7 @@ endfunction(deploy_PID_Framework)
 
 
 ### Installing a package on the workspace filesystem from an existing package repository, known in the workspace. All its dependencies will be deployed, either has binary (if available) or has source (if not).
-function(deploy_PID_Package package version verbose)
+function(deploy_PID_Native_Package package version verbose can_use_source redeploy)
 set(PROJECT_NAME ${package})
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
 if(verbose)
@@ -747,62 +767,188 @@ if(verbose)
 else()
 	set(ADDITIONNAL_DEBUG_INFO OFF)
 endif()
-if("${version}" STREQUAL "")#deploying the source repository
-	set(DEPLOYED FALSE)
-	deploy_Package_Repository(DEPLOYED ${package})
-	if(DEPLOYED)
+
+set(REPOSITORY_IN_WORKSPACE FALSE)
+if(EXISTS ${WORKSPACE_DIR}/packages/${package})
+	set(REPOSITORY_IN_WORKSPACE TRUE)
+endif()
+
+if("${version}" STREQUAL "")#no specific version required
+	if(can_use_source)#this first step is only possible if sources can be used
+		if(NOT REPOSITORY_IN_WORKSPACE)
+			set(DEPLOYED FALSE)
+			deploy_Package_Repository(DEPLOYED ${package})
+			if(NOT DEPLOYED)
+				message("[PID] ERROR : cannot deploy ${package} repository. Deployment aborted !")
+				return()
+			endif()
+		endif()
+		#now build the package
 		set(INSTALLED FALSE)
 		deploy_Source_Package(INSTALLED ${package} "")
 		if(NOT INSTALLED)
-			message("[PID] ERROR : cannot install ${package} after deployment.")
+			message("[PID] ERROR : cannot build ${package} after cloning of its repository. Deployment aborted !")
+			return()
+		endif()
+	endif()
+	#try to install last available version from sources
+	set(RES_VERSION)
+	greatest_Version_Archive(${package} RES_VERSION)
+	if(RES_VERSION)
+		deploy_Binary_Package_Version(DEPLOYED ${package} ${RES_VERSION} TRUE "")
+		if(NOT DEPLOYED)
+			message("[PID] ERROR : problem deploying ${package} binary archive version ${RES_VERSION}. Deployment aborted !")
+			return()
+		else()
+			message("[PID] INFO : deploying ${package} binary archive version ${RES_VERSION} success !")
 			return()
 		endif()
 	else()
-		message("[PID] ERROR : cannot deploy ${package} repository.")
+		message("[PID] ERROR : no binary archive available for ${package}. Deployment aborted !")
+		return()
 	endif()
-else()#deploying the target binary relocatable archive
-	deploy_Binary_Package_Version(DEPLOYED ${package} ${version} TRUE "")
-	if(NOT DEPLOYED)
-		message("[PID] ERROR : cannot deploy ${package} binary archive version ${version}.")
+
+else()#deploying a specific version
+	#first, try to download the archive if the binary archive for this version exists
+	exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
+	if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
+		deploy_Binary_Package_Version(DEPLOYED ${package} ${version} TRUE "")
+		if(NOT DEPLOYED)
+			message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
+			return()
+		else()
+			message("[PID] INFO : deploying ${package} binary archive for version ${version} succeeded !")
+			return()
+		endif()
+	endif()
+	#OK so try from sources
+	if(can_use_source)#this first step is only possible if sources can be used
+		if(NOT REPOSITORY_IN_WORKSPACE)
+			deploy_Package_Repository(DEPLOYED ${package})
+			if(NOT DEPLOYED)
+				message("[PID] ERROR : cannot clone ${package} repository. Deployment aborted !")
+				return()
+			endif()
+		endif()
+		deploy_Source_Package_Version(DEPLOYED ${package} ${version} TRUE "")
+		if(DEPLOYED)
+				message("[PID] INFO : package ${package} has been deployed from its repository.")
+		else()
+			message("[PID] ERROR : cannot build ${package} from its repository. Deployment aborted !")
+		endif()
+	else()
+		message("[PID] ERROR : cannot install ${package} since no binary archive exist for that version. Deployment aborted !")
 	endif()
 endif()
-endfunction(deploy_PID_Package)
+endfunction(deploy_PID_Native_Package)
 
 
 ### Installing an external package binary on the workspace filesystem from an existing download point. Constraint: the reference file of the package must be loaded before thsi call.
-function(deploy_External_Package package version verbose)
+function(deploy_PID_External_Package package version verbose can_use_source redeploy)
 if(verbose)
 	set(ADDITIONNAL_DEBUG_INFO ON)
 else()
 	set(ADDITIONNAL_DEBUG_INFO OFF)
 endif()
+
+#check if the repository of the external package wrapper lies in the workspace
+set(REPOSITORY_IN_WORKSPACE FALSE)
+if(EXISTS ${WORKSPACE_DIR}/wrappers/${package})
+	set(REPOSITORY_IN_WORKSPACE TRUE)
+endif()
 get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 set(MAX_CURR_VERSION 0.0.0)
 if("${version}" STREQUAL "")#deploying the latest version of the package
-	foreach(version_i IN ITEMS ${${package}_REFERENCES})
-		list(FIND ${package}_REFERENCE_${version_i} ${PLATFORM_NAME} INDEX)
-		if(NOT INDEX EQUAL -1) #a reference for this OS is known
-			if(${version_i} VERSION_GREATER ${MAX_CURR_VERSION})
-				set(MAX_CURR_VERSION ${version_i})
+
+	#first try to directly download its archive
+	if(${package}_REFERENCES) #there are references to external package binaries
+		foreach(version_i IN ITEMS ${${package}_REFERENCES})
+			list(FIND ${package}_REFERENCE_${version_i} ${PLATFORM_NAME} INDEX)
+			if(NOT INDEX EQUAL -1) #a reference for this OS is known
+				if(${version_i} VERSION_GREATER ${MAX_CURR_VERSION})
+					set(MAX_CURR_VERSION ${version_i})
+				endif()
+			endif()
+		endforeach()
+		if(NOT ${MAX_CURR_VERSION} STREQUAL 0.0.0)
+			if(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package}/${MAX_CURR_VERSION}
+			AND NOT redeploy)
+				message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} already lies in the workspace, use force=true to force the redeployment.")
+				return()
+			endif()
+			deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE)
+			if(NOT DEPLOYED)#an error occurred during deployment !! => Not a normal situation
+				message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive. Please contact the administrator of the package ${package}.")
+				return()
+			else()
+				message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} has been deployed from its binary archive.")
+				return()
+			endif()
+		else()#there may be no binary version available for the target OS => not an error
+			if(ADDITIONNAL_DEBUG_INFO)
+				message("[PID] ERROR : no known binary version of external package ${package} for OS ${OS_STRING}.")
 			endif()
 		endif()
-	endforeach()
-	if(NOT ${MAX_CURR_VERSION} STREQUAL 0.0.0)
-		deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE)
-		if(NOT DEPLOYED)
-			message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive. Please contact the administrator of the package ${package}.")
-		endif()
-	else()
-		message("[PID] ERROR : no known version to external package ${package} for OS ${OS_STRING}.")
 	endif()
 
-else()#deploying the target binary relocatable archive
-	deploy_External_Package_Version(DEPLOYED ${package} ${version} FALSE)
-	if(NOT DEPLOYED)
-		message("[PID] ERROR : cannot deploy ${package} binary archive version ${version}.")
+	#second option: build it from sources
+	if(can_use_source)#this step is only possible if sources can be used
+		if(NOT REPOSITORY_IN_WORKSPACE)
+			deploy_Wrapper_Repository(DEPLOYED ${package})
+			if(NOT DEPLOYED)
+				message("[PID] ERROR : cannot clone external package ${package} wrapper repository. Deployment aborted !")
+				return()
+			endif()
+		endif()
+		set(list_of_installed_versions)
+		if(NOT redeploy #only exlcude the installed versions if redeploy is not required
+		AND EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package}/)
+			list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package})
+			set(list_of_installed_versions ${RES_VERSIONS})
+		endif()
+		deploy_Source_Wrapper(DEPLOYED ${package} "${list_of_installed_versions}")
+		if(DEPLOYED)
+				message("[PID] INFO : external package ${package} has been deployed from its wrapper repository.")
+		else()
+			message("[PID] ERROR : cannot build external package ${package} from its wrapper repository. Deployment aborted !")
+		endif()
+	else()
+		message("[PID] ERROR : cannot install external package ${package} since no binary archive exist for that version and no source deployment is required. Deployment aborted !")
+	endif()
+
+else()#deploying a specific version of the external package
+	#first, try to download the archive if the binary archive for this version exists
+	exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
+	if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
+		deploy_External_Package_Version(DEPLOYED ${package} ${version} FALSE)#deploying the target binary relocatable archive
+		if(NOT DEPLOYED)
+			message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
+			return()
+		else()
+			message("[PID] INFO : deploying ${package} binary archive for version ${version} succeeded !")
+			return()
+		endif()
+	endif()
+	#Not possible from binaries so try from sources
+	if(can_use_source)#this step is only possible if sources can be used
+		if(NOT REPOSITORY_IN_WORKSPACE)
+			deploy_Wrapper_Repository(DEPLOYED ${package})
+			if(NOT DEPLOYED)
+				message("[PID] ERROR : cannot clone external package ${package} wrapper repository. Deployment aborted !")
+				return()
+			endif()
+		endif()
+		deploy_Source_Wrapper_Version(DEPLOYED ${package} ${version} TRUE "")
+		if(DEPLOYED)
+				message("[PID] INFO : external package ${package} has been deployed from its wrapper repository.")
+		else()
+			message("[PID] ERROR : cannot build external package ${package} from its wrapper repository. Deployment aborted !")
+		endif()
+	else()
+		message("[PID] ERROR : cannot install external package ${package} since no binary archive exist for that version. Deployment aborted !")
 	endif()
 endif()
-endfunction(deploy_External_Package)
+endfunction(deploy_PID_External_Package)
 
 ### Configuring the official remote repository of current wrapper
 function(connect_PID_Wrapper wrapper git_url first_time)

@@ -690,8 +690,6 @@ endfunction(get_Remotes_Address)
 ###
 function(clone_Wrapper_Repository IS_DEPLOYED wrapper url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers git clone ${url} OUTPUT_QUIET ERROR_QUIET)
-
-#framework may be named by only by their name or with a -framework suffix
 if(EXISTS ${WORKSPACE_DIR}/wrappers/${wrapper} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper})
 	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
@@ -742,6 +740,16 @@ function(is_Wrapper_Connected CONNECTED wrapper remote)
 	endif()
 endfunction(is_Wrapper_Connected)
 
+###
+function(initialize_Wrapper_Git_Repository_Push_Address package url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git remote set-url --push origin ${url})
+endfunction(initialize_Wrapper_Git_Repository_Push_Address)
+
+### update the repository of the wrapper
+function(update_Wrapper_Repository package)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git lfs pull origin master)#fetching master branch to get most up to date archives
+endfunction(update_Wrapper_Repository package)
 
 ##############################################################################
 ############## frameworks repository related functions #######################

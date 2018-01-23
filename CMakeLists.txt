@@ -75,7 +75,7 @@ add_custom_target(help ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "Available PID commands:"
 	COMMAND ${CMAKE_COMMAND} -E echo "help -- This help message."
 	COMMAND ${CMAKE_COMMAND} -E echo "info -- getting information about the workspace. With no argument it will printing the current version of PID. If the argument framework=*all* is used, then it lists all frameworks. If, instead, the argument framework=*name of a framework* is used, then it prints information about the framework and lists all packages of the framework with same name, ordered by categories defined by the framework. If the argument package=*name of a package* is used then it prints information about the package. If the argument package=*all* is used then it lists all packages ordered by categories. If the argument license=*all* is used then it lists all licenses avilable in the workspace. If the argument license=*a givenl license* is used then it prints precise information on the license."
-	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive, or a framework. Use only package=*name of a package* argument to deploy source repository or use in addition version=VERSION to deploy the specific binary version. If you want to deploy an external package use external=*name of an external package* argument instead and you must define a version. Otherwise, if you want to deploy a framework use framework=*name of a framework* argument instead."
+	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive, or a framework. Use only package=*name of a package* argument to deploy source repository of the corresponding native package or external package wrapper. Use in addition version=VERSION to deploy a specific version, this argument must be used for an external package. The argument no_source=true will force the download of an existing binary package version archive. Use the argument force=true to force deployment even if the adequate version already lies in the workspace. Otherwise, if you want to deploy a framework use framework=*name of a framework* argument lonely."
 	COMMAND ${CMAKE_COMMAND} -E echo "resolve -- resolving runtime dependencies of an already installed package. Use package=*name of a package* and version=*a version number* arguments to specify the target binary package."
 	COMMAND ${CMAKE_COMMAND} -E echo "create -- create a new package, framework or wrapper. Use package=*name of a package* to specify the name of the new package. If you want to create a framework use the framework=*name of a framework* argument instead. If you want to create a wrapper for an external package use the wrapper=*name of an external package* argument instead. Other optional arguments are: author, affiliation, license, and url. If url is used, the connection with a remote repository is established the same way as calling the connect command. If a framework is created you may use the site=*framework web site url* argument."
 	COMMAND ${CMAKE_COMMAND} -E echo "connect -- synchronize local repository with a remote one. Required arguments are : package -to specify the name of the package- or framework -same for a framework- or wrapper -same for a wrapper-. Other arguments are official or origin to specify the url of the remote repository to set. official is the default one, and can only be set on an empty remote repository except if the argument force=true is used to force the update of the official repository. "
@@ -106,9 +106,10 @@ add_custom_target(info
 add_custom_target(deploy
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_VERSION=$(version)
-					-DTARGET_EXTERNAL=$(external)
 					-DTARGET_FRAMEWORK=$(framework)
 					-DVERBOSE_MODE=$(verbose)
+					-DFORCE_REDEPLOY=$(force)
+					-DNO_SOURCE=$(no_source)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Deploy_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -190,7 +191,8 @@ add_custom_target(hard_clean
 add_custom_target(remove
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
-					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-D
+ORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Remove_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

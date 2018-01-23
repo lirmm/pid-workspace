@@ -89,7 +89,7 @@ endif()
 add_Category("${ARGV0}")
 endmacro(add_PID_Wrapper_Category)
 
-### API : declare_PID_Publishing()
+### API : declare_PID_Wrapper_Publishing()
 macro(declare_PID_Wrapper_Publishing)
 set(optionArgs PUBLISH_BINARIES)
 set(oneValueArgs PROJECT FRAMEWORK GIT PAGE)

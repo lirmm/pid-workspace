@@ -413,7 +413,8 @@ else()#using references
 endif()
 endfunction(install_Package)
 
-### Get the references to binary archives containing package versions. Constraint: the reference file of the package must be loaded before this call.
+### Get the references to binary archives containing package versions.
+# Constraint: the reference file of the package must be loaded before this call.
 function(load_Package_Binary_References REFERENCES_OK package)
 set(${REFERENCES_OK} FALSE PARENT_SCOPE)
 if(${package}_FRAMEWORK) #references are deployed in a framework
@@ -642,7 +643,7 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 		endif()
 
 	endif()
-else()
+else()#selected version excluded from current process
 	is_Binary_Package_Version_In_Development(IN_DEV ${package} ${RES_VERSION})
 	if(IN_DEV) # dev version is not generating the same binary as currently installed version
 		message("[PID] WARNING : when installing the package ${package} from source : a possibly conflicting binary package with same version ${RES_VERSION} is already installed. Please uninstall it by hand by using the \"make uninstall\" command from package build folder or \"make clear name=${package} version=${RES_VERSION} from workspace pid folder.\"")
@@ -1068,10 +1069,172 @@ set(${INSTALLED} TRUE PARENT_SCOPE)
 message("[PID] INFO : binary package ${package} (version ${version_string}) has been installed into the workspace.")
 endfunction(download_And_Install_Binary_Package)
 
-
 #############################################################################################
 ############################### functions for external Packages #############################
 #############################################################################################
+###
+function(load_And_Configure_Wrapper LOADED package)
+	if(NOT EXISTS ${WORKSPACE_DIR}/wrappers/${package}/CMakeLists.txt)
+		message("[PID] ERROR : cannot find external package ${package} wrapper in workspace !")
+		set(${LOADED} FALSE PARENT_SCOPE)
+		return()
+	endif()
+	#configure the wrapper
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : configuring wrapper of external package ${package} ...")
+	endif()
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} ..
+		WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
+		RESULT_VARIABLE CONFIG_RES
+	)
+	if((NOT CONFIG_RES EQUAL 0) OR (NOT EXISTS ${WORKSPACE_DIR}/wrappers/${package}/build/Build${package}.cmake))
+		message("[PID] ERROR : configuration of external package  ${package} wrapper has FAILED !")
+		set(${LOADED} FALSE PARENT_SCOPE)
+		return()
+	endif()
+	include(${WORKSPACE_DIR}/wrappers/${package}/build/Build${package}.cmake NO_POLICY_SCOPE)#loading the wrapper description
+	set(${LOADED} TRUE PARENT_SCOPE)
+endfunction(load_And_Configure_Wrapper)
+
+### Suppose that the wrapper has been configured and loaded before (see load_And_Configure_Wrapper)
+function(get_Wrapper_Known_Versions RES_VERSIONS package)
+set(${RES_VERSIONS} ${${package}_KNOWN_VERSIONS} PARENT_SCOPE)
+endfunction(get_Wrapper_Known_Versions RES_VERSIONS package)
+
+### building an external package from its wrapper
+function(build_And_Install_External_Package_Version INSTALLED package version)
+ if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : building version ${version} of external package ${package} ...")
+ endif()
+ execute_process(
+	COMMAND ${CMAKE_MAKE_PROGRAM} build "version=${version}"
+	WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
+	RESULT_VARIABLE BUILD_RES
+	)
+	get_System_Variables(platform package_string)
+	if(BUILD_RES EQUAL 0
+	AND EXISTS ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
+		set(${INSTALLED} TRUE PARENT_SCOPE)
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : external package ${package} version ${version} built !")
+		endif()
+		return()
+	else()
+		message("[PID] ERROR : building external package ${package} version ${version} FAILED !")
+	endif()
+	set(${INSTALLED} FALSE PARENT_SCOPE)
+endfunction(build_And_Install_External_Package_Version)
+
+### function used to put into workspace the repository of the external package wrapper.
+function(deploy_Wrapper_Repository IS_DEPLOYED package)
+if(${package}_PID_WRAPPER_ADDRESS)
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : cloning the repository of wrapper for external package ${package}...")
+	endif()
+	if(${package}_PID_WRAPPER_PUBLIC_ADDRESS)#there is a public address where to fetch (without any )
+		clone_Wrapper_Repository(DEPLOYED ${package} ${${package}_PID_WRAPPER_PUBLIC_ADDRESS})#we clone from public address
+		if(DEPLOYED)
+			initialize_Wrapper_Git_Repository_Push_Address(${package} ${${package}_PID_WRAPPER_ADDRESS})#the push address is modified accordingly
+		endif()
+	else() #basic case where package deployment requires identification : push/fetch address are the same
+		clone_Wrapper_Repository(DEPLOYED ${package} ${${package}_PID_WRAPPER_ADDRESS})
+	endif()
+	if(DEPLOYED)
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : repository of of the wrapper for external package ${package} has been cloned.")
+		endif()
+	else()
+		message("[PID] ERROR : cannot clone the repository of the wrapper for external package ${package}.")
+	endif()
+	set(${IS_DEPLOYED} ${DEPLOYED} PARENT_SCOPE)
+else()
+	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
+	message("[PID] ERROR : impossible to clone the repository of the wrapper of external package ${package} (no repository address defined). This is maybe due to a malformed package, please contact the administrator of this wrapper package.")
+endif()
+endfunction(deploy_Wrapper_Repository)
+
+
+### deploy a wrapper means manage git repository + configure + build the external wrapper SOURCE package in the workspace so that it can be used by a third party package. It goes to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it. See: build_And_Install_Package. See: build_And_Install_Source.
+function(deploy_Source_Wrapper DEPLOYED package already_installed_versions)
+# go to wrapper source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
+set(${DEPLOYED} FALSE PARENT_SCOPE)
+
+update_Wrapper_Repository(${package})#update wrapper repository
+load_And_Configure_Wrapper(LOADED ${package})
+if(NOT LOADED)
+	return()
+endif()
+get_Wrapper_Known_Versions(ALL_VERSIONS ${package})
+select_Last_Version(RES_VERSION "${ALL_VERSIONS}")
+if(NOT RES_VERSION)
+	message("[PID] ERROR : no adequate version found for wrapper of external package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package). Otherwise that may mean you use a non released version of ${package} (in development version).")
+	add_Managed_Package_In_Current_Process(${package} "NO VERSION" "FAIL" TRUE)
+	return()
+endif()
+list(FIND already_installed_versions ${RES_VERSION} INDEX)
+if(INDEX EQUAL -1) # selected version is not excluded from deploy process
+	build_And_Install_External_Package_Version(INSTALLED ${package} ${RES_VERSION})
+	if(NOT INSTALLED) # this package version has FAILED TO be built during current process
+		set(${DEPLOYED} FALSE PARENT_SCOPE)
+		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE)
+	else() #SUCCESS because last correct version already built
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : wrapper for external package ${package} has deployed the version ${RES_VERSION}...")
+		endif()
+		set(${DEPLOYED} TRUE PARENT_SCOPE)
+		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
+	endif()
+else() #nothing to do but result is OK
+	set(${DEPLOYED} TRUE PARENT_SCOPE)
+	message("[PID] WARNING : no need to deploy external package ${package} version ${RES_VERSION} from wrapper, since version already exists.")
+add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
+endif()
+endfunction(deploy_Source_Wrapper)
+
+### deploy a version means manage git repository + configure + build the wrapper SOURCE package version in the workspace so that it can be used by a third party package.
+# It goes to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it.
+# See: build_And_Install_Package.
+function(deploy_Source_Wrapper_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
+set(${DEPLOYED} FALSE PARENT_SCOPE)
+# go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
+
+update_Wrapper_Repository(${package})#update wrapper repository
+load_And_Configure_Wrapper(LOADED ${package})
+if(NOT LOADED)
+	return()
+endif()
+get_Wrapper_Known_Versions(ALL_VERSIONS ${package})
+
+if(EXACT)
+	select_Exact_Version(RES_VERSION ${VERSION_MIN} "${ALL_VERSIONS}")
+else()
+	select_Best_Version(RES_VERSION ${VERSION_MIN} "${ALL_VERSIONS}")
+endif()
+
+if(NOT RES_VERSION)
+	message("[PID] WARNING : no adequate version found for wrapper of external package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package).")
+	return()
+endif()
+
+list(FIND already_installed_versions ${RES_VERSION} INDEX)
+if(INDEX EQUAL -1) # selected version is not excluded from deploy process
+	build_And_Install_External_Package_Version(INSTALLED ${package} ${RES_VERSION})
+	if(NOT INSTALLED) # this package version has FAILED TO be built during current process
+		set(${DEPLOYED} FALSE PARENT_SCOPE)
+		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE)
+	else() #SUCCESS because last correct version already built
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : wrapper for external package ${package} has deployed the version ${RES_VERSION}...")
+		endif()
+		set(${DEPLOYED} TRUE PARENT_SCOPE)
+		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
+	endif()
+else() #nothing to do but result is OK
+	set(${DEPLOYED} TRUE PARENT_SCOPE)
+	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
+endif()
+endfunction(deploy_Source_Wrapper_Version)
 
 ### resolving the version to use for the external package according to current build constraints. Constraints: package binary references must be loaded before.
 function(resolve_Required_External_Package_Version SELECTED_VERSION package)
@@ -1459,6 +1622,7 @@ if(CONFIGS_TO_CHECK)#arch and OS are not checked as they are supposed to be alre
 	endforeach()
 endif() #otherwise no configuration for this platform is supposed to be necessary
 
+#TODO UNCOMMENT AND TEST DEPLOYMENT
 # Manage external package dependencies => need to deploy other external packages
 #if(${package}_EXTERNAL_DEPENDENCIES) #the external package has external dependencies
 #	foreach(dep_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES}) #recursive call for deployment of dependencies

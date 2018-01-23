@@ -23,7 +23,7 @@
 ########################################################################
 include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
-include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
+include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 ##################################################################################
