@@ -24,6 +24,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Wrapper_API_Internal_Functions NO_POLICY_SCOPE) # to be able to interpret description of external packages and generate the use files
 
+message("[PID] INFO : building wrapper for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
 #checking that user input is coherent
 if(NOT TARGET_EXTERNAL_VERSION OR TARGET_EXTERNAL_VERSION STREQUAL "")
   message(FATAL_ERROR "[PID] CRITICAL ERROR: you must define the version to build and deploy using version= argument to the build command")
@@ -32,6 +33,8 @@ endif()
 set(package_dir ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE})
 set(package_version_src_dir ${package_dir}/src/${TARGET_EXTERNAL_VERSION})
 set(package_version_build_dir ${package_dir}/build/${TARGET_EXTERNAL_VERSION})
+set(package_version_install_dir ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${TARGET_EXTERNAL_VERSION})
+
 if(NOT EXISTS ${package_version_build_dir})
   file(MAKE_DIRECTORY ${package_version_build_dir})
 endif()
@@ -54,13 +57,30 @@ else()
   return()
 endif()
 
+if(EXISTS ${package_version_install_dir})#clean the install folder
+  file(REMOVE_RECURSE ${package_version_install_dir})
+endif()
 
 # prepare script execution
 set(target_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_SCRIPT_FILE})
-message("[PID] INFO : Executing deployment script ${package_version_src_dir}/${target_script_file}...")
 set(TARGET_BUILD_DIR ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_VERSION})
-set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${TARGET_EXTERNAL_VERSION})
-include(${package_version_src_dir}/${target_script_file} NO_POLICY_SCOPE)#execute the script
+set(TARGET_INSTALL_DIR ${package_version_install_dir})
 
+if(NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true)
+  message("[PID] INFO : Executing deployment script ${package_version_src_dir}/${target_script_file}...")
+  set(ERROR_IN_SCRIPT FALSE)
+  include(${package_version_src_dir}/${target_script_file} NO_POLICY_SCOPE)#execute the script
+  if(ERROR_IN_SCRIPT)
+    message("[PID] ERROR : Cannot deploy external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
+    return()
+  endif()
+endif()
 # generate and install the use file
 generate_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION} ${CURRENT_PLATFORM})
+message("[PID] INFO : Installing external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
+
+#create the output folder
+file(MAKE_DIRECTORY ${TARGET_INSTALL_DIR}/share)
+install_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION} ${CURRENT_PLATFORM})
+
+message("[PID] INFO : external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} built.")

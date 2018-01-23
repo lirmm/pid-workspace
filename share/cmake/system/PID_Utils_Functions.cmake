@@ -57,6 +57,20 @@ endif()
 
 endfunction(is_A_System_Reference_Path)
 
+
+###
+function(extract_Info_From_Platform RES_ARCH RES_BITS RES_OS RES_ABI name)
+	string(REGEX REPLACE "^([^_]+)_([^_]+)_([^_]+)_([^_]+)$" "\\1;\\2;\\3;\\4" list_of_properties ${name})
+	list(GET list_of_properties 0 arch)
+	list(GET list_of_properties 1 bits)
+	list(GET list_of_properties 2 os)
+	list(GET list_of_properties 3 abi)
+	set(${RES_ARCH} ${arch} PARENT_SCOPE)
+	set(${RES_BITS} ${bits} PARENT_SCOPE)
+	set(${RES_OS} ${os} PARENT_SCOPE)
+	set(${RES_ABI} ${abi} PARENT_SCOPE)
+endfunction(extract_Info_From_Platform)
+
 #############################################################
 ################ string handling utilities ##################
 #############################################################

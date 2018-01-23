@@ -204,9 +204,10 @@ endmacro(declare_PID_Wrapper_Platform_Configuration)
 
 ### dependency to another external package
 macro(declare_PID_Wrapper_External_Dependency)
+set(options EXACT)
 set(oneValueArgs PACKAGE)
 set(multiValueArgs VERSIONS) #known versions of the external package that can be used to build/run it
-cmake_parse_arguments(DECLARE_PID_WRAPPER_DEPENDENCY "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+cmake_parse_arguments(DECLARE_PID_WRAPPER_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_External_Dependency requires to define the name of the dependency by using PACKAGE keyword.")
 	return()
@@ -215,7 +216,11 @@ if(NOT DECLARE_PID_WRAPPER_DEPENDENCY_VERSIONS)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_External_Dependency requires to define at least a version by using the VERSIONS keyword.")
 	return()
 endif()
-declare_Wrapped_External_Dependency("${DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE}" "${DECLARE_PID_WRAPPER_DEPENDENCY_VERSIONS}")
+set(exact FALSE)
+if(DECLARE_PID_WRAPPER_DEPENDENCY_EXACT)
+set(exact TRUE)
+endif()
+declare_Wrapped_External_Dependency("${DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE}" "${DECLARE_PID_WRAPPER_DEPENDENCY_VERSIONS}" ${exact})
 endmacro(declare_PID_Wrapper_External_Dependency)
 
 ### define a component
