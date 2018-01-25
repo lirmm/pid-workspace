@@ -120,7 +120,6 @@ else()# a package deployment is required
 		endif()
 	endif()
 
-
 		####################################################################
 		##########################  OPERATIONS  ############################
 		####################################################################
@@ -138,8 +137,8 @@ else()# a package deployment is required
 		endif()
 		#from here the operation can be theorically realized
 		if(redeploy)#if a redeploy has been forced then first action is to uninstall
-			clear_PID_Package(${TARGET_PACKAGE} ${TARGET_VERSION})
-			if("${VERBOSE_MODE}" STREQUAL "true" OR "${VERBOSE_MODE}" STREQUAL "TRUE")
+			clear_PID_Package(RES ${TARGET_PACKAGE} ${TARGET_VERSION})
+			if(RES AND ("${VERBOSE_MODE}" STREQUAL "true" OR "${VERBOSE_MODE}" STREQUAL "TRUE"))
 				message("[PID] INFO : package ${TARGET_PACKAGE} version ${TARGET_VERSION} has been uninstalled ...")
 			endif()
 		endif()

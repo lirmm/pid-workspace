@@ -22,7 +22,7 @@
 ##################################################################################
 
 ### select the exact compatible version of a native package (with major.minor strict, only patch can be adapted)
-function(select_Exact_Version RES_VERSION minimum_version available_versions)
+function(select_Exact_Native_Version RES_VERSION minimum_version available_versions)
 get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
 if(DEFINED PATCH)
 	set(curr_max_patch_number ${PATCH})
@@ -43,11 +43,24 @@ if(curr_max_patch_number EQUAL -1)#i.e. nothing found
 else()
 	set(${RES_VERSION} "${MAJOR}.${MINOR}.${curr_max_patch_number}" PARENT_SCOPE)
 endif()
-endfunction(select_Exact_Version)
+endfunction(select_Exact_Native_Version)
+
+### select the exact compatible version of an external package (with strict major.minor.patch)
+#simply consists in returning the version value if exists in the list
+function(select_Exact_External_Version RES_VERSION exact_version available_versions)
+foreach(version IN ITEMS ${available_versions})
+	if(version VERSION_EQUAL exact_version)
+		set(${RES_VERSION} ${version} PARENT_SCOPE)
+		return()
+	endif()
+endforeach()
+set(${RES_VERSION} PARENT_SCOPE)
+endfunction(select_Exact_External_Version)
+
 
 
 ### select the best compatible version of a native package (last major.minor available)
-function(select_Best_Version RES_VERSION minimum_version available_versions)
+function(select_Best_Native_Version RES_VERSION minimum_version available_versions)
 get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
 if(DEFINED PATCH)
 	set(curr_max_patch_number ${PATCH})
@@ -73,8 +86,29 @@ if(curr_max_patch_number EQUAL -1)#i.e. nothing found
 else()
 	set(${RES_VERSION} "${MAJOR}.${curr_max_minor_number}.${curr_max_patch_number}" PARENT_SCOPE)
 endif()
-endfunction(select_Best_Version)
+endfunction(select_Best_Native_Version)
 
+### select the best compatible version of a native package (last major.minor available)
+function(select_Best_External_Version RES_VERSION package minimum_version available_versions)
+foreach(version IN ITEMS ${available_versions})
+	if(version VERSION_EQUAL minimum_version
+		OR version VERSION_GREATER minimum_version)#only greater or equal versions are feasible
+		if(DEFINED ${package}_PID_KNOWN_VERSION_${minimum_version}_GREATER_VERSIONS_COMPATIBLE_UP_TO)#if not defined the version is compatible with nothing
+			if(	highest_version )#if a compatible highest version is already found
+					if(version VERSION_GREATER highest_version #the new version must be greater to be interesting
+						AND version VERSION_LESS "${${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO}")#but it also has to be compatible
+						set(highest_version ${version})
+					endif()
+			elseif(version VERSION_LESS "${${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO}")#if no highest compatible version found, simply check that the version is compatible
+				set(highest_version ${version})#if highest not set, set ot for thr first time
+			endif()
+		elseif(version VERSION_EQUAL minimum_version)#no compatible version defined, only the exact version can be used
+				set(highest_version ${version})
+		endif()
+	endif()
+endforeach()
+set(${RES_VERSION} ${highest_version} PARENT_SCOPE)
+endfunction(select_Best_External_Version)
 
 ### select the last available version of a native package
 function(select_Last_Version RES_VERSION available_versions)
@@ -90,7 +124,6 @@ if(curr_version VERSION_EQUAL "0.0.0")#i.e. nothing found
 else()
 	set(${RES_VERSION} "${curr_version}" PARENT_SCOPE)
 endif()
-
 endfunction(select_Last_Version)
 
 ### check if an exact major.minor version exists (patch version is always let undefined)
@@ -223,7 +256,7 @@ if(VERSION_DIRS)
 		document_External_Version_Strings(${package} ${highest_version})
 	endif()
 endif()
-endfunction()
+endfunction(check_External_Last_Version)
 
 
 ### check if an exact major.minor.patch version of the external package exists
@@ -873,7 +906,12 @@ if(EXIST)
 		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
 			if(${package}_FIND_REQUIRED)
 				if(${package}_FIND_VERSION)
-					add_To_Install_External_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${${package}_FIND_VERSION_EXACT})
+					if(${package}_FIND_VERSION_EXACT)
+						set(is_exact TRUE)
+					else()
+						set(is_exact FALSE)
+					endif()
+					add_To_Install_External_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${is_exact})
 				else()
 					add_To_Install_External_Package_Specification(${package} "" FALSE)
 				endif()

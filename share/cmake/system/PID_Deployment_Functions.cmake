@@ -149,7 +149,7 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : package ${package} needs to install following packages : ${TO_INSTALL_DEPS}")
 		endif()
-		install_Required_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES NOT_INSTALLED)
+		install_Required_Native_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES NOT_INSTALLED)
 		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
 			resolve_Package_Dependency(${package} ${installed} ${mode})
 			if(${installed}_FOUND)
@@ -197,9 +197,9 @@ if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_UPDATE) #if no automatic download 
 		package_Source_Exists_In_Workspace(SOURCE_EXIST RETURNED_PATH ${package})
 		if(SOURCE_EXIST) # updating the source package, if possible
 			if(WITH_VERSION)
-				deploy_Source_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
+				deploy_Source_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
 			else()
-				deploy_Source_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
+				deploy_Source_Native_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
 			endif()
 		else() # updating the binary package, if possible
 			include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
@@ -214,9 +214,9 @@ if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_UPDATE) #if no automatic download 
 				endif()
 			endif()
 			if(WITH_VERSION)
-				deploy_Binary_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
+				deploy_Binary_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
 			else()
-				deploy_Binary_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
+				deploy_Binary_Native_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
 			endif()
 		endif()
 	endif()
@@ -224,8 +224,9 @@ endif()
 endfunction(update_Package_Installed_Version)
 
 
-### function used to select an adequate version to install for a given package.
-function(resolve_Required_Package_Version version_possible min_version is_exact package)
+### function used to select an adequate version to install for a given native package.
+# given the currently required versions
+function(resolve_Required_Native_Package_Version version_possible min_version is_exact package)
 
 foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX}})
 	get_Version_String_Numbers("${version}.0" compare_major compare_minor compared_patch)
@@ -255,17 +256,17 @@ endforeach()
 set(${version_possible} TRUE PARENT_SCOPE)
 set(${min_version} "${MAJOR_RESOLVED}.${CUR_MINOR_RESOLVED}" PARENT_SCOPE)
 set(${is_exact} ${CURR_EXACT} PARENT_SCOPE)
-endfunction(resolve_Required_Package_Version)
+endfunction(resolve_Required_Native_Package_Version)
 
 
 ### root function for launching automatic installation of all dependencies of a given package.
-function(install_Required_Packages list_of_packages_to_install INSTALLED_PACKAGES NOT_INSTALLED)
+function(install_Required_Native_Packages list_of_packages_to_install INSTALLED_PACKAGES NOT_INSTALLED)
 set(successfully_installed )
 set(not_installed )
 set(${NOT_INSTALLED} PARENT_SCOPE)
 foreach(dep_package IN ITEMS ${list_of_packages_to_install}) #while there are still packages to install
 	set(INSTALL_OK FALSE)
-	install_Package(INSTALL_OK ${dep_package})
+	install_Native_Package(INSTALL_OK ${dep_package})
 	if(INSTALL_OK)
 		list(APPEND successfully_installed ${dep_package})
 	else()
@@ -279,7 +280,7 @@ if(not_installed)
 	message("[PID] ERROR : some of the required packages cannot be installed : ${not_installed}.")
 	set(${NOT_INSTALLED} ${not_installed} PARENT_SCOPE)
 endif()
-endfunction(install_Required_Packages)
+endfunction(install_Required_Native_Packages)
 
 ### check if the repository of a package already lies in the workspace.
 function(package_Source_Exists_In_Workspace EXIST RETURNED_PATH package)
@@ -312,7 +313,7 @@ endfunction(get_Package_References)
 
 
 ### install a package for the first time
-function(install_Package INSTALL_OK package)
+function(install_Native_Package INSTALL_OK package)
 
 # 0) test if either reference or source of the package exist in the workspace
 set(IS_EXISTING FALSE)
@@ -336,7 +337,7 @@ if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	set(POSSIBLE FALSE)
 	set(VERSION_MIN)
 	set(EXACT FALSE)
-	resolve_Required_Package_Version(POSSIBLE VERSION_MIN EXACT ${package})
+	resolve_Required_Native_Package_Version(POSSIBLE VERSION_MIN EXACT ${package})
 	if(NOT POSSIBLE)
 		message("[PID] ERROR : When deploying package ${package}, impossible to find an adequate version for package ${package}.")
 		set(${INSTALL_OK} FALSE PARENT_SCOPE)
@@ -353,9 +354,9 @@ if(USE_SOURCES) #package sources reside in the workspace
 
 	set(SOURCE_DEPLOYED FALSE)
 	if(NOT NO_VERSION)
-		deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
+		deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
 	else()
-		deploy_Source_Package(SOURCE_DEPLOYED ${package} "") # case when the sources exist but haven't been installed yet (should never happen)
+		deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "") # case when the sources exist but haven't been installed yet (should never happen)
 	endif()
 	if(NOT SOURCE_DEPLOYED)
 		message("[PID] ERROR : impossible to deploy package ${package} from sources. Try \"by hand\".")
@@ -378,9 +379,9 @@ else()#using references
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
 	if(NOT ${refer_path} STREQUAL NOTFOUND)
 		if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number
-			deploy_Binary_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
+			deploy_Binary_Native_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
 		else()# deploying the most up to date version
-			deploy_Binary_Package(PACKAGE_BINARY_DEPLOYED ${package} "")
+			deploy_Binary_Native_Package(PACKAGE_BINARY_DEPLOYED ${package} "")
 		endif()
 	else()
 		message("[PID] ERROR : reference file not found for package ${package}!! This is maybe due to a bad release of package ${package}. Please contact the administrator of this package. !!!")
@@ -394,9 +395,9 @@ else()#using references
 		if(DEPLOYED) # doing the same as for the USE_SOURCES step
 			set(SOURCE_DEPLOYED FALSE)
 			if(NOT NO_VERSION)
-				deploy_Source_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
+				deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
 			else()
-				deploy_Source_Package(SOURCE_DEPLOYED ${package} "")
+				deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "")
 			endif()
 			if(NOT SOURCE_DEPLOYED)
 				set(${INSTALL_OK} FALSE PARENT_SCOPE)
@@ -411,12 +412,12 @@ else()#using references
 		endif()
 	endif()
 endif()
-endfunction(install_Package)
+endfunction(install_Native_Package)
 
 ### Get the references to binary archives containing package versions.
 # Constraint: the reference file of the package must be loaded before this call.
-function(load_Package_Binary_References REFERENCES_OK package)
-set(${REFERENCES_OK} FALSE PARENT_SCOPE)
+function(load_Package_Binary_References REFERENCES_FOUND package)
+set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
 if(${package}_FRAMEWORK) #references are deployed in a framework
 	if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${package}_FRAMEWORK}.cmake)
 		#when package is in a framework there is one more indirection to get references (we need to get information about this framework before downloading the reference file)
@@ -424,6 +425,7 @@ if(${package}_FRAMEWORK) #references are deployed in a framework
 		set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_FRAMEWORK_SITE})#get the address of the framework static site
 		file(DOWNLOAD ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 		list(GET res 0 numeric_error)
+
 		if(numeric_error EQUAL 0 #framework site is online & reference available.
 		AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 			include(${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
@@ -446,8 +448,7 @@ elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static s
 	endif()
 endif()
 if(${package}_REFERENCES) #if there are direct reference (simpler case), no need to do more becase binary references are already included
-	set(${REFERENCES_OK} TRUE PARENT_SCOPE)
-	return()
+	set(${REFERENCES_FOUND} TRUE PARENT_SCOPE)
 endif()
 endfunction(load_Package_Binary_References)
 
@@ -483,7 +484,7 @@ else()
 endif()
 endfunction(deploy_Package_Repository)
 
-### function used to configure and build the target package version. Called by: deploy_Source_Package and deploy_Source_Package_Version.
+### function used to configure and build the target package version. Called by: deploy_Source_Native_Package and deploy_Source_Native_Package_Version.
 function(build_And_Install_Source DEPLOYED package version)
 	if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : configuring version ${version} of package ${package} ...")
@@ -521,7 +522,7 @@ function(build_And_Install_Source DEPLOYED package version)
 endfunction(build_And_Install_Source)
 
 ### deploy a package means manage git repository + configure + build the native SOURCE package in the workspace so that it can be used by a third party package. It goes to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it. See: build_And_Install_Package. See: build_And_Install_Source.
-function(deploy_Source_Package DEPLOYED package already_installed_versions)
+function(deploy_Source_Native_Package DEPLOYED package already_installed_versions)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
@@ -583,11 +584,11 @@ else()#already installed !!
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 endif()
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
-endfunction(deploy_Source_Package)
+endfunction(deploy_Source_Native_Package)
 
 
 ### deploy a version means manage git repository + configure + build the native SOURCE package version in the workspace so that it can be used by a third party package. It goes to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it. See: build_And_Install_Package.
-function(deploy_Source_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
+function(deploy_Source_Native_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
@@ -608,9 +609,9 @@ endif()
 normalize_Version_Tags(VERSION_NUMBERS "${GIT_VERSIONS}")
 
 if(EXACT)
-	select_Exact_Version(RES_VERSION ${VERSION_MIN} "${VERSION_NUMBERS}")
+	select_Exact_Native_Version(RES_VERSION ${VERSION_MIN} "${VERSION_NUMBERS}")
 else()
-	select_Best_Version(RES_VERSION ${VERSION_MIN} "${VERSION_NUMBERS}")
+	select_Best_Native_Version(RES_VERSION ${VERSION_MIN} "${VERSION_NUMBERS}")
 endif()
 if(NOT RES_VERSION)
 	message("[PID] WARNING : no adequate version found for source package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package). Otherwise that may mean you use a non released version of ${package} (in development version).")
@@ -657,7 +658,7 @@ else()#selected version excluded from current process
 endif()
 
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
-endfunction(deploy_Source_Package_Version)
+endfunction(deploy_Source_Native_Package_Version)
 
 
 ### intermediate internal function that is used to put the source package in an adequate version (using git tags) and then build it. See: build_And_Install_Source.
@@ -768,8 +769,8 @@ endif()
 set(${RES_FOR_PLATFORM} PARENT_SCOPE)
 endfunction(select_Platform_Binary_For_Version)
 
-### deploying a binary package, if necessary. It means that last version is installed and configured in the workspace.  See: download_And_Install_Binary_Package. Constraints: package binary references must be loaded before.
-function(deploy_Binary_Package DEPLOYED package already_installed_versions)
+### deploying a binary package, if necessary. It means that last version is installed and configured in the workspace.  See: download_And_Install_Binary_Native_Package. Constraints: package binary references must be loaded before.
+function(deploy_Binary_Native_Package DEPLOYED package already_installed_versions)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
@@ -784,7 +785,7 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the current process
 		select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
 
-		download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
+		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
 		if(INSTALLED)
 			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 		else()
@@ -806,10 +807,10 @@ else()
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
-endfunction(deploy_Binary_Package)
+endfunction(deploy_Binary_Native_Package)
 
-### deploying a given binary version package, if necessary. The package version archive is installed and configured in the workspace. See: download_And_Install_Binary_Package.  Constraints: package binary references must be loaded before.
-function(deploy_Binary_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
+### deploying a given binary version package, if necessary. The package version archive is installed and configured in the workspace. See: download_And_Install_Binary_Native_Package.  Constraints: package binary references must be loaded before.
+function(deploy_Binary_Native_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
@@ -822,9 +823,9 @@ endif()
 
 # taking the adequate version from the list of all eligible versions
 if(EXACT)
-	select_Exact_Version(RES_VERSION ${VERSION_MIN} "${available_versions}")
+	select_Exact_Native_Version(RES_VERSION ${VERSION_MIN} "${available_versions}")
 else()
-	select_Best_Version(RES_VERSION ${VERSION_MIN} "${available_versions}")
+	select_Best_Native_Version(RES_VERSION ${VERSION_MIN} "${available_versions}")
 endif()
 
 if(NOT RES_VERSION)
@@ -842,7 +843,7 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the current process
 		select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
-		download_And_Install_Binary_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
+		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
 		if(INSTALLED)
 			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 		else()
@@ -864,7 +865,7 @@ else()
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 
-endfunction(deploy_Binary_Package_Version)
+endfunction(deploy_Binary_Native_Package_Version)
 
 ### get the filename of a binary archive for a given package, version, platform and build mode.  Constraints: package binary references must be loaded before.
 function(generate_Binary_Package_Name package version platform mode RES_FILE RES_FOLDER)
@@ -875,7 +876,7 @@ set(${RES_FOLDER} "${package}-${version}${TARGET_SUFFIX}-${PACKAGE_STRING}" PARE
 endfunction(generate_Binary_Package_Name)
 
 ### download the target binary version archive of a package and then intsall it. Constraint: the binary references of the package must be loaded before this call
-function(download_And_Install_Binary_Package INSTALLED package version_string platform)
+function(download_And_Install_Binary_Native_Package INSTALLED package version_string platform)
 
 message("[PID] INFO : deploying the binary package ${package} with version ${version_string} for platform ${platform}, please wait ...")
 if(ADDITIONNAL_DEBUG_INFO)
@@ -1067,7 +1068,7 @@ if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
 endif()
 set(${INSTALLED} TRUE PARENT_SCOPE)
 message("[PID] INFO : binary package ${package} (version ${version_string}) has been installed into the workspace.")
-endfunction(download_And_Install_Binary_Package)
+endfunction(download_And_Install_Binary_Native_Package)
 
 #############################################################################################
 ############################### functions for external Packages #############################
@@ -1156,7 +1157,7 @@ endfunction(deploy_Wrapper_Repository)
 
 
 ### deploy a wrapper means manage git repository + configure + build the external wrapper SOURCE package in the workspace so that it can be used by a third party package. It goes to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it. See: build_And_Install_Package. See: build_And_Install_Source.
-function(deploy_Source_Wrapper DEPLOYED package already_installed_versions)
+function(deploy_Source_External_Package DEPLOYED package already_installed_versions)
 # go to wrapper source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 
@@ -1190,12 +1191,12 @@ else() #nothing to do but result is OK
 	message("[PID] WARNING : no need to deploy external package ${package} version ${RES_VERSION} from wrapper, since version already exists.")
 add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
 endif()
-endfunction(deploy_Source_Wrapper)
+endfunction(deploy_Source_External_Package)
 
 ### deploy a version means manage git repository + configure + build the wrapper SOURCE package version in the workspace so that it can be used by a third party package.
 # It goes to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it.
 # See: build_And_Install_Package.
-function(deploy_Source_Wrapper_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
+function(deploy_Source_External_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 
@@ -1207,9 +1208,9 @@ endif()
 get_Wrapper_Known_Versions(ALL_VERSIONS ${package})
 
 if(EXACT)
-	select_Exact_Version(RES_VERSION ${VERSION_MIN} "${ALL_VERSIONS}")
+	select_Exact_External_Version(RES_VERSION ${VERSION_MIN} "${ALL_VERSIONS}")
 else()
-	select_Best_Version(RES_VERSION ${VERSION_MIN} "${ALL_VERSIONS}")
+	select_Best_External_Version(RES_VERSION ${package} ${VERSION_MIN} "${ALL_VERSIONS}")
 endif()
 
 if(NOT RES_VERSION)
@@ -1234,55 +1235,31 @@ else() #nothing to do but result is OK
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
 endif()
-endfunction(deploy_Source_Wrapper_Version)
+endfunction(deploy_Source_External_Package_Version)
 
-### resolving the version to use for the external package according to current build constraints. Constraints: package binary references must be loaded before.
-function(resolve_Required_External_Package_Version SELECTED_VERSION package)
-get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
-if(NOT available_versions)
-	set(${SELECTED_VERSION} PARENT_SCOPE)
-	message("[PID] ERROR : impossible to find a version of external package ${package} that conforms to current platform constraints.")
-	return()
-endif()
-
-if(NOT ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})#no specific version required
-	if(${package}_REFERENCES)
-		#simply searching to most up to date one in available references
-		set(CURRENT_VERSION 0.0.0)
-		foreach(ref IN ITEMS ${available_versions})
-			if(ref VERSION_GREATER ${CURRENT_VERSION})
-				set(CURRENT_VERSION ${ref})
-			endif()
-		endforeach()
-		set(${SELECTED_VERSION} "${CURRENT_VERSION}" PARENT_SCOPE)
-		return()
-	else()
-		set(${SELECTED_VERSION} PARENT_SCOPE)
-		message("[PID] ERROR : impossible to find a valid reference to any version of external package ${package}.")
-		return()
-	endif()
-
-else()#specific version(s) required (common case)
+### function used to select an adequate version to install for a given native package.
+# given the currently required versions
+function(resolve_Required_External_Package_Version VERSION_POSSIBLE SELECTED_VERSION IS_EXACT package)
 	list(REMOVE_DUPLICATES ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
-	#1) testing if a solution exists as regard of "exactness" of versions
 	set(CURRENT_EXACT FALSE)
-	set(CURRENT_VERSION)
+	#1) first pass to eliminate everything impossible just when considering exactness
 	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}})
-		if(CURRENT_EXACT)
+		if(CURRENT_EXACT)#current version is an exact version
 			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX}) #impossible to find two different exact versions solution
-				set(${SELECTED_VERSION} PARENT_SCOPE)
+				set(${VERSION_POSSIBLE} FALSE PARENT_SCOPE)
 				return()
 			elseif(${version} VERSION_GREATER ${CURRENT_VERSION})#any not exact version that is greater than current exact one makes the solution impossible
-				set(${SELECTED_VERSION} PARENT_SCOPE)
+				set(${VERSION_POSSIBLE} FALSE PARENT_SCOPE)
 				return()
 			endif()
-		else()
-			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX})
-				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})
+		else()#current version is not exact
+			#there is no current version (first run)
+			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX})#the current version is exact
+				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})#no current version defined OR this version is less
 					set(CURRENT_EXACT TRUE)
 					set(CURRENT_VERSION ${version})
-				else()# current version is greater than exact one currently required => impossible
-					set(${SELECTED_VERSION} PARENT_SCOPE)
+				else()# current version is greater than exact one currently required => impossible to find a solution
+					set(${VERSION_POSSIBLE} FALSE PARENT_SCOPE)
 					return()
 				endif()
 
@@ -1291,31 +1268,23 @@ else()#specific version(s) required (common case)
 					set(CURRENT_VERSION ${version})
 				endif()
 			endif()
-
 		endif()
-
 	endforeach()
-	#2) testing if a solution exists as regard of "compatibility" of versions
+
+	#2) testing if a solution exists as regard of "compatibility" of required versions
 	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}})
 		if(NOT ${version} VERSION_EQUAL ${CURRENT_VERSION})
 			if(DEFINED ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO
 			AND NOT ${CURRENT_VERSION} VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
-				set(${SELECTED_VERSION} PARENT_SCOPE) #there is no solution
+				set(${VERSION_POSSIBLE} FALSE PARENT_SCOPE) #there is no solution
 				return()
 			endif()
 		endif()
 	endforeach()
 
-	#3) testing if there is a binary package with adequate platform constraints for the current version
-	list(FIND available_versions ${CURRENT_VERSION} INDEX)
-	if(INDEX EQUAL -1) #a package binary for that version has not been found
-		set(${SELECTED_VERSION} PARENT_SCOPE) #there is no solution
-		return()
-	endif()
-
-endif()
-
-set(${SELECTED_VERSION} "${CURRENT_VERSION}" PARENT_SCOPE)
+	set(${VERSION_POSSIBLE} TRUE PARENT_SCOPE)
+	set(${SELECTED_VERSION} "${CURRENT_VERSION}" PARENT_SCOPE)
+	set(${IS_EXACT} ${CURRENT_EXACT} PARENT_SCOPE)
 endfunction(resolve_Required_External_Package_Version)
 
 ### functio used to uninstall an external package from the workspace
@@ -1329,59 +1298,141 @@ endif()
 endfunction(uninstall_External_Package)
 
 ### function used to prepare the loading of external package references
-function(memorize_External_Binary_References RES package)
+function(memorize_External_Binary_References REFERENCES_FOUND package)
 set(IS_EXISTING FALSE)
 package_Reference_Exists_In_Workspace(IS_EXISTING External${package})
 if(NOT IS_EXISTING)
-	set(${RES} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : unknown external package ${package} : cannot find any reference of this package in the workspace. Cannot install this package.")
+	set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
+	message("[PID] WARNING : unknown external package ${package} : cannot find any reference of this package in the workspace. Cannot install this package.")
 	return()
 endif()
 
 include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
 if(${refer_path} STREQUAL NOTFOUND)
-	set(${RES} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : reference file not found for external package ${package}!! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
+	set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
+	message("[PID] WARNING : reference file not found for external package ${package}!! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
 	return()
 endif()
 
-load_Package_Binary_References(REFERENCES_OK ${package}) #getting the references (address of sites) where to download binaries for that package
-if(NOT REFERENCES_OK)
-	set(${RES} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : cannot load the references to binaries of external package ${package} ! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
-	return()
-endif()
-set(${RES} TRUE PARENT_SCOPE)
+load_Package_Binary_References(RES ${package}) #getting the references (address of sites) where to download binaries for that package
+set(${REFERENCES_FOUND} ${RES} PARENT_SCOPE) #returns wether refernces have been found or not
 endfunction(memorize_External_Binary_References)
 
-### function used to install a single external package. It leads to the resolution of the adequate package version and the deployment of that version. See: deploy_External_Package_Version and resolve_Required_External_Package_Version.
+### function used to install a single external package.
+# It leads to the resolution of the adequate package version and the deployment of that version.
+# See: deploy_Binary_External_Package_Version and resolve_Required_External_Package_Version.
 function(install_External_Package INSTALL_OK package force)
 
-# 0) test if reference of the external package exists in the workspace
+set(USE_SOURCE FALSE)#by default try to install from binaries, if they are available
+set(SELECTED)
+set(IS_EXACT FALSE)
+
+# test if some binaries for this external package exists in the workspace
 memorize_External_Binary_References(RES ${package})
-if(NOT RES)
-	set(${INSTALL_OK} FALSE PARENT_SCOPE)
-	return()
+if(NOT RES)# no binary reference found...
+	set(USE_SOURCE TRUE)#...means we need to build this package from sources, if any available
 endif()
 
-# 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
-set(SELECTED)
-resolve_Required_External_Package_Version(SELECTED ${package})
-if(SELECTED) # if there is ONE adequate reference, downloading and installing it
-	#2) installing package
-	set(PACKAGE_BINARY_DEPLOYED FALSE)
-	deploy_External_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${SELECTED} ${force})
-	if(PACKAGE_BINARY_DEPLOYED)
-		message("[PID] INFO : external package ${package} (version ${SELECTED}) has been installed.")
-		set(${INSTALL_OK} TRUE PARENT_SCOPE)
+# resolve finally required package version by current project, if any specific version required
+if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
+	set(POSSIBLE_VERSION FALSE)
+	resolve_Required_External_Package_Version(VERSION_POSSIBLE SELECTED IS_EXACT ${package})
+	if(NOT VERSION_POSSIBLE)
+		message("[PID] ERROR : When deploying package ${package}, impossible to find an adequate version for package ${package}.")
+		set(${INSTALL_OK} FALSE PARENT_SCOPE)
 		return()
 	else()
-		message("[PID] ERROR : external package ${package} (version ${SELECTED}) cannot be deployed.")
+		message("[PID] INFO : deploying package ${package}...")
 	endif()
+	set(NO_VERSION FALSE)
 else()
-	message("[PID] ERROR : impossible to find an adequate version for external package ${package}.")
+	set(NO_VERSION TRUE)#no code in project of its dependencies apply constraint to the target external package version
 endif()
 
+# Just check if there is any chance to get an adequate Binary Archive for that external package
+if(NOT USE_SOURCE) #no need to manage binairies if building from sources
+	#otherwise we need to be sure that there are binaries
+	get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
+	if(NOT available_versions)
+		set(USE_SOURCE TRUE)# no solution with binaries since no version available for current platform => so use the sources
+	else()
+		if(NOT NO_VERSION)#there is a constraint on the version to use
+			set(RES FALSE)
+			#try to find if at least one available version is OK
+			foreach(version IN ITEMS ${available_versions})
+				if(version VERSION_EQUAL SELECTED)#exactly same version number => OK no need to continue
+					set(RES TRUE)#at least a good version found !
+					break()
+				elseif(NOT IS_EXACT)#not exact, compatibility may be defined by a variable
+					if(version VERSION_GREATER SELECTED
+							AND version VERSION_LESS ${package}_PID_KNOWN_VERSION_${SELECTED}_GREATER_VERSIONS_COMPATIBLE_UP_TO)
+							#greater version, may be compatibleif version less that the maximum compatible version with version SELECTED
+							set(RES TRUE)#at least a good version found !
+							break()
+					endif()
+				endif()
+			endforeach()
+			if(NOT RES)#no version found compatible with required one
+				set(USE_SOURCE TRUE)# no solution with binaries since no version available for current platform => so use the sources
+			endif()
+		endif()
+	endif()
+endif()
+
+if(NOT USE_SOURCE)# we can still try a binary archive deployment
+	set(BINARY_DEPLOYED FALSE)
+	if(NO_VERSION)#there is no constraint on the version to use for package
+		deploy_Binary_External_Package(BINARY_DEPLOYED ${package} "")
+	else()	#we know there is at least an adequate version in binary format, the target version is SELECTED
+		deploy_Binary_External_Package_Version(BINARY_DEPLOYED ${package} ${SELECTED} ${force})
+	endif()
+	if(BINARY_DEPLOYED)
+		if(NO_VERSION)
+			message("[PID] INFO : external package ${package} has been installed from a binary archive.")
+		else()
+			message("[PID] INFO : external package ${package} (version ${SELECTED}) has been installed from a binary archive.")
+		endif()
+		set(${INSTALL_OK} TRUE PARENT_SCOPE)
+		return()
+	endif()
+endif()
+
+#from here no binary deployment has been possible
+#so try to do it from sources
+set(REPOSITORY_IN_WORKSPACE FALSE)
+if(EXISTS ${WORKSPACE_DIR}/wrappers/${package})
+	set(REPOSITORY_IN_WORKSPACE TRUE)
+endif()
+if(NOT REPOSITORY_IN_WORKSPACE)# if the external wrapper repository does not ly in workspace then install it
+	deploy_Wrapper_Repository(DEPLOYED ${package})
+	if(NOT DEPLOYED)
+		message("[PID] ERROR : cannot clone external package ${package} wrapper repository. Deployment aborted !")
+		set(${INSTALL_OK} FALSE PARENT_SCOPE)
+		return()
+	endif()
+endif()
+
+#get the list of already installed versions used to avoid installation if not mandatory
+set(list_of_installed_versions)
+if(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package}/)
+	list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package})
+	set(list_of_installed_versions ${RES_VERSIONS})
+endif()
+
+#now deploy
+if(NO_VERSION)
+	deploy_Source_External_Package(DEPLOYED ${package} "${list_of_installed_versions}")
+else()
+	deploy_Source_External_Package_Version(DEPLOYED ${package} ${SELECTED} ${IS_EXACT} "${list_of_installed_versions}")
+endif()
+
+if(DEPLOYED)
+		message("[PID] INFO : external package ${package} has been deployed from its wrapper repository.")
+		set(${INSTALL_OK} TRUE PARENT_SCOPE)
+		return()
+else()
+	message("[PID] ERROR : cannot build external package ${package} from its wrapper repository. Deployment aborted !")
+endif()
 set(${INSTALL_OK} FALSE PARENT_SCOPE)
 endfunction(install_External_Package)
 
@@ -1407,13 +1458,67 @@ if(not_installed)
 endif()
 endfunction(install_Required_External_Packages)
 
-
 ### deploy means download + install + configure the external package in the workspace so that it can be used by a third party package.
-function(deploy_External_Package_Version DEPLOYED package version force)
+function(deploy_Binary_External_Package DEPLOYED package already_installed_versions)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
-	message("[PID] ERROR : no available binary version of package ${package}.")
+	set(${DEPLOYED} FALSE PARENT_SCOPE)
+	return()
+endif()
+select_Last_Version(RES_VERSION "${available_versions}")# taking the most up to date version from all eligible versions
+list(FIND already_installed_versions ${RES_VERSION} INDEX)
+set(INSTALLED FALSE)
+
+if(INDEX EQUAL -1) # selected version not found in versions already installed
+	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
+	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the current process
+		select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" TARGET_PLATFORM)
+		if(NOT TARGET_PLATFORM)
+			message("[PID] ERROR : cannot find the binary version ${RES_VERSION} of package ${package} compatible with current platform.")
+			set(${DEPLOYED} FALSE PARENT_SCOPE)
+			return()
+		endif()
+
+		message("TARGET_PLATFORM=${TARGET_PLATFORM}")
+
+		download_And_Install_Binary_External_Package(INSTALLED ${package} "${RES_VERSION}" "${TARGET_PLATFORM}")
+		if(INSTALLED)
+			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
+			#checking and resolving external package dependencies and constraints
+			configure_External_Package(${package} ${RES_VERSION} ${TARGET_PLATFORM} Debug)
+			configure_External_Package(${package} ${RES_VERSION} ${TARGET_PLATFORM} Release)
+		else()
+			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE) #for external binary packages the fail is automatic as they cannot be buit from sources
+			message("[PID] ERROR : cannot install version ${RES_VERSION} of external package ${package}.")
+			set(${DEPLOYED} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	else() #no need to do the job again if already successfull
+		if(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be installed during current process
+			set(INSTALLED FALSE)
+		else() #SUCCESS because last correct version already built
+			set(INSTALLED TRUE)
+		endif()
+	endif()
+else()#version to install already found in installed version
+	set(INSTALLED TRUE) #if exlcuded it means that the version is already installed
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : package ${package} is already up to date ...")
+	endif()
+	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
+endif()
+
+set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
+endfunction(deploy_Binary_External_Package)
+
+
+### deploy means download + install + configure the external package in the workspace so that it can be used by a third party package.
+function(deploy_Binary_External_Package_Version DEPLOYED package version force)
+set(available_versions "")
+get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
+if(NOT available_versions)
+	message("[PID] ERROR : no available binary version of package ${package} that match current platform ${CURRENT_PLATFORM}.")
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
@@ -1430,9 +1535,8 @@ else()
 	uninstall_External_Package(${package}) #if force then uninstall before reinstalling
 	set(RES "UNKNOWN")
 endif()
-
 if(RES STREQUAL "UNKNOWN")
-	download_And_Install_External_Package(INSTALLED ${package} ${version} ${TARGET_PLATFORM})
+	download_And_Install_Binary_External_Package(INSTALLED ${package} ${version} ${TARGET_PLATFORM})
 	if(INSTALLED)
 		add_Managed_Package_In_Current_Process(${package} ${version} "SUCCESS" TRUE)
 	else()
@@ -1452,11 +1556,11 @@ elseif(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be insta
 endif()
 
 set(${DEPLOYED} TRUE PARENT_SCOPE)
-endfunction(deploy_External_Package_Version)
+endfunction(deploy_Binary_External_Package_Version)
 
 
-### function to get the target external package version and put it in the workspace. Constraint: the reference file for that package must be loaded before. See: deploy_External_Package_Version
-function(download_And_Install_External_Package INSTALLED package version platform)
+### function to get the target external package version and put it in the workspace. Constraint: the reference file for that package must be loaded before. See: deploy_Binary_External_Package_Version
+function(download_And_Install_Binary_External_Package INSTALLED package version platform)
 set(${INSTALLED} FALSE PARENT_SCOPE)
 
 ###### downloading the binary package ######
@@ -1578,10 +1682,12 @@ else()
 endif()
 
 set(${INSTALLED} TRUE PARENT_SCOPE)
-endfunction(download_And_Install_External_Package)
+endfunction(download_And_Install_Binary_External_Package)
 
 
-### configure the external package, after it has been installed. It can lead to the install of OS related packages depending of its system configuration. See: deploy_External_Package_Version.
+### configure the external package, after it has been installed.
+# It can lead to the install of OS related packages depending of its system configuration.
+# See: deploy_Binary_External_Package_Version.
 function(configure_External_Package package version platform mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share)
@@ -1626,7 +1732,7 @@ endif() #otherwise no configuration for this platform is supposed to be necessar
 # Manage external package dependencies => need to deploy other external packages
 #if(${package}_EXTERNAL_DEPENDENCIES) #the external package has external dependencies
 #	foreach(dep_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES}) #recursive call for deployment of dependencies
-#		deploy_External_Package_Version(DEPLOYED ${dep_pack} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION})
+#		deploy_Binary_External_Package_Version(DEPLOYED ${dep_pack} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION})
 #	endforeach()
 #endif()
 endfunction(configure_External_Package)

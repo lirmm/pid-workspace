@@ -32,7 +32,6 @@ else() #updating these files by silently replacing the ci folder
 	file(REMOVE ${CMAKE_SOURCE_DIR}/share/ci)
 	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
 endif()
-
 endfunction(verify_CI_Content)
 
 ### configure the ci by generating the adequate gitlab-ci.yml file for the project
@@ -113,7 +112,6 @@ function(add_CI_Config_File_Runner_Selection_By_Platform configfile platform)
 file(APPEND ${configfile} "#platform ${platform}\n\n")
 file(APPEND ${configfile} ".selection_platform_${platform}_: &selection_platform_${platform}\n    tags:\n        - pid\n        - ${platform}\n\n")
 endfunction(add_CI_Config_File_Runner_Selection_By_Platform)
-
 
 ##subsidiary function used to write how a runner is selected according to a given platform, for all jabs of the pid CI pipeline
 function(add_CI_Config_File_Jobs_Definitions_By_Platform configfile platform)

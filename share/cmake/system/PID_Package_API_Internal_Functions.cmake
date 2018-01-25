@@ -34,7 +34,7 @@ include(PID_Package_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Package_Coding_Support NO_POLICY_SCOPE)
 include(PID_Package_Continuous_Integration_Functions NO_POLICY_SCOPE)
-include(PID_Package_Plugins_Management NO_POLICY_SCOPE)
+include(PID_Plugins_Management NO_POLICY_SCOPE)
 
 ##################################################################################
 #################### package management public functions and macros ##############
@@ -565,7 +565,7 @@ endif()
 set(INSTALL_REQUIRED FALSE)
 need_Install_External_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#when automatic download engaged (default) then automatically install
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} try to resolve required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}.")
 		endif()
@@ -597,7 +597,7 @@ if(INSTALL_REQUIRED)
 		endif()
 		set(INSTALLED_PACKAGES)
 		set(NOT_INSTALLED)
-		install_Required_Packages("${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES NOT_INSTALLED)
+		install_Required_Native_Packages("${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES NOT_INSTALLED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} has automatically installed the following native packages : ${INSTALLED_PACKAGES}")
 		endif()
@@ -1354,7 +1354,6 @@ endfunction(declare_Package_Dependency)
 
 ### declare external dependancies
 function(declare_External_Package_Dependency dep_package optional list_of_versions exact_versions components_list)
-
 set(unused FALSE)
 # 1) the package may be required at that time
 # defining if there is either a specific version to use or not
@@ -1473,7 +1472,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 	# 4) managing automatic install process if needed
 	if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
 		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#testing if there is automatic install activated
-			list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${USE_MODE_SUFFIX} ${dep_package} INDEX)
+			list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${dep_package} INDEX)
 			if(INDEX EQUAL -1)
 				#if the package where not specified as REQUIRED in the find_package call, we face a case of conditional dependency => the package has not been registered as "to install" while now we know it must be installed
 				if(version)

@@ -218,7 +218,7 @@ if(DIR_NAME STREQUAL "build")
            -DTARGET_SCRIPT_FILE=${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE}
 					 -DDO_NOT_EXECUTE_SCRIPT=$(skip_script)
 					 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Wrapper.cmake
-    COMMENT "[PID] Building external package for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+    COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
     VERBATIM
   )
   # reference file generation target

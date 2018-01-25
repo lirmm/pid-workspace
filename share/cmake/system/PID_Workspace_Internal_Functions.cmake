@@ -785,7 +785,7 @@ if("${version}" STREQUAL "")#no specific version required
 		endif()
 		#now build the package
 		set(INSTALLED FALSE)
-		deploy_Source_Package(INSTALLED ${package} "")
+		deploy_Source_Native_Package(INSTALLED ${package} "")
 		if(NOT INSTALLED)
 			message("[PID] ERROR : cannot build ${package} after cloning of its repository. Deployment aborted !")
 			return()
@@ -795,7 +795,7 @@ if("${version}" STREQUAL "")#no specific version required
 	set(RES_VERSION)
 	greatest_Version_Archive(${package} RES_VERSION)
 	if(RES_VERSION)
-		deploy_Binary_Package_Version(DEPLOYED ${package} ${RES_VERSION} TRUE "")
+		deploy_Binary_Native_Package_Version(DEPLOYED ${package} ${RES_VERSION} TRUE "")
 		if(NOT DEPLOYED)
 			message("[PID] ERROR : problem deploying ${package} binary archive version ${RES_VERSION}. Deployment aborted !")
 			return()
@@ -812,7 +812,7 @@ else()#deploying a specific version
 	#first, try to download the archive if the binary archive for this version exists
 	exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
 	if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
-		deploy_Binary_Package_Version(DEPLOYED ${package} ${version} TRUE "")
+		deploy_Binary_Native_Package_Version(DEPLOYED ${package} ${version} TRUE "")
 		if(NOT DEPLOYED)
 			message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
 			return()
@@ -830,7 +830,7 @@ else()#deploying a specific version
 				return()
 			endif()
 		endif()
-		deploy_Source_Package_Version(DEPLOYED ${package} ${version} TRUE "")
+		deploy_Source_Native_Package_Version(DEPLOYED ${package} ${version} TRUE "")
 		if(DEPLOYED)
 				message("[PID] INFO : package ${package} has been deployed from its repository.")
 		else()
@@ -876,7 +876,7 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 				message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} already lies in the workspace, use force=true to force the redeployment.")
 				return()
 			endif()
-			deploy_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE)
+			deploy_Binary_External_Package_Version(DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE)
 			if(NOT DEPLOYED)#an error occurred during deployment !! => Not a normal situation
 				message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive. Please contact the administrator of the package ${package}.")
 				return()
@@ -906,7 +906,7 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 			list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package})
 			set(list_of_installed_versions ${RES_VERSIONS})
 		endif()
-		deploy_Source_Wrapper(DEPLOYED ${package} "${list_of_installed_versions}")
+		deploy_Source_External_Package(DEPLOYED ${package} "${list_of_installed_versions}")
 		if(DEPLOYED)
 				message("[PID] INFO : external package ${package} has been deployed from its wrapper repository.")
 		else()
@@ -920,7 +920,7 @@ else()#deploying a specific version of the external package
 	#first, try to download the archive if the binary archive for this version exists
 	exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
 	if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
-		deploy_External_Package_Version(DEPLOYED ${package} ${version} FALSE)#deploying the target binary relocatable archive
+		deploy_Binary_External_Package_Version(DEPLOYED ${package} ${version} FALSE)#deploying the target binary relocatable archive
 		if(NOT DEPLOYED)
 			message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
 			return()
@@ -938,7 +938,7 @@ else()#deploying a specific version of the external package
 				return()
 			endif()
 		endif()
-		deploy_Source_Wrapper_Version(DEPLOYED ${package} ${version} TRUE "")
+		deploy_Source_External_Package_Version(DEPLOYED ${package} ${version} TRUE "")
 		if(DEPLOYED)
 				message("[PID] INFO : external package ${package} has been deployed from its wrapper repository.")
 		else()
@@ -1022,8 +1022,9 @@ endfunction(add_Connection_To_PID_Framework)
 ##################################################
 
 ### clearing consist in clearing a package version related folder from the workspace
-function(clear_PID_Package package version)
+function(clear_PID_Package RESULT package version)
 get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
+set(${RESULT} TRUE PARENT_SCOPE)
 if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
 
 	if( EXISTS ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package}/${version}
@@ -1035,6 +1036,7 @@ if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
 			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package}/${version})
 		else()
 			message("[PID] ERROR : package ${package} version ${version} does not resides in workspace install directory.")
+			set(${RESULT} FALSE PARENT_SCOPE)
 		endif()
 	endif()
 elseif("${version}" MATCHES "all")#all versions targetted (including own versions and installers folder)
@@ -1047,20 +1049,23 @@ elseif("${version}" MATCHES "all")#all versions targetted (including own version
 			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package})
 		else()
 			message("[PID] ERROR : package ${package} is not installed in workspace.")
+			set(${RESULT} FALSE PARENT_SCOPE)
 		endif()
 	endif()
 else()
 	message("[PID] ERROR : invalid version string : ${version}, possible inputs are version numbers and all.")
+	set(${RESULT} FALSE PARENT_SCOPE)
 endif()
 endfunction(clear_PID_Package)
 
 ### removing consists in clearing the workspace of any trace of the target package (including its source repository)
 function(remove_PID_Package package)
 get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
+#clearing install folder
 if(	EXISTS ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
-	clear_PID_Package(${package} all)
+	clear_PID_Package(RES ${package} all)
 endif()
-
+#clearing source folder
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/packages/${package})
 endfunction(remove_PID_Package)
 
@@ -1220,7 +1225,7 @@ get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 set(INSTALLED FALSE)
 message("[PID] INFO : launch the update of source package ${package}...")
 list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
-deploy_Source_Package(INSTALLED ${package} "${version_dirs}")
+deploy_Source_Native_Package(INSTALLED ${package} "${version_dirs}")
 if(NOT INSTALLED)
 	message("[PID] ERROR : cannot update ${package}.")
 else()
@@ -1234,7 +1239,7 @@ function(update_PID_Binary_Package package)
 get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 message("[PID] INFO : launch the update of binary package ${package}...")
 list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
-deploy_Binary_Package(DEPLOYED ${package} "${version_dirs}")
+deploy_Binary_Native_Package(DEPLOYED ${package} "${version_dirs}")
 if(NOT DEPLOYED)
 	message("[PID] ERROR : cannot update ${package}.")
 else()
