@@ -62,8 +62,12 @@ endmacro(load_Current_Platform)
 #############################################################################################
 include(CMakeDependentOption)
 
+macro(declare_Wrapper_Global_Cache_Options)
+option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
+endmacro(declare_Wrapper_Global_Cache_Options)
+
 ###
-macro(declare_Global_Cache_Options)
+macro(declare_Native_Global_Cache_Options)
 
 # base options
 option(BUILD_EXAMPLES "Package builds examples" OFF)
@@ -84,7 +88,7 @@ CMAKE_DEPENDENT_OPTION(BUILD_TESTS_IN_DEBUG "Package build and run test in debug
 CMAKE_DEPENDENT_OPTION(BUILD_COVERAGE_REPORT "Package build a coverage report in debug mode" ON "BUILD_AND_RUN_TESTS;BUILD_TESTS_IN_DEBUG" OFF)
 CMAKE_DEPENDENT_OPTION(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF "REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD" OFF)
 
-endmacro(declare_Global_Cache_Options)
+endmacro(declare_Native_Global_Cache_Options)
 
 ###
 macro(manage_Parrallel_Build_Option)

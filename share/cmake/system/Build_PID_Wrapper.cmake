@@ -21,8 +21,14 @@
 include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration before executing the deploy script
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the package
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using common find modules of the workspace
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
+
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Wrapper_API_Internal_Functions NO_POLICY_SCOPE) # to be able to interpret description of external packages and generate the use files
+include(Package_Definition NO_POLICY_SCOPE) #to be able to interpret description of dependencies (external packages)
 
 message("[PID] INFO : building wrapper for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
 #checking that user input is coherent
@@ -75,6 +81,7 @@ if(NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true)
     return()
   endif()
 endif()
+
 # generate and install the use file
 generate_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION} ${CURRENT_PLATFORM})
 message("[PID] INFO : Installing external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")

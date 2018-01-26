@@ -20,9 +20,7 @@
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-include(PID_Set_Policies NO_POLICY_SCOPE)
-include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
-include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(Package_Definition NO_POLICY_SCOPE) #to be able to interpret description of dependencies (external packages)
 
 ###########################################################################
 ############ description of functions implementing the API ################
@@ -155,7 +153,7 @@ reset_Documentation_Info()
 endfunction(reset_Wrapper_Description_Cached_Variables)
 
 ###
-function(declare_Wrapper author institution mail year license address public_address description readme_file)
+macro(declare_Wrapper author institution mail year license address public_address description readme_file)
 
 set(${PROJECT_NAME}_ROOT_DIR ${WORKSPACE_DIR}/wrappers/${PROJECT_NAME} CACHE INTERNAL "")
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
@@ -201,7 +199,7 @@ if(TEMP_PLATFORM) #check if any change occurred
 endif()
 
 initialize_Platform_Variables() #initialize platform related variables usefull for other end-user API functions
-
+set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
 #############################################################
 ############ Managing build process #########################
 #############################################################
@@ -236,12 +234,12 @@ if(DIR_NAME STREQUAL "build")
   reset_Wrapper_Description_Cached_Variables()
   init_PID_Version_Variable()
   init_Wrapper_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
-
+	begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 else()
   message("[PID] ERROR : please run cmake in the build folder of the wrapper ${PROJECT_NAME}.")
   return()
 endif()
-endfunction(declare_Wrapper)
+endmacro(declare_Wrapper)
 
 ###
 function(define_Wrapped_Project authors_references licenses original_project_url)
@@ -552,10 +550,43 @@ endfunction(generate_Wrapper_Build_File)
 ###
 macro(build_Wrapped_Project)
 
+#####################################################################################################################
+######## recursion into version subdirectories to describe the content of the external package ######################
+#####################################################################################################################
+
 list_Version_Subdirectories(VERSIONS_DIRS ${CMAKE_SOURCE_DIR}/src)
 if(VERSIONS_DIRS)
 	foreach(version IN ITEMS ${VERSIONS_DIRS})
 	 	add_subdirectory(src/${version})
+		################################################################################
+		##### resolve dependencies after full package description of any version #######
+		################################################################################
+		# from here only direct dependencies have been satisfied
+		set(INSTALL_REQUIRED FALSE)
+		need_Install_External_Packages(INSTALL_REQUIRED)
+		if(INSTALL_REQUIRED)# if there are packages to install it means that there are some unresolved required dependencies
+			set(INSTALLED_PACKAGES)
+			set(NOT_INSTALLED)
+			install_Required_External_Packages("${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES}" INSTALLED_PACKAGES NOT_INSTALLED)
+			if(NOT_INSTALLED)
+				message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${PROJECT_NAME}, there are some unresolved required external package dependencies for version ${CURRENT_MANAGED_VERSION}: ${NOT_INSTALLED}.")
+				return()
+			endif()
+			foreach(a_dep IN ITEMS ${INSTALLED_PACKAGES})#do the recursion on installed external packages
+				#perform a new refind to be sure that all direct dependencies are well configured
+				resolve_External_Package_Dependency(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION} ${a_dep} ${CMAKE_BUILD_TYPE})
+			endforeach()
+		endif()
+		#resolving external dependencies for project external dependencies (recursion but only with binaries)
+		#need to do this here has
+		if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_EXTERNAL_DEPENDENCIES)
+			# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
+			# we get the set of all packages undirectly required
+			foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_EXTERNAL_DEPENDENCIES})
+				resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
+			endforeach()
+		endif()
+		reset_To_Install_External_Packages()#reset "to install" depenencies for next version of the package
 	endforeach()
 endif()
 
@@ -567,6 +598,7 @@ generate_Wrapper_Reference_File(${CMAKE_BINARY_DIR}/share/ReferExternal${PROJECT
 generate_Wrapper_Readme_Files() # generating and putting into source directory the readme file used by gitlab
 generate_Wrapper_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Wrapper_Find_File() # generating/installing the generic cmake find file for the package
+# TODO generate CI + documentation files
 
 ################################################################################
 ######## create global targets from entire project description #################
@@ -609,6 +641,7 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 			 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Site.cmake
 	)
 endif()
+finish_Progress("${GLOBAL_PROGRESS_VAR}") #managing the build from a global point of view
 endmacro(build_Wrapped_Project)
 
 ###
@@ -664,11 +697,116 @@ else()#no platform constraint applies => this platform configuration is adequate
 endif()
 endfunction(declare_Wrapped_Configuration)
 
+
+### set cached variable for external packages dependency
+function(add_External_Package_Dependency_To_Wrapper external_version dep_package list_of_versions exact_versions list_of_components)
+	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCIES ${dep_package})#dep package must be deployed in irder t use current project
+	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_VERSIONS "${list_of_versions}")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_VERSIONS_EXACT "${exact_versions}" CACHE INTERNAL "")
+	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_COMPONENTS "${list_of_components}")
+endfunction(add_External_Package_Dependency_To_Wrapper)
+
+
+### set cached variable for external packages dependency
+function(set_External_Package_Dependency_Version external_version dep_package version exact)
+	set(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_VERSION ${version} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_VERSION_EXACT "${exact}" CACHE INTERNAL "")
+endfunction(set_External_Package_Dependency_Version)
+
+
 ### dependency to another external package
-function(declare_Wrapped_External_Dependency dependency_project dependency_versions exact)
-append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCIES ${dependency_project})
-append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dependency_project}_VERSIONS "${dependency_versions}")
-set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dependency_project}_VERSIONS_EXACT "${exact}" CACHE INTERNAL "")
+function(declare_Wrapped_External_Dependency dep_package list_of_versions exact_versions list_of_components)
+add_External_Package_Dependency_To_Wrapper(${CURRENT_MANAGED_VERSION} ${dep_package} "${list_of_versions}" "${exact_versions}" "${list_of_components}")
+
+### now finding external package dependencies as they are required to build the package
+set(unused FALSE)
+# 1) the package may be required at that time
+# defining if there is either a specific version to use or not
+if(NOT list_of_versions OR list_of_versions STREQUAL "")#no specific version to use
+	set(${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+	set_External_Package_Dependency_Version(${CURRENT_MANAGED_VERSION} ${dep_package} "" FALSE)#no version means any version (no contraint)
+else()#there are version specified
+	# defining which version to use, if any
+	list(LENGTH list_of_versions SIZE)
+	list(GET list_of_versions 0 version) #by defaut this is the first element in the list that is taken
+	if(SIZE EQUAL 1)#only one dependent version, this is the basic version of the function
+		set(${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)
+	else() #there are many possible versions
+		fill_List_Into_String("${list_of_versions}" available_versions)
+		set(${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} to be used among versions : ${available_versions}")
+		#check if the user input is not faulty (version is in the list)
+		if(NOT ${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : you did not define any version for dependency ${dep_package}.")
+			return()
+		endif()
+
+		if(${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#special case where any version was specified by the user
+			list(GET list_of_versions 0 VERSION_AUTOMATICALLY_SELECTED) #taking first version available
+			#force reset the value of the variable to this version
+			set(${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED ${VERSION_AUTOMATICALLY_SELECTED} CACHE STRING "Select if ${dep_package} is to be used (input NONE) ot choose among versions : ${available_versions}" FORCE)
+		else()# a version has been specified
+			list(FIND list_of_versions ${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED} INDEX)
+			if(INDEX EQUAL -1 )#no possible version found corresponding to user input
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value (${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED}) for dependency ${dep_package}.")
+				return()
+			endif()
+		endif()
+	endif()# at the end the version USED for the dependency is specified
+
+	#now set the info on selected variable dependeding on the "exactness" of the version
+	list(FIND exact_versions ${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED} INDEX)
+	if(INDEX EQUAL -1)#version does not belong to exact versions
+		set_External_Package_Dependency_Version(${CURRENT_MANAGED_VERSION} ${dep_package} ${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED} FALSE)
+	else()#it is an exact version
+		set_External_Package_Dependency_Version(${CURRENT_MANAGED_VERSION} ${dep_package} ${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED} TRUE)
+	endif()
+endif()
+
+# based on this version constraint, try to find an adequate package version in workspace
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)#by default downloading is the behavior of a wrapper so download is always automatic
+if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION)
+	if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_EXACT)#exact version is required
+		if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
+			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION}
+				EXACT REQUIRED
+				COMPONENTS ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_COMPONENTS})
+		else()#do not check for components
+			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION}
+				EXACT REQUIRED)
+		endif()
+	else()#any compatible version
+		if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
+			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION}
+				REQUIRED
+				COMPONENTS ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_COMPONENTS})
+		else()#do not check for components
+			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION}
+				REQUIRED)#this is the basic situation
+		endif()
+	endif()
+else()#no version specified
+	if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
+		find_package(${dep_package}
+			REQUIRED
+			COMPONENTS ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_COMPONENTS})
+	else()#do not check for components
+		find_package(${dep_package} REQUIRED)
+	endif()
+endif()
+
+#  managing automatic install process if required (when not found)
+if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
+		list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES ${dep_package} INDEX)
+		if(INDEX EQUAL -1)
+			#if the package where not specified as REQUIRED in the find_package call, we face a case of conditional dependency => the package has not been registered as "to install" while now we know it must be installed
+			if(version)# a version is specified (the same as for native packages)
+				add_To_Install_External_Package_Specification(${dep_package} "${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION}" ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_EXACT})
+			else()
+				add_To_Install_External_Package_Specification(${dep_package} "" FALSE)
+			endif()
+		endif()
+endif()
+
 endfunction(declare_Wrapped_External_Dependency)
 
 ### define a component
@@ -744,17 +882,17 @@ function(generate_Use_File_For_Version package version platform)
 
 	#add required external dependencies
 	if(${package}_KNOWN_VERSION_${version}_DEPENDENCIES)
-		file(APPEND ${file_for_version} "#description of external package ${package} version ${version} dependencies\n")
-		foreach(dependency IN ITEMS ${${package}_KNOWN_VERSION_${version}_DEPENDENCIES})
-			set(list_of_versions)
-			foreach(dep_version IN ITEMS ${${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS})
-				list(APPEND list_of_versions ${${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSION_${dep_version}})
-			endforeach()
-			fill_List_Into_String(${list_of_versions} RES_STR)
-			if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS_EXACT)
-				set(STR_EXACT "EXACT")
+		file(APPEND ${file_for_version} "#description of external package ${package} dependencies for version ${version}\n")
+		foreach(dependency IN ITEMS ${${package}_KNOWN_VERSION_${version}_DEPENDENCIES})#do the description for each dependency
+			set(VERSION_STR "")
+			if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS)#there is at least one version requirement
+				if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSION_EXACT)
+					set(STR_EXACT "EXACT ")
+				endif()
+				file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency} ${EXACT_STR}VERSION ${${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSION})\n")
+			else()
+				file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency})\n")
 			endif()
-			file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency} VERSION ${RES_STR} ${STR_EXACT})\n")
 		endforeach()
 	endif()
 

@@ -48,7 +48,7 @@ set(${OUTDATED} TRUE PARENT_SCOPE)
 set(${CONTEXT} ${CURRENT_PROCESS_LAUNCHER} PARENT_SCOPE)
 string(TIMESTAMP TIME_VAR "%Y-%j-%H-%M" UTC)
 string(REGEX REPLACE "^([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)$" "\\1;\\2;\\3;\\4" DATE_OF_NOW ${TIME_VAR})
-if(NOT DATE_OF_NOW STREQUAL TIME_VAR) # problem
+if(NOT DATE_OF_NOW STREQUAL TIME_VAR) # match found
 	string(REGEX REPLACE "^([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)$" "\\1;\\2;\\3;\\4" LAST_DATE "${CURRENT_PROCESS_LAST_UPDATE_DATE}")
 	if(NOT LAST_DATE STREQUAL CURRENT_PROCESS_LAST_UPDATE_DATE) # problem
 		list(GET DATE_OF_NOW 0 NOW_YEAR)
@@ -61,8 +61,8 @@ if(NOT DATE_OF_NOW STREQUAL TIME_VAR) # problem
 		list(GET LAST_DATE 3 LAST_MIN)
 
 		math(EXPR NOW_DATE_MINUTES_UTC "525600*${NOW_YEAR} + 1440*${NOW_DAY} + 60*${NOW_HOUR} + ${NOW_MIN}")
-		math(EXPR LAST_DATE_MINUTES_UTC "525600*${LAST_YEAR} + 1440*${LAST_DAY} + 60*${LAST_HOUR} + ${LAST_MIN} + 20")
-		if(NOW_DATE_MINUTES_UTC GREATER LAST_DATE_MINUTES_UTC) # if last modification is older than 20 minutes ago
+		math(EXPR LAST_DATE_MINUTES_UTC "525600*${LAST_YEAR} + 1440*${LAST_DAY} + 60*${LAST_HOUR} + ${LAST_MIN} + 1440")
+		if(NOW_DATE_MINUTES_UTC GREATER LAST_DATE_MINUTES_UTC) # if last modification is older than 1440 minutes (== 1 day) ago
 			return()
 		endif()
 		set(${OUTDATED} FALSE PARENT_SCOPE)
@@ -210,11 +210,12 @@ if(EXISTS ${thefile})
 		set(RESET_FILE TRUE)
 	else()
 		check_Progress_File_Last_Modification_Outdated(OUTDATED CONTEXT)
-		if(OUTDATED)
+		if(OUTDATED #file is too old
+			OR CONTEXT STREQUAL "${name}") #the launcher context is the current one... we can reset the file
 			set(RESET_FILE TRUE)
 		endif()
 	endif()
-else()
+else()#file not exists yet so this is the role of the package to supress it
 	set(RESET_FILE TRUE)
 endif()
 

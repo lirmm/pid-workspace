@@ -240,6 +240,43 @@ endfunction(check_Required_Directories_Exist)
 #############################################################
 
 ###
+function(parse_Package_Dependency_Version_Arguments args RES_VERSION RES_EXACT RES_UNPARSED)
+set(full_string)
+string(REGEX REPLACE "^(EXACT;VERSION;[^;]+;?).*$" "\\1" RES "${args}")
+if(RES STREQUAL "${args}")
+	string(REGEX REPLACE "^(VERSION;[^;]+;?).*$" "\\1" RES "${args}")
+	if(NOT full_string STREQUAL "${args}")#there is a match => there is a version specified
+		set(full_string ${RES})
+	endif()
+else()#there is a match => there is a version specified
+	set(full_string ${RES})
+endif()
+if(full_string)#version expression has been found => parse it
+	set(options EXACT)
+	set(oneValueArg VERSION)
+	cmake_parse_arguments(PARSE_PACKAGE_ARGS "${options}" "${oneValueArg}" "" ${full_string})
+	set(${RES_VERSION} ${PARSE_PACKAGE_ARGS_VERSION} PARENT_SCOPE)
+	set(${RES_EXACT} ${PARSE_PACKAGE_ARGS_EXACT} PARENT_SCOPE)
+
+	#now extracting unparsed
+	string(LENGTH "${full_string}" PARSED_SIZE)
+	string(LENGTH "${args}" TOTAL_SIZE)
+
+	if(PARSED_SIZE EQUAL TOTAL_SIZE)
+		set(${RES_UNPARSED} PARENT_SCOPE)
+	else()
+		string(SUBSTRING "${args}" ${PARSED_SIZE} -1 UNPARSED_STRING)
+		set(${RES_UNPARSED} ${UNPARSED_STRING} PARENT_SCOPE)
+	endif()
+
+else()
+	set(${RES_VERSION} PARENT_SCOPE)
+	set(${RES_EXACT} PARENT_SCOPE)
+	set(${RES_UNPARSED} "${args}" PARENT_SCOPE)
+endif()
+endfunction(parse_Package_Dependency_Version_Arguments)
+
+###
 function (document_Version_Strings package_name major minor patch)
 	set(${package_name}_VERSION_MAJOR ${major} CACHE INTERNAL "")
 	set(${package_name}_VERSION_MINOR ${minor} CACHE INTERNAL "")
@@ -248,13 +285,11 @@ function (document_Version_Strings package_name major minor patch)
 	set(${package_name}_VERSION_RELATIVE_PATH "${major}.${minor}.${patch}" CACHE INTERNAL "")
 endfunction(document_Version_Strings)
 
-
 ###
 function (document_External_Version_Strings package version)
 	set(${package}_VERSION_STRING "${version}" CACHE INTERNAL "")
 	set(${package}_VERSION_RELATIVE_PATH "${version}" CACHE INTERNAL "")
 endfunction(document_External_Version_Strings)
-
 
 ###
 function(get_Version_String_Numbers version_string major minor patch)
