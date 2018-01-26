@@ -111,7 +111,7 @@ add_custom_target(deploy
 					-DFORCE_REDEPLOY=$(force)
 					-DNO_SOURCE=$(no_source)
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Deploy_PID_Package.cmake
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/Deploy_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 

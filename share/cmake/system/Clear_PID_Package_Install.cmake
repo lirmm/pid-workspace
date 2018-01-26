@@ -168,7 +168,7 @@ foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
 	endif()
 endforeach()
 
-# now include the new Use file to install to that we know all the required information about things to install
+# now include the new Use file to install so that we know all the required information about things to install
 include(${NEW_USE_FILE})
 set(TO_CHECK_COMPONENTS ${INSTALLED_COMPONENTS})
 foreach(component IN ITEMS ${INSTALLED_COMPONENTS}) #for each existing component
