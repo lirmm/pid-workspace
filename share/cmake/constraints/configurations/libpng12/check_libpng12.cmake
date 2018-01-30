@@ -29,6 +29,7 @@ if(NOT libpng12_FOUND) #any linux or macosx is zlib ...
 	else()
 		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libpng12/install_libpng12.cmake)
 		if(libpng12_INSTALLED)
+			set(libpng12_LINK_OPTIONS ${libpng12_LIBRARIES} CACHE INTERNAL "") #simply adding all zlib standard libraries
 			set(CHECK_libpng12_RESULT TRUE)
 		else()
 			set(CHECK_libpng12_RESULT FALSE)

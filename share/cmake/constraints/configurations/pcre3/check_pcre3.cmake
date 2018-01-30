@@ -29,6 +29,7 @@ if(NOT pcre3_FOUND) #any linux or macosx is zlib ...
 	else()
 		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/pcre3/install_pcre3.cmake)
 		if(pcre3_INSTALLED)
+			set(pcre3_LINK_OPTIONS ${pcre3_LIBRARIES} CACHE INTERNAL "") #simply adding all zlib standard libraries
 			set(CHECK_pcre3_RESULT TRUE)
 		else()
 			set(CHECK_pcre3_RESULT FALSE)
