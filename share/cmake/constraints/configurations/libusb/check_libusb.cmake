@@ -27,7 +27,13 @@ if(NOT libusb_FOUND) #any linux or macosx is zlib ...
 		set(libusb_LINK_OPTIONS ${libusb_LIBRARIES} CACHE INTERNAL "") #simply adding all libusb standard libraries
 		set(CHECK_libusb_RESULT TRUE)
 	else()
-		set(CHECK_libusb_RESULT FALSE)
+		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libusb/install_libusb.cmake)
+		if(libusb_INSTALLED)
+			set(libusb_LINK_OPTIONS ${libusb_LIBRARIES} CACHE INTERNAL "") #simply adding all libusb standard libraries
+			set(CHECK_libusb_RESULT TRUE)
+		else()
+			set(CHECK_libusb_RESULT FALSE)
+		endif()
 	endif()
 else()
 	set(CHECK_libusb_RESULT TRUE)

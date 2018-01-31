@@ -285,9 +285,8 @@ endmacro(check_PID_Platform)
 
 ### API: get_PID_Platform_Info([TYPE res_type] [OS res_os] [ARCH res_arch] [ABI res_abi])
 function(get_PID_Platform_Info)
-set(oneValueArgs NAME OS ARCH ABI TYPE PYTHON DISTRIBUTION)
-set(multiValueArgs CONFIGURATION)
-cmake_parse_arguments(GET_PID_PLATFORM_INFO "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+set(oneValueArgs NAME OS ARCH ABI TYPE PYTHON DISTRIBUTION VERSION)
+cmake_parse_arguments(GET_PID_PLATFORM_INFO "" "${oneValueArgs}" "" ${ARGN} )
 set(OK FALSE)
 if(GET_PID_PLATFORM_INFO_NAME)
 	set(OK TRUE)
@@ -316,6 +315,10 @@ endif()
 if(GET_PID_PLATFORM_INFO_DISTRIBUTION)
 		set(OK TRUE)
 		set(${GET_PID_PLATFORM_INFO_DISTRIBUTION} ${CURRENT_DISTRIBUTION} PARENT_SCOPE)
+endif()
+if(GET_PID_PLATFORM_INFO_DISTRIBUTION_VERSION)
+		set(OK TRUE)
+		set(${GET_PID_PLATFORM_INFO_DISTRIBUTION_VERSION} ${CURRENT_DISTRIBUTION_VERSION} PARENT_SCOPE)
 endif()
 if(NOT OK)
 	message("[PID] ERROR : you must use one or more of the NAME, TYPE, ARCH, OS or ABI keywords together with corresponding variables that will contain the resulting property of the current platform in use.")
@@ -716,18 +719,18 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 	endif()
 
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE
-		AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)#package dependency target package is not current project
-
+		AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL ${PROJECT_NAME})
+		#package dependency target package is not current project
 		is_Package_Dependency(IS_DEPENDENCY "${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}")
-		if(NOT IS_DEPENDENCY)
+		if(NOT IS_DEPENDENCY)#the target package has NOT been defined as a dependency
 			set(IS_CONFIGURED TRUE)
 			if(${PROJECT_NAME}_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
 				set(IS_CONFIGURED FALSE)
 			elseif(${PROJECT_NAME}_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}))
 				set(IS_CONFIGURED FALSE)
 			endif()
-			if(IS_CONFIGURED) #only notify the error if the package does configure the component
-				message(WARNING "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} !")
+			if(IS_CONFIGURED) #only notify the error if the package DOES configure the component
+				message(WARNING "[PID] WARNING : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} !")
 			endif()
 		endif()
 		declare_Package_Component_Dependency(
