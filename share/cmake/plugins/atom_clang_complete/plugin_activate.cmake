@@ -17,7 +17,7 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(PID_Utils_Functions)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 ## subsudiary function to get the folder path depending on component type
 function(get_Dir_Path_For_Component RET_SOURCE_PATH RET_HEADER_PATH component)

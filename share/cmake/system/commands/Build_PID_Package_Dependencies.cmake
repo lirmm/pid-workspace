@@ -16,20 +16,29 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
+
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
+
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 
-option(RTAGS_INDEX_DEBUG "Index the Debug (TRUE) or Release (FALSE) configuration with RTags" TRUE)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE CACHE BOOL "" FORCE)
-
-if(CMAKE_BUILD_TYPE MATCHES Release AND NOT RTAGS_INDEX_DEBUG) #only generating in release mode
-
-	set(COMPILE_COMMANDS_PATH ${CMAKE_SOURCE_DIR}/build/release/compile_commands.json)
-	execute_process(COMMAND ${WORKSPACE_DIR}/share/cmake/plugins/rtags/index.sh ${COMPILE_COMMANDS_PATH})
-
-elseif(CMAKE_BUILD_TYPE MATCHES Debug AND RTAGS_INDEX_DEBUG) #only generating in debug mode
-
-	set(COMPILE_COMMANDS_PATH ${CMAKE_SOURCE_DIR}/build/debug/compile_commands.json)
-	execute_process(COMMAND ${WORKSPACE_DIR}/share/cmake/plugins/rtags/index.sh ${COMPILE_COMMANDS_PATH})
-
+if(DEPENDENT_PACKAGES)
+	SEPARATE_ARGUMENTS(DEPENDENT_PACKAGES)
+	foreach(dep_pack IN ITEMS ${DEPENDENT_PACKAGES})
+		package_Already_Built(IS_BUILT ${dep_pack} ${PACKAGE_LAUCHING_BUILD})
+		if(NOT IS_BUILT)# if not built modifications
+			get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${dep_pack})
+			if(BRANCH_NAME AND NOT BRANCH_NAME STREQUAL "master")
+				#if on integration branch or another feature specific branch (not on master or on an "isolated" commit like one pointed by a tag)
+				message("[PID] INFO : Building ${dep_pack} ...")
+				execute_process (COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${dep_pack}/build ${CMAKE_MAKE_PROGRAM} build)
+				message("[PID] INFO : ${dep_pack} built.")
+			endif()
+		endif()
+	endforeach()
+else()
+	message("[PID] ERROR : no package to build !")
 endif()

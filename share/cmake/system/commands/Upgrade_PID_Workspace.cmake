@@ -16,20 +16,42 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-include(PID_Utils_Functions NO_POLICY_SCOPE)
 
-option(RTAGS_INDEX_DEBUG "Index the Debug (TRUE) or Release (FALSE) configuration with RTags" TRUE)
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE CACHE BOOL "" FORCE)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-if(CMAKE_BUILD_TYPE MATCHES Release AND NOT RTAGS_INDEX_DEBUG) #only generating in release mode
+# needed to parse adequately CMAKe variables passed to the script
+SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)
+SEPARATE_ARGUMENTS(CMAKE_SYSTEM_INCLUDE_PATH)
+SEPARATE_ARGUMENTS(CMAKE_SYSTEM_LIBRARY_PATH)
+SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_PREFIXES)
+SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_SUFFIXES)
+SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 
-	set(COMPILE_COMMANDS_PATH ${CMAKE_SOURCE_DIR}/build/release/compile_commands.json)
-	execute_process(COMMAND ${WORKSPACE_DIR}/share/cmake/plugins/rtags/index.sh ${COMPILE_COMMANDS_PATH})
+## global management of the process
+remove_Progress_File() #reset the build progress information (sanity action)
+begin_Progress(workspace NEED_REMOVE)
 
-elseif(CMAKE_BUILD_TYPE MATCHES Debug AND RTAGS_INDEX_DEBUG) #only generating in debug mode
-
-	set(COMPILE_COMMANDS_PATH ${CMAKE_SOURCE_DIR}/build/debug/compile_commands.json)
-	execute_process(COMMAND ${WORKSPACE_DIR}/share/cmake/plugins/rtags/index.sh ${COMPILE_COMMANDS_PATH})
-
+if(UPDATE_ALL_PACKAGES STREQUAL ON)
+	set(UPDATE_PACKS TRUE)
+else()
+	set(UPDATE_PACKS FALSE)
 endif()
+if(TARGET_OFFICIAL STREQUAL OFF)
+	set(TARGET_REMOTE origin)
+else()	#by default using official remote (where all official references are from)
+	set(TARGET_REMOTE official)
+endif()
+upgrade_Workspace(${TARGET_REMOTE} ${UPDATE_PACKS})
+
+## global management of the process
+if(UPDATE_PACKS)
+	message("--------------------------------------------")
+	message("All packages deployed during this process : ")
+	print_Deployed_Packages()
+endif()
+finish_Progress(TRUE) #reset the build progress information

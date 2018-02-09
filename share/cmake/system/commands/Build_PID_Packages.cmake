@@ -16,20 +16,47 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-include(PID_Utils_Functions NO_POLICY_SCOPE)
 
-option(RTAGS_INDEX_DEBUG "Index the Debug (TRUE) or Release (FALSE) configuration with RTags" TRUE)
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE CACHE BOOL "" FORCE)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-if(CMAKE_BUILD_TYPE MATCHES Release AND NOT RTAGS_INDEX_DEBUG) #only generating in release mode
+SEPARATE_ARGUMENTS(TARGET_PACKAGES)
 
-	set(COMPILE_COMMANDS_PATH ${CMAKE_SOURCE_DIR}/build/release/compile_commands.json)
-	execute_process(COMMAND ${WORKSPACE_DIR}/share/cmake/plugins/rtags/index.sh ${COMPILE_COMMANDS_PATH})
+remove_Progress_File() #reset the build progress information (sanity action)
+begin_Progress(workspace NEED_REMOVE)
 
-elseif(CMAKE_BUILD_TYPE MATCHES Debug AND RTAGS_INDEX_DEBUG) #only generating in debug mode
-
-	set(COMPILE_COMMANDS_PATH ${CMAKE_SOURCE_DIR}/build/debug/compile_commands.json)
-	execute_process(COMMAND ${WORKSPACE_DIR}/share/cmake/plugins/rtags/index.sh ${COMPILE_COMMANDS_PATH})
-
+if(TARGET_PACKAGES AND NOT TARGET_PACKAGES STREQUAL "all")
+	#clean them first
+	foreach(package IN ITEMS ${TARGET_PACKAGES})
+		if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build) #rebuild all target packages
+			list(APPEND LIST_OF_TARGETS ${package})
+		else()
+			message("[PID] WARNING : target package ${package} does not exist in workspace")
+		endif()
+	endforeach()
+else()#default is all
+	list_All_Source_Packages_In_Workspace(ALL_PACKAGES)
+	if(ALL_PACKAGES)
+		set(LIST_OF_TARGETS ${ALL_PACKAGES})
+	endif()
 endif()
+
+
+if(LIST_OF_TARGETS)
+	# build them
+	foreach(package IN ITEMS ${LIST_OF_TARGETS})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build force=true)
+	endforeach()
+endif()
+
+
+## global management of the process
+message("--------------------------------------------")
+message("All packages built during this process : ${LIST_OF_TARGETS}")
+message("Other Packages deployed/updated/checked during this process : ")
+print_Deployed_Packages()
+finish_Progress(TRUE) #reset the build progress information

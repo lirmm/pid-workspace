@@ -17,7 +17,7 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(PID_Utils_Functions)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(${WORKSPACE_DIR}/share/cmake/plugins/cotire/cotire.cmake)
 
 if(${PROJECT_NAME}_COMPONENTS) #if no component => nothing to build so no need of a clang complete

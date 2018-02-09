@@ -16,20 +16,30 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-include(PID_Utils_Functions NO_POLICY_SCOPE)
 
-option(RTAGS_INDEX_DEBUG "Index the Debug (TRUE) or Release (FALSE) configuration with RTags" TRUE)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE CACHE BOOL "" FORCE)
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
 
-if(CMAKE_BUILD_TYPE MATCHES Release AND NOT RTAGS_INDEX_DEBUG) #only generating in release mode
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-	set(COMPILE_COMMANDS_PATH ${CMAKE_SOURCE_DIR}/build/release/compile_commands.json)
-	execute_process(COMMAND ${WORKSPACE_DIR}/share/cmake/plugins/rtags/index.sh ${COMPILE_COMMANDS_PATH})
+if(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
+	if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
+		remove_PID_Package(${TARGET_PACKAGE})
+	else()
+		message("[PID] ERROR : the package to be removed, named ${TARGET_PACKAGE}, does not lies in the workspace.")
+	endif()
+elseif(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
+	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
+		remove_PID_Framework(${TARGET_FRAMEWORK})
+	else()
+		message("[PID] ERROR : the framework to be removed, named ${TARGET_FRAMEWORK}, does not lies in the workspace.")
+	endif()
 
-elseif(CMAKE_BUILD_TYPE MATCHES Debug AND RTAGS_INDEX_DEBUG) #only generating in debug mode
-
-	set(COMPILE_COMMANDS_PATH ${CMAKE_SOURCE_DIR}/build/debug/compile_commands.json)
-	execute_process(COMMAND ${WORKSPACE_DIR}/share/cmake/plugins/rtags/index.sh ${COMPILE_COMMANDS_PATH})
-
+else()
+	message("[PID] ERROR : you must specify the name of the package to remove using package=<name of package> argument, or the name of the framework to remove by using framework=<name of framework> argument.")
 endif()

@@ -17,32 +17,35 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
+
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
+
+include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 
-macro(add_Debug_Target component folder)
-	set(component_config "\"${component}\":\n\tpath: \"$<TARGET_FILE:${component}-dbg>\"\n\tcwd: \"build\"\n")
-	set(DEBUG_CONFIG "${DEBUG_CONFIG}${component_config}")
-endmacro()
-
-## main script
-if(CMAKE_BUILD_TYPE MATCHES Debug) #only generating in debug mode
-	set(DEBUG_CONFIG "")
-
-	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
-		if(${PROJECT_NAME}_${component}_TYPE STREQUAL "APP")
-			add_Debug_Target(${component} apps)
-		elseif(${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE")
-			add_Debug_Target(${component} apps)
-		elseif(BUILD_TESTS_IN_DEBUG AND ${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
-			add_Debug_Target(${component} test)
+is_Package_Connected(CONNECTED ${TARGET_PACKAGE} official)
+if(CONNECTED)
+	get_Package_Repository_Address(${TARGET_PACKAGE} OFFICIAL_URL OFFICIAL_PUBLIC_URL)
+	get_Remotes_Address(${TARGET_PACKAGE} ADDR_OFFICIAL ADDR_ORIGIN)
+	if(NOT ADDR_OFFICIAL STREQUAL OFFICIAL_URL AND NOT ADDR_OFFICIAL STREQUAL OFFICIAL_PUBLIC_URL)# the remote address does not match address specified in the package
+		reconnect_Repository_Remote(${TARGET_PACKAGE} ${OFFICIAL_URL} "${OFFICIAL_PUBLIC_URL}" official)
+		if(OFFICIAL_PUBLIC_URL)
+			message("[PID] INFO : reconfiguing official repository address to fetch=${OFFICIAL_URL} push=${OFFICIAL_PUBLIC_URL}")
+		else()
+			message("[PID] INFO : reconfiguing official repository address to ${OFFICIAL_URL}")
 		endif()
-	endforeach()
-
-	if(NOT DEBUG_CONFIG STREQUAL "")
-		set(path_to_file "${CMAKE_SOURCE_DIR}/.atom-dbg.cson")
-		if(EXISTS ${path_to_file})
-			file(REMOVE ${path_to_file})
+		if(ADDR_OFFICIAL STREQUAL ADDR_ORIGIN)#origin was also affocial
+			reconnect_Repository_Remote(${TARGET_PACKAGE} ${OFFICIAL_URL} "${OFFICIAL_PUBLIC_URL}" origin)
+			if(OFFICIAL_PUBLIC_URL)
+				message("[PID] INFO : reconfiguing origin repository address to fetch=${OFFICIAL_URL} push=${OFFICIAL_PUBLIC_URL} (keep it same as official)")
+			else()
+				message("[PID] INFO : reconfiguing official repository address to ${OFFICIAL_URL} (keep it same as official)")
+			endif()
 		endif()
-		file(GENERATE OUTPUT ${path_to_file} CONTENT ${DEBUG_CONFIG})
+	# else nothing to do
 	endif()
+# else nothing to do
 endif()
