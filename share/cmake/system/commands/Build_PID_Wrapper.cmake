@@ -42,36 +42,61 @@ include(Package_Definition NO_POLICY_SCOPE) #to be able to interpret description
 ###
 function(get_External_Dependency_Info)
 set(options)
-set(oneValueArgs PACKAGE COMPONENT ROOT)
-set(multiValueArgs INCLUDES LINKS FLAGS)
+set(oneValueArgs PACKAGE ROOT C_STANDARD CXX_STANDARD)
+set(multiValueArgs OPTIONS INCLUDES DEFINITIONS SHARED STATIC FLAGS LINKS)
 cmake_parse_arguments(GET_EXTERNAL_DEPENDENCY_INFO "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_External_Dependency_Info, need to define the external package by using the keyword PACKAGE.")
 	return()
 endif()
-set(ext_package_root ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${TARGET_EXTERNAL_VERSION})
-if(GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE_ROOT)
-	set(${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE_ROOT} ${ext_package_root} PARENT_SCOPE)
+
+#build the version prefix using variables automatically configured in Build_PID_Wrapper script
+#for cleaner description at next lines only
+set(prefix ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION})
+
+if(GET_EXTERNAL_DEPENDENCY_INFO_ROOT)
+	set(dep_version ${${prefix}_DEPENDENCY_${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE}_VERSION_USED_FOR_BUILD})
+	set(ext_package_root ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE}/${dep_version})
+	set(${GET_EXTERNAL_DEPENDENCY_INFO_ROOT} ${ext_package_root} PARENT_SCOPE)
 endif()
-if(GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES OR GET_EXTERNAL_DEPENDENCY_INFO_LINKS OR GET_EXTERNAL_DEPENDENCY_INFO_FLAGS)
-	if(NOT GET_EXTERNAL_DEPENDENCY_INFO_COMPONENT)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_External_Dependency_Info, need to define the target external component by using the keyword COMPONENT.")
-		return()
-	endif()
-endif()
-set(prefix ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_COMPONENT_${GET_EXTERNAL_DEPENDENCY_INFO_COMPONENT}) #build the version prefix using variables automatically configured in Build_PID_Wrapper script
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES)
-  set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${${prefix}_INCLUDES} PARENT_SCOPE)
+  set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${${prefix}_BUILD_INCLUDES} PARENT_SCOPE)
 endif()
 
-if(GET_EXTERNAL_DEPENDENCY_INFO_LINKS)
-  set(${GET_EXTERNAL_DEPENDENCY_INFO_LINKS} ${${prefix}_LINKS} PARENT_SCOPE)
+if(GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS)
+  set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${${prefix}_BUILD_DEFINITIONS} PARENT_SCOPE)
+endif()
+
+if(GET_EXTERNAL_DEPENDENCY_INFO_OPTIONS)
+  set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${${prefix}_BUILD_COMPILER_OPTIONS} PARENT_SCOPE)
+endif()
+
+if(GET_EXTERNAL_DEPENDENCY_INFO_C_STANDARD)
+  set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${${prefix}_BUILD_C_STANDARD} PARENT_SCOPE)
+endif()
+
+if(GET_EXTERNAL_DEPENDENCY_INFO_CXX_STANDARD)
+  set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${${prefix}_BUILD_CXX_STANDARD} PARENT_SCOPE)
+endif()
+
+if(GET_EXTERNAL_DEPENDENCY_INFO_STATIC)
+  set(${GET_EXTERNAL_DEPENDENCY_INFO_LINKS} ${${prefix}_BUILD_STATIC_LINKS} PARENT_SCOPE)
+endif()
+
+if(GET_EXTERNAL_DEPENDENCY_INFO_SHARED)
+  set(${GET_EXTERNAL_DEPENDENCY_INFO_LINKS} ${${prefix}_BUILD_SHARED_LINKS} PARENT_SCOPE)
+endif()
+
+if(GET_EXTERNAL_DEPENDENCY_INFO_LINKS) #simply put together all shared and static links
+  set(${GET_EXTERNAL_DEPENDENCY_INFO_LINKS} ${${prefix}_BUILD_STATIC_LINKS} ${${prefix}_BUILD_SHARED_LINKS} PARENT_SCOPE)
 endif()
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_FLAGS)
-  set(${GET_EXTERNAL_DEPENDENCY_INFO_FLAGS} ${${prefix}_FLAGS} PARENT_SCOPE)
+	#provide a way to get all compiler flags in the adequate format
+	#TODO
 endif()
+
 endfunction(get_External_Dependency_Info)
 
 

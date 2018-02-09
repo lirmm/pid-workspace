@@ -87,13 +87,26 @@ if(${PROJECT_NAME}_KNOWN_VERSIONS)
 		#reset package dependencies
 		if(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES)
 			foreach(package IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES})
-				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package} CACHE INTERNAL "")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSIONS CACHE INTERNAL "")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSIONS_EXACT CACHE INTERNAL "")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSION_USED_FOR_BUILD CACHE INTERNAL "")
 			endforeach()
 		endif()
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES CACHE INTERNAL "")
+
+		#reset build related variables for this version
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_STATIC_LINKS CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_SHARED_LINKS CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_INCLUDES CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_DEFINITIONS CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_COMPILER_OPTIONS CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_C_STANDARD CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_CXX_STANDARD CACHE INTERNAL "")
+
 		#reset components
 		if(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS)
 			foreach(component IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS})
+
 				#reset information local to the component
 				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS CACHE INTERNAL "")
 				set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS CACHE INTERNAL "")
@@ -478,6 +491,7 @@ foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME} CACHE INTERNAL \"\")\n")
+
 	#manage platform configuration description
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
 	if(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS)
@@ -492,8 +506,19 @@ foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
 		foreach(package IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES})
 			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSIONS} CACHE INTERNAL \"\")\n")
 			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSIONS_EXACT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSIONS_EXACT} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSION_USED_FOR_BUILD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSION_USED_FOR_BUILD} CACHE INTERNAL \"\")\n")
 		endforeach()
 	endif()
+
+	#manage build flags coming from dependencies (includes, links, flags)
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_STATIC_LINKS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_STATIC_LINKS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_SHARED_LINKS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_SHARED_LINKS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_INCLUDES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_INCLUDES} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_DEFINITIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_DEFINITIONS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_COMPILER_OPTIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_COMPILER_OPTIONS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_C_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_C_STANDARD} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_CXX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_CXX_STANDARD} CACHE INTERNAL \"\")\n")
+
 
 	#manage components description
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS} CACHE INTERNAL \"\")\n")
@@ -549,6 +574,47 @@ endforeach()
 endif()
 endfunction(generate_Wrapper_Build_File)
 
+### return only the list of path to links folders or
+# !! remove the -l option so that we can use it even with projects that do not use direct compiler options like those using cmake)
+# !! do not remove the -l if no absolute path can be deduced
+# !! resolve the path for those that can be translated into absolute path
+function(agregate_All_Links version RES_STATIC RES_SHARED)
+#TODO fill: set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_LINKS CACHE INTERNAL "")
+endfunction(agregate_All_Links)
+
+### return only the list of path to include folders
+# !! remove the -I option so that we can use it even with projects that do not use direct compiler options like those using cmake)
+# !! systematically translated into absolute path
+function(agregate_All_Includes version RES)
+#TODO fill: set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_INCLUDES CACHE INTERNAL "")
+endfunction(agregate_All_Includes)
+
+### return only the list of definitions used to compile the project version
+# !! remove the -D option so that we can use it even with projects that do not use direct compiler options like those using cmake)
+function(agregate_All_Defines version RES)
+#TODO fill: set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_FLAGS CACHE INTERNAL "")
+endfunction(agregate_All_Defines)
+
+### return the list of other compile options used to compile the project version
+# !! option are kept "as is" EXCEPT those setting the C and CXX languages standards to use to build the package
+function(agregate_All_Options version RES_OPTS RES_C_STD RES_CXX_STD)
+#TODO fill: set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_FLAGS CACHE INTERNAL "")
+endfunction(agregate_All_Options)
+
+
+###
+function(configure_Wrapper_Build_Variables)
+if(${PROJECT_NAME}_KNOWN_VERSIONS)
+	foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
+		agregate_All_Links(${version} RES_STATIC RES_SHARED)
+		agregate_All_Defines(${version} RES_DEFINES)
+		agregate_All_Includes(${version} RES_INCLUDES)
+		agregate_All_Options(${version} RES_OPTS RES_C_STD RES_CXX_STD)
+
+	endforeach()
+endif()
+endfunction(configure_Wrapper_Build_Variables)
+
 ###
 macro(build_Wrapped_Project)
 
@@ -595,6 +661,8 @@ endif()
 ################################################################################
 ######## generating CMake configuration files used by PID ######################
 ################################################################################
+### configure the project in order to get the complete configruation data required to build versions (includes, flags, links)
+configure_Wrapper_Build_Variables()
 generate_Wrapper_Build_File(${CMAKE_BINARY_DIR}/Build${PROJECT_NAME}.cmake)
 generate_Wrapper_Reference_File(${CMAKE_BINARY_DIR}/share/ReferExternal${PROJECT_NAME}.cmake)
 generate_Wrapper_Readme_Files() # generating and putting into source directory the readme file used by gitlab
@@ -709,13 +777,6 @@ function(add_External_Package_Dependency_To_Wrapper external_version dep_package
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_COMPONENTS "${list_of_components}")
 endfunction(add_External_Package_Dependency_To_Wrapper)
 
-
-### set cached variable for external packages dependency
-function(set_External_Package_Dependency_Version external_version dep_package version)
-	set(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${version} CACHE INTERNAL "")
-endfunction(set_External_Package_Dependency_Version)
-
-
 ### dependency to another external package
 function(declare_Wrapped_External_Dependency dep_package list_of_versions exact_versions list_of_components)
 add_External_Package_Dependency_To_Wrapper(${CURRENT_MANAGED_VERSION} ${dep_package} "${list_of_versions}" "${exact_versions}" "${list_of_components}")
@@ -726,7 +787,7 @@ set(unused FALSE)
 # defining if there is either a specific version to use or not
 if(NOT list_of_versions OR list_of_versions STREQUAL "")#no specific version to use
 	set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
-	set_External_Package_Dependency_Version(${CURRENT_MANAGED_VERSION} ${dep_package} "" FALSE)#no version means any version (no contraint)
+	set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD CACHE INTERNAL "")#no version means any version (no contraint)
 else()#there are version specified
 	# defining which version to use, if any
 	list(LENGTH list_of_versions SIZE)
@@ -755,13 +816,8 @@ else()#there are version specified
 		endif()
 	endif()# at the end the version USED for the dependency is specified
 
-	#now set the info on selected variable dependeding on the "exactness" of the version
-	list(FIND exact_versions ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-	if(INDEX EQUAL -1)#version does not belong to exact versions
-		set_External_Package_Dependency_Version(${CURRENT_MANAGED_VERSION} ${dep_package} ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} FALSE)
-	else()#it is an exact version
-		set_External_Package_Dependency_Version(${CURRENT_MANAGED_VERSION} ${dep_package} ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} TRUE)
-	endif()
+	#now set the version used for build depending on what has been chosen
+	set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} CACHE INTERNAL "")#no version means any version (no contraint)
 endif()
 
 # based on this version constraint, try to find an adequate package version in workspace
@@ -816,6 +872,8 @@ if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or
 				add_To_Install_External_Package_Specification(${dep_package} "" FALSE)
 			endif()
 		endif()
+else()#if something found then it becomes the real version used in the end
+	set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
 endif()
 endfunction(declare_Wrapped_External_Dependency)
 
