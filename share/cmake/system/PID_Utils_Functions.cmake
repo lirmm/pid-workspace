@@ -730,7 +730,7 @@ endif()
 endfunction(is_External_Package_Defined)
 
 
-###
+### resolve any kind of path to library, either static or relative, absolute or relative to provide an absolute path (most of time pointing to a library in the workspace)
 function(resolve_External_Libs_Path COMPLETE_LINKS_PATH package ext_links mode)
 set(res_links)
 foreach(link IN ITEMS ${ext_links})
@@ -754,6 +754,7 @@ foreach(link IN ITEMS ${ext_links})
 			is_External_Package_Defined(${package} ${ext_package_name} ${mode} PATHTO)
 			if(PATHTO STREQUAL NOTFOUND)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!!")
+				return()
 			endif()
 			liST(LENGTH RES_WITH_PREFIX SIZE)
 			if(SIZE EQUAL 3)
@@ -771,7 +772,7 @@ endforeach()
 set(${COMPLETE_LINKS_PATH} ${res_links} PARENT_SCOPE)
 endfunction(resolve_External_Libs_Path)
 
-###
+### resolve any kind of path absolute or relative to provide an absolute path (most of time pointing to the workspace)
 function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH package_context ext_inc_dirs mode)
 set(res_includes)
 foreach(include_dir IN ITEMS ${ext_inc_dirs})

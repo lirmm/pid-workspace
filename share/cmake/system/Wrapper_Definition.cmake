@@ -69,7 +69,6 @@ macro(define_PID_Wrapper_Original_Project_Info)
 	define_Wrapped_Project("${DEFINE_WRAPPED_PROJECT_AUTHORS}" "${DEFINE_WRAPPED_PROJECT_LICENSES}"  "${DEFINE_WRAPPED_PROJECT_URL}")
 endmacro(define_PID_Wrapper_Original_Project_Info)
 
-
 ### API : add_PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
 macro(add_PID_Wrapper_Author)
 set(multiValueArgs AUTHOR INSTITUTION)
@@ -79,7 +78,6 @@ if(NOT ADD_PID_WRAPPER_AUTHOR_AUTHOR)
 endif()
 add_Author("${ADD_PID_WRAPPER_AUTHOR_AUTHOR}" "${ADD_PID_WRAPPER_AUTHOR_INSTITUTION}")
 endmacro(add_PID_Wrapper_Author)
-
 
 ### API : add_PID_Package_Category(category_path)
 macro(add_PID_Wrapper_Category)
@@ -144,14 +142,14 @@ endmacro(build_PID_Wrapper)
 #	memorizing a new known version (the target folder that can be found in src folder contains the script used to install the project)
 macro(add_PID_Wrapper_Known_Version)
 set(optionArgs)
-set(oneValueArgs VERSION SCRIPT COMPATIBILITY SONAME)
+set(oneValueArgs VERSION DEPLOY COMPATIBILITY SONAME POSTINSTALL)
 set(multiValueArgs)
 cmake_parse_arguments(ADD_PID_WRAPPER_KNOWN_VERSION "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT ADD_PID_WRAPPER_KNOWN_VERSION_VERSION)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the version number using the VERSION keyword.")
 endif()
-if(NOT ADD_PID_WRAPPER_KNOWN_VERSION_SCRIPT)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the build script to use using the SCRIPT keyword.")
+if(NOT ADD_PID_WRAPPER_KNOWN_VERSION_DEPLOY)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the build script to use using the DEPLOY keyword.")
 endif()
 
 #verify the version information
@@ -166,7 +164,7 @@ if(NOT INDEX EQUAL -1)
 	return()
 endif()
 #verify the script information
-set(script_file ${ADD_PID_WRAPPER_KNOWN_VERSION_SCRIPT})
+set(script_file ${ADD_PID_WRAPPER_KNOWN_VERSION_DEPLOY})
 get_filename_component(RES_EXTENSION ${script_file} EXT)
 if(NOT RES_EXTENSION MATCHES ".*\\.cmake$")
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, type of script file ${script_file} cannot be deduced from its extension only .cmake extensions supported")
@@ -178,6 +176,21 @@ if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version}/${script_file})
 	return()
 endif()
 
+#manage post install script
+set(post_install_script)
+if(ADD_PID_WRAPPER_KNOWN_VERSION_POSTINSTALL)
+	set(post_install_script ${ADD_PID_WRAPPER_KNOWN_VERSION_POSTINSTALL})
+	get_filename_component(RES_EXTENSION ${post_install_script} EXT)
+	if(NOT RES_EXTENSION MATCHES ".*\\.cmake$")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, type of script file ${script_file} cannot be deduced from its extension only .cmake extensions supported")
+		return()
+	endif()
+	if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version}/${post_install_script})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot find post install script file ${post_install_script} in folder src/${version}/.")
+		return()
+	endif()
+endif()
+
 if(ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY)
 	belongs_To_Known_Versions(PREVIOUS_VERSION_EXISTS ${ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY})
 	if(NOT PREVIOUS_VERSION_EXISTS)
@@ -186,9 +199,8 @@ if(ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY)
 	endif()
 	set(compatible_with_version ${ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY})
 endif()
-add_Known_Version("${version}" "${script_file}" "${compatible_with_version}" "${ADD_PID_WRAPPER_KNOWN_VERSION_SONAME}")
+add_Known_Version("${version}" "${script_file}" "${compatible_with_version}" "${ADD_PID_WRAPPER_KNOWN_VERSION_SONAME}" "${post_install_script}")
 endmacro(add_PID_Wrapper_Known_Version)
-
 
 ### dependency to OS configuration
 macro(declare_PID_Wrapper_Platform_Configuration)
@@ -332,5 +344,4 @@ else()#this is a dependency to another component defined in the same external pa
 		"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
 	)
 endif()
-
 endmacro(declare_PID_Wrapper_Component_Dependency)

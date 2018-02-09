@@ -145,7 +145,8 @@ if(${PROJECT_NAME}_KNOWN_VERSIONS)
 		#reset current version general information
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME CACHE INTERNAL "")
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH CACHE INTERNAL "")
-		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT CACHE INTERNAL "")
 	endforeach()
 set(${PROJECT_NAME}_KNOWN_VERSIONS CACHE INTERNAL "")
 endif()
@@ -213,8 +214,7 @@ if(DIR_NAME STREQUAL "build")
     ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
            -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
            -DTARGET_EXTERNAL_VERSION=$(version)
-           -DTARGET_SCRIPT_FILE=${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE}
-					 -DDO_NOT_EXECUTE_SCRIPT=$(skip_script)
+           -DDO_NOT_EXECUTE_SCRIPT=$(skip_script)
 					 -P ${WORKSPACE_DIR}/share/cmake/system/Build_PID_Wrapper.cmake
     COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
     VERBATIM
@@ -430,7 +430,7 @@ function(generate_Wrapper_Find_File)
 		endforeach()
 		# second step defines version compatibility at fine grain only if needed
 		if(COMPATIBLE_VERSION_FOUND)
-			foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS} )
+			foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
 				set(FIRST_INCOMPATIBLE_VERSION)
 				set(COMPATIBLE_VERSION_FOUND FALSE)
 				foreach(other_version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
@@ -474,7 +474,8 @@ function(generate_Wrapper_Build_File path_to_file)
 file(WRITE ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_KNOWN_VERSIONS)
 foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
-	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE ${${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME} CACHE INTERNAL \"\")\n")
 	#manage platform configuration description
@@ -489,7 +490,8 @@ foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES} CACHE INTERNAL \"\")\n")
 	if(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES)
 		foreach(package IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES})
-			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package} ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSIONS} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSIONS_EXACT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCY_${package}_VERSIONS_EXACT} CACHE INTERNAL \"\")\n")
 		endforeach()
 	endif()
 
@@ -655,7 +657,7 @@ function(belongs_To_Known_Versions BELONGS_TO version)
 endfunction(belongs_To_Known_Versions)
 
 #	memorizing a new known version (the target folder that can be found in src folder contains the script used to install the project)
-function(add_Known_Version version deploy_file_name compatible_with_version so_name)
+function(add_Known_Version version deploy_file_name compatible_with_version so_name post_install_script)
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
 	return()
@@ -666,7 +668,8 @@ if(NOT INDEX EQUAL -1)
 	return()
 endif()
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${version})
-set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SCRIPT_FILE ${deploy_file_name} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT ${deploy_file_name} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${post_install_script} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${so_name} CACHE INTERNAL "")
 if(compatible_with_version AND NOT compatible_with_version STREQUAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${compatible_with_version} CACHE INTERNAL "")
@@ -708,9 +711,8 @@ endfunction(add_External_Package_Dependency_To_Wrapper)
 
 
 ### set cached variable for external packages dependency
-function(set_External_Package_Dependency_Version external_version dep_package version exact)
-	set(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_VERSION ${version} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_VERSION_EXACT "${exact}" CACHE INTERNAL "")
+function(set_External_Package_Dependency_Version external_version dep_package version)
+	set(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${version} CACHE INTERNAL "")
 endfunction(set_External_Package_Dependency_Version)
 
 
@@ -723,29 +725,29 @@ set(unused FALSE)
 # 1) the package may be required at that time
 # defining if there is either a specific version to use or not
 if(NOT list_of_versions OR list_of_versions STREQUAL "")#no specific version to use
-	set(${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+	set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
 	set_External_Package_Dependency_Version(${CURRENT_MANAGED_VERSION} ${dep_package} "" FALSE)#no version means any version (no contraint)
 else()#there are version specified
 	# defining which version to use, if any
 	list(LENGTH list_of_versions SIZE)
 	list(GET list_of_versions 0 version) #by defaut this is the first element in the list that is taken
 	if(SIZE EQUAL 1)#only one dependent version, this is the basic version of the function
-		set(${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)
+		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)
 	else() #there are many possible versions
 		fill_List_Into_String("${list_of_versions}" available_versions)
-		set(${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} to be used among versions : ${available_versions}")
+		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} to be used among versions : ${available_versions}")
 		#check if the user input is not faulty (version is in the list)
-		if(NOT ${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED)
+		if(NOT ${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : you did not define any version for dependency ${dep_package}.")
 			return()
 		endif()
 
-		if(${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#special case where any version was specified by the user
+		if(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#special case where any version was specified by the user
 			list(GET list_of_versions 0 VERSION_AUTOMATICALLY_SELECTED) #taking first version available
 			#force reset the value of the variable to this version
-			set(${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED ${VERSION_AUTOMATICALLY_SELECTED} CACHE STRING "Select if ${dep_package} is to be used (input NONE) ot choose among versions : ${available_versions}" FORCE)
+			set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${VERSION_AUTOMATICALLY_SELECTED} CACHE STRING "Select if ${dep_package} is to be used (input NONE) ot choose among versions : ${available_versions}" FORCE)
 		else()# a version has been specified
-			list(FIND list_of_versions ${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED} INDEX)
+			list(FIND list_of_versions ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 			if(INDEX EQUAL -1 )#no possible version found corresponding to user input
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value (${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED}) for dependency ${dep_package}.")
 				return()
@@ -754,33 +756,36 @@ else()#there are version specified
 	endif()# at the end the version USED for the dependency is specified
 
 	#now set the info on selected variable dependeding on the "exactness" of the version
-	list(FIND exact_versions ${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED} INDEX)
+	list(FIND exact_versions ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 	if(INDEX EQUAL -1)#version does not belong to exact versions
-		set_External_Package_Dependency_Version(${CURRENT_MANAGED_VERSION} ${dep_package} ${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED} FALSE)
+		set_External_Package_Dependency_Version(${CURRENT_MANAGED_VERSION} ${dep_package} ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} FALSE)
 	else()#it is an exact version
-		set_External_Package_Dependency_Version(${CURRENT_MANAGED_VERSION} ${dep_package} ${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED} TRUE)
+		set_External_Package_Dependency_Version(${CURRENT_MANAGED_VERSION} ${dep_package} ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} TRUE)
 	endif()
 endif()
 
 # based on this version constraint, try to find an adequate package version in workspace
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)#by default downloading is the behavior of a wrapper so download is always automatic
-if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION)
-	if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_EXACT)#exact version is required
+if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD)
+	set(version_used ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD})
+
+	list(FIND ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSIONS_EXACT ${version_used} EXACT_AT)
+	if(EXACT_AT GREATER -1)#exact version used
 		if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
-			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION}
+			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
 				EXACT REQUIRED
 				COMPONENTS ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_COMPONENTS})
 		else()#do not check for components
-			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION}
+			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
 				EXACT REQUIRED)
 		endif()
 	else()#any compatible version
 		if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
-			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION}
+			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
 				REQUIRED
 				COMPONENTS ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_COMPONENTS})
 		else()#do not check for components
-			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION}
+			find_package(${dep_package} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
 				REQUIRED)#this is the basic situation
 		endif()
 	endif()
@@ -800,13 +805,18 @@ if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or
 		if(INDEX EQUAL -1)
 			#if the package where not specified as REQUIRED in the find_package call, we face a case of conditional dependency => the package has not been registered as "to install" while now we know it must be installed
 			if(version)# a version is specified (the same as for native packages)
-				add_To_Install_External_Package_Specification(${dep_package} "${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION}" ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_EXACT})
-			else()
+				list(FIND ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSIONS_EXACT ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD} EXACT_AT)
+				if(EXACT_AT GREATER -1)#exact version used
+					set(is_exact TRUE)
+				else()
+					set(is_exact FALSE)
+				endif()
+				add_To_Install_External_Package_Specification(${dep_package} "${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}" ${is_exact})
+			else()#no version simply install
 				add_To_Install_External_Package_Specification(${dep_package} "" FALSE)
 			endif()
 		endif()
 endif()
-
 endfunction(declare_Wrapped_External_Dependency)
 
 ### define a component
@@ -851,14 +861,14 @@ set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${compone
 endfunction(declare_Wrapped_Component_Internal_Dependency)
 
 ###
-function(install_Use_File_For_Version package version platform)
+function(install_External_Use_File_For_Version package version platform)
 	set(file_path ${WORKSPACE_DIR}/wrappers/${package}/build/Use${package}-${version}.cmake)
 	set(target_folder ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share)
 	file(COPY ${file_path} DESTINATION ${target_folder})
-endfunction(install_Use_File_For_Version)
+endfunction(install_External_Use_File_For_Version)
 
 ###
-function(generate_Use_File_For_Version package version platform)
+function(generate_External_Use_File_For_Version package version platform)
 	set(file_for_version ${WORKSPACE_DIR}/wrappers/${package}/build/Use${package}-${version}.cmake)
 	file(WRITE ${file_for_version} "#############################################\n")#reset file content (if any) or create file
 	file(APPEND ${file_for_version} "#description of ${package} content (version ${version})\n")
@@ -886,10 +896,17 @@ function(generate_Use_File_For_Version package version platform)
 		foreach(dependency IN ITEMS ${${package}_KNOWN_VERSION_${version}_DEPENDENCIES})#do the description for each dependency
 			set(VERSION_STR "")
 			if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS)#there is at least one version requirement
-				if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSION_EXACT)
-					set(STR_EXACT "EXACT ")
+				set(selected_version ${${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSION_USED_FOR_BUILD})
+				if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS_EXACT)
+					list(FIND ${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS_EXACT ${selected_version} INDEX)
+					if(INDEX EQUAL -1)
+						set(STR_EXACT "")#not an exact version
+					else()
+						set(STR_EXACT "EXACT ")
+					endif()
 				endif()
-				file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency} ${EXACT_STR}VERSION ${${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSION})\n")
+				#setting the selected version as the "reference version" (only compatible versions can be used instead when using the binary version of a package)
+				file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency} ${EXACT_STR}VERSION ${selected_version})\n")
 			else()
 				file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency})\n")
 			endif()
@@ -903,8 +920,7 @@ function(generate_Use_File_For_Version package version platform)
 			generate_Description_For_External_Component(${file_for_version} ${package} ${platform} ${version} ${component})
 		endforeach()
 	endif()
-
-endfunction(generate_Use_File_For_Version)
+endfunction(generate_External_Use_File_For_Version)
 
 ###
 function(create_Shared_Lib_Extension RES_EXT platform soname)
