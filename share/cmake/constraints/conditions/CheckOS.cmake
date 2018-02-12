@@ -49,11 +49,21 @@ elseif(UNIX)
 		if(NOT RES STREQUAL "${DISTRIB_STR}")#match
 			string(TOLOWER "${RES}" DISTRIB_ID)
 			set(CURRENT_DISTRIBUTION "${DISTRIB_ID}" CACHE INTERNAL "")
+			execute_process(COMMAND lsb_release -r OUTPUT_VARIABLE VERSION_STR ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID
+			string(REGEX REPLACE "^[^:]+:[ \t\r]*([\\.0-9]+)[ \t\r\n]*$" "\\1" RES "${VERSION_STR}")
+			if(NOT RES STREQUAL "${VERSION_STR}")#match
+				string(TOLOWER "${RES}" VERSION_NUMBER)
+				set(CURRENT_DISTRIBUTION_VERSION "${VERSION_NUMBER}" CACHE INTERNAL "")
+			else()
+				set(CURRENT_DISTRIBUTION_VERSION "" CACHE INTERNAL "")
+			endif()
 		else()
 			set(CURRENT_DISTRIBUTION "" CACHE INTERNAL "")
+			set(CURRENT_DISTRIBUTION_VERSION "" CACHE INTERNAL "")
 		endif()
 	else()# when cross compiling we cannot use distribution info
 		set(CURRENT_DISTRIBUTION "" CACHE INTERNAL "")
+		set(CURRENT_DISTRIBUTION_VERSION "" CACHE INTERNAL "")
 	endif()
 #other OS are not known (add new elseif statement to check for other OS and set adequate variables)
 endif()

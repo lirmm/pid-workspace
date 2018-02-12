@@ -1,7 +1,8 @@
 #### referencing external package ffmpeg ####
-set(ffmpeg_PID_Package_AUTHOR _Robin_Passama CACHE INTERNAL "")
-set(ffmpeg_PID_Package_INSTITUTION _LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr CACHE INTERNAL "")
-set(ffmpeg_PID_Package_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(ffmpeg_PID_WRAPPER_CONTACT_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(ffmpeg_PID_WRAPPER_CONTACT_INSTITUTION "LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr" CACHE INTERNAL "")
+set(ffmpeg_PID_WRAPPER_CONTACT_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+
 set(ffmpeg_AUTHORS "FFMPEG.org authors, see http://www.ffmpeg.org/" CACHE INTERNAL "")
 set(ffmpeg_LICENSES "LGPL v2.1 license" CACHE INTERNAL "")
 set(ffmpeg_DESCRIPTION external package providing C++ libraries to manage video streams, repackaged for PID CACHE INTERNAL "")

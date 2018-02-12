@@ -35,6 +35,8 @@ set(WORKSPACE_DIR ${path} CACHE INTERNAL "")
 ############ all PID system path are put into the cmake path ###########
 ########################################################################
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find)
@@ -53,7 +55,7 @@ include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
 include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
-include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
+include(PID_Deployment_Functions NO_POLICY_SCOPE)
 
 include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
 
@@ -86,7 +88,6 @@ endmacro(import_PID_Package)
 
 ###
 macro(link_PID_Components)
-
 if(CMAKE_BUILD_TYPE STREQUAL "")
 	message("[PID] WARNING : when calling link_PID_Components, no known build type defined (Release or Debug) : the Release build is selected by default.")
 	set(CMAKE_BUILD_TYPE Release)

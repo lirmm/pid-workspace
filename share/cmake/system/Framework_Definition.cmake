@@ -16,6 +16,8 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 
 include(PID_Framework_API_Internal_Functions NO_POLICY_SCOPE)
 include(CMakeParseArguments)
@@ -89,7 +91,7 @@ endmacro(add_PID_Framework_Category)
 ### API : build_PID_Framework()
 macro(build_PID_Framework)
 if(${ARGC} GREATER 0)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Package command requires no arguments.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Framework command requires no arguments.")
 endif()
 build_Framework()
 endmacro(build_PID_Framework)

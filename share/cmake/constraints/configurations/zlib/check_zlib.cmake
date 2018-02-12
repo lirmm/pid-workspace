@@ -20,6 +20,7 @@
 if(NOT zlib_FOUND) #any linux or macosx is zlib ...
 	set(zlib_COMPILE_OPTIONS CACHE INTERNAL "")
 	set(zlib_INCLUDE_DIRS CACHE INTERNAL "")
+	set(zlib_DEFINITIONS CACHE INTERNAL "")
 	set(zlib_LINK_OPTIONS CACHE INTERNAL "")
 	set(zlib_RPATH CACHE INTERNAL "")
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/zlib/find_zlib.cmake)
@@ -27,7 +28,13 @@ if(NOT zlib_FOUND) #any linux or macosx is zlib ...
 		set(zlib_LINK_OPTIONS ${zlib_LIBRARIES} CACHE INTERNAL "") #simply adding all zlib standard libraries
 		set(CHECK_zlib_RESULT TRUE)
 	else()
-		set(CHECK_zlib_RESULT FALSE)
+		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/zlib/install_zlib.cmake)
+		if(zlib_INSTALLED)
+			set(zlib_LINK_OPTIONS ${zlib_LIBRARIES} CACHE INTERNAL "") #simply adding all zlib standard libraries
+			set(CHECK_zlib_RESULT TRUE)
+		else()
+			set(CHECK_zlib_RESULT FALSE)
+		endif()
 	endif()
 else()
 	set(CHECK_zlib_RESULT TRUE)

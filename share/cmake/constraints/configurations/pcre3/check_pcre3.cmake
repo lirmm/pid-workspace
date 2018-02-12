@@ -20,6 +20,7 @@
 if(NOT pcre3_FOUND) #any linux or macosx is zlib ...
 	set(pcre3_COMPILE_OPTIONS CACHE INTERNAL "")
 	set(pcre3_INCLUDE_DIRS CACHE INTERNAL "")
+	set(pcre3_DEFINITIONS CACHE INTERNAL "")
 	set(pcre3_LINK_OPTIONS CACHE INTERNAL "")
 	set(pcre3_RPATH CACHE INTERNAL "")
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/pcre3/find_pcre3.cmake)
@@ -27,7 +28,13 @@ if(NOT pcre3_FOUND) #any linux or macosx is zlib ...
 		set(pcre3_LINK_OPTIONS ${pcre3_LIBRARIES} CACHE INTERNAL "") #simply adding all zlib standard libraries
 		set(CHECK_pcre3_RESULT TRUE)
 	else()
-		set(CHECK_pcre3_RESULT FALSE)
+		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/pcre3/install_pcre3.cmake)
+		if(pcre3_INSTALLED)
+			set(pcre3_LINK_OPTIONS ${pcre3_LIBRARIES} CACHE INTERNAL "") #simply adding all zlib standard libraries
+			set(CHECK_pcre3_RESULT TRUE)
+		else()
+			set(CHECK_pcre3_RESULT FALSE)
+		endif()
 	endif()
 else()
 	set(CHECK_pcre3_RESULT TRUE)

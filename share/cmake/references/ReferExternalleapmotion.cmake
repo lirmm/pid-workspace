@@ -1,7 +1,8 @@
 #### referencing external package leapmotion ####
-set(leapmotion_PID_Package_AUTHOR _Robin_Passama CACHE INTERNAL "")
-set(leapmotion_PID_Package_INSTITUTION _LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr CACHE INTERNAL "")
-set(leapmotion_PID_Package_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(leapmotion_PID_WRAPPER_CONTACT_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(leapmotion_PID_WRAPPER_CONTACT_INSTITUTION "LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr" CACHE INTERNAL "")
+set(leapmotion_PID_WRAPPER_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+
 set(leapmotion_AUTHORS "Leapmotion company, see https://www.leapmotion.com" CACHE INTERNAL "")
 set(leapmotion_LICENSES "leapmotion SDK license agreement, see https://central.leapmotion.com/agreements/SdkAgreement" CACHE INTERNAL "")
 set(leapmotion_DESCRIPTION "external package providing wrapper for leapmotion SDK in PID system" CACHE INTERNAL "")

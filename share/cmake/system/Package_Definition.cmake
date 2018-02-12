@@ -16,14 +16,16 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 
 include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
+include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
 include(CMakeParseArguments)
 
 ### API : declare_PID_Package(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... LICENSE license [ADDRESS address] DESCRIPTION ...)
 macro(declare_PID_Package)
-set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS)
+set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
 cmake_parse_arguments(DECLARE_PID_PACKAGE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_PACKAGE_AUTHOR)
@@ -50,7 +52,7 @@ endif()
 declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${DECLARE_PID_PACKAGE_MAIL}"
 			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}"
 			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_PUBLIC_ADDRESS}"
-			"${DECLARE_PID_PACKAGE_DESCRIPTION}")
+		"${DECLARE_PID_PACKAGE_DESCRIPTION}" "${DECLARE_PID_PACKAGE_README}")
 endmacro(declare_PID_Package)
 
 ### API : set_PID_Package_Version(major minor [patch])
@@ -285,9 +287,8 @@ endmacro(check_PID_Platform)
 
 ### API: get_PID_Platform_Info([TYPE res_type] [OS res_os] [ARCH res_arch] [ABI res_abi])
 function(get_PID_Platform_Info)
-set(oneValueArgs NAME OS ARCH ABI TYPE)
-set(multiValueArgs CONFIGURATION)
-cmake_parse_arguments(GET_PID_PLATFORM_INFO "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+set(oneValueArgs NAME OS ARCH ABI TYPE PYTHON DISTRIBUTION VERSION)
+cmake_parse_arguments(GET_PID_PLATFORM_INFO "" "${oneValueArgs}" "" ${ARGN} )
 set(OK FALSE)
 if(GET_PID_PLATFORM_INFO_NAME)
 	set(OK TRUE)
@@ -308,6 +309,18 @@ endif()
 if(GET_PID_PLATFORM_INFO_ABI)
 	set(OK TRUE)
 	set(${GET_PID_PLATFORM_INFO_ABI} ${CURRENT_PLATFORM_ABI} PARENT_SCOPE)
+endif()
+if(GET_PID_PLATFORM_INFO_PYTHON)
+		set(OK TRUE)
+		set(${GET_PID_PLATFORM_INFO_PYTHON} ${CURRENT_PYTHON} PARENT_SCOPE)
+endif()
+if(GET_PID_PLATFORM_INFO_DISTRIBUTION)
+		set(OK TRUE)
+		set(${GET_PID_PLATFORM_INFO_DISTRIBUTION} ${CURRENT_DISTRIBUTION} PARENT_SCOPE)
+endif()
+if(GET_PID_PLATFORM_INFO_DISTRIBUTION_VERSION)
+		set(OK TRUE)
+		set(${GET_PID_PLATFORM_INFO_DISTRIBUTION_VERSION} ${CURRENT_DISTRIBUTION_VERSION} PARENT_SCOPE)
 endif()
 if(NOT OK)
 	message("[PID] ERROR : you must use one or more of the NAME, TYPE, ARCH, OS or ABI keywords together with corresponding variables that will contain the resulting property of the current platform in use.")
@@ -351,12 +364,31 @@ endmacro(build_PID_Package)
 #				[DESCRIPTION short description of the utility of this component]
 #				[USAGE includes...])
 macro(declare_PID_Component)
-set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION)
+set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION PYTHON_PACK)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}.")
+endif()
+
+#check for the name argument
+if(NOT DECLARE_PID_COMPONENT_NAME)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the component using NAME keyword.")
+endif()
+
+#check unique names
+set(DECLARED FALSE)
+is_Declared(${DECLARE_PID_COMPONENT_NAME} DECLARED)
+if(DECLARED)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : a component with the same name than ${DECLARE_PID_COMPONENT_NAME} is already defined.")
+	return()
+endif()
+unset(DECLARED)
+
+#check for directory argument
+if(NOT DECLARE_PID_COMPONENT_DIRECTORY)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword.")
 endif()
 
 if(DECLARE_PID_COMPONENT_C_STANDARD)
@@ -367,7 +399,7 @@ if(DECLARE_PID_COMPONENT_C_STANDARD)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad C_STANDARD argument, the value used must be 90, 99 or 11.")
 	endif()
 else() #default language standard is first standard
-	set(c_language_standard 90)
+	set(c_language_standard 99)
 endif()
 
 if(DECLARE_PID_COMPONENT_CXX_STANDARD)
@@ -382,12 +414,6 @@ else() #default language standard is first standard
 	set(cxx_language_standard 98)
 endif()
 
-if(NOT DECLARE_PID_COMPONENT_NAME)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the component using NAME keyword.")
-endif()
-if(NOT DECLARE_PID_COMPONENT_DIRECTORY)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword.")
-endif()
 set(nb_options 0)
 if(DECLARE_PID_COMPONENT_STATIC_LIB)
 	math(EXPR nb_options "${nb_options}+1")
@@ -417,8 +443,17 @@ if(DECLARE_PID_COMPONENT_TEST_APPLICATION)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "TEST")
 endif()
+if(DECLARE_PID_COMPONENT_PYTHON_PACK)
+	math(EXPR nb_options "${nb_options}+1")
+	set(type "PYTHON")
+endif()
 if(NOT nb_options EQUAL 1)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION|TEST_APPLICATION) must be given for the component.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION or TEST_APPLICATION) must be given for the component.")
+endif()
+#checking that the required directories exist
+check_Required_Directories_Exist(PROBLEM ${type} ${DECLARE_PID_COMPONENT_DIRECTORY})
+if(PROBLEM)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring ${DECLARE_PID_COMPONENT_NAME}, the source directory ${DECLARE_PID_COMPONENT_DIRECTORY} cannot be found in ${CMAKE_CURRENT_SOURCE_DIR} (${PROBLEM}).")
 endif()
 
 set(internal_defs "")
@@ -475,15 +510,6 @@ if(DECLARE_PID_COMPONENT_RUNTIME_RESOURCES)
 	set(runtime_resources ${DECLARE_PID_COMPONENT_RUNTIME_RESOURCES})
 endif()
 
-#check unique names
-set(DECLARED FALSE)
-is_Declared(${DECLARE_PID_COMPONENT_NAME} DECLARED)
-if(DECLARED)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : a component with the same name than ${DECLARE_PID_COMPONENT_NAME} is already defined.")
-	return()
-endif()
-unset(DECLARED)
-
 if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME}
 					${DECLARE_PID_COMPONENT_DIRECTORY}
@@ -495,6 +521,8 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 					"${internal_compiler_options}"
 					"${internal_link_flags}"
 					"${runtime_resources}")
+elseif(type MATCHES "PYTHON")#declare a python package
+	declare_Python_Component(${DECLARE_PID_COMPONENT_NAME} ${DECLARE_PID_COMPONENT_DIRECTORY})
 else() #it is a library
 	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME}
 					${DECLARE_PID_COMPONENT_DIRECTORY}
@@ -514,42 +542,6 @@ if(NOT "${DECLARE_PID_COMPONENT_DESCRIPTION}" STREQUAL "")
 	init_Component_Description(${DECLARE_PID_COMPONENT_NAME} "${DECLARE_PID_COMPONENT_DESCRIPTION}" "${DECLARE_PID_COMPONENT_USAGE}")
 endif()
 endmacro(declare_PID_Component)
-
-function(parse_Package_Dependency_Version_Arguments args RES_VERSION RES_EXACT RES_UNPARSED)
-set(full_string)
-string(REGEX REPLACE "^(EXACT;VERSION;[^;]+;?).*$" "\\1" RES "${args}")
-if(RES STREQUAL "${args}")
-	string(REGEX REPLACE "^(VERSION;[^;]+;?).*$" "\\1" RES "${args}")
-	if(NOT full_string STREQUAL "${args}")#there is a match => there is a version specified
-		set(full_string ${RES})
-	endif()
-else()#there is a match => there is a version specified
-	set(full_string ${RES})
-endif()
-if(full_string)#version expression has been found => parse it
-	set(options EXACT)
-	set(oneValueArg VERSION)
-	cmake_parse_arguments(PARSE_PACKAGE_ARGS "${options}" "${oneValueArg}" "" ${full_string})
-	set(${RES_VERSION} ${PARSE_PACKAGE_ARGS_VERSION} PARENT_SCOPE)
-	set(${RES_EXACT} ${PARSE_PACKAGE_ARGS_EXACT} PARENT_SCOPE)
-
-	#now extracting unparsed
-	string(LENGTH "${full_string}" PARSED_SIZE)
-	string(LENGTH "${args}" TOTAL_SIZE)
-
-	if(PARSED_SIZE EQUAL TOTAL_SIZE)
-		set(${RES_UNPARSED} PARENT_SCOPE)
-	else()
-		string(SUBSTRING "${args}" ${PARSED_SIZE} -1 UNPARSED_STRING)
-		set(${RES_UNPARSED} ${UNPARSED_STRING} PARENT_SCOPE)
-	endif()
-
-else()
-	set(${RES_VERSION} PARENT_SCOPE)
-	set(${RES_EXACT} PARENT_SCOPE)
-	set(${RES_UNPARSED} "${args}" PARENT_SCOPE)
-endif()
-endfunction(parse_Package_Dependency_Version_Arguments)
 
 ### API : declare_PID_Package_Dependency (	PACKAGE name
 #						<EXTERNAL VERSION version_string [EXACT] | NATIVE [VERSION major[.minor] [EXACT]]] >
@@ -729,8 +721,20 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 	endif()
 
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE
-		AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)#package dependency target package is not current project
-
+		AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL ${PROJECT_NAME})
+		#package dependency target package is not current project
+		is_Package_Dependency(IS_DEPENDENCY "${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}")
+		if(NOT IS_DEPENDENCY)#the target package has NOT been defined as a dependency
+			set(IS_CONFIGURED TRUE)
+			if(${PROJECT_NAME}_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
+				set(IS_CONFIGURED FALSE)
+			elseif(${PROJECT_NAME}_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}))
+				set(IS_CONFIGURED FALSE)
+			endif()
+			if(IS_CONFIGURED) #only notify the error if the package DOES configure the component
+				message(WARNING "[PID] WARNING : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} !")
+			endif()
+		endif()
 		declare_Package_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
@@ -761,6 +765,11 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 		if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the target external package canoot be current project !")
 		endif()
+		#check for package dependency using the PACKAGE name
+		is_Package_Dependency(IS_DEPENDENCY "${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}")
+		if(NOT IS_DEPENDENCY)
+			message(WARNING "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown external package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} !")
+		endif()
 		declare_External_Wrapper_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
@@ -771,6 +780,10 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 					"${dep_defs}")
 
 	else()
+		is_Package_Dependency(IS_DEPENDENCY "${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}")
+		if(NOT IS_DEPENDENCY)
+			message(WARNING "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown external package ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} !")
+		endif()
 		declare_External_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}
@@ -801,29 +814,70 @@ endif()
 endmacro(declare_PID_Component_Dependency)
 
 
+function(wrap_CTest_Call name command args)
+	if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do if on tests before this version
+		add_test(NAME ${name} COMMAND ${command} ${args})
+	else()
+		add_test(${name} ${command} ${args})
+	endif()
+endfunction(wrap_CTest_Call)
+
 ### API : run_PID_Test (NAME 			test_name
 #			<EXE name | COMPONENT 	name [PACKAGE name]>
 #			PRIVILEGED
 #			ARGUMENTS	 	list_of_args
 #			)
-macro(run_PID_Test)
-set(options PRIVILEGED)
+function(run_PID_Test)
+set(options PRIVILEGED PYTHON)
 set(oneValueArgs NAME EXE COMPONENT PACKAGE)
 set(multiValueArgs ARGUMENTS)
 cmake_parse_arguments(RUN_PID_TEST "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(RUN_PID_TEST_UNPARSED_ARGUMENTS)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
 endif()
 if(NOT RUN_PID_TEST_NAME)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the test (using NAME <name> syntax) !")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, a name must be given to the test (using NAME <name> syntax) !")
+else()
+	if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do call if(TEST) before this version, the default behavior (without using NAME and COMMAND will overwrite the rprevious test with same name)
+		if(TEST ${RUN_PID_TEST_NAME})
+			message("[PID] WARNING : bad arguments for the test ${RUN_PID_TEST_NAME}, this test unit is already defined. Skipping new definition !")
+			return()
+		endif()
+	endif()
 endif()
 
-if(NOT RUN_PID_TEST_EXE AND NOT RUN_PID_TEST_COMPONENT)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an executable must be defined. Using EXE you can use an executable present on your system or by using COMPONENT. In this later case you must specify a PID executable component. If the PACKAGE keyword is used then this component will be found in another package than the current one.")
+if(NOT RUN_PID_TEST_EXE AND NOT RUN_PID_TEST_COMPONENT AND NOT RUN_PID_TEST_PYTHON)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, an executable must be defined. Using EXE you can use an executable present on your system. By using COMPONENT you can specify a component built by the project. In this later case you must specify a PID executable component. If the PACKAGE keyword is used then this component will be found in another package than the current one. Finaly you can otherwise use the PYTHON keyword and pass the target python script file lying in your test folder as argument (path is relative to the test folder).")
 endif()
 
-if(RUN_PID_TEST_EXE AND RUN_PID_TEST_COMPONENT)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must use either a system executable (using EXE keyword) OR a PID application component (using COMPONENT keyword).")
+if((RUN_PID_TEST_EXE AND RUN_PID_TEST_COMPONENT)
+		OR (RUN_PID_TEST_EXE AND RUN_PID_TEST_PYTHON)
+		OR (RUN_PID_TEST_COMPONENT AND RUN_PID_TEST_PYTHON))
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, you must use either a system executable (using EXE keyword) OR a PID application component (using COMPONENT keyword) OR the python executable (using PYTHON keyword).")
+endif()
+
+if(RUN_PID_TEST_PYTHON)
+	if(NOT CURRENT_PYTHON)
+		return()
+	endif()
+	if(NOT RUN_PID_TEST_ARGUMENTS)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, you must define a path to a target python file using ARGUMENTS keyword.")
+	endif()
+	list(LENGTH  RUN_PID_TEST_ARGUMENTS SIZE)
+	if(NOT SIZE EQUAL 1)
+		message("[PID] WARNING : bad arguments for the test ${RUN_PID_TEST_NAME}, you must define a path to a UNIQUE target python file using ARGUMENTS keyword. First file is selected, others will be ignored.")
+	endif()
+	list(GET RUN_PID_TEST_ARGUMENTS 0 target_py_file)
+	if (NOT target_py_file MATCHES "^.*\\.py$")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, ${target_py_file} is not a python file.")
+	endif()
+	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target_py_file})#first check that the file exists in test folder
+		set(PATH_TO_PYTHON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${target_py_file})
+	elseif(EXISTS ${CMAKE_SOURCE_DIR}/share/script/${target_py_file})
+		set(PATH_TO_PYTHON_FILE ${CMAKE_SOURCE_DIR}/share/script/${target_py_file})
+	else()
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, ${target_py_file} cannot be found in either test or script folders.")
+	endif()
 endif()
 
 if(NOT PID_CROSSCOMPILATION)
@@ -837,423 +891,20 @@ if(RUN_PID_TEST_PRIVILEGED)
 endif()
 
 if(RUN_PID_TEST_EXE)
-	add_test("${RUN_PID_TEST_NAME}" "${RUN_PID_TEST_EXE}" ${RUN_PID_TEST_ARGUMENTS})
-else()#RUN_PID_TEST_COMPONENT
+	wrap_CTest_Call(${RUN_PID_TEST_NAME} "${RUN_PID_TEST_EXE}" "${RUN_PID_TEST_ARGUMENTS}")
+elseif(RUN_PID_TEST_COMPONENT)# run test by executing a PID component
 	if(RUN_PID_TEST_PACKAGE)#component coming from another PID package
 		set(target_of_test ${RUN_PID_TEST_PACKAGE}-${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX})
-		add_test(${RUN_PID_TEST_NAME} ${target_of_test} ${RUN_PID_TEST_ARGUMENTS})
+		wrap_CTest_Call(${RUN_PID_TEST_NAME} "${target_of_test}" "${RUN_PID_TEST_ARGUMENTS}")
 	else()#internal component
-		add_test(${RUN_PID_TEST_NAME} ${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX} ${RUN_PID_TEST_ARGUMENTS})
+		wrap_CTest_Call(${RUN_PID_TEST_NAME} "${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX}" "${RUN_PID_TEST_ARGUMENTS}")
 	endif()
+elseif(RUN_PID_TEST_PYTHON)#run PID test with python
+	wrap_CTest_Call(${RUN_PID_TEST_NAME} "${CURRENT_PYTHON_EXECUTABLE}" "${PATH_TO_PYTHON_FILE}")
+	#setting the python path automatically for this test
+	set_tests_properties(${RUN_PID_TEST_NAME} PROPERTIES ENVIRONMENT "PYTHONPATH=${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}")
 endif()
-
-endmacro(run_PID_Test)
-
-##################################################################################################
-#################### API to ease the description of external packages ############################
-##################################################################################################
-macro(declare_PID_External_Package)
-	set(options)
-	set(oneValueArgs PACKAGE)
-	set(multiValueArgs)
-	cmake_parse_arguments(DECLARE_PID_EXTERNAL_PACKAGE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-	if(NOT DECLARE_PID_EXTERNAL_PACKAGE_PACKAGE)
-		message("[PID] WARNING: Bad usage of function declare_PID_External_Package: package name must be defined using PACKAGE keyword")
-		return() #return will exit from current Use file included (because we are in a macro)
-	endif()
-	#reset all values
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-	set(package ${DECLARE_PID_EXTERNAL_PACKAGE_PACKAGE})
-	set(${package}_HAS_DESCRIPTION TRUE CACHE INTERNAL "")#variable to be used to test if the package is described with a wrapper (if this macro is used this is always TRUE)
-	if(NOT ${package}_DECLARED)
-		#reset all variables related to this external package
-		set(${package}_PLATFORM${VAR_SUFFIX}  CACHE INTERNAL "")
-		set(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}  CACHE INTERNAL "")
-		if(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
-			foreach(dep IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-				set(${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
-				set(${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
-			endforeach()
-		endif()
-		set(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
-		if(${package}_COMPONENTS${VAR_SUFFIX})
-			foreach(comp IN ITEMS ${${package}_COMPONENTS${VAR_SUFFIX}})
-				#resetting variables of the component
-				set(${package}_${comp}_INC_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
-				set(${package}_${comp}_OPTS${VAR_SUFFIX} CACHE INTERNAL "")
-				set(${package}_${comp}_DEFS${VAR_SUFFIX} CACHE INTERNAL "")
-				set(${package}_${comp}_STATIC_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
-				set(${package}_${comp}_SHARED_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
-				set(${package}_${comp}_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE INTERNAL "")
-				set(${package}_${comp}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
-				if(${package}_${comp}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
-					foreach(dep_pack IN ITEMS ${${package}_${comp}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-						if(${package}_${comp}_EXTERNAL_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
-							foreach(dep_comp IN ITEMS ${${package}_${comp}_EXTERNAL_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX}})
-								set(${package}_${comp}_EXTERNAL_EXPORT_${dep_pack}_${dep_comp}${VAR_SUFFIX} CACHE INTERNAL "")
-							endforeach()
-							set(${package}_${comp}_EXTERNAL_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX} CACHE INTERNAL "")
-						endif()
-					endforeach()
-					set(${package}_${comp}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
-				endif()
-			endforeach()
-		endif()
-	else()
-		return()#simply returns as the external package is already in memory
-	endif()
-	set(${package}_DECLARED TRUE)
-endmacro(declare_PID_External_Package)
-
-### API: used to describe external package platform constraints
-macro(check_PID_External_Package_Platform)
-set(options)
-set(oneValueArgs PLATFORM PACKAGE)
-set(multiValueArgs CONFIGURATION)
-cmake_parse_arguments(CHECK_EXTERNAL_PID_PLATFORM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-if(CHECK_EXTERNAL_PID_PLATFORM_PACKAGE
-	AND CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION
-	AND CHECK_EXTERNAL_PID_PLATFORM_PLATFORM)
-	if(NOT ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_DECLARED)
-		message("[PID] WARNING: Bad usage of function check_PID_External_Package_Platform: package ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE} is unknown. Use macro declare_PID_External_Package to declare it")
-		return() #return will exit from current Use file included (because we are in a macro)
-	endif()
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-	set(${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_PLATFORM${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM}  CACHE INTERNAL "")
-	set(${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION}  CACHE INTERNAL "")
-else()
-	message("[PID] WARNING: Bad usage of function check_PID_External_Package_Platform: PACKAGE (value: ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}), PLATFORM (value: ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM}) and CONFIGURATION (value: ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION}) keywords must be used !")
-	return() #return will exit from current Use file included (because we are in a macro)
-endif()
-endmacro(check_PID_External_Package_Platform)
-
-### API: used to describe external package dependency to other external packages
-macro(declare_PID_External_Package_Dependency)
-	set(options EXACT)
-	set(oneValueArgs PACKAGE EXTERNAL VERSION)
-	cmake_parse_arguments(DECLARE_PID_EXTERNAL_DEPENDENCY "${options}" "${oneValueArgs}" "" ${ARGN} )
-	if(DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE
-		AND DECLARE_PID_EXTERNAL_DEPENDENCY_EXTERNAL) #if everything not used then simply do nothing
-		if(NOT ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_DECLARED)
-			message("[PID] WARNING: Bad usage of function declare_PID_External_Package_Dependency: package ${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE} is unknown. Use macro declare_PID_External_Package to declare it")
-			return() #return will exit from current Use file included (because we are in a macro)
-		endif()
-		set(package ${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE})
-		set(dependency ${DECLARE_PID_EXTERNAL_DEPENDENCY_EXTERNAL})
-
-		get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-		set(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}} ${dependency} CACHE INTERNAL "")
-
-		if(NOT DECLARE_PID_EXTERNAL_DEPENDENCY_VERSION)
-			if(DECLARE_PID_DEPENDENCY_EXTERNAL_EXACT)
-				message("[PID] WARNING: Bad usage of function declare_PID_External_Package_Dependency: use EXACT keyword only if a version is defined.")
-				return() #return will exit from current Use file included (because we are in a macro)
-			endif()
-			set(${package}_EXTERNAL_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
-			set(${package}_EXTERNAL_DEPENDENCY_${dependency}_VERSION_EXACT${VAR_SUFFIX} FALSE CACHE INTERNAL "")
-
-		else()
-			if(DECLARE_PID_DEPENDENCY_EXTERNAL_EXACT)
-				set(exact TRUE)
-			else()
-				set(exact FALSE)
-			endif()
-			if(NOT ${package}_EXTERNAL_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX})
-				set(${package}_EXTERNAL_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_DEPENDENCY_VERSION} CACHE INTERNAL "")
-				set(${package}_EXTERNAL_DEPENDENCY_${dependency}_VERSION_EXACT${VAR_SUFFIX} ${exact} CACHE INTERNAL "")
-			else()
-					message("[PID] WARNING: Bad usage of function declare_PID_External_Package_Dependency: package ${package} already declares a dependency to external package ${dependency} with version ${DECLARE_PID_EXTERNAL_DEPENDENCY_VERSION} has already been defined !")
-					return() #return will exit from current Use file included (because we are in a macro)
-			endif()
-		endif()
-	else()
-		message("[PID] WARNING: Bad usage of function declare_PID_External_Package_Dependency: PACKAGE (value: ${package}) and EXTERNAL (value: ${dependency}) keywords must be used !")
-		return() #return will exit from current Use file included (because we are in a macro)
-	endif()
-endmacro(declare_PID_External_Package_Dependency)
-
-### API: used to describe a component inside and external package
-macro(declare_PID_External_Component)
-	set(options)
-	set(oneValueArgs PACKAGE COMPONENT C_STANDARD CXX_STANDARD)
-	set(multiValueArgs INCLUDES STATIC_LINKS SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
-
-	cmake_parse_arguments(DECLARE_PID_EXTERNAL_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-	if(NOT DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE OR NOT DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT)
-		message("[PID] WARNING: Bad usage of function declare_PID_External_Component: you must define the PACKAGE (value: ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}) and the name of the component using COMPONENT keyword (value: ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}).")
-		return()#return will exit from current Use file included (because we are in a macro)
-	endif()
-	if(NOT ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_DECLARED)
-		message("[PID] WARNING: Bad usage of function declare_PID_External_Component: package ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE} is unknown. Use macro declare_PID_External_Package to declare it")
-		return() #return will exit from current Use file included (because we are in a macro)
-	endif()
-	set(curr_ext_package ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE})
-	set(curr_ext_comp ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT})
-	set(comps_list ${${curr_ext_package}_COMPONENTS${VAR_SUFFIX}} ${curr_ext_comp})
-	list(REMOVE_DUPLICATES comps_list)
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-	set(${curr_ext_package}_COMPONENTS${VAR_SUFFIX} ${comps_list} CACHE INTERNAL "")
-
-	#manage include folders
-	set(incs)
-	if(DECLARE_PID_EXTERNAL_COMPONENT_INCLUDES)
-		foreach(an_include IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_INCLUDES})
-			if(an_include MATCHES "^(<${curr_ext_package}>|/).*")
-				list(APPEND incs ${an_include})
-			else()#if the string DOES NOT start with a / (absolute path), a <package> (relative path from package root) then we add the header <package> to the path
-				list(APPEND incs "<${curr_ext_package}>/${an_include}")# prepend the external package name
-			endif()
-		endforeach()
-	endif()
-	if(incs)
-		list(REMOVE_DUPLICATES incs)
-		set(${curr_ext_package}_${curr_ext_comp}_INC_DIRS${VAR_SUFFIX} ${incs} CACHE INTERNAL "")
-	endif()
-	#manage compile options
-	set(${curr_ext_package}_${curr_ext_comp}_OPTS${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_COMPILER_OPTIONS} CACHE INTERNAL "")
-	#manage definitions
-	set(${curr_ext_package}_${curr_ext_comp}_DEFS${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_DEFINITIONS} CACHE INTERNAL "")
-
-	#manage C standard in USE
-	if(DECLARE_PID_EXTERNAL_COMPONENT_C_STANDARD)
-		set(c_language_standard ${DECLARE_PID_EXTERNAL_COMPONENT_C_STANDARD})
-		if(	NOT c_language_standard EQUAL 90
-		AND NOT c_language_standard EQUAL 99
-		AND NOT c_language_standard EQUAL 11)
-			message("[PID] ERROR : bad C_STANDARD argument for component ${curr_ext_comp} from external package ${curr_ext_package}, the value used must be 90, 99 or 11.")
-		endif()
-	else() #default language standard is first standard
-		set(c_language_standard 90)
-	endif()
-	set(${curr_ext_package}_${curr_ext_comp}_C_STANDARD${VAR_SUFFIX} ${c_language_standard} CACHE INTERNAL "")
-
-	if(DECLARE_PID_EXTERNAL_COMPONENT_CXX_STANDARD)
-		set(cxx_language_standard ${DECLARE_PID_EXTERNAL_COMPONENT_CXX_STANDARD})
-		if(	NOT cxx_language_standard EQUAL 98
-		AND NOT cxx_language_standard EQUAL 11
-		AND NOT cxx_language_standard EQUAL 14
-		AND NOT cxx_language_standard EQUAL 17 )
-		message(FATAL_ERROR "[PID] ERROR : bad CXX_STANDARD argument for component ${curr_ext_comp} from external package ${curr_ext_package}, the value used must be 98, 11, 14 or 17.")
-		endif()
-	else() #default language standard is first standard
-		set(cxx_language_standard 98)
-	endif()
-	#manage definitions
-	set(${curr_ext_package}_${curr_ext_comp}_CXX_STANDARD${VAR_SUFFIX} ${cxx_language_standard} CACHE INTERNAL "")
-
-	#manage links
-	set(links)
-	if(DECLARE_PID_EXTERNAL_COMPONENT_STATIC_LINKS)
-		foreach(a_link IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_STATIC_LINKS})
-			#if the string DOES NOT start with a / (absolute path), a <package> (relative path from package root) or - (link option specification) then we add the header <package>
-			if(a_link MATCHES  "^(<${curr_ext_package}>|/|-).*")
-				list(APPEND links ${a_link})
-			else()
-				list(APPEND links "<${curr_ext_package}>/${a_link}")# prepend the external package name
-			endif()
-		endforeach()
-	endif()
-	if(links)
-		list(REMOVE_DUPLICATES links)
-		set(${curr_ext_package}_${curr_ext_comp}_STATIC_LINKS${VAR_SUFFIX} ${links} CACHE INTERNAL "")
-	endif()
-
-	#manage shared links
-	set(links)
-	if(DECLARE_PID_EXTERNAL_COMPONENT_SHARED_LINKS)
-		foreach(a_link IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_SHARED_LINKS})
-			#if the string DOES NOT start with a / (absolute path), a <package> (relative path from package root) or - (link option specification) then we add the header <package>
-			if(a_link MATCHES  "^(<${curr_ext_package}>|/|-).*")
-				list(APPEND links ${a_link})
-			else()
-				list(APPEND links "<${curr_ext_package}>/${a_link}")# prepend the external package name
-			endif()
-		endforeach()
-	endif()
-	if(links)
-		list(REMOVE_DUPLICATES links)
-		set(${curr_ext_package}_${curr_ext_comp}_SHARED_LINKS${VAR_SUFFIX} ${links} CACHE INTERNAL "")
-	endif()
-
-
-	#manage runtime resources
-	set(resources)
-	if(DECLARE_PID_EXTERNAL_COMPONENT_RUNTIME_RESOURCES)
-		foreach(a_resource IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_RUNTIME_RESOURCES})
-			if(a_resource MATCHES "^<${curr_ext_package}>")
-				list(APPEND resources ${a_resource})
-			else()
-				list(APPEND resources "<${curr_ext_package}>/${a_resource}")# prepend the external package name
-			endif()
-		endforeach()
-	endif()
-	if(resources)
-		list(REMOVE_DUPLICATES links)
-		set(${curr_ext_package}_${curr_ext_comp}_RUNTIME_RESOURCES${VAR_SUFFIX} ${resources} CACHE INTERNAL "")
-	endif()
-endmacro(declare_PID_External_Component)
-
-### declare_PID_External_Component_Dependency (PACKAGE current COMPONENT curr_comp [DEPENDS or EXPORT other] comp EXTERNAL other ext pack)
-### EXTERNAL may be not used if the dependency is INTERNAL to the external package
-### if EXTERNAL is used it may be use with a component name (using EXPORT or DEPENDS) or without (and so will directly use keywords: INCLUDES LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
-macro(declare_PID_External_Component_Dependency)
-	set(options)
-	set(oneValueArgs PACKAGE COMPONENT EXTERNAL EXPORT USE)
-	set(multiValueArgs INCLUDES STATIC_LINKS SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
-	cmake_parse_arguments(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-	if(NOT DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE OR NOT DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT)
-		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: you must define the PACKAGE (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}) and the name of the component using COMPONENT keyword (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT}).")
-		return()
-	endif()
-	if(NOT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}_DECLARED)
-		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE} is unknown. Use macro declare_PID_External_Package to declare it")
-		return() #return will exit from current Use file included (because we are in a macro)
-	endif()
-	set(LOCAL_PACKAGE ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE})
-	set(LOCAL_COMPONENT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT})
-	set(TARGET_COMPONENT)
-	set(EXPORT_TARGET FALSE)
-
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-	#checking that the component is defined locally
-	list(FIND ${LOCAL_PACKAGE}_COMPONENTS${VAR_SUFFIX} ${LOCAL_COMPONENT} INDEX)
-	if(INDEX EQUAL -1)
-		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE} does not define component ${LOCAL_COMPONENT}.")
-		return()
-	endif()
-
-	#configuraing target package
-	if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL)
-		list(FIND ${LOCAL_PACKAGE}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL} INDEX)
-		if(INDEX EQUAL -1)
-			# the external package is using the dependent package
-			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL} is not defined as a dependency of external package ${LOCAL_PACKAGE}.")
-			return()
-		endif()
-		set(TARGET_PACKAGE ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL})
-		#in that case a component is not mandatory defined we can just target the libraries inside the depdendency packages
-	else() #if not an external component it means it is an internal one
-		#in that case the component must be defined
-		set(TARGET_PACKAGE)#internal means the local is the dependency
-	endif()
-
-	#configuring target component
-	if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_USE)
-		if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXPORT)
-			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: in package ${LOCAL_PACKAGE} you must use either USE OR EXPORT keywords not both.")
-			return()
-		endif()
-		set(TARGET_COMPONENT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_USE})
-	elseif(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXPORT)
-		set(TARGET_COMPONENT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXPORT})
-		set(EXPORT_TARGET TRUE)
-	endif()
-
-	if(TARGET_COMPONENT AND NOT TARGET_PACKAGE) #this is a link to a component locally defined
-		list(FIND ${LOCAL_PACKAGE}_COMPONENTS${VAR_SUFFIX} ${TARGET_COMPONENT} INDEX)
-		if(INDEX EQUAL -1)
-			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE} does not define component ${TARGET_COMPONENT} used as a dependency for ${LOCAL_COMPONENT}.")
-			return()
-		endif()
-	endif()
-
-	# more checks
-	if(TARGET_COMPONENT)
-		if(NOT TARGET_PACKAGE)
-			set(list_of_comps ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}} ${TARGET_COMPONENT})
-			list(REMOVE_DUPLICATES list_of_comps)
-			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} ${list_of_comps} CACHE INTERNAL "")
-			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_EXPORT_${TARGET_COMPONENT}${VAR_SUFFIX} ${EXPORT_TARGET} CACHE INTERNAL "")
-		else()
-			set(list_of_deps ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}} ${TARGET_PACKAGE})
-			list(REMOVE_DUPLICATES list_of_deps)
-			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${list_of_deps} CACHE INTERNAL "")
-			set(list_of_comps ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCY_${TARGET_PACKAGE}_COMPONENTS${VAR_SUFFIX}} ${TARGET_COMPONENT})
-			list(REMOVE_DUPLICATES list_of_comps)
-			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCY_${TARGET_PACKAGE}_COMPONENTS${VAR_SUFFIX} ${list_of_comps} CACHE INTERNAL "")
-			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_EXPORT_${TARGET_PACKAGE}_${TARGET_COMPONENT}${VAR_SUFFIX} ${EXPORT_TARGET} CACHE INTERNAL "")
-		endif()
-	else() #otherwise this is a direct reference to external package content
-		set(list_of_deps ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}} ${TARGET_PACKAGE})
-		list(REMOVE_DUPLICATES list_of_deps)
-		set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${list_of_deps} CACHE INTERNAL "")
-		#this previous line is used to tell the system that path inside this component's variables have to be resolved again that external package
-		if(NOT TARGET_PACKAGE) #check that we really target an external package
-			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: a target external package name must be defined when a component dependency is defined with no target component (use the EXTERNAL KEYWORD).")
-			return()
-		endif()
-	endif()
-
-#manage include folders
-if(TARGET_PACKAGE AND NOT TARGET_COMPONENT) #if a target package is specified but not a component
-	set(incs ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX}})
-	if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES)
-		foreach(an_include IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES})
-			if(an_include MATCHES "^(<${TARGET_PACKAGE}>|/).*")
-				list(APPEND incs ${an_include})
-			else()
-				list(APPEND incs "<${TARGET_PACKAGE}>/${an_include}")# prepend the external package name
-			endif()
-		endforeach()
-		list(REMOVE_DUPLICATES incs)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX} ${incs} CACHE INTERNAL "")
-
-	#manage compile options
-	set(opts ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX}} ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPILER_OPTIONS})
-	if(opts)
-		list(REMOVE_DUPLICATES opts)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX} ${opts} CACHE INTERNAL "")
-	#manage definitions
-	set(defs ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS${VAR_SUFFIX}} ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_DEFINITIONS})
-	if(defs)
-		list(REMOVE_DUPLICATES defs)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS${VAR_SUFFIX} ${defs} CACHE INTERNAL "")
-	#manage links
-	set(links ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX}})
-	if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_STATIC_LINKS)
-		foreach(a_link IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_STATIC_LINKS})
-			if(a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-).*")
-				list(APPEND links ${a_link})
-			else()
-				list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
-			endif()
-		endforeach()
-		list(REMOVE_DUPLICATES links)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX} ${links} CACHE INTERNAL "")
-
-	#manage shared links
-	set(links ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_SHARED_LINKS${VAR_SUFFIX}})
-	if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_SHARED_LINKS)
-		foreach(a_link IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_SHARED_LINKS})
-			if(a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-).*")
-				list(APPEND links ${a_link})
-			else()
-				list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
-			endif()
-		endforeach()
-		list(REMOVE_DUPLICATES links)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_SHARED_LINKS${VAR_SUFFIX} ${links} CACHE INTERNAL "")
-
-	#manage runtime resources
-	set(resources ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX}})
-	if(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES)
-		foreach(a_resource IN ITEMS ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES})
-			if(a_resource MATCHES "^<${TARGET_PACKAGE}>")
-				list(APPEND resources ${a_resource})
-			else()
-				list(APPEND resources "<${TARGET_PACKAGE}>/${a_resource}")# prepend the external package name
-			endif()
-		endforeach()
-		list(REMOVE_DUPLICATES resources)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX} ${resources} CACHE INTERNAL "")
-endif()
-endmacro(declare_PID_External_Component_Dependency)
+endfunction(run_PID_Test)
 
 
 #############################################################################################
@@ -1267,7 +918,7 @@ cmake_parse_arguments(EXT_PACKAGE_PATH "" "${oneValueArgs}" "" ${ARGN} )
 if(NOT EXT_PACKAGE_PATH_NAME OR NOT EXT_PACKAGE_PATH_PATH)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name of an external package must be provided with name and a variable containing the resulting path must be set with PATH keyword.")
 endif()
-is_External_Package_Defined(${PROJECT_NAME} "${EXT_PACKAGE_PATH_NAME}" ${CMAKE_BUILD_TYPE} PATHTO)
+is_External_Package_Defined("${EXT_PACKAGE_PATH_NAME}" ${CMAKE_BUILD_TYPE} PATHTO)
 if(PATHTO STREQUAL NOTFOUND)
 	set(${EXT_PACKAGE_PATH_PATH} NOTFOUND PARENT_SCOPE)
 else()
