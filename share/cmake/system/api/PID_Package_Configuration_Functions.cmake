@@ -53,7 +53,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(RES "${${package}_ROOT_DIR}/include/${${package}_${component}_HEADER_DIR_NAME}")
 #additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
 if(${package}_${component}_INC_DIRS${mode_suffix})
-	resolve_External_Includes_Path(RES_INCLUDES ${package} "${${package}_${component}_INC_DIRS${VAR_SUFFIX}}" ${mode})
+	resolve_External_Includes_Path(RES_INCLUDES "${${package}_${component}_INC_DIRS${VAR_SUFFIX}}" ${mode})
 	list(APPEND RES ${RES_INCLUDES})
 endif()
 set(${INCLUDES} ${RES} PARENT_SCOPE)
@@ -64,7 +64,7 @@ function(list_Public_Links LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #provided additionnal ld flags (exported external/system libraries and ldflags)
 if(${package}_${component}_LINKS${VAR_SUFFIX})
-	resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})
+	resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})
 set(${LINKS} "${RES_LINKS}" PARENT_SCOPE)
 endif()
 endfunction(list_Public_Links)
@@ -126,7 +126,7 @@ function(list_Private_Links PRIVATE_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #provided additionnal ld flags (exported external/system libraries and ldflags)
 if(${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX})
-	resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})
+	resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})
 set(${PRIVATE_LINKS} "${RES_LINKS}" PARENT_SCOPE)
 endif()
 endfunction(list_Private_Links)
@@ -160,7 +160,7 @@ get_Mode_Variables(mode_binary_suffix mode_var_suffix ${mode})
 # 1) searching public external dependencies
 if(NOT is_direct) #otherwise external dependencies are direct dependencies so their LINKS (i.e. exported links) are already taken into account (not private)
 	if(${package}_${component}_LINKS${mode_var_suffix})
-		resolve_External_Libs_Path(RES_LINKS ${package} "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
+		resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
 		foreach(ext_dep IN ITEMS ${RES_LINKS})
 			is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
 			if(IS_SHARED)
@@ -172,7 +172,7 @@ endif()
 
 # 1-bis) searching private external dependencies
 if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
-	resolve_External_Libs_Path(RES_PRIVATE_LINKS ${package} "${${package}_${component}_PRIVATE_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
+	resolve_External_Libs_Path(RES_PRIVATE_LINKS "${${package}_${component}_PRIVATE_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
 	foreach(ext_dep IN ITEMS ${RES_PRIVATE_LINKS})
 		is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
 		if(IS_SHARED)
@@ -339,7 +339,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
 
-        resolve_External_Libs_Path(RES ${package} "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+        resolve_External_Libs_Path(RES "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
         if(RES)
 		foreach(lib IN ITEMS ${RES})
                         is_Shared_Lib_With_Path(IS_SHARED ${lib})
@@ -359,7 +359,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 
 if(${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX})#if there are private links
-	resolve_External_Libs_Path(RES_PRIVATE ${package} "${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+	resolve_External_Libs_Path(RES_PRIVATE "${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
 	if(RES_PRIVATE)
 		foreach(lib IN ITEMS ${RES_PRIVATE})
 			is_Shared_Lib_With_Path(IS_SHARED ${lib})

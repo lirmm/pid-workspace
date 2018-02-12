@@ -33,8 +33,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms
 
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(Wrapper_Definition NO_POLICY_SCOPE) # to be able to interpret description of external packages and generate the use files
-include(Package_Definition NO_POLICY_SCOPE) #to be able to interpret description of dependencies (external packages)
-
+include(External_Definition NO_POLICY_SCOPE) #to be able to interpret description of dependencies (external packages)
 
 #########################################################################################
 #######################################Build script #####################################

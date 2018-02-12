@@ -20,6 +20,7 @@
 if(NOT openssl_FOUND)
 	set(openssl_COMPILE_OPTIONS CACHE INTERNAL "")
 	set(openssl_INCLUDE_DIRS CACHE INTERNAL "")
+	set(openssl_DEFINITIONS CACHE INTERNAL "")
 	set(openssl_LINK_OPTIONS CACHE INTERNAL "")
 	set(openssl_RPATH CACHE INTERNAL "")
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/openssl/find_openssl.cmake)

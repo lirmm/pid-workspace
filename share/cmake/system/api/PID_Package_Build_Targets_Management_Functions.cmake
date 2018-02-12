@@ -571,7 +571,7 @@ endfunction(fill_Component_Target_With_Package_Dependency)
 ### configure the target to link with an external dependancy
 function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_links)
 if(ext_links)
-	resolve_External_Libs_Path(COMPLETE_LINKS_PATH ${PROJECT_NAME} "${ext_links}" ${CMAKE_BUILD_TYPE})
+	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${ext_links}" ${CMAKE_BUILD_TYPE})
 	if(COMPLETE_LINKS_PATH)
 		foreach(link IN ITEMS ${COMPLETE_LINKS_PATH})
 			create_External_Dependency_Target(EXT_TARGET_NAME ${link} ${CMAKE_BUILD_TYPE})
@@ -585,7 +585,7 @@ if(ext_links)
 	list(APPEND EXT_LINKS ${EXT_LINKS_TARGETS} ${EXT_LINKS_OPTIONS})
 endif()
 if(ext_inc_dirs)
-	resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH ${PROJECT_NAME} "${ext_inc_dirs}" ${CMAKE_BUILD_TYPE})
+	resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${ext_inc_dirs}" ${CMAKE_BUILD_TYPE})
 endif()
 
 # setting compile/linkage definitions for the component target

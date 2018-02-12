@@ -20,6 +20,7 @@
 if(NOT zlib_FOUND) #any linux or macosx is zlib ...
 	set(zlib_COMPILE_OPTIONS CACHE INTERNAL "")
 	set(zlib_INCLUDE_DIRS CACHE INTERNAL "")
+	set(zlib_DEFINITIONS CACHE INTERNAL "")
 	set(zlib_LINK_OPTIONS CACHE INTERNAL "")
 	set(zlib_RPATH CACHE INTERNAL "")
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/zlib/find_zlib.cmake)

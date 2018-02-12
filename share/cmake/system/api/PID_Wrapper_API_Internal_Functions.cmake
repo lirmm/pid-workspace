@@ -95,8 +95,7 @@ if(${PROJECT_NAME}_KNOWN_VERSIONS)
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPENDENCIES CACHE INTERNAL "")
 
 		#reset build related variables for this version
-		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_STATIC_LINKS CACHE INTERNAL "")
-		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_SHARED_LINKS CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_LINKS CACHE INTERNAL "")
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_INCLUDES CACHE INTERNAL "")
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_DEFINITIONS CACHE INTERNAL "")
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_COMPILER_OPTIONS CACHE INTERNAL "")
@@ -511,8 +510,7 @@ foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
 	endif()
 
 	#manage build flags coming from dependencies (includes, links, flags)
-	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_STATIC_LINKS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_STATIC_LINKS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_SHARED_LINKS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_SHARED_LINKS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_LINKS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_LINKS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_INCLUDES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_INCLUDES} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_DEFINITIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_DEFINITIONS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_COMPILER_OPTIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_COMPILER_OPTIONS} CACHE INTERNAL \"\")\n")
@@ -574,43 +572,132 @@ endforeach()
 endif()
 endfunction(generate_Wrapper_Build_File)
 
-### return only the list of path to links folders or
+### deduce the options than can be used when building an external package that depends on the target package
+# based on the description provided by external package use file
+# FOR LINKS: path to links folders or direct link options
 # !! remove the -l option so that we can use it even with projects that do not use direct compiler options like those using cmake)
 # !! do not remove the -l if no absolute path can be deduced
 # !! resolve the path for those that can be translated into absolute path
-function(agregate_All_Links version RES_STATIC RES_SHARED)
-#TODO fill: set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_LINKS CACHE INTERNAL "")
-endfunction(agregate_All_Links)
-
-### return only the list of path to include folders
+# FOR INCLUDES: only the list of path to include folders
 # !! remove the -I option so that we can use it even with projects that do not use direct compiler options like those using cmake)
 # !! systematically translated into absolute path
-function(agregate_All_Includes version RES)
-#TODO fill: set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_INCLUDES CACHE INTERNAL "")
-endfunction(agregate_All_Includes)
-
-### return only the list of definitions used to compile the project version
+# FOR DEFINITIONS:  only the list of definitions used to compile the project version
 # !! remove the -D option so that we can use it even with projects that do not use direct compiler options like those using cmake)
-function(agregate_All_Defines version RES)
-#TODO fill: set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_FLAGS CACHE INTERNAL "")
-endfunction(agregate_All_Defines)
-
-### return the list of other compile options used to compile the project version
+# FOR COMPILER OPTIONS: return the list of other compile options used to compile the project version
 # !! option are kept "as is" EXCEPT those setting the C and CXX languages standards to use to build the package
-function(agregate_All_Options version RES_OPTS RES_C_STD RES_CXX_STD)
-#TODO fill: set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_FLAGS CACHE INTERNAL "")
-endfunction(agregate_All_Options)
+function(agregate_All_Build_Info_For_Package package RES_INCS RES_DEFS RES_OPTS RES_STD_C REST_STD_CXX RES_LINKS)
+set(all_links)
+set(all_definitions)
+set(all_includes)
+set(all_compiler_options)
 
+#dealing with configurations
+foreach(config IN ITEMS ${${prefix}_CONFIGURATIONS})
+	list(APPEND all_links ${${config}_LINK_OPTIONS})
+	list(APPEND all_definitions ${${config}_DEFINITIONS})
+	list(APPEND all_includes ${${config}_INCLUDE_DIRS})
+	list(APPEND all_compiler_options ${${config}_COMPILE_OPTIONS})
+endforeach()
+
+#there is a description of package content
+# simply append the options related to this description b(rutal but quite simple approach)
+if(${package}_COMPONENTS)
+	foreach(comp IN ITEMS ${${package}_COMPONENTS})
+		list(APPEND all_links ${${package}_${comp}_STATIC_LINKS} ${${package}_${comp}_SHARED_LINKS})
+		list(APPEND all_definitions ${${package}_${comp}_DEFS})
+		list(APPEND all_includes ${${package}_${comp}_INC_DIRS})
+		list(APPEND all_compiler_options ${${config}_OPTS})
+	endforeach()
+endif()
+
+#dealing with dependent package (do the recursion)
+foreach(dep_package IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES})
+	agregate_All_Build_Info_For_Package(${package}
+	RES_INCS RES_DEFS RES_OPTS RES_STD_C REST_STD_CXX RES_LINKS)
+	list(APPEND all_links ${RES_LINKS})
+	list(APPEND all_definitions ${RES_DEFS})
+	list(APPEND all_includes ${RES_INCS})
+	list(APPEND all_compiler_options ${RES_OPTS})
+	if(RES_STD_C)
+		is_C_Version_Less(IS_LESS ${c_std} ${RES_STD_C})
+		set(c_std ${RES_STD_C})
+	endif()
+	if(REST_STD_CXX)
+		is_CXX_Version_Less(IS_LESS ${cxx_std} ${REST_STD_CXX})
+		set(cxx_std ${REST_STD_CXX})
+	endif()
+endforeach()
+remove_Duplicates_From_List(all_includes)
+remove_Duplicates_From_List(all_definitions)
+remove_Duplicates_From_List(all_compiler_options)
+remove_Duplicates_From_List(all_links)
+set(${RES_INCS} ${all_includes} CACHE INTERNAL "")
+set(${RES_DEFS} ${all_definitions} CACHE INTERNAL "")
+set(${RES_OPTS} ${all_compiler_options} CACHE INTERNAL "")
+set(${RES_STD_C} ${c_std} CACHE INTERNAL "")
+set(${RES_STD_CXX} ${cxx_std} CACHE INTERNAL "")
+set(${RES_LINKS} ${all_links} CACHE INTERNAL "")
+endfunction(agregate_All_Build_Info_For_Package)
+
+
+### set the the list of compilation option used to build the external package
+function(agregate_All_Build_Info version)
+	set(prefix ${PROJECT_NAME}_KNOWN_VERSION_${version})#just for a simpler description
+	set(all_links)
+	set(all_definitions)
+	set(all_includes)
+	set(all_compiler_options)
+	set(c_std 90) #basic C language version
+	set(cxx_std 98) #basic CXX language version
+	#dealing with configurations
+	foreach(config IN ITEMS ${${prefix}_CONFIGURATIONS})
+		list(APPEND all_links ${${config}_LINK_OPTIONS})
+		list(APPEND all_definitions ${${config}_DEFINITIONS})
+		list(APPEND all_includes ${${config}_INCLUDE_DIRS})
+		list(APPEND all_compiler_options ${${config}_COMPILE_OPTIONS})
+	endforeach()
+
+	#dealing with direct package dependencies
+	foreach(package IN ITEMS ${${prefix}_DEPENDENCIES})
+		#agregate all information about the dependency package (no need to get per component requirements as external projects are built all at once)
+		agregate_All_Build_Info_For_Package(${package}
+		RES_INCS RES_DEFS RES_OPTS RES_STD_C REST_STD_CXX RES_LINKS)
+		list(APPEND all_links ${RES_LINKS})
+		list(APPEND all_definitions ${RES_DEFS})
+		list(APPEND all_includes ${RES_INCS})
+		list(APPEND all_compiler_options ${RES_OPTS})
+		if(RES_STD_C)
+			is_C_Version_Less(IS_LESS ${c_std} ${RES_STD_C})
+			set(c_std ${RES_STD_C})
+		endif()
+		if(REST_STD_CXX)
+			is_CXX_Version_Less(IS_LESS ${cxx_std} ${REST_STD_CXX})
+			set(cxx_std ${REST_STD_CXX})
+		endif()
+	endforeach()
+	remove_Duplicates_From_List(all_includes)
+	remove_Duplicates_From_List(all_definitions)
+	remove_Duplicates_From_List(all_compiler_options)
+	remove_Duplicates_From_List(all_links)
+
+	#now resolving path when necessary
+	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${all_links}" Release)
+	resolve_External_Includes_Path(COMPLETE_INCS_PATH "${all_includes}" Release)
+	
+	#set the cached variable accordingly
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_INCLUDES ${COMPLETE_INCS_PATH} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_DEFINITIONS ${all_definitions} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_COMPILER_OPTIONS ${all_compiler_options} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_C_STANDARD ${c_std} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_CXX_STANDARD ${cxx_std} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_LINKS ${COMPLETE_LINKS_PATH} CACHE INTERNAL "")
+endfunction(agregate_All_Build_Info)
 
 ###
 function(configure_Wrapper_Build_Variables)
 if(${PROJECT_NAME}_KNOWN_VERSIONS)
 	foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
-		agregate_All_Links(${version} RES_STATIC RES_SHARED)
-		agregate_All_Defines(${version} RES_DEFINES)
-		agregate_All_Includes(${version} RES_INCLUDES)
-		agregate_All_Options(${version} RES_OPTS RES_C_STD RES_CXX_STD)
-
+		agregate_All_Build_Info(${version})
 	endforeach()
 endif()
 endfunction(configure_Wrapper_Build_Variables)

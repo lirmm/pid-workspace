@@ -21,6 +21,7 @@ if(NOT libusb_FOUND) #any linux or macosx is zlib ...
 	set(libusb_COMPILE_OPTIONS CACHE INTERNAL "")
 	set(libusb_INCLUDE_DIRS CACHE INTERNAL "")
 	set(libusb_LINK_OPTIONS CACHE INTERNAL "")
+	set(libusb_DEFINITIONS CACHE INTERNAL "")
 	set(libusb_RPATH CACHE INTERNAL "")
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libusb/find_libusb.cmake)
 	if(libusb_FOUND)
