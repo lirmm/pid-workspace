@@ -29,6 +29,7 @@ include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
+include(External_Definition NO_POLICY_SCOPE) #to interpret content description of external packages
 
 ########################################################################
 ########## Categories (classification of packages) management ##########
