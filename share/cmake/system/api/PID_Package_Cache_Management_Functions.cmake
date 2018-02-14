@@ -371,29 +371,6 @@ set (${PROJECT_NAME}_VERSION_PATCH CACHE INTERNAL "" )
 set (${PROJECT_NAME}_VERSION CACHE INTERNAL "" )
 endfunction(reset_Version_Cache_Variables)
 
-### reset variables describing platforms constraints
-function(reset_Platforms_Variables)
-
-	set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS CACHE INTERNAL "")
-	if(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX}) # reset all configurations satisfied by current platform
-		set(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	endif()
-	#reset all constraints defined by the package
-	if(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} GREATER 0)
-		set(CURRENT_INDEX 0)
-
-		while(${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}} GREATER CURRENT_INDEX)
-			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_TYPE${USE_MODE_SUFFIX} CACHE INTERNAL "")
-			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ARCH${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		  	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_OS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ABI${USE_MODE_SUFFIX} CACHE INTERNAL "")
-			set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONFIGURATION${USE_MODE_SUFFIX} CACHE INTERNAL "")
-			math(EXPR CURRENT_INDEX "${CURRENT_INDEX}+1")
-		endwhile()
-	endif()
-	set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} 0 CACHE INTERNAL "")
-endfunction(reset_Platforms_Variables)
-
 ### define a set of configuration constraints that applies to all platforms with specific condition specified by type arch os and abi
 function(add_Platform_Constraint_Set type arch os abi constraints)
 	if(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX})
@@ -623,7 +600,7 @@ set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} "${cxx_standard}
 endfunction(init_Component_Cached_Variables_For_Export)
 
 ### resetting all internal cached variables that would cause some troubles
-function(reset_Project_Description_Cached_Variables)
+function(reset_Package_Description_Cached_Variables)
 
 # package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 foreach(dep_package IN ITEMS ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}})
@@ -651,28 +628,9 @@ set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
 
-#unsetting all root variables usefull to the find/configuration mechanism
-foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
-	set(${a_used_package}_FOUND CACHE INTERNAL "")
-	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
-	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
-	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
-endforeach()
 
-foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES})
-	set(${a_used_package}_FOUND CACHE INTERNAL "")
-	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
-	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
-	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
-endforeach()
-
-set(${PROJECT_NAME}_ALL_USED_PACKAGES CACHE INTERNAL "")
-set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES CACHE INTERNAL "")
-reset_Platforms_Variables()
-reset_To_Install_Packages()
-reset_To_Install_External_Packages()
 reset_Documentation_Info()
-endfunction(reset_Project_Description_Cached_Variables)
+endfunction(reset_Package_Description_Cached_Variables)
 
 ###
 function(init_Component_Description component description usage)

@@ -385,15 +385,18 @@ endif()
 #################################################
 ######## Initializing cache variables ###########
 #################################################
-reset_Project_Description_Cached_Variables()
+reset_Package_Description_Cached_Variables()
+reset_Package_Platforms_Variables()
+reset_Packages_Finding_Variables()
 init_PID_Version_Variable()
-init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
+endif()
 reset_Version_Cache_Variables()
 check_For_Remote_Respositories("${address}")
 init_Standard_Path_Cache_Variables()
 begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 endmacro(declare_Package)
-
 
 #####################################################################################
 ################## setting info on documentation ####################################

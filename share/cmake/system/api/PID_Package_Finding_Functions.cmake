@@ -658,6 +658,30 @@ endforeach()
 set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_To_Install_External_Packages)
 
+
+###
+function(reset_Found_External_Packages)
+foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES})
+	set(${a_used_package}_FOUND CACHE INTERNAL "")
+	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
+	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
+	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES CACHE INTERNAL "")
+endfunction(reset_Found_External_Packages)
+
+
+###
+function(reset_Found_Native_Packages)
+foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
+	set(${a_used_package}_FOUND CACHE INTERNAL "")
+	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
+	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
+	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_ALL_USED_PACKAGES CACHE INTERNAL "")
+endfunction(reset_Found_Native_Packages)
+
 ###
 function(need_Install_External_Packages NEED)
 if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX})
@@ -667,6 +691,14 @@ else()
 endif()
 endfunction(need_Install_External_Packages)
 
+###
+function(reset_Packages_Finding_Variables)
+#unsetting all cache variables usefull to the find/configuration mechanism
+reset_Found_Native_Packages()
+reset_Found_External_Packages()
+reset_To_Install_Packages()
+reset_To_Install_External_Packages()
+endfunction(reset_Packages_Finding_Variables)
 
 #########################################################################################################
 ################## functions to resolve packages dependencies globally ##################################

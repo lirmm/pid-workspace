@@ -85,12 +85,10 @@ set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${$
 set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
 set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
 set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_PUBLIC_ADDRESS ${public_address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
 set(${PROJECT_NAME}_USER_README_FILE ${readme_file} CACHE INTERNAL "")
-endif()
 reset_References_Info()
 endfunction(init_Meta_Info_Cache_Variables)
 

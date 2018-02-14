@@ -234,6 +234,7 @@ if(DIR_NAME STREQUAL "build")
   ######## Initializing cache variables ###########
   #################################################
   reset_Wrapper_Description_Cached_Variables()
+	reset_Packages_Finding_Variables()
   init_PID_Version_Variable()
   init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
 	begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
