@@ -129,10 +129,6 @@ endmacro(load_Current_Platform)
 #############################################################################################
 include(CMakeDependentOption)
 
-macro(declare_Wrapper_Global_Cache_Options)
-option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
-endmacro(declare_Wrapper_Global_Cache_Options)
-
 ###
 macro(declare_Native_Global_Cache_Options)
 
@@ -328,33 +324,6 @@ set(RUN_TESTS_WITH_PRIVILEGES FALSE CACHE INTERNAL "")
 endfunction(reset_Mode_Cache_Options)
 
 
-### setting global variable describing versions used
-function(init_PID_Version_Variable)
-if(NOT EXISTS ${WORKSPACE_DIR}/pid/PID_version.cmake)#if workspace has not been built (or build files deleted), then build it to get the version
-	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
-endif()
-include(${WORKSPACE_DIR}/pid/PID_version.cmake) # get the current workspace version
-
-if(	EXISTS ${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake)# get the workspace version with wich the package has been built
-	#The file already resides in package shared files
-	include(${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake)
-	if(${PID_WORKSPACE_VERSION} LESS ${${PROJECT_NAME}_PID_VERSION})#workspace need to be updated
-		update_Workspace_Repository("origin")
-		execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
-		include(${WORKSPACE_DIR}/pid/PID_version.cmake) # get the current workspace version AGAIN (most up to date version)
-		if(${PID_WORKSPACE_VERSION} LESS ${${PROJECT_NAME}_PID_VERSION})#still less => impossible
-			message("[PID] INFO : PID version ${${PROJECT_NAME}_PID_VERSION} is corrupted for package ${PROJECT_NAME} ... regenerating version according to most up to date workspace.")
-			set(${PROJECT_NAME}_PID_VERSION ${PID_WORKSPACE_VERSION} CACHE INTERNAL "")
-			file(WRITE ${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake "set(${PROJECT_NAME}_PID_VERSION ${${PROJECT_NAME}_PID_VERSION} CACHE INTERNAL \"\")")#save the PID version with which the package has been built
-		endif()
-	#else if > the workspace version of scripts should be able to manage difference between versions by using the ${PROJECT_NAME}_PID_VERSION variable (inside package) or ${package_name}_PID_VERSION (outside package)
-	endif()
-else()
-	set(${PROJECT_NAME}_PID_VERSION ${PID_WORKSPACE_VERSION})#if no version defined yet then set it to the current workspace one
-	file(WRITE ${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake "set(${PROJECT_NAME}_PID_VERSION ${${PROJECT_NAME}_PID_VERSION} CACHE INTERNAL \"\")")#save the PID version with which the package has been built
-endif()
-
-endfunction(init_PID_Version_Variable)
 
 ###
 function(first_Called_Build_Mode RESULT)
@@ -405,94 +374,12 @@ macro(print_Component_Variables)
 	endforeach()
 endmacro(print_Component_Variables)
 
-function(init_Package_Info_Cache_Variables author institution mail description year license address public_address readme_file)
-set(res_string)
-foreach(string_el IN ITEMS ${author})
-	set(res_string "${res_string}_${string_el}")
-endforeach()
-set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
-
-set(res_string "")
-foreach(string_el IN ITEMS ${institution})
-	set(res_string "${res_string}_${string_el}")
-endforeach()
-set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_CONTACT_MAIL ${mail} CACHE INTERNAL "")
-
-set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
-set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
-set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
-set(${PROJECT_NAME}_PUBLIC_ADDRESS ${public_address} CACHE INTERNAL "")
-set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
-set(${PROJECT_NAME}_USER_README_FILE ${readme_file} CACHE INTERNAL "")
-endif()
-reset_References_Info()
-reset_Version_Cache_Variables()
-endfunction(init_Package_Info_Cache_Variables)
-
 function(init_Standard_Path_Cache_Variables)
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH}  CACHE INTERNAL "")
 set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resources CACHE INTERNAL "")
 endfunction(init_Standard_Path_Cache_Variables)
 
-### documentation sites related cache variables management
-function(init_Documentation_Info_Cache_Variables framework project_page repo home_page introduction)
-if(framework STREQUAL "")
-	set(${PROJECT_NAME}_FRAMEWORK CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PROJECT_PAGE ${project_page} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_SITE_ROOT_PAGE "${home_page}" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_SITE_GIT_ADDRESS "${repo}" CACHE INTERNAL "")
-else()
-	set(${PROJECT_NAME}_FRAMEWORK ${framework} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PROJECT_PAGE ${project_page} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_SITE_ROOT_PAGE CACHE INTERNAL "")
-	set(${PROJECT_NAME}_SITE_GIT_ADDRESS CACHE INTERNAL "")
-endif()
-set(${PROJECT_NAME}_SITE_INTRODUCTION "${introduction}" CACHE INTERNAL "")
-endfunction(init_Documentation_Info_Cache_Variables)
-
-### defining a framework static site the package belongs to
-macro(define_Framework_Contribution framework url description)
-if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
-	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
-	return()
-elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
-	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a framework !")
-	return()
-endif()
-init_Documentation_Info_Cache_Variables("${framework}" "${url}" "" "" "${description}")
-endmacro(define_Framework_Contribution)
-
-### defining a lone static site for the package
-macro(define_Static_Site_Contribution url git_repository homepage description)
-if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
-	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a static site !")
-	return()
-elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
-	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a new one !")
-	return()
-endif()
-init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${homepage}" "${description}")
-
-endif()
-endmacro(define_Static_Site_Contribution)
-
-
-### reset all cache variables used in static web site based documentation
-function(reset_Documentation_Info)
-	set(${PROJECT_NAME}_FRAMEWORK CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PROJECT_PAGE CACHE INTERNAL "")
-	set(${PROJECT_NAME}_SITE_ROOT_PAGE CACHE INTERNAL "")
-	set(${PROJECT_NAME}_SITE_GIT_ADDRESS CACHE INTERNAL "")
-	set(${PROJECT_NAME}_SITE_INTRODUCTION CACHE INTERNAL "")
-	set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING CACHE INTERNAL "")
-	set(${PROJECT_NAME}_DEV_INFO_AUTOMATIC_PUBLISHING CACHE INTERNAL "")
-	set(${PROJECT_NAME}_USER_README_FILE CACHE INTERNAL "")
-endfunction(reset_Documentation_Info)
 
 ### set cache variable for install
 function(set_Install_Cache_Variables)
@@ -523,120 +410,6 @@ set (${PROJECT_NAME}_VERSION_MINOR CACHE INTERNAL "" )
 set (${PROJECT_NAME}_VERSION_PATCH CACHE INTERNAL "" )
 set (${PROJECT_NAME}_VERSION CACHE INTERNAL "" )
 endfunction(reset_Version_Cache_Variables)
-
-###
-function(add_Author author institution)
-	set(res_string_author)
-	foreach(string_el IN ITEMS ${author})
-		set(res_string_author "${res_string_author}_${string_el}")
-	endforeach()
-	set(res_string_instit)
-	foreach(string_el IN ITEMS ${institution})
-		set(res_string_instit "${res_string_instit}_${string_el}")
-	endforeach()
-	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS};${res_string_author}(${res_string_instit})" CACHE INTERNAL "")
-endfunction(add_Author)
-
-
-###
-function(add_Category category_spec)
-	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category_spec} CACHE INTERNAL "")
-endfunction(add_Category)
-
-###################################################################################
-############### API functions for setting platform related variables ##############
-###################################################################################
-
-## check if a platform name match a platform defined in workspace
-function(platform_Exist IS_DEFINED platform)
-if(platform AND NOT platform STREQUAL "")
-	list(FIND WORKSPACE_ALL_PLATFORMS "${platform}" INDEX)
-	if(INDEX EQUAL -1)
-		set(${IS_DEFINED} FALSE PARENT_SCOPE)
-	else()
-		set(${IS_DEFINED} TRUE PARENT_SCOPE)
-	endif()
-else()
-	set(${IS_DEFINED} FALSE PARENT_SCOPE)
-endif()
-endfunction(platform_Exist)
-
-
-## function used to create uvariable usefull to list common properties of platforms
-function(initialize_Platform_Variables)
-set(WORKSPACE_ALL_TYPE PARENT_SCOPE)
-set(WORKSPACE_ALL_OS  PARENT_SCOPE)
-set(WORKSPACE_ALL_ARCH PARENT_SCOPE)
-set(WORKSPACE_ALL_ABI PARENT_SCOPE)
-if(WORKSPACE_ALL_PLATFORMS)
-	foreach(platform IN ITEMS ${WORKSPACE_ALL_PLATFORMS})
-		string(REGEX REPLACE "^([^_]+)_([^_]+)_([^_]+)_([^_]+)$" "\\1;\\2;\\3;\\4" RES_LIST ${platform})
-		if(NOT platform STREQUAL "${RES_LIST}")#match a platform with a target OS
-			list(GET RES_LIST 0 TYPE)
-			list(GET RES_LIST 1 ARCH)
-			list(GET RES_LIST 2 OS)
-			list(GET RES_LIST 3 ABI)
-			list(APPEND WORKSPACE_ALL_TYPE ${TYPE})
-			list(APPEND WORKSPACE_ALL_OS ${OS})
-			list(APPEND WORKSPACE_ALL_ARCH ${ARCH})
-			list(APPEND WORKSPACE_ALL_ABI ${ABI})
-		else()
-			string(REGEX REPLACE "^([^_]+)_([^_]+)_([^_]+)$" "\\1;\\2;\\3" RES_LIST ${platform})
-			if(NOT platform STREQUAL "${RES_LIST}")#match a platform without any target OS
-				list(GET RES_LIST 0 TYPE)
-				list(GET RES_LIST 1 ARCH)
-				list(GET RES_LIST 2 ABI)
-				list(APPEND WORKSPACE_ALL_TYPE ${TYPE})
-				list(APPEND WORKSPACE_ALL_ARCH ${ARCH})
-				list(APPEND WORKSPACE_ALL_ABI ${ABI})
-			endif()
-		endif()
-	endforeach()
-	list(REMOVE_DUPLICATES WORKSPACE_ALL_TYPE)
-	list(REMOVE_DUPLICATES WORKSPACE_ALL_OS)
-	list(REMOVE_DUPLICATES WORKSPACE_ALL_ARCH)
-	list(REMOVE_DUPLICATES WORKSPACE_ALL_ABI)
-
-	set(WORKSPACE_ALL_TYPE ${WORKSPACE_ALL_TYPE} PARENT_SCOPE)
-	set(WORKSPACE_ALL_OS ${WORKSPACE_ALL_OS} PARENT_SCOPE)
-	set(WORKSPACE_ALL_ARCH ${WORKSPACE_ALL_ARCH} PARENT_SCOPE)
-	set(WORKSPACE_ALL_ABI ${WORKSPACE_ALL_ABI} PARENT_SCOPE)
-endif()
-endfunction(initialize_Platform_Variables)
-
-
-### add a direct reference to a binary version of the package
-function(add_Reference version platform url url-dbg)
-platform_Exist(IS_DEFINED ${platform})
-if(NOT IS_DEFINED)
-	return()
-endif()
-set(LIST_OF_VERSIONS ${${PROJECT_NAME}_REFERENCES} ${version})
-list(REMOVE_DUPLICATES LIST_OF_VERSIONS)
-set(${PROJECT_NAME}_REFERENCES  ${LIST_OF_VERSIONS} CACHE INTERNAL "")#to put the modification in cache
-list(FIND ${PROJECT_NAME}_REFERENCE_${version} ${platform} INDEX)
-if(INDEX EQUAL -1)#this version for tha target platform is not already registered
-	set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${platform} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL ${url} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL_DEBUG ${url-dbg} CACHE INTERNAL "")
-endif()
-endfunction(add_Reference)
-
-### reset variables describing direct references to binaries
-function(reset_References_Info)
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
-	# references to package binaries version available must be reset
-	foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES})
-		foreach(ref_platform IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}})
-			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL CACHE INTERNAL "")
-			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG CACHE INTERNAL "")
-		endforeach()
-		set(${PROJECT_NAME}_REFERENCE_${ref_version} CACHE INTERNAL "")
-	endforeach()
-	set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL "")
-endif()
-endfunction(reset_References_Info)
 
 ### reset variables describing platforms constraints
 function(reset_Platforms_Variables)
@@ -941,22 +714,6 @@ reset_To_Install_External_Packages()
 reset_Documentation_Info()
 endfunction(reset_Project_Description_Cached_Variables)
 
-
-###
-function(publish_Binaries true_or_false)
-set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERNAL "")
-endfunction(publish_Binaries)
-
-###
-function(publish_Development_Info true_or_false)
-set(${PROJECT_NAME}_DEV_INFO_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERNAL "")
-endfunction(publish_Development_Info)
-
-### restrict CI to a limited set of platforms using this function
-function(restrict_CI platform)
-	set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS} ${platform} CACHE INTERNAL "")
-endfunction(restrict_CI)
-
 ###
 function(init_Component_Description component description usage)
 generate_Formatted_String("${description}" RES_STRING)
@@ -1192,114 +949,6 @@ foreach(dep_pack IN ITEMS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 	endforeach()
 endforeach()
 endfunction(is_Bin_Component_Exporting_Other_Components)
-
-
-##############################################################################################################
-############### API functions for managing cache variables bound to package dependencies #####################
-##############################################################################################################
-
-###
-function(add_To_Install_Package_Specification package version version_exact)
-list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
-if(INDEX EQUAL -1)#not found
-	set(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}} ${package} CACHE INTERNAL "")
-	if(version AND NOT version STREQUAL "")
-		set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
-		if(version_exact)
-			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-		else()
-			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
-		endif()
-	endif()
-else()#package already required as "to install"
-	if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
-		list(FIND ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} ${version} INDEX)
-		if(INDEX EQUAL -1)#version not already required
-			set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
-			if(version_exact)
-				set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-			else()
-				set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
-			endif()
-		elseif(version_exact) #if this version was previously not exact it becomes exact if exact is required
-			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-		endif()
-	else()# when there is a problem !! (maybe a warning could be cgood idea)
-		set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
-		if(version_exact)
-			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-		else()
-			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
-		endif()
-	endif()
-endif()
-endfunction(add_To_Install_Package_Specification)
-
-###
-function(reset_To_Install_Packages)
-foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}})
-	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_${pack}_VERSIONS${USE_MODE_SUFFIX}})
-		set(${PROJECT_NAME}_TOINSTALL_${pack}_${version}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	endforeach()
-	set(${PROJECT_NAME}_TOINSTALL_${pack}_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-endforeach()
-set(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} CACHE INTERNAL "")
-endfunction(reset_To_Install_Packages)
-
-###
-function(need_Install_Packages NEED)
-if(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX})
-	set(${NEED} TRUE PARENT_SCOPE)
-else()
-	set(${NEED} FALSE PARENT_SCOPE)
-endif()
-endfunction(need_Install_Packages)
-
-
-### set an external package as "to be installed"
-function(add_To_Install_External_Package_Specification package version version_exact)
-list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
-if(INDEX EQUAL -1)#not found => adding it to "to install" packages
-	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}} ${package} CACHE INTERNAL "")
-	if(version AND NOT version STREQUAL "")#set the version
-		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
-		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} "${version_exact}" CACHE INTERNAL "")
-	endif()
-else()#package already required as "to install"
-	if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})#required versions are already specified
-		list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} ${version} INDEX)
-		if(INDEX EQUAL -1)#version not already required => adding it to required versions
-			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}} "${version}" CACHE INTERNAL "")
-			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} "${version_exact}" CACHE INTERNAL "")
-		elseif(version_exact) #if this version was previously not exact it becomes exact if exact is required
-			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-		endif()
-	else()#no version specified => simply add the version constraint
-		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
-		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} "${version_exact}" CACHE INTERNAL "")
-	endif()
-endif()
-endfunction(add_To_Install_External_Package_Specification)
-
-###
-function(reset_To_Install_External_Packages)
-foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}})
-	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS${USE_MODE_SUFFIX}})
-		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_${version}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	endforeach()
-	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-endforeach()
-set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} CACHE INTERNAL "")
-endfunction(reset_To_Install_External_Packages)
-
-###
-function(need_Install_External_Packages NEED)
-if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX})
-	set(${NEED} TRUE PARENT_SCOPE)
-else()
-	set(${NEED} FALSE PARENT_SCOPE)
-endif()
-endfunction(need_Install_External_Packages)
 
 
 ##################################################################################

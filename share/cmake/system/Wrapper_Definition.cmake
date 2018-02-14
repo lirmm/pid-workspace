@@ -102,7 +102,7 @@ set(oneValueArgs PROJECT FRAMEWORK GIT PAGE)
 set(multiValueArgs DESCRIPTION ALLOWED_PLATFORMS)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_PUBLISHING "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_PUBLISHING_PROJECT)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the project page of the official package repository using PROJECT keyword.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the project page of the official external package wrapper repository using PROJECT keyword.")
 endif()
 
 if(NOT DECLARE_PID_WRAPPER_PUBLISHING_FRAMEWORK AND NOT DECLARE_PID_WRAPPER_PUBLISHING_GIT)
@@ -456,6 +456,5 @@ endif()
 if(GET_EXTERNAL_DEPENDENCY_INFO_LINKS)
   set(${GET_EXTERNAL_DEPENDENCY_INFO_LINKS} ${${prefix}_BUILD_LINKS} PARENT_SCOPE)
 endif()
-
 
 endfunction(get_External_Dependency_Info)

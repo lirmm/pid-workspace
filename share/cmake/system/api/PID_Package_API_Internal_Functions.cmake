@@ -35,6 +35,8 @@ include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Package_Coding_Support NO_POLICY_SCOPE)
 include(PID_Package_Continuous_Integration_Functions NO_POLICY_SCOPE)
 include(PID_Plugins_Management NO_POLICY_SCOPE)
+include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
+include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 
 ##################################################################################
 #################### package management public functions and macros ##############
@@ -387,7 +389,8 @@ endif()
 #################################################
 reset_Project_Description_Cached_Variables()
 init_PID_Version_Variable()
-init_Package_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
+init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
+reset_Version_Cache_Variables()
 check_For_Remote_Respositories("${address}")
 init_Standard_Path_Cache_Variables()
 begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view

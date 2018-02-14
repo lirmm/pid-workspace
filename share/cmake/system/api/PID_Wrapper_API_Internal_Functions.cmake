@@ -20,7 +20,15 @@
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
-include(Package_Definition NO_POLICY_SCOPE) #to be able to interpret description of dependencies (external packages)
+include(External_Definition NO_POLICY_SCOPE) #to be able to interpret description of dependencies (external packages)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Git_Functions NO_POLICY_SCOPE)
+include(PID_Version_Management_Functions NO_POLICY_SCOPE)
+include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
+include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
+include(PID_Deployment_Functions NO_POLICY_SCOPE)
+include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
+include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 
 ###########################################################################
 ############ description of functions implementing the API ################
@@ -245,13 +253,19 @@ if(DIR_NAME STREQUAL "build")
   #################################################
   reset_Wrapper_Description_Cached_Variables()
   init_PID_Version_Variable()
-  init_Wrapper_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
+  init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
 	begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 else()
   message("[PID] ERROR : please run cmake in the build folder of the wrapper ${PROJECT_NAME}.")
   return()
 endif()
 endmacro(declare_Wrapper)
+
+include(CMakeDependentOption)
+
+macro(declare_Wrapper_Global_Cache_Options)
+option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
+endmacro(declare_Wrapper_Global_Cache_Options)
 
 ###
 function(define_Wrapped_Project authors_references licenses original_project_url)
@@ -585,46 +599,56 @@ endfunction(generate_Wrapper_Build_File)
 # !! remove the -D option so that we can use it even with projects that do not use direct compiler options like those using cmake)
 # FOR COMPILER OPTIONS: return the list of other compile options used to compile the project version
 # !! option are kept "as is" EXCEPT those setting the C and CXX languages standards to use to build the package
-function(agregate_All_Build_Info_For_Package package RES_INCS RES_DEFS RES_OPTS RES_STD_C REST_STD_CXX RES_LINKS)
+function(agregate_All_Build_Info_For_Package package mode RES_INCS RES_DEFS RES_OPTS RES_STD_C REST_STD_CXX RES_LINKS)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(all_links)
 set(all_definitions)
 set(all_includes)
 set(all_compiler_options)
-
+set(c_std 90)
+set(cxx_std 98)
 #dealing with configurations
-foreach(config IN ITEMS ${${prefix}_CONFIGURATIONS})
-	list(APPEND all_links ${${config}_LINK_OPTIONS})
-	list(APPEND all_definitions ${${config}_DEFINITIONS})
-	list(APPEND all_includes ${${config}_INCLUDE_DIRS})
-	list(APPEND all_compiler_options ${${config}_COMPILE_OPTIONS})
+foreach(config IN ITEMS ${${package}_CONFIGURATIONS})
+	list(APPEND all_links ${${package}_LINK_OPTIONS})
+	list(APPEND all_definitions ${${package}_DEFINITIONS})
+	list(APPEND all_includes ${${package}_INCLUDE_DIRS})
+	list(APPEND all_compiler_options ${${package}_COMPILE_OPTIONS})
 endforeach()
 
 #there is a description of package content
-# simply append the options related to this description b(rutal but quite simple approach)
+# simply append the options related to this description (rutal but quite simple approach)
 if(${package}_COMPONENTS)
-	foreach(comp IN ITEMS ${${package}_COMPONENTS})
-		list(APPEND all_links ${${package}_${comp}_STATIC_LINKS} ${${package}_${comp}_SHARED_LINKS})
-		list(APPEND all_definitions ${${package}_${comp}_DEFS})
-		list(APPEND all_includes ${${package}_${comp}_INC_DIRS})
-		list(APPEND all_compiler_options ${${config}_OPTS})
+	foreach(comp IN ITEMS ${${package}_COMPONENTS}${VAR_SUFFIX})
+		list(APPEND all_links ${${package}_${comp}_STATIC_LINKS${VAR_SUFFIX}} ${${package}_${comp}_SHARED_LINKS${VAR_SUFFIX}})
+		list(APPEND all_definitions ${${package}_${comp}_DEFS${VAR_SUFFIX}})
+		list(APPEND all_includes ${${package}_${comp}_INC_DIRS${VAR_SUFFIX}})
+		list(APPEND all_compiler_options ${${package}_${comp}_OPTS${VAR_SUFFIX}})
+		if(RES_STD_C)#always take the greater standard number
+			is_C_Version_Less(IS_LESS ${c_std} ${${package}_${comp}_C_STANDARD${VAR_SUFFIX}})
+			set(c_std ${${package}_${comp}_C_STANDARD${VAR_SUFFIX}})
+		endif()
+		if(REST_STD_CXX)#always take the greater standard number
+			is_CXX_Version_Less(IS_LESS ${cxx_std} ${${package}_${comp}_CXX_STANDARD${VAR_SUFFIX}})
+			set(cxx_std ${${package}_${comp}_CXX_STANDARD${VAR_SUFFIX}})
+		endif()
 	endforeach()
 endif()
 
 #dealing with dependent package (do the recursion)
-foreach(dep_package IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES})
-	agregate_All_Build_Info_For_Package(${package}
-	RES_INCS RES_DEFS RES_OPTS RES_STD_C REST_STD_CXX RES_LINKS)
+foreach(dep_package IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+	agregate_All_Build_Info_For_Package(${package} ${mode}
+	RES_INCS RES_DEFS RES_OPTS STD_C STD_CXX RES_LINKS)
 	list(APPEND all_links ${RES_LINKS})
 	list(APPEND all_definitions ${RES_DEFS})
 	list(APPEND all_includes ${RES_INCS})
 	list(APPEND all_compiler_options ${RES_OPTS})
-	if(RES_STD_C)
-		is_C_Version_Less(IS_LESS ${c_std} ${RES_STD_C})
-		set(c_std ${RES_STD_C})
+	if(STD_C)
+		is_C_Version_Less(IS_LESS ${c_std} ${STD_C})
+		set(c_std ${STD_C})
 	endif()
-	if(REST_STD_CXX)
-		is_CXX_Version_Less(IS_LESS ${cxx_std} ${REST_STD_CXX})
-		set(cxx_std ${REST_STD_CXX})
+	if(STD_CXX)
+		is_CXX_Version_Less(IS_LESS ${cxx_std} ${STD_CXX})
+		set(cxx_std ${STD_CXX})
 	endif()
 endforeach()
 remove_Duplicates_From_List(all_includes)
@@ -660,7 +684,7 @@ function(agregate_All_Build_Info version)
 	#dealing with direct package dependencies
 	foreach(package IN ITEMS ${${prefix}_DEPENDENCIES})
 		#agregate all information about the dependency package (no need to get per component requirements as external projects are built all at once)
-		agregate_All_Build_Info_For_Package(${package}
+		agregate_All_Build_Info_For_Package(${package} Release
 		RES_INCS RES_DEFS RES_OPTS RES_STD_C REST_STD_CXX RES_LINKS)
 		list(APPEND all_links ${RES_LINKS})
 		list(APPEND all_definitions ${RES_DEFS})
@@ -683,7 +707,7 @@ function(agregate_All_Build_Info version)
 	#now resolving path when necessary
 	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${all_links}" Release)
 	resolve_External_Includes_Path(COMPLETE_INCS_PATH "${all_includes}" Release)
-	
+
 	#set the cached variable accordingly
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_INCLUDES ${COMPLETE_INCS_PATH} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_BUILD_DEFINITIONS ${all_definitions} CACHE INTERNAL "")
@@ -1252,3 +1276,16 @@ function(generate_Description_For_External_Component file_for_version package pl
 		endforeach()
 	endif()
 endfunction(generate_Description_For_External_Component)
+
+
+### defining a framework static site the package belongs to
+macro(define_Wrapper_Framework_Contribution framework url description)
+if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
+	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
+	return()
+elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
+	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a framework !")
+	return()
+endif()
+init_Documentation_Info_Cache_Variables("${framework}" "${url}" "" "" "${description}")
+endmacro(define_Wrapper_Framework_Contribution)
