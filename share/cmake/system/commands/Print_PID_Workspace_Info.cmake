@@ -17,8 +17,6 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
-
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
@@ -26,6 +24,8 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
+load_Current_Platform() #loading the current platform configuration
+
 include(${WORKSPACE_DIR}/pid/CategoriesInfo.cmake NO_POLICY_SCOPE)
 
 if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))

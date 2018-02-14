@@ -85,46 +85,6 @@ set(${IS_EXACT} PARENT_SCOPE)
 endfunction(configured_With_Build_Constraints)
 
 #############################################################################################
-############### API functions for managing platform description variables ###################
-#############################################################################################
-
-macro(load_Current_Platform build_folder)
-	if(build_folder STREQUAL build)
-		if(CURRENT_PLATFORM AND NOT CURRENT_PLATFORM STREQUAL "")# a current platform is already defined
-			#if any of the following variable changed, the cache of the CMake project needs to be regenerated from scratch
-			set(TEMP_PLATFORM ${CURRENT_PLATFORM})
-			set(TEMP_C_COMPILER ${CMAKE_C_COMPILER})
-			set(TEMP_CXX_COMPILER ${CMAKE_CXX_COMPILER})
-			set(TEMP_CMAKE_LINKER ${CMAKE_LINKER})
-			set(TEMP_CMAKE_RANLIB ${CMAKE_RANLIB})
-			set(TEMP_CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID})
-			set(TEMP_CMAKE_CXX_COMPILER_VERSION ${CMAKE_CXX_COMPILER_VERSION})
-		endif()
-	endif()
-	include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
-
-	if(build_folder STREQUAL build)
-		if(TEMP_PLATFORM)
-			if( (NOT TEMP_PLATFORM STREQUAL CURRENT_PLATFORM) #the current platform has changed to we need to regenerate
-					OR (NOT TEMP_C_COMPILER STREQUAL CMAKE_C_COMPILER)
-					OR (NOT TEMP_CXX_COMPILER STREQUAL CMAKE_CXX_COMPILER)
-					OR (NOT TEMP_CMAKE_LINKER STREQUAL CMAKE_LINKER)
-					OR (NOT TEMP_CMAKE_RANLIB STREQUAL CMAKE_RANLIB)
-					OR (NOT TEMP_CMAKE_CXX_COMPILER_ID STREQUAL CMAKE_CXX_COMPILER_ID)
-					OR (NOT TEMP_CMAKE_CXX_COMPILER_VERSION STREQUAL CMAKE_CXX_COMPILER_VERSION)
-				)
-				message("[PID] INFO : cleaning the build folder after major environment change")
-				hard_Clean_Package_Debug(${PROJECT_NAME})
-				hard_Clean_Package_Release(${PROJECT_NAME})
-				reconfigure_Package_Build_Debug(${PROJECT_NAME})#force reconfigure before running the build
-				reconfigure_Package_Build_Release(${PROJECT_NAME})#force reconfigure before running the build
-			endif()
-		endif()
-	endif()
-endmacro(load_Current_Platform)
-
-
-#############################################################################################
 ############### API functions for managing user options cache variables #####################
 #############################################################################################
 include(CMakeDependentOption)

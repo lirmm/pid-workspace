@@ -81,28 +81,14 @@ set(TARGET_TEMPORARY_FILE ${CMAKE_BINARY_DIR}/.gitlab-ci.yml)
 configure_file(${WORKSPACE_DIR}/share/patterns/packages/.gitlab-ci.yml.in ${TARGET_TEMPORARY_FILE} @ONLY)#adding the gitlab-ci configuration file to the repository
 
 #now need to complete the configuration file with platform and environment related information
-if(WORKSPACE_ALL_PLATFORMS)
-	# managing restriction on platforms used for CI
-	if(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
-		foreach(a_platform IN ITEMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS})
-			list(FIND WORKSPACE_ALL_PLATFORMS ${a_platform} INDEX)
-			if(NOT INDEX EQUAL -1)# adding the platform to the selected ones for CI
-				list(APPEND SELECTED_PLATFORMS ${a_platform})
-			endif()
-		endforeach()
-	else()
-		set(SELECTED_PLATFORMS ${WORKSPACE_ALL_PLATFORMS})
-	endif()
-
-	# generating CI config file
-	foreach(platform IN ITEMS ${SELECTED_PLATFORMS})
-		add_CI_Config_File_Runner_Selection_By_Platform(${TARGET_TEMPORARY_FILE} ${platform})
-	endforeach()
-	file(APPEND ${TARGET_TEMPORARY_FILE} "\n\n############ jobs definition, by platform #############\n\n")
-	foreach(platform IN ITEMS ${SELECTED_PLATFORMS})
-		add_CI_Config_File_Jobs_Definitions_By_Platform(${TARGET_TEMPORARY_FILE} ${platform})
-	endforeach()
-endif()
+# managing restriction on platforms used for CI and generating CI config file
+foreach(platform IN ITEMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS})
+	add_CI_Config_File_Runner_Selection_By_Platform(${TARGET_TEMPORARY_FILE} ${platform})
+endforeach()
+file(APPEND ${TARGET_TEMPORARY_FILE} "\n\n############ jobs definition, by platform #############\n\n")
+foreach(platform IN ITEMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS})
+	add_CI_Config_File_Jobs_Definitions_By_Platform(${TARGET_TEMPORARY_FILE} ${platform})
+endforeach()
 
 file(COPY ${TARGET_TEMPORARY_FILE} DESTINATION ${CMAKE_SOURCE_DIR})
 endfunction(generate_CI_Config_File)

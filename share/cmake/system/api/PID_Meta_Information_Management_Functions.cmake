@@ -39,10 +39,6 @@ endfunction(add_Category)
 
 ### add a direct reference to a binary version of the package
 function(add_Reference version platform url url-dbg)
-platform_Exist(IS_DEFINED ${platform})
-if(NOT IS_DEFINED)
-	return()
-endif()
 set(LIST_OF_VERSIONS ${${PROJECT_NAME}_REFERENCES} ${version})
 list(REMOVE_DUPLICATES LIST_OF_VERSIONS)
 set(${PROJECT_NAME}_REFERENCES  ${LIST_OF_VERSIONS} CACHE INTERNAL "")#to put the modification in cache

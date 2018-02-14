@@ -21,12 +21,12 @@
 ########### this is the script file to call to integrate local modificaiton with those of a remote  #########
 #############################################################################################################
 
-include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
-
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 include(PID_Git_Functions NO_POLICY_SCOPE)
+include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
+load_Current_Platform() #loading the current platform configuration
 
 # check that current branch of package is integration
 get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})

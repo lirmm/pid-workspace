@@ -1356,81 +1356,32 @@ function(detect_Current_Platform)
 			set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family= ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS} (${CURRENT_DISTRIBUTION} ${CURRENT_DISTRIBUTION_VERSION})\n + compiler ABI= ${CURRENT_ABI}")
 		endif()
 	endif()
-
-	# Select the platform in use
-	set(POSSIBLE_PLATFORMS)
-	foreach(platform IN ITEMS ${WORKSPACE_ALL_PLATFORMS})
-		check_Current_Configuration_Against_Platform(IT_MATCHES ${platform})
-		if(IT_MATCHES)
-			list(APPEND POSSIBLE_PLATFORMS ${platform})
-		endif()
-	endforeach()
-
-	if(NOT POSSIBLE_PLATFORMS)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : no platform defined in the workspace match the current development environment in use : \n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n")
+	#simply rewriting previously defined variable to normalize their names between workspace and packages (same accessor function can then be used from any place)
+	set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL "" FORCE)
+	set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL "" FORCE)
+	set(CURRENT_PLATFORM_TYPE ${CURRENT_TYPE} CACHE INTERNAL "" FORCE)
+	set(CURRENT_PLATFORM_ARCH ${CURRENT_ARCH} CACHE INTERNAL "" FORCE)
+	set(CURRENT_PLATFORM_OS ${CURRENT_OS} CACHE INTERNAL "" FORCE)
+	if(CURRENT_ABI STREQUAL CXX11)
+		set(CURRENT_PLATFORM_ABI abi11 CACHE INTERNAL "" FORCE)
 	else()
-		list(REMOVE_DUPLICATES POSSIBLE_PLATFORMS)
-		list(LENGTH POSSIBLE_PLATFORMS SIZE)
-
-		if(SIZE GREATER 1)
-			set(CONFLICTING_PLATFORM_DESCRIPTION_FILES "")
-			foreach(platform IN ITEMS ${POSSIBLE_PLATFORMS})
-				set(CONFLICTING_PLATFORM_DESCRIPTION_FILES "${CONFLICTING_PLATFORM_DESCRIPTION_FILES}\n + ${CMAKE_SOURCE_DIR}/share/cmake/platforms/Platform${platform}.cmake")
-			endforeach()
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : more than one platform is eligible as the one currently in use. This is possible only if two platforms define the same properties which is not allowed. Please check the following platform description files: ${CONFLICTING_PLATFORM_DESCRIPTION_FILES}")
-		endif()
-
-		#simply rewriting previously defined variable to normalize their names between workspace and packages (same accessor function can then be used from any place)
-		set(CURRENT_PLATFORM ${POSSIBLE_PLATFORMS} CACHE INTERNAL "" FORCE)
-		set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL "" FORCE)
-		set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL "" FORCE)
-		set(CURRENT_PLATFORM_TYPE ${CURRENT_TYPE} CACHE INTERNAL "" FORCE)
-		set(CURRENT_PLATFORM_ARCH ${CURRENT_ARCH} CACHE INTERNAL "" FORCE)
-		set(CURRENT_PLATFORM_OS ${CURRENT_OS} CACHE INTERNAL "" FORCE)
-		set(CURRENT_PLATFORM_ABI ${CURRENT_ABI} CACHE INTERNAL "" FORCE)
-		set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external/${CURRENT_PLATFORM} CACHE INTERNAL "")
-		set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install/${CURRENT_PLATFORM} CACHE INTERNAL "")
-		message("[PID] INFO : Target platform in use is ${CURRENT_PLATFORM}:\n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n")
+		set(CURRENT_PLATFORM_ABI abi98 CACHE INTERNAL "" FORCE)
 	endif()
+	
+	if(CURRENT_PLATFORM_OS)#the OS is optional (for microcontrolers there is no OS)
+		set(CURRENT_PLATFORM ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_OS}_${CURRENT_PLATFORM_ABI} CACHE INTERNAL "" FORCE)
+	else()
+		set(CURRENT_PLATFORM ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_ABI} CACHE INTERNAL "" FORCE)
+	endif()
+
+	set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external/${CURRENT_PLATFORM} CACHE INTERNAL "")
+	set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install/${CURRENT_PLATFORM} CACHE INTERNAL "")
+	message("[PID] INFO : Target platform in use is ${CURRENT_PLATFORM}:\n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n")
 
 	if(CURRENT_PYTHON)
 		message("[PID] INFO : Python may be used, target python version in use is ${CURRENT_PYTHON}. To use python modules installed in workspace please set the PYTHONPATH to =${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}\n")
 	endif()
 endfunction(detect_Current_Platform)
-
-## subsidiary function that put sinto cmake variable description of available platforms
-function(register_Available_Platforms)
-	file(GLOB ALL_AVAILABLE_PLATFORMS RELATIVE ${CMAKE_SOURCE_DIR}/share/cmake/platforms ${CMAKE_SOURCE_DIR}/share/cmake/platforms/*) #getting platform description files names
-	if(NOT ALL_AVAILABLE_PLATFORMS)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : there is no platform defined in the workspace. This is a BUG, please contact the maintainers of pid-workspace project !")
-	endif()
-	set(ALL_PLATFORMS_DEFINED)
-	foreach(platform_file IN ITEMS ${ALL_AVAILABLE_PLATFORMS})#filtering platform description files (check if these are really cmake files related to platform description, according to the PID standard)
-		string(REGEX REPLACE "^Platform([^.]+)\\.cmake$" "\\1" PLATFORM_NAME ${platform_file})
-		if(NOT PLATFORM_NAME STREQUAL ${platform_file})# match : this is a platform definition file
-			include(${CMAKE_SOURCE_DIR}/share/cmake/platforms/${platform_file})
-			list(APPEND ALL_PLATFORMS_DEFINED ${PLATFORM_NAME})
-		endif()
-	endforeach()
-	list(REMOVE_DUPLICATES ALL_PLATFORMS_DEFINED)
-	if(NOT ALL_PLATFORMS_DEFINED)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : there is no platform description file found in the workspace. This means that names of files found in ${CMAKE_SOURCE_DIR}/share/cmake/platforms do not conform to PID standard !")
-	endif()
-	set(WORKSPACE_ALL_PLATFORMS ${ALL_PLATFORMS_DEFINED} CACHE INTERNAL "")
-
-endfunction(register_Available_Platforms)
-
-## subsidiary function for testing if the given platform is the current platform for the workspace
-function(check_Current_Configuration_Against_Platform IT_MATCHES platform)
-	if(	PLATFORM_${platform}_TYPE STREQUAL "${CURRENT_TYPE}"
-		AND PLATFORM_${platform}_ARCH EQUAL "${CURRENT_ARCH}"
-		AND PLATFORM_${platform}_OS STREQUAL "${CURRENT_OS}"
-		AND PLATFORM_${platform}_ABI STREQUAL "${CURRENT_ABI}")
-		set(${IT_MATCHES} TRUE PARENT_SCOPE)
-	else()
-		set(${IT_MATCHES} FALSE PARENT_SCOPE)
-	endif()
-endfunction(check_Current_Configuration_Against_Platform)
 
 ## subsidiary function to append to a file the content of advanced options of CMAKE
 function(write_Current_Configuration_Build_Related_Variables file)
@@ -1530,18 +1481,6 @@ endfunction(write_Current_Configuration_Build_Related_Variables)
 ## subsidiary function for writing a global description of the workspace into a cmake file
 function(write_Platform_Description file)
 file(WRITE ${file} "")#reset the file
-# defining all available platforms (usefull for CI configuration generation)
-file(APPEND ${file} "set(WORKSPACE_ALL_PLATFORMS ${WORKSPACE_ALL_PLATFORMS} CACHE INTERNAL \"\" FORCE)\n")
-foreach(platform IN ITEMS ${WORKSPACE_ALL_PLATFORMS})
-	set(type "PLATFORM_${platform}_TYPE")
-	set(arch "PLATFORM_${platform}_ARCH")
-	set(os "PLATFORM_${platform}_OS")
-	set(abi "PLATFORM_${platform}_ABI")
-	file(APPEND ${file} "set(${type} ${${type}} CACHE INTERNAL \"\" FORCE)\n")
-	file(APPEND ${file} "set(${arch} ${${arch}} CACHE INTERNAL \"\" FORCE)\n")
-	file(APPEND ${file} "set(${os} ${${os}} CACHE INTERNAL \"\" FORCE)\n")
-	file(APPEND ${file} "set(${abi} ${${abi}} CACHE INTERNAL \"\" FORCE)\n")
-endforeach()
 
 # defining properties of the current platform
 file(APPEND ${file} "set(CURRENT_PLATFORM ${CURRENT_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
@@ -1584,8 +1523,6 @@ endfunction(write_Current_Configuration)
 function(manage_Platforms path_to_workspace)
 
 set(WORKSPACE_DIR ${path_to_workspace} CACHE INTERNAL "")
-# listing all available platforms from platforms definitions cmake files found in the workspace
-register_Available_Platforms()
 
 if(CURRENT_ENVIRONMENT)
 	#load the environment description

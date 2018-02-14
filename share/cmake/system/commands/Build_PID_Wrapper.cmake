@@ -21,8 +21,6 @@
 ############### load everything required to execute this command ########################
 #########################################################################################
 
-include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration before executing the deploy script
-
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
@@ -34,6 +32,8 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(Wrapper_Definition NO_POLICY_SCOPE) # to be able to interpret description of external packages and generate the use files
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret description of dependencies (external packages)
+
+load_Current_Platform() #loading the current platform configuration before executing the deploy script
 
 #########################################################################################
 #######################################Build script #####################################

@@ -17,18 +17,19 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
-
-if(NOT CURRENT_PYTHON)
-  return()#do nothing if python not configured
-endif()
-
 # using systems scripts the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 
 include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
+load_Current_Platform() #loading the current platform configuration
+
+if(NOT CURRENT_PYTHON)
+  return()#do nothing if python not configured
+endif()
+
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 
 if(CURRENT_PLATFORM_OS STREQUAL "macosx")

@@ -17,12 +17,11 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
-
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
+load_Current_Platform() #loading the current platform configuration
 
 # needed to parse adequately CMAKe variables passed to the script
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)

@@ -58,23 +58,6 @@ set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
 set(${PROJECT_NAME}_USER_README_FILE ${readme_file} CACHE INTERNAL "")
 endfunction(init_Wrapper_Info_Cache_Variables)
 
-###
-function(hard_Clean_Wrapper)
-set(TARGET_BUILD_FOLDER ${${PROJECT_NAME}_ROOT_DIR}/build)
-file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
-if(thefiles)
-foreach(a_file IN ITEMS ${thefiles})
-	if(NOT a_file STREQUAL ".gitignore")
-		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
-		else()#it is a regular file or symlink
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
-		endif()
-	endif()
-endforeach()
-endif()
-endfunction(hard_Clean_Wrapper)
-
 ### reconfiguring a wrapper
 function(reconfigure_Wrapper_Build)
 set(TARGET_BUILD_FOLDER ${${PROJECT_NAME}_ROOT_DIR}/build)
@@ -202,7 +185,7 @@ if(CURRENT_PLATFORM AND NOT CURRENT_PLATFORM STREQUAL "")# a current platform is
   set(TEMP_CMAKE_CXX_COMPILER_VERSION ${CMAKE_CXX_COMPILER_VERSION})
 endif()
 
-include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
+load_Current_Platform() #loading the current platform configuration
 
 if(TEMP_PLATFORM) #check if any change occurred
   if( (NOT TEMP_PLATFORM STREQUAL CURRENT_PLATFORM) #the current platform has changed to we need to regenerate
@@ -214,12 +197,11 @@ if(TEMP_PLATFORM) #check if any change occurred
       OR (NOT TEMP_CMAKE_CXX_COMPILER_VERSION STREQUAL CMAKE_CXX_COMPILER_VERSION)
     )
     message("[PID] INFO : cleaning the build folder after major environment change")
-    hard_Clean_Wrapper()
+    hard_Clean_Wrapper(${PROJECT_NAME})
 		reconfigure_Wrapper_Build()
   endif()
 endif()
 
-initialize_Platform_Variables() #initialize platform related variables usefull for other end-user API functions
 set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
 #############################################################
 ############ Managing build process #########################

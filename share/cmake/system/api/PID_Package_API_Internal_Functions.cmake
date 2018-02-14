@@ -49,8 +49,7 @@ macro(declare_Package author institution mail year license address public_addres
 activate_Adequate_Languages()
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
-load_Current_Platform(${DIR_NAME}) #loading the current platform configuration and perform adequate actions if any changes
-
+manage_Current_Platform(${DIR_NAME}) #loading the current platform configuration and perform adequate actions if any changes
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 #################################################
 ############ Managing options ###################
@@ -62,7 +61,6 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms
 
 configure_Git()
 set(${PROJECT_NAME}_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL "")#to keep compatibility with PID v1 released package versions
-initialize_Platform_Variables() #initialize platform related variables usefull for other end-user API functions
 initialize_Build_System()#initializing PID specific settings for build
 
 #################################################

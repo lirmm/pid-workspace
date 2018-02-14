@@ -17,6 +17,14 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Set_Policies NO_POLICY_SCOPE)
+include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
+load_Current_Platform() #loading the current platform configuration
+
 function(Find_Unique_Elements first_list second_list unique_in_first unique_in_second prefix_for_elements)
 
 set(temp_first_res)
@@ -48,10 +56,6 @@ endfunction(Find_Unique_Elements)
 ########### WORKSPACE_DIR : path to the root of the workspace
 #################################################################################################
 
-include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
-
-include(PID_Utils_Functions NO_POLICY_SCOPE)
-include(PID_Set_Policies NO_POLICY_SCOPE)
 
 if(EXISTS ${SOURCE_PACKAGE_CONTENT}) #the package has already been configured
 	include(${SOURCE_PACKAGE_CONTENT}) #import source code meta-information (which files for each component)

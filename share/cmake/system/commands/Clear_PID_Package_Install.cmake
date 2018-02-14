@@ -17,13 +17,12 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Info.cmake) #loading the current platform configuration
-
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
+load_Current_Platform() #loading the current platform configuration
 
 function(remove_Installed_Component component package install_version platform workspace)
 	set(PATH_TO_INSTALL_DIR ${workspace}/install/${platform}/${package}/${install_version})
