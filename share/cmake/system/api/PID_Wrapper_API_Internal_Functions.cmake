@@ -29,6 +29,7 @@ include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
+include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 
 ###########################################################################
 ############ description of functions implementing the API ################
@@ -153,7 +154,6 @@ if(${PROJECT_NAME}_KNOWN_VERSIONS)
 	endforeach()
 set(${PROJECT_NAME}_KNOWN_VERSIONS CACHE INTERNAL "")
 endif()
-reset_Documentation_Info()
 endfunction(reset_Wrapper_Description_Cached_Variables)
 
 ###
@@ -234,6 +234,8 @@ if(DIR_NAME STREQUAL "build")
   ######## Initializing cache variables ###########
   #################################################
   reset_Wrapper_Description_Cached_Variables()
+	reset_Documentation_Info()
+	reset_CI_Variables()
 	reset_Packages_Finding_Variables()
   init_PID_Version_Variable()
   init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")

@@ -628,8 +628,6 @@ set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
 set(${PROJECT_NAME}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
 
-
-reset_Documentation_Info()
 endfunction(reset_Package_Description_Cached_Variables)
 
 ###

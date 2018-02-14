@@ -65,7 +65,6 @@ endfunction(load_Current_Platform)
 ### reset variables describing platforms constraints
 function(reset_Package_Platforms_Variables)
 
-	set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS CACHE INTERNAL "")
 	if(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX}) # reset all configurations satisfied by current platform
 		set(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	endif()

@@ -17,8 +17,23 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+###
+function(reset_CI_Variables)
+		set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS CACHE INTERNAL "")
+endfunction(reset_CI_Variables)
+
+### allow to specify the set of platforms for which the CI will take place
+function(allow_CI_For_Platform platform)
+	set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS} ${platform} CACHE INTERNAL "")
+endfunction(allow_CI_For_Platform)
+
+#########################################################################################
+############################# CI for native packges #####################################
+#########################################################################################
+
+
 ### sets the adequate ci scripts in the package repository
-function(verify_CI_Content)
+function(verify_Package_CI_Content)
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/share/ci)#the ci folder is missing
 	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
@@ -32,12 +47,19 @@ else() #updating these files by silently replacing the ci folder
 	file(REMOVE ${CMAKE_SOURCE_DIR}/share/ci)
 	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
 endif()
-endfunction(verify_CI_Content)
+endfunction(verify_Package_CI_Content)
 
 ### configure the ci by generating the adequate gitlab-ci.yml file for the project
-function(generate_CI_Config_File)
+function(generate_Package_CI_Config_File)
 
-verify_CI_Content()
+if(NOT ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
+	if(EXISTS ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)
+		file(REMOVE ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)#remove the file as CI is allowed for no platform
+	endif()
+	return() #no CI to run so no need to generate the file
+endif()
+
+verify_Package_CI_Content()
 
 # determine general informations about package content
 if(NOT ${PROJECT_NAME}_COMPONENTS_LIBS)
@@ -91,7 +113,7 @@ foreach(platform IN ITEMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS})
 endforeach()
 
 file(COPY ${TARGET_TEMPORARY_FILE} DESTINATION ${CMAKE_SOURCE_DIR})
-endfunction(generate_CI_Config_File)
+endfunction(generate_Package_CI_Config_File)
 
 ##subsidiary function used to write how a runner is selected according to a given platform
 function(add_CI_Config_File_Runner_Selection_By_Platform configfile platform)
@@ -115,3 +137,7 @@ file(APPEND ${configfile} "build_release_${platform}:\n  <<: *build_release\n  <
 file(APPEND ${configfile} "deploy_release_${platform}:\n  <<: *deploy_release\n  <<: *selection_platform_${platform}\n\n")
 file(APPEND ${configfile} "cleanup_release_${platform}:\n  <<: *cleanup_release\n  <<: *selection_platform_${platform}\n\n")
 endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform)
+
+#########################################################################################
+############################ CI for external packges wrappers ###########################
+#########################################################################################

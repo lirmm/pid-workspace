@@ -33,7 +33,7 @@ include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Package_Coding_Support NO_POLICY_SCOPE)
-include(PID_Package_Continuous_Integration_Functions NO_POLICY_SCOPE)
+include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 include(PID_Plugins_Management NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
@@ -386,6 +386,8 @@ endif()
 ######## Initializing cache variables ###########
 #################################################
 reset_Package_Description_Cached_Variables()
+reset_Documentation_Info()
+reset_CI_Variables()
 reset_Package_Platforms_Variables()
 reset_Packages_Finding_Variables()
 init_PID_Version_Variable()
@@ -685,7 +687,7 @@ generate_Coverage() #generating a coverage report in debug mode
 generate_Static_Checks() #generating a static check report in release mode, if tests are enabled then static check test are automatically generated
 create_Documentation_Target() # create target for generating documentation
 configure_Pages() # generating the markdown files for the project web pages
-generate_CI_Config_File() #generating the CI config file in the project
+generate_Package_CI_Config_File() #generating the CI config file in the project
 
 
 #installing specific folders of the share sub directory

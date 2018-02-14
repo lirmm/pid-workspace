@@ -30,7 +30,6 @@ function(add_Author author institution)
 	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS};${res_string_author}(${res_string_instit})" CACHE INTERNAL "")
 endfunction(add_Author)
 
-
 ###
 function(add_Category category_spec)
 	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category_spec} CACHE INTERNAL "")
@@ -108,33 +107,6 @@ endif()
 set(${PROJECT_NAME}_SITE_INTRODUCTION "${introduction}" CACHE INTERNAL "")
 endfunction(init_Documentation_Info_Cache_Variables)
 
-
-### defining a framework static site the project belongs to
-macro(define_Framework_Contribution framework url description)
-if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
-	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
-	return()
-elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
-	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a framework !")
-	return()
-endif()
-init_Documentation_Info_Cache_Variables("${framework}" "${url}" "" "" "${description}")
-endmacro(define_Framework_Contribution)
-
-### defining a lone static site for the package
-macro(define_Static_Site_Contribution url git_repository homepage description)
-if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
-	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a static site !")
-	return()
-elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
-	message("[PID] ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a new one !")
-	return()
-endif()
-init_Documentation_Info_Cache_Variables("" "${url}" "${git_repository}" "${homepage}" "${description}")
-
-endif()
-endmacro(define_Static_Site_Contribution)
-
 ### reset all cache variables used in static web site based documentation
 function(reset_Documentation_Info)
 	set(${PROJECT_NAME}_FRAMEWORK CACHE INTERNAL "")
@@ -147,6 +119,7 @@ function(reset_Documentation_Info)
 	set(${PROJECT_NAME}_USER_README_FILE CACHE INTERNAL "")
 endfunction(reset_Documentation_Info)
 
+
 ###
 function(publish_Binaries true_or_false)
 set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERNAL "")
@@ -156,8 +129,3 @@ endfunction(publish_Binaries)
 function(publish_Development_Info true_or_false)
 set(${PROJECT_NAME}_DEV_INFO_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERNAL "")
 endfunction(publish_Development_Info)
-
-### restrict CI to a limited set of platforms using this function
-function(restrict_CI platform)
-	set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS} ${platform} CACHE INTERNAL "")
-endfunction(restrict_CI)
