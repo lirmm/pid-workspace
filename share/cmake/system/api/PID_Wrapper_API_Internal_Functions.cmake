@@ -67,6 +67,8 @@ endfunction(reconfigure_Wrapper_Build)
 
 ### reset whole data from version description to ensure there is no faulty description due to content change
 function(reset_Wrapper_Description_Cached_Variables)
+
+#reset versions description
 if(${PROJECT_NAME}_KNOWN_VERSIONS)
   foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
 		#reset configurations
@@ -154,6 +156,16 @@ if(${PROJECT_NAME}_KNOWN_VERSIONS)
 	endforeach()
 set(${PROJECT_NAME}_KNOWN_VERSIONS CACHE INTERNAL "")
 endif()
+
+#reset user options
+if(${PROJECT_NAME}_USER_OPTIONS)
+	foreach(opt IN ITEMS ${${PROJECT_NAME}_USER_OPTIONS})
+		set(${PROJECT_NAME}_USER_OPTION_${opt}_TYPE CACHE INTERNAL "")
+		set(${PROJECT_NAME}_USER_OPTION_${opt}_VALUE CACHE INTERNAL "")
+	endforeach()
+	set(${PROJECT_NAME}_USER_OPTIONS CACHE INTERNAL "")
+endif()
+
 endfunction(reset_Wrapper_Description_Cached_Variables)
 
 ###
@@ -246,11 +258,18 @@ else()
 endif()
 endmacro(declare_Wrapper)
 
-include(CMakeDependentOption)
-
 macro(declare_Wrapper_Global_Cache_Options)
 option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 endmacro(declare_Wrapper_Global_Cache_Options)
+
+###
+function(set_Wrapper_Option name type default_value description)
+set(${name} ${default_value} CACHE ${type} "${description}")
+set(${PROJECT_NAME}_USER_OPTIONS ${${PROJECT_NAME}_USER_OPTIONS} ${name} CACHE INTERNAL "")
+set(${PROJECT_NAME}_USER_OPTION_${name}_TYPE ${type} CACHE INTERNAL "")
+set(${PROJECT_NAME}_USER_OPTION_${name}_VALUE ${${name}} CACHE INTERNAL "")
+message("[PID] INFO : Value of user option ${name} is \"${${PROJECT_NAME}_USER_OPTION_${name}_VALUE}\"")
+endfunction(set_Wrapper_Option name type default_value)
 
 ###
 function(define_Wrapped_Project authors_references licenses original_project_url)
@@ -482,6 +501,7 @@ endfunction(generate_Wrapper_Find_File)
 
 ###
 function(generate_Wrapper_Build_File path_to_file)
+#write info about versions
 file(WRITE ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_KNOWN_VERSIONS)
 foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
@@ -568,6 +588,15 @@ foreach(version IN ITEMS ${${PROJECT_NAME}_KNOWN_VERSIONS})
 	endif()
 
 endforeach()
+endif()
+
+#write version about user options
+file(APPEND ${path_to_file} "set(${PROJECT_NAME}_USER_OPTIONS ${${PROJECT_NAME}_USER_OPTIONS} CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_USER_OPTIONS)
+	foreach(opt IN ITEMS ${${PROJECT_NAME}_USER_OPTIONS})
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_USER_OPTION_${opt}_TYPE ${${PROJECT_NAME}_USER_OPTION_${opt}_TYPE} CACHE INTERNAL \"\")\n")
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_USER_OPTION_${opt}_VALUE ${${PROJECT_NAME}_USER_OPTION_${opt}_VALUE} CACHE INTERNAL \"\")\n")
+	endforeach()
 endif()
 endfunction(generate_Wrapper_Build_File)
 
