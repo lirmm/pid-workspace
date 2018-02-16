@@ -25,6 +25,10 @@ include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Version_Management_Functions NO_POLICY_SCOPE)
+include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
+include(PID_Git_Functions NO_POLICY_SCOPE)
+include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 
 ##################################################################################
 ##################  declaration of a lone package static site ####################
