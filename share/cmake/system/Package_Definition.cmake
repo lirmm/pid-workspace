@@ -139,7 +139,7 @@ cmake_parse_arguments(DECLARE_PID_PUBLISHING "${optionArgs}" "${oneValueArgs}" "
 	#manage configuration of CI
 if(DECLARE_PID_PUBLISHING_ALLOWED_PLATFORMS)
 	foreach(platform IN ITEMS ${DECLARE_PID_PUBLISHING_ALLOWED_PLATFORMS})
-		allow_CI_For_Platform(${platform}) 
+		allow_CI_For_Platform(${platform})
 	endforeach()
 	set(DO_CI TRUE)
 else()
@@ -647,7 +647,7 @@ endfunction(used_Package_Dependency dep_package)
 #						)
 macro(declare_PID_Component_Dependency)
 set(options EXPORT)
-set(oneValueArgs COMPONENT DEPEND NATIVE PACKAGE EXTERNAL)
+set(oneValueArgs COMPONENT DEPEND NATIVE PACKAGE EXTERNAL C_STANDARD CXX_STANDARD)
 set(multiValueArgs INCLUDE_DIRS LINKS COMPILER_OPTIONS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -750,7 +750,7 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 
 elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 
-	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE)
+	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #an external package name is given => external package is supposed to be provided with a descirption file
 		if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the target external package canoot be current project !")
 		endif()
@@ -768,7 +768,7 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 					"${comp_exp_defs}"
 					"${dep_defs}")
 
-	else()
+	else() #an external package name is not given
 		is_Package_Dependency(IS_DEPENDENCY "${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}")
 		if(NOT IS_DEPENDENCY)
 			message(WARNING "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown external package ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} !")
@@ -784,6 +784,8 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 					"${compiler_options}"
 					"${static_links}"
 					"${shared_links}"
+					"${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
+					"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
 					"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
 	endif()
 else()#system dependency
@@ -798,6 +800,8 @@ else()#system dependency
 			"${compiler_options}"
 			"${static_links}"
 			"${shared_links}"
+			"${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
+			"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
 			"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
 endif()
 endmacro(declare_PID_Component_Dependency)

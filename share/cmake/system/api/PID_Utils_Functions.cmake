@@ -1301,6 +1301,14 @@ endfunction(translate_Standard_Into_Option)
 
 ### compare 2 different C++ language standard version
 function(is_CXX_Version_Less IS_LESS first second)
+if(NOT second OR second STREQUAL "")#second is not set so false anytime
+	set(${IS_LESS} FALSE PARENT_SCOPE)
+	return()
+endif()
+if(NOT first OR first STREQUAL "") #first is not set so true anytime
+	set(${IS_LESS} TRUE PARENT_SCOPE)
+	return()
+endif()
 if(first EQUAL 98)
 	if(second EQUAL 98)
 		set(${IS_LESS} FALSE PARENT_SCOPE)
@@ -1322,6 +1330,14 @@ endfunction(is_CXX_Version_Less)
 
 ### compare 2 different C language standard version
 function(is_C_Version_Less IS_LESS first second)
+if(NOT second OR second STREQUAL "") #second is not set so false anytime
+	set(${IS_LESS} FALSE PARENT_SCOPE)
+	return()
+endif()
+if(NOT first OR first STREQUAL "") #first is not set so true anytime
+	set(${IS_LESS} TRUE PARENT_SCOPE)
+	return()
+endif()
 if(first EQUAL 11)#last version is 11 so never less
 	set(${IS_LESS} FALSE PARENT_SCOPE)
 else()

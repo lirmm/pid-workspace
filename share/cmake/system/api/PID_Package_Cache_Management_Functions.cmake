@@ -441,7 +441,7 @@ endfunction(is_Python_Module)
 
 
 ### configure variables exported by component that will be used to generate the package cmake use file
-function (configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
+function (configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links c_standard cxx_standard runtime_resources)
 
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
@@ -503,6 +503,16 @@ else() # otherwise no need to register them since no more useful
 			${shared_links}
 			CACHE INTERNAL "")
 	endif()
+endif()
+
+is_C_Version_Less(IS_LESS ${${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX}} "${c_standard}")
+if(IS_LESS)
+	set(${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX} ${c_standard} CACHE INTERNAL "")
+endif()
+
+is_CXX_Version_Less(IS_LESS ${${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX}} "${cxx_standard}")
+if(IS_LESS)
+	set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} ${cxx_standard} CACHE INTERNAL "")
 endif()
 
 if(NOT runtime_resources STREQUAL "")#runtime resources are exported in any case

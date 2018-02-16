@@ -259,7 +259,6 @@ function(resolve_Component_Language component_target)
 	#default case that can be managed directly by CMake
 	get_target_property(STD_C ${component_target} PID_C_STANDARD)
 	get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
-
 	set_target_properties(${component_target} PROPERTIES
 			C_STANDARD ${STD_C}
 			C_STANDARD_REQUIRED YES
@@ -488,14 +487,17 @@ if(links AND NOT links STREQUAL "")
 endif()
 
 #management of standards (setting minimum standard at beginning)
-if(c_standard AND NOT c_standard STREQUAL "")
+get_target_property(STD_C ${component_name}${mode_suffix} PID_C_STANDARD)
+is_C_Version_Less(IS_LESS "${STD_C}" "${c_standard}")
+if(IS_LESS)
 	set_target_properties(${component_name}${mode_suffix} PROPERTIES PID_C_STANDARD ${c_standard})
 endif()
 
-if(cxx_standard AND NOT cxx_standard STREQUAL "")
+get_target_property(STD_CXX ${component_name}${mode_suffix} PID_CXX_STANDARD)
+is_CXX_Version_Less(IS_LESS "${STD_CXX}" "${cxx_standard}")
+if(IS_LESS)
 	set_target_properties(${component_name}${mode_suffix} PROPERTIES PID_CXX_STANDARD ${cxx_standard})
 endif()
-
 endfunction(manage_Additional_Component_Internal_Flags)
 
 function(manage_Additionnal_Component_Inherited_Flags component dep_component mode_suffix export)
@@ -556,12 +558,12 @@ is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
 if(NOT DEP_IS_HF)#the required package component is a library
 
 	if(export)
-		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
+		set(EXPORTED_DEFS ${comp_exp_defs} ${dep_defs})
 		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "${comp_defs}" "")
-		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "")
+		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${EXPORTED_DEFS}" "")
 	else()
-		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})
-		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "")
+		set(INTERNAL_DEFS ${comp_defs} ${dep_defs})
+		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "${INTERNAL_DEFS}" "")
 		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "")
 	endif()
 endif()	#else, it is an application or a module => runtime dependency declaration
@@ -569,7 +571,7 @@ endfunction(fill_Component_Target_With_Package_Dependency)
 
 
 ### configure the target to link with an external dependancy
-function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_links)
+function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_links c_standard cxx_standard)
 if(ext_links)
 	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${ext_links}" ${CMAKE_BUILD_TYPE})
 	if(COMPLETE_LINKS_PATH)
@@ -591,15 +593,15 @@ endif()
 # setting compile/linkage definitions for the component target
 if(export)
 	if(NOT ${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")#if component is a not header, everything is used to build
-		set(TEMP_DEFS ${comp_exp_defs} ${ext_defs} ${comp_defs})
-		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "" "${EXT_LINKS}")
+		set(INTERNAL_DEFS ${comp_exp_defs} ${ext_defs} ${comp_defs})
+		manage_Additional_Component_Internal_Flags(${component} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${INTERNAL_DEFS}" "" "${EXT_LINKS}")
 	endif()
-	set(TEMP_DEFS ${comp_exp_defs} ${ext_defs})#only definitions belonging to interfaces are exported (interface of current component + interface of exported component)
-	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "" "${EXT_LINKS}")
+	set(EXPORTED_DEFS ${comp_exp_defs} ${ext_defs})#only definitions belonging to interfaces are exported (interface of current component + interface of exported component)
+	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${EXPORTED_DEFS}" "" "${EXT_LINKS}")
 
 else()#otherwise only definitions for interface of the current component is exported
-	set(TEMP_DEFS ${comp_defs} ${ext_defs} ${comp_defs})#everything define for building current component
-	manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${TEMP_DEFS}" "" "${EXT_LINKS}")
+	set(INTERNAL_DEFS ${comp_defs} ${ext_defs} ${comp_defs})#everything define for building current component
+	manage_Additional_Component_Internal_Flags(${component} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${INTERNAL_DEFS}" "" "${EXT_LINKS}")
 	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "" "${EXT_LINKS}")
 endif()
 
@@ -920,7 +922,6 @@ function(bind_Internal_Target component dep_component mode export comp_defs comp
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
 is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_component})
-
 if(COMP_IS_BUILT)# interface library cannot receive PRIVATE PROPERTIES
 	#use definitions and links for building the target
 	set(internal_defs ${comp_defs} ${comp_exp_defs} ${dep_defs})
