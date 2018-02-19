@@ -69,14 +69,14 @@ endfunction(remove_Installed_Component)
 function(check_Headers_Modifications all_components_to_check package install_version platform workspace)
 set(PATH_TO_INSTALL_DIR ${workspace}/install/${platform}/${package}/${install_version})
 
-foreach(component IN ITEMS ${all_components_to_check}) #for each remaining existing component
+foreach(component IN LISTS all_components_to_check) #for each remaining existing component
 	#component exists, check for header files/folders suppression/changes
 	if(	"${INSTALLED_${component}_TYPE}" STREQUAL "HEADER"
 		OR "${INSTALLED_${component}_TYPE}" STREQUAL "STATIC"
 		OR "${INSTALLED_${component}_TYPE}" STREQUAL "SHARED")#if component is a library its header folder still exist at this step (not removed by previous function)
 		# checking header folder modification/suppression
 		if("${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}" STREQUAL "${INSTALLED_${component}_HEADER_DIR_NAME}")#same header include folder
-			foreach(header_name IN ITEMS ${INSTALLED_${component}_HEADERS})
+			foreach(header_name IN LISTS INSTALLED_${component}_HEADERS)
 				list(FIND ${PACKAGE_NAME}_${component}_HEADERS ${header_name} FIND_INDEX)
 				if(FIND_INDEX EQUAL -1)#this header file does no more exists
 					file(REMOVE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME}/${header_name})
@@ -116,14 +116,14 @@ endif()
 
 #registering interesting infos for each existing component
 
-foreach(component IN ITEMS ${${PACKAGE_NAME}_COMPONENTS})
+foreach(component IN LISTS ${PACKAGE_NAME}_COMPONENTS)
 	if(NOT "${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "TEST")
 		list(APPEND INSTALLED_COMPONENTS ${component})
 		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0) #initializing usage of headers
 	endif()
 endforeach()
 
-foreach(component IN ITEMS ${INSTALLED_COMPONENTS})
+foreach(component IN LISTS INSTALLED_COMPONENTS)
 	if(	"${${PACKAGE_NAME}_${component}_TYPE}" STREQUAL "HEADER")
 		set(INSTALLED_${component}_TYPE HEADER)
 
@@ -173,7 +173,7 @@ endforeach()
 # now include the new Use file to install so that we know all the required information about things to install
 include(${NEW_USE_FILE})
 set(TO_CHECK_COMPONENTS ${INSTALLED_COMPONENTS})
-foreach(component IN ITEMS ${INSTALLED_COMPONENTS}) #for each existing component
+foreach(component IN LISTS INSTALLED_COMPONENTS) #for each existing component
 	list(FIND ${PACKAGE_NAME}_COMPONENTS ${component} FIND_INDEX)
 	if(FIND_INDEX EQUAL -1)#component no more exists => remove corresponding files if necessary
 		remove_Installed_Component(${component} ${PACKAGE_NAME} ${PACKAGE_INSTALL_VERSION} ${CURRENT_PLATFORM} ${WORKSPACE_DIR})

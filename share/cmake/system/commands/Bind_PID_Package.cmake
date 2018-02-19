@@ -52,10 +52,9 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 ###############################################################
 
 # 1) checking constraints on platform configuration DEBUG mode
-if(${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS_DEBUG) #there are configuration constraints
-	foreach(config IN ITEMS ${${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS_DEBUG})
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
+foreach(config IN LISTS ${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS_DEBUG)#if empty no configuration for this platform is supposed to be necessary
+	if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 			if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${PACKAGE_NAME}.")
 				return()
@@ -67,13 +66,11 @@ if(${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS_DEBUG) #there are configuration const
 			return()
 		endif()
 	endforeach()
-endif()#otherwise no configuration for this platform is supposed to be necessary
 
 # 2) checking constraints on platform configuration RELEASE mode
-if(${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS) #there are configuration constraints
-	foreach(config IN ITEMS ${${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS})
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
+foreach(config IN LISTS ${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS)#if empty no configuration for this platform is supposed to be necessary
+	if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 			if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${PACKAGE_NAME}.")
 				return()
@@ -83,26 +80,25 @@ if(${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS) #there are configuration constraints
 			return()
 		endif()
 	endforeach()
-endif()#otherwise no configuration for this platform is supposed to be necessary
 
 ###############################################################
 ############### resolving external dependencies ###############
 ###############################################################
 
 # 1) getting all the runtime external dependencies of the package
-foreach(ext_dep IN ITEMS ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCIES_DEBUG})
+foreach(ext_dep IN LISTS ${PACKAGE_NAME}_EXTERNAL_DEPENDENCIES_DEBUG)
 	if(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_USE_RUNTIME_DEBUG)
 		list(APPEND ALL_EXTERNAL_DEPS_DEBUG ${ext_dep})
 	endif()
 endforeach()
-foreach(ext_dep IN ITEMS ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCIES})
+foreach(ext_dep IN LISTS ${PACKAGE_NAME}_EXTERNAL_DEPENDENCIES)
 	if(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_USE_RUNTIME)
 		list(APPEND ALL_EXTERNAL_DEPS ${ext_dep})
 	endif()
 endforeach()
 
 # 2) looking for unresolved external runtime dependencies
-foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS_DEBUG})
+foreach(ext_dep IN LISTS ALL_EXTERNAL_DEPS_DEBUG)
 	if(CONFIG_${ext_dep})#the path has been set by the user with -DCONFIG_<package>=<path> argument
 		set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG ${CONFIG_${ext_dep}})#changing the reference path
 	else()
@@ -113,7 +109,7 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS_DEBUG})
 		endif()
 	endif()
 endforeach()
-foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS})
+foreach(ext_dep IN LISTS ALL_EXTERNAL_DEPS)
 	if(CONFIG_${ext_dep})#the path has been set by the user with -DCONFIG_<package>=<path> argument
 		set(${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH ${CONFIG_${ext_dep}})#changing the reference path
 	else()
@@ -127,10 +123,10 @@ foreach(ext_dep IN ITEMS ${ALL_EXTERNAL_DEPS})
 endforeach()
 if(NOT_DEFINED_EXT_DEPS OR NOT_DEFINED_EXT_DEPS_DEBUG)
 	message(WARNING "[PID] WARNING : Following external packages path has been automatically set. To resolve their path by hand use -DCONFIG_<package>=<path> option when calling this script")
-	foreach(ext_dep IN ITEMS ${NOT_DEFINED_EXT_DEPS_DEBUG})
+	foreach(ext_dep IN LISTS NOT_DEFINED_EXT_DEPS_DEBUG)
 		message("[PID] DEBUG mode : ${ext_dep} with path = ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH_DEBUG}")
 	endforeach()
-	foreach(ext_dep IN ITEMS ${NOT_DEFINED_EXT_DEPS})
+	foreach(ext_dep IN LISTS NOT_DEFINED_EXT_DEPS)
 		message("[PID] RELEASE mode : ${ext_dep} with path = ${${PACKAGE_NAME}_EXTERNAL_DEPENDENCY_${ext_dep}_REFERENCE_PATH}")
 	endforeach()
 

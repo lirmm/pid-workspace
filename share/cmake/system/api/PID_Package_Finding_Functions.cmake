@@ -30,7 +30,7 @@ else()
 	set(curr_max_patch_number -1)
 endif()
 
-foreach(version IN ITEMS ${available_versions})
+foreach(version IN LISTS available_versions)
 	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
 	if(	COMPARE_MAJOR EQUAL ${MAJOR}
 		AND COMPARE_MINOR EQUAL ${MINOR}
@@ -48,7 +48,7 @@ endfunction(select_Exact_Native_Version)
 ### select the exact compatible version of an external package (with strict major.minor.patch)
 #simply consists in returning the version value if exists in the list
 function(select_Exact_External_Version RES_VERSION exact_version available_versions)
-foreach(version IN ITEMS ${available_versions})
+foreach(version IN LISTS available_versions)
 	if(version VERSION_EQUAL exact_version)
 		set(${RES_VERSION} ${version} PARENT_SCOPE)
 		return()
@@ -68,7 +68,7 @@ else()
 	set(curr_max_patch_number -1)
 endif()
 set(curr_max_minor_number ${MINOR})
-foreach(version IN ITEMS ${available_versions})
+foreach(version IN LISTS available_versions)
 	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
 	if(COMPARE_MAJOR EQUAL ${MAJOR})
 		if(	COMPARE_MINOR EQUAL ${curr_max_minor_number}
@@ -90,7 +90,7 @@ endfunction(select_Best_Native_Version)
 
 ### select the best compatible version of a native package (last major.minor available)
 function(select_Best_External_Version RES_VERSION package minimum_version available_versions)
-foreach(version IN ITEMS ${available_versions})
+foreach(version IN LISTS available_versions)
 	if(version VERSION_EQUAL minimum_version
 		OR version VERSION_GREATER minimum_version)#only greater or equal versions are feasible
 		if(DEFINED ${package}_PID_KNOWN_VERSION_${minimum_version}_GREATER_VERSIONS_COMPATIBLE_UP_TO)#if not defined the version is compatible with nothing
@@ -113,7 +113,7 @@ endfunction(select_Best_External_Version)
 ### select the last available version of a native package
 function(select_Last_Version RES_VERSION available_versions)
 set(curr_version 0.0.0)
-foreach(version IN ITEMS ${available_versions})
+foreach(version IN LISTS available_versions)
 	if(curr_version VERSION_LESS ${version})
 		set(curr_version ${version})
 	endif()
@@ -134,7 +134,7 @@ list_Version_Subdirectories(version_dirs ${package_install_dir})
 if(version_dirs)#seaking for a good version only if there are versions installed
 	update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} true "${version_dirs}")#updating only if there are installed versions
 	set(curr_patch_version -1)
-	foreach(patch IN ITEMS ${version_dirs})
+	foreach(patch IN LISTS version_dirs)
 		string(REGEX REPLACE "^${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
 		if(	NOT (A_VERSION STREQUAL "${patch}") #there is a match
 			AND ${A_VERSION} GREATER ${curr_patch_version})#newer patch version
@@ -160,7 +160,7 @@ set(curr_patch_version 0)
 list_Version_Subdirectories(version_dirs ${package_install_dir})
 if(version_dirs)#seaking for a good version only if there are versions installed
 	update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} false "${version_dirs}")#updating only if there are installed versions
-	foreach(version IN ITEMS ${version_dirs})
+	foreach(version IN LISTS version_dirs)
 		string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
 		if(NOT (A_VERSION STREQUAL "${version}"))#there is a match
 			list(GET A_VERSION 0 minor)
@@ -195,7 +195,7 @@ if(local_versions)#seaking for a good version only if there are versions install
 	update_Package_Installed_Version(${package_name} "" "" false "${local_versions}")#updating only if there are installed versions
 	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
 	set(version_string_curr "0.0.0")
-	foreach(local_version_dir IN ITEMS ${local_versions})
+	foreach(local_version_dir IN LISTS local_versions)
 		if("${version_string_curr}" VERSION_LESS "${local_version_dir}")
 			set(version_string_curr ${local_version_dir})
 		endif()
@@ -214,7 +214,7 @@ function(check_External_Minimum_Version VERSION_FOUND package search_path versio
 set(${VERSION_FOUND} PARENT_SCOPE)
 list_Version_Subdirectories(VERSION_DIRS ${search_path})
 if(VERSION_DIRS)
-	foreach(version_dir IN ITEMS ${VERSION_DIRS})
+	foreach(version_dir IN LISTS VERSION_DIRS)
 		if(version_dir VERSION_EQUAL version OR version_dir VERSION_GREATER version)#only greater or equal versions are feasible
 			if(DEFINED ${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO)#if not defined the version is compatible with nothing
 				if(	highest_version )#if a compatible highest version is already found
@@ -242,7 +242,7 @@ function(check_External_Last_Version VERSION_FOUND package search_path)
 set(${VERSION_FOUND} PARENT_SCOPE)
 list_Version_Subdirectories(VERSION_DIRS ${search_path})
 if(VERSION_DIRS)
-	foreach(version_dir IN ITEMS ${VERSION_DIRS})
+	foreach(version_dir IN LISTS VERSION_DIRS)
 		if(highest_version)
 			if(version_dir VERSION_GREATER highest_version)
 				set(highest_version ${version_dir})
@@ -293,7 +293,7 @@ if(idx EQUAL -1)#the component is NOT an application
 		#for a lib checking headers and then binaries
 		if(DEFINED ${package_name}_${component_name}_HEADERS)#a library must have HEADERS defined otherwise ERROR
 			#checking existence of all its exported headers
-			foreach(header IN ITEMS ${${package_name}_${component_name}_HEADERS})
+			foreach(header IN LISTS ${package_name}_${component_name}_HEADERS)
 				find_file(PATH_TO_HEADER NAMES ${header} PATHS ${package_path}/include/${${package_name}_${component_name}_HEADER_DIR_NAME} NO_DEFAULT_PATH)
 				if(PATH_TO_HEADER-NOTFOUND)
 					set(PATH_TO_HEADER CACHE INTERNAL "")
@@ -353,7 +353,7 @@ if(	${res} STREQUAL NOTFOUND
 	return()
 endif()
 set(${package_name}_${requested_component}_FOUND TRUE CACHE INTERNAL "")
-foreach(a_component IN ITEMS ${${package_name}_COMPONENTS})
+foreach(a_component IN LISTS ${package_name}_COMPONENTS)
 	check_Component_Elements_Exist(COMPONENT_ELEMENT_NOTFOUND ${path_to_package_version} ${package_name} ${a_component})
 	if(COMPONENT_ELEMENT_NOTFOUND)
 		set(${package_name}_${requested_component}_FOUND FALSE CACHE INTERNAL "")
@@ -378,7 +378,7 @@ endif()
 
 #checking that all requested components trully exist for this version
 set(ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND TRUE PARENT_SCOPE)
-foreach(requested_component IN ITEMS ${list_of_components})
+foreach(requested_component IN LISTS list_of_components)
 	list(FIND ${package_name}_COMPONENTS ${requested_component} idx)
 	if(idx EQUAL -1)#component has not been found
 		set(${package_name}_${requested_component}_FOUND FALSE  CACHE INTERNAL "")
@@ -422,7 +422,7 @@ if(${package}_REQUIRED_VERSION_EXACT)
 endif()
 #no exact version required
 get_Version_String_Numbers("${version_string}.0" exact_major exact_minor exact_patch)
-foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
+foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	unset(COMPATIBLE_VERSION)
 	is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_required})
 	if(NOT COMPATIBLE_VERSION)
@@ -457,7 +457,7 @@ endif()
 get_Version_String_Numbers("${version_string}.0" new_major new_minor new_patch)
 set(curr_major ${new_major})
 set(curr_max_minor 0)
-foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
+foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	get_Version_String_Numbers("${version_required}.0" required_major required_minor required_patch)
 	if(NOT ${required_major} EQUAL ${new_major})
 		return()#not compatible
@@ -516,7 +516,7 @@ if(${package}_REQUIRED_VERSION_EXACT)
 endif()
 
 #no exact version required
-foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
+foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	unset(COMPATIBLE_VERSION)
 	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version_string})
 	if(NOT COMPATIBLE_VERSION)
@@ -549,7 +549,7 @@ if(${package}_REQUIRED_VERSION_EXACT)
 	return()#no need to set the version to find
 endif()
 
-foreach(version_required IN ITEMS ${${package}_ALL_REQUIRED_VERSIONS})
+foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	unset(COMPATIBLE_VERSION)
 	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version_string})
 	if(NOT COMPATIBLE_VERSION)
@@ -603,8 +603,8 @@ endfunction(add_To_Install_Package_Specification)
 
 ###
 function(reset_To_Install_Packages)
-foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}})
-	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_${pack}_VERSIONS${USE_MODE_SUFFIX}})
+foreach(pack IN LISTS ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX})
+	foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${pack}_VERSIONS${USE_MODE_SUFFIX})
 		set(${PROJECT_NAME}_TOINSTALL_${pack}_${version}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	endforeach()
 	set(${PROJECT_NAME}_TOINSTALL_${pack}_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -649,8 +649,8 @@ endfunction(add_To_Install_External_Package_Specification)
 
 ###
 function(reset_To_Install_External_Packages)
-foreach(pack IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}})
-	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS${USE_MODE_SUFFIX}})
+foreach(pack IN LISTS ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX})
+	foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS${USE_MODE_SUFFIX})
 		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_${version}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
 	endforeach()
 	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -661,7 +661,7 @@ endfunction(reset_To_Install_External_Packages)
 
 ###
 function(reset_Found_External_Packages)
-foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES})
+foreach(a_used_package IN LISTS ${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES)
 	set(${a_used_package}_FOUND CACHE INTERNAL "")
 	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
 	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
@@ -673,7 +673,7 @@ endfunction(reset_Found_External_Packages)
 
 ###
 function(reset_Found_Native_Packages)
-foreach(a_used_package IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
+foreach(a_used_package IN LISTS ${PROJECT_NAME}_ALL_USED_PACKAGES)
 	set(${a_used_package}_FOUND CACHE INTERNAL "")
 	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
 	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")

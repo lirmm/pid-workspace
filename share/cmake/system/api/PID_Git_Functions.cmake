@@ -100,7 +100,7 @@ endfunction(get_Repository_Version_Tags)
 
 ###
 function(normalize_Version_Tags VERSION_NUMBERS VERSIONS_TAGS)
-foreach(tag IN ITEMS ${VERSIONS_TAGS})
+foreach(tag IN LISTS VERSIONS_TAGS)
 	string(REGEX REPLACE "^v(.*)$" "\\1" VNUMBERS ${tag})
 	list(APPEND result ${VNUMBERS})
 endforeach()
@@ -510,7 +510,7 @@ execute_process(COMMAND git branch -a
 if(all_branches AND NOT all_branches STREQUAL "")
 	string(REPLACE "\n" ";" GIT_BRANCHES ${all_branches})
 	set(INTEGRATION_FOUND FALSE)
-	foreach(branch IN ITEMS ${GIT_BRANCHES})#checking that the origin/integration branch exists
+	foreach(branch IN LISTS GIT_BRANCHES)#checking that the origin/integration branch exists
 		string(REGEX REPLACE "^[ \t]*remotes/(origin/integration)[ \t]*$" "\\1" A_BRANCH ${branch})
 		if(NOT branch STREQUAL "${A_BRANCH}")#i.e. match found (this is the origin integration branch)
 			set(INTEGRATION_FOUND TRUE)
@@ -670,7 +670,8 @@ set(${RES_ORIGIN} PARENT_SCOPE)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote -v OUTPUT_VARIABLE RESULTING_REMOTES)
 if(RESULTING_REMOTES)
 	string(REPLACE "\n" ";" LINES ${RESULTING_REMOTES})
-	foreach(remote IN ITEMS ${LINES})
+	string(REGEX REPLACE ";$" "" LINES "${LINES}")
+	foreach(remote IN LISTS LINES)
 		string(REGEX REPLACE "^([^ \t]+)[ \t]+([^ \t]+)[ \t]+.*$" "\\1;\\2" REMOTES_INFO ${remote})
 		list(GET REMOTES_INFO 1 ADDR_REMOTE)
 		list(GET REMOTES_INFO 0 NAME_REMOTE)

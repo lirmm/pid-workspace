@@ -38,13 +38,13 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 ###
 function(init_Wrapper_Info_Cache_Variables author institution mail description year license address public_address readme_file)
 set(res_string)
-foreach(string_el IN ITEMS ${author})
+foreach(string_el IN LISTS author)
 	set(res_string "${res_string}_${string_el}")
 endforeach()
 set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
 
 set(res_string "")
-foreach(string_el IN ITEMS ${institution})
+foreach(string_el IN LISTS institution)
 	set(res_string "${res_string}_${string_el}")
 endforeach()
 set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
@@ -887,7 +887,7 @@ function(declare_Wrapped_Configuration platform configurations)
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${configurations}")
 
 if(platform AND NOT platform STREQUAL "")# if a platform constraint applies
-	foreach(config IN ITEMS ${configurations})
+	foreach(config IN LISTS configurations)
 		if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config}) # another platform constraint already applies
 			if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} STREQUAL "all")#the configuration has no constraint
 				# simply add it
@@ -898,7 +898,7 @@ if(platform AND NOT platform STREQUAL "")# if a platform constraint applies
 		endif()
 	endforeach()
 else()#no platform constraint applies => this platform configuration is adequate for all platforms
-	foreach(config IN ITEMS ${configurations})
+	foreach(config IN LISTS configurations)
 		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "all" CACHE INTERNAL "")
 	endforeach()
 endif()
@@ -1069,51 +1069,45 @@ function(generate_External_Use_File_For_Version package version platform)
 	file(APPEND ${file_for_version} "declare_PID_External_Package(PACKAGE ${package})\n")
 
 	#add checks for required platform configurations
-	if(${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-		set(list_of_configs)
-		foreach(config IN ITEMS ${${package}_KNOWN_VERSION_${version}_CONFIGURATIONS})
-			if(${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "all"
-				OR ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "${platform}")#this configuration is required for any platform
-				list(APPEND list_of_configs ${config})
-			endif()
-		endforeach()
-		if(list_of_configs)
-			file(APPEND ${file_for_version} "#description of external package ${package} version ${version} required platform configurations\n")
-			fill_List_Into_String(${list_of_configs} RES_CONFIG)
-			file(APPEND ${file_for_version} "check_PID_External_Package_Platform(PACKAGE ${package} PLATFORM ${platform} CONFIGURATION ${RES_CONFIG})\n")
+	set(list_of_configs)
+	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
+		if(${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "all"
+			OR ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "${platform}")#this configuration is required for any platform
+			list(APPEND list_of_configs ${config})
 		endif()
+	endforeach()
+	if(list_of_configs)
+		file(APPEND ${file_for_version} "#description of external package ${package} version ${version} required platform configurations\n")
+		fill_List_Into_String(${list_of_configs} RES_CONFIG)
+		file(APPEND ${file_for_version} "check_PID_External_Package_Platform(PACKAGE ${package} PLATFORM ${platform} CONFIGURATION ${RES_CONFIG})\n")
 	endif()
 
 	#add required external dependencies
-	if(${package}_KNOWN_VERSION_${version}_DEPENDENCIES)
-		file(APPEND ${file_for_version} "#description of external package ${package} dependencies for version ${version}\n")
-		foreach(dependency IN ITEMS ${${package}_KNOWN_VERSION_${version}_DEPENDENCIES})#do the description for each dependency
-			set(VERSION_STR "")
-			if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS)#there is at least one version requirement
-				set(selected_version ${${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSION_USED_FOR_BUILD})
-				if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS_EXACT)
-					list(FIND ${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS_EXACT ${selected_version} INDEX)
-					if(INDEX EQUAL -1)
-						set(STR_EXACT "")#not an exact version
-					else()
-						set(STR_EXACT "EXACT ")
-					endif()
+	file(APPEND ${file_for_version} "#description of external package ${package} dependencies for version ${version}\n")
+	foreach(dependency IN LISTS ${package}_KNOWN_VERSION_${version}_DEPENDENCIES)#do the description for each dependency
+		set(VERSION_STR "")
+		if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS)#there is at least one version requirement
+			set(selected_version ${${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSION_USED_FOR_BUILD})
+			if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS_EXACT)
+				list(FIND ${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS_EXACT ${selected_version} INDEX)
+				if(INDEX EQUAL -1)
+					set(STR_EXACT "")#not an exact version
+				else()
+					set(STR_EXACT "EXACT ")
 				endif()
-				#setting the selected version as the "reference version" (only compatible versions can be used instead when using the binary version of a package)
-				file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency} ${EXACT_STR}VERSION ${selected_version})\n")
-			else()
-				file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency})\n")
 			endif()
-		endforeach()
-	endif()
+			#setting the selected version as the "reference version" (only compatible versions can be used instead when using the binary version of a package)
+			file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency} ${EXACT_STR}VERSION ${selected_version})\n")
+		else()
+			file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency})\n")
+		endif()
+	endforeach()
 
 	# manage generation of component description
-	if(${package}_KNOWN_VERSION_${version}_COMPONENTS ${component})
-		file(APPEND ${file_for_version} "#description of external package ${package} version ${version} components\n")
-		foreach(component IN ITEMS ${${package}_KNOWN_VERSION_${version}_COMPONENTS})
-			generate_Description_For_External_Component(${file_for_version} ${package} ${platform} ${version} ${component})
-		endforeach()
-	endif()
+	file(APPEND ${file_for_version} "#description of external package ${package} version ${version} components\n")
+	foreach(component IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENTS)
+		generate_Description_For_External_Component(${file_for_version} ${package} ${platform} ${version} ${component})
+	endforeach()
 endfunction(generate_External_Use_File_For_Version)
 
 ###
@@ -1149,7 +1143,7 @@ endfunction(generate_Description_For_External_Component_Internal_Dependency)
 ###
 function(generate_Description_For_External_Component_Dependency file_for_version package platform version component external_package_dependency)
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency})
-foreach(dep_component IN ITEMS ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}})
+foreach(dep_component IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency})
 	#managing each component individually
 	set(defs "")
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_${dep_component}_DEFINITIONS)
@@ -1177,7 +1171,7 @@ endif()
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_SHARED)
 	create_Shared_Lib_Extension(RES_EXT ${platform} ${${package}_KNOWN_VERSION_${version}_SONAME})
 	set(final_list_of_shared)#add the adequate extension name depending on the platform
-	foreach(shared_lib_path IN ITEMS ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_SHARED})
+	foreach(shared_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_SHARED)
 			get_filename_component(EXTENSION ${shared_lib_path} EXT)
 			if(NOT EXTENSION OR EXTENSION STREQUAL "")#OK no extension defined we can apply
 				list(APPEND final_list_of_shared "${shared_lib_path}${RES_EXT}")
@@ -1243,7 +1237,7 @@ function(generate_Description_For_External_Component file_for_version package pl
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
 		create_Shared_Lib_Extension(RES_EXT ${shared} ${platform} ${${package}_KNOWN_VERSION_${version}_SONAME})
 		set(final_list_of_shared)#add the adequate extension name depending on the platform
-		foreach(shared_lib_path IN ITEMS ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS})
+		foreach(shared_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
 				get_filename_component(EXTENSION ${shared_lib_path} EXT)
 				if(NOT EXTENSION OR EXTENSION STREQUAL "")#OK no extension defined we can apply
 					list(APPEND final_list_of_shared "${shared_lib_path}${RES_EXT}")
@@ -1288,7 +1282,7 @@ function(generate_Description_For_External_Component file_for_version package pl
 	#management of component internal dependencies
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES)
 		file(APPEND ${file_for_version} "#declaring internal dependencies for component ${component}\n")
-		foreach(dep IN ITEMS ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES})
+		foreach(dep IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES)
 			generate_Description_For_External_Component_Internal_Dependency(${file_for_version} ${package} ${version} ${component} ${dep})
 		endforeach()
 	endif()
@@ -1296,7 +1290,7 @@ function(generate_Description_For_External_Component file_for_version package pl
 	#management of component internal dependencies
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES)
 		file(APPEND ${file_for_version} "#declaring external dependencies for component ${component}\n")
-		foreach(dep_pack IN ITEMS ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES})
+		foreach(dep_pack IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES)
 			generate_Description_For_External_Component_Dependency(${file_for_version} ${package} ${platform} ${version} ${component} ${dep_pack})
 		endforeach()
 	endif()

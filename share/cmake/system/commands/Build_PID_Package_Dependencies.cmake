@@ -27,7 +27,7 @@ load_Current_Platform() #loading the current platform configuration
 
 if(DEPENDENT_PACKAGES)
 	SEPARATE_ARGUMENTS(DEPENDENT_PACKAGES)
-	foreach(dep_pack IN ITEMS ${DEPENDENT_PACKAGES})
+	foreach(dep_pack IN LISTS DEPENDENT_PACKAGES)
 		package_Already_Built(IS_BUILT ${dep_pack} ${PACKAGE_LAUCHING_BUILD})
 		if(NOT IS_BUILT)# if not built modifications
 			get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${dep_pack})

@@ -32,7 +32,7 @@ set(LIST_OF_TARGETS)
 
 if(TARGET_PACKAGES AND NOT TARGET_PACKAGES STREQUAL "all")
 	#clean them first
-	foreach(package IN ITEMS ${TARGET_PACKAGES})
+	foreach(package IN LISTS TARGET_PACKAGES)
 		if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build) #rebuild all target packages
 			list(APPEND LIST_OF_TARGETS ${package})
 		else()
@@ -41,21 +41,17 @@ if(TARGET_PACKAGES AND NOT TARGET_PACKAGES STREQUAL "all")
 	endforeach()
 else()#default is all
 	list_All_Source_Packages_In_Workspace(ALL_PACKAGES)
-	if(ALL_PACKAGES)
-		set(LIST_OF_TARGETS ${ALL_PACKAGES})
-	endif()
+	set(LIST_OF_TARGETS ${ALL_PACKAGES})
 endif()
 
-if(LIST_OF_TARGETS)
-	#clean them first
-	foreach(package IN ITEMS ${LIST_OF_TARGETS})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} clean)
-	endforeach()
-	#then build them
-	foreach(package IN ITEMS ${LIST_OF_TARGETS})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build force=true)
-	endforeach()
-endif()
+#clean them first
+foreach(package IN LISTS LIST_OF_TARGETS)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} clean)
+endforeach()
+#then build them
+foreach(package IN LISTS LIST_OF_TARGETS)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build force=true)
+endforeach()
 
 ## global management of the process
 message("--------------------------------------------")

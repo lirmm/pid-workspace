@@ -94,7 +94,7 @@ endfunction(extract_All_Words_From_Path)
 ###
 function(fill_List_Into_String input_list res_string)
 set(res "")
-foreach(element IN ITEMS ${input_list})
+foreach(element IN LISTS input_list)
 	set(res "${res} ${element}")
 endforeach()
 string(STRIP "${res}" res_finished)
@@ -574,7 +574,7 @@ macro(activate_Adequate_Languages)
 get_All_Sources_Absolute(list_of_files ${CMAKE_SOURCE_DIR})#list all source files
 get_property(USED_LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES) #getting all languages already in use
 
-foreach(source_file IN ITEMS ${list_of_files})
+foreach(source_file IN LISTS list_of_files)
 		get_filename_component(EXTENSION ${source_file} EXT)
 		if(EXTENSION STREQUAL ".f")#we have a fortran file
 				list(FIND USED_LANGUAGES Fortran INDEX)
@@ -775,7 +775,7 @@ endfunction(resolve_External_Libs_Path)
 ### resolve any kind of path absolute or relative to provide an absolute path (most of time pointing to the workspace)
 function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH ext_inc_dirs mode)
 set(res_includes)
-foreach(include_dir IN ITEMS ${ext_inc_dirs})
+foreach(include_dir IN LISTS ext_inc_dirs)
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${include_dir})
 	if(NOT RES STREQUAL ${include_dir})# a replacement has taken place => this is a full path to an incude dir of an external package
 		list(GET RES 0 ext_package_name)
@@ -819,7 +819,7 @@ endfunction(resolve_External_Includes_Path)
 ###
 function(resolve_External_Resources_Path COMPLETE_RESOURCES_PATH package ext_resources mode)
 set(res_resources)
-foreach(resource IN ITEMS ${ext_resources})
+foreach(resource IN LISTS ext_resources)
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${resource})
 	if(NOT RES STREQUAL ${resource})# a replacement has taken place => this is a relative path to an external package resource
 		set(fullpath)
@@ -881,7 +881,7 @@ endfunction(get_Package_Repository_Address)
 ###
 function(list_All_Source_Packages_In_Workspace PACKAGES)
 file(GLOB source_packages RELATIVE ${WORKSPACE_DIR}/packages ${WORKSPACE_DIR}/packages/*)
-foreach(a_file IN ITEMS ${source_packages})
+foreach(a_file IN LISTS source_packages)
 	if(EXISTS ${WORKSPACE_DIR}/packages/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${a_file})
 		list(APPEND result ${a_file})
 	endif()
@@ -893,7 +893,7 @@ endfunction(list_All_Source_Packages_In_Workspace)
 function(list_All_Binary_Packages_In_Workspace NATIVE_PACKAGES EXTERNAL_PACKAGES)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 file(GLOB bin_pakages RELATIVE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME} ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/*)
-foreach(a_file IN ITEMS ${bin_pakages})
+foreach(a_file IN LISTS bin_pakages)
 	if(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${a_file})
 		list(APPEND result ${a_file})
 	endif()
@@ -901,7 +901,7 @@ endforeach()
 set(${NATIVE_PACKAGES} ${result} PARENT_SCOPE)
 set(result)
 file(GLOB ext_pakages RELATIVE ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME} ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/*)
-foreach(a_file IN ITEMS ${ext_pakages})
+foreach(a_file IN LISTS ext_pakages)
 	if(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${a_file})
 		list(APPEND result ${a_file})
 	endif()
@@ -937,7 +937,7 @@ endfunction(test_Modified_Components)
 function(get_Version_Number_And_Repo_From_Package package NUMBER STRING_NUMBER ADDRESS)
 set(${ADDRESS} PARENT_SCOPE)
 file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
-foreach(line IN ITEMS ${PACKAGE_METADATA})
+foreach(line IN LISTS PACKAGE_METADATA)
 	string(REGEX REPLACE "^.*set_PID_Package_Version\\(([0-9]+)(\\ +)([0-9]+)(\\ *)([0-9]*)(\\ *)\\).*$" "\\1;\\3;\\5" A_VERSION ${line})
 	if(NOT "${line}" STREQUAL "${A_VERSION}")
 		set(VERSION_COMMAND ${A_VERSION})#only taking the last instruction since it shadows previous ones
@@ -1005,8 +1005,7 @@ endfunction(is_Binary_Package_Version_In_Development)
 function(hard_Clean_Wrapper wrapper)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${wrapper}/build)
 file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
-if(thefiles)
-foreach(a_file IN ITEMS ${thefiles})
+foreach(a_file IN LISTS thefiles)
 	if(NOT a_file STREQUAL ".gitignore")
 		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
 			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
@@ -1015,15 +1014,13 @@ foreach(a_file IN ITEMS ${thefiles})
 		endif()
 	endif()
 endforeach()
-endif()
 endfunction(hard_Clean_Wrapper)
 
 ### hard clean consist in cleaning the build folder in an aggressive way
 function(hard_Clean_Package package)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
 file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
-if(thefiles)
-foreach(a_file IN ITEMS ${thefiles})
+foreach(a_file IN LISTS thefiles)
 	if(NOT a_file STREQUAL ".gitignore")
 		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
 			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
@@ -1032,14 +1029,12 @@ foreach(a_file IN ITEMS ${thefiles})
 		endif()
 	endif()
 endforeach()
-endif()
 endfunction(hard_Clean_Package)
 
 function(hard_Clean_Package_Debug package)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
 file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
-if(thefiles)
-foreach(a_file IN ITEMS ${thefiles})
+foreach(a_file IN LISTS thefiles)
 	if(NOT a_file STREQUAL ".gitignore")
 		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
 			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
@@ -1048,14 +1043,12 @@ foreach(a_file IN ITEMS ${thefiles})
 		endif()
 	endif()
 endforeach()
-endif()
 endfunction(hard_Clean_Package_Debug)
 
 function(hard_Clean_Package_Release package)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
 file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
-if(thefiles)
-foreach(a_file IN ITEMS ${thefiles})
+foreach(a_file IN LISTS thefiles)
 	if(NOT a_file STREQUAL ".gitignore")
 		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
 			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
@@ -1064,7 +1057,6 @@ foreach(a_file IN ITEMS ${thefiles})
 		endif()
 	endif()
 endforeach()
-endif()
 endfunction(hard_Clean_Package_Release)
 
 ### reconfiguring a package
@@ -1098,50 +1090,47 @@ include(${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.c
 include(${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
 # now check that target dependencies
 #debug
-if(TARGET_NATIVE_DEPENDENCIES_DEBUG)
-	foreach(dep IN ITEMS ${TARGET_NATIVE_DEPENDENCIES_DEBUG})
-		if(EXISTS ${WORKSPACE_DIR}/packages/${dep})#checking that the user may use a version generated by a source package
-				# step 1: get all versions for that package
-				get_Repository_Version_Tags(AVAILABLE_VERSIONS ${dep})
-				set(VERSION_NUMBERS)
-				if(AVAILABLE_VERSIONS)
-					normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
-				endif()
+foreach(dep IN LISTS TARGET_NATIVE_DEPENDENCIES_DEBUG)
+	if(EXISTS ${WORKSPACE_DIR}/packages/${dep})#checking that the user may use a version generated by a source package
+		# step 1: get all versions for that package
+		get_Repository_Version_Tags(AVAILABLE_VERSIONS ${dep})
+		set(VERSION_NUMBERS)
+		if(AVAILABLE_VERSIONS)
+			normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
+		endif()
 
-				# step 2: checking that the version specified in the CMakeLists really exist
-				if(TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG)
-					normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
+		# step 2: checking that the version specified in the CMakeLists really exist
+		if(TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG)
+			normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
 
-					list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
-					if(INDEX EQUAL -1)
-							list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG}")#using # instead of _ since names of package can contain _
-					endif()
-				endif()#else no version bound to dependency == no constraint
+			list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
+			if(INDEX EQUAL -1)
+				list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG}")#using # instead of _ since names of package can contain _
+			endif()
+		endif()#else no version bound to dependency == no constraint
 		endif()
 	endforeach()
-endif()
+
 #release
-if(TARGET_NATIVE_DEPENDENCIES)
-	foreach(dep IN ITEMS ${TARGET_NATIVE_DEPENDENCIES})
-		if(EXISTS ${WORKSPACE_DIR}/packages/${dep})#checking that the user may use a version generated by a source package
-				# step 1: get all versions for that package
-				get_Repository_Version_Tags(AVAILABLE_VERSIONS ${dep})
-				set(VERSION_NUMBERS)
-				if(AVAILABLE_VERSIONS)
-					normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
-				endif()
-
-				# step 2: checking that the version specified in the CMakeLists really exist
-				if(TARGET_NATIVE_DEPENDENCY_${dep}_VERSION)
-					normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
-					list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
-					if(INDEX EQUAL -1)
-							list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION}")#using # instead of _ since names of package can contain _
-					endif()
-				endif()#no version bound to dependency == no constraint
+foreach(dep IN LISTS TARGET_NATIVE_DEPENDENCIES)
+	if(EXISTS ${WORKSPACE_DIR}/packages/${dep})#checking that the user may use a version generated by a source package
+		# step 1: get all versions for that package
+		get_Repository_Version_Tags(AVAILABLE_VERSIONS ${dep})
+		set(VERSION_NUMBERS)
+		if(AVAILABLE_VERSIONS)
+			normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
 		endif()
-	endforeach()
-endif()
+
+		# step 2: checking that the version specified in the CMakeLists really exist
+		if(TARGET_NATIVE_DEPENDENCY_${dep}_VERSION)
+			normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
+			list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
+			if(INDEX EQUAL -1)
+				list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION}")#using # instead of _ since names of package can contain _
+			endif()
+		endif()#no version bound to dependency == no constraint
+	endif()
+endforeach()
 if(list_of_bad_deps)#guard to avoid troubles with CMake complaining that the list does not exist
 	list(REMOVE_DUPLICATES list_of_bad_deps)
 	set(${BAD_DEPS} ${list_of_bad_deps} PARENT_SCOPE)#need of guillemet to preserve the list structure
@@ -1251,7 +1240,7 @@ endfunction(test_Same_File_Content)
 function(test_Same_Directory_Content dir1_path dir2_path ARE_SAME)
 file(GLOB_RECURSE ALL_FILES_DIR1 RELATIVE ${dir1_path} ${dir1_path}/*)
 file(GLOB_RECURSE ALL_FILES_DIR2 RELATIVE ${dir2_path} ${dir2_path}/*)
-foreach(a_file IN ITEMS ${ALL_FILES_DIR1})
+foreach(a_file IN LISTS ALL_FILES_DIR1)
 	list(FIND ALL_FILES_DIR2 ${a_file} INDEX)
 	if(INDEX EQUAL -1)#if file not found -> not same content
 		set(${ARE_SAME} FALSE PARENT_SCOPE)

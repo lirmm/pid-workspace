@@ -30,7 +30,7 @@ begin_Progress(workspace NEED_REMOVE)
 
 if(TARGET_PACKAGES AND NOT TARGET_PACKAGES STREQUAL "all")
 	#clean them first
-	foreach(package IN ITEMS ${TARGET_PACKAGES})
+	foreach(package IN LISTS TARGET_PACKAGES)
 		if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build) #rebuild all target packages
 			list(APPEND LIST_OF_TARGETS ${package})
 		else()
@@ -44,13 +44,10 @@ else()#default is all
 	endif()
 endif()
 
-
-if(LIST_OF_TARGETS)
-	# build them
-	foreach(package IN ITEMS ${LIST_OF_TARGETS})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build force=true)
-	endforeach()
-endif()
+#build the packages
+foreach(package IN LISTS LIST_OF_TARGETS)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build force=true)
+endforeach()
 
 
 ## global management of the process

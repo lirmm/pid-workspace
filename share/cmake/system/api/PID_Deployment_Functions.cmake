@@ -36,7 +36,7 @@ file(APPEND ${file} "set(${PROJECT_NAME}_SITE_GIT_ADDRESS ${${PROJECT_NAME}_SITE
 file(APPEND ${file} "set(${PROJECT_NAME}_SITE_INTRODUCTION ${${PROJECT_NAME}_SITE_INTRODUCTION} CACHE INTERNAL \"\")\n")
 
 set(res_string "")
-foreach(auth IN ITEMS ${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS})
+foreach(auth IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
 	list(APPEND res_string ${auth})
 endforeach()
 set(printed_authors "${res_string}")
@@ -57,17 +57,13 @@ endif()
 ###### direct reference to a downloadable binary for a given platform ######
 ############################################################################
 file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} CACHE INTERNAL \"\")\n")
-if(${PROJECT_NAME}_REFERENCES)
-foreach(ref_version IN ITEMS ${${PROJECT_NAME}_REFERENCES}) #for each available version, all os for which there is a reference
+foreach(ref_version IN LISTS ${PROJECT_NAME}_REFERENCES) #for each available version, all os for which there is a reference
 	file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n")
-	if(${PROJECT_NAME}_REFERENCE_${ref_version})
-	foreach(ref_platform IN ITEMS ${${PROJECT_NAME}_REFERENCE_${ref_version}})#for each version & os, all arch for which there is a reference
+	foreach(ref_platform IN LISTS ${PROJECT_NAME}_REFERENCE_${ref_version})#for each version & os, all arch for which there is a reference
 		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG} CACHE INTERNAL \"\")\n")
 	endforeach()
-	endif()
 endforeach()
-endif()
 endfunction(generate_Reference_File)
 
 
@@ -85,7 +81,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 # - locating dependent external packages in the workspace and configuring their build variables recursively
 set(TO_INSTALL_EXTERNAL_DEPS)
 if(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	foreach(dep_ext_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+	foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 		# 1) resolving direct dependencies
 		resolve_External_Package_Dependency(${package} ${dep_ext_pack} ${mode})
 		if(NOT ${dep_ext_pack}_FOUND)
@@ -106,7 +102,7 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external packages: ${NOT_INSTALLED_PACKAGES}. This is an internal bug maybe due to bad references on these packages.")
 			return()
 		endif()
-		foreach(installed IN ITEMS ${INSTALLED_EXTERNAL_PACKAGES})#recursive call for newly installed packages
+		foreach(installed IN LISTS INSTALLED_EXTERNAL_PACKAGES)#recursive call for newly installed packages
 			resolve_External_Package_Dependency(${package} ${installed} ${mode})
 			if(NOT ${installed}_FOUND)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find installed external package ${installed}. This is an internal bug maybe due to a bad find file.")
@@ -128,7 +124,7 @@ endif()
 # - locating dependent packages in the workspace and configuring their build variables recursively
 set(TO_INSTALL_DEPS)
 if(${package}_DEPENDENCIES${VAR_SUFFIX})
-	foreach(dep_pack IN ITEMS ${${package}_DEPENDENCIES${VAR_SUFFIX}})
+	foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
 		# 1) resolving direct dependencies
 		resolve_Package_Dependency(${package} ${dep_pack} ${mode})
 		if(${dep_pack}_FOUND)
@@ -150,7 +146,7 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 			message("[PID] INFO : package ${package} needs to install following packages : ${TO_INSTALL_DEPS}")
 		endif()
 		install_Required_Native_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES NOT_INSTALLED)
-		foreach(installed IN ITEMS ${INSTALLED_PACKAGES})#recursive call for newly installed packages
+		foreach(installed IN LISTS INSTALLED_PACKAGES)#recursive call for newly installed packages
 			resolve_Package_Dependency(${package} ${installed} ${mode})
 			if(${installed}_FOUND)
 				if(${installed}_DEPENDENCIES${VAR_SUFFIX})
@@ -228,7 +224,7 @@ endfunction(update_Package_Installed_Version)
 # given the currently required versions
 function(resolve_Required_Native_Package_Version version_possible min_version is_exact package)
 
-foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX}})
+foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	get_Version_String_Numbers("${version}.0" compare_major compare_minor compared_patch)
 	if(NOT MAJOR_RESOLVED)#first time
 		set(MAJOR_RESOLVED ${compare_major})
@@ -264,7 +260,7 @@ function(install_Required_Native_Packages list_of_packages_to_install INSTALLED_
 set(successfully_installed )
 set(not_installed )
 set(${NOT_INSTALLED} PARENT_SCOPE)
-foreach(dep_package IN ITEMS ${list_of_packages_to_install}) #while there are still packages to install
+foreach(dep_package IN LISTS list_of_packages_to_install) #while there are still packages to install
 	set(INSTALL_OK FALSE)
 	install_Native_Package(INSTALL_OK ${dep_package})
 	if(INSTALL_OK)
@@ -702,28 +698,26 @@ if(platform STREQUAL ${PLATFORM_STRING})
 		endif()
 	endif()
 
-	if(CONFIGS_TO_CHECK)
-		foreach(config IN ITEMS ${CONFIGS_TO_CHECK})
-			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)
-				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)	# find the configuation
-				if(NOT ${config}_FOUND)# not found, trying to see if can be installed
-					if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)
-						include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)
-						if(NOT ${config}_INSTALLABLE)
-							set(${CHECK_OK} FALSE PARENT_SCOPE)
-							return()
-						endif()
-					else()
+	foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)
+			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)	# find the configuation
+			if(NOT ${config}_FOUND)# not found, trying to see if can be installed
+				if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)
+					include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)
+					if(NOT ${config}_INSTALLABLE)
 						set(${CHECK_OK} FALSE PARENT_SCOPE)
 						return()
 					endif()
+				else()
+					set(${CHECK_OK} FALSE PARENT_SCOPE)
+					return()
 				endif()
-			else()
-				set(${CHECK_OK} FALSE PARENT_SCOPE)
-				return()
 			endif()
-		endforeach()
-	endif()#OK no specific check for configuration so simply reply TRUE
+		else()
+			set(${CHECK_OK} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
 else()#the binary is not eligible since does not match either familly, os, arch or ABI of the current system
 	set(${CHECK_OK} FALSE PARENT_SCOPE)
 	return()
@@ -735,8 +729,8 @@ endfunction(check_Package_Platform_Against_Current)
 function(get_Available_Binary_Package_Versions package list_of_versions list_of_versions_with_platform)
 # listing available binaries of the package and searching if there is any "good version"
 set(available_binary_package_version "")
-foreach(ref_version IN ITEMS ${${package}_REFERENCES})
-	foreach(ref_platform IN ITEMS ${${package}_REFERENCE_${ref_version}})
+foreach(ref_version IN LISTS ${package}_REFERENCES)
+	foreach(ref_platform IN LISTS ${package}_REFERENCE_${ref_version})
 		set(BINARY_OK FALSE)
 		check_Package_Platform_Against_Current(${package} ${ref_platform} BINARY_OK)#will return TRUE if the platform conforms to current one
 		if(BINARY_OK)
@@ -758,7 +752,7 @@ endfunction(get_Available_Binary_Package_Versions)
 ### select the version passed as argument in the list of binary versions of a package
 function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_FOR_PLATFORM)
 if(list_of_bin_with_platform)
-	foreach(bin IN ITEMS ${list_of_bin_with_platform})
+	foreach(bin IN LISTS list_of_bin_with_platform)
 		string (REGEX REPLACE "^${version}/(.*)$" "\\1" RES ${bin})
 		if(NOT RES STREQUAL "${bin}") #match
 			set(${RES_FOR_PLATFORM} ${RES} PARENT_SCOPE)
@@ -1243,7 +1237,7 @@ function(resolve_Required_External_Package_Version VERSION_POSSIBLE SELECTED_VER
 	list(REMOVE_DUPLICATES ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	set(CURRENT_EXACT FALSE)
 	#1) first pass to eliminate everything impossible just when considering exactness
-	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}})
+	foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 		if(CURRENT_EXACT)#current version is an exact version
 			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX}) #impossible to find two different exact versions solution
 				set(${VERSION_POSSIBLE} FALSE PARENT_SCOPE)
@@ -1272,7 +1266,7 @@ function(resolve_Required_External_Package_Version VERSION_POSSIBLE SELECTED_VER
 	endforeach()
 
 	#2) testing if a solution exists as regard of "compatibility" of required versions
-	foreach(version IN ITEMS ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}})
+	foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 		if(NOT ${version} VERSION_EQUAL ${CURRENT_VERSION})
 			if(DEFINED ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO
 			AND NOT ${CURRENT_VERSION} VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
@@ -1359,7 +1353,7 @@ if(NOT USE_SOURCE) #no need to manage binairies if building from sources
 		if(NOT NO_VERSION)#there is a constraint on the version to use
 			set(RES FALSE)
 			#try to find if at least one available version is OK
-			foreach(version IN ITEMS ${available_versions})
+			foreach(version IN LISTS available_versions)
 				if(version VERSION_EQUAL SELECTED)#exactly same version number => OK no need to continue
 					set(RES TRUE)#at least a good version found !
 					break()
@@ -1440,7 +1434,7 @@ endfunction(install_External_Package)
 function(install_Required_External_Packages list_of_packages_to_install INSTALLED_PACKAGES NOT_INSTALLED_PACKAGES)
 set(successfully_installed "")
 set(not_installed "")
-foreach(dep_package IN ITEMS ${list_of_packages_to_install}) #while there are still packages to install
+foreach(dep_package IN LISTS list_of_packages_to_install) #while there are still packages to install
 	set(INSTALL_OK FALSE)
 	install_External_Package(INSTALL_OK ${dep_package} FALSE)
 	if(INSTALL_OK)
@@ -1699,7 +1693,7 @@ if(res STREQUAL NOTFOUND)
 endif()
 unset(${package}_CURR_DIR)
 
-# checking platforms constraints
+# 1) checking platforms constraints
 set(CONFIGS_TO_CHECK)
 if(${package}_PLATFORM_CONFIGURATIONS)
 	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})#there are configuration constraints in PID v2 style
@@ -1710,11 +1704,10 @@ elseif(${package}_PLATFORM${VAR_SUFFIX} STREQUAL ${platform}) # this case may be
 	endif()
 endif()
 
-if(CONFIGS_TO_CHECK)#arch and OS are not checked as they are supposed to be already OK
-	# 2) checking constraints on configuration
-	foreach(config IN ITEMS ${CONFIGS_TO_CHECK})
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
+# 2) checking constraints on configuration
+foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this platform is supposed to be necessary
+	if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 			if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
 				return()
@@ -1726,12 +1719,11 @@ if(CONFIGS_TO_CHECK)#arch and OS are not checked as they are supposed to be alre
 			return()
 		endif()
 	endforeach()
-endif() #otherwise no configuration for this platform is supposed to be necessary
 
 #TODO UNCOMMENT AND TEST DEPLOYMENT
 # Manage external package dependencies => need to deploy other external packages
 #if(${package}_EXTERNAL_DEPENDENCIES) #the external package has external dependencies
-#	foreach(dep_pack IN ITEMS ${${package}_EXTERNAL_DEPENDENCIES}) #recursive call for deployment of dependencies
+#	foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES) #recursive call for deployment of dependencies
 #		deploy_Binary_External_Package_Version(DEPLOYED ${dep_pack} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION})
 #	endforeach()
 #endif()

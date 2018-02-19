@@ -71,7 +71,7 @@ endif()
 # are there tests and examples ?
 set(PACKAGE_CI_HAS_TESTS "false")
 set(PACKAGE_CI_HAS_EXAMPLES "false")
-foreach(component IN ITEMS ${${PROJECT_NAME}_DECLARED_COMPS})#looking into all declared components
+foreach(component IN LISTS ${PROJECT_NAME}_DECLARED_COMPS)#looking into all declared components
 	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE")
 		set(PACKAGE_CI_HAS_EXAMPLES "true")
 	elseif(${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
@@ -104,11 +104,11 @@ configure_file(${WORKSPACE_DIR}/share/patterns/packages/.gitlab-ci.yml.in ${TARG
 
 #now need to complete the configuration file with platform and environment related information
 # managing restriction on platforms used for CI and generating CI config file
-foreach(platform IN ITEMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS})
+foreach(platform IN LISTS ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
 	add_CI_Config_File_Runner_Selection_By_Platform(${TARGET_TEMPORARY_FILE} ${platform})
 endforeach()
 file(APPEND ${TARGET_TEMPORARY_FILE} "\n\n############ jobs definition, by platform #############\n\n")
-foreach(platform IN ITEMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS})
+foreach(platform IN LISTS ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
 	add_CI_Config_File_Jobs_Definitions_By_Platform(${TARGET_TEMPORARY_FILE} ${platform})
 endforeach()
 

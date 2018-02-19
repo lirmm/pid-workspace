@@ -138,7 +138,7 @@ cmake_parse_arguments(DECLARE_PID_PUBLISHING "${optionArgs}" "${oneValueArgs}" "
 
 	#manage configuration of CI
 if(DECLARE_PID_PUBLISHING_ALLOWED_PLATFORMS)
-	foreach(platform IN ITEMS ${DECLARE_PID_PUBLISHING_ALLOWED_PLATFORMS})
+	foreach(platform IN LISTS DECLARE_PID_PUBLISHING_ALLOWED_PLATFORMS)
 		allow_CI_For_Platform(${platform})
 	endforeach()
 	set(DO_CI TRUE)

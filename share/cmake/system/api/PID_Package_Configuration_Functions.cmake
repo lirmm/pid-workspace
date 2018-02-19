@@ -23,16 +23,14 @@
 
 function (list_Closed_Source_Dependency_Packages)
 set(CLOSED_PACKS)
-if(${PROJECT_NAME}_ALL_USED_PACKAGES)
-	foreach(pack IN ITEMS ${${PROJECT_NAME}_ALL_USED_PACKAGES})
-		package_License_Is_Closed_Source(CLOSED ${pack})
-		if(CLOSED)
-			list(APPEND CLOSED_PACKS ${pack})
-		endif()
-	endforeach()
-	if(CLOSED_PACKS)
-		list(REMOVE_DUPLICATES CLOSED_PACKS)
+foreach(pack IN LISTS ${PROJECT_NAME}_ALL_USED_PACKAGES)
+	package_License_Is_Closed_Source(CLOSED ${pack})
+	if(CLOSED)
+		list(APPEND CLOSED_PACKS ${pack})
 	endif()
+endforeach()
+if(CLOSED_PACKS)
+	list(REMOVE_DUPLICATES CLOSED_PACKS)
 endif()
 set(CLOSED_SOURCE_DEPENDENCIES ${CLOSED_PACKS} CACHE INTERNAL "")
 endfunction(list_Closed_Source_Dependency_Packages)
@@ -80,34 +78,32 @@ endfunction(list_Public_Definitions)
 ### list all public compile options of a component
 function(list_Public_Options OPTS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(${package}_${component}_OPTS${VAR_SUFFIX})
-	#checking that no compiler option is used directly to set the standard
-	#remove the option and set the standard adequately instead
-	set(FILTERED_OPTS)
-	foreach(opt IN ITEMS ${${package}_${component}_OPTS${VAR_SUFFIX}})
-		#checking for CXX_STANDARD
-		is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
-		if(STANDARD_NUMBER)
-			message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c++${STANDARD_NUMBER} or -std=gnu++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
-			is_CXX_Version_Less(IS_LESS ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
-			if(IS_LESS)
-				set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
-			endif()
-		else()#checking for C_STANDARD
-			is_C_Standard_Option(STANDARD_NUMBER ${opt})
-			if(STANDARD_NUMBER)
-				message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c${STANDARD_NUMBER} or -std=gnu${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
-				is_C_Version_Less(IS_LESS ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
-				if(IS_LESS)
-					set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
-				endif()
-			else()
-				list(APPEND FILTERED_OPTS ${opt})#keep the option unchanged
-			endif()
+#checking that no compiler option is used directly to set the standard
+#remove the option and set the standard adequately instead
+set(FILTERED_OPTS)
+foreach(opt IN LISTS ${package}_${component}_OPTS${VAR_SUFFIX})
+	#checking for CXX_STANDARD
+	is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
+	if(STANDARD_NUMBER)
+		message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c++${STANDARD_NUMBER} or -std=gnu++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+		is_CXX_Version_Less(IS_LESS ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
+		if(IS_LESS)
+			set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
 		endif()
-	endforeach()
-	set(${OPTS} ${FILTERED_OPTS} PARENT_SCOPE)
-endif()
+	else()#checking for C_STANDARD
+		is_C_Standard_Option(STANDARD_NUMBER ${opt})
+		if(STANDARD_NUMBER)
+			message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c${STANDARD_NUMBER} or -std=gnu${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+			is_C_Version_Less(IS_LESS ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
+			if(IS_LESS)
+				set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+			endif()
+		else()
+			list(APPEND FILTERED_OPTS ${opt})#keep the option unchanged
+		endif()
+	endif()
+endforeach()
+set(${OPTS} ${FILTERED_OPTS} PARENT_SCOPE)
 endfunction(list_Public_Options)
 
 ### get the location of a given component resulting binary on the filesystem
@@ -161,7 +157,7 @@ get_Mode_Variables(mode_binary_suffix mode_var_suffix ${mode})
 if(NOT is_direct) #otherwise external dependencies are direct dependencies so their LINKS (i.e. exported links) are already taken into account (not private)
 	if(${package}_${component}_LINKS${mode_var_suffix})
 		resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
-		foreach(ext_dep IN ITEMS ${RES_LINKS})
+		foreach(ext_dep IN LISTS RES_LINKS)
 			is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
 			if(IS_SHARED)
 				list(APPEND undirect_list ${ext_dep})
@@ -173,7 +169,7 @@ endif()
 # 1-bis) searching private external dependencies
 if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
 	resolve_External_Libs_Path(RES_PRIVATE_LINKS "${${package}_${component}_PRIVATE_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
-	foreach(ext_dep IN ITEMS ${RES_PRIVATE_LINKS})
+	foreach(ext_dep IN LISTS RES_PRIVATE_LINKS)
 		is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
 		if(IS_SHARED)
 			list(APPEND undirect_list ${ext_dep})
@@ -182,8 +178,8 @@ if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
 endif()
 
 # 2) searching in dependent packages
-foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_suffix}})
-	foreach(dep_component IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${mode_var_suffix}})
+foreach(dep_package IN LISTS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
+	foreach(dep_component IN LISTS ${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${mode_var_suffix})
 		set(UNDIRECT)
 		if(is_direct) # current component is a direct dependency of the application
 			if(	${dep_package}_${dep_component}_TYPE STREQUAL "STATIC"
@@ -212,7 +208,7 @@ foreach(dep_package IN ITEMS ${${package}_${component}_DEPENDENCIES${mode_var_su
 endforeach()
 
 # 3) searching in current package
-foreach(dep_component IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix}})
+foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
 	set(UNDIRECT)
 	if(is_direct) # current component is a direct dependency of the application
 		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
@@ -266,7 +262,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
 	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${package} "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
-	foreach(path IN ITEMS ${COMPLETE_RESOURCES_PATH})
+	foreach(path IN LISTS COMPLETE_RESOURCES_PATH)
 		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
 			list(APPEND result ${${package}_ROOT_DIR}/share/resources/${path})#the path contained by the link
 		else() #external or absolute resource path coming from external dependencies
@@ -281,7 +277,7 @@ endfunction(get_Bin_Component_Direct_Runtime_Resources_Dependencies)
 function(get_Bin_Component_Direct_Internal_Runtime_Dependencies RES_RESOURCES package component mode prefix_path suffix_ext)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(RES)
-foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	is_Runtime_Component(IS_RUNTIME ${package} ${int_dep})
 	if(IS_RUNTIME)
 		list(APPEND RES ${prefix_path}${int_dep}${TARGET_SUFFIX}${suffix_ext})
@@ -297,8 +293,8 @@ set(result)
 get_Bin_Component_Direct_Runtime_Resources_Dependencies(DIRECT_RESOURCES ${package} ${component} ${mode})
 list(APPEND result ${DIRECT_RESOURCES})
 
-foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
-	foreach(dep_comp IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX}})
+foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
 		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
 		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
 		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
@@ -315,7 +311,7 @@ foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 endforeach()
 
 # 3) adding internal components dependencies
-foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
 	#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
 	get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode})
@@ -338,18 +334,14 @@ function(get_Bin_Component_Direct_Runtime_Links_Dependencies RES_LINKS package c
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
-
-        resolve_External_Libs_Path(RES "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
-        if(RES)
-		foreach(lib IN ITEMS ${RES})
-                        is_Shared_Lib_With_Path(IS_SHARED ${lib})
-			if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
-                                list(APPEND result ${lib})
-			endif()
-		endforeach()
-	endif()
+  resolve_External_Libs_Path(RES "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+	foreach(lib IN LISTS RES)
+		is_Shared_Lib_With_Path(IS_SHARED ${lib})
+		if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
+			list(APPEND result ${lib})
+		endif()
+	endforeach()
 endif()
-
 set(${RES_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_Links_Dependencies)
 
@@ -360,16 +352,13 @@ set(result)
 
 if(${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX})#if there are private links
 	resolve_External_Libs_Path(RES_PRIVATE "${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
-	if(RES_PRIVATE)
-		foreach(lib IN ITEMS ${RES_PRIVATE})
-			is_Shared_Lib_With_Path(IS_SHARED ${lib})
-			if(IS_SHARED)
-				list(APPEND result ${lib})
-			endif()
-		endforeach()
-	endif()
+	foreach(lib IN LISTS RES_PRIVATE)
+		is_Shared_Lib_With_Path(IS_SHARED ${lib})
+		if(IS_SHARED)
+			list(APPEND result ${lib})
+		endif()
+	endforeach()
 endif()
-
 set(${RES_PRIVATE_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies)
 
@@ -385,8 +374,8 @@ get_Bin_Component_Direct_Runtime_Links_Dependencies(RES_LINKS ${package} ${compo
 list(APPEND result ${RES_LINKS})
 
 # 2) adding package components dependencies
-foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
-	foreach(dep_comp IN ITEMS ${${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX}})
+foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
 		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC")
 			get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
 			if(INT_DEP_RUNTIME_RESOURCES)
@@ -406,7 +395,7 @@ foreach(dep_pack IN ITEMS ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
 endforeach()
 
 # 3) adding internal components dependencies
-foreach(int_dep IN ITEMS ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")
 		get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
 		if(INT_DEP_RUNTIME_RESOURCES)
@@ -454,8 +443,8 @@ set(undirect_deps)
 # 0) no need to search for system libraries as they are installed and found automatically by the OS binding mechanism, idem for external dependencies since they are always direct dependencies for the currenlty build component
 
 # 1) searching each direct dependency in other packages
-foreach(dep_package IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX}})
-	foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX}})
+foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
 		set(LIST_OF_DEP_SHARED)
 		is_HeaderFree_Component(IS_HF ${dep_package} ${dep_component})
 		if(NOT IS_HF)
@@ -468,7 +457,7 @@ foreach(dep_package IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SU
 endforeach()
 
 # 2) searching each direct dependency in current package (no problem with undirect internal dependencies since undirect path only target install path which is not a problem for build)
-foreach(dep_component IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	set(LIST_OF_DEP_SHARED)
 	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${dep_component})
 	if(NOT IS_HF)
@@ -507,12 +496,12 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 # 1) resolving runtime dependencies by recursion (resolving dependancy packages' components first)
 if(${package}_DEPENDENCIES${VAR_SUFFIX})
-	foreach(dep IN ITEMS ${${package}_DEPENDENCIES${VAR_SUFFIX}})
+	foreach(dep IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
 		resolve_Package_Runtime_Dependencies(${dep} ${mode})
 	endforeach()
 endif()
 # 2) resolving runtime dependencies of the package's own components
-foreach(component IN ITEMS ${${package}_COMPONENTS})
+foreach(component IN LISTS ${package}_COMPONENTS)
 	resolve_Bin_Component_Runtime_Dependencies(${package} ${component} ${mode})
 endforeach()
 set(${package}_DURING_PREPARE_RUNTIME FALSE)
@@ -567,14 +556,14 @@ endfunction(resolve_Bin_Component_Runtime_Dependencies)
 function(create_Bin_Component_Symlinks bin_package bin_component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #creatings symbolic links
-foreach(resource IN ITEMS ${resources})
+foreach(resource IN LISTS resources)
 	create_Runtime_Symlink("${resource}" "${${bin_package}_ROOT_DIR}/.rpath" ${bin_component}${TARGET_SUFFIX})
 endforeach()
 endfunction(create_Bin_Component_Symlinks)
 
 function(create_Bin_Component_Python_Symlinks bin_package bin_component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-foreach(resource IN ITEMS ${resources})
+foreach(resource IN LISTS resources)
 	create_Runtime_Symlink("${resource}" "${${bin_package}_ROOT_DIR}/share/script" ${bin_component})#installing Debug and Release modes links in the same script folder
 endforeach()
 endfunction(create_Bin_Component_Python_Symlinks)
@@ -584,7 +573,7 @@ endfunction(create_Bin_Component_Python_Symlinks)
 ##################################################################################
 function(create_Source_Component_Python_Symlinks component mode targets)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-foreach(target IN ITEMS ${targets})
+foreach(target IN LISTS targets)
 	install_Runtime_Symlink(${target} "${${PROJECT_NAME}_DEPLOY_PATH}/share/script" ${component})#installing Debug and Release modes links in the same script folder
 endforeach()
 endfunction(create_Source_Component_Python_Symlinks)
@@ -592,7 +581,7 @@ endfunction(create_Source_Component_Python_Symlinks)
 ### configuring source components (currently built) runtime paths (links to libraries, executable, modules, files, etc.)
 function(create_Source_Component_Symlinks component mode targets)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-foreach(target IN ITEMS ${targets})
+foreach(target IN LISTS targets)
 	install_Runtime_Symlink(${target} "${${PROJECT_NAME}_DEPLOY_PATH}/.rpath" ${component}${TARGET_SUFFIX})
 endforeach()
 ###
@@ -647,7 +636,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 if(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
 	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${PROJECT_NAME} "${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
-	foreach(path IN ITEMS ${COMPLETE_RESOURCES_PATH})
+	foreach(path IN LISTS COMPLETE_RESOURCES_PATH)
 		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
 			list(APPEND result ${CMAKE_SOURCE_DIR}/share/resources/${path})#the path contained by the link
 		else() #external or absolute resource path coming from external/system dependencies
@@ -666,8 +655,8 @@ set(result)
 get_Source_Component_Direct_Runtime_Resources_Dependencies(DIRECT_RESOURCES ${component} ${mode})
 list(APPEND result ${DIRECT_RESOURCES})
 
-foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX}})
-	foreach(dep_comp IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX}})
+foreach(dep_pack IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(dep_comp IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
 		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location)
 		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
 		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
@@ -684,21 +673,19 @@ foreach(dep_pack IN ITEMS ${${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFI
 endforeach()
 
 # 3) adding internal components dependencies
-if(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	foreach(int_dep IN ITEMS ${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
-		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-		get_Source_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${int_dep} ${mode})
-		if(INT_DEP_RUNTIME_RESOURCES)
-			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
-		endif()
-		if(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "MODULE")
-			list(APPEND result ${CMAKE_BINARY_DIR}/src/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-		elseif(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "APP" OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "EXAMPLE")
-			list(APPEND result ${CMAKE_BINARY_DIR}/apps/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
-		endif()
-	endforeach()
-endif()
+foreach(int_dep IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
+	#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
+	get_Source_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${int_dep} ${mode})
+	if(INT_DEP_RUNTIME_RESOURCES)
+		list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
+	endif()
+	if(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "MODULE")
+		list(APPEND result ${CMAKE_BINARY_DIR}/src/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+	elseif(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "APP" OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "EXAMPLE")
+		list(APPEND result ${CMAKE_BINARY_DIR}/apps/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+	endif()
+endforeach()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Source_Component_Runtime_Resources_Dependencies)
 
@@ -707,7 +694,7 @@ endfunction(get_Source_Component_Runtime_Resources_Dependencies)
 function(create_Source_Component_Symlinks_Build_Tree component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(NOT "${resources}" STREQUAL "")
-	foreach(resource IN ITEMS ${resources})
+	foreach(resource IN LISTS resources)
 		create_Runtime_Symlink(${resource} ${CMAKE_BINARY_DIR}/.rpath ${component}${TARGET_SUFFIX})
 	endforeach()
 endif()

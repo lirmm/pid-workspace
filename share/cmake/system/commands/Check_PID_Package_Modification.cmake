@@ -29,7 +29,7 @@ function(Find_Unique_Elements first_list second_list unique_in_first unique_in_s
 
 set(temp_first_res)
 
-foreach(element IN ITEMS ${first_list})
+foreach(element IN LISTS first_list)
 	list(FIND second_list ${element} FIND_INDEX)
 	if(FIND_INDEX EQUAL -1)
 		list(APPEND temp_first_res ${prefix_for_elements}/${element})
@@ -40,7 +40,7 @@ endforeach()
 
 set(temp_second_res)
 
-foreach(element IN ITEMS ${second_list})
+foreach(element IN LISTS second_list)
 	list(APPEND temp_second_res ${prefix_for_elements}/${element})
 endforeach()
 
@@ -77,7 +77,7 @@ if(MODIFIED)
 endif()
 
 #testing if source code build tree has been modified (files added/removed)
-foreach(component IN ITEMS ${${PACKAGE_NAME}_COMPONENTS})
+foreach(component IN LISTS ${PACKAGE_NAME}_COMPONENTS)
 	if(${PACKAGE_NAME}_${component}_HEADER_DIR_NAME AND ${PACKAGE_NAME}_${component}_SOURCE_DIR) # this component is a binary library
 		set(current_dir ${path_to_package}/include/${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
 		file(	GLOB_RECURSE FILE_PACKAGE_HEADERS

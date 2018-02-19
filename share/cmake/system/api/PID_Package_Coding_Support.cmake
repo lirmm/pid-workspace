@@ -122,7 +122,7 @@ function(add_Static_Check component is_library)
 	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#header targets have no sources => list them by hand
 		set(SOURCES_TO_CHECK)
-		foreach(source IN ITEMS ${${PROJECT_NAME}_${component}_HEADERS})
+		foreach(source IN LISTS ${PROJECT_NAME}_${component}_HEADERS)
 			list(APPEND SOURCES_TO_CHECK ${CMAKE_SOURCE_DIR}/include/${${PROJECT_NAME}_${component}_HEADER_DIR_NAME}/${source})
 		endforeach()
 	else()

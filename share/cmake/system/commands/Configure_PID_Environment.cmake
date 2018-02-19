@@ -20,7 +20,7 @@
 function(clean_Build_Tree workspace)
 file(GLOB ALL_FILES "${workspace}/pid/*")
 if(ALL_FILES)
-	foreach(a_file IN ITEMS ${ALL_FILES})
+	foreach(a_file IN LISTS ALL_FILES)
 		if(IS_DIRECTORY ${a_file})
 			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${a_file})
 		elseif(NOT ${a_file} STREQUAL "${workspace}/pid/.gitignore")

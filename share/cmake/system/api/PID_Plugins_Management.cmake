@@ -21,14 +21,12 @@
 function(manage_Plugins)
 include(${WORKSPACE_DIR}/pid/Workspace_Plugins_Info.cmake OPTIONAL RESULT_VARIABLE res)
 if(NOT res STREQUAL NOTFOUND)
-	if(WORKSPACE_ACTIVE_PLUGINS)
-		foreach(plugin IN ITEMS  ${WORKSPACE_ACTIVE_PLUGINS})
-			if(${plugin}_PLUGIN_RESIDUAL_FILES)# if the plugin generates residual files we need to exclude them from source tree using .gitignore
-				dereference_Residual_Files(${plugin})
-			endif()
-			activate_Plugin(${plugin})
-		endforeach()
-	endif()
+	foreach(plugin IN LISTS WORKSPACE_ACTIVE_PLUGINS)
+		if(${plugin}_PLUGIN_RESIDUAL_FILES)# if the plugin generates residual files we need to exclude them from source tree using .gitignore
+			dereference_Residual_Files(${plugin})
+		endif()
+		activate_Plugin(${plugin})
+	endforeach()
 endif()
 endfunction(manage_Plugins)
 
@@ -54,7 +52,7 @@ set(PATH_TO_IGNORE ${CMAKE_SOURCE_DIR}/.gitignore)
 file(STRINGS ${PATH_TO_IGNORE} IGNORED_FILES)
 if(NOT IGNORED_FILES) #simply write the file from scratch if there is nothing ingnored from now
 	file(WRITE ${PATH_TO_IGNORE} "")
-	foreach(ignored IN ITEMS ${plugin}_PLUGIN_RESIDUAL_FILES)
+	foreach(ignored IN LISTS ${plugin}_PLUGIN_RESIDUAL_FILES)
 		file(APPEND ${PATH_TO_IGNORE} "${ignored}\n")
 	endforeach()
 	execute_process(COMMAND git add ${PATH_TO_IGNORE} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}) #immediately add it to git reference system to avoid big troubles
@@ -62,9 +60,9 @@ if(NOT IGNORED_FILES) #simply write the file from scratch if there is nothing in
 endif()
 
 set(rules_added FALSE)
-foreach(ignored IN ITEMS ${${plugin}_PLUGIN_RESIDUAL_FILES})
+foreach(ignored IN LISTS ${plugin}_PLUGIN_RESIDUAL_FILES)
 	set(add_rule TRUE)
-	foreach(already_ignored IN ITEMS ${IGNORED_FILES}) #looking if this ignore rule is already written in the .gitignore file
+	foreach(already_ignored IN LISTS IGNORED_FILES) #looking if this ignore rule is already written in the .gitignore file
 		if(already_ignored STREQUAL ignored)
 			set(add_rule FALSE)
 			break()

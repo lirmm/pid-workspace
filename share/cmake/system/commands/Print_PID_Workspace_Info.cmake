@@ -32,7 +32,7 @@ if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
 	if(TARGET_FRAMEWORK STREQUAL "all")#listing all frameworks
 		if(FRAMEWORKS_CATEGORIES)
 			message("FRAMEWORKS: ")
-			foreach(framework IN ITEMS ${FRAMEWORKS_CATEGORIES})
+			foreach(framework IN LISTS FRAMEWORKS_CATEGORIES)
 				message("- ${framework}")
 			endforeach()
 		else()
@@ -50,7 +50,7 @@ if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
 elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
 	if(TARGET_PACKAGE STREQUAL "all")#listing all packages ordered by category
 		message("CATEGORIES:") # printing the structure of categories and packages they belong to
-		foreach(root_cat IN ITEMS ${ROOT_CATEGORIES})
+		foreach(root_cat IN LISTS ROOT_CATEGORIES)
 			print_Category("" ${root_cat} 0)
 		endforeach()
 	else()#searching for categories a package belongs to
