@@ -439,21 +439,21 @@ set(${TRANSLATE_INTO_OPTION_FLAGS} ${result} PARENT_SCOPE)
 endfunction(translate_Into_Options)
 
 ###
-function(get_External_Dependency_Info)
+function(get_External_Dependencies_Info)
 set(options FLAGS)
 set(oneValueArgs PACKAGE ROOT C_STANDARD CXX_STANDARD)
 set(multiValueArgs OPTIONS INCLUDES DEFINITIONS LINKS)
 cmake_parse_arguments(GET_EXTERNAL_DEPENDENCY_INFO "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-if(NOT GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_External_Dependency_Info, need to define the external package by using the keyword PACKAGE.")
-	return()
-endif()
 
 #build the version prefix using variables automatically configured in Build_PID_Wrapper script
 #for cleaner description at next lines only
 set(prefix ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION})
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_ROOT)
+	if(NOT GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_External_Dependency_Info, need to define the external package by using the keyword PACKAGE.")
+		return()
+	endif()
 	set(dep_version ${${prefix}_DEPENDENCY_${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE}_VERSION_USED_FOR_BUILD})
 	set(ext_package_root ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE}/${dep_version})
 	set(${GET_EXTERNAL_DEPENDENCY_INFO_ROOT} ${ext_package_root} PARENT_SCOPE)
@@ -503,7 +503,7 @@ if(GET_EXTERNAL_DEPENDENCY_INFO_LINKS)
   set(${GET_EXTERNAL_DEPENDENCY_INFO_LINKS} ${${prefix}_BUILD_LINKS} PARENT_SCOPE)
 endif()
 
-endfunction(get_External_Dependency_Info)
+endfunction(get_External_Dependencies_Info)
 
 ### getting user options defined at global level of the wrapper
 function(get_User_Option_Info)

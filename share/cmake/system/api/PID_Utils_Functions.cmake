@@ -733,7 +733,7 @@ endfunction(is_External_Package_Defined)
 ### resolve any kind of path to library, either static or relative, absolute or relative to provide an absolute path (most of time pointing to a library in the workspace)
 function(resolve_External_Libs_Path COMPLETE_LINKS_PATH ext_links mode)
 set(res_links)
-foreach(link IN ITEMS ${ext_links})
+foreach(link IN LISTS ext_links)
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${link})
 	if(NOT RES STREQUAL ${link})# a replacement has taken place => this is a full path to a library
 		set(fullpath)
@@ -1368,6 +1368,18 @@ if(NOT OUTPUT_VAR_CXX STREQUAL opt)#it matches
 	set(${STANDARD_NUMBER} ${OUTPUT_VAR_CXX} PARENT_SCOPE)
 endif()
 endfunction(is_CXX_Standard_Option)
+
+function(take_Greater_Standard_Version greater_c_var to_compare_c_var greater_cxx_var to_compare_cxx_var)
+	is_C_Version_Less(IS_LESS "${${greater_c_var}}" "${${to_compare_c_var}}")
+	if(IS_LESS)
+		set(${greater_c_var} ${${to_compare_c_var}} PARENT_SCOPE)
+	endif()
+	is_CXX_Version_Less(IS_LESS "${${greater_cxx_var}}" "${${to_compare_cxx_var}}")
+	if(IS_LESS)
+		set(${greater_cxx_var} ${${to_compare_cxx_var}} PARENT_SCOPE)
+	endif()
+endfunction(take_Greater_Standard_Version)
+
 
 #################################################################################################
 ################################### pure CMake utilities ########################################
