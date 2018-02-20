@@ -81,7 +81,7 @@ set(INC_CONTENT_EXIST $<BOOL:$<JOIN:${COMPONENT_INC_FLAGS},>>)#deal with empty l
 #merging all flags together to put them in a file
 set(ALL_OPTS_LINES $<${OPT_CONTENT_EXIST}:$<JOIN:${COMPONENT_OPT_FLAGS},\n>>)
 if(NOT ALREADY_IN_COMPILE_OPTIONS)
-	translate_Standard_Into_Option(C_LANGUAGE_OPT CXX_LANGUAGE_OPT ${${PROJECT_NAME}_${target_component}_C_STANDARD} ${${PROJECT_NAME}_${target_component}_CXX_STANDARD})
+	translate_Standard_Into_Option(C_LANGUAGE_OPT CXX_LANGUAGE_OPT "${${PROJECT_NAME}_${target_component}_C_STANDARD}" "${${PROJECT_NAME}_${target_component}_CXX_STANDARD}")
 	set(ALL_OPTS_LINES "${ALL_OPTS_LINES}\n${CXX_LANGUAGE_OPT}\n${C_LANGUAGE_OPT}\n")
 endif()
 

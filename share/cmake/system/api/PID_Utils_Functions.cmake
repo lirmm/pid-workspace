@@ -1293,6 +1293,8 @@ function(translate_Standard_Into_Option RES_C_STD_OPT RES_CXX_STD_OPT c_std_numb
 		set(${RES_C_STD_OPT} "-std=c99" PARENT_SCOPE)
 	elseif(c_std_number EQUAL 11)
 		set(${RES_C_STD_OPT} "-std=c11" PARENT_SCOPE)
+  else()
+    set(${RES_C_STD_OPT} PARENT_SCOPE)#the c standard may be let optional
 	endif()
 
 endfunction(translate_Standard_Into_Option)

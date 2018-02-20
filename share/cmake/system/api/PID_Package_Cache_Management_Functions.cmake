@@ -512,12 +512,12 @@ else() # otherwise no need to register them since no more useful
 	endif()
 endif()
 
-is_C_Version_Less(IS_LESS ${${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX}} "${c_standard}")
+is_C_Version_Less(IS_LESS "${${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX}}" "${c_standard}")
 if(IS_LESS)
 	set(${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX} ${c_standard} CACHE INTERNAL "")
 endif()
 
-is_CXX_Version_Less(IS_LESS ${${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX}} "${cxx_standard}")
+is_CXX_Version_Less(IS_LESS "${${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX}}" "${cxx_standard}")
 if(IS_LESS)
 	set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} ${cxx_standard} CACHE INTERNAL "")
 endif()

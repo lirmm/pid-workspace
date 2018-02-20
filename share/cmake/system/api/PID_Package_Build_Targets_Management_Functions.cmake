@@ -251,11 +251,13 @@ function(resolve_Component_Language component_target)
 	if(CMAKE_VERSION VERSION_LESS 3.1)#this is only usefll if CMake does not automatically deal with standard related properties
 		get_target_property(STD_C ${component_target} PID_C_STANDARD)
 		get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
-		translate_Standard_Into_Option(RES_C_STD_OPT RES_CXX_STD_OPT ${STD_C} ${STD_CXX})
+		translate_Standard_Into_Option(RES_C_STD_OPT RES_CXX_STD_OPT "${STD_C}" "${STD_CXX}")
 		#direclty setting the option, without using CMake mechanism as it is not available for these versions
 		target_compile_options(${component_target} PUBLIC "${RES_CXX_STD_OPT}")
-		target_compile_options(${component_target} PUBLIC "${RES_C_STD_OPT}")
-		return()
+    if(RES_C_STD_OPT)#the std C is let optional as using a standard may cause error with posix includes
+		    target_compile_options(${component_target} PUBLIC "${RES_C_STD_OPT}")
+    endif()
+    return()
 	elseif(CMAKE_VERSION VERSION_LESS 3.8)#if cmake version is less than 3.8 than the c++ 17 language is unknown
 		get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
 		is_CXX_Version_Less(IS_LESS ${STD_CXX} 17)
@@ -268,12 +270,13 @@ function(resolve_Component_Language component_target)
 	#default case that can be managed directly by CMake
 	get_target_property(STD_C ${component_target} PID_C_STANDARD)
 	get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
-	set_target_properties(${component_target} PROPERTIES
-			C_STANDARD ${STD_C}
-			C_STANDARD_REQUIRED YES
-			C_EXTENSIONS NO
-	)#setting the standard in use locally
-
+  if(STD_C)#the std C is let optional as using a standard may cause error with posix includes
+  	set_target_properties(${component_target} PROPERTIES
+  			C_STANDARD ${STD_C}
+  			C_STANDARD_REQUIRED YES
+  			C_EXTENSIONS NO
+  	)#setting the standard in use locally
+  endif()
 	set_target_properties(${component_target} PROPERTIES
 			CXX_STANDARD ${STD_CXX}
 			CXX_STANDARD_REQUIRED YES
@@ -827,7 +830,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 get_Language_Standards(STD_C STD_CXX ${package} ${component} ${mode})
 get_Language_Standards(DEP_STD_C DEP_STD_CXX ${dep_package} ${dep_component} ${mode})
 
-is_C_Version_Less(IS_LESS ${STD_C} ${DEP_STD_C})
+is_C_Version_Less(IS_LESS "${STD_C}" "${DEP_STD_C}")
 if( IS_LESS )#dependency has greater or equal level of standard required
 	set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${DEP_STD_C} CACHE INTERNAL "")
 	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
@@ -835,7 +838,7 @@ if( IS_LESS )#dependency has greater or equal level of standard required
 	endif()
 endif()
 
-is_CXX_Version_Less(IS_LESS ${STD_CXX} ${DEP_STD_CXX})
+is_CXX_Version_Less(IS_LESS "${STD_CXX}" "${DEP_STD_CXX}")
 if( IS_LESS )#dependency has greater or equal level of standard required
 	set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${DEP_STD_CXX} CACHE INTERNAL "")#the minimal value in use file is set adequately
 	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
