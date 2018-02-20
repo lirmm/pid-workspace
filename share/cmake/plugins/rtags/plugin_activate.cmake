@@ -16,7 +16,7 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-include(PID_Utils_Functions)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 option(RTAGS_INDEX_DEBUG "Index the Debug (TRUE) or Release (FALSE) configuration with RTags" TRUE)
 

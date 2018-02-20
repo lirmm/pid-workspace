@@ -17,7 +17,7 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(PID_Utils_Functions)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 macro(add_Debug_Target component folder)
 	set(component_config "\"${component}\":\n\tpath: \"$<TARGET_FILE:${component}-dbg>\"\n\tcwd: \"build\"\n")
@@ -28,7 +28,7 @@ endmacro()
 if(CMAKE_BUILD_TYPE MATCHES Debug) #only generating in debug mode
 	set(DEBUG_CONFIG "")
 
-	foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+	foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 		if(${PROJECT_NAME}_${component}_TYPE STREQUAL "APP")
 			add_Debug_Target(${component} apps)
 		elseif(${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE")

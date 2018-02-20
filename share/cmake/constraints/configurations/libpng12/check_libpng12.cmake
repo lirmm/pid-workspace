@@ -21,6 +21,7 @@ if(NOT libpng12_FOUND) #any linux or macosx is zlib ...
 	set(libpng12_COMPILE_OPTIONS CACHE INTERNAL "")
 	set(libpng12_INCLUDE_DIRS CACHE INTERNAL "")
 	set(libpng12_LINK_OPTIONS CACHE INTERNAL "")
+	set(libpng12_DEFINITIONS CACHE INTERNAL "")
 	set(libpng12_RPATH CACHE INTERNAL "")
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libpng12/find_libpng12.cmake)
 	if(libpng12_FOUND)

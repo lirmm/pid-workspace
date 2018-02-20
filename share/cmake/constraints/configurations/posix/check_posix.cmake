@@ -20,6 +20,7 @@
 if(NOT posix_FOUND) #any linux or macosx is posix ...
 	set(posix_COMPILE_OPTIONS CACHE INTERNAL "")
 	set(posix_INCLUDE_DIRS CACHE INTERNAL "")
+	set(posix_DEFINITIONS CACHE INTERNAL "")
 	set(posix_LINK_OPTIONS CACHE INTERNAL "")
 	set(posix_RPATH CACHE INTERNAL "")
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/posix/find_posix.cmake)

@@ -35,6 +35,8 @@ set(WORKSPACE_DIR ${path} CACHE INTERNAL "")
 ############ all PID system path are put into the cmake path ###########
 ########################################################################
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find)
@@ -53,7 +55,7 @@ include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
 include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
-include(PID_Package_Deployment_Functions NO_POLICY_SCOPE)
+include(PID_Deployment_Functions NO_POLICY_SCOPE)
 
 include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
 
@@ -86,7 +88,6 @@ endmacro(import_PID_Package)
 
 ###
 macro(link_PID_Components)
-
 if(CMAKE_BUILD_TYPE STREQUAL "")
 	message("[PID] WARNING : when calling link_PID_Components, no known build type defined (Release or Debug) : the Release build is selected by default.")
 	set(CMAKE_BUILD_TYPE Release)
@@ -105,7 +106,7 @@ if(NOT LINK_PID_COMPONENTS_COMPONENTS)
 endif()
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX  ${CMAKE_BUILD_TYPE})
 #create the imported targets
-foreach (component IN ITEMS  ${LINK_PID_COMPONENTS_COMPONENTS})
+foreach (component IN LISTS LINK_PID_COMPONENTS_COMPONENTS)
 	create_Dependency_Target(${LINK_PID_COMPONENTS_PACKAGE} ${component} ${CMAKE_BUILD_TYPE}) #create the fake target for component
 	is_HeaderFree_Component(DEP_IS_HF ${LINK_PID_COMPONENTS_PACKAGE} ${component})
 	if(NOT DEP_IS_HF) #link that target (only possible with non runtime libraries)
@@ -127,7 +128,6 @@ endmacro(link_PID_Components)
 
 ###
 macro(targets_For_PID_Components)
-
 set(oneValueArgs PACKAGE)
 set(multiValueArgs COMPONENTS)
 cmake_parse_arguments(TARGETS_PID_COMPONENTS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -139,7 +139,7 @@ if(NOT TARGETS_PID_COMPONENTS_COMPONENTS)
 endif()
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX  ${CMAKE_BUILD_TYPE})
 #create the imported targets
-foreach (component IN ITEMS  ${TARGETS_PID_COMPONENTS_COMPONENTS})
+foreach (component IN LISTS TARGETS_PID_COMPONENTS_COMPONENTS)
 	create_Dependency_Target(${TARGETS_PID_COMPONENTS_PACKAGE} ${component} ${CMAKE_BUILD_TYPE})
 	set(${TARGETS_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES ${${TARGETS_PID_PACKAGE}_RPATH}/${component}${TARGET_SUFFIX} CACHE INTERNAL "")
 endforeach()
@@ -148,7 +148,6 @@ endmacro(targets_For_PID_Components)
 
 ###
 function(path_To_PID_Component_Resources)
-
 set(oneValueArgs PACKAGE COMPONENT RESOURCES)
 cmake_parse_arguments(PATH_PID_RESOURCES "" "${oneValueArgs}" "" ${ARGN})
 if(NOT PATH_PID_RESOURCES_PACKAGE OR NOT PATH_PID_RESOURCES_COMPONENT)

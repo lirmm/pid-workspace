@@ -20,6 +20,7 @@
 if(NOT gtk2_FOUND) #any linux or macosx is gtk2 ...
 	set(gtk2_INCLUDE_DIRS CACHE INTERNAL "")
 	set(gtk2_COMPILE_OPTIONS CACHE INTERNAL "")
+	set(gtk2_DEFINITIONS CACHE INTERNAL "")
 	set(gtk2_LINK_OPTIONS CACHE INTERNAL "")
 	set(gtk2_RPATH CACHE INTERNAL "")
 	# trying to find gtk2

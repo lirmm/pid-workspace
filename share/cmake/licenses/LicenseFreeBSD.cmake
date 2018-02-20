@@ -29,9 +29,9 @@ set(LICENSE_IS_OPEN_SOURCE 		TRUE)
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION
 "/*      File: @PROJECT_FILENAME@
-*       This file is part of the program ${PROJECT_NAME}
-*       Program description : ${${PROJECT_NAME}_DESCRIPTION}
-*       Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_LIST}. All Right reserved.
+*       This file is part of the program ${${PROJECT_NAME}_FOR_LICENSE}
+*       Program description : ${${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE}
+*       Copyright (C) ${${PROJECT_NAME}_YEARS_FOR_LICENSE} - ${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE}. All Right reserved.
 *
 *       This software is free software: you can redistribute it and/or modify
 *       it under the terms of the ${LICENSE_NAME} license as published by
@@ -49,11 +49,11 @@ set(	LICENSE_HEADER_FILE_DESCRIPTION
 
 set(	LICENSE_LEGAL_TERMS
 "
-Software license for the software named : ${PROJECT_NAME}
+Software license for the software named : ${${PROJECT_NAME}_FOR_LICENSE}
 
-Software description : ${${PROJECT_NAME}_DESCRIPTION}
+Software description : ${${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE}
 
-Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_LIST}
+Copyright (C) ${${PROJECT_NAME}_YEARS_FOR_LICENSE} ${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE}
 
 This software is free software: you can redistribute it and/or modify it under the terms of the ${LICENSE_NAME} license as published by
 ${LICENSE_AUTHORS}, either version ${LICENSE_VERSION} of the License, or (at your option) any later version. This software

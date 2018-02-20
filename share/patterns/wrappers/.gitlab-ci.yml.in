@@ -1,0 +1,62 @@
+variables:
+  PACKAGE_HAS_SITE: "@PACKAGE_CI_HAS_SITE@"
+  PACKAGE_BINARIES_PUBLISHED: "@PACKAGE_CI_PUBLISH_BINARIES@"
+
+cache:
+  key: "$CI_BUILD_REF/$CI_BUILD_REF_NAME"
+  paths:
+   - binaries/
+   - build/
+
+stages:
+ - configure
+ - build
+ - deploy
+ - cleanup
+
+ ############ generic jobs patterns #############
+
+ ### configure (CMake project configuration)
+ .configure_wrapper_: &configure_wrapper
+   stage: configure
+   script:
+     - chmod 700 ./share/ci/prepare_wrapper_ci.sh
+     - chmod 700 ./share/ci/configure_wrapper.sh
+     - ./share/ci/prepare_wrapper_ci.sh
+     - ./share/ci/configure_wrapper.sh
+   only:
+     - master
+
+ ### build the wrapper
+ .build_wrapper_: &build_wrapper
+   stage: build
+   script:
+    - chmod 700 ./share/ci/build_wrapper.sh
+    - ./share/ci/build_wrapper.sh
+   only:
+     - master
+
+ ### deploy (make interesting part of the result available wiki+doc, binaries)
+ .deploy_wrapper_: &deploy_wrapper
+   stage: deploy
+   script:
+    - chmod 700 ./share/ci/deploy_wrapper.sh
+    - ./share/ci/deploy_wrapper.sh
+   artifacts:
+     paths:
+     - public
+   only:
+     - master
+
+ ## cleanup everything at the end
+ .cleanup_build_: &cleanup_build
+   stage: cleanup
+   script:
+    - chmod 700 ./share/ci/cleanup_wrapper.sh
+    - ./share/ci/cleanup_wrapper.sh
+   when: always
+   only:
+     - master
+
+ ############ patterns for platforms selection #############
+ # here the project generates patterns for runner selection according to platforms defined in CI for the wrapper

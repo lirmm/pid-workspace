@@ -1,7 +1,7 @@
 #### referencing external package qtlibs ####
-set(qtlibs_PID_Package_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
-set(qtlibs_PID_Package_INSTITUTION _LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr CACHE INTERNAL "")
-set(qtlibs_PID_Package_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
+set(qtlibs_PID_WRAPPER_CONTACT_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
+set(qtlibs_PID_WRAPPER_CONTACT_INSTITUTION _LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr CACHE INTERNAL "")
+set(qtlibs_PID_WRAPPER_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
 set(qtlibs_AUTHORS "qt.io authors, see http://www.qt.io/" CACHE INTERNAL "")
 set(qtlibs_LICENSES "qtlibs license" CACHE INTERNAL "")
 set(qtlibs_DESCRIPTION external package providing the Qt libraries libraries, repackaged for PID CACHE INTERNAL "")
@@ -44,5 +44,3 @@ set(qtlibs_REFERENCE_5.4.1_linux64_FOLDER ext-qtlibs-linux-64-5.4.1-e51168017730
 #macosx 64
 set(qtlibs_REFERENCE_5.4.1_macosx64_URL https://gite.lirmm.fr/pid/ext-qtlibs/repository/archive.tar.gz?ref=macosx-5.4.1CACHE INTERNAL "")
 set(qtlibs_REFERENCE_5.4.1_macosx64_FOLDER ext-qtlibs-macosx-5.4.1-cd27fc4c101f1e425982495cc2e0bc205a15dee8 CACHE INTERNAL "")
-
-

@@ -20,6 +20,7 @@
 if(NOT imagemagic_FOUND)
 	set(imagemagic_INCLUDE_DIRS CACHE INTERNAL "")
 	set(imagemagic_COMPILE_OPTIONS CACHE INTERNAL "")
+	set(imagemagic_DEFINITIONS CACHE INTERNAL "")
 	set(imagemagic_LINK_OPTIONS CACHE INTERNAL "")
 	set(imagemagic_RPATH CACHE INTERNAL "")
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/imagemagic/find_imagemagic.cmake)

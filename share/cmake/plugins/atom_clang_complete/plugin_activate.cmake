@@ -17,7 +17,7 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(PID_Utils_Functions)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 ## subsudiary function to get the folder path depending on component type
 function(get_Dir_Path_For_Component RET_SOURCE_PATH RET_HEADER_PATH component)
@@ -104,7 +104,7 @@ get_filename_component(CONTAINER_FOLDER_NAME ${FULL_FOLDER} NAME)
 set(FOLDER_IDENTIFIER ${CONTAINER_FOLDER_NAME}/${FOLDER_NAME})
 
 # 1) finding all components that use this folder
-foreach(component IN ITEMS ${${PROJECT_NAME}_COMPONENTS})
+foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 	get_Dir_Path_For_Component(RET_SOURCE_PATH RET_HEADER_PATH ${component})
 	if(RET_SOURCE_PATH AND target_dir STREQUAL RET_SOURCE_PATH)
 		list(APPEND COMPONENTS_FOR_DIR ${component})
@@ -144,25 +144,25 @@ if(CMAKE_BUILD_TYPE MATCHES Release) #only generating in release mode
 
 		list_Subdirectories(HEADERS_DIRS ${CMAKE_SOURCE_DIR}/include)
 
-		foreach(dir IN ITEMS ${HEADERS_DIRS})
+		foreach(dir IN LISTS HEADERS_DIRS)
 			generate_Clang_Complete_File(${CMAKE_SOURCE_DIR}/include/${dir})
 		endforeach()
 
 		list_Subdirectories(SOURCES_DIRS ${CMAKE_SOURCE_DIR}/src)
 
-		foreach(dir IN ITEMS ${SOURCES_DIRS})
+		foreach(dir IN LISTS SOURCES_DIRS)
 			generate_Clang_Complete_File(${CMAKE_SOURCE_DIR}/src/${dir})
 		endforeach()
 
 		list_Subdirectories(APPS_DIRS ${CMAKE_SOURCE_DIR}/apps)
 
-		foreach(dir IN ITEMS ${APPS_DIRS})
+		foreach(dir IN LISTS APPS_DIRS)
 			generate_Clang_Complete_File(${CMAKE_SOURCE_DIR}/apps/${dir})
 		endforeach()
 
 		list_Subdirectories(TESTS_DIRS ${CMAKE_SOURCE_DIR}/test)
 
-		foreach(dir IN ITEMS ${TESTS_DIRS})
+		foreach(dir IN LISTS TESTS_DIRS)
 			generate_Clang_Complete_File(${CMAKE_SOURCE_DIR}/test/${dir})
 		endforeach()
 

@@ -1,7 +1,8 @@
 #### referencing external package libxml2 ####
-set(libxml2_PID_Package_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
-set(libxml2_PID_Package_INSTITUTION _LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr CACHE INTERNAL "")
-set(libxml2_PID_Package_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
+set(libxml2_PID_WRAPPER_CONTACT_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
+set(libxml2_PID_WRAPPER_CONTACT_INSTITUTION _LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr CACHE INTERNAL "")
+set(libxml2_PID_WRAPPER_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
+
 set(libxml2_AUTHORS "qt.io authors, see http://www.qt.io/" CACHE INTERNAL "")
 set(libxml2_LICENSES "libxml2 license" CACHE INTERNAL "")
 set(libxml2_DESCRIPTION external package providing the LibXML2 libraries, repackaged for PID CACHE INTERNAL "")
@@ -27,4 +28,3 @@ set(libxml2_REFERENCE_2.9.2_x86_64_linux_abi11_FOLDER ext-libxml2-linux-64cxx11-
 #macosx64
 set(libxml2_REFERENCE_2.9.2_x86_64_macosx_abi98_URL https://gite.lirmm.fr/pid/ext-libxml2/repository/archive.tar.gz?ref=macosx-2.9.2 CACHE INTERNAL "")
 set(libxml2_REFERENCE_2.9.2_x86_64_macosx_abi98_FOLDER ext-libxml2-macosx-2.9.2-29aa51df94450601a9bfc8616d029918b385639f CACHE INTERNAL "")
-

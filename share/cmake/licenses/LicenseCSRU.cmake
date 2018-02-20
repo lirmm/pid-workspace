@@ -30,13 +30,13 @@ set(	LICENSE_IS_OPEN_SOURCE 		FALSE)
 
 set(	LICENSE_HEADER_FILE_DESCRIPTION
 "/* 	File: @PROJECT_FILENAME@
-*	This file is part of the program ${PROJECT_NAME}
-*  	Program description : ${${PROJECT_NAME}_DESCRIPTION}
-*  	Copyright (C) ${${PROJECT_NAME}_YEARS} - ${${PROJECT_NAME}_AUTHORS_LIST}. All Right reserved.
+*	This file is part of the program ${${PROJECT_NAME}_FOR_LICENSE}
+*  	Program description : ${${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE}
+*  	Copyright (C) ${${PROJECT_NAME}_YEARS_FOR_LICENSE} - ${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE}. All Right reserved.
 *
 *       This software is proprietary and confidential: Unauthorized copying,
-*       modification, redistribution of this file or its resulting binary code, 
-*       via any medium is strictly prohibited, except exceptions as defined under  
+*       modification, redistribution of this file or its resulting binary code,
+*       via any medium is strictly prohibited, except exceptions as defined under
 *       the terms of the ${LICENSE_NAME} license as published by
 *	${LICENSE_AUTHORS}, either version ${LICENSE_VERSION}
 *	of the License, or (at your option) any later version.
@@ -53,14 +53,14 @@ set(	LICENSE_HEADER_FILE_DESCRIPTION
 
 set(	LICENSE_LEGAL_TERMS
 "
-Software license for the software named : ${PROJECT_NAME}
+Software license for the software named : ${${PROJECT_NAME}_FOR_LICENSE}
 
-Software description : ${${PROJECT_NAME}_DESCRIPTION}
+Software description : ${${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE}
 
-Copyright (C) ${${PROJECT_NAME}_YEARS} ${${PROJECT_NAME}_AUTHORS_LIST}
+Copyright (C) ${${PROJECT_NAME}_YEARS_FOR_LICENSE} ${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE}
 
-This software is proprietary and confidential: Unauthorized copying, modification, redistribution of this 
-file or its resulting binary code, via any medium is strictly prohibited, except exceptions as defined under  
+This software is proprietary and confidential: Unauthorized copying, modification, redistribution of this
+file or its resulting binary code, via any medium is strictly prohibited, except exceptions as defined under
 the terms of the ${LICENSE_NAME} license as published by ${LICENSE_AUTHORS}, either version ${LICENSE_VERSION}
 of the License, or (at your option) any later version.
 
@@ -90,7 +90,7 @@ This Agreement is a Properietary Software license agreement. The Software (as de
 
 By exercing any rights to the Software provided here, you accept and agree to be bound by the terms of this License. To the extent this License may be considered as a contract, the Licensor grants you the rights contained here in consideration of your acceptance of such terms and conditions. The exercising of this rights is conditional upon certain obligations for Licensee, paticularly the obligation to establish a Contract with the Holder (see Article 5).
 
-The risks associated with loading, using, modifying and/or developing or reproducing the software by the user are brought to the user's attention, with the result that its use is reserved for developers and experienced professionals having in-depth computer knowledge. Users are therefore encouraged to load and test the suitability of the software as regards their requirements in conditions enabling the security of their systems and/or data to be ensured and, more generally, to use and operate it in the same conditions of security. 
+The risks associated with loading, using, modifying and/or developing or reproducing the software by the user are brought to the user's attention, with the result that its use is reserved for developers and experienced professionals having in-depth computer knowledge. Users are therefore encouraged to load and test the suitability of the software as regards their requirements in conditions enabling the security of their systems and/or data to be ensured and, more generally, to use and operate it in the same conditions of security.
 
 This Agreement may be freely reproduced and published, provided it is not altered, and that no provisions are either added or removed herefrom.
 
@@ -168,9 +168,9 @@ Besides, if the Licensor owns or comes to own one or more patents protecting all
 
 The right of use includes: permanent or temporary reproduction of all or part of the Software by any or all means and in any or all form ; loading, displaying, running, or storing the Software on any or all medium ; entitlement to observe, study or test its operation so as to determine the ideas and principles behind any or all constituent elements of said Software. This shall apply when the Licensee carries out any or all loading, displaying, running, transmission or storage operation as regards the Software, that it is entitled to carry out hereunder.
 
-The Licensee is authorized to use the Software anywhere in the world under following circumstances: 
+The Licensee is authorized to use the Software anywhere in the world under following circumstances:
 - the Licensee has established a Contract with the Holder.
-- the Licensee loads, runs, or stores on any medium the Object Code of the Software without any modification, does not include or use the Object Code of the Software in any kind of commercial offer (being it a product or service). 
+- the Licensee loads, runs, or stores on any medium the Object Code of the Software without any modification, does not include or use the Object Code of the Software in any kind of commercial offer (being it a product or service).
 
 5.2 ENTITLEMENT TO MAKE CONTRIBUTIONS
 
