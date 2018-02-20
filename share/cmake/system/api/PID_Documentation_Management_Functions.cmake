@@ -172,10 +172,14 @@ endfunction(generate_API)
 
 ############ function used to create the license.txt file of the package  ###########
 function(generate_Package_License_File)
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	if(	DEFINED ${PROJECT_NAME}_LICENSE
-		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+if(CMAKE_BUILD_TYPE MATCHES Release)
+	if(EXISTS ${CMAKE_SOURCE_DIR}/license.txt)# a license has already been generated
+		if(NOT REGENERATE_LICENSE)# avoid regeneration if nothing changed
+			return()
+		endif()
+	endif()
 
+	if(	${PROJECT_NAME}_LICENSE )
 		find_file(	LICENSE
 				"License${${PROJECT_NAME}_LICENSE}.cmake"
 				PATH "${WORKSPACE_DIR}/share/cmake/licenses"

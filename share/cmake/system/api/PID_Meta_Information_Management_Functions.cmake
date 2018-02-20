@@ -80,23 +80,35 @@ endfunction(reset_References_Info)
 
 ### resetting meta information variables to be sure package is cleaned before configruation
 function(init_Meta_Info_Cache_Variables author institution mail description year license address public_address readme_file)
-set(res_string)
+set(res_string_auth "")
 foreach(string_el IN LISTS author)
-	set(res_string "${res_string}_${string_el}")
+	set(res_string_auth "${res_string_auth}_${string_el}")
 endforeach()
-set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
 
-set(res_string "")
+set(res_string_instit "")
 foreach(string_el IN LISTS institution)
-	set(res_string "${res_string}_${string_el}")
+	set(res_string_instit "${res_string_instit}_${string_el}")
 endforeach()
-set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
+
+set(REGENERATE_LICENSE FALSE CACHE INTERNAL "")
+if(	NOT ${PROJECT_NAME}_LICENSE STREQUAL "${license}" OR
+		NOT ${PROJECT_NAME}_YEARS STREQUAL "${year}" OR
+		NOT ${PROJECT_NAME}_DESCRIPTION STREQUAL "${description}" OR
+		NOT ${PROJECT_NAME}_MAIN_AUTHOR STREQUAL "${res_string_auth}" OR
+		NOT ${PROJECT_NAME}_MAIN_INSTITUTION STREQUAL "${res_string_instit}"
+	)
+	set(REGENERATE_LICENSE TRUE CACHE INTERNAL "")
+endif()
+set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string_auth}" CACHE INTERNAL "")
+
+set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string_instit}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_CONTACT_MAIL ${mail} CACHE INTERNAL "")
 if(NOT res_string STREQUAL "")
 	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
 else()
 	set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}" CACHE INTERNAL "")
 endif()
+
 set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
 set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")

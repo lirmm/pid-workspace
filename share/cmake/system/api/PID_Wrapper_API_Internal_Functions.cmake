@@ -32,33 +32,9 @@ include(PID_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 
-###########################################################################
-############ description of functions implementing the API ################
-###########################################################################
-
-###
-function(init_Wrapper_Info_Cache_Variables author institution mail description year license address public_address readme_file)
-set(res_string)
-foreach(string_el IN LISTS author)
-	set(res_string "${res_string}_${string_el}")
-endforeach()
-set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
-
-set(res_string "")
-foreach(string_el IN LISTS institution)
-	set(res_string "${res_string}_${string_el}")
-endforeach()
-set(${PROJECT_NAME}_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_CONTACT_MAIL ${mail} CACHE INTERNAL "")
-set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
-set(${PROJECT_NAME}_DESCRIPTION "${description}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
-set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
-set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
-set(${PROJECT_NAME}_PUBLIC_ADDRESS ${public_address} CACHE INTERNAL "")
-set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
-set(${PROJECT_NAME}_USER_README_FILE ${readme_file} CACHE INTERNAL "")
-endfunction(init_Wrapper_Info_Cache_Variables)
+################################################################################
+############ description of functions implementing the wrapper API #############
+################################################################################
 
 ### reconfiguring a wrapper
 function(reconfigure_Wrapper_Build)
