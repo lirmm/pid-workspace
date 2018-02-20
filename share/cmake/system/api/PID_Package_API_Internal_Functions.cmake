@@ -30,7 +30,7 @@ include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
 include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
-include(PID_Package_Documentation_Management_Functions NO_POLICY_SCOPE)
+include(PID_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Package_Coding_Support NO_POLICY_SCOPE)
 include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
@@ -676,8 +676,8 @@ resolve_Compile_Options_For_Targets(${CMAKE_BUILD_TYPE})
 ##########################################################
 ############ MANAGING non source files ###################
 ##########################################################
-generate_Readme_Files() # generating and putting into source directory the readme file used by gitlab + in build tree the api doc welcome page (contain the same information)
-generate_License_File() # generating and putting into source directory the file containing license info about the package
+generate_Package_Readme_Files() # generating and putting into source directory the readme file used by gitlab + in build tree the api doc welcome page (contain the same information)
+generate_Package_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Find_File() # generating/installing the generic cmake find file for the package
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
 generate_API() #generating the API documentation configuration file and the rule to launch doxygen and install the doc
@@ -686,7 +686,7 @@ generate_Dependencies_File() #generating a cmake "dependencies" file containing 
 generate_Coverage() #generating a coverage report in debug mode
 generate_Static_Checks() #generating a static check report in release mode, if tests are enabled then static check test are automatically generated
 create_Documentation_Target() # create target for generating documentation
-configure_Pages() # generating the markdown files for the project web pages
+configure_Package_Pages() # generating the markdown files for the project web pages
 generate_Package_CI_Config_File() #generating the CI config file in the project
 
 
@@ -954,7 +954,7 @@ clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if
 #########################################################################################################################
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	if(${PROJECT_NAME}_ADDRESS)
-		generate_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake)
+		generate_Package_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake)
 	endif()
 
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD AND GLOBAL_PROGRESS_VAR)

@@ -141,3 +141,72 @@ endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform)
 #########################################################################################
 ############################ CI for external packges wrappers ###########################
 #########################################################################################
+
+### sets the adequate ci scripts in the wrapper repository
+function(verify_Wrapper_CI_Content)
+
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/share/ci)#the ci folder is missing
+	file(COPY ${WORKSPACE_DIR}/share/patterns/wrappers/package/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
+	message("[PID] INFO : creating the ci folder in wrapper ${PROJECT_NAME} repository")
+elseif(NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/share/ci)#the ci folder is missing
+	file(REMOVE ${CMAKE_SOURCE_DIR}/share/ci)
+	message("[PID] WARNING : removed file ${CMAKE_SOURCE_DIR}/share/ci in wrapper ${PROJECT_NAME}")
+	file(COPY ${WORKSPACE_DIR}/share/patterns/wrappers/package/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
+	message("[PID] INFO : creating the ci folder in wrapper ${PROJECT_NAME} repository")
+else() #updating these files by silently replacing the ci folder
+	file(REMOVE ${CMAKE_SOURCE_DIR}/share/ci)
+	file(COPY ${WORKSPACE_DIR}/share/patterns/wrappers/package/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
+endif()
+endfunction(verify_Wrapper_CI_Content)
+
+##subsidiary function used to write how a runner is selected according to a given platform, for all jabs of the pid CI pipeline
+function(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper configfile platform)
+file(APPEND ${configfile} "#pipeline generated for platform: ${platform}\n\n")
+file(APPEND ${configfile} "#jobs for platform ${platform}\n\n")
+file(APPEND ${configfile} "configure_wrapper_${platform}:\n  <<: *configure_wrapper\n  <<: *selection_platform_${platform}\n\n")
+file(APPEND ${configfile} "build_wrapper_${platform}:\n  <<: *build_wrapper\n  <<: *selection_platform_${platform}\n\n")
+file(APPEND ${configfile} "deploy_wrapper_${platform}:\n  <<: *deploy_wrapper\n  <<: *selection_platform_${platform}\n\n")
+file(APPEND ${configfile} "cleanup_wrapper_${platform}:\n  <<: *cleanup_wrapper\n  <<: *selection_platform_${platform}\n\n")
+endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper)
+
+### configure the ci by generating the adequate gitlab-ci.yml file for the project
+function(generate_Wrapper_CI_Config_File)
+
+if(NOT ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
+	if(EXISTS ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)
+		file(REMOVE ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)#remove the file as CI is allowed for no platform
+	endif()
+	return() #no CI to run so no need to generate the file
+endif()
+
+verify_Wrapper_CI_Content()
+
+#is there a static site defined for the project ?
+if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS)
+	set(PACKAGE_CI_HAS_SITE "false")
+	set(PACKAGE_CI_PUBLISH_BINARIES "false")
+else()
+	set(PACKAGE_CI_HAS_SITE "true")
+	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING)
+		set(PACKAGE_CI_PUBLISH_BINARIES "true")
+	else()
+		set(PACKAGE_CI_PUBLISH_BINARIES "false")
+	endif()
+endif()
+
+#configuring pattern file
+set(TARGET_TEMPORARY_FILE ${CMAKE_BINARY_DIR}/.gitlab-ci.yml)
+configure_file(${WORKSPACE_DIR}/share/patterns/wrappers/.gitlab-ci.yml.in ${TARGET_TEMPORARY_FILE} @ONLY)#adding the gitlab-ci configuration file to the repository
+
+#now need to complete the configuration file with platform and environment related information
+# managing restriction on platforms used for CI and generating CI config file
+foreach(platform IN LISTS ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
+	add_CI_Config_File_Runner_Selection_By_Platform(${TARGET_TEMPORARY_FILE} ${platform})
+endforeach()
+file(APPEND ${TARGET_TEMPORARY_FILE} "\n\n############ jobs definition, by platform #############\n\n")
+foreach(platform IN LISTS ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
+	add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper(${TARGET_TEMPORARY_FILE} ${platform})
+endforeach()
+
+file(COPY ${TARGET_TEMPORARY_FILE} DESTINATION ${CMAKE_SOURCE_DIR})
+endfunction(generate_Wrapper_CI_Config_File)

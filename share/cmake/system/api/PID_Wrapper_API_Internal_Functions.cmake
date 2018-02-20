@@ -28,6 +28,7 @@ include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
+include(PID_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 
@@ -272,62 +273,6 @@ set(${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_LICENSES ${licenses} CACHE INTERNAL
 set(${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_SITE ${original_project_url} CACHE INTERNAL "")
 endfunction(define_Wrapped_Project)
 
-
-### generate the reference file used to retrieve packages
-function(generate_Wrapper_Reference_File pathtonewfile)
-set(file ${pathtonewfile})
-#1) write information related only to the wrapper project itself (not used in resulting installed external package description)
-file(WRITE ${file} "")
-file(APPEND ${file} "#### referencing wrapper of external package ${PROJECT_NAME} ####\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_CONTACT_AUTHOR ${${PROJECT_NAME}_MAIN_AUTHOR} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_CONTACT_INSTITUTION ${${PROJECT_NAME}_MAIN_INSTITUTION} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_CONTACT_MAIL ${${PROJECT_NAME}_CONTACT_MAIL} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_SITE_ROOT_PAGE ${${PROJECT_NAME}_SITE_ROOT_PAGE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_PROJECT_PAGE ${${PROJECT_NAME}_PROJECT_PAGE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_SITE_GIT_ADDRESS ${${PROJECT_NAME}_SITE_GIT_ADDRESS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_SITE_INTRODUCTION ${${PROJECT_NAME}_SITE_INTRODUCTION} CACHE INTERNAL \"\")\n")
-
-set(res_string "")
-foreach(auth IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
-	list(APPEND res_string ${auth})
-endforeach()
-set(printed_authors "${res_string}")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_AUTHORS_AND_INSTITUTIONS \"${res_string}\" CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_YEARS ${${PROJECT_NAME}_YEARS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_ADDRESS ${${PROJECT_NAME}_ADDRESS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_PUBLIC_ADDRESS ${${PROJECT_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
-
-#2) write information shared between wrapper and its external packages
-file(APPEND ${file} "set(${PROJECT_NAME}_DESCRIPTION \"${${PROJECT_NAME}_DESCRIPTION}\" CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK ${${PROJECT_NAME}_FRAMEWORK} CACHE INTERNAL \"\")\n")
-if(${PROJECT_NAME}_CATEGORIES)
-file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES \"${${PROJECT_NAME}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
-else()
-file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL \"\")\n")
-endif()
-
-#3) write information related to original project only
-file(APPEND ${file} "set(${PROJECT_NAME}_AUTHORS \"${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_AUTHORS}\" CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PROJECT_SITE ${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_SITE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_LICENSES ${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_LICENSES} CACHE INTERNAL \"\")\n")
-
-
-############################################################################
-###### all available versions of the package for which there is a ##########
-###### direct reference to a downloadable binary for a given platform ######
-############################################################################
-file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} CACHE INTERNAL \"\")\n")
-foreach(ref_version IN LISTS ${PROJECT_NAME}_REFERENCES) #for each available version, all os for which there is a reference
-	file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n")
-	foreach(ref_platform IN LISTS ${PROJECT_NAME}_REFERENCE_${ref_version})#for each version & os, all arch for which there is a reference
-		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG} CACHE INTERNAL \"\")\n")
-	endforeach()
-endforeach()
-endfunction(generate_Wrapper_Reference_File)
-
-
 ### Get the root address of the wrapper page (either if it belongs to a framework or has its own lone static site)
 function(get_Wrapper_Site_Address SITE_ADDRESS wrapper)
 set(${SITE_ADDRESS} PARENT_SCOPE)
@@ -342,89 +287,6 @@ endif()
 endfunction(get_Wrapper_Site_Address)
 
 ###
-function(generate_Wrapper_Readme_Files)
-set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/wrappers/README.md.in)
-## introduction (more detailed description, if any)
-get_Wrapper_Site_Address(ADDRESS ${PROJECT_NAME})
-if(NOT ADDRESS)#no site description has been provided nor framework reference
-	# intro
-	set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site use the short one
-	# no reference to site page
-	set(WRAPPER_SITE_REF_IN_README "")
-
-	# simplified install section
-	set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} wrapper and for using its components is based on the [PID](http://pid.lirmm.net/pid-framework/pages/install.html) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
-else()
-	# intro
-	generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
-	if("${RES_INTRO}" STREQUAL "")
-		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site description use the short one
-	else()
-		set(README_OVERVIEW "${RES_INTRO}") #otherwise use detailed one specific for site
-	endif()
-
-	# install procedure
-	set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} wrapper and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called [PID](http://pid.lirmm.net/pid-framework/pages/install.html). Just follow and read the links to understand how to install, use and call its API and/or applications.")
-
-	# reference to site page
-	set(WRAPPER_SITE_REF_IN_README "[package_site]: ${ADDRESS} \"${PROJECT_NAME} wrapper\"
-")
-endif()
-
-if(${PROJECT_NAME}_LICENSE)
-	set(WRAPPER_LICENSE_FOR_README "The license that applies to the PID wrapper content (Cmake files mostly) is **${${PROJECT_NAME}_LICENSE}**. Please look at the license.txt file at the root of this repository. The content generated by the wrapper being based on third party code it is subject to the licenses that apply for the ${PROJECT_NAME} project ")
-else()
-	set(WRAPPER_LICENSE_FOR_README "The wrapper has no license defined yet.")
-endif()
-
-set(README_USER_CONTENT "")
-if(${PROJECT_NAME}_USER_README_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE})
-	file(READ ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE} CONTENT_OF_README)
-	set(README_USER_CONTENT "${CONTENT_OF_README}")
-endif()
-
-set(README_AUTHORS_LIST "")
-foreach(author IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
-	generate_Full_Author_String(${author} STRING_TO_APPEND)
-	set(README_AUTHORS_LIST "${README_AUTHORS_LIST}\n+ ${STRING_TO_APPEND}")
-endforeach()
-
-get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
-set(README_CONTACT_AUTHOR "${RES_STRING}")
-
-configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put the readme in the source dir
-
-endfunction(generate_Wrapper_Readme_Files)
-
-###
-function(generate_Wrapper_License_File)
-if(	DEFINED ${PROJECT_NAME}_LICENSE
-	AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
-
-	find_file(LICENSE_IN
-			"License${${PROJECT_NAME}_LICENSE}.cmake"
-			PATH "${WORKSPACE_DIR}/share/cmake/licenses"
-			NO_DEFAULT_PATH
-		)
-	if(LICENSE_IN STREQUAL LICENSE_IN-NOTFOUND)
-		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
-	else()
-
-		#prepare license generation
-		set(${PROJECT_NAME}_FOR_LICENSE "${PROJECT_NAME} PID Wrapper")
-		set(${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE ${${PROJECT_NAME}_DESCRIPTION})
-		set(${PROJECT_NAME}_YEARS_FOR_LICENSE ${${PROJECT_NAME}_YEARS})
-		foreach(author IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
-			generate_Full_Author_String(${author} STRING_TO_APPEND)
-			set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
-		endforeach()
-
-		include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
-		file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
-	endif()
-endif()
-endfunction(generate_Wrapper_License_File)
-
 function(check_External_Version_Compatibility IS_COMPATIBLE ref_version version_to_check)
 if(version_to_check VERSION_GREATER ref_version)#the version to check is greater to the reference version
 	# so we need to check the compatibility constraints of that version => recursive call
@@ -803,8 +665,9 @@ generate_Wrapper_Build_File(${CMAKE_BINARY_DIR}/Build${PROJECT_NAME}.cmake)
 generate_Wrapper_Reference_File(${CMAKE_BINARY_DIR}/share/ReferExternal${PROJECT_NAME}.cmake)
 generate_Wrapper_Readme_Files() # generating and putting into source directory the readme file used by gitlab
 generate_Wrapper_License_File() # generating and putting into source directory the file containing license info about the package
-generate_Wrapper_Find_File() # generating/installing the generic cmake find file for the package
-# TODO generate CI + documentation files
+generate_Wrapper_Find_File() # generating/installing the generic cmake find file for the external package
+configure_Wrapper_Pages() #generate markdown pages for package web site
+generate_Wrapper_CI_Config_File()#generating the CI config file for the wrapper
 
 ################################################################################
 ######## create global targets from entire project description #################
@@ -814,13 +677,13 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
+						-DTARGET_VERSION=""
 						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-						-DINCLUDES_API_DOC=${BUILD_API_DOC}
-						-DINCLUDES_COVERAGE=${INCLUDING_COVERAGE}
-						-DINCLUDES_STATIC_CHECKS=${INCLUDING_STATIC_CHECKS}
+						-DINCLUDES_API_DOC="FALSE"
+						-DINCLUDES_COVERAGE="FALSE"
+						-DINCLUDES_STATIC_CHECKS="FALSE"
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
 						-DSYNCHRO=$(synchro)
 						-DFORCED_UPDATE=$(force)
@@ -833,14 +696,14 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
+						-DTARGET_VERSION=""
 						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}
-						-DINCLUDES_API_DOC=${BUILD_API_DOC}
-						-DINCLUDES_COVERAGE=${INCLUDING_COVERAGE}
-						-DINCLUDES_STATIC_CHECKS=${INCLUDING_STATIC_CHECKS}
+						-DINCLUDES_API_DOC="FALSE"
+						-DINCLUDES_COVERAGE="FALSE"
+						-DINCLUDES_STATIC_CHECKS="FALSE"
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
 						-DSYNCHRO=$(synchro)
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"

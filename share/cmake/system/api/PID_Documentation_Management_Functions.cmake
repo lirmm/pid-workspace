@@ -17,6 +17,11 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+
+################################################################################
+######################## Native packages related functions #####################
+################################################################################
+
 ### adding source code of the example components to the API doc
 function(add_Example_To_Doc c_name)
 	file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/share/doc/examples/)
@@ -157,7 +162,7 @@ endfunction(generate_API)
 
 
 ############ function used to create the license.txt file of the package  ###########
-function(generate_License_File)
+function(generate_Package_License_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	if(	DEFINED ${PROJECT_NAME}_LICENSE
 		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
@@ -188,11 +193,11 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		endif()
 	endif()
 endif()
-endfunction(generate_License_File)
+endfunction(generate_Package_License_File)
 
 
 ############ function used to create the README.md file of the package  ###########
-function(generate_Readme_Files)
+function(generate_Package_Readme_Files)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/packages/README.md.in)
 	set(APIDOC_WELCOME_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/packages/APIDOC_welcome.md.in)
@@ -248,7 +253,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put the readme in the source dir
 	configure_file(${APIDOC_WELCOME_CONFIG_FILE} ${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md @ONLY)#put api doc welcome page in the build tree
 endif()
-endfunction(generate_Readme_Files)
+endfunction(generate_Package_Readme_Files)
 
 
 ############ functions for the management of static sites of packages  ###########
@@ -414,9 +419,11 @@ set(PACKAGE_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_PROJECT_PAGE})
 set(PACKAGE_CATEGORIES ${${PROJECT_NAME}_CATEGORIES})
 
 #released version info
-set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
-get_Version_String_Numbers(${${PROJECT_NAME}_VERSION} major minor patch)
-set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
+if(${PROJECT_NAME}_VERSION) #only native package have a current version
+	set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
+	get_Version_String_Numbers(${${PROJECT_NAME}_VERSION} major minor patch)
+	set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
+endif()
 
 ## descirption (use the most detailed description, if any)
 generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
@@ -445,6 +452,8 @@ if(${PROJECT_NAME}_LICENSE)
 else()
 	set(PACKAGE_LICENSE_FOR_SITE "No license Defined")
 endif()
+
+# following data will always be empty or false for external packages wrappers
 
 #configure references to logo, advanced material and tutorial pages
 set(PACKAGE_TUTORIAL)
@@ -490,15 +499,15 @@ endif()
 
 endmacro(configure_Static_Site_Generation_Variables)
 
-### site pages generation
-function(configure_Pages)
+### package site pages generation
+function(configure_Package_Pages)
 if(NOT ${CMAKE_BUILD_TYPE} MATCHES Release)
 	return()
 endif()
 if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS) #no web site definition simply exit
 	#no static site definition done so we create a fake "site" command in realease mode
 	add_custom_target(site
-		COMMAND ${CMAKE_COMMAND} -E  echo "No specification of a static site in the project, use the declare_PID_Documentation function in the root CMakeLists.txt file of the project"
+		COMMAND ${CMAKE_COMMAND} -E  echo "No specification of a static site in the project, use the declare_PID_Publishing function in the root CMakeLists.txt file of the project"
 	)
 	return()
 endif()
@@ -511,7 +520,7 @@ file(MAKE_DIRECTORY ${PATH_TO_SITE}) # create the site root site directory
 set(PATH_TO_SITE_PAGES ${PATH_TO_SITE}/pages)
 file(MAKE_DIRECTORY ${PATH_TO_SITE_PAGES}) # create the pages directory
 
-#0) prepare variables used for files generations (it is a macro to keep variable defined in there in the current scope, important for next calls)
+#0) prepare variables used for files generations (it is a macro to keep variable defined in the current scope, important for next calls)
 configure_Static_Site_Generation_Variables()
 
 #1) generate the data files for jekyll (vary depending on the site creation mode
@@ -533,7 +542,7 @@ endif()
 #2) generate pages
 generate_Static_Site_Pages(${PATH_TO_SITE_PAGES})
 
-endfunction(configure_Pages)
+endfunction(configure_Package_Pages)
 
 ## generate the section of md file to describe native package dependencies
 function(generate_Dependency_Site dependency RES_CONTENT)
@@ -1069,3 +1078,141 @@ endfunction(load_Framework)
 function(get_Framework_Site framework SITE)
 set(${SITE} ${${framework}_FRAMEWORK_SITE} PARENT_SCOPE)
 endfunction(get_Framework_Site)
+
+
+
+################################################################################
+################## External package wrapper related functions ##################
+################################################################################
+
+###
+function(generate_Wrapper_Readme_Files)
+set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/wrappers/README.md.in)
+## introduction (more detailed description, if any)
+get_Wrapper_Site_Address(ADDRESS ${PROJECT_NAME})
+if(NOT ADDRESS)#no site description has been provided nor framework reference
+	# intro
+	set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site use the short one
+	# no reference to site page
+	set(WRAPPER_SITE_REF_IN_README "")
+
+	# simplified install section
+	set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} wrapper and for using its components is based on the [PID](http://pid.lirmm.net/pid-framework/pages/install.html) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+else()
+	# intro
+	generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
+	if("${RES_INTRO}" STREQUAL "")
+		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site description use the short one
+	else()
+		set(README_OVERVIEW "${RES_INTRO}") #otherwise use detailed one specific for site
+	endif()
+
+	# install procedure
+	set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} wrapper and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called [PID](http://pid.lirmm.net/pid-framework/pages/install.html). Just follow and read the links to understand how to install, use and call its API and/or applications.")
+
+	# reference to site page
+	set(WRAPPER_SITE_REF_IN_README "[package_site]: ${ADDRESS} \"${PROJECT_NAME} wrapper\"
+")
+endif()
+
+if(${PROJECT_NAME}_LICENSE)
+	set(WRAPPER_LICENSE_FOR_README "The license that applies to the PID wrapper content (Cmake files mostly) is **${${PROJECT_NAME}_LICENSE}**. Please look at the license.txt file at the root of this repository. The content generated by the wrapper being based on third party code it is subject to the licenses that apply for the ${PROJECT_NAME} project ")
+else()
+	set(WRAPPER_LICENSE_FOR_README "The wrapper has no license defined yet.")
+endif()
+
+set(README_USER_CONTENT "")
+if(${PROJECT_NAME}_USER_README_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE})
+	file(READ ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE} CONTENT_OF_README)
+	set(README_USER_CONTENT "${CONTENT_OF_README}")
+endif()
+
+set(README_AUTHORS_LIST "")
+foreach(author IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
+	generate_Full_Author_String(${author} STRING_TO_APPEND)
+	set(README_AUTHORS_LIST "${README_AUTHORS_LIST}\n+ ${STRING_TO_APPEND}")
+endforeach()
+
+get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
+set(README_CONTACT_AUTHOR "${RES_STRING}")
+
+configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put the readme in the source dir
+endfunction(generate_Wrapper_Readme_Files)
+
+### generating the license file used in wrapper (differs a bit from those of the native packages)
+function(generate_Wrapper_License_File)
+if(	DEFINED ${PROJECT_NAME}_LICENSE
+	AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+
+	find_file(LICENSE_IN
+			"License${${PROJECT_NAME}_LICENSE}.cmake"
+			PATH "${WORKSPACE_DIR}/share/cmake/licenses"
+			NO_DEFAULT_PATH
+		)
+	if(LICENSE_IN STREQUAL LICENSE_IN-NOTFOUND)
+		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
+	else()
+
+		#prepare license generation
+		set(${PROJECT_NAME}_FOR_LICENSE "${PROJECT_NAME} PID Wrapper")
+		set(${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE ${${PROJECT_NAME}_DESCRIPTION})
+		set(${PROJECT_NAME}_YEARS_FOR_LICENSE ${${PROJECT_NAME}_YEARS})
+		foreach(author IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
+			generate_Full_Author_String(${author} STRING_TO_APPEND)
+			set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
+		endforeach()
+
+		include(${WORKSPACE_DIR}/share/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
+		file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
+	endif()
+endif()
+endfunction(generate_Wrapper_License_File)
+
+
+### create the index file for wrapper in the framework
+function(generate_Wrapper_Page_Index_In_Framework generated_site_folder)
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/index_wrapper.html.in ${generated_site_folder}/index.html @ONLY)
+endfunction(generate_Wrapper_Page_Index_In_Framework)
+
+
+### package site pages generation
+function(configure_Wrapper_Pages)
+if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS) #no web site definition simply exit
+	#no static site definition done so we create a fake "site" command in realease mode
+	add_custom_target(site
+		COMMAND ${CMAKE_COMMAND} -E  echo "No specification of a static site in the project, use the declare_PID_Publishing function in the root CMakeLists.txt file of the project"
+	)
+	return()
+endif()
+
+set(PATH_TO_SITE ${CMAKE_BINARY_DIR}/site)
+if(EXISTS ${PATH_TO_SITE}) # delete the content that has to be copied to the site source folder
+	file(REMOVE_RECURSE ${PATH_TO_SITE})
+endif()
+file(MAKE_DIRECTORY ${PATH_TO_SITE}) # create the site root site directory
+set(PATH_TO_SITE_PAGES ${PATH_TO_SITE}/pages)
+file(MAKE_DIRECTORY ${PATH_TO_SITE_PAGES}) # create the pages directory
+
+#0) prepare variables used for files generations (it is a macro to keep variable defined in the current scope, important for next calls)
+configure_Static_Site_Generation_Variables()
+
+#1) generate the data files for jekyll (vary depending on the site creation mode
+if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
+	generate_Static_Site_Data_Files(${PATH_TO_SITE})
+
+else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
+	#find the framework in workspace
+	check_Framework(FRAMEWORK_OK ${${PROJECT_NAME}_FRAMEWORK})
+	if(NOT FRAMEWORK_OK)
+		message(FATAL_ERROR "[PID] ERROR : the framework you specified (${${PROJECT_NAME}_FRAMEWORK}) is unknown in the workspace.")
+		return()
+	endif()
+	generate_Wrapper_Page_Index_In_Framework(${PATH_TO_SITE}) # create index page
+endif()
+
+# common generation process between framework and lone static sites
+
+#2) generate pages
+generate_Static_Site_Pages(${PATH_TO_SITE_PAGES})
+
+endfunction(configure_Wrapper_Pages)
