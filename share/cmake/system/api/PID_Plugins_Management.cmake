@@ -17,6 +17,15 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+##########################################################################################
+############################ Guard for optimization of configuration process #############
+##########################################################################################
+if(PID_PLUGINS_MANAGEMENT_INCLUDED)
+  return()
+endif()
+set(PID_PLUGINS_MANAGEMENT_INCLUDED TRUE)
+##########################################################################################
+
 ### root function to manage plugin activation
 function(manage_Plugins)
 include(${WORKSPACE_DIR}/pid/Workspace_Plugins_Info.cmake OPTIONAL RESULT_VARIABLE res)

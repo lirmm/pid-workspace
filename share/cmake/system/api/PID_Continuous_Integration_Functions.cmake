@@ -17,6 +17,16 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+##########################################################################################
+############################ Guard for optimization of configuration process #############
+##########################################################################################
+if(PID_CONTINUOUS_INTEGRATION_FUNCTIONS_INCLUDED)
+  return()
+endif()
+set(PID_CONTINUOUS_INTEGRATION_FUNCTIONS_INCLUDED TRUE)
+##########################################################################################
+
+
 ###
 function(reset_CI_Variables)
 		set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS CACHE INTERNAL "")

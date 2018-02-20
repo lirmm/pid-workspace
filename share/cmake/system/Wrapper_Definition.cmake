@@ -16,6 +16,18 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
+
+
+##########################################################################################
+############################ Guard for optimization of configuration process #############
+##########################################################################################
+if(WRAPPER_DEFINITION_INCLUDED)
+  return()
+endif()
+set(WRAPPER_DEFINITION_INCLUDED TRUE)
+##########################################################################################
+
+
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 

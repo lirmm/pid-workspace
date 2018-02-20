@@ -17,6 +17,15 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+##########################################################################################
+############################ Guard for optimization of configuration process #############
+##########################################################################################
+if(PID_PACKAGE_CODING_SUPPORT_INCLUDED)
+  return()
+endif()
+set(PID_PACKAGE_CODING_SUPPORT_INCLUDED TRUE)
+##########################################################################################
+
 ### generating test coverage reports for the package
 function(generate_Coverage)
 

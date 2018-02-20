@@ -17,6 +17,15 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+##########################################################################################
+############################ Guard for optimization of configuration process #############
+##########################################################################################
+if(PID_META_INFORMATION_MANAGEMENT_FUNCTIONS_INCLUDED)
+  return()
+endif()
+set(PID_META_INFORMATION_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
+##########################################################################################
+
 ###
 function(add_Author author institution)
 	set(res_string_author)

@@ -17,6 +17,15 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+##########################################################################################
+############################ Guard for optimization of configuration process #############
+##########################################################################################
+if(EXTERNAL_DEFINITION_INCLUDED)
+  return()
+endif()
+set(EXTERNAL_DEFINITION_INCLUDED TRUE)
+##########################################################################################
+
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 

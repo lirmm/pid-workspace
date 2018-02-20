@@ -17,6 +17,15 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+##########################################################################################
+############################ Guard for optimization of configuration process #############
+##########################################################################################
+if(PID_VERSION_MANAGEMENT_FUNCTIONS_INCLUDED)
+  return()
+endif()
+set(PID_VERSION_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
+##########################################################################################
+
 ### setting global variable describing versions used
 function(init_PID_Version_Variable)
 if(NOT EXISTS ${WORKSPACE_DIR}/pid/PID_version.cmake)#if workspace has not been built (or build files deleted), then build it to get the version
