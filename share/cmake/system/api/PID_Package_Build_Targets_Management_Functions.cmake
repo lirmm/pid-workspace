@@ -682,7 +682,6 @@ foreach(opt IN LISTS options)
 		if(IS_LESS)
 			set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
 		endif()
-	endif()
 	else()#checking for C_STANDARD
 		is_C_Standard_Option(STANDARD_NUMBER ${opt})
 		if(STANDARD_NUMBER)
