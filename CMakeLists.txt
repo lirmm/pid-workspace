@@ -41,15 +41,13 @@ set(PID_OFFICIAL_REMOTE_ADDRESS "git@gite.lirmm.fr:pid/pid-workspace.git" CACHE 
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote -v OUTPUT_VARIABLE res)
 string(REPLACE "\n" ";" GIT_REMOTES ${res})
 set(OFFICIAL_EXISTS)
-if(GIT_REMOTES) #there are remotes defined
-	foreach(remote IN ITEMS ${GIT_REMOTES})
-		string(REGEX REPLACE "^[ \t]*official[ \t]+([^ \t]+)[ \t]*\\(fetch\\)(.*)$" "\\1" OFFICIAL_ADDR ${remote})
-		if(NOT "${remote}" STREQUAL "${OFFICIAL_ADDR}")#i.e. match => official already exists
-			set(OFFICIAL_EXISTS ${OFFICIAL_ADDR})
-			break()
-		endif()
-	endforeach()
-endif()
+foreach(remote IN LISTS GIT_REMOTES)# for each git remote defined in repository
+	string(REGEX REPLACE "^[ \t]*official[ \t]+([^ \t]+)[ \t]*\\(fetch\\)(.*)$" "\\1" OFFICIAL_ADDR ${remote})
+	if(NOT "${remote}" STREQUAL "${OFFICIAL_ADDR}")#i.e. match => official already exists
+		set(OFFICIAL_EXISTS ${OFFICIAL_ADDR})
+		break()
+	endif()
+endforeach()
 if(NOT OFFICIAL_EXISTS) # automatically create a branch called official that points to the official remote. This is a sanity action to avoid troubles on updates / deployments.
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add official ${PID_OFFICIAL_REMOTE_ADDRESS})
 elseif(NOT OFFICIAL_EXISTS STREQUAL PID_OFFICIAL_REMOTE_ADDRESS)#strange thing remote may have changed
