@@ -101,7 +101,7 @@ endif()
 produce_Static_Site_Content(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}" ${TARGET_VERSION} ${TARGET_PLATFORM} ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
 
 #3) build static site
-build_Static_Site(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}")
+build_Package_Static_Site(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}")
 
 #4) if required push to static site official repository
 if(push_site)

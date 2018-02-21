@@ -10,16 +10,17 @@ package: @PACKAGE_NAME@
 
 ## Authors
 
-Package manager: @PACKAGE_MAINTAINER_NAME@
+External package wrapper manager: @PACKAGE_MAINTAINER_NAME@
 
 Authors of this package:
 @PACKAGE_ALL_AUTHORS@
 
 ## License
 
-The license of the current release version of @PACKAGE_NAME@ package is : **@PACKAGE_LICENSE_FOR_SITE@**. It applies to the whole package content.
-
+The license of @PACKAGE_NAME@ PID wrapper is : **@PACKAGE_LICENSE_FOR_SITE@**. It applies to the whole wrapper content BUT DOES NOT APPLY to the content coming from the @PACKAGE_NAME@ original project.
 For more details see [license file](license.html).
+
+The content of the original project @PACKAGE_NAME@ has its own licenses: @PACKAGE_ORIGINAL_PROJECT_LICENSES@. More information can be found at @PACKAGE_ORIGINAL_PROJECT_SITE@.
 
 ## Version
 

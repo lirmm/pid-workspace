@@ -2,7 +2,7 @@
 layout: package
 categories: @PACKAGE_CATEGORIES@
 package: @PACKAGE_NAME@
-tutorial: @PACKAGE_TUTORIAL@
+tutorial:
 details: @PACKAGE_DETAILS@
 has_apidoc: false
 has_checks: false
@@ -19,8 +19,11 @@ has_coverage: false
 
 <h2>First steps</h2>
 
-If your are a new user, you can start reading <a href="{{ site.baseurl }}/wrappers/{{ page.package }}/pages/introduction.html">introduction section</a> and <a href="{{ site.baseurl }}/wrappers/{{ page.package }}/pages/install.html">installation instructions</a>. Use the documentation tab to access usefull resources to start working with the package.
+If your are a new user, you can start reading <a href="{{ site.baseurl }}/external/{{ page.package }}/pages/introduction.html">introduction section</a> and <a href="{{ site.baseurl }}/wrappers/{{ page.package }}/pages/install.html">installation instructions</a>. Use the documentation tab to access usefull resources to start working with the package.
 <br>
+
+To get complete documentation about @PACKAGE_NAME@ please visit <a href="@PACKAGE_ORIGINAL_PROJECT_SITE@">the official website of the project</a>
+
 <br>
 
 To lean more about this site and how it is managed you can refer to <a href="{{ site.baseurl }}/pages/help.html">this help page</a>.

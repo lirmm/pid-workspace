@@ -4,23 +4,21 @@ title: Usage
 package: @PACKAGE_NAME@
 ---
 
-## Import the package
+## Import the external package
 
 You can import @PACKAGE_NAME@ as usual with PID. In the root CMakelists.txt file of your package, after the package declaration you have to write something like:
 
 {% highlight cmake %}
-declare_PID_Package_Dependency(PACKAGE @PACKAGE_NAME@ NATIVE)
+declare_PID_Package_Dependency(PACKAGE @PACKAGE_NAME@ EXTERNAL)
 {% endhighlight %}
 
-It will try to install last version of the package.
+It will try to install last version of this external package.
 
 If you want a specific version (recommended), for instance the currently last released version:
 
 {% highlight cmake %}
-declare_PID_Package_Dependency(PACKAGE @PACKAGE_NAME@ NATIVE VERSION @PACKAGE_LAST_VERSION_WITHOUT_PATCH@)
+declare_PID_Package_Dependency(PACKAGE @PACKAGE_NAME@ EXTERNAL VERSION @PACKAGE_LAST_VERSION_WITHOUT_PATCH@)
 {% endhighlight %}
-
-Notice that PID will automatically install the last available patch version of the package when configuring the project with the option `REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD` to **ON** (default value).
 
 ## Components
 

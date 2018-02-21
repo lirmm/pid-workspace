@@ -269,7 +269,9 @@ endif()
 endfunction(generate_Package_Readme_Files)
 
 
-############ functions for the management of static sites of packages  ###########
+################################################################################
+#################### Static sites for native packages ##########################
+################################################################################
 
 ### create the data files for jekyll
 function(generate_Static_Site_Data_Files generated_site_folder)
@@ -285,7 +287,7 @@ configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/index.html.in ${gene
 endfunction(generate_Package_Page_Index_In_Framework)
 
 ### create introduction page
-function(generate_Static_Site_Page_Introduction generated_pages_folder)
+function(generate_Package_Static_Site_Page_Introduction generated_pages_folder)
 
 # categories
 if (NOT ${PROJECT_NAME}_CATEGORIES)
@@ -322,7 +324,7 @@ if("${PACKAGE_DEPENDENCIES_DESCRIPTION}" STREQUAL "") #means that the package ha
 	endforeach()
 
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES)# we take nly dependencies of the release version
-		generate_External_Dependency_Site(${dep_package} RES_CONTENT_EXTERNAL)
+		generate_External_Dependency_Site(${dep_package} "${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION}" "${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION_EXACT}" RES_CONTENT_EXTERNAL)
 		set(EXTERNAL_SITE_SECTION "${EXTERNAL_SITE_SECTION}\n${RES_CONTENT_EXTERNAL}")
 	endforeach()
 
@@ -331,10 +333,10 @@ endif()
 
 # generating the introduction file for package site
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/introduction.md.in ${generated_pages_folder}/introduction.md @ONLY)
-endfunction(generate_Static_Site_Page_Introduction)
+endfunction(generate_Package_Static_Site_Page_Introduction)
 
-### create introduction page
-function(generate_Static_Site_Page_Install generated_pages_folder)
+### create HOWTO install page
+function(generate_Package_Static_Site_Page_Install generated_pages_folder)
 
 #getting git references of the project (for manual installation explanation)
 if(NOT ${PROJECT_NAME}_ADDRESS)
@@ -359,29 +361,29 @@ endif()
 
 # generating the install file for package site
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/install.md.in ${generated_pages_folder}/install.md @ONLY)
-endfunction(generate_Static_Site_Page_Install)
+endfunction(generate_Package_Static_Site_Page_Install)
 
 ### create use page
-function(generate_Static_Site_Page_Use generated_pages_folder)
+function(generate_Package_Static_Site_Page_Use generated_pages_folder)
 
 # package components
 set(PACKAGE_COMPONENTS_DESCRIPTION "")
 if(${PROJECT_NAME}_COMPONENTS) #if there are components
 foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
-	generate_Component_Site(${component} RES_CONTENT_COMP)
+	generate_Component_Site_For_Package(${component} RES_CONTENT_COMP)
 	set(PACKAGE_COMPONENTS_DESCRIPTION "${PACKAGE_COMPONENTS_DESCRIPTION}\n${RES_CONTENT_COMP}")
 endforeach()
 endif()
 
 # generating the install file for package site
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/use.md.in ${generated_pages_folder}/use.md @ONLY)
-endfunction(generate_Static_Site_Page_Use)
+endfunction(generate_Package_Static_Site_Page_Use)
 
 ###
-function(generate_Static_Site_Page_Contact generated_pages_folder)
+function(generate_Package_Static_Site_Page_Contact generated_pages_folder)
 # generating the install file for package site
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/contact.md.in ${generated_pages_folder}/contact.md @ONLY)
-endfunction(generate_Static_Site_Page_Contact)
+endfunction(generate_Package_Static_Site_Page_Contact)
 
 ###
 function(generate_Static_Site_Page_License generated_pages_folder)
@@ -417,25 +419,225 @@ endif()
 endfunction(define_Component_Documentation_Content)
 
 ### create the data files from package description
-function(generate_Static_Site_Pages generated_pages_folder)
-	generate_Static_Site_Page_Introduction(${generated_pages_folder}) # create introduction page
-	generate_Static_Site_Page_Install(${generated_pages_folder})# create install page
-	generate_Static_Site_Page_Use(${generated_pages_folder})# create use page
-	generate_Static_Site_Page_Contact(${generated_pages_folder})# create use page
+function(generate_Package_Static_Site_Pages generated_pages_folder)
+	generate_Package_Static_Site_Page_Introduction(${generated_pages_folder}) # create introduction page
+	generate_Package_Static_Site_Page_Install(${generated_pages_folder})# create install page
+	generate_Package_Static_Site_Page_Use(${generated_pages_folder})# create use page
+	generate_Package_Static_Site_Page_Contact(${generated_pages_folder})# create use page
 	generate_Static_Site_Page_License(${generated_pages_folder}) #create license page
-endfunction(generate_Static_Site_Pages)
+endfunction(generate_Package_Static_Site_Pages)
+
+################################################################################
+#################### Static sites for wrappers #################################
+################################################################################
+
+### create introduction page
+function(generate_Wrapper_Static_Site_Page_Introduction generated_pages_folder)
+
+# categories
+if (NOT ${PROJECT_NAME}_CATEGORIES)
+	set(PACKAGE_CATEGORIES_LIST "\nThis package belongs to no category.\n")
+else()
+	set(PACKAGE_CATEGORIES_LIST "\nThis package belongs to following categories defined in PID workspace:\n")
+	foreach(category IN LISTS ${PROJECT_NAME}_CATEGORIES)
+		set(PACKAGE_CATEGORIES_LIST "${PACKAGE_CATEGORIES_LIST}\n+ ${category}")
+	endforeach()
+endif()
+
+# package dependencies
+set(EXTERNAL_SITE_SECTION "## External\n")
+set(PACKAGE_DEPENDENCIES_DESCRIPTION "")
+
+
+if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_DEPENDENCIES)
+	set(PACKAGE_DEPENDENCIES_DESCRIPTION "This package has no dependency.\n")
+	set(EXTERNAL_SITE_SECTION "")
+endif()
+
+if(NOT PACKAGE_DEPENDENCIES_DESCRIPTION) #means that the package has dependencies
+	foreach(dep_package IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_DEPENDENCIES)# we take only dependencies of the last version
+		generate_External_Dependency_Site(${dep_package} "${${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}" RES_CONTENT_EXTERNAL)
+		set(EXTERNAL_SITE_SECTION "${EXTERNAL_SITE_SECTION}\n${RES_CONTENT_EXTERNAL}")
+	endforeach()
+	set(PACKAGE_DEPENDENCIES_DESCRIPTION "${EXTERNAL_SITE_SECTION}\n")
+endif()
+
+# generating the introduction file for package site
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/introduction_wrapper.md.in ${generated_pages_folder}/introduction.md @ONLY)
+endfunction(generate_Wrapper_Static_Site_Page_Introduction)
+
+function(generate_Wrapper_Static_Site_Page_Contact generated_pages_folder)
+  configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/contact_wrapper.md.in ${generated_pages_folder}/contact.md @ONLY)
+endfunction(generate_Wrapper_Static_Site_Page_Contact)
+
+
+### create HOWTO install page
+function(generate_Wrapper_Static_Site_Page_Install generated_pages_folder)
+
+#getting git references of the project (for manual installation explanation)
+if(NOT ${PROJECT_NAME}_ADDRESS)
+	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_SITE_GIT_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS EXTENSION)
+	if(GIT_NAMESPACE AND SERVER_ADDRESS)
+		set(OFFICIAL_REPOSITORY_ADDRESS "${SERVER_ADDRESS}:${GIT_NAMESPACE}/${PROJECT_NAME}.git")
+		set(GIT_SERVER ${SERVER_ADDRESS})
+	else()	#no info about the git namespace => generating a bad address
+		set(OFFICIAL_REPOSITORY_ADDRESS "unknown_server:unknown_namespace/${PROJECT_NAME}.git")
+		set(GIT_SERVER unknown_server)
+	endif()
+
+else()
+	set(OFFICIAL_REPOSITORY_ADDRESS ${${PROJECT_NAME}_ADDRESS})
+	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS EXTENSION)
+	if(SERVER_ADDRESS)
+		set(GIT_SERVER ${SERVER_ADDRESS})
+	else()	#no info about the git namespace => use the project name
+		set(GIT_SERVER unknown_server)
+	endif()
+endif()
+
+# generating the install file for package site
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/install_wrapper.md.in ${generated_pages_folder}/install.md @ONLY)
+endfunction(generate_Wrapper_Static_Site_Page_Install)
+
+
+## generate the section of md file to describe a component of the package
+function(generate_Component_Site_For_Wrapper prefix component RES_CONTENT)
+
+set(RES "## ${component}\n") # adding a section fo this component
+
+#export possible only for libraries with headers
+set(EXPORTS_SOMETHING FALSE)
+set(EXPORTED_DEPS)
+set(INT_EXPORTED_DEPS)
+set(EXT_EXPORTED_DEPS)
+foreach(a_int_dep IN LISTS ${prefix}_${component}_INTERNAL_DEPENDENCIES)# loop on the component internal dependencies
+	if(${prefix}_${component}_INTERNAL_DEPENDENCY_${a_int_dep}_EXPORTED)
+		set(EXPORTS_SOMETHING TRUE)
+		list(APPEND INT_EXPORTED_DEPS ${a_int_dep})
+	endif()
+endforeach()
+
+foreach(a_pack IN LISTS ${prefix}_${component}_DEPENDENCIES)# loop on the component dependencies
+	set(${a_pack}_EXPORTED FALSE)
+	foreach(a_comp IN LISTS ${prefix}_${component}_DEPENDENCY_${a_pack})
+		if(${prefix}_${component}_DEPENDENCY_${a_pack}_${a_comp}_EXPORTED)
+			set(EXPORTS_SOMETHING TRUE)
+			if(NOT ${a_pack}_EXPORTED)
+				set(${a_pack}_EXPORTED TRUE)
+				list(APPEND EXPORTED_DEPS ${a_pack})
+			endif()
+			list(APPEND EXPORTED_DEP_${a_pack} ${a_comp})
+		endif()
+	endforeach()
+endforeach()
+
+if(EXPORTS_SOMETHING) #defines those dependencies that are exported
+	set(RES "${RES}\n### exported dependencies:\n")
+	if(INT_EXPORTED_DEPS)
+		set(RES "${RES}+ from this external package:\n")
+		foreach(a_dep IN LISTS INT_EXPORTED_DEPS)
+			format_PID_Identifier_Into_Markdown_Link(RES_STR "${a_dep}")
+			set(RES "${RES}\t* [${a_dep}](#${RES_STR})\n")
+		endforeach()
+		set(RES "${RES}\n")
+	endif()
+	foreach(a_pack IN LISTS EXPORTED_DEPS)
+		#defining the target documentation page of the package
+		if(${a_pack}_SITE_ROOT_PAGE)
+			set(TARGET_PAGE ${${a_pack}_SITE_ROOT_PAGE})
+		elseif(${a_pack}_FRAMEWORK AND ${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE)
+			set(TARGET_PAGE ${${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE}/external/${a_pack})
+		else()
+			set(TARGET_PAGE)
+		endif()
+		if(TARGET_PAGE)
+			set(RES "${RES}+ from external package [${a_pack}](${TARGET_PAGE}):\n")
+		else()
+			set(RES "${RES}+ from external package **${a_pack}**:\n")
+		endif()
+		foreach(a_dep IN LISTS EXPORTED_DEP_${a_pack})
+			if(TARGET_PAGE)# the package to which the component belong has a static site defined
+				format_PID_Identifier_Into_Markdown_Link(RES_STR "${a_dep}")
+				set(RES "${RES}\t* [${a_dep}](${TARGET_PAGE}/pages/use.html#${RES_STR})\n")
+			else()
+				set(RES "${RES}\t* ${a_dep}\n")
+			endif()
+		endforeach()
+		set(RES "${RES}\n")
+	endforeach()
+	set(RES "${RES}\n")
+endif()
+
+if(${prefix}_${component}_USAGE_INCLUDES)
+  set(RES "${RES}### include directive :\n")
+	set(RES "${RES}In your code using the library:\n\n")
+	set(RES "${RES}{% highlight cpp %}\n")
+	foreach(include_file IN LISTS ${prefix}_${component}_USAGE_INCLUDES)
+		set(RES "${RES}#include <${include_file}>\n")
+	endforeach()
+	set(RES "${RES}{% endhighlight %}\n")
+endif()
+# for any kind of usable component
+set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applications, libraries or tests:\n\n{% highlight cmake %}\ndeclare_PID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tEXTERNAL\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n{% endhighlight %}\n\n")
+
+set(${RES_CONTENT} ${RES} PARENT_SCOPE)
+endfunction(generate_Component_Site_For_Wrapper)
+
+
+### create use page
+function(generate_Wrapper_Static_Site_Page_Use generated_pages_folder)
+
+# package components
+set(PACKAGE_COMPONENTS_DESCRIPTION "")
+if(${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_COMPONENTS) #if there are components
+  set(prefix ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_COMPONENT)
+  foreach(component IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_COMPONENTS)
+  	generate_Component_Site_For_Wrapper(${prefix} ${component} RES_CONTENT_COMP)
+  	set(PACKAGE_COMPONENTS_DESCRIPTION "${PACKAGE_COMPONENTS_DESCRIPTION}\n${RES_CONTENT_COMP}")
+  endforeach()
+else()
+  set(PACKAGE_COMPONENTS_DESCRIPTION "The PID wrapper for ${PROJECT_NAME} version ${PACKAGE_LAST_VERSION_WITH_PATCH} does not provide any component description.")
+endif()
+
+# generating the install file for package site
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/use_wrapper.md.in ${generated_pages_folder}/use.md @ONLY)
+endfunction(generate_Wrapper_Static_Site_Page_Use)
+
+
+### create the data files from wrapper description
+function(generate_Wrapper_Static_Site_Pages generated_pages_folder)
+  generate_Wrapper_Static_Site_Page_Introduction(${generated_pages_folder}) # create introduction page
+  generate_Wrapper_Static_Site_Page_Install(${generated_pages_folder})# create install page
+  generate_Wrapper_Static_Site_Page_Use(${generated_pages_folder})# create usage page
+	generate_Wrapper_Static_Site_Page_Contact(${generated_pages_folder})# create use page
+	generate_Static_Site_Page_License(${generated_pages_folder}) #create license page
+endfunction(generate_Wrapper_Static_Site_Pages)
 
 ###
 macro(configure_Static_Site_Generation_Variables)
 set(PACKAGE_NAME ${PROJECT_NAME})
 set(PACKAGE_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_PROJECT_PAGE})
 set(PACKAGE_CATEGORIES ${${PROJECT_NAME}_CATEGORIES})
+set(PACKAGE_ORIGINAL_PROJECT_SITE ${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_SITE}) #useful only for wrappers
+set(PACKAGE_ORIGINAL_PROJECT_LICENSES ${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_LICENSES}) #useful only for wrappers
 
 #released version info
 if(${PROJECT_NAME}_VERSION) #only native package have a current version
 	set(PACKAGE_LAST_VERSION_WITH_PATCH "${${PROJECT_NAME}_VERSION}")
 	get_Version_String_Numbers(${${PROJECT_NAME}_VERSION} major minor patch)
 	set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
+elseif(${PROJECT_NAME}_KNOWN_VERSIONS)#only external package wrappers have known versions
+  set(greater_version)
+  foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
+    if(NOT greater_version OR version VERSION_GREATER greater_version)
+      set(greater_version ${version})
+    endif()
+  endforeach()
+  if(greater_version)
+    set(PACKAGE_LAST_VERSION_WITH_PATCH "${greater_version}")
+    get_Version_String_Numbers(${greater_version} major minor patch)
+    set(PACKAGE_LAST_VERSION_WITHOUT_PATCH "${major}.${minor}")
+  endif()
 endif()
 
 ## descirption (use the most detailed description, if any)
@@ -450,7 +652,6 @@ endif()
 get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
 set(PACKAGE_MAINTAINER_NAME ${RES_STRING})
 set(PACKAGE_MAINTAINER_MAIL ${${PROJECT_NAME}_CONTACT_MAIL})
-
 
 set(PACKAGE_ALL_AUTHORS "")
 foreach(author IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
@@ -553,7 +754,7 @@ endif()
 # common generation process between framework and lone static sites
 
 #2) generate pages
-generate_Static_Site_Pages(${PATH_TO_SITE_PAGES})
+generate_Package_Static_Site_Pages(${PATH_TO_SITE_PAGES})
 
 endfunction(configure_Package_Pages)
 
@@ -589,7 +790,7 @@ set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Dependency_Site)
 
 ## generate the section of md file to describe external package dependencies
-function(generate_External_Dependency_Site dependency RES_CONTENT)
+function(generate_External_Dependency_Site dependency version exact RES_CONTENT)
 if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${dependency}.cmake)
 	include (${WORKSPACE_DIR}/share/cmake/references/ReferExternal${dependency}.cmake) #get the information about the framework
 endif()
@@ -607,11 +808,11 @@ if(${dependency}_FRAMEWORK)
 else()
 	set(RES "+ ${dependency}")
 endif()
-if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION)
-	if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION}_EXACT)
-		set(RES "${RES}: exact version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION} required.")
+if(version)
+	if(exact)
+		set(RES "${RES}: exact version ${version} required.")
 	else()
-		set(RES "${RES}: version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION} or compatible.")
+		set(RES "${RES}: version ${version} or compatible.")
 	endif()
 else()
 	set(RES "${RES}: any version available (dangerous).")
@@ -621,7 +822,7 @@ endfunction(generate_External_Dependency_Site)
 
 
 ## generate the section of md file to describe a component of the package
-function(generate_Component_Site component RES_CONTENT)
+function(generate_Component_Site_For_Package component RES_CONTENT)
 is_Externally_Usable(IS_EXT_USABLE ${component})
 if(NOT IS_EXT_USABLE)#component cannot be used from outside package => no need to document it
 	set(${RES_CONTENT} "" PARENT_SCOPE)
@@ -738,14 +939,14 @@ if(NOT IS_HF)
 
 		foreach(a_pack IN LISTS EXT_EXPORTED_DEPS)
 			if(${a_pack}_FRAMEWORK AND ${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE)
-				set(TARGET_PAGE ${${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE}/external/${a_pack})
+				set(TARGET_PAGE ${${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${a_pack})
 			else()
 				set(TARGET_PAGE)
 			endif()
 			if(TARGET_PAGE)
-				set(RES "${RES}+ external package [${a_pack}](${TARGET_PAGE})\n")
+				set(RES "${RES}+ package [${a_pack}](${TARGET_PAGE})\n")
 			else()
-				set(RES "${RES}+ external package **${a_pack}**\n")
+				set(RES "${RES}+ package **${a_pack}**\n")
 			endif()
 		endforeach()
 		set(RES "${RES}\n")
@@ -774,7 +975,7 @@ set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applic
 
 
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
-endfunction(generate_Component_Site)
+endfunction(generate_Component_Site_For_Package)
 
 ### create a local repository for the package's static site
 function(create_Local_Static_Site_Project SUCCESS package repo_addr push_site package_url site_url)
@@ -986,7 +1187,7 @@ endif()
 endfunction(produce_Static_Site_Content)
 
 ### building the static site simply consists in calling adequately the repository project adequate build commands
-function (build_Static_Site package framework)
+function (build_Package_Static_Site package framework)
 if(framework AND NOT framework STREQUAL "")
 	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/frameworks/${framework} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
@@ -994,7 +1195,7 @@ else()
 	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/packages/${package} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
 	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
 endif()
-endfunction(build_Static_Site)
+endfunction(build_Package_Static_Site)
 
 #####################################################################
 ###################Framework usage functions ########################
@@ -1092,8 +1293,6 @@ function(get_Framework_Site framework SITE)
 set(${SITE} ${${framework}_FRAMEWORK_SITE} PARENT_SCOPE)
 endfunction(get_Framework_Site)
 
-
-
 ################################################################################
 ################## External package wrapper related functions ##################
 ################################################################################
@@ -1114,11 +1313,7 @@ if(NOT ADDRESS)#no site description has been provided nor framework reference
 else()
 	# intro
 	generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
-	if("${RES_INTRO}" STREQUAL "")
-		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site description use the short one
-	else()
-		set(README_OVERVIEW "${RES_INTRO}") #otherwise use detailed one specific for site
-	endif()
+	set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site description use the short one
 
 	# install procedure
 	set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} wrapper and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called [PID](http://pid.lirmm.net/pid-framework/pages/install.html). Just follow and read the links to understand how to install, use and call its API and/or applications.")
@@ -1154,10 +1349,14 @@ endfunction(generate_Wrapper_Readme_Files)
 
 ### generating the license file used in wrapper (differs a bit from those of the native packages)
 function(generate_Wrapper_License_File)
-if(	DEFINED ${PROJECT_NAME}_LICENSE
-	AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+if(EXISTS ${CMAKE_SOURCE_DIR}/license.txt)# a license has already been generated
+	if(NOT REGENERATE_LICENSE)# avoid regeneration if nothing changed
+		return()
+	endif()
+endif()
+if(${PROJECT_NAME}_LICENSE)
 
-	find_file(LICENSE_IN
+  find_file(LICENSE_IN
 			"License${${PROJECT_NAME}_LICENSE}.cmake"
 			PATH "${WORKSPACE_DIR}/share/cmake/licenses"
 			NO_DEFAULT_PATH
@@ -1226,6 +1425,6 @@ endif()
 # common generation process between framework and lone static sites
 
 #2) generate pages
-generate_Static_Site_Pages(${PATH_TO_SITE_PAGES})
+generate_Wrapper_Static_Site_Pages(${PATH_TO_SITE_PAGES})
 
 endfunction(configure_Wrapper_Pages)
