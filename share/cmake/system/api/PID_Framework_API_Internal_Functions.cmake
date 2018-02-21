@@ -110,7 +110,7 @@ endfunction(generate_Site_Binary_References)
 
 
 ### implementation function for creating a static site for a lone package
-macro(declare_Site package_url site_url)
+function(declare_Site package_url site_url)
 set(${PROJECT_NAME}_PROJECT_PAGE ${package_url} CACHE INTERNAL "")
 set(${PROJECT_NAME}_SITE_PAGE ${site_url} CACHE INTERNAL "")
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
@@ -152,13 +152,12 @@ else()
 	message("[PID] ERROR : please run cmake in the build folder of the package ${PROJECT_NAME} static site.")
 	return()
 endif()
-endmacro(declare_Site)
+endfunction(declare_Site)
 
 ##################################################################################
 ##########################  declaration of a framework ###########################
 ##################################################################################
-macro(declare_Framework author institution mail year site license git_address repo_site description)
-
+function(declare_Framework author institution mail year site license git_address repo_site description)
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 if(DIR_NAME STREQUAL "build")
 
@@ -167,11 +166,10 @@ if(DIR_NAME STREQUAL "build")
 
 	init_PID_Version_Variable() # getting the workspace version used to generate the code
 	set(res_string)
-	foreach(string_el IN LISTS author)
+	foreach(string_el IN ITEMS ${author})
 		set(res_string "${res_string}_${string_el}")
 	endforeach()
 	set(${PROJECT_NAME}_FRAMEWORK_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
-
 	set(res_string "")
 	foreach(string_el IN LISTS institution)
 		set(res_string "${res_string}_${string_el}")
@@ -190,7 +188,6 @@ if(DIR_NAME STREQUAL "build")
 	set(${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE ${repo_site} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_FRAMEWORK_LICENSE ${license} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES CACHE INTERNAL "")#categories are reset
-
 
 	#searching for jekyll (static site generator)
 	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
@@ -225,7 +222,7 @@ else()
 	message("[PID] ERROR : please run cmake in the build folder of the framework ${PROJECT_NAME}.")
 	return()
 endif()
-endmacro(declare_Framework)
+endfunction(declare_Framework)
 
 ###
 macro(declare_Framework_Image image_file_path is_banner)
@@ -279,11 +276,10 @@ set(README_OVERVIEW "${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION}") #if no detailed 
 if(${PROJECT_NAME}_FRAMEWORK_LICENSE)
 	set(LICENSE_FOR_README "The license that applies to this repository project is **${${PROJECT_NAME}_FRAMEWORK_LICENSE}**.")
 else()
-	set(LICENSE_FOR_README "The package has no license defined yet.")
+	set(LICENSE_FOR_README "The framework has no license defined yet.")
 endif()
 
 set(README_AUTHORS_LIST "")
-
 foreach(author IN LISTS ${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS)
 	generate_Full_Author_String(${author} STRING_TO_APPEND)
 	set(README_AUTHORS_LIST "${README_AUTHORS_LIST}\n+ ${STRING_TO_APPEND}")
@@ -665,7 +661,6 @@ macro(build_Framework)
 generate_Framework_Readme_File() # generating and putting into source directory the readme file used by gitlab
 generate_Framework_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Framework_Data() # generating the data files for jekyll (result in the build tree)
-
 generate_Framework_Binary_References() # generating in the project the cmake script files that allow to find references on packages of the framework
 
 # build steps
