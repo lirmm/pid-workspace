@@ -19,7 +19,7 @@ People that can be interested in using PID are project managers that want to enf
 
 + Fully based on CMake and git.
 + Management of C/C++ projects in a common an standardized way (same basic commands and options to manage the build process for all projects).
-+ Languages supported are: basically C/C++ are fully managed. PROLOG and ASSEMBLER languages are also supported as well as CMake does, and their code can be merged with C/C++ code in a transparent way. Python is also supported, notably for the creation of python wrappers for C/C++ code.
++ Languages supported are: basically C/C++ are fully managed. Fortran and ASSEMBLER languages are also supported as well as CMake does, and their code can be merged with C/C++ code in a transparent way. Python is also supported, notably for the creation of python wrappers for C/C++ code.
 + Management of source and binary packages in a common way.
 + Management of external binary packages and OS dependencies.
 + Formalization of packages dependencies and versions, automating deployment of dependencies (either binary or source). 
