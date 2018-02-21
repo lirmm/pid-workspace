@@ -3,7 +3,7 @@ variables:
   PACKAGE_BINARIES_PUBLISHED: "@PACKAGE_CI_PUBLISH_BINARIES@"
 
 cache:
-  key: "$CI_BUILD_REF/$CI_BUILD_REF_NAME"
+  key: "$CI_BUILD_REF-$CI_BUILD_REF_NAME"
   paths:
    - binaries/
    - build/
