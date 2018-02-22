@@ -109,4 +109,15 @@ if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install
   include(${TARGET_INSTALL_DIR}/share/${post_install_script_file} NO_POLICY_SCOPE)#execute the script
 endif()
 
+if(GENERATE_BINARY_ARCHIVE AND (GENERATE_BINARY_ARCHIVE STREQUAL "true" OR GENERATE_BINARY_ARCHIVE STREQUAL "TRUE"))
+  #need to create an archive from relocatable binary created in install tree
+  file(COPY ${TARGET_INSTALL_DIR} ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM})
+  execute_process(COMMAND ${CMAKE_COMMAND} -E tar cf
+      ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}.tar.gz
+      ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}
+    )
+  file(REMOVE_RECURSE ${TARGET_INSTALL_DIR} ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM})
+  message("[PID] INFO : binary archive for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} has been generated.")
+endif()
+
 message("[PID] INFO : external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} built.")

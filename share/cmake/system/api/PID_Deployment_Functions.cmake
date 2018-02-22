@@ -27,6 +27,8 @@ endif()
 set(PID_DEPLOYMENT_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
 
+include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Git_Functions NO_POLICY_SCOPE)
 
 #############################################################################################
 ############### API functions for managing references on dependent packages #################

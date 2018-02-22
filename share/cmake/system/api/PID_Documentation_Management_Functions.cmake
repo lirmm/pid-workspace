@@ -25,6 +25,19 @@ if(PID_DOCUMENTATION_MANAGEMENT_FUNCTIONS_INCLUDED)
 endif()
 set(PID_DOCUMENTATION_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
+include(PID_Static_Site_Management_Functions NO_POLICY_SCOPE)
+
+
+################################################################################
+#################### common function between native and wrapper ################
+################################################################################
+
+### create the data files for jekyll
+function(generate_Static_Site_Data_Files generated_site_folder)
+#generating the data file for package site description
+file(MAKE_DIRECTORY ${generated_site_folder}/_data) # create the _data folder to put configuration files inside
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/package.yml.in ${generated_site_folder}/_data/package.yml @ONLY)
+endfunction(generate_Static_Site_Data_Files)
 
 
 ################################################################################
@@ -267,18 +280,6 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	configure_file(${APIDOC_WELCOME_CONFIG_FILE} ${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md @ONLY)#put api doc welcome page in the build tree
 endif()
 endfunction(generate_Package_Readme_Files)
-
-
-################################################################################
-#################### Static sites for native packages ##########################
-################################################################################
-
-### create the data files for jekyll
-function(generate_Static_Site_Data_Files generated_site_folder)
-#generating the data file for package site description
-file(MAKE_DIRECTORY ${generated_site_folder}/_data) # create the _data folder to put configuration files inside
-configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/package.yml.in ${generated_site_folder}/_data/package.yml @ONLY)
-endfunction(generate_Static_Site_Data_Files)
 
 
 ### create the index file for package in the framework
@@ -977,58 +978,10 @@ set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applic
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Component_Site_For_Package)
 
-### create a local repository for the package's static site
-function(create_Local_Static_Site_Project SUCCESS package repo_addr push_site package_url site_url)
-set(PATH_TO_STATIC_SITE_FOLDER ${WORKSPACE_DIR}/sites/packages)
-clone_Static_Site_Repository(IS_INITIALIZED BAD_URL ${package} ${repo_addr})
-set(CONNECTED FALSE)
-if(NOT IS_INITIALIZED)#repository must be initialized first
-	if(BAD_URL)
-		message("[PID] ERROR : impossible to clone the repository of package ${package} static site (maybe ${repo_addr} is a bad repository address or you have no clone rights for this repository). Please contact the administrator of this repository.")
-		set(${SUCCESS} FALSE PARENT_SCOPE)
-		return()
-	endif()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/package ${WORKSPACE_DIR}/sites/packages/${package})#create the folder containing the site from the pattern folder
-	set(PACKAGE_NAME ${package})
-	set(PACKAGE_PROJECT_URL ${package_url})
-	set(PACKAGE_SITE_URL ${site_url})
-	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/CMakeLists.txt.in ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt @ONLY)#adding the cmake project file to the static site project
-
-	init_Static_Site_Repository(CONNECTED ${package} ${repo_addr} ${push_site})#configuring the folder as a git repository
-	if(push_site AND NOT CONNECTED)
-		set(${SUCCESS} FALSE PARENT_SCOPE)
-	else()
-		set(${SUCCESS} TRUE PARENT_SCOPE)
-	endif()
-else()
-	set(${SUCCESS} TRUE PARENT_SCOPE)
-endif()#else the repo has been created
-endfunction(create_Local_Static_Site_Project)
-
-### update the local site
-function(update_Local_Static_Site_Project package package_url site_url)
-update_Static_Site_Repository(${package}) # updating the repository from git
-#reconfigure the root CMakeLists and README to automatically manage evolution in PID
-set(PACKAGE_NAME ${package})
-set(PACKAGE_PROJECT_URL ${package_url})
-set(PACKAGE_SITE_URL ${site_url})
-configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/CMakeLists.txt.in ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt @ONLY)#modifying the cmake project file to the static site project
-endfunction(update_Local_Static_Site_Project)
-
-### checking if the package static site repository exists in the workspace
-function(static_Site_Project_Exists SITE_EXISTS PATH_TO_SITE package)
-set(SEARCH_PATH ${WORKSPACE_DIR}/sites/packages/${package})
-if(EXISTS ${SEARCH_PATH} AND IS_DIRECTORY ${SEARCH_PATH})
-	set(${SITE_EXISTS} TRUE PARENT_SCOPE)
-else()
-	set(${SITE_EXISTS} FALSE PARENT_SCOPE)
-endif()
-set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
-endfunction(static_Site_Project_Exists)
-
 
 ### copying documentation content to the site repository
-function(produce_Static_Site_Content package framework version platform include_api_doc include_coverage include_staticchecks include_installer force) # copy everything needed
+function(produce_Package_Static_Site_Content package framework version platform include_api_doc include_coverage include_staticchecks include_installer force) # copy everything needed
+
 #### preparing the copy depending on the target: lone static site or framework ####
 if(framework AND NOT framework STREQUAL "")
 	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_packages/${package})
@@ -1039,12 +992,12 @@ if(framework AND NOT framework STREQUAL "")
 	set(TARGET_PAGES_PATH ${TARGET_PACKAGE_PATH}/pages)
 	set(TARGET_POSTS_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_posts)
 
-else()#it is a lone static site
+else()#it is a lone static site (no need to adapt the path as they work the same for external wrappers and native packages)
 	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/packages/${package}/src)
-	set(TARGET_APIDOC_PATH ${TARGET_PACKAGE_PATH}/api_doc)
+  set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/_binaries/${version}/${platform})
+  set(TARGET_APIDOC_PATH ${TARGET_PACKAGE_PATH}/api_doc)
 	set(TARGET_COVERAGE_PATH ${TARGET_PACKAGE_PATH}/coverage)
 	set(TARGET_STATICCHECKS_PATH ${TARGET_PACKAGE_PATH}/static_checks)
-	set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/_binaries/${version}/${platform})
 	set(TARGET_PAGES_PATH ${TARGET_PACKAGE_PATH}/pages)
 	set(TARGET_POSTS_PATH ${TARGET_PACKAGE_PATH}/_posts)
 endif()
@@ -1120,7 +1073,7 @@ if(	include_installer
 endif()
 
 ######### copy the license file (only for lone static sites, framework have their own) ##############
-if(NOT framework OR framework STREQUAL "")
+if(NOT framework)
 	set(ARE_SAME FALSE)
 	if(NOT force)#only do this heavy check if the generation is not forced
 		test_Same_File_Content(${WORKSPACE_DIR}/packages/${package}/license.txt ${WORKSPACE_DIR}/sites/packages/${package}/license.txt ARE_SAME)
@@ -1184,18 +1137,7 @@ endif()
 if(NOT POST_UPDATE_STRING STREQUAL "") #do not generate a post if there is nothing to say (sanity check)
 	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/post.markdown.in ${TARGET_POSTS_PATH}/${POST_FILENAME} @ONLY)#adding to the static site project the markdown file used as a post on the site
 endif()
-endfunction(produce_Static_Site_Content)
-
-### building the static site simply consists in calling adequately the repository project adequate build commands
-function (build_Package_Static_Site package framework)
-if(framework AND NOT framework STREQUAL "")
-	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/frameworks/${framework} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
-	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
-else()
-	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/packages/${package} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
-	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
-endif()
-endfunction(build_Package_Static_Site)
+endfunction(produce_Package_Static_Site_Content)
 
 #####################################################################
 ###################Framework usage functions ########################
@@ -1213,85 +1155,6 @@ elseif(${package}_SITE_GIT_ADDRESS AND ${package}_SITE_ROOT_PAGE)
 	set(${SITE_ADDRESS} ${${package}_SITE_ROOT_PAGE} PARENT_SCOPE)
 endif()
 endfunction(get_Package_Site_Address)
-
-###
-function(framework_Reference_Exists_In_Workspace EXIST framework)
-	if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
-		set(${EXIST} TRUE PARENT_SCOPE)
-	else()
-		set(${EXIST} FALSE PARENT_SCOPE)
-	endif()
-endfunction(framework_Reference_Exists_In_Workspace)
-
-### checking if the framework site repository exists in the workspace
-function(framework_Project_Exists SITE_EXISTS PATH_TO_SITE framework)
-set(SEARCH_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework})
-if(EXISTS ${SEARCH_PATH} AND IS_DIRECTORY ${SEARCH_PATH})
-	set(${SITE_EXISTS} TRUE PARENT_SCOPE)
-else()
-	set(${SITE_EXISTS} FALSE PARENT_SCOPE)
-endif()
-set(${PATH_TO_SITE} ${SEARCH_PATH} PARENT_SCOPE)
-endfunction(framework_Project_Exists)
-
-### checking that the given framework exists
-function(check_Framework CHECK_OK framework)
-	framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
-	if(REF_EXIST)
-		include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
-		set(${CHECK_OK} TRUE PARENT_SCOPE)
-		return()
-	else()
-		framework_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${framework})
-		if(FOLDER_EXISTS)#generate the reference file on demand
-			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
-			framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
-			if(REF_EXIST)
-				include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
-				set(${CHECK_OK} TRUE PARENT_SCOPE)
-				return()
-			endif()
-		endif()
-	endif()
-	set(${CHECK_OK} FALSE PARENT_SCOPE)
-endfunction(check_Framework)
-
-### putting the framework repository into the workspace, or update it if it is already there
-function(load_Framework LOADED framework)
-	set(${LOADED} FALSE PARENT_SCOPE)
-	set(FOLDER_EXISTS FALSE)
-	framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
-	if(REF_EXIST)
-		include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
-	endif()
-
-	framework_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${framework})
-	if(FOLDER_EXISTS)
-		message("[PID] INFO: updating framework ${framework} (this may take a long time)")
-		update_Framework_Repository(${framework}) #update the repository to be sure to work on last version
-		if(NOT REF_EXIST) #if reference file does not exist we use the project present in the workspace. This way we may force it to generate references
-			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
-			framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
-			if(REF_EXIST)
-				include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
-				set(${LOADED} TRUE PARENT_SCOPE)
-			endif()
-		else()
-			set(${LOADED} TRUE PARENT_SCOPE)
-		endif()
-	elseif(REF_EXIST) #we can try to clone it if we know where to clone from
-		message("[PID] INFO: deploying framework ${framework} in workspace (this may take a long time)")
-		deploy_Framework_Repository(IS_DEPLOYED ${framework})
-		if(IS_DEPLOYED)
-			set(${LOADED} TRUE PARENT_SCOPE)
-		endif()
-	endif()
-endfunction(load_Framework)
-
-###
-function(get_Framework_Site framework SITE)
-set(${SITE} ${${framework}_FRAMEWORK_SITE} PARENT_SCOPE)
-endfunction(get_Framework_Site)
 
 ################################################################################
 ################## External package wrapper related functions ##################
@@ -1426,5 +1289,102 @@ endif()
 
 #2) generate pages
 generate_Wrapper_Static_Site_Pages(${PATH_TO_SITE_PAGES})
-
 endfunction(configure_Wrapper_Pages)
+
+### produce content from wrapper
+function(produce_Wrapper_Static_Site_Content package framework versions platform include_installer force)
+
+  #### preparing the copy depending on the target: lone static site or framework ####
+  if(framework AND NOT framework STREQUAL "")
+  	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_external/${package})
+  	set(TARGET_POSTS_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_posts)
+  else()#it is a lone static site (no need to adapt the path as they work the same for external wrappers and native packages)
+  	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/packages/${package}/src)
+  	set(TARGET_POSTS_PATH ${TARGET_PACKAGE_PATH}/_posts)
+  endif()
+  set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/_binaries)
+  set(TARGET_PAGES_PATH ${TARGET_PACKAGE_PATH}/pages)
+
+  ######### copy the binaries that have been built ##############
+  set(NEW_POST_CONTENT_BINARY_VERSIONS)
+  if(	include_installer) #reinstall all the binary archives that lie in the wrapper build folder
+    foreach(version IN LISTS versions)
+      if(EXISTS ${WORKSPACE_DIR}/wrappers/${package}/build/${package}-${version}-${platform}.tar.gz)
+        #an archive has been generated for this package version
+        set(target_bin_path ${TARGET_BINARIES_PATH}/${version}/${platform})
+        if(NOT EXISTS ${target_bin_path})
+          file(MAKE_DIRECTORY ${target_bin_path})#create the target folder
+        endif()
+        file(COPY ${WORKSPACE_DIR}/wrappers/${package}/build/${package}-${version}-${platform}.tar.gz
+      	   DESTINATION  ${target_bin_path})#copy the release archive
+        if(EXISTS ${WORKSPACE_DIR}/wrappers/${package}/build/${package}-${version}-dbg-${platform}.tar.gz)#copy debug archive if it exist
+      			file(COPY ${WORKSPACE_DIR}/wrappers/${package}/build/${package}-${version}-dbg-${platform}.tar.gz
+      			     DESTINATION  ${target_bin_path})#copy the binaries
+      	endif()
+        set(BINARY_PACKAGE ${package})
+      	set(BINARY_VERSION ${version})
+      	set(BINARY_PLATFORM ${platform})
+        # configure the file used to reference the binary in jekyll
+        configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binary.md.in ${TARGET_BINARIES_PATH}/${version}/${platform}/binary.md @ONLY)#adding to the static site project the markdown file describing the binary package (to be used by jekyll)
+        list(APPEND NEW_POST_CONTENT_BINARY_VERSIONS ${version})
+      endif()
+    endforeach()
+  endif()
+
+  ######### copy the license file (only for lone static sites, framework have their own) ##############
+  if(NOT framework)
+  	set(ARE_SAME FALSE)
+  	if(NOT force)#only do this heavy check if the generation is not forced
+  		test_Same_File_Content(${WORKSPACE_DIR}/wrappers/${package}/license.txt ${WORKSPACE_DIR}/sites/packages/${package}/license.txt ARE_SAME)
+  	endif()
+  	if(NOT ARE_SAME)
+  		execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/wrappers/${package}/license.txt  ${WORKSPACE_DIR}/sites/packages/${package})#copy the up to date license file into site repository
+  	endif()
+  endif()
+
+  ######### copy the documentation content ##############
+  set(NEW_POST_CONTENT_PAGES FALSE)
+  # 1) copy content from source into the binary dir
+  if(EXISTS ${WORKSPACE_DIR}/wrappers/${package}/share/site AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/share/site)
+  	#copy the content of the site source share folder of the package (user defined pages, documents and images) to the package final site in build tree
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/wrappers/${package}/share/site ${WORKSPACE_DIR}/wrappers/${package}/build/site/pages)
+  endif()
+
+  # 2) if content is new (either generated or user defined) then clean the site and copy the content to the site repository
+  set(ARE_SAME FALSE)
+  if(NOT force)#only do this heavy check if the generation is not forced
+  	test_Same_Directory_Content(${WORKSPACE_DIR}/wrappers/${package}/build/site/pages ${TARGET_PAGES_PATH} ARE_SAME)
+  endif()
+
+  if(NOT ARE_SAME)
+  	# clean the source folder content
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_PAGES_PATH})#delete all pages
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${TARGET_PAGES_PATH})# recreate the pages folder
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/wrappers/${package}/build/site ${TARGET_PACKAGE_PATH})# copy content from binary dir to site repository source dir
+  	set(NEW_POST_CONTENT_PAGES TRUE)
+  else()
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${WORKSPACE_DIR}/wrappers/${package}/build/site/index.html ${TARGET_PACKAGE_PATH})# copy content from binary dir to site repository source dir
+  endif()
+
+  ######### configure the post used to describe the update ##############
+  string(TIMESTAMP POST_DATE "%Y-%m-%d" UTC)
+  string(TIMESTAMP POST_HOUR "%H-%M-%S" UTC)
+  set(POST_FILENAME "${POST_DATE}-${POST_HOUR}-${package}-${platform}-update.markdown")
+  set(POST_PACKAGE ${package})
+  if(force)
+  	set(POST_TITLE "The update of external package ${package} has been forced !")
+  else()
+  	set(POST_TITLE "external package ${package} has been updated !")
+  endif()
+  set(POST_UPDATE_STRING "")
+  if(NEW_POST_CONTENT_BINARY_VERSIONS)
+    fill_List_Into_String("${NEW_POST_CONTENT_BINARY_VERSIONS}" ALL_VERSIONS_STR)
+    set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### Binary versions of the external package targetting ${platform} platform have been added/updated : ${ALL_VERSIONS_STR}\n\n")
+  endif()
+  if(NEW_POST_CONTENT_PAGES)
+  	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### The pages documenting the external package have been updated\n\n")
+  endif()
+  if(NOT POST_UPDATE_STRING STREQUAL "") #do not generate a post if there is nothing to say (sanity check)
+  	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/post.markdown.in ${TARGET_POSTS_PATH}/${POST_FILENAME} @ONLY)#adding to the static site project the markdown file used as a post on the site
+  endif()
+endfunction(produce_Wrapper_Static_Site_Content)
