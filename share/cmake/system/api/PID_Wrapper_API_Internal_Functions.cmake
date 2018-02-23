@@ -199,6 +199,7 @@ if(DIR_NAME STREQUAL "build")
     ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
            -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
            -DTARGET_EXTERNAL_VERSION=$(version)
+           -DTARGET_BUILD_MODE=$(mode)
 					 -DGENERATE_BINARY_ARCHIVE=$(archive)
            -DDO_NOT_EXECUTE_SCRIPT=$(skip_script)
 					 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Wrapper.cmake
@@ -594,6 +595,53 @@ function(configure_Wrapper_Build_Variables)
 	endforeach()
 endfunction(configure_Wrapper_Build_Variables)
 
+### craete a "site" target taht will update the sattic site information about the current package
+function(create_Wrapper_Documentation_Target)
+package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME} TRUE)
+get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+set(INCLUDING_BINARIES FALSE)
+if(NOT CLOSED)#check if project is closed source or not
+	# management of binaries publication
+	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING)
+		set(INCLUDING_BINARIES TRUE)
+	endif()
+endif()
+################################################################################
+######## create global target from entire project description ##################
+################################################################################
+if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done within a lone static site
+
+	add_custom_target(site
+		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DTARGET_VERSION="${${PROJECT_NAME}_KNOWN_VERSIONS}"
+						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
+						-DCMAKE_COMMAND=${CMAKE_COMMAND}
+						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
+						-DSYNCHRO=$(synchro)
+						-DFORCED_UPDATE=$(force)
+						-DSITE_GIT="${${PROJECT_NAME}_SITE_GIT_ADDRESS}"
+						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
+						-DPACKAGE_SITE_URL="${${PROJECT_NAME}_SITE_ROOT_PAGE}"
+			 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Site.cmake)
+elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done with a framework
+	add_custom_target(site
+		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DTARGET_VERSION="${${PROJECT_NAME}_KNOWN_VERSIONS}"
+						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
+						-DCMAKE_COMMAND=${CMAKE_COMMAND}
+						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}
+						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
+						-DSYNCHRO=$(synchro)
+						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
+			 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Site.cmake
+	)
+endif()
+endfunction(create_Wrapper_Documentation_Target)
+
 ###
 macro(build_Wrapped_Project)
 
@@ -645,41 +693,8 @@ generate_Wrapper_License_File() # generating and putting into source directory t
 generate_Wrapper_Find_File() # generating/installing the generic cmake find file for the external package
 configure_Wrapper_Pages() #generate markdown pages for package web site
 generate_Wrapper_CI_Config_File()#generating the CI config file for the wrapper
+create_Wrapper_Documentation_Target() # create target for generating documentation
 
-################################################################################
-######## create global targets from entire project description #################
-################################################################################
-if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done within a lone static site
-
-	add_custom_target(site
-		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DTARGET_VERSION=${${PROJECT_NAME}_KNOWN_VERSIONS}
-						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
-						-DCMAKE_COMMAND=${CMAKE_COMMAND}
-						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
-						-DSYNCHRO=$(synchro)
-						-DFORCED_UPDATE=$(force)
-						-DSITE_GIT="${${PROJECT_NAME}_SITE_GIT_ADDRESS}"
-						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
-						-DPACKAGE_SITE_URL="${${PROJECT_NAME}_SITE_ROOT_PAGE}"
-			 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Site.cmake)
-elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done with a framework
-	add_custom_target(site
-		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DTARGET_VERSION=${${PROJECT_NAME}_KNOWN_VERSIONS}
-						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
-						-DCMAKE_COMMAND=${CMAKE_COMMAND}
-						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}
-						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
-						-DSYNCHRO=$(synchro)
-						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
-			 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Site.cmake
-	)
-endif()
 finish_Progress("${GLOBAL_PROGRESS_VAR}") #managing the build from a global point of view
 endmacro(build_Wrapped_Project)
 

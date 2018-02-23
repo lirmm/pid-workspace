@@ -534,15 +534,24 @@ endfunction(get_Formatted_Framework_Contact_String)
 
 
 ### checking that the license applying to the package is closed source or not (set the variable CLOSED to TRUE or FALSE adequately)
-function(package_License_Is_Closed_Source CLOSED package)
+function(package_License_Is_Closed_Source CLOSED package is_external)
 	#first step determining if the dependent package provides its license in its use file (compatiblity with previous version of PID)
 	if(NOT ${package}_LICENSE)
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
-			include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake) #the reference file contains the license
-		else()#we consider the package as having an opensource license
-			set(${CLOSED} FALSE PARENT_SCOPE)
-			return()
-		endif()
+    if(is_external)
+      if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${package}.cmake)
+  			include(${WORKSPACE_DIR}/share/cmake/references/ReferExternal${package}.cmake) #the reference file contains the license
+  		else()#we consider the package as having an opensource license
+  			set(${CLOSED} FALSE PARENT_SCOPE)
+  			return()
+  		endif()
+    else()
+  		if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
+  			include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake) #the reference file contains the license
+  		else()#we consider the package as having an opensource license
+  			set(${CLOSED} FALSE PARENT_SCOPE)
+  			return()
+  		endif()
+    endif()
 	endif()
 	set(found_license_description FALSE)
 	if(KNOWN_LICENSES)

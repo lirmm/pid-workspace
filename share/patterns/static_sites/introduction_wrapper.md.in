@@ -1,5 +1,5 @@
 ---
-layout: package
+layout: external
 title: Introduction
 package: @PACKAGE_NAME@
 ---

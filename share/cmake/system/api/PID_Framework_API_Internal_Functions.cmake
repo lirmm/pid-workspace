@@ -450,91 +450,105 @@ endfunction(generate_Package_Page_Binaries_In_Framework)
 ### create the file for presenting an external package and listing its binaries in the framework
 function(generate_External_Page_Binaries_In_Framework package)
 set(PACKAGE_NAME ${package})
-configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binaries.md.in ${CMAKE_SOURCE_DIR}/src/_external/${package}/pages/binaries.md @ONLY)
+# 2 alternatives: the external package has been put "by hand" into the framework OR
+# the external package doc has been generated from a wrapper
+if(EXISTS ${CMAKE_SOURCE_DIR}/src/_external/${package}/pages/introduction.md
+AND EXISTS ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.html)
+	#first alternative, the package has been generated from a wrapper (these pages are caracteristic of such a generation)
+	#simply add a page explaining the available binaries, like for native packages
+	if(EXISTS ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
+		#there is a automatically generated file that still lies in the folder => need to remove it
+		file(REMOVE ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
+	endif()
+	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/binaries_wrapper.md.in ${CMAKE_SOURCE_DIR}/src/_external/${package}/pages/binaries.md @ONLY)
+else()
+	#second almternative, binaries have been put into the folder by hand
+	#need to generate a simple index page that directly contains description of binaries
+	set(PATH_TO_PAGE ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
+	set(PATH_TO_REFERENCE_FILE ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${package}.cmake)
+	if(NOT EXISTS ${PATH_TO_REFERENCE_FILE})
+		message("[PID] WARNING : reference file to package ${package} does not exists !")
+		return()
+	endif()
+	if(EXISTS ${PATH_TO_PAGE}) #remove the file to be sure
+		file(REMOVE ${PATH_TO_PAGE})
+	endif()
 
-# set(PATH_TO_PAGE ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
-# set(PATH_TO_REFERENCE_FILE ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${package}.cmake)
-# if(NOT EXISTS ${PATH_TO_REFERENCE_FILE})
-# 	message("[PID] WARNING : refernce file to package ${package} does not exists !")
-# 	return()
-# endif()
-# if(EXISTS ${PATH_TO_PAGE}) #remove the file to be sure
-# 	file(REMOVE ${PATH_TO_PAGE})
-# endif()
-#
-# include(${PATH_TO_REFERENCE_FILE})
-#
-# set(EXTERNAL_PACKAGE_NAME ${package})
-#
-# fill_List_Into_String("${${package}_DESCRIPTION}" DESCRIPTION_STRING)
-# set(EXTERNAL_PACKAGE_DESCRIPTION ${DESCRIPTION_STRING})
-#
-# set(EXTERNAL_PACKAGE_AUTHORS ${${package}_AUTHORS})
-# set(EXTERNAL_PACKAGE_LICENSE ${${package}_LICENSES})
-#
-# # managing categories
-# if(NOT ${package}_CATEGORIES)
-# 	set(EXTERNAL_PACKAGE_CATEGORIES)
-# else()
-# 	list(LENGTH ${package}_CATEGORIES SIZE)
-# 	if(SIZE EQUAL 1)
-# 		set(EXTERNAL_PACKAGE_CATEGORIES ${${package}_CATEGORIES})
-# 	else()
-# 		set(EXTERNAL_PACKAGE_CATEGORIES "[")
-# 		set(idx 0)
-# 		foreach(cat IN LISTS ${package}_CATEGORIES)
-# 			set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES}${cat}")
-# 			math(EXPR idx '${idx}+1')
-# 			if(NOT idx EQUAL SIZE)
-# 				set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES},")
-# 			endif()
-# 		endforeach()
-# 		set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES}]")
-# 	endif()
-# endif()
-# # managing binaries
-# set(binary_dir ${CMAKE_SOURCE_DIR}/src/_external/${package})
-# list_Version_Subdirectories(ALL_VERSIONS ${binary_dir})
-# set(PRINTED_VERSIONS)
-# foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os for which there is a reference
-# 	set(${ref_version}_PRINTED_PLATFORM)
-# 	# binaries may be referenced with subdirectories (basic case)
-# 	list_Platform_Subdirectories(ALL_PLATFORMS ${binary_dir}/${ref_version})
-# 	foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
-# 		# now referencing the binaries
-# 		list_Regular_Files(ALL_BINARIES ${binary_dir}/${ref_version}/${ref_platform})
-# 		if(ALL_BINARIES AND EXISTS ${binary_dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) # check to avoid problem is the binaries have been badly published
-# 			list(APPEND PRINTED_VERSIONS ${ref_version})
-# 			list(APPEND ${ref_version}_PRINTED_PLATFORM ${ref_platform})
-# 		endif()
-# 	endforeach()
-#
-# 	# binaries may also be referenced with symlinks (case when different platform can share the same binary package, typical with header only libraries)
-# 	list_Platform_Symlinks(ALL_PLATFORMS ${binary_dir}/${ref_version})
-# 	foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
-# 		# now referencing the binaries
-# 		list_Regular_Files(ALL_BINARIES ${binary_dir}/${ref_version}/${ref_platform})
-# 		if(ALL_BINARIES) #do not check for binary archive name since it may differ from standard regarding platform (king of generic platform name may be used)
-#
-# 			list(APPEND PRINTED_VERSIONS ${ref_version})
-# 			list(APPEND ${ref_version}_PRINTED_PLATFORM ${ref_platform})
-# 		endif()
-# 	endforeach()
-# endforeach()
-#
-# if(PRINTED_VERSIONS)
-# 	list(REMOVE_DUPLICATES PRINTED_VERSIONS)
-# 	foreach(version IN LISTS PRINTED_VERSIONS)
-# 		set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES}\n### ${version}\n\n")
-# 		foreach(platform IN LISTS ${version}_PRINTED_PLATFORM)
-# 			set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES} + ${platform}\n")
-# 		endforeach()
-# 	endforeach()
-# 	set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES}\n")
-# else()
-# 	set(EXTERNAL_PACKAGE_BINARIES "There is no binary provided for this package !")
-# endif()
-# configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/external_index.md.in ${PATH_TO_PAGE} @ONLY)
+	include(${PATH_TO_REFERENCE_FILE})
+
+	set(EXTERNAL_PACKAGE_NAME ${package})
+
+	fill_List_Into_String("${${package}_DESCRIPTION}" DESCRIPTION_STRING)
+	set(EXTERNAL_PACKAGE_DESCRIPTION ${DESCRIPTION_STRING})
+
+	fill_List_Into_String("${${package}_AUTHORS}" EXTERNAL_PACKAGE_AUTHORS)
+	fill_List_Into_String("${${package}_LICENSES}" EXTERNAL_PACKAGE_LICENSE)
+
+	# managing categories
+	if(NOT ${package}_CATEGORIES)
+		set(EXTERNAL_PACKAGE_CATEGORIES)
+	else()
+		list(LENGTH ${package}_CATEGORIES SIZE)
+		if(SIZE EQUAL 1)
+			set(EXTERNAL_PACKAGE_CATEGORIES ${${package}_CATEGORIES})
+		else()
+			set(EXTERNAL_PACKAGE_CATEGORIES "[")
+			set(idx 0)
+			foreach(cat IN LISTS ${package}_CATEGORIES)
+				set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES}${cat}")
+				math(EXPR idx '${idx}+1')
+				if(NOT idx EQUAL SIZE)
+					set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES},")
+				endif()
+			endforeach()
+			set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES}]")
+		endif()
+	endif()
+	# managing binaries
+	set(binary_dir ${CMAKE_SOURCE_DIR}/src/_external/${package}/binaries)
+	list_Version_Subdirectories(ALL_VERSIONS ${binary_dir})
+	set(PRINTED_VERSIONS)
+	foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os for which there is a reference
+		set(${ref_version}_PRINTED_PLATFORM)
+		# binaries may be referenced with subdirectories (basic case)
+		list_Platform_Subdirectories(ALL_PLATFORMS ${binary_dir}/${ref_version})
+		foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
+			# now referencing the binaries
+			list_Regular_Files(ALL_BINARIES ${binary_dir}/${ref_version}/${ref_platform})
+			if(ALL_BINARIES AND EXISTS ${binary_dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) # check to avoid problem is the binaries have been badly published
+				list(APPEND PRINTED_VERSIONS ${ref_version})
+				list(APPEND ${ref_version}_PRINTED_PLATFORM ${ref_platform})
+			endif()
+		endforeach()
+
+		# binaries may also be referenced with symlinks (case when different platform can share the same binary package, typical with header only libraries)
+		list_Platform_Symlinks(ALL_PLATFORMS ${binary_dir}/${ref_version})
+		foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
+			# now referencing the binaries
+			list_Regular_Files(ALL_BINARIES ${binary_dir}/${ref_version}/${ref_platform})
+			if(ALL_BINARIES) #do not check for binary archive name since it may differ from standard regarding platform (king of generic platform name may be used)
+				list(APPEND PRINTED_VERSIONS ${ref_version})
+				list(APPEND ${ref_version}_PRINTED_PLATFORM ${ref_platform})
+			endif()
+		endforeach()
+	endforeach()
+
+	if(PRINTED_VERSIONS)
+		list(REMOVE_DUPLICATES PRINTED_VERSIONS)
+		foreach(version IN LISTS PRINTED_VERSIONS)
+			set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES}\n### ${version}\n\n")
+			foreach(platform IN LISTS ${version}_PRINTED_PLATFORM)
+				set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES} + ${platform}\n")
+			endforeach()
+		endforeach()
+		set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES}\n")
+	else()
+		set(EXTERNAL_PACKAGE_BINARIES "There is no binary provided for this package !")
+	endif()
+	#generate another index file
+	configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/external_index.md.in ${PATH_TO_PAGE} @ONLY)
+endif()
+
 endfunction(generate_External_Page_Binaries_In_Framework)
 
 ### generating a cmake script files that references the binaries for a given package (native or external) that has been put into the framework
@@ -580,10 +594,10 @@ foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os f
 
 				set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
 				set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
-				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
+				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
 				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${package}-${ref_version}-${ref_platform})
 				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
+					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
 					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${package}-${ref_version}-dbg-${ref_platform})
 				endif()
 			endif()
@@ -613,10 +627,10 @@ foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os f
 					set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version}) #adding the version
 					set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform}) #adding the platform
 
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${RELEASE_BINARY}/${package}-${ref_version}-${RELEASE_BINARY}.tar.gz)
+					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${RELEASE_BINARY}/${package}-${ref_version}-${RELEASE_BINARY}.tar.gz)
 					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${package}-${ref_version}-${RELEASE_BINARY})
 					if(DEBUG_BINARY)
-						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/${ref_version}/${DEBUG_BINARY}/${package}-${ref_version}-dbg-${DEBUG_BINARY}.tar.gz)
+						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${DEBUG_BINARY}/${package}-${ref_version}-dbg-${DEBUG_BINARY}.tar.gz)
 						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${package}-${ref_version}-dbg-${DEBUG_BINARY})
 					endif()
 				endif()

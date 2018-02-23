@@ -1,10 +1,10 @@
 {% for package in site.packages %}
   	{% if package.path contains 'index' and package.package == page.package %}
-		{% assign package_tutorial = package.tutorial %}
-		{% assign package_details = package.details %}
-      		{% assign package_has_apidoc = package.has_apidoc %}
-		{% assign package_has_checks = package.has_checks %}
-      		{% assign package_has_coverage = package.has_coverage %}
+  		{% assign package_tutorial = package.tutorial %}
+  		{% assign package_details = package.details %}
+      {% assign package_has_apidoc = package.has_apidoc %}
+		  {% assign package_has_checks = package.has_checks %}
+      {% assign package_has_coverage = package.has_coverage %}
   	{% endif %}
 {% endfor %}
 

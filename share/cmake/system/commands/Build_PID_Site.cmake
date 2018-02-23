@@ -107,6 +107,9 @@ endif()
 if(is_native)
 	produce_Package_Static_Site_Content(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}" "${TARGET_VERSION}" ${TARGET_PLATFORM} ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
 else()
+	#need to parse the version argument as there may have many versions
+	include(CMakeParseArguments)
+	separate_arguments(TARGET_VERSION)
 	produce_Wrapper_Static_Site_Content(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}" "${TARGET_VERSION}" ${TARGET_PLATFORM} ${include_installer} ${forced_update}) # copy everything needed
 endif()
 

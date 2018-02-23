@@ -1,0 +1,33 @@
+---
+layout: external
+title: Binaries
+package: @PACKAGE_NAME@
+---
+
+{% assign all_versions = "" %}
+{% for package in site.external %}
+  	{% if package.path contains 'binary' and package.package == page.package and package.version %}
+		{% unless all_versions contains package.version %}
+
+## {{ package.version }}
+
+Available for platforms:
+			{% for binary in site.external %}
+
+				{% if binary.path contains 'binary' and package.package == binary.package and package.version == binary.version %}
++ {{ binary.platform }}
+				{% endif %}
+			{% endfor %}
+
+			{% assign all_versions = all_versions | append: ";" | append: package.version %}
+		{% endunless %}
+  	{% endif %}
+{% endfor %}
+
+{% if all_versions == "" %}
+
+There is no binary provided for this package !
+
+{% endif %}
+
+<br><br><br><br><br>

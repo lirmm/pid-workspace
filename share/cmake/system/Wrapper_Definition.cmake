@@ -299,7 +299,7 @@ if(DECLARE_PID_WRAPPER_DEPENDENCY_UNPARSED_ARGUMENTS)#there are still arguments 
 	set(TO_PARSE "${DECLARE_PID_WRAPPER_DEPENDENCY_UNPARSED_ARGUMENTS}")
 	set(RES_VERSION TRUE)
 	while(TO_PARSE AND RES_VERSION)
-		parse_Package_Dependency_Version_Arguments("${TO_PARSE}" RES_VERSION RES_EXACT TO_PARSE)#TODO
+		parse_Package_Dependency_Version_Arguments("${TO_PARSE}" RES_VERSION RES_EXACT TO_PARSE)
 		if(RES_VERSION)
 			list(APPEND list_of_versions ${RES_VERSION})
 			if(RES_EXACT)

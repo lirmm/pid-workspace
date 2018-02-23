@@ -410,7 +410,7 @@ if(NOT ${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in 
 	return()
 endif()
 
-package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME})
+package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME} FALSE)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 set(INCLUDING_BINARIES FALSE)
 set(INCLUDING_COVERAGE FALSE)
@@ -773,7 +773,7 @@ if(GENERATE_INSTALLER)
 	if(PACKAGE_SYSTEM_STRING)
 		if(	DEFINED ${PROJECT_NAME}_LICENSE
 		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
-			package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME})
+			package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME} FALSE)
 			if(CLOSED)
 					#if the license is not open source then we do not generate a package with debug info
 					#this requires two step -> first consists in renaming adequately the generated artifcats, second in installing a package with adequate name

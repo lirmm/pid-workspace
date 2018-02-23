@@ -39,12 +39,17 @@ load_Current_Platform() #loading the current platform configuration before execu
 #######################################Build script #####################################
 #########################################################################################
 
-
 message("[PID] INFO : building wrapper for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
 #checking that user input is coherent
 if(NOT TARGET_EXTERNAL_VERSION OR TARGET_EXTERNAL_VERSION STREQUAL "")
   message(FATAL_ERROR "[PID] CRITICAL ERROR: you must define the version to build and deploy using version= argument to the build command")
   return()
+endif()
+
+if(NOT TARGET_BUILD_MODE OR (NOT TARGET_BUILD_MODE STREQUAL "Debug" AND NOT TARGET_BUILD_MODE STREQUAL "debug"))
+  set(CMAKE_BUILD_TYPE Release)
+else()
+  set(CMAKE_BUILD_TYPE Debug)
 endif()
 
 set(package_dir ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE})
@@ -110,13 +115,19 @@ if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install
 endif()
 
 if(GENERATE_BINARY_ARCHIVE AND (GENERATE_BINARY_ARCHIVE STREQUAL "true" OR GENERATE_BINARY_ARCHIVE STREQUAL "TRUE"))
-  #need to create an archive from relocatable binary created in install tree
-  file(COPY ${TARGET_INSTALL_DIR} ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM})
+  #need to create an archive from relocatable binary created in install tree (use the / at the end of the copied path to target content of the folder and not folder itself)
+  file(COPY ${TARGET_INSTALL_DIR}/ DESTINATION ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM})
+  #clean the existing archive
+  if(EXISTS ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}.tar.gz)
+    file(REMOVE ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}.tar.gz)
+  endif()
+  #generate archive
   execute_process(COMMAND ${CMAKE_COMMAND} -E tar cf
       ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}.tar.gz
       ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}
     )
-  file(REMOVE_RECURSE ${TARGET_INSTALL_DIR} ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM})
+  # clean copied install folder used to create the archive
+  file(REMOVE_RECURSE ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM})
   message("[PID] INFO : binary archive for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} has been generated.")
 endif()
 

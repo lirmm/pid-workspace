@@ -494,7 +494,7 @@ if(${package}_FRAMEWORK) #references are deployed in a framework
 		AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 			include(${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 		else() #it may be an external package, try this
-			file(DOWNLOAD ${FRAMEWORK_ADDRESS}/external/${package}/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
+			file(DOWNLOAD ${FRAMEWORK_ADDRESS}/external/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 			list(GET res 0 numeric_error)
 			if(numeric_error EQUAL 0 #framework site is online & reference available.
 			AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
@@ -970,7 +970,7 @@ file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
 list(GET res-dbg 0 numeric_error_dbg)
 list(GET res-dbg 1 status_dbg)
 if(NOT numeric_error_dbg EQUAL 0)#there is an error
-	package_License_Is_Closed_Source(CLOSED ${package})#limit this high cost function when an error occurs
+	package_License_Is_Closed_Source(CLOSED ${package} FALSE)#limit this high cost function when an error occurs
 	if(NOT CLOSED) #generate an error if the package is not closed source (there is a missing archive)
 		set(${INSTALLED} FALSE PARENT_SCOPE)
 		message("[PID] ERROR : problem when downloading binary version ${version_string} of package ${package} (debug binaries) from address ${download_url_dbg} : ${status_dbg}.")

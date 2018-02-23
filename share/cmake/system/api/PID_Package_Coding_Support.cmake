@@ -127,8 +127,12 @@ function(add_Static_Check component is_library)
 	if(NOT TARGET ${component})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target name ${component} when trying to cppcheck !")
 	endif()
-	set(ALL_SETTING "-I/usr/include/" "-I/usr/local/include/")#TODO change with a CMake retrieved list of OS standard INCLUDE folders
-	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+  # getting include automatically search by the compiler => this allow also to be robust to cross compilation requests
+  set(ALL_SETTING ${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES} ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+  if(ALL_SETTING)
+    list(REMOVE_DUPLICATES ALL_SETTING)
+  endif()
+  if(${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#header targets have no sources => list them by hand
 		set(SOURCES_TO_CHECK)
 		foreach(source IN LISTS ${PROJECT_NAME}_${component}_HEADERS)
@@ -154,13 +158,13 @@ function(add_Static_Check component is_library)
 		add_test(NAME ${component}_staticcheck
 			 COMMAND ${CPPCHECK_EXECUTABLE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
 		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: ")
-	endif()#TODO also manage the language standard here (option -std=)!!
+	endif()#TODO also manage the language standard here (option -std=)!! necessary ?
 
 	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
 	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions)
-		set(CPPCHECK_ARGS --enable=style –inconclusive --suppress=missingIncludeSystem)#TODO remove --suppress when OS INCLUDE folders are well retrieved
+		set(CPPCHECK_ARGS --enable=style –inconclusive)
 	else()
-		set(CPPCHECK_ARGS --enable=all –inconclusive --suppress=missingIncludeSystem)
+		set(CPPCHECK_ARGS --enable=all –inconclusive)
 	endif()
 
 	#adding a target to print all issues for the given target, this is used to generate a report

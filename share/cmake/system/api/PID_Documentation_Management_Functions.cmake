@@ -387,10 +387,10 @@ configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/contact.md.in ${gene
 endfunction(generate_Package_Static_Site_Page_Contact)
 
 ###
-function(generate_Static_Site_Page_License generated_pages_folder)
+function(generate_Package_Static_Site_Page_License generated_pages_folder)
 #adding a license file in markdown format in the site pages (to be copied later if any modification occurred)
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/license.md.in ${generated_pages_folder}/license.md @ONLY)
-endfunction(generate_Static_Site_Page_License)
+endfunction(generate_Package_Static_Site_Page_License)
 
 ###
 function(define_Component_Documentation_Content component file)
@@ -425,7 +425,7 @@ function(generate_Package_Static_Site_Pages generated_pages_folder)
 	generate_Package_Static_Site_Page_Install(${generated_pages_folder})# create install page
 	generate_Package_Static_Site_Page_Use(${generated_pages_folder})# create use page
 	generate_Package_Static_Site_Page_Contact(${generated_pages_folder})# create use page
-	generate_Static_Site_Page_License(${generated_pages_folder}) #create license page
+	generate_Package_Static_Site_Page_License(${generated_pages_folder}) #create license page
 endfunction(generate_Package_Static_Site_Pages)
 
 ################################################################################
@@ -605,20 +605,46 @@ configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/use_wrapper.md.in ${
 endfunction(generate_Wrapper_Static_Site_Page_Use)
 
 
+###
+function(generate_Wrapper_Static_Site_Page_License generated_pages_folder)
+#adding a license file in markdown format in the site pages (to be copied later if any modification occurred)
+configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/license_wrapper.md.in ${generated_pages_folder}/license.md @ONLY)
+endfunction(generate_Wrapper_Static_Site_Page_License)
+
 ### create the data files from wrapper description
 function(generate_Wrapper_Static_Site_Pages generated_pages_folder)
   generate_Wrapper_Static_Site_Page_Introduction(${generated_pages_folder}) # create introduction page
   generate_Wrapper_Static_Site_Page_Install(${generated_pages_folder})# create install page
   generate_Wrapper_Static_Site_Page_Use(${generated_pages_folder})# create usage page
 	generate_Wrapper_Static_Site_Page_Contact(${generated_pages_folder})# create use page
-	generate_Static_Site_Page_License(${generated_pages_folder}) #create license page
+	generate_Wrapper_Static_Site_Page_License(${generated_pages_folder}) #create license page
 endfunction(generate_Wrapper_Static_Site_Pages)
 
 ###
 macro(configure_Static_Site_Generation_Variables)
 set(PACKAGE_NAME ${PROJECT_NAME})
 set(PACKAGE_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_PROJECT_PAGE})
-set(PACKAGE_CATEGORIES ${${PROJECT_NAME}_CATEGORIES})
+
+if(NOT ${PROJECT_NAME}_CATEGORIES)
+  set(PACKAGE_CATEGORIES)
+else()
+  list(LENGTH ${PROJECT_NAME}_CATEGORIES SIZE)
+  if(SIZE EQUAL 1)
+    set(PACKAGE_CATEGORIES ${${PROJECT_NAME}_CATEGORIES})
+  else()
+    set(PACKAGE_CATEGORIES "[")
+    set(idx 0)
+    foreach(cat IN LISTS ${PROJECT_NAME}_CATEGORIES)
+      set(PACKAGE_CATEGORIES "${PACKAGE_CATEGORIES}${cat}")
+      math(EXPR idx '${idx}+1')
+      if(NOT idx EQUAL SIZE)
+        set(PACKAGE_CATEGORIES "${PACKAGE_CATEGORIES},")
+      endif()
+    endforeach()
+    set(PACKAGE_CATEGORIES "${PACKAGE_CATEGORIES}]")
+  endif()
+endif()
+
 set(PACKAGE_ORIGINAL_PROJECT_SITE ${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_SITE}) #useful only for wrappers
 set(PACKAGE_ORIGINAL_PROJECT_LICENSES ${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_LICENSES}) #useful only for wrappers
 
@@ -1298,11 +1324,12 @@ function(produce_Wrapper_Static_Site_Content package framework versions platform
   if(framework AND NOT framework STREQUAL "")
   	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_external/${package})
   	set(TARGET_POSTS_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_posts)
+    set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/binaries)
   else()#it is a lone static site (no need to adapt the path as they work the same for external wrappers and native packages)
   	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/packages/${package}/src)
   	set(TARGET_POSTS_PATH ${TARGET_PACKAGE_PATH}/_posts)
+    set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/_binaries)
   endif()
-  set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/_binaries)
   set(TARGET_PAGES_PATH ${TARGET_PACKAGE_PATH}/pages)
 
   ######### copy the binaries that have been built ##############

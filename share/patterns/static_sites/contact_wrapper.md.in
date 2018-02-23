@@ -1,5 +1,5 @@
 ---
-layout: package
+layout: external
 title: Contact
 package: @PACKAGE_NAME@
 ---
