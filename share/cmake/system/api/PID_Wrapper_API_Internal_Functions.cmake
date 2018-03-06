@@ -206,7 +206,19 @@ if(DIR_NAME STREQUAL "build")
     COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
     VERBATIM
   )
-  # reference file generation target
+
+	# adding an uninstall command (uninstall the whole installed version currently built)
+	add_custom_target(uninstall
+		${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+           -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
+           -DTARGET_EXTERNAL_VERSION=$(version)
+					 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Uninstall_PID_Wrapper.cmake
+		COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
+		COMMENT "[PID] Uninstalling external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} ..."
+    VERBATIM
+	)
+
+	# reference file generation target
   add_custom_target(referencing
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferExternal${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
   	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/find
@@ -641,6 +653,7 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 	)
 endif()
 endfunction(create_Wrapper_Documentation_Target)
+
 
 ###
 macro(build_Wrapped_Project)
