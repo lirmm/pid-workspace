@@ -284,7 +284,7 @@ if(version_to_check VERSION_GREATER ref_version)#the version to check is greater
 		#check againt this version
 		check_External_Version_Compatibility(IS_RECURSIVE_COMPATIBLE ${ref_version} ${${PROJECT_NAME}_KNOWN_VERSION_${version_to_check}_COMPATIBLE_WITH})
 		set(${IS_COMPATIBLE} ${IS_RECURSIVE_COMPATIBLE} PARENT_SCOPE)
-	else() #not compatible with a previous version and greater than current 
+	else() #not compatible with a previous version and greater than current
 			set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
 	endif()
 else()#the version to check is compatible as it target a version lower or equal to the reference version
@@ -653,6 +653,7 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
 						-DSYNCHRO=$(synchro)
+						-DFORCED_UPDATE=$(force)
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 			 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Site.cmake
 	)

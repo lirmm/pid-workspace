@@ -1340,7 +1340,7 @@ function(produce_Wrapper_Static_Site_Content package framework versions platform
 
   ######### copy the binaries that have been built ##############
   set(NEW_POST_CONTENT_BINARY_VERSIONS)
-  if(	include_installer) #reinstall all the binary archives that lie in the wrapper build folder
+  if(include_installer) #reinstall all the binary archives that lie in the wrapper build folder
     foreach(version IN LISTS versions)
       if(EXISTS ${WORKSPACE_DIR}/wrappers/${package}/build/${package}-${version}-${platform}.tar.gz)
         #an archive has been generated for this package version

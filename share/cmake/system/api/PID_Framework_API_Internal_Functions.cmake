@@ -515,7 +515,7 @@ else()
 		foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
 			# now referencing the binaries
 			list_Regular_Files(ALL_BINARIES ${binary_dir}/${ref_version}/${ref_platform})
-			if(ALL_BINARIES AND EXISTS ${binary_dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) # check to avoid problem is the binaries have been badly published
+			if(ALL_BINARIES AND EXISTS ${binary_dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) # check to avoid problem if the binaries have been badly published
 				list(APPEND PRINTED_VERSIONS ${ref_version})
 				list(APPEND ${ref_version}_PRINTED_PLATFORM ${ref_platform})
 			endif()
@@ -535,8 +535,10 @@ else()
 
 	if(PRINTED_VERSIONS)
 		list(REMOVE_DUPLICATES PRINTED_VERSIONS)
+		list(SORT PRINTED_VERSIONS)
 		foreach(version IN LISTS PRINTED_VERSIONS)
 			set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES}\n### ${version}\n\n")
+			list(SORT ${version}_PRINTED_PLATFORM)
 			foreach(platform IN LISTS ${version}_PRINTED_PLATFORM)
 				set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES} + ${platform}\n")
 			endforeach()
