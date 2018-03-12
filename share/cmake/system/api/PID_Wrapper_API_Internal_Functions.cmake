@@ -280,8 +280,13 @@ endfunction(get_Wrapper_Site_Address)
 function(check_External_Version_Compatibility IS_COMPATIBLE ref_version version_to_check)
 if(version_to_check VERSION_GREATER ref_version)#the version to check is greater to the reference version
 	# so we need to check the compatibility constraints of that version => recursive call
-	check_External_Version_Compatibility(IS_RECURSIVE_COMPATIBLE ${ref_version} ${${PROJECT_NAME}_${version_to_check}_COMPATIBLE_WITH})
-	set(${IS_COMPATIBLE} ${IS_RECURSIVE_COMPATIBLE} PARENT_SCOPE)
+	if(${PROJECT_NAME}_KNOWN_VERSION_${version_to_check}_COMPATIBLE_WITH) #the version to check is compatible with another version
+		#check againt this version
+		check_External_Version_Compatibility(IS_RECURSIVE_COMPATIBLE ${ref_version} ${${PROJECT_NAME}_KNOWN_VERSION_${version_to_check}_COMPATIBLE_WITH})
+		set(${IS_COMPATIBLE} ${IS_RECURSIVE_COMPATIBLE} PARENT_SCOPE)
+	else() #not compatible with a previous version and greater than current 
+			set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
+	endif()
 else()#the version to check is compatible as it target a version lower or equal to the reference version
 	set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 endif()
@@ -663,6 +668,7 @@ macro(build_Wrapped_Project)
 #####################################################################################################################
 
 list_Version_Subdirectories(VERSIONS_DIRS ${CMAKE_SOURCE_DIR}/src)
+
 foreach(version IN LISTS VERSIONS_DIRS)
  	add_subdirectory(src/${version})
 	################################################################################
