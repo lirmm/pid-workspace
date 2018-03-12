@@ -115,19 +115,31 @@ if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install
 endif()
 
 if(GENERATE_BINARY_ARCHIVE AND (GENERATE_BINARY_ARCHIVE STREQUAL "true" OR GENERATE_BINARY_ARCHIVE STREQUAL "TRUE"))
-  #need to create an archive from relocatable binary created in install tree (use the / at the end of the copied path to target content of the folder and not folder itself)
-  file(COPY ${TARGET_INSTALL_DIR}/ DESTINATION ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM})
-  #clean the existing archive
-  if(EXISTS ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}.tar.gz)
-    file(REMOVE ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}.tar.gz)
+  #cleaning the build folder to start from a clean situation
+  set(path_to_installer_content ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM})
+  if(EXISTS ${path_to_installer_content} AND IS_DIRECTORY ${path_to_installer_content})
+    file(REMOVE_RECURSE ${path_to_installer_content})
   endif()
+
+  if(TARGET_BUILD_MODE STREQUAL "Debug")
+    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-dbg-${CURRENT_PLATFORM}.tar.gz)
+  else()
+    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}.tar.gz)
+  endif()
+  file(REMOVE ${path_to_installer_archive})
+
+  #need to create an archive from relocatable binary created in install tree (use the / at the end of the copied path to target content of the folder and not folder itself)
+  file(COPY ${TARGET_INSTALL_DIR}/ DESTINATION ${path_to_installer_content})
+
   #generate archive
-  execute_process(COMMAND ${CMAKE_COMMAND} -E tar cf
-      ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}.tar.gz
-      ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}
+  execute_process(COMMAND ${CMAKE_COMMAND} -E tar cf ${path_to_installer_archive}
+      ${path_to_installer_content}
     )
-  # clean copied install folder used to create the archive
-  file(REMOVE_RECURSE ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM})
+
+  # immediate cleaning to avoid keeping unecessary data in build tree
+  if(EXISTS ${path_to_installer_content} AND IS_DIRECTORY ${path_to_installer_content})
+    file(REMOVE_RECURSE ${path_to_installer_content})
+  endif()
   message("[PID] INFO : binary archive for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} has been generated.")
 endif()
 
