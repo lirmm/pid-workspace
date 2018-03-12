@@ -341,12 +341,7 @@ if(NOT DECLARE_PID_WRAPPER_COMPONENT_COMPONENT)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component requires to define the name of the component by using COMPONENT keyword.")
 	return()
 endif()
-if(NOT DECLARE_PID_WRAPPER_COMPONENT_SHARED_LINKS
-	AND NOT DECLARE_PID_WRAPPER_COMPONENT_STATIC_LINKS
-	AND NOT DECLARE_PID_WRAPPER_COMPONENT_INCLUDES)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling declare_PID_Wrapper_Component, component descirption is empty ! Use one or more of the keywords INCLUDES SHARED_LINKS STATIC_LINKS to define such resources.")
-	return()
-endif()
+
 declare_Wrapped_Component(${DECLARE_PID_WRAPPER_COMPONENT_COMPONENT}
 	"${DECLARE_PID_WRAPPER_COMPONENT_SHARED_LINKS}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_STATIC_LINKS}"
