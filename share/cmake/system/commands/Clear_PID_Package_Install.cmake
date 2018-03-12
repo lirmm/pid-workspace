@@ -71,27 +71,25 @@ set(PATH_TO_INSTALL_DIR ${workspace}/install/${platform}/${package}/${install_ve
 
 foreach(component IN LISTS all_components_to_check) #for each remaining existing component
 	#component exists, check for header files/folders suppression/changes
-	if(	"${INSTALLED_${component}_TYPE}" STREQUAL "HEADER"
-		OR "${INSTALLED_${component}_TYPE}" STREQUAL "STATIC"
-		OR "${INSTALLED_${component}_TYPE}" STREQUAL "SHARED")#if component is a library its header folder still exist at this step (not removed by previous function)
+	if(	INSTALLED_${component}_TYPE STREQUAL "HEADER"
+		OR INSTALLED_${component}_TYPE STREQUAL "STATIC"
+		OR INSTALLED_${component}_TYPE STREQUAL "SHARED")#if component is a library its header folder still exist at this step (not removed by previous function)
 		# checking header folder modification/suppression
-		if("${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}" STREQUAL "${INSTALLED_${component}_HEADER_DIR_NAME}")#same header include folder
+		if(${PACKAGE_NAME}_${component}_HEADER_DIR_NAME STREQUAL "${INSTALLED_${component}_HEADER_DIR_NAME}")#same header include folder
 			foreach(header_name IN LISTS INSTALLED_${component}_HEADERS)
 				list(FIND ${PACKAGE_NAME}_${component}_HEADERS ${header_name} FIND_INDEX)
 				if(FIND_INDEX EQUAL -1)#this header file does no more exists
 					file(REMOVE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME}/${header_name})
 				endif()
-
 			endforeach()
 
 		else()#new folder for this library
-			if("${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}" EQUAL 1)
-				file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME})#removing old header include folder
-				math(EXPR ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0)
+			if(INSTALLED_${component}_HEADER_DIR_NAME EQUAL 1)
+				file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME})#removing old header include folder since no component use it anymore
+				math(EXPR ${INSTALLED_${component}_HEADER_DIR_NAME}_NB_USAGE 0)
 			else()
-				math(EXPR ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)
+				math(EXPR ${INSTALLED_${component}_HEADER_DIR_NAME}_NB_USAGE ${${INSTALLED_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)#decrease the number of this folder users
 			endif()
-
 		endif()
 	endif()
 endforeach()
