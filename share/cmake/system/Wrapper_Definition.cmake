@@ -33,6 +33,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 
 include(PID_Wrapper_API_Internal_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
+include(Package_Definition NO_POLICY_SCOPE) #to enable the use of get_PID_Platform_Info in find files
 
 include(CMakeParseArguments)
 
