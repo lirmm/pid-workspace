@@ -958,13 +958,15 @@ function(get_Version_Number_And_Repo_From_Package package NUMBER STRING_NUMBER A
 set(${ADDRESS} PARENT_SCOPE)
 file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
 foreach(line IN LISTS PACKAGE_METADATA)
-	string(REGEX REPLACE "^.*set_PID_Package_Version\\(([0-9]+)(\\ +)([0-9]+)(\\ *)([0-9]*)(\\ *)\\).*$" "\\1;\\3;\\5" A_VERSION ${line})
-	if(NOT "${line}" STREQUAL "${A_VERSION}")
-		set(VERSION_COMMAND ${A_VERSION})#only taking the last instruction since it shadows previous ones
-	endif()
-	string(REGEX REPLACE "^.*ADDRESS[\\ \\\t]+([^\\ \\\t]+\\.git).*$" "\\1" AN_ADDRESS ${line})
-	if(NOT "${line}" STREQUAL "${AN_ADDRESS}")
-		set(${ADDRESS} ${AN_ADDRESS} PARENT_SCOPE)#an address had been found
+	if(NOT ${line} STREQUAL "")
+		string(REGEX REPLACE "^.*set_PID_Package_Version\\(([0-9]+)(\\ +)([0-9]+)(\\ *)([0-9]*)(\\ *)\\).*$" "\\1;\\3;\\5" A_VERSION ${line})
+		if(NOT "${line}" STREQUAL "${A_VERSION}")
+			set(VERSION_COMMAND ${A_VERSION})#only taking the last instruction since it shadows previous ones
+		endif()
+		string(REGEX REPLACE "^.*ADDRESS[\\ \\\t]+([^\\ \\\t]+\\.git).*$" "\\1" AN_ADDRESS ${line})
+		if(NOT "${line}" STREQUAL "${AN_ADDRESS}")
+			set(${ADDRESS} ${AN_ADDRESS} PARENT_SCOPE)#an address had been found
+		endif()
 	endif()
 endforeach()
 if(VERSION_COMMAND)
