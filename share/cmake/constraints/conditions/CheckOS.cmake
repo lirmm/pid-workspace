@@ -43,7 +43,14 @@ elseif(UNIX)
 	endif()
 	# now check for distribution (shoud not influence contraints but only the way to install required constraints)
 	if(NOT PID_CROSSCOMPILATION)
-		execute_process(COMMAND lsb_release -i OUTPUT_VARIABLE DISTRIB_STR ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID
+		execute_process(COMMAND lsb_release -i OUTPUT_VARIABLE DISTRIB_STR RESULT_VARIABLE lsb_res ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID
+		if(NOT lsb_res EQUAL 0)
+			# lsb_release is not available
+			# checking for archlinux
+			if(EXISTS "/etc/arch-release")
+				set(DISTRIB_STR "Distributor ID:	Arch") # same string as lsb_release -i would return
+			endif()
+		endif()
 		string(REGEX REPLACE "^[^:]+:[ \t\r]*([A-Za-z_0-9]+)[ \t\r\n]*$" "\\1" RES "${DISTRIB_STR}")
 
 		if(NOT RES STREQUAL "${DISTRIB_STR}")#match
