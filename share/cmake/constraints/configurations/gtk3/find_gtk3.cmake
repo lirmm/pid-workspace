@@ -17,14 +17,14 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+set(gtk3_FOUND FALSE CACHE INTERNAL "")
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK3 gtk+-3.0)
 pkg_check_modules(GTKMM gtkmm-3.0)
 
-if(${GTK3_FOUND} AND ${GTKMM_FOUND})
+if(GTK3_FOUND AND GTKMM_FOUND)
 	set(gtk3_FOUND TRUE CACHE INTERNAL "")
-	set(gtk3_INCLUDE_PATH ${GTKMM_INCLUDE_DIRS} PARENT_SCOPE)
-	set(gtk3_LINK_OPTIONS ${GTKMM_LIBRARIES} PARENT_SCOPE)
-else()
-	set(gtk3_FOUND FALSE CACHE INTERNAL "")
+	set(gtk3_INCLUDE_PATH ${GTKMM_INCLUDE_DIRS})
+	set(gtk3_LIBRARIES ${GTKMM_LIBRARIES})
 endif()
