@@ -137,12 +137,17 @@ endfunction(select_Last_Version)
 
 ### check if an exact major.minor version exists (patch version is always let undefined)
 function (check_Exact_Version 	VERSION_HAS_BEEN_FOUND
-				package_name package_install_dir major_version minor_version) #minor version cannot be increased
+				package_name package_install_dir major_version minor_version patch_version) #minor version cannot be increased but patch version can
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 list_Version_Subdirectories(version_dirs ${package_install_dir})
 if(version_dirs)#seaking for a good version only if there are versions installed
-	update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} true "${version_dirs}")#updating only if there are installed versions
-	set(curr_patch_version -1)
+  if(patch_version)
+    update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} ${patch_version} true "${version_dirs}")#updating only if there are installed versions
+    set(curr_patch_version ${patch_version})
+  else()#any patch version can be used
+    update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} "" true "${version_dirs}")#updating only if there are installed versions
+    set(curr_patch_version -1)
+  endif()
 	foreach(patch IN LISTS version_dirs)
 		string(REGEX REPLACE "^${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
 		if(	NOT (A_VERSION STREQUAL "${patch}") #there is a match
@@ -160,15 +165,20 @@ if(version_dirs)#seaking for a good version only if there are versions installed
 endif()
 endfunction(check_Exact_Version)
 
-###  check if a version with constraints =major >=minor (with greater minor number available) exists (patch version is always let undefined)
+###  check if a version with constraints =major >=minor (with greater minor number available) exists
+# the patch version is used only if =major and =minor is found
 function(check_Best_Version 	VERSION_HAS_BEEN_FOUND
-				package_name package_install_dir major_version minor_version)#major version cannot be increased
+				package_name package_install_dir major_version minor_version patch_version)#major version cannot be increased
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 set(curr_max_minor_version ${minor_version})
-set(curr_patch_version 0)
 list_Version_Subdirectories(version_dirs ${package_install_dir})
 if(version_dirs)#seaking for a good version only if there are versions installed
-	update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} false "${version_dirs}")#updating only if there are installed versions
+  if(patch_version)
+    set(curr_patch_version ${patch_version})
+  else()#no preliminary contraints applies to version
+    set(curr_patch_version 0)
+  endif()
+  update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} "${patch_version}" false "${version_dirs}")#updating only if there are installed versions
 	foreach(version IN LISTS version_dirs)
 		string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
 		if(NOT (A_VERSION STREQUAL "${version}"))#there is a match
@@ -201,7 +211,7 @@ function(check_Last_Version 	VERSION_HAS_BEEN_FOUND
 set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
 list_Version_Subdirectories(local_versions ${package_install_dir})
 if(local_versions)#seaking for a good version only if there are versions installed
-	update_Package_Installed_Version(${package_name} "" "" false "${local_versions}")#updating only if there are installed versions
+	update_Package_Installed_Version(${package_name} "" "" "" false "${local_versions}")#updating only if there are installed versions
 	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
 	set(version_string_curr "0.0.0")
 	foreach(local_version_dir IN LISTS local_versions)
@@ -579,7 +589,7 @@ list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
 if(INDEX EQUAL -1)#not found
 	set(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}} ${package} CACHE INTERNAL "")
 	if(version AND NOT version STREQUAL "")
-		set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
+    set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
 		if(version_exact)
 			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		else()
@@ -927,9 +937,9 @@ if(EXIST)
 	#variables that will be filled by generic functions
 	if(${package}_FIND_VERSION)
 		if(${package}_FIND_VERSION_EXACT) #using a specific version (only patch number can be adapted)
-			check_Exact_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR})
+			check_Exact_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR} "${${package}_FIND_VERSION_PATCH}")
 		else() #using the best version as regard of version constraints (only minor and patch numbers can be adapted)
-			check_Best_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR})
+      check_Best_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR} "${${package}_FIND_VERSION_PATCH}")
 		endif()
 	else() #no specific version targetted using last available version (major minor and patch numbers can be adapted)
 		check_Last_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH})
@@ -978,8 +988,12 @@ if(EXIST)
 		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
 			if(${package}_FIND_REQUIRED)
 				if(${package}_FIND_VERSION)
-					add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" ${${package}_FIND_VERSION_EXACT})
-				else()
+          if(${package}_FIND_VERSION_PATCH)
+					   add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${${package}_FIND_VERSION_EXACT})
+          else()
+            add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" ${${package}_FIND_VERSION_EXACT})
+          endif()
+        else()
 					add_To_Install_Package_Specification(${package} "" FALSE)
 				endif()
 			endif()
@@ -991,7 +1005,11 @@ else() #if the directory does not exist it means the package cannot be found
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
 		if(${package}_FIND_REQUIRED)
 			if(${package}_FIND_VERSION)
-				add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" ${${package}_FIND_VERSION_EXACT})
+        if(${package}_FIND_VERSION_PATCH)
+           add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${${package}_FIND_VERSION_EXACT})
+        else()
+          add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" ${${package}_FIND_VERSION_EXACT})
+        endif()
 			else()
 				add_To_Install_Package_Specification(${package} "" FALSE)
 			endif()

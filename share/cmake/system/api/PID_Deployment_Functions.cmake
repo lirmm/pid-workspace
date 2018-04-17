@@ -236,13 +236,17 @@ endfunction(resolve_Package_Dependencies)
 #############################################################################################
 
 ### function called by find script subfunctions to automatically update a package, if possible
-function(update_Package_Installed_Version package major minor exact already_installed)
+function(update_Package_Installed_Version package major minor patch exact already_installed)
 first_Called_Build_Mode(FIRST_TIME) # do the update only once per global configuration of the project
 if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_UPDATE) #if no automatic download then simply do nothing
 	if(NOT major STREQUAL "" AND NOT minor STREQUAL "")
 		set(WITH_VERSION TRUE)
-		check_Package_Version_Managed_In_Current_Process(${package} "${major}.${minor}" RES)
-		if(RES STREQUAL "UNKNOWN") #package has not been already updated during this run session
+    if(patch)
+      check_Package_Version_Managed_In_Current_Process(${package} "${major}.${minor}.${patch}" RES)
+    else()
+      check_Package_Version_Managed_In_Current_Process(${package} "${major}.${minor}" RES)
+    endif()
+    if(RES STREQUAL "UNKNOWN") #package has not been already updated during this run session
 			set(NEED_CHECK_UPDATE TRUE)
 		else()
 			set(NEED_CHECK_UPDATE FALSE)
@@ -258,11 +262,15 @@ if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_UPDATE) #if no automatic download 
 	endif()
 
 	if(NEED_CHECK_UPDATE) #package has not been already updated during this run session
-		package_Source_Exists_In_Workspace(SOURCE_EXIST RETURNED_PATH ${package})
+    package_Source_Exists_In_Workspace(SOURCE_EXIST RETURNED_PATH ${package})
 		if(SOURCE_EXIST) # updating the source package, if possible
 			if(WITH_VERSION)
-				deploy_Source_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
-			else()
+        if(patch)
+				  deploy_Source_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}.${patch}" ${exact} "${already_installed}")
+        else()
+          deploy_Source_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
+        endif()
+      else()
 				deploy_Source_Native_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
 			endif()
 		else() # updating the binary package, if possible
@@ -278,8 +286,12 @@ if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_UPDATE) #if no automatic download 
 				endif()
 			endif()
 			if(WITH_VERSION)
-				deploy_Binary_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
-			else()
+        if(patch)
+				  deploy_Binary_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}.${patch}" ${exact} "${already_installed}")
+        else()
+          deploy_Binary_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
+        endif()
+      else()
 				deploy_Binary_Native_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
 			endif()
 		endif()
@@ -293,10 +305,15 @@ endfunction(update_Package_Installed_Version)
 function(resolve_Required_Native_Package_Version version_possible min_version is_exact package)
 
 foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
-	get_Version_String_Numbers("${version}.0" compare_major compare_minor compared_patch)
+	get_Version_String_Numbers("${version}" compare_major compare_minor compared_patch)
 	if(NOT MAJOR_RESOLVED)#first time
 		set(MAJOR_RESOLVED ${compare_major})
 		set(CUR_MINOR_RESOLVED ${compare_minor})
+    if(compared_patch)
+      set(CUR_PATCH_RESOLVED ${compared_patch})
+    else()
+      set(CUR_PATCH_RESOLVED 0)
+    endif()
 		if(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX})
 			set(CURR_EXACT TRUE)
 		else()
@@ -310,6 +327,7 @@ foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE
 		return()
 	elseif(NOT CURR_EXACT AND (compare_minor GREATER ${CUR_MINOR_RESOLVED}))
 		set(CUR_MINOR_RESOLVED ${compare_minor})
+    set(CUR_PATCH_RESOLVED 0) #reset the patch version as we changed the minor version number
 		if(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX})
 			set(CURR_EXACT TRUE)
 		else()
@@ -318,7 +336,7 @@ foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE
 	endif()
 endforeach()
 set(${version_possible} TRUE PARENT_SCOPE)
-set(${min_version} "${MAJOR_RESOLVED}.${CUR_MINOR_RESOLVED}" PARENT_SCOPE)
+set(${min_version} "${MAJOR_RESOLVED}.${CUR_MINOR_RESOLVED}.${CUR_PATCH_RESOLVED}" PARENT_SCOPE)
 set(${is_exact} ${CURR_EXACT} PARENT_SCOPE)
 endfunction(resolve_Required_Native_Package_Version)
 
@@ -397,7 +415,7 @@ else()
 	endif()
 endif()
 if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
-# 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
+  # 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
 	set(POSSIBLE FALSE)
 	set(VERSION_MIN)
 	set(EXACT FALSE)
@@ -415,8 +433,7 @@ else()
 endif()
 
 if(USE_SOURCES) #package sources reside in the workspace
-
-	set(SOURCE_DEPLOYED FALSE)
+  set(SOURCE_DEPLOYED FALSE)
 	if(NOT NO_VERSION)
 		deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
 	else()

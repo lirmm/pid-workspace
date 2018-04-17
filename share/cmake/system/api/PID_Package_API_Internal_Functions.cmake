@@ -1339,22 +1339,6 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 				endif()
 			endif()
 		endif()#otherwise nothing more to do
-
-
-		# 4) managing automatic install process if needed
-		if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
-			if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#testing if there is automatic install activated
-				list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${dep_package} INDEX)
-				if(INDEX EQUAL -1)
-					#if the package where not specified as REQUIRED in the find_package call, we face a case of conditional dependency => the package has not been registered as "to install" while now we know it must be installed
-					if(version)
-						add_To_Install_Package_Specification(${dep_package} "${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}" ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX}})
-					else()
-						add_To_Install_Package_Specification(${dep_package} "" FALSE)
-					endif()
-				endif()
-			endif()
-		endif()
 	endif()
 endfunction(declare_Package_Dependency)
 
