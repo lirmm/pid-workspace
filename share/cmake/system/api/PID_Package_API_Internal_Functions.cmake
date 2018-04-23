@@ -66,9 +66,9 @@ initialize_Build_System()#initializing PID specific settings for build
 #################################################
 ############ MANAGING build mode ################
 #################################################
+manage_Parrallel_Build_Option()
 if(DIR_NAME STREQUAL "build/release")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
-	manage_Parrallel_Build_Option()
 	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Release" CACHE String "the type of build is dependent from build location" FORCE)
 	set (INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
@@ -79,7 +79,6 @@ if(DIR_NAME STREQUAL "build/release")
 	endif()
 elseif(DIR_NAME STREQUAL "build/debug")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
-	manage_Parrallel_Build_Option()
 	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Debug" CACHE String "the type of build is dependent from build location" FORCE)
 	set(INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
@@ -226,12 +225,20 @@ elseif(DIR_NAME STREQUAL "build")
 	add_dependencies(build check-repository) #checking if remote addrr needs to be changed
 	endif()
 
-	add_custom_target(global_main ALL
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-		COMMENT "[PID] Compiling and linking package (Debug and Release modes) ..."
-		VERBATIM
-	)
+	if(BUILD_RELEASE_ONLY)
+		add_custom_target(global_main ALL
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+			COMMENT "[PID] Compiling and linking package (Release mode only) ..."
+			VERBATIM
+		)
+	else()
+		add_custom_target(global_main ALL
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+			COMMENT "[PID] Compiling and linking package (Debug and Release modes) ..."
+			VERBATIM
+		)
+	endif()
 
 	# redefinition of clean target (cleaning the build tree)
 	add_custom_target(clean
