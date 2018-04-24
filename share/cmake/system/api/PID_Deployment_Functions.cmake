@@ -786,7 +786,7 @@ if(platform STREQUAL ${PLATFORM_STRING})
 	foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
 		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)
 			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)	# find the configuation
-			if(NOT ${config}_FOUND)# not found, trying to see if can be installed
+			if(NOT ${config}_FOUND)# not found, trying to see if it can be installed
 				if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)
 					include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)
 					if(NOT ${config}_INSTALLABLE)

@@ -91,11 +91,32 @@ set(TARGET_INSTALL_DIR ${package_version_install_dir})
 set(post_install_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_POST_INSTALL_SCRIPT})
 
 if(NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true)
+  #checking for configurations
+  set(IS_CONFIGURED TRUE)
+  foreach(config IN LISTS ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_CONFIGURATIONS)
+    if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+      include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
+      if(NOT CHECK_${config}_RESULT)# not found, trying to see if it can be installed
+        message("[PID] WARNING : the configuration ${config} cannot be find or installed on target platform !")
+        set(IS_CONFIGURED FALSE)
+      endif()
+    else()
+      message("[PID] WARNING : unknown configuration ${config} !")
+      set(IS_CONFIGURED FALSE)
+    endif()
+  endforeach()
+  if(NOT IS_CONFIGURED)
+    message("[PID] ERROR : Cannot satisfy target platform's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} !")
+    return()
+  else()
+    message("[PID] INFO : all required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} are satisfied !")
+  endif()
+
   message("[PID] INFO : Executing deployment script ${package_version_src_dir}/${deploy_script_file}...")
   set(ERROR_IN_SCRIPT FALSE)
   include(${package_version_src_dir}/${deploy_script_file} NO_POLICY_SCOPE)#execute the script
   if(ERROR_IN_SCRIPT)
-    message("[PID] ERROR : Cannot deploy external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
+    message("[PID] ERROR: Cannot deploy external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
     return()
   endif()
 endif()
@@ -110,7 +131,7 @@ install_External_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERN
 
 if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install_script_file})
   file(COPY ${package_version_src_dir}/${post_install_script_file} DESTINATION  ${TARGET_INSTALL_DIR}/share)
-  message("[PID] Info performing post install operations from file ${TARGET_INSTALL_DIR}/share/${post_install_script_file} ...")
+  message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/share/${post_install_script_file} ...")
   include(${TARGET_INSTALL_DIR}/share/${post_install_script_file} NO_POLICY_SCOPE)#execute the script
 endif()
 
