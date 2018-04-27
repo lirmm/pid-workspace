@@ -37,15 +37,17 @@ set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external CACHE INTERNAL "")
 
 ###### automatically managing reference to official remote repository #####
-set(PID_OFFICIAL_REMOTE_ADDRESS "git@gite.lirmm.fr:pid/pid-workspace.git" CACHE STRING "address of the official PID repository") #this is the "central" repo for PID system
+set(PID_OFFICIAL_REMOTE_ADDRESS "https://gite.lirmm.fr/pid/pid-workspace.git" CACHE STRING "address of the official PID repository") #this is the "central" repo for PID system
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote -v OUTPUT_VARIABLE res)
 string(REPLACE "\n" ";" GIT_REMOTES ${res})
 set(OFFICIAL_EXISTS)
 foreach(remote IN LISTS GIT_REMOTES)# for each git remote defined in repository
-	string(REGEX REPLACE "^[ \t]*official[ \t]+([^ \t]+)[ \t]*\\(fetch\\)(.*)$" "\\1" OFFICIAL_ADDR ${remote})
-	if(NOT "${remote}" STREQUAL "${OFFICIAL_ADDR}")#i.e. match => official already exists
-		set(OFFICIAL_EXISTS ${OFFICIAL_ADDR})
-		break()
+	if(remote)#guard to avoid last semincolon to generate an empty element that makes the reges command crash
+		string(REGEX REPLACE "^[ \t]*official[ \t]+([^ \t]+)[ \t]*\\(fetch\\)(.*)$" "\\1" OFFICIAL_ADDR ${remote})
+		if(NOT "${remote}" STREQUAL "${OFFICIAL_ADDR}")#i.e. match => official already exists
+			set(OFFICIAL_EXISTS ${OFFICIAL_ADDR})
+			break()
+		endif()
 	endif()
 endforeach()
 if(NOT OFFICIAL_EXISTS) # automatically create a branch called official that points to the official remote. This is a sanity action to avoid troubles on updates / deployments.
