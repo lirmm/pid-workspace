@@ -18,9 +18,9 @@
 #########################################################################################
 
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	OR CURRENT_DISTRIBUTION STREQUAL debian
+	OR CURRENT_DISTRIBUTION STREQUAL arch)
 	set(pcre3_INSTALLABLE TRUE)
 else()
 	set(pcre3_INSTALLABLE FALSE)
 endif()
-

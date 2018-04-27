@@ -20,7 +20,12 @@
 include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/pcre3/installable_pcre3.cmake)
 if(pcre3_INSTALLABLE)
 	message("[PID] INFO : trying to install pcre3...")
-	execute_process(COMMAND sudo apt-get install libpcre3-dev)
+	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+		OR CURRENT_DISTRIBUTION STREQUAL debian)
+		execute_process(COMMAND sudo apt-get install libpcre3-dev)
+	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+		execute_process(COMMAND sudo pacman -S pcre --noconfirm)
+	endif()
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/pcre3/find_pcre3.cmake)
 	if(pcre3_FOUND)
 		message("[PID] INFO : pcre3 installed !")

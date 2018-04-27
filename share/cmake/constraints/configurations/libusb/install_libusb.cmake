@@ -20,7 +20,12 @@
 include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libusb/installable_libusb.cmake)
 if(libusb_INSTALLABLE)
 	message("[PID] INFO : trying to install libusb...")
-	execute_process(COMMAND sudo apt-get install libusb-1.0-0-dev)
+	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+		OR CURRENT_DISTRIBUTION STREQUAL debian)
+		execute_process(COMMAND sudo apt-get install libusb-1.0-0-dev)
+	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+		execute_process(COMMAND sudo pacman -S libusb --noconfirm)
+	endif()
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libusb/find_libusb.cmake)
 	if(libusb_FOUND)
 		message("[PID] INFO : libusb installed !")

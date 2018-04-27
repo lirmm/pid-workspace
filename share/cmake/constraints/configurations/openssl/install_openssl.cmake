@@ -20,7 +20,12 @@
 include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/openssl/installable_openssl.cmake)
 if(openssl_INSTALLABLE)
 	message("[PID] INFO : trying to install openssl...")
-	execute_process(COMMAND sudo apt-get install openssl)
+	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+		OR CURRENT_DISTRIBUTION STREQUAL debian)
+		execute_process(COMMAND sudo apt-get install openssl)
+	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+		execute_process(COMMAND sudo pacman -S openssl --noconfirm)
+	endif()
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/openssl/find_openssl.cmake)
 	if(openssl_FOUND)
 		message("[PID] INFO : openssl installed !")
