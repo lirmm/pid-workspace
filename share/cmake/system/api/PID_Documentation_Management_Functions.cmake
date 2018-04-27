@@ -458,11 +458,17 @@ endif()
 if(NOT PACKAGE_DEPENDENCIES_DESCRIPTION) #means that the package has dependencies
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_DEPENDENCIES)# we take only dependencies of the last version
     set(prefix ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_DEPENDENCY_${dep_package})
-    list(FIND  ${prefix}_VERSIONS_EXACT ${${prefix}_VERSION_USED_FOR_BUILD} INDEX)
-    if(INDEX EQUAL -1)#not an exact version
-      generate_External_Dependency_Site(${dep_package} "${${prefix}_VERSION_USED_FOR_BUILD}" FALSE RES_CONTENT_EXTERNAL)
-    else()
+    set(is_exact FALSE)
+    if(${prefix}_VERSIONS_EXACT)
+      list(FIND ${prefix}_VERSIONS_EXACT ${${prefix}_VERSION_USED_FOR_BUILD} INDEX)
+      if(INDEX EQUAL -1)#not an exact version
+        set(is_exact TRUE)
+      endif()
+    endif()
+    if(is_exact)
       generate_External_Dependency_Site(${dep_package} "${${prefix}_VERSION_USED_FOR_BUILD}" TRUE RES_CONTENT_EXTERNAL)
+    else()
+      generate_External_Dependency_Site(${dep_package} "${${prefix}_VERSION_USED_FOR_BUILD}" FALSE RES_CONTENT_EXTERNAL)
     endif()
     set(EXTERNAL_SITE_SECTION "${EXTERNAL_SITE_SECTION}\n${RES_CONTENT_EXTERNAL}")
 	endforeach()
