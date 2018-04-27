@@ -862,15 +862,18 @@ set(INSTALLED FALSE)
 if(INDEX EQUAL -1) # selected version not found in versions already installed
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the current process
-		select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
-
-		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
-		if(INSTALLED)
-			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
-		else()
-			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE) #situation is problematic but we can still overcome it by using sources ... if possible
-		endif()
-	else()
+    select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
+    if(RES_PLATFORM)
+  		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
+  		if(INSTALLED)
+  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
+  		else()
+  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE) #situation is problematic but we can still overcome it by using sources ... if possible
+  		endif()
+    else()
+      set(INSTALLED FALSE)
+    endif()
+  else()
 		if(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be installed during current process
 			set(INSTALLED FALSE)
 		else() #SUCCESS because last correct version already built
@@ -888,7 +891,8 @@ endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 endfunction(deploy_Binary_Native_Package)
 
-### deploying a given binary version package, if necessary. The package version archive is installed and configured in the workspace. See: download_And_Install_Binary_Native_Package.  Constraints: package binary references must be loaded before.
+### deploying a given binary version package, if necessary.
+# The package version archive is installed and configured in the workspace. See: download_And_Install_Binary_Native_Package.  Constraints: package binary references must be loaded before.
 function(deploy_Binary_Native_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
@@ -922,12 +926,16 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the current process
 		select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
-		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
-		if(INSTALLED)
-			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
-		else()
-			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
-		endif()
+    if(RES_PLATFORM)
+  		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
+  		if(INSTALLED)
+  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
+  		else()
+  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
+  		endif()
+    else()
+      set(INSTALLED FALSE)
+    endif()
 	else()
 		if(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be installed during current process
 			set(INSTALLED FALSE)
