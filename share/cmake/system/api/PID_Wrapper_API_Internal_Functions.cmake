@@ -785,6 +785,9 @@ endfunction(add_External_Package_Dependency_To_Wrapper)
 
 ### dependency to another external package
 function(declare_Wrapped_External_Dependency dep_package list_of_versions exact_versions list_of_components)
+if(NOT CURRENT_MANAGED_VERSION)#may be necessary to avoid errors at first configuration 
+	return()
+endif()
 add_External_Package_Dependency_To_Wrapper(${CURRENT_MANAGED_VERSION} ${dep_package} "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 
 ### now finding external package dependencies as they are required to build the package
