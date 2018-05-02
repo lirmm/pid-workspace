@@ -32,7 +32,7 @@ endfunction()
 function(extract_Header in_file out_file)
 	set(to_append)
 	file(STRINGS ${in_file} ALL_LINES) #getting global info on the package
-	foreach(line IN LISTS ${ALL_LINES})
+	foreach(line IN LISTS ALL_LINES)
 		string(REGEX MATCH "^[ \t]*<(/results|/errors)>.*$" END_TAG ${line}) #if it is an error then report it
 		if(NOT END_TAG)
 			file(APPEND ${out_file} "${line}\n")
@@ -43,6 +43,7 @@ endfunction()
 # Prepare a temporary file to "cat" to:
 file(WRITE ${OUTPUT_FILE} "") #reset output
 file(GLOB LIST_OF_FILES "${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_*.xml")
+
 
 # concatenating the content of xml files
 set(FIRST_FILE TRUE)
