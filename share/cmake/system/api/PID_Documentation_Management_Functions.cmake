@@ -1094,7 +1094,6 @@ if(	include_installer
 	file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder
 
 	file(COPY ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
-	${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
 	DESTINATION  ${TARGET_BINARIES_PATH})#copy the release archive
 
 	if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz)#copy debug archive if it exist

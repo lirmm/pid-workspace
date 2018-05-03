@@ -778,9 +778,10 @@ if(GENERATE_INSTALLER)
 	set(PACKAGE_TARGET_NAME ${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${CURRENT_PLATFORM_NAME}.tar.gz) #we use specific PID platform name instead of CMake default one to avoid troubles (because it is not really discrimant)
 
 	if(PACKAGE_SYSTEM_STRING)
-		if(	DEFINED ${PROJECT_NAME}_LICENSE
-		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+		message("${PROJECT_NAME}_LICENSE=${${PROJECT_NAME}_LICENSE}")
+		if(${PROJECT_NAME}_LICENSE)
 			package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME} FALSE)
+			message("${PROJECT_NAME}_LICENSE is closed ? ${CLOSED}")
 			if(CLOSED)
 					#if the license is not open source then we do not generate a package with debug info
 					#this requires two step -> first consists in renaming adequately the generated artifcats, second in installing a package with adequate name
