@@ -717,8 +717,8 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 		set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE})
 	endif()
 
-	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE
-		AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL ${PROJECT_NAME})
+  if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE
+		AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL "${PROJECT_NAME}")
 		#package dependency target package is not current project
 		is_Package_Dependency(IS_DEPENDENCY "${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}")
 		if(NOT IS_DEPENDENCY)#the target package has NOT been defined as a dependency
@@ -742,7 +742,7 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 					"${dep_defs}"
 					)
 	else()#internal dependency
-		if(target_component STREQUAL DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT)
+		if(target_component STREQUAL "${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}")
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component cannot depend on itself !")
 		endif()
 
@@ -758,15 +758,24 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND OR DECLARE_PID_COMPONENT_DEPENDENCY_N
 
 elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 
-	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #an external package name is given => external package is supposed to be provided with a descirption file
-		if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)
+	if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #an external package name is given => external package is supposed to be provided with a description file
+		if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL "${PROJECT_NAME}")
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the target external package canoot be current project !")
 		endif()
 		#check for package dependency using the PACKAGE name
 		is_Package_Dependency(IS_DEPENDENCY "${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}")
 		if(NOT IS_DEPENDENCY)
-			message(WARNING "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown external package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} !")
+      set(IS_CONFIGURED TRUE)
+			if(${PROJECT_NAME}_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
+				set(IS_CONFIGURED FALSE)
+			elseif(${PROJECT_NAME}_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}))
+				set(IS_CONFIGURED FALSE)
+			endif()
+			if(IS_CONFIGURED) #only notify the error if the package DOES configure the component
+        message(WARNING "[PID] WARNING : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown external package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE} !")
+			endif()
 		endif()
+
 		declare_External_Wrapper_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
@@ -776,10 +785,18 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 					"${comp_exp_defs}"
 					"${dep_defs}")
 
-	else() #an external package name is not given
+	else() #an external package name is given but without using an external package description
 		is_Package_Dependency(IS_DEPENDENCY "${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}")
 		if(NOT IS_DEPENDENCY)
-			message(WARNING "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown external package ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} !")
+      set(IS_CONFIGURED TRUE)
+			if(${PROJECT_NAME}_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
+				set(IS_CONFIGURED FALSE)
+			elseif(${PROJECT_NAME}_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}))
+				set(IS_CONFIGURED FALSE)
+			endif()
+			if(IS_CONFIGURED) #only notify the error if the package DOES configure the component
+        message(WARNING "[PID] WARNING : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown external package ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} !")
+			endif()
 		endif()
 		declare_External_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}

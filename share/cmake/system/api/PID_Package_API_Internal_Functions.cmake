@@ -668,7 +668,6 @@ if(BUILD_AND_RUN_TESTS)
  	if(	CMAKE_BUILD_TYPE MATCHES Release
 		OR (CMAKE_BUILD_TYPE MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
 		enable_testing()
-
 	endif()
 endif()
 add_subdirectory(share)
