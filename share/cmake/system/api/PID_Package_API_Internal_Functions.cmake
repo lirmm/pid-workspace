@@ -423,7 +423,7 @@ set(INCLUDING_STATIC_CHECKS FALSE)
 if(NOT CLOSED)#check if project is closed source or not
 
 	# management of binaries publication
-	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING AND GENERATE_INSTALLER)
+	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING)
 		set(INCLUDING_BINARIES TRUE)
 	endif()
 

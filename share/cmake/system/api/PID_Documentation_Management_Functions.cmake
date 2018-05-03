@@ -1088,10 +1088,12 @@ endif()
 ######### copy the new binaries ##############
 set(NEW_POST_CONTENT_BINARY FALSE)
 if(	include_installer
-	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
-	AND NOT EXISTS ${TARGET_BINARIES_PATH})
+	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz)#at least a release version has been generated previously
+
 	# update the site content only if necessary
-	file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder
+  if(NOT EXISTS ${TARGET_BINARIES_PATH})
+    file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder if it does not exist
+  endif()
 
 	file(COPY ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
 	DESTINATION  ${TARGET_BINARIES_PATH})#copy the release archive
