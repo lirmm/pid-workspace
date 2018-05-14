@@ -283,14 +283,14 @@ elseif(DIR_NAME STREQUAL "build")
 	if(BUILD_AND_RUN_TESTS AND NOT PID_CROSSCOMPILATION)
 		# test target (launch test units, redefinition of tests)
 		if(BUILD_TESTS_IN_DEBUG)
-			add_custom_target(test
+			add_custom_target(testing
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests ..."
 				VERBATIM
 			)
 		else()
-			add_custom_target(test
+			add_custom_target(testing
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests ..."
 				VERBATIM
