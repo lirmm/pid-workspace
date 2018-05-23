@@ -821,9 +821,12 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 
 	#copy the reference file of the package into the "references" folder of the workspace
 	add_custom_target(referencing
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/find
-		COMMAND ${CMAKE_COMMAND} -E echo "Package references have been registered into the worskpace"
+		COMMAND ${CMAKE_COMMAND}
+						-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DREQUIRED_PACKAGE=${PROJECT_NAME}
+						-DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+						-DBINARY_DIR=${CMAKE_BINARY_DIR}
+						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Reference_PID_Package.cmake
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
 
