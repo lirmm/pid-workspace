@@ -73,9 +73,9 @@ classify_Packages()
 write_Categories_File()
 
 #adding custom targets providing workspace level commands
-add_custom_target(help ALL
+add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "Available PID commands:"
-	COMMAND ${CMAKE_COMMAND} -E echo "help -- This help message."
+	COMMAND ${CMAKE_COMMAND} -E echo "manual -- This help message."
 	COMMAND ${CMAKE_COMMAND} -E echo "info -- getting information about the workspace. With no argument it will printing the current version of PID. If the argument framework=*all* is used, then it lists all frameworks. If, instead, the argument framework=*name of a framework* is used, then it prints information about the framework and lists all packages of the framework with same name, ordered by categories defined by the framework. If the argument package=*name of a package* is used then it prints information about the package. If the argument package=*all* is used then it lists all packages ordered by categories. If the argument license=*all* is used then it lists all licenses avilable in the workspace. If the argument license=*a givenl license* is used then it prints precise information on the license."
 	COMMAND ${CMAKE_COMMAND} -E echo "deploy -- deploying a package, either soure repository or binary relocatable archive, or a framework. Use only package=*name of a package* argument to deploy source repository of the corresponding native package or external package wrapper. Use in addition version=VERSION to deploy a specific version, this argument must be used for an external package. The argument no_source=true will force the download of an existing binary package version archive. Use the argument force=true to force deployment even if the adequate version already lies in the workspace. Otherwise, if you want to deploy a framework use framework=*name of a framework* argument lonely."
 	COMMAND ${CMAKE_COMMAND} -E echo "resolve -- resolving runtime dependencies of an already installed package. Use package=*name of a package* and version=*a version number* arguments to specify the target binary package."
