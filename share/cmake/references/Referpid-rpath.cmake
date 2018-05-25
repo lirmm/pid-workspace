@@ -8,7 +8,7 @@ set(pid-rpath_PROJECT_PAGE https://gite.lirmm.fr/pid/pid-rpath CACHE INTERNAL ""
 set(pid-rpath_SITE_GIT_ADDRESS  CACHE INTERNAL "")
 set(pid-rpath_SITE_INTRODUCTION pid-rpath;is;a;package;providing;a;little;API;to;ease;the;management;of;runtime;resources;within;a;PID;workspace.;Runtime;resources;may;be;either;configuration;files,;executables;or;module;libraries.;Its;usage;is;completely;bound;to;the;use;of;PID;system. CACHE INTERNAL "")
 set(pid-rpath_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM);_Benjamin_Navarro(_LIRMM)" CACHE INTERNAL "")
-set(pid-rpath_DESCRIPTION Default package of PID, used to manage runtime path of executables CACHE INTERNAL "")
+set(pid-rpath_DESCRIPTION "Default package of PID, used to manage runtime path of executables" CACHE INTERNAL "")
 set(pid-rpath_YEARS 2015 CACHE INTERNAL "")
 set(pid-rpath_LICENSE CeCILL-C CACHE INTERNAL "")
 set(pid-rpath_ADDRESS git@gite.lirmm.fr:pid/pid-rpath.git CACHE INTERNAL "")

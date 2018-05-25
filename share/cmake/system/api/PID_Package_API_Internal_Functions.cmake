@@ -241,7 +241,7 @@ elseif(DIR_NAME STREQUAL "build")
 	endif()
 
 	# redefinition of clean target (cleaning the build tree)
-	add_custom_target(clean
+	add_custom_target(cleaning
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
 		COMMENT "[PID] Cleaning package (Debug and Release modes) ..."
@@ -256,7 +256,7 @@ elseif(DIR_NAME STREQUAL "build")
 	)
 
 	# redefinition of install target
-	add_custom_target(install
+	add_custom_target(installing
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Debug artefacts
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
@@ -283,14 +283,14 @@ elseif(DIR_NAME STREQUAL "build")
 	if(BUILD_AND_RUN_TESTS AND NOT PID_CROSSCOMPILATION)
 		# test target (launch test units, redefinition of tests)
 		if(BUILD_TESTS_IN_DEBUG)
-			add_custom_target(test
+			add_custom_target(testing
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests ..."
 				VERBATIM
 			)
 		else()
-			add_custom_target(test
+			add_custom_target(testing
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests ..."
 				VERBATIM
@@ -398,9 +398,7 @@ reset_CI_Variables()
 reset_Package_Platforms_Variables()
 reset_Packages_Finding_Variables()
 init_PID_Version_Variable()
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
-endif()
+init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
 reset_Version_Cache_Variables()
 check_For_Remote_Respositories("${address}")
 init_Standard_Path_Cache_Variables()
@@ -425,7 +423,7 @@ set(INCLUDING_STATIC_CHECKS FALSE)
 if(NOT CLOSED)#check if project is closed source or not
 
 	# management of binaries publication
-	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING AND GENERATE_INSTALLER)
+	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING)
 		set(INCLUDING_BINARIES TRUE)
 	endif()
 
@@ -670,7 +668,6 @@ if(BUILD_AND_RUN_TESTS)
  	if(	CMAKE_BUILD_TYPE MATCHES Release
 		OR (CMAKE_BUILD_TYPE MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
 		enable_testing()
-
 	endif()
 endif()
 add_subdirectory(share)
@@ -778,8 +775,7 @@ if(GENERATE_INSTALLER)
 	set(PACKAGE_TARGET_NAME ${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${CURRENT_PLATFORM_NAME}.tar.gz) #we use specific PID platform name instead of CMake default one to avoid troubles (because it is not really discrimant)
 
 	if(PACKAGE_SYSTEM_STRING)
-		if(	DEFINED ${PROJECT_NAME}_LICENSE
-		AND NOT ${${PROJECT_NAME}_LICENSE} STREQUAL "")
+		if(${PROJECT_NAME}_LICENSE)
 			package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME} FALSE)
 			if(CLOSED)
 					#if the license is not open source then we do not generate a package with debug info
@@ -825,9 +821,12 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 
 	#copy the reference file of the package into the "references" folder of the workspace
 	add_custom_target(referencing
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/find
-		COMMAND ${CMAKE_COMMAND} -E echo "Package references have been registered into the worskpace"
+		COMMAND ${CMAKE_COMMAND}
+						-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DREQUIRED_PACKAGE=${PROJECT_NAME}
+						-DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+						-DBINARY_DIR=${CMAKE_BINARY_DIR}
+						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Reference_PID_Package.cmake
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
 

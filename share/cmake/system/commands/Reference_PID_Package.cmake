@@ -17,42 +17,19 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml)
+message("[PID] Registering references of package ${REQUIRED_PACKAGE} into the worskpace ... ")
+if(EXISTS ${BINARY_DIR}/share/Refer${REQUIRED_PACKAGE}.cmake)
+  file( COPY ${BINARY_DIR}/share/Refer${REQUIRED_PACKAGE}.cmake
+        DESTINATION ${WORKSPACE_DIR}/share/cmake/references)
+else()
+  message("[PID] WARNING: NO reference file found for package ${REQUIRED_PACKAGE}. This can be due to a missing official git remote for the package. Please set the address of the package's official remote within root CMakeLists.txt of ${REQUIRED_PACKAGE}.")
+endif()
 
-function(cat in_file out_file)
-	file(STRINGS ${in_file} ALL_LINES) #getting global info on the package
-	foreach(line IN LISTS ALL_LINES)
-		string(REGEX MATCH "^[ \t]*<(/?results|/?errors|\\?xml|cppcheck).*$" BEGINEND_TAG ${line}) #if it is an error then report it
-		if(NOT BEGINEND_TAG)
-			file(APPEND ${out_file} "${line}\n")
-		endif()
-	endforeach()
-endfunction()
+if(EXISTS ${BINARY_DIR}/share/Find${REQUIRED_PACKAGE}.cmake)
+  file( COPY ${BINARY_DIR}/share/Find${REQUIRED_PACKAGE}.cmake
+        DESTINATION ${WORKSPACE_DIR}/share/cmake/find)
+else()
+  message(FATAL_ERROR "[PID] BUG: NO find file found for package ${REQUIRED_PACKAGE}. This is a BUG in PID please contact PID developpers.")
+endif()
 
-function(extract_Header in_file out_file)
-	set(to_append)
-	file(STRINGS ${in_file} ALL_LINES) #getting global info on the package
-	foreach(line IN LISTS ${ALL_LINES})
-		string(REGEX MATCH "^[ \t]*<(/results|/errors)>.*$" END_TAG ${line}) #if it is an error then report it
-		if(NOT END_TAG)
-			file(APPEND ${out_file} "${line}\n")
-		endif()
-	endforeach()
-endfunction()
-
-# Prepare a temporary file to "cat" to:
-file(WRITE ${OUTPUT_FILE} "") #reset output
-file(GLOB LIST_OF_FILES "${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_*.xml")
-
-# concatenating the content of xml files
-set(FIRST_FILE TRUE)
-foreach(in_file IN LISTS LIST_OF_FILES)
-	if(FIRST_FILE)
-		extract_Header(${in_file} ${OUTPUT_FILE})
-  		set(FIRST_FILE FALSE)
-	else()
-		cat(${in_file} ${OUTPUT_FILE})
-	endif()
-endforeach()
-
-file(APPEND ${OUTPUT_FILE} "\n\t</errors>\n</results>\n")
+message("[PID] package ${REQUIRED_PACKAGE} has been registered.")

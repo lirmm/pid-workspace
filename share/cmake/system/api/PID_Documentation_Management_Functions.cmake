@@ -458,11 +458,17 @@ endif()
 if(NOT PACKAGE_DEPENDENCIES_DESCRIPTION) #means that the package has dependencies
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_DEPENDENCIES)# we take only dependencies of the last version
     set(prefix ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_DEPENDENCY_${dep_package})
-    list(FIND  ${prefix}_VERSIONS_EXACT ${${prefix}_VERSION_USED_FOR_BUILD} INDEX)
-    if(INDEX EQUAL -1)#not an exact version
-      generate_External_Dependency_Site(${dep_package} "${${prefix}_VERSION_USED_FOR_BUILD}" FALSE RES_CONTENT_EXTERNAL)
-    else()
+    set(is_exact FALSE)
+    if(${prefix}_VERSIONS_EXACT)
+      list(FIND ${prefix}_VERSIONS_EXACT ${${prefix}_VERSION_USED_FOR_BUILD} INDEX)
+      if(INDEX EQUAL -1)#not an exact version
+        set(is_exact TRUE)
+      endif()
+    endif()
+    if(is_exact)
       generate_External_Dependency_Site(${dep_package} "${${prefix}_VERSION_USED_FOR_BUILD}" TRUE RES_CONTENT_EXTERNAL)
+    else()
+      generate_External_Dependency_Site(${dep_package} "${${prefix}_VERSION_USED_FOR_BUILD}" FALSE RES_CONTENT_EXTERNAL)
     endif()
     set(EXTERNAL_SITE_SECTION "${EXTERNAL_SITE_SECTION}\n${RES_CONTENT_EXTERNAL}")
 	endforeach()
@@ -1082,13 +1088,14 @@ endif()
 ######### copy the new binaries ##############
 set(NEW_POST_CONTENT_BINARY FALSE)
 if(	include_installer
-	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
-	AND NOT EXISTS ${TARGET_BINARIES_PATH})
+	AND EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz)#at least a release version has been generated previously
+
 	# update the site content only if necessary
-	file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder
+  if(NOT EXISTS ${TARGET_BINARIES_PATH})
+    file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder if it does not exist
+  endif()
 
 	file(COPY ${WORKSPACE_DIR}/packages/${package}/build/release/${package}-${version}-${platform}.tar.gz
-	${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz
 	DESTINATION  ${TARGET_BINARIES_PATH})#copy the release archive
 
 	if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/${package}-${version}-dbg-${platform}.tar.gz)#copy debug archive if it exist

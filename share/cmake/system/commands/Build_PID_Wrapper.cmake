@@ -92,25 +92,26 @@ set(post_install_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET
 
 if(NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true)
   #checking for configurations
-  set(IS_CONFIGURED TRUE)
-  foreach(config IN LISTS ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_CONFIGURATIONS)
-    if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-      include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
-      if(NOT CHECK_${config}_RESULT)# not found, trying to see if it can be installed
-        message("[PID] WARNING : the configuration ${config} cannot be find or installed on target platform !")
-        set(IS_CONFIGURED FALSE)
-      endif()
-    else()
-      message("[PID] WARNING : unknown configuration ${config} !")
-      set(IS_CONFIGURED FALSE)
-    endif()
-  endforeach()
-  if(NOT IS_CONFIGURED)
+  resolve_Wrapper_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
+  if(NOT IS_OK)
     message("[PID] ERROR : Cannot satisfy target platform's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} !")
     return()
   else()
     message("[PID] INFO : all required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} are satisfied !")
   endif()
+
+  # checking for dependencies
+  message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
+  resolve_Wrapper_Dependencies(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
+  if(NOT IS_OK)
+    message("[PID] ERROR : Cannot satisfy required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} !")
+    return()
+  else()
+    message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} are satisfied !")
+  endif()
+
+  #prepare deplyment script execution by caching build variable that may be used inside
+  configure_Wrapper_Build_Variables(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
 
   message("[PID] INFO : Executing deployment script ${package_version_src_dir}/${deploy_script_file}...")
   set(ERROR_IN_SCRIPT FALSE)

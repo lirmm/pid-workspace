@@ -765,6 +765,7 @@ if(EXISTS ${WORKSPACE_DIR}/packages/${package})
 endif()
 
 if("${version}" STREQUAL "")#no specific version required
+	set(INSTALLED FALSE)
 	if(can_use_source)#this first step is only possible if sources can be used
 		if(NOT REPOSITORY_IN_WORKSPACE)
 			set(DEPLOYED FALSE)
@@ -775,30 +776,30 @@ if("${version}" STREQUAL "")#no specific version required
 			endif()
 		endif()
 		#now build the package
-		set(INSTALLED FALSE)
 		deploy_Source_Native_Package(INSTALLED ${package} "")
 		if(NOT INSTALLED)
 			message("[PID] ERROR : cannot build ${package} after cloning of its repository. Deployment aborted !")
 			return()
 		endif()
 	endif()
-	#try to install last available version from sources
-	set(RES_VERSION)
-	greatest_Version_Archive(${package} RES_VERSION)
-	if(RES_VERSION)
-		deploy_Binary_Native_Package_Version(DEPLOYED ${package} ${RES_VERSION} TRUE "")
-		if(NOT DEPLOYED)
-			message("[PID] ERROR : problem deploying ${package} binary archive version ${RES_VERSION}. Deployment aborted !")
-			return()
+	if(NOT INSTALLED)# deployment from sources was not possible
+		#try to install last available version from sources
+		set(RES_VERSION)
+		greatest_Version_Archive(${package} RES_VERSION)
+		if(RES_VERSION)
+			deploy_Binary_Native_Package_Version(DEPLOYED ${package} ${RES_VERSION} TRUE "")
+			if(NOT DEPLOYED)
+				message("[PID] ERROR : problem deploying ${package} binary archive version ${RES_VERSION}. Deployment aborted !")
+				return()
+			else()
+				message("[PID] INFO : deploying ${package} binary archive version ${RES_VERSION} success !")
+				return()
+			endif()
 		else()
-			message("[PID] INFO : deploying ${package} binary archive version ${RES_VERSION} success !")
+			message("[PID] ERROR : no binary archive available for ${package}. Deployment aborted !")
 			return()
 		endif()
-	else()
-		message("[PID] ERROR : no binary archive available for ${package}. Deployment aborted !")
-		return()
 	endif()
-
 else()#deploying a specific version
 	#first, try to download the archive if the binary archive for this version exists
 	exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)

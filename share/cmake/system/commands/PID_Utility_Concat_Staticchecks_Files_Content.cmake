@@ -17,33 +17,43 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-##########################################################################################
-############################ Guard for optimization of configuration process #############
-##########################################################################################
-if(PID_SET_POLICIES_INCLUDED)
-  return()
-endif()
-set(PID_SET_POLICIES_INCLUDED TRUE)
-##########################################################################################
+set(OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml)
+
+function(cat in_file out_file)
+	file(STRINGS ${in_file} ALL_LINES) #getting global info on the package
+	foreach(line IN LISTS ALL_LINES)
+		string(REGEX MATCH "^[ \t]*<(/?results|/?errors|\\?xml|cppcheck).*$" BEGINEND_TAG ${line}) #if it is an error then report it
+		if(NOT BEGINEND_TAG)
+			file(APPEND ${out_file} "${line}\n")
+		endif()
+	endforeach()
+endfunction()
+
+function(extract_Header in_file out_file)
+	set(to_append)
+	file(STRINGS ${in_file} ALL_LINES) #getting global info on the package
+	foreach(line IN LISTS ALL_LINES)
+		string(REGEX MATCH "^[ \t]*<(/results|/errors)>.*$" END_TAG ${line}) #if it is an error then report it
+		if(NOT END_TAG)
+			file(APPEND ${out_file} "${line}\n")
+		endif()
+	endforeach()
+endfunction()
+
+# Prepare a temporary file to "cat" to:
+file(WRITE ${OUTPUT_FILE} "") #reset output
+file(GLOB LIST_OF_FILES "${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_*.xml")
 
 
-########################################################################
-##################### definition of CMake policies #####################
-########################################################################
+# concatenating the content of xml files
+set(FIRST_FILE TRUE)
+foreach(in_file IN LISTS LIST_OF_FILES)
+	if(FIRST_FILE)
+		extract_Header(${in_file} ${OUTPUT_FILE})
+  		set(FIRST_FILE FALSE)
+	else()
+		cat(${in_file} ${OUTPUT_FILE})
+	endif()
+endforeach()
 
-#not guarded policies (they exist since version 3.0 which is the minimum for PID)
-set(CMAKE_WARN_DEPRECATED FALSE CACHE INTERNAL "" FORCE)
-cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
-cmake_policy(SET CMP0037 NEW) #do not allow to redefine standard target such as clean or install
-cmake_policy(SET CMP0026 NEW) #avoid using the LOCATION property
-cmake_policy(SET CMP0045 NEW) #allow to test if a target exist without a warning on a get_target_property
-cmake_policy(SET CMP0007 NEW) #do not allow a list to have empty elements without warning
-
-# guarded policies (they exist in further version of CMake)
-if(POLICY CMP0054)
-	cmake_policy(SET CMP0054 NEW) #only KEYWORDS (without "") are considered as KEYWORDS
-endif()
-
-if(POLICY CMP0064)
-	cmake_policy(SET CMP0064 NEW) #do not warn when a Keyword between guillemet "" is used in an if expression
-endif()
+file(APPEND ${OUTPUT_FILE} "\n\t</errors>\n</results>\n")
