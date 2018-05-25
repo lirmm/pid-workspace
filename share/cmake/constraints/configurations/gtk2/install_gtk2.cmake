@@ -21,7 +21,12 @@
 include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/gtk2/installable_gtk2.cmake)
 if(gtk2_INSTALLABLE)
 	message("[PID] INFO : trying to install gtk2...")
-	execute_process(COMMAND sudo apt-get install libgtk2.0-dev)
+	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+		OR CURRENT_DISTRIBUTION STREQUAL debian)
+		execute_process(COMMAND sudo apt-get install libgtk2.0-dev libgtkmm-2.4-dev)
+	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+		execute_process(COMMAND sudo pacman -S gtk2 gtkmm)
+	endif()
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/gtk2/find_gtk2.cmake)
 	if(gtk2_FOUND)
 		message("[PID] INFO : gtk2 installed !")

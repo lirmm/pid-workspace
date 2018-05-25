@@ -17,23 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/openssl/installable_openssl.cmake)
-if(openssl_INSTALLABLE)
-	message("[PID] INFO : trying to install openssl...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get install openssl)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S openssl --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/openssl/find_openssl.cmake)
-	if(openssl_FOUND)
-		message("[PID] INFO : openssl installed !")
-		set(openssl_INSTALLED TRUE)
-	else()
-		set(openssl_INSTALLED FALSE)
-		message("[PID] INFO : install of openssl has failed !")
-	endif()
-else()
-	set(openssl_INSTALLED FALSE)
+set(nasm_FOUND FALSE CACHE INTERNAL "")
+
+find_program(NASM_EXE nasm)
+
+if(NOT NASM_EXE STREQUAL "NASM_EXE-NOTFOUND")
+	set(nasm_FOUND TRUE CACHE INTERNAL "")
 endif()

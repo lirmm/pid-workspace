@@ -20,7 +20,12 @@
 include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/imagemagic/installable_imagemagic.cmake)
 if(imagemagic_INSTALLABLE)
 	message("[PID] INFO : trying to install imagemagic and some of its related packages...")
-	execute_process(COMMAND sudo apt-get install imagemagick libmagick++-dev libx264-dev)
+	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+		OR CURRENT_DISTRIBUTION STREQUAL debian)
+		execute_process(COMMAND sudo apt-get install imagemagick libmagick++-dev libx264-dev)
+	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+		execute_process(COMMAND sudo pacman -S imagemagick libx264 --noconfirm)
+	endif()
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/imagemagic/find_imagemagic.cmake)
 	if(imagemagic_FOUND)
 		message("[PID] INFO : imagemagic installed !")

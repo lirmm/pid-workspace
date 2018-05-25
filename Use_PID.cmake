@@ -56,6 +56,7 @@ include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
 include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
+include(External_Definition NO_POLICY_SCOPE)
 
 include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
 
@@ -141,7 +142,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX  ${CMAKE_BUILD_TYPE})
 #create the imported targets
 foreach (component IN LISTS TARGETS_PID_COMPONENTS_COMPONENTS)
 	create_Dependency_Target(${TARGETS_PID_COMPONENTS_PACKAGE} ${component} ${CMAKE_BUILD_TYPE})
-	set(${TARGETS_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES ${${TARGETS_PID_PACKAGE}_RPATH}/${component}${TARGET_SUFFIX} CACHE INTERNAL "")
+	set(${TARGETS_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES ${${TARGETS_PID_COMPONENTS_PACKAGE}_RPATH}/${component}${TARGET_SUFFIX} CACHE INTERNAL "")
 endforeach()
 endmacro(targets_For_PID_Components)
 
@@ -161,6 +162,6 @@ if (NOT TARGET ${PATH_PID_RESOURCES_PACKAGE}-${PATH_PID_RESOURCES_COMPONENT}${TA
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling path_To_PID_Component_Resources, the target corresponding to the required component does not exist. Use targets_For_PID_Components() macro to do so.")
 endif()
 
-file(GLOB RESULT ${${TARGETS_PID_COMPONENTS_PACKAGE}_${component}_RESOURCES}/*)
+file(GLOB RESULT ${${PATH_PID_RESOURCES_PACKAGE}_${PATH_PID_RESOURCES_COMPONENT}_RESOURCES}/*)
 set(${PATH_PID_RESOURCES_RESOURCES} ${RESULT} PARENT_SCOPE)
 endfunction(path_To_PID_Component_Resources)

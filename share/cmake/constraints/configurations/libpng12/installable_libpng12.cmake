@@ -18,9 +18,9 @@
 #########################################################################################
 
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	OR CURRENT_DISTRIBUTION STREQUAL debian
+	OR CURRENT_DISTRIBUTION STREQUAL arch)
 	set(libpng12_INSTALLABLE TRUE)
 else()
 	set(libpng12_INSTALLABLE FALSE)
 endif()
-

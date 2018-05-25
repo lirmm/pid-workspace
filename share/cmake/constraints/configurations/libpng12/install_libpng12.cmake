@@ -20,7 +20,12 @@
 include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libpng12/installable_libpng12.cmake)
 if(libpng12_INSTALLABLE)
 	message("[PID] INFO : trying to install libpng12...")
-	execute_process(COMMAND sudo apt-get install libpng12-dev)
+	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+		OR CURRENT_DISTRIBUTION STREQUAL debian)
+		execute_process(COMMAND sudo apt-get install libpng12-dev)
+	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+		execute_process(COMMAND sudo pacman -S libpng12 --noconfirm)
+	endif()
 	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/libpng12/find_libpng12.cmake)
 	if(libpng12_FOUND)
 		message("[PID] INFO : libpng12 installed !")

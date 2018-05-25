@@ -18,9 +18,9 @@
 #########################################################################################
 
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	OR CURRENT_DISTRIBUTION STREQUAL debian
+	OR CURRENT_DISTRIBUTION STREQUAL arch)
 	set(libusb_INSTALLABLE TRUE)
 else()
 	set(libusb_INSTALLABLE FALSE)
 endif()
-

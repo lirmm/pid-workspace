@@ -18,7 +18,8 @@
 #########################################################################################
 
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	OR CURRENT_DISTRIBUTION STREQUAL debian
+	OR CURRENT_DISTRIBUTION STREQUAL arch)
 	set(imagemagic_INSTALLABLE TRUE)
 else()
 	set(imagemagic_INSTALLABLE FALSE)
