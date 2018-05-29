@@ -755,7 +755,7 @@ foreach(dep_component IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${c
 	else()
 		set(usage "USE ${dep_component}")
 	endif()
-	file(APPEND ${file_for_version} "declare_PID_External_Component_Dependency(PACKAGE ${package} COMPONENT ${component} ${usage} EXTERNAL ${dependency}${defs})\n")
+	file(APPEND ${file_for_version} "declare_PID_External_Component_Dependency(PACKAGE ${package} COMPONENT ${component} ${usage} EXTERNAL ${dep_component} PACKAGE ${external_package_dependency} ${defs})\n")
 endforeach()
 endif()
 
