@@ -17,30 +17,23 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(libpng12_FOUND FALSE CACHE INTERNAL "")
-# - Find libpng12 installation
-# Try to find libraries for libpng12 on UNIX systems. The following values are defined
-#  libpng12_FOUND        - True if libpng12 is available
-#  libpng12_LIBRARIES    - link against these to use libpng12 library
-if (UNIX)
-
-	find_path(libpng12_INCLUDE_PATH libpng12/png.h)
-	find_library(libpng12_LIB png12)
-
-	set(libpng12_LIBRARIES) # start with empty list
-	set(IS_FOUND TRUE)
-	if(libpng12_INCLUDE_PATH AND libpng12_LIB)
-		set(libpng12_LIBRARIES -lpng12)
-	else()
-		message("[PID] ERROR : cannot find png12 library.")
-		set(IS_FOUND FALSE)
+include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/freetype2/installable_freetype2.cmake)
+if(freetype2_INSTALLABLE)
+	message("[PID] INFO : trying to install freetype2...")
+	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+		OR CURRENT_DISTRIBUTION STREQUAL debian)
+		execute_process(COMMAND sudo apt-get install libfreetype6-dev)
+	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+		execute_process(COMMAND sudo pacman -S freetype2 --noconfirm)
 	endif()
-
-	if(IS_FOUND)
-		set(libpng12_FOUND TRUE CACHE INTERNAL "")
-	endif ()
-
-	unset(IS_FOUND)
-	unset(libpng12_INCLUDE_PATH CACHE)
-	unset(libpng12_LIB CACHE)
-endif ()
+	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/freetype2/find_freetype2.cmake)
+	if(freetype2_FOUND)
+		message("[PID] INFO : freetype2 installed !")
+		set(freetype2_INSTALLED TRUE)
+	else()
+		set(freetype2_INSTALLED FALSE)
+		message("[PID] INFO : install of freetype2 has failed !")
+	endif()
+else()
+	set(freetype2_INSTALLED FALSE)
+endif()

@@ -1,2 +1,3 @@
-set(nanomsg_PID_KNOWN_VERSION 5.1.0)
+set(nanomsg_PID_KNOWN_VERSION 1.1.3)
+
 finding_External_Package(nanomsg)
