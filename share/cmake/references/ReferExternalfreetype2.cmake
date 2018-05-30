@@ -1,21 +1,20 @@
-#### referencing package the-testpack-a mode ####
+#### referencing wrapper of external package freetype2 ####
 set(freetype2_PID_WRAPPER_CONTACT_AUTHOR _Benjamin_Navarro CACHE INTERNAL "")
-set(freetype2_PID_WRAPPER_CONTACT_INSTITUTION _LIRMM: Laboratoire d'Informatique de Robotique et de Microélectronique de Montpellier, www.lirmm.fr CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_CONTACT_INSTITUTION _CNRS_/_LIRMM:_Laboratoire_d'Informatique_de_Robotique_et_de_Microélectronique_de_Montpellier,_www.lirmm.fr CACHE INTERNAL "")
 set(freetype2_PID_WRAPPER_CONTACT_MAIL navarro@lirmm.fr CACHE INTERNAL "")
-
-set(freetype2_AUTHORS "http://www.freetype.org/" CACHE INTERNAL "")
-set(freetype2_LICENSES "GNU GPL" CACHE INTERNAL "")
-set(freetype2_DESCRIPTION external package for the freetype library, repackaged for PID CACHE INTERNAL "")
-set(freetype2_CATEGORIES programming/gui CACHE INTERNAL "")
-
-# declaration of known references
-set(freetype2_REFERENCES 2.6.1 CACHE INTERNAL "")
-set(freetype2_REFERENCE_2.6.1 x86_64_linux_abi98 x86_64_linux_abi11 CACHE INTERNAL "")
-
-#linux 64
-set(freetype2_REFERENCE_2.6.1_x86_64_linux_abi98_URL https://gite.lirmm.fr/pid/ext-freetype2/repository/archive.tar.gz?ref=linux-64-2.6.1 CACHE INTERNAL "")
-set(freetype2_REFERENCE_2.6.1_x86_64_linux_abi98_FOLDER ext-freetype2-linux-64-2.6.1-b4825a0b98108d1cab41f166256de56f0c49925b CACHE INTERNAL "")
-
-#linux 64 cxx11 ABI
-set(freetype2_REFERENCE_2.6.1_x86_64_linux_abi11_URL https://gite.lirmm.fr/pid/ext-freetype2/repository/archive.tar.gz?ref=linux-64-cxx11-2.6.1 CACHE INTERNAL "")
-set(freetype2_REFERENCE_2.6.1_x86_64_linux_abi11_FOLDER ext-freetype2-linux-64-cxx11-2.6.1-b4825a0b98108d1cab41f166256de56f0c49925b CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_SITE_ROOT_PAGE  CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_PROJECT_PAGE https://gite.lirmm.fr/pid/freetype2 CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_SITE_GIT_ADDRESS  CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_SITE_INTRODUCTION freetype2;is;a;PID;wrapper;for;the;external;project;called;FreeType2.;FreeType2;is;a;A;Free,;High-Quality,;and;Portable;Font;Engine. CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_AUTHORS_AND_INSTITUTIONS "_Benjamin_Navarro(_CNRS_/_LIRMM:_Laboratoire_d'Informatique_de_Robotique_et_de_Microélectronique_de_Montpellier,_www.lirmm.fr)" CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_YEARS 2018 CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_LICENSE GNULGPL CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_ADDRESS git@gite.lirmm.fr:pid/freetype2.git CACHE INTERNAL "")
+set(freetype2_PID_WRAPPER_PUBLIC_ADDRESS https://gite.lirmm.fr/pid/freetype2.git CACHE INTERNAL "")
+set(freetype2_DESCRIPTION "TinyXML-2 is a simple, small, efficient, C++ XML parser. Repackaged for PID" CACHE INTERNAL "")
+set(freetype2_FRAMEWORK pid CACHE INTERNAL "")
+set(freetype2_CATEGORIES "programming/gui" CACHE INTERNAL "")
+set(freetype2_AUTHORS "David Turner, Robert Wilhelm, and Werner Lemberg" CACHE INTERNAL "")
+set(freetype2_PROJECT_SITE http://freetype.sourceforge.net/index2.html CACHE INTERNAL "")
+set(freetype2_LICENSES GNUGPL CACHE INTERNAL "")
+set(freetype2_REFERENCES  CACHE INTERNAL "")
