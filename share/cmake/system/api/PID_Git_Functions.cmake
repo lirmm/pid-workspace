@@ -60,39 +60,47 @@ endfunction(git_Provides_GETURL)
 ######################################################################
 
 ###
+function(prepare_Repository_Context_Switch package)
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git reset --hard # remove any change applied to the previous repository state
+		COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git clean -ff -d # remove unstracked files
+		OUTPUT_QUIET ERROR_QUIET)#this is a mandatory step due to the generation of versionned files in source dir when build takes place (this should let the repository in same state as initially)
+endfunction(prepare_Repository_Context_Switch)
+
+###
+function(go_To_Commit repo branch)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${repo} git checkout ${branch}
+		              OUTPUT_QUIET ERROR_QUIET)
+endfunction(go_To_Commit)
+
+###
 function(go_To_Integration package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout integration
-		OUTPUT_QUIET ERROR_QUIET)
+  prepare_Repository_Context_Switch(${package})
+  go_To_Commit(${WORKSPACE_DIR}/packages/${package} integration)
 endfunction(go_To_Integration)
 
 ###
 function(go_To_Master package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout master
-		OUTPUT_QUIET ERROR_QUIET)
+  prepare_Repository_Context_Switch(${package})
+  go_To_Commit(${WORKSPACE_DIR}/packages/${package} master)
 endfunction(go_To_Master)
 
 ###
 function(go_To_Workspace_Master)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git checkout master
-		OUTPUT_QUIET ERROR_QUIET)
+  go_To_Commit(${WORKSPACE_DIR} master)
 endfunction(go_To_Workspace_Master)
 
 ###
 function(go_To_Workspace_Development)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git checkout development
-		OUTPUT_QUIET ERROR_QUIET)
+  go_To_Commit(${WORKSPACE_DIR} development)
 endfunction(go_To_Workspace_Development)
 
-###
-function(go_To_Commit repo branch)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${repo} git checkout ${branch}
-		OUTPUT_QUIET ERROR_QUIET)
-endfunction(go_To_Commit)
 
 ###
 function(go_To_Version package version)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout tags/v${version}
-		OUTPUT_QUIET ERROR_QUIET)
+  prepare_Repository_Context_Switch(${package})
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout tags/v${version}
+		              OUTPUT_QUIET ERROR_QUIET)
 endfunction(go_To_Version)
 
 
@@ -158,7 +166,7 @@ endif()
 set(${INITIAL_COMMIT} ${CONTEXT} PARENT_SCOPE)
 has_Modifications(RESULT ${package})
 if(RESULT)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash save --include-untracked OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash save --include-untracked --keep-index OUTPUT_QUIET ERROR_QUIET)
 	set(${SAVED_CONTENT} TRUE PARENT_SCOPE)
 else()
 	set(${SAVED_CONTENT} FALSE PARENT_SCOPE)
@@ -167,16 +175,12 @@ endfunction(save_Repository_Context)
 
 ###
 function(restore_Repository_Context package initial_commit saved_content)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git reset --hard
-		COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git clean -ff -d
-		OUTPUT_QUIET ERROR_QUIET)#this is a mandatory step due to the generation of versionned files in source dir when build takes place (this should let the repository in same state as initially)
-
-go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${initial_commit})
-if(saved_content)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash pop OUTPUT_QUIET ERROR_QUIET)
-endif()
+  prepare_Repository_Context_Switch(${package})
+  go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${initial_commit})
+  if(saved_content)
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash pop --index OUTPUT_QUIET ERROR_QUIET)
+  endif()
 endfunction(restore_Repository_Context)
-
 
 ###
 function(save_Workspace_Repository_Context INITIAL_COMMIT SAVED_CONTENT)
