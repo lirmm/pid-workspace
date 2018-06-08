@@ -142,7 +142,6 @@ endfunction(reset_Wrapper_Description_Cached_Variables)
 
 ###
 macro(declare_Wrapper author institution mail year license address public_address description readme_file)
-
 set(${PROJECT_NAME}_ROOT_DIR ${WORKSPACE_DIR}/wrappers/${PROJECT_NAME} CACHE INTERNAL "")
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
@@ -187,6 +186,7 @@ if(TEMP_PLATFORM) #check if any change occurred
 endif()
 
 set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
+set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
 #############################################################
 ############ Managing build process #########################
 #############################################################
