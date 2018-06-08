@@ -548,12 +548,36 @@ if(platform AND NOT platform STREQUAL "")# if a platform constraint applies
 		else() #simply set the variable
 			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} ${platform} CACHE INTERNAL "")
 		endif()
+
+		if(platform STREQUAL "${CURRENT_PLATFORM}")
+			#check that the configuration applies to the current platform if the current platform is the target of this constraint
+			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
+				if(NOT CHECK_${config}_RESULT)# not found, trying to see if it can be installed
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : the configuration ${config} cannot be find or installed on target platform !")
+				endif()
+			else()
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown configuration ${config} !")
+			endif()
+		endif()
 	endforeach()
 else()#no platform constraint applies => this platform configuration is adequate for all platforms
 	foreach(config IN LISTS configurations)
 		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "all" CACHE INTERNAL "")
+
+		#check that the configuration applies to the current platform anytime
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
+			if(NOT CHECK_${config}_RESULT)# not found, trying to see if it can be installed
+				message("[PID] ERROR : current platform does not satisfy configuration constraint ${config}.")
+			endif()
+		else()
+			message("[PID] ERROR : unknown configuration ${config} !")
+		endif()
 	endforeach()
 endif()
+
+
 endfunction(declare_Wrapped_Configuration)
 
 
@@ -833,11 +857,15 @@ function(generate_Description_For_External_Component file_for_version package pl
 		create_Shared_Lib_Extension(RES_EXT ${platform} "${USE_SONAME}")#create the soname extension
 		set(final_list_of_shared)#add the adequate extension name depending on the platform
 		foreach(shared_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
-				get_filename_component(EXTENSION ${shared_lib_path} EXT)
-				if(NOT EXTENSION OR EXTENSION STREQUAL "")#OK no extension defined we can apply
-					list(APPEND final_list_of_shared "${shared_lib_path}${RES_EXT}")
+				if(shared_lib_path MATCHES "^-l.*$" OR shared_lib_path MATCHES "^[^\\.]+\\.so(\\.[^\\.]+)*$")
+					list(APPEND final_list_of_shared "${shared_lib_path}")#keep the library path as is because it already contains the shared object extension or is a system library path
 				else()
-					list(APPEND final_list_of_shared "${shared_lib_path}")
+					get_filename_component(EXTENSION ${shared_lib_path} EXT)
+					if(NOT EXTENSION)#OK no extension defined we can apply
+						list(APPEND final_list_of_shared "${shared_lib_path}${RES_EXT}")
+					else()
+						list(APPEND final_list_of_shared "${shared_lib_path}")
+					endif()
 				endif()
 		endforeach()
 
