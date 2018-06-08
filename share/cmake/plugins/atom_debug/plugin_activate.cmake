@@ -20,13 +20,15 @@
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 macro(add_Debug_Target component folder)
-	set(component_config "\"${component}\":\n\tpath: \"$<TARGET_FILE:${component}-dbg>\"\n\tcwd: \"build\"\n")
+	
+	set(component_config "\"${component}\":\n\tpath: \"$<TARGET_FILE:${component}-dbg>\"\n\tcwd: \"build\"\n\tgdb_executable: \"${ATOM_DEBUG_GDB_EXE}\"\n")
 	set(DEBUG_CONFIG "${DEBUG_CONFIG}${component_config}")
 endmacro()
 
 ## main script
 if(CMAKE_BUILD_TYPE MATCHES Debug) #only generating in debug mode
 	set(DEBUG_CONFIG "")
+	set(ATOM_DEBUG_GDB_EXE "gdb" CACHE STRING "Define the gdb executable to use when running the targets") 
 
 	foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 		if(${PROJECT_NAME}_${component}_TYPE STREQUAL "APP")
