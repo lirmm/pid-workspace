@@ -5,10 +5,11 @@ include(Package_Definition NO_POLICY_SCOPE)
 
 PROJECT(@PACKAGE_NAME@)
 
-declare_PID_Package(	AUTHOR 		@PACKAGE_AUTHOR_NAME@
-			YEAR 		@PACKAGE_YEARS@ 
-			LICENSE 	@PACKAGE_LICENSE@
-			DESCRIPTION 	@PACKAGE_DESCRIPTION@
+declare_PID_Package(
+			AUTHOR      @PACKAGE_AUTHOR_NAME@
+			YEAR        @PACKAGE_YEARS@
+			LICENSE     @PACKAGE_LICENSE@
+			DESCRIPTION @PACKAGE_DESCRIPTION@
 		)
 
 set_PID_Package_Version(0 1)
@@ -16,4 +17,3 @@ set_PID_Package_Version(0 1)
 #now finding packages
 
 build_PID_Package()
-

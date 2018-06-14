@@ -32,5 +32,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL 
 	else()
 		set(CURRENT_ABI "CXX" CACHE INTERNAL "")
 	endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	set(CURRENT_ABI "CXX" CACHE INTERNAL "")
 # add new support for compiler or use CMake generic mechanism to do so
 endif()
