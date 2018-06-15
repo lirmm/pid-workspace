@@ -784,8 +784,14 @@ function(create_Imported_Shared_Library_Target package component mode)
 	if(NOT MODE_TO_IMPORT MATCHES mode)
 		get_Binary_Location(LOCATION_RES ${package} ${component} ${MODE_TO_IMPORT})#find the adequate release binary
 	endif()
-
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
+  if(WIN32)#in windows a shared librairy is specific because it has two parts : a dll and an interface static library
+    #we need to link againts the statis library while the "real" component is the dll
+    #so we transform the name of the dll object into a .lib object
+    string(REPLACE ".dll" ".lib" STATIC_LOCATION_RES "${LOCATION_RES}")
+    set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${STATIC_LOCATION_RES}")
+  else()#for UNIX system everything is automatic
+    set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
+  endif()
 
 	list_Public_Includes(INCLUDES ${package} ${component} ${MODE_TO_IMPORT})
 	list_Public_Links(LINKS ${package} ${component} ${MODE_TO_IMPORT})

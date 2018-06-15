@@ -117,7 +117,7 @@ set(${OPTS} ${FILTERED_OPTS} PARENT_SCOPE)
 endfunction(list_Public_Options)
 
 ### get the location of a given component resulting binary on the filesystem
-function( get_Binary_Location LOCATION_RES package component mode)
+function(get_Binary_Location LOCATION_RES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 is_Executable_Component(IS_EXE ${package} ${component})
 if(IS_EXE)
