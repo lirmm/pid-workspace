@@ -378,7 +378,8 @@ function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exporte
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
 
     if(WIN32)
-    	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH})
+    	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .dll
+    	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .lib
     else()
         install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH})
     endif()

@@ -34,6 +34,8 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 
 if(CURRENT_PLATFORM_OS STREQUAL "macosx")
     set(module_binary_name ${TARGET_MODULE}${TARGET_SUFFIX}.dylib)
+elseif(CURRENT_PLATFORM_OS STREQUAL "windows")
+    set(module_binary_name ${TARGET_MODULE}${TARGET_SUFFIX}.dll)
 else()
     set(module_binary_name ${TARGET_MODULE}${TARGET_SUFFIX}.so)
 endif()

@@ -739,6 +739,8 @@ function(create_Shared_Lib_Extension RES_EXT platform soname)
 	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
 	if(RES_OS STREQUAL macosx)
 		set(${RES_EXT} ".dylib" PARENT_SCOPE)
+	elseif(RES_OS STREQUAL windows)
+		set(${RES_EXT} ".dll" PARENT_SCOPE)
 	else()# Linux or any other standard UNIX system
 		if(soname)
 			set(${RES_EXT} ".so.${soname}" PARENT_SCOPE)

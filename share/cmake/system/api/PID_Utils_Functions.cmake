@@ -700,13 +700,16 @@ set(${SHARED} FALSE PARENT_SCOPE)
 get_filename_component(LIB_TYPE ${input_link} EXT)
 if(LIB_TYPE)
         if(APPLE)
-                if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
+            if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
 			set(${SHARED} TRUE PARENT_SCOPE)
 		endif()
 	elseif(UNIX)
-                if(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib
+            if(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib
 			set(${SHARED} TRUE PARENT_SCOPE)
 		endif()
+    elseif(WIN32)
+        if(LIB_TYPE MATCHES "^\\.dll(\\.[0-9]+)*$")#found shared lib
+        set(${SHARED} TRUE PARENT_SCOPE)
 	endif()
 else()
 	# no extenion may be possible with MACOSX frameworks
@@ -720,13 +723,17 @@ endfunction(is_Shared_Lib_With_Path)
 function(get_Link_Type RES_TYPE input_link)
 get_filename_component(LIB_TYPE ${input_link} EXT)
 if(LIB_TYPE)
-        if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
+    if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
 		set(${RES_TYPE} SHARED PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib (MACOSX)
 		set(${RES_TYPE} SHARED PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.a$")#found static lib (C)
 		set(${RES_TYPE} STATIC PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.la$")#found static lib (pkg-config)
+		set(${RES_TYPE} STATIC PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.lib$")#found lib (windows)
+		set(${RES_TYPE} STATIC PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.dll$")#found shared lib (windows)
 		set(${RES_TYPE} STATIC PARENT_SCOPE)
 	else()#unknown extension => linker option
 		set(${RES_TYPE} OPTION PARENT_SCOPE)
