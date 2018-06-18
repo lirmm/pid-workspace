@@ -166,14 +166,56 @@ endfunction(normalize_Version_String)
 
 ###
 function(create_Symlink path_to_old path_to_new)
-if(	EXISTS ${path_to_new} AND IS_SYMLINK ${path_to_new})
-	execute_process(#removing the existing symlink
-		COMMAND ${CMAKE_COMMAND} -E remove -f ${path_to_new}
-	)
-endif()
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
-)
+    set(oneValueArgs WORKING_DIR)
+    cmake_parse_arguments(OPT "" "${oneValueArgs}" "" ${ARGN} )
+    if(WIN32)
+        string(REGEX REPLACE "/" "\\\\" path_to_old ${path_to_old})
+        string(REGEX REPLACE "/" "\\\\" path_to_new ${path_to_new})
+        if(OPT_WORKING_DIR)
+            string(REGEX REPLACE "/" "\\\\" OPT_WORKING_DIR ${OPT_WORKING_DIR})
+        endif()
+
+        # check if target is a directory or a file to pass to proper argument to mklink
+        get_filename_component(DIR ${path_to_old} DIRECTORY)
+        if(${path_to_old} STREQUAL ${DIR})
+            set(mklink_option "/D")
+        else()
+            set(mklink_option "")
+        endif()
+    endif()
+
+    if(EXISTS ${OPT_WORKING_DIR}/${path_to_new} AND IS_SYMLINK ${OPT_WORKING_DIR}/${path_to_new})
+        #remove the existing symlink
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E remove -f ${OPT_WORKING_DIR}/${path_to_new}
+        )
+    endif()
+
+    if(WIN32)
+        if(OPT_WORKING_DIR)
+            execute_process(
+                COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
+                WORKING_DIRECTORY ${OPT_WORKING_DIR}
+                OUTPUT_QUIET
+            )
+        else()
+            execute_process(
+                COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
+                OUTPUT_QUIET
+            )
+        endif()
+    else()
+        if(OPT_WORKING_DIR)
+            execute_process(
+                COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
+                WORKING_DIRECTORY ${OPT_WORKING_DIR}
+            )
+        else()
+            execute_process(
+                COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
+            )
+        endif()
+    endif()
 endfunction(create_Symlink)
 
 ###
@@ -196,18 +238,20 @@ function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_f
         string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_TARGET ${path_to_target})
     endif()
 	install(CODE "
-                    if(EXISTS ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE})
-    		              execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
-        				                  WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-                    endif()
+                    include(${WORKSPACE_DIR}/share/cmake/system/api/PID_Utils_Functions.cmake NO_POLICY_SCOPE)
+                    # if(EXISTS ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE})
+    		        #       execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
+        			# 	                  WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+                    # endif()
                     message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
-                    if(WIN32)
-                        execute_process(COMMAND cmd.exe /c mklink ${W32_PATH_FILE} ${W32_PATH_TARGET}
-                                        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} OUTPUT_QUIET)
-                    else()
-                        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
-                                        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-                    endif()
+                    create_Symlink(${path_to_target} ${FULL_RPATH_DIR}/${A_FILE} WORKING_DIR ${CMAKE_INSTALL_PREFIX})
+                    # if(WIN32)
+                    #     execute_process(COMMAND cmd.exe /c mklink ${W32_PATH_FILE} ${W32_PATH_TARGET}
+                    #                     WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} OUTPUT_QUIET)
+                    # else()
+                    #     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
+                    #                     WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+                    # endif()
 	")# creating links "on the fly" when installing
 
 endfunction(install_Runtime_Symlink)
