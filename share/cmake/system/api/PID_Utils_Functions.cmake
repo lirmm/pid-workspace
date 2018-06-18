@@ -191,14 +191,23 @@ function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_f
 	get_filename_component(A_FILE "${path_to_target}" NAME)
 	set(FULL_RPATH_DIR ${path_to_rpath_folder}/${rpath_sub_folder})
 	install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
+    if(WIN32)
+        string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_FILE ${FULL_RPATH_DIR}/${A_FILE})
+        string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_TARGET ${path_to_target})
+    endif()
 	install(CODE "
-	              if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
-									execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
-									                 WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-		            endif()
-		            execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
-	                              WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-		            message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+                    if(EXISTS ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE})
+    		              execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
+        				                  WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+                    endif()
+                    message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+                    if(WIN32)
+                        execute_process(COMMAND cmd.exe /c mklink ${W32_PATH_FILE} ${W32_PATH_TARGET}
+                                        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} OUTPUT_QUIET)
+                    else()
+                        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
+                                        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+                    endif()
 	")# creating links "on the fly" when installing
 
 endfunction(install_Runtime_Symlink)
@@ -728,13 +737,13 @@ if(LIB_TYPE)
 		set(${RES_TYPE} SHARED PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib (UNIX)
 		set(${RES_TYPE} SHARED PARENT_SCOPE)
+    elseif(LIB_TYPE MATCHES "^\\.dll$")#found shared lib (windows)
+        set(${RES_TYPE} SHARED PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.a$")#found static lib (C)
 		set(${RES_TYPE} STATIC PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.la$")#found static lib (pkg-config)
 		set(${RES_TYPE} STATIC PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.lib$")#found lib (windows)
-		set(${RES_TYPE} STATIC PARENT_SCOPE)
-	elseif(LIB_TYPE MATCHES "^\\.dll$")#found shared lib (windows)
 		set(${RES_TYPE} STATIC PARENT_SCOPE)
 	else()#unknown extension => linker option
 		set(${RES_TYPE} OPTION PARENT_SCOPE)
