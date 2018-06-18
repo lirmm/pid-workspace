@@ -777,8 +777,11 @@ endfunction(create_Imported_Static_Library_Target)
 
 function(create_Imported_Shared_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
-	add_library(${package}-${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)#create the target for the imported library
-
+    if(WIN32)
+        add_library(${package}-${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL)#create the target for the imported library
+    else()
+    	add_library(${package}-${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)#create the target for the imported library
+    endif()
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})#find the binary to use depending on build mode
 	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
 	if(NOT MODE_TO_IMPORT MATCHES mode)
