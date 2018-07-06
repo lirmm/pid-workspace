@@ -743,12 +743,33 @@ function(create_Shared_Lib_Extension RES_EXT platform soname)
 		set(${RES_EXT} ".dll" PARENT_SCOPE)
 	else()# Linux or any other standard UNIX system
 		if(soname)
-			set(${RES_EXT} ".so.${soname}" PARENT_SCOPE)
+			string(REGEX MATCH "^\\.[0-9].*$" MATCHED ${soname})
+			if(MATCHED)#MATCH: the expression start with a dot
+				set(${RES_EXT} ".so${MATCHED}" PARENT_SCOPE)
+			else()#the expression starts with a number, simply add the dot
+				set(${RES_EXT} ".so.${soname}" PARENT_SCOPE)
+			endif()
 		else()
 			set(${RES_EXT} ".so" PARENT_SCOPE)
 		endif()
 	endif()
 endfunction(create_Shared_Lib_Extension)
+
+###
+function(shared_Library_Has_Extension HAS_EXTENSION library_path)
+	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
+	if(NOT RES_OS STREQUAL macosx
+		AND NOT RES_OS STREQUAL windows)
+		get_filename_component(EXTENSION ${library_path} EXT)#get the longest extension of the file
+		if(EXTENSION MATCHES "^\\.so(\\.[0-9]+)*$")
+			# this check is here to ensure that a library name ending with a dot followed by any characters
+			# will not be considered as a library extension (e.g. example for which this check has been done : libusb-1.0)
+			set(${HAS_EXTENSION} TRUE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+	set(${HAS_EXTENSION} FALSE PARENT_SCOPE)
+endfunction(shared_Library_Has_Extension)
 
 ###
 function(generate_Description_For_External_Component_Internal_Dependency file_for_version package version component dependency)
@@ -859,11 +880,12 @@ function(generate_Description_For_External_Component file_for_version package pl
 		create_Shared_Lib_Extension(RES_EXT ${platform} "${USE_SONAME}")#create the soname extension
 		set(final_list_of_shared)#add the adequate extension name depending on the platform
 		foreach(shared_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
-				if(shared_lib_path MATCHES "^-l.*$" OR shared_lib_path MATCHES "^[^\\.]+\\.so(\\.[^\\.]+)*$")
+				if(shared_lib_path MATCHES "^-l.*$"
+					OR shared_lib_path MATCHES "^[^\\.]+\\.so(\\.[^\\.]+)*$")
 					list(APPEND final_list_of_shared "${shared_lib_path}")#keep the library path as is because it already contains the shared object extension or is a system library path
 				else()
-					get_filename_component(EXTENSION ${shared_lib_path} EXT)
-					if(NOT EXTENSION)#OK no extension defined we can apply
+					shared_Library_Has_Extension(HAS_EXTENSION ${shared_lib_path})
+					if(NOT HAS_EXTENSION)#OK no extension defined we can apply
 						list(APPEND final_list_of_shared "${shared_lib_path}${RES_EXT}")
 					else()
 						list(APPEND final_list_of_shared "${shared_lib_path}")
