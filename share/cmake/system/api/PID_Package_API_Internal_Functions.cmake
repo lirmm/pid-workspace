@@ -977,7 +977,7 @@ endif()
 #print_Component_Variables()
 
 # dealing with plugins at the end of the configuration process
-manage_Plugins()
+manage_Plugins_In_Package()
 reset_Removed_Examples_Build_Option()
 finish_Progress(${GLOBAL_PROGRESS_VAR}) #managing the build from a global point of view
 endmacro(build_Package)

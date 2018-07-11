@@ -402,6 +402,19 @@ function(list_Version_Subdirectories result curdir)
 endfunction(list_Version_Subdirectories)
 
 ###
+function(get_Greater_Version GREATER_ONE list_of_versions)
+  set(version_string_curr)
+  foreach(version IN LISTS list_of_versions)
+    if(NOT version_string_curr)
+        set(version_string_curr ${version})
+    elseif(version_string_curr VERSION_LESS ${version})
+      set(version_string_curr ${version})
+    endif()
+  endforeach()
+  set(${GREATER_ONE} ${version_string_curr} PARENT_SCOPE)
+endfunction(get_Greater_Version)
+
+###
 function(list_Platform_Symlinks result curdir)
 	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
 	set(dirlist "")

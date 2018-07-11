@@ -919,7 +919,7 @@ macro(exitFindScript package message_to_send)
 	endif()
 endmacro(exitFindScript)
 
-### macro to be called in find script of packages. Implement the finding the standard way in CMake.
+### macro to be called in find script of packages. Implement the finding process the standard way in CMake.
 macro(finding_Package package)
 set(${package}_FOUND FALSE CACHE INTERNAL "")
 
@@ -939,7 +939,7 @@ if(EXIST)
 		if(${package}_FIND_VERSION_EXACT) #using a specific version (only patch number can be adapted)
 			check_Exact_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR} "${${package}_FIND_VERSION_PATCH}")
 		else() #using the best version as regard of version constraints (only minor and patch numbers can be adapted)
-            check_Best_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR} "${${package}_FIND_VERSION_PATCH}")
+      check_Best_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR} "${${package}_FIND_VERSION_PATCH}")
 		endif()
 	else() #no specific version targetted using last available version (major minor and patch numbers can be adapted)
 		check_Last_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH})
