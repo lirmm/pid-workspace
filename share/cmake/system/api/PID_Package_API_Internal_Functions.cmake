@@ -683,6 +683,7 @@ resolve_Compile_Options_For_Targets(${CMAKE_BUILD_TYPE})
 ##########################################################
 generate_Package_Readme_Files() # generating and putting into source directory the readme file used by gitlab + in build tree the api doc welcome page (contain the same information)
 generate_Package_License_File() # generating and putting into source directory the file containing license info about the package
+generate_Package_Install_Script() # generating and putting into source directory the file and folder containing stand alone install scripts
 generate_Find_File() # generating/installing the generic cmake find file for the package
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
 generate_API() #generating the API documentation configuration file and the rule to launch doxygen and install the doc
@@ -2001,3 +2002,14 @@ else()
 endif()
 
 endfunction(declare_External_Wrapper_Component_Dependency)
+
+function(generate_Package_Install_Script)
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/share/install)
+	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/install DESTINATION ${CMAKE_SOURCE_DIR}/share)
+	return()
+endif()
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/share/install/standlone_install.sh)
+	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/install/standalone_install.sh DESTINATION ${CMAKE_SOURCE_DIR}/share/install)
+endif()
+#TODO copy .bat file also when written
+endfunction(generate_Package_Install_Script)
