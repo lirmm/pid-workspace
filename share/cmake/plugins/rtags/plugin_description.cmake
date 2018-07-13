@@ -19,4 +19,8 @@
 
 set(rtags_PLUGIN_DESCRIPTION "use this plugin to generate a compilation database and load it with rtags" CACHE INTERNAL "")
 
-set(rtags_PLUGIN_ACTIVATION_MESSAGE "plugin rtags: generating compilation databases (comoile_commands.json)" CACHE INTERNAL "")
+set(rtags_PLUGIN_ACTIVATION_MESSAGE "generating compilation databases for rtags ..." CACHE INTERNAL "")
+
+set(rtags_PLUGIN_ACTIVATED_MESSAGE "automatically generating compilation databases (compile_commands.json files) for packages, used by rtags program to find packages artefacts" CACHE INTERNAL "")
+
+set(rtags_PLUGIN_RESIDUAL_FILES "" CACHE INTERNAL "")#no residual file live in the source tree

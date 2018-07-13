@@ -56,10 +56,10 @@ function(generate_Pkg_Config_Files_For_Dependencies path_to_build_folder package
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode}) #getting mode info that will be used for generating adequate names
   foreach(dep_package IN LISTS ${package}_${library_name}_DEPENDENCIES${VAR_SUFFIX})
     foreach(dep_component IN LISTS ${package}_${library_name}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-      if(NOT EXISTS ${WORKSPACE_DIR}/pid/share/pkgconfig/${dep_package}_${${dep_package}_VERSION_STRING}_${dep_component}${TARGET_SUFFIX}.pc)
-        #if the .pc file describing the dependency version does not exist => generate it
+      # if(NOT EXISTS ${WORKSPACE_DIR}/pid/share/pkgconfig/${dep_package}_${${dep_package}_VERSION_STRING}_${dep_component}${TARGET_SUFFIX}.pc)
+        #generate the pkg-config file to be sure the adeqaute version used locally is existing
         generate_Pkg_Config_Files(${path_to_build_folder} ${dep_package} ${platform} ${${dep_package}_VERSION_STRING} ${dep_component} ${mode})
-      endif()
+      # endif()
     endforeach()
   endforeach()
 endfunction(generate_Pkg_Config_Files_For_Dependencies)
@@ -82,14 +82,14 @@ macro(install_Pkg_Config_File path_to_build_folder package platform version libr
   endif()
   #generate a temporary file with the adequate pkg-config format but whose content is not already generated from cmake
   configure_file("${WORKSPACE_DIR}/share/cmake/plugins/pkg_config/pkg_config.pc.pre.in"
-  "${path_to_build_folder}/${package}_${version}_${library_name}${TARGET_SUFFIX}.pre.pc" @ONLY)
+  "${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pre.pc" @ONLY)
   #the final generation is performed after evaluation of generator expression (this is the case for currently build package only, not for dependencies for which expression have already been resolved)
-  file(GENERATE OUTPUT ${path_to_build_folder}/${package}_${version}_${library_name}${TARGET_SUFFIX}.pc
-                INPUT ${path_to_build_folder}/${package}_${version}_${library_name}${TARGET_SUFFIX}.pre.pc)
+  file(GENERATE OUTPUT ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pc
+                INPUT ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pre.pc)
 	#finally create the install target for the .pc file corresponding to the library
 	set(PATH_TO_INSTALL_FOLDER ${WORKSPACE_DIR}/pid/share/pkgconfig) #put everythng in a global folder so that adding this folder to PKG_CONFIG_PATH will be a quite easy task
   install(
-		FILES ${path_to_build_folder}/${package}_${version}_${library_name}${TARGET_SUFFIX}.pc
+		FILES ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pc
 		DESTINATION ${PATH_TO_INSTALL_FOLDER} #put generated .pc files into a unique folder in install tree of the package
 		PERMISSIONS OWNER_READ GROUP_READ WORLD_READ OWNER_WRITE)
 endmacro(install_Pkg_Config_File)
@@ -118,16 +118,16 @@ macro(setup_Pkg_Config_Variables package platform version library_name mode)
 		set(_PKG_CONFIG_PACKAGE_URL_)
 	endif()
 
-	#set the name
-	set(_PKG_CONFIG_COMPONENT_NAME_ "${package}_${library_name}${TARGET_SUFFIX}")
-
+	#set the name (just something that is human readable so keep only the name of the library)
+	set(_PKG_CONFIG_COMPONENT_NAME_ "${library_name}${TARGET_SUFFIX}")
+  set(_PKG_CONFIG_COMPONENT_DESCRIPTION_ "library ${library_name} from package ${package} (in ${mode} mode)")
 	#set the description
 	if(${package}_${library_name}_DESCRIPTION)
-		set(_PKG_CONFIG_COMPONENT_DESCRIPTION_ "${${package}_${library_name}_DESCRIPTION}")
+		set(_PKG_CONFIG_COMPONENT_DESCRIPTION_ "${_PKG_CONFIG_COMPONENT_DESCRIPTION_}: ${${package}_${library_name}_DESCRIPTION}")
 	elseif(${package}_DESCRIPTION)
-		set(_PKG_CONFIG_COMPONENT_DESCRIPTION_ "library ${library_name} from project ${package}: ${${package}_DESCRIPTION}")
+		set(_PKG_CONFIG_COMPONENT_DESCRIPTION_ "${_PKG_CONFIG_COMPONENT_DESCRIPTION_}: ${${package}_DESCRIPTION}")
 	else()
-		set(_PKG_CONFIG_COMPONENT_DESCRIPTION_)
+		set(_PKG_CONFIG_COMPONENT_DESCRIPTION_ "${_PKG_CONFIG_COMPONENT_DESCRIPTION_}")
 	endif()
 
 	#2. Set build information about the library
@@ -190,6 +190,14 @@ macro(setup_Pkg_Config_Variables package platform version library_name mode)
     endforeach()
   endif()
 
+  #preparing to decide if libs will be generated as public or private
+  if( ${package}_${library_name}_TYPE STREQUAL "HEADER" #header and static libraries always export all their dependencies
+    OR ${package}_${library_name}_TYPE STREQUAL "STATIC")
+    set(FORCE_EXPORT TRUE)
+  else()
+    set(FORCE_EXPORT FALSE)
+  endif()
+
 	#add to private libraries the private linker options used for that library
   if(${package}_${library_name}_PRIVATE_LINKS${VAR_SUFFIX})
     resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${${package}_${library_name}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})
@@ -197,12 +205,24 @@ macro(setup_Pkg_Config_Variables package platform version library_name mode)
       if(IS_ABSOLUTE ${link}) #this is an absolute path
         file(RELATIVE_PATH relative_link ${_PKG_CONFIG_WORKSPACE_GLOBAL_PATH_} ${link})
         if(relative_link)#relative relation found between the file and the workspace
-          set(_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_ "${_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_} ${LIBRARY_KEYWORD}\${global}/${relative_link}")
+          if(FORCE_EXPORT)
+            set(_PKG_CONFIG_COMPONENT_LIBS_ "${_PKG_CONFIG_COMPONENT_LIBS_} ${LIBRARY_KEYWORD}\${global}/${relative_link}")
+          else()
+            set(_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_ "${_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_} ${LIBRARY_KEYWORD}\${global}/${relative_link}")
+          endif()
         else()
-          set(_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_ "${_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_} ${LIBRARY_KEYWORD}${link}")#using adequate pkg-config keyword
+          if(FORCE_EXPORT)
+            set(_PKG_CONFIG_COMPONENT_LIBS_ "${_PKG_CONFIG_COMPONENT_LIBS_} ${LIBRARY_KEYWORD}${link}")
+          else()
+            set(_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_ "${_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_} ${LIBRARY_KEYWORD}${link}")#using adequate pkg-config keyword
+          endif()
         endif()
       else()#this is already an option so let it "as is"
-        set(_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_ "${_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_} ${link}")
+        if(FORCE_EXPORT)
+          set(_PKG_CONFIG_COMPONENT_LIBS_ "${_PKG_CONFIG_COMPONENT_LIBS_} ${link}")
+        else()
+          set(_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_ "${_PKG_CONFIG_COMPONENT_LIBS_PRIVATE_} ${link}")
+        endif()
       endif()
   	endforeach()
   endif()
@@ -213,7 +233,7 @@ macro(setup_Pkg_Config_Variables package platform version library_name mode)
   #3.a manage internal dependencies
   foreach(a_int_dep IN LISTS ${package}_${library_name}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
     set(DEPENDENT_PKG_MODULE_NAME "${package}_${a_int_dep}${TARGET_SUFFIX} = ${version}")# STRONG version constraint between component of the same package
-    if(${package}_${library_name}_INTERNAL_EXPORT_${a_int_dep}${VAR_SUFFIX})
+    if( FORCE_EXPORT OR ${package}_${library_name}_INTERNAL_EXPORT_${a_int_dep}${VAR_SUFFIX}) #otherwise shared libraries export their dependencies if it is explicitly specified (according to pkg-config doc)
         if(_PKG_CONFIG_COMPONENT_REQUIRES_)
           set(_PKG_CONFIG_COMPONENT_REQUIRES_ "${_PKG_CONFIG_COMPONENT_REQUIRES_}, ${DEPENDENT_PKG_MODULE_NAME}")
         else()
@@ -233,7 +253,7 @@ macro(setup_Pkg_Config_Variables package platform version library_name mode)
   foreach(dep_package IN LISTS ${package}_${library_name}_DEPENDENCIES${VAR_SUFFIX})
     foreach(dep_component IN LISTS ${package}_${library_name}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
       set(DEPENDENT_PKG_MODULE_NAME "${dep_package}_${dep_component}${TARGET_SUFFIX} >= ${${package}_DEPENDENCY_${dep_package}_VERSION${VAR_SUFFIX}}") # version constraint here is less STRONG as any version greater than the one specified should work
-      if(${package}_${library_name}_EXPORT_${dep_package}_${dep_component})
+      if( FORCE_EXPORT OR ${package}_${library_name}_EXPORT_${dep_package}_${dep_component})#otherwise shared libraries export their dependencies in it is explicitly specified (according to pkg-config doc)
         if(_PKG_CONFIG_COMPONENT_REQUIRES_)
           set(_PKG_CONFIG_COMPONENT_REQUIRES_ "${_PKG_CONFIG_COMPONENT_REQUIRES_}, ${DEPENDENT_PKG_MODULE_NAME}")
         else()

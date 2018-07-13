@@ -1601,9 +1601,9 @@ function(manage_Plugins)
 register_Available_Plugins()
 
 if(WORKSPACE_ACTIVE_PLUGINS)
-	message("[PID] Active plugins:")
+	message("[PID] INFO : Active plugins")
 	foreach(plugin IN LISTS WORKSPACE_ACTIVE_PLUGINS)
-		message(" ${plugin}")
+		message("  + ${plugin} : ${${plugin}_PLUGIN_ACTIVATED_MESSAGE}")
 	endforeach()
 endif()
 

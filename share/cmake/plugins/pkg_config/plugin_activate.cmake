@@ -25,5 +25,3 @@ foreach(library IN LISTS ${PROJECT_NAME}_COMPONENTS_LIBS)
 		generate_Pkg_Config_Files(${CMAKE_BINARY_DIR}/share ${PROJECT_NAME} ${CURRENT_PLATFORM} ${${PROJECT_NAME}_VERSION} ${library} ${CMAKE_BUILD_TYPE})
 	endif()
 endforeach()
-
-message("[PID] INFO : to use pkg-config for retrieving generated libraries please set your environment variable PKG_CONFIG_PATH to ${WORKSPACE_DIR}/pid/share/pkgconfig (e.g. export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${WORKSPACE_DIR}/pid/share/pkgconfig)")

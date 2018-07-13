@@ -19,4 +19,6 @@
 
 set(IWYU_PLUGIN_DESCRIPTION "use this plugin to find unused include files (not 100% accurate)" CACHE INTERNAL "")
 
-set(IWYU_PLUGIN_ACTIVATION_MESSAGE "plugin IWYU: listing unused headers during compilation" CACHE INTERNAL "")
+set(IWYU_PLUGIN_ACTIVATION_MESSAGE "listing unused headers during compilation..." CACHE INTERNAL "")
+
+set(IWYU_PLUGIN_ACTIVATED_MESSAGE "listing unused headers during compilation of packages." CACHE INTERNAL "")

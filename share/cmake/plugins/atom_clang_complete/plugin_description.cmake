@@ -19,6 +19,8 @@
 
 set(atom_clang_complete_PLUGIN_DESCRIPTION "use this plugin to generate clang complete configuration files to be used with the clang-complete atom plugin" CACHE INTERNAL "")
 
-set(atom_clang_complete_PLUGIN_ACTIVATION_MESSAGE "plugin atom_clang_complete: generating .clang_ complete configuration files" CACHE INTERNAL "")
+set(atom_clang_complete_PLUGIN_ACTIVATION_MESSAGE "generating linter configuration files..." CACHE INTERNAL "")
+
+set(atom_clang_complete_PLUGIN_ACTIVATED_MESSAGE "automatically generating .clang_ complete configuration files usad by atom clang complete atom plugin (c++ linter)." CACHE INTERNAL "")
 
 set(atom_clang_complete_PLUGIN_RESIDUAL_FILES ".clang_complete" CACHE INTERNAL "")
