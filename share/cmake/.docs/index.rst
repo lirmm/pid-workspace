@@ -12,6 +12,7 @@ Contents
    :maxdepth: 3
 
    /pages/Package_API.rst
+   /pages/Wrapper_API.rst
    /pages/Package_Files.rst
    /pages/internal.rst
    /pages/developers.rst

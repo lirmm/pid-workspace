@@ -41,7 +41,66 @@ include(CMakeParseArguments)
 ######################## API to be used in wrapper description ##########################
 #########################################################################################
 
-### API : declare_PID_Wrapper(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... LICENSE license [ADDRESS address] DESCRIPTION ...)
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |declare_PID_Wrapper| replace:: ``declare_PID_Wrapper``
+#  .. _declare_PID_Wrapper:
+#
+#  declare_PID_Wrapper
+#  -------------------
+#
+#   .. command:: declare_PID_Wrapper(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
+#
+#      Declare the current CMake project as a PID wrapper for a given external package with specific meta-information passed as parameter.
+#
+#     .. rubric:: Required parameters
+#
+#     :AUTHOR <name>: Defines the name of the reference author.
+#
+#     :YEAR <dates>: Reflects the lifetime of the wrapper, e.g. ``YYYY-ZZZZ`` where ``YYYY`` is the creation year and ``ZZZZ`` the latest modification date.
+#
+#     :LICENSE <license name>: The name of the license applying to the wrapper. This must match one of the existing license file in the ``licenses`` directory of the workspace. This license applies to the wrapper and not to the original project.
+#
+#     :DESCRIPTION <description>: A short description of the package usage and utility.
+#
+#     .. rubric:: Optional parameters
+#
+#     :INSTITUTION <institutions>: Define the institution(s) to which the reference author belongs.
+#
+#     :MAIL <e-mail>: E-mail of the reference author.
+#
+#     :ADDRESS <url>: The url of the wrapper's official repository. Must be set once the package is published.
+#
+#     :PUBLIC_ADDRESS <url>: Can be used to provide a public counterpart to the repository `ADDRESS`
+#
+#     :README <path relative to share folder>: Used to define a user-defined README file for the package.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the root ``CMakeLists.txt`` file of the wrapper before any other call to the PID Wrapper API.
+#        - It must be called **exactly once**.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        Initialization of the wrapper's internal state. After this call the its content can be defined.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        declare_PID_Wrapper(
+#		         AUTHOR Robin Passama
+#		         INSTITUTION LIRMM
+#		         YEAR 2013
+#		         LICENSE CeCILL-C
+#		         ADDRESS git@gite.lirmm.fr:passama/a-given-wrapper.git
+# 		       DESCRIPTION "an example PID wrapper"
+#        )
+#
 macro(declare_PID_Wrapper)
 set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
@@ -73,7 +132,48 @@ declare_Wrapper(	"${DECLARE_PID_WRAPPER_AUTHOR}" "${DECLARE_PID_WRAPPER_INSTITUT
 		"${DECLARE_PID_WRAPPER_DESCRIPTION}" "${DECLARE_PID_WRAPPER_README}")
 endmacro(declare_PID_Wrapper)
 
-### feed information about the original projet
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |define_PID_Wrapper_Original_Project_Info| replace:: ``define_PID_Wrapper_Original_Project_Info``
+#  .. _define_PID_Wrapper_Original_Project_Info:
+#
+#  define_PID_Wrapper_Original_Project_Info
+#  ----------------------------------------
+#
+#   .. command:: define_PID_Wrapper_Original_Project_Info(AUTHORS ... LICENSE ... URL ...)
+#
+#      Set the meta information about original project being wrapped by current project.
+#
+#     .. rubric:: Required parameters
+#
+#     :AUTHORS <string>: Defines who are the authors of the original project.
+#
+#     :LICENSE <string>: The license that applies to the original project content.
+#
+#     :URL <url>: this is the index URL of the original project.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the root CMakeLists.txt file of the wrapper, after declare_PID_Wrapper.
+#        - It must be called **exactly once**.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        Sets the meta-information about original project.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        define_PID_Wrapper_Original_Project_Info(
+#	           AUTHORS "Boost.org contributors"
+#	           LICENSES "Boost license"
+#            URL http://www.boost.org)
+#
 macro(define_PID_Wrapper_Original_Project_Info)
 	set(oneValueArgs URL)
 	set(multiValueArgs AUTHORS LICENSES)
@@ -90,7 +190,44 @@ macro(define_PID_Wrapper_Original_Project_Info)
 	define_Wrapped_Project("${DEFINE_WRAPPED_PROJECT_AUTHORS}" "${DEFINE_WRAPPED_PROJECT_LICENSES}"  "${DEFINE_WRAPPED_PROJECT_URL}")
 endmacro(define_PID_Wrapper_Original_Project_Info)
 
-### API : add_PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |add_PID_Wrapper_Author| replace:: ``add_PID_Wrapper_Author``
+#  .. _add_PID_Wrapper_Author:
+#
+#  add_PID_Wrapper_Author
+#  ----------------------
+#
+#   .. command:: add_PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
+#
+#      Add an author to the list of authors of the wrapper.
+#
+#     .. rubric:: Required parameters
+#
+#     :AUTHOR <string>: Name of the author
+#
+#     .. rubric:: Optional parameters
+#
+#     :INSTITUTION <institutions>: the institution(s) to which the author belongs.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the root CMakeLists.txt file of the package, after declare_PID_Wrapper and before build_PID_Wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        Add another author to the list of authors of the wrapper.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        add_PID_Wrapper_Author(AUTHOR Another Writter INSTITUTION LIRMM)
+#
 macro(add_PID_Wrapper_Author)
 set(multiValueArgs AUTHOR INSTITUTION)
 cmake_parse_arguments(ADD_PID_WRAPPER_AUTHOR "" "" "${multiValueArgs}" ${ARGN} )
@@ -100,7 +237,40 @@ endif()
 add_Author("${ADD_PID_WRAPPER_AUTHOR_AUTHOR}" "${ADD_PID_WRAPPER_AUTHOR_INSTITUTION}")
 endmacro(add_PID_Wrapper_Author)
 
-### API : add_PID_Package_Category(category_path)
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |add_PID_Wrapper_Category| replace:: ``add_PID_Wrapper_Category``
+#  .. _add_PID_Wrapper_Category:
+#
+#  add_PID_Wrapper_Category
+#  ------------------------
+#
+#   .. command:: add_PID_Wrapper_Category(...)
+#
+#      Declare that the current wrapper generates external packages that belong to a given category.
+#
+#     .. rubric:: Required parameters
+#
+#     :<string>: Name of the category
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the root CMakeLists.txt file of the wrapper, after declare_PID_Wrapper and before build_PID_Wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        Register the wrapper has being member of the given (sub)category. This information will be added to the wrapper reference file when it is generated.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        add_PID_Wrapper_Category(example/packaging)
+#
 macro(add_PID_Wrapper_Category)
 if(NOT ${ARGC} EQUAL 1)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the add_PID_Wrapper_Category command requires one string argument of the form <category>[/subcategory]*.")
@@ -108,8 +278,49 @@ endif()
 add_Category("${ARGV0}")
 endmacro(add_PID_Wrapper_Category)
 
-
-### API : add_PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |define_PID_Wrapper_User_Option| replace:: ``define_PID_Wrapper_User_Option``
+#  .. _define_PID_Wrapper_User_Option:
+#
+#  define_PID_Wrapper_User_Option
+#  ------------------------------
+#
+#   .. command:: define_PID_Wrapper_User_Option(OPTION ... TYPE ...[DESCRIPTION ...])
+#
+#      Declare that the current wrapper generates external packages that belong to a given category.
+#
+#     .. rubric:: Required parameters
+#
+#     :OPTION <name>:  string defining the name of the user option. This name can then be used in deployment scripts.
+#     :TYPE <type of the cmake option>:  ype of the option, to be chosen between: FILEPATH (File chooser dialog), PATH (Directory chooser dialog), STRING (Arbitrary string), BOOL.
+#
+#     .. rubric:: Optional parameters
+#
+#     :DESCRIPTION <string>: string describing what this option is acting on.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the root CMakeLists.txt file of the wrapper, after declare_PID_Wrapper and before build_PID_Wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        Register a new user option into the wrapper. This user option will be used only in deployment scripts.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        define_PID_Wrapper_User_Option(
+#	          OPTION BUILD_WITH_CUDA_SUPPORT
+#	          TYPE BOOL
+#	          DEFAULT OFF
+#	          DESCRIPTION "set to ON to enable CUDA support during build")
+#
 macro(define_PID_Wrapper_User_Option)
 set(oneValueArgs OPTION TYPE DESCRIPTION)
 set(multiValueArgs DEFAULT)
@@ -126,7 +337,56 @@ endif()
 set_Wrapper_Option("${DEFINE_PID_WRAPPER_USER_OPTION_OPTION}" "${DEFINE_PID_WRAPPER_USER_OPTION_TYPE}" "${DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT}" "${DEFINE_PID_WRAPPER_USER_OPTION_DESCRIPTION}")
 endmacro(define_PID_Wrapper_User_Option)
 
-### API : declare_PID_Wrapper_Publishing()
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |declare_PID_Wrapper_Publishing| replace:: ``declare_PID_Wrapper_Publishing``
+#  .. _declare_PID_Wrapper_Publishing:
+#
+#  declare_PID_Wrapper_Publishing
+#  ------------------------------
+#
+#   .. command:: declare_PID_Wrapper_Publishing(PROJECT ... GIT|FRAMEWORK ... [OPTIONS])
+#
+#      Declare that the current wrapper generates external packages that belong to a given category.
+#
+#     .. rubric:: Required parameters
+#
+#     :PROJECT <url>: This argument tells where to fing the official repository project page of the wrapper. This is used to reference the wrapper project into the static site.
+#
+#     .. rubric:: Optional parameters
+#
+#     :ALLOWED_PLATFORMS <list of platforms>: This argument limits the set of platforms used for CI, only platforms specified will be managed in the CI process. WARNING: Due to gitlab limitation (only one pipeline can be defined) only ONE platform is allowed at the moment.
+#     :DESCRIPTION <string>: This is a long(er) description of the wrapper that will be used for its documentation in static site.
+#     :PUBLISH_BINARIES:  If this argument is used then the wrapper will automatically publish new binary versions to the publication site.
+#     :FRAMEWORK <name of the framework>:  If this argument is set, then it means that the wrapper belongs to a framework. It will so contribute to the framework site. You must use either this argument or GIT one.
+#     :GIT <repository address>: This is the address of the lone static site repository for the wrapper. It is used to automatically clone/update the static site of the wrapper. With this option the wrapper will not contribute to a framework but will have its own isolated deployment. You must use either this argument or FRAMEWORK one.
+#     :PAGE <url>:  This is the online URL of the static site index page. Must be used if you use the GIT argument.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the root CMakeLists.txt of the package, after declare_PID_Wrapper and before build_PID_Wrapper.
+#        - This function must be called it has to be called after any other following functions: add_PID_Wrapper_Author, add_PID_Wrapper_Category and define_PID_Wrapper_Original_Project_Info.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        - Generate or update a static site for the project. This static site locally resides in a dedicated git repository. If the project belongs to no framework then it has its lone static site that can be found in <pid-workspace>/sites/packages/<wrapper name>. If it belongs to a framework, the framework repository can be found in <pid-workspace>/sites/frameworks/<framework name>. In this later case, the wrapper only contributes to its own related content not the overall content of the framework.
+#        - Depending on options it can also deploy binaries for target platform into the static site repository (framework or lone static site).
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        declare_PID_Wrapper_Publishing(
+#              PROJECT https://gite.lirmm.fr/pid/boost
+#			         FRAMEWORK pid
+#			         DESCRIPTION boost is a PID wrapper for external project called Boost. Boost provides many libraries and templates to ease development in C++.
+#			         PUBLISH_BINARIES
+#			         ALLOWED_PLATFORMS x86_64_linux_abi11)
+#
 macro(declare_PID_Wrapper_Publishing)
 set(optionArgs PUBLISH_BINARIES)
 set(oneValueArgs PROJECT FRAMEWORK GIT PAGE)
@@ -188,11 +448,38 @@ if(DECLARE_PID_WRAPPER_PUBLISHING_PUBLISH_BINARIES)
 else()
 	publish_Binaries(FALSE)
 endif()
-
 endmacro(declare_PID_Wrapper_Publishing)
 
-### build the wrapper ==> providing commands used to deploy a specific version of the external package
-### make build version=1.55.0 (download, configure, compile and install the adequate version)
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |build_PID_Wrapper| replace:: ``build_PID_Wrapper``
+#  .. _build_PID_Wrapper:
+#
+#  build_PID_Wrapper
+#  -------------------
+#
+#   .. command:: build_PID_Wrapper()
+#
+#      Configure the PID wrapper according to overall information.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        This function must be the last one called in the root CMakeList.txt file of the wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        This function generates configuration files, manage the generation of the global build process and call CMakeLists.txt files of version folders contained in subfolder src.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        build_PID_Wrapper()
+#
 macro(build_PID_Wrapper)
 if(${ARGC} GREATER 0)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Wrapper command requires no arguments.")
@@ -205,7 +492,50 @@ endmacro(build_PID_Wrapper)
 ###############To be used in subfolders of the src folder ##############################
 ########################################################################################
 
-#	memorizing a new known version (the target folder that can be found in src folder contains the script used to install the project)
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |add_PID_Wrapper_Known_Version| replace:: ``add_PID_Wrapper_Known_Version``
+#  .. _add_PID_Wrapper_Known_Version:
+#
+#  add_PID_Wrapper_Known_Version
+#  -----------------------------
+#
+#   .. command:: add_PID_Wrapper_Known_Version(VERSION ... DEPLOY ... [OPTIONS])
+#
+#      Declare a new version of the original project wrapped into PID system.
+#
+#     .. rubric:: Required parameters
+#
+#     :VERSION <number>: tells which version of the external package is being wrapped. The version number must exactly match the name of the folder containing the CMakeLists.txt that does this call.
+#     :DEPLOY <path to deploy script>: This is the path, relative to the current folder, to the deploy script used to build and install the external package version. Script must be a cmake module file.
+#
+#     .. rubric:: Optional parameters
+#
+#     :POSTINSTALL <path to install script>: This is the path, relative to the current folder, to the install script that will be run after external package version has been installed into the workspace, to perform additionnal configuration steps. Script is a cmake module file.
+#     :COMPATIBILITY <version number>: define which previous version is compatible with this current version, if any. Compatible simply means that this current version can be used instead of the previous one without any restriction.
+#     :SONAME <version number>: (useful on UNIX only) Specify which soname will be given by default to all shared libraries defined by the wrapper.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be the first one called in the CMakeList.txt file of a version folder.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        Configure information about a specific version of the external package.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        add_PID_Wrapper_Known_Version(VERSION 1.55.0 DEPLOY deploy.cmake
+#                              SONAME 1.55.0 #define the extension name to use for shared objects
+#        )
+#
+#
 macro(add_PID_Wrapper_Known_Version)
 set(optionArgs)
 set(oneValueArgs VERSION DEPLOY COMPATIBILITY SONAME POSTINSTALL)
@@ -268,7 +598,44 @@ endif()
 add_Known_Version("${version}" "${script_file}" "${compatible_with_version}" "${ADD_PID_WRAPPER_KNOWN_VERSION_SONAME}" "${post_install_script}")
 endmacro(add_PID_Wrapper_Known_Version)
 
-### dependency to OS configuration
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |declare_PID_Wrapper_Platform_Configuration| replace:: ``declare_PID_Wrapper_Platform_Configuration``
+#  .. _declare_PID_Wrapper_Platform_Configuration:
+#
+#  declare_PID_Wrapper_Platform_Configuration
+#  ------------------------------------------
+#
+#   .. command:: declare_PID_Wrapper_Platform_Configuration(CONFIGURATION ... [PLATFORM ...])
+#
+#      Declare a platform configuration constraint for the current version of the external project being described.
+#
+#     .. rubric:: Required parameters
+#
+#     :CONFIGURATION <list of configurations>: tells which version of the external package is being wrapped. The version number must exactly match the name of the folder containing the CMakeLists.txt that does this call.
+#
+#     .. rubric:: Optional parameters
+#
+#     :PLATFORM <platform name>: Use to apply the configuration constraints only to the target platform.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the CMakeList.txt file of a version folder after add_PID_Wrapper_Known_Version.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         - Configure the check of a set of platform configurations that will be perfomed when the given wrapper version is built.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        declare_PID_Wrapper_Platform_Configuration(CONFIGURATION posix)
+#
 macro(declare_PID_Wrapper_Platform_Configuration)
 set(oneValueArgs PLATFORM)
 set(multiValueArgs CONFIGURATION)
@@ -280,7 +647,46 @@ endif()
 declare_Wrapped_Configuration("${DECLARE_PID_WRAPPER_PLATFORM_PLATFORM}" "${DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION}")
 endmacro(declare_PID_Wrapper_Platform_Configuration)
 
-### dependency to another external package
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |declare_PID_Wrapper_External_Dependency| replace:: ``declare_PID_Wrapper_External_Dependency``
+#  .. _declare_PID_Wrapper_External_Dependency:
+#
+#  declare_PID_Wrapper_External_Dependency
+#  ---------------------------------------
+#
+#   .. command:: declare_PID_Wrapper_External_Dependency(CONFIGURATION ... [PLATFORM ...])
+#
+#     Declare a dependency between the currently described version of the external package and another external package.
+#
+#     .. rubric:: Required parameters
+#
+#     :PACKAGE <string>: defines the unique identifier of the required package.
+#
+#     .. rubric:: Optional parameters
+#
+#     :VERSION <version string>: dotted notation of a version, representing which version of the external package is required. May be use many times.
+#     :EXACT: use to specify if the following version must be exac. May be used for earch VERSION specification.
+#     :COMPONENTS <list of components>: Used to specify which components of the required external package will be used by local components. If not specified there will be no check for the presence of specific components in the required package.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the CMakeList.txt file of a version folder after add_PID_Wrapper_Known_Version.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         - Register the target package as a dependency of the current package.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        declare_PID_Wrapper_External_Dependency (PACKAGE boost EXACT VERSION 1.55.0 EXACT VERSION 1.63.0 EXACT VERSION 1.64.0)
+#
 macro(declare_PID_Wrapper_External_Dependency)
 set(options )
 set(oneValueArgs PACKAGE)
@@ -333,7 +739,51 @@ endif()
 declare_Wrapped_External_Dependency("${DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 endmacro(declare_PID_Wrapper_External_Dependency)
 
-### define a component
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |declare_PID_Wrapper_Component| replace:: ``declare_PID_Wrapper_Component``
+#  .. _declare_PID_Wrapper_Component:
+#
+#  declare_PID_Wrapper_Component
+#  -----------------------------
+#
+#   .. command:: declare_PID_Wrapper_Component(COMPONENT ... [OPTIONS])
+#
+#     Declare a new component for the current version of the external package.
+#
+#     .. rubric:: Required parameters
+#
+#     :COMPONENT <string w/o withespaces>: defines the unique identifier of the component.
+#
+#     .. rubric:: Optional parameters
+#
+#     :C_STANDARD <number of standard>: This argument is followed by the version of the C language standard to be used to build this component. The values may be 90, 99 or 11.
+#     :CXX_STANDARD <number of standard>: his argument is followed by the version of the C++ language standard to be used to build this component. The values may be 98, 11, 14 or 17. If not specified the version 98 is used.
+#     :DEFINITIONS <defs>: These are the preprocessor definitions used in the component’s interface.
+#     :INCLUDES <folders>: These are the include folder to pass to any component using the current component. Path are interpreted relative to the installed external package version root folder.
+#     :SHARED_LINKS <links>: These are shared link flags. Path are interpreted relative to the installed external package version root folder.
+#     :STATIC_LINKS <links>: These are static link flags. Path are interpreted relative to the installed external package version root folder.
+#     :OPTIONS <compile options>: These are compiler options to be used whenever a third party code use this component. This should be used only for options bound to compiler usage, not definitions or include directories.
+#     :RUNTIME_RESOURCES <list of path>: This argument is followed by a list of path relative to the installed external package version root folder.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be called in the CMakeList.txt file of a version folder after add_PID_Wrapper_Known_Version and before any call to declare_PID_Wrapper_Component_Dependency applied to the same declared component.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         - Define a component for the current external package version, which is mainly usefull to register all compilation options relative to a component.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        declare_PID_Wrapper_Component(COMPONENT libyaml INCLUDES include SHARED_LINKS ${posix_LINK_OPTIONS} lib/libyaml-cpp)
+#
 macro(declare_PID_Wrapper_Component)
 set(oneValueArgs COMPONENT C_STANDARD CXX_STANDARD SONAME)
 set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES) #known versions of the external package that can be used to build/run it
@@ -355,7 +805,50 @@ declare_Wrapped_Component(${DECLARE_PID_WRAPPER_COMPONENT_COMPONENT}
 	"${DECLARE_PID_WRAPPER_COMPONENT_RUNTIME_RESOURCES}")
 endmacro(declare_PID_Wrapper_Component)
 
-### define a component
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |declare_PID_Wrapper_Component_Dependency| replace:: ``declare_PID_Wrapper_Component_Dependency``
+#  .. _declare_PID_Wrapper_Component_Dependency:
+#
+#  declare_PID_Wrapper_Component_Dependency
+#  ----------------------------------------
+#
+#   .. command:: declare_PID_Wrapper_Component_Dependency(COMPONENT ... [OPTIONS])
+#
+#     Declare a dependency for a component defined in the current version of the current external package.
+#
+#     .. rubric:: Required parameters
+#
+#     :COMPONENT <string w/o withespaces>: defines the unique identifier of the component for which a dependency is described.
+#
+#     .. rubric:: Optional parameters
+#
+#     :EXPORT: Tells whether the component exports the required dependency. Exporting means that the reference to the dependency is contained in its interface (header files). This can be only the case for libraries, not for applications.
+#
+#     :EXTERNAL <dependency>: This is the name of the component whose component <name> depends on.
+#
+#     :PACKAGE <name>: This is the name of the external package the dependency belongs to. This package must have been defined has a package dependency before this call. If this argument is not used, the dependency belongs to the current package (i.e. internal dependency).
+#
+#     :DEFINITIONS <definitions>:  List of definitions exported by the component. These definitions are supposed to be managed in the dependency's heaedr files, but are set by current component.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be called in the CMakeList.txt file of a version folder after add_PID_Wrapper_Known_Version and after any call to declare_PID_Wrapper_Component applied to the same declared component.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  Define and configure a dependency between a component in the current external package version and another component.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        declare_PID_Wrapper_Component_Dependency(COMPONENT libyaml EXPORT EXTERNAL boost-headers PACKAGE boost)
+#
 macro(declare_PID_Wrapper_Component_Dependency)
 set(options EXPORT)
 set(oneValueArgs COMPONENT EXTERNAL PACKAGE)
@@ -413,7 +906,6 @@ endmacro(declare_PID_Wrapper_Component_Dependency)
 ######################## API to be used in deploy scripts ###############################
 #########################################################################################
 
-###
 function(translate_Into_Options)
 set(options)
 set(oneValueArgs C_STANDARD CXX_STANDARD FLAGS)
@@ -447,7 +939,51 @@ endif()
 set(${TRANSLATE_INTO_OPTION_FLAGS} ${result} PARENT_SCOPE)
 endfunction(translate_Into_Options)
 
-###
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |get_External_Dependencies_Info| replace:: ``get_External_Dependencies_Info``
+#  .. _get_External_Dependencies_Info:
+#
+#  get_External_Dependencies_Info
+#  ----------------------------------------
+#
+#   .. command:: get_External_Dependencies_Info([OPTIONS])
+#
+#     Allow to get info defined in description of the currenlty built version.
+#
+#     .. rubric:: Optional parameters
+#
+#     :PACKAGE <ext_package>: Target external package that is a dependency of the currently built package, for which we want specific information. Used as a filter to limit information to those relative to the dependency.
+#     :ROOT <returned path>: The variable passed as argument will be filled with the path to the dependency external package version. Must be used together with PACKAGE.
+#     :OPTIONS <returned options>: The variable passed as argument will be filled with compiler options for the external package version being built.
+#     :INCLUDES <returned includes>: The variable passed as argument will be filled with include folders for the external package version being built.
+#     :DEFINITIONS <returned defs>: The variable passed as argument will be filled with all definitions for the external package version being built.
+#     :LINKS <returned links>: The variable passed as argument will be filled with all path to librairies and linker options for the external package version being built.
+#     :C_STANDARD <returned c_std>: The variable passed as argument will be filled with the C language standard to use for the external package version, if any specified.
+#     :CXX_STANDARD <returned cxx_std>: The variable passed as argument will be filled with the CXX language standard to use for the external package version, if any specified.
+#     :FLAGS: option to get result of all preceeding arguments directly as compiler flags instead of CMake variables.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  This function has no side effect but simply allow the wrapper build process to get some information about the package it is trying to build. Indeed, building an external package may require to have precise information about package description in order to use adequate compilation flags.
+#
+#     .. rubric:: Example
+#
+#     Example of deploy script used for the yaml-cpp wrapper:
+#
+#     .. code-block:: cmake
+#
+#        get_External_Dependencies_Info(INCLUDES all_includes)
+#        execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=${TARGET_INSTALL_DIR} -DBoost_INCLUDE_DIR=${all_includes} .. WORKING_DIRECTORY ${YAML_BUILD_DIR})
+#
 function(get_External_Dependencies_Info)
 set(options FLAGS)
 set(oneValueArgs PACKAGE ROOT C_STANDARD CXX_STANDARD)
@@ -514,7 +1050,46 @@ endif()
 
 endfunction(get_External_Dependencies_Info)
 
-### getting user options defined at global level of the wrapper
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |get_User_Option_Info| replace:: ``get_User_Option_Info``
+#  .. _get_User_Option_Info:
+#
+#  get_User_Option_Info
+#  --------------------
+#
+#   .. command:: get_User_Option_Info(COMPONENT ... [OPTIONS])
+#
+#     Allow to get info defined and set by user of the wrapper into deploy script when a wrapper version is built.
+#
+#     .. rubric:: Required parameters
+#
+#     :OPTION <variable>: Target option we need to get the value into the deploy script.
+#     :RESULT <returned variable>: The variable passed as argument will be filled with the value of the target user option's value.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  This function has no side effect but simply allow the wrapper build process to get some information about the package it is trying to build. Indeed, building an external package may require additional configuration from the user in order to use adequate compilation flags.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        get_User_Option_Info(OPTION BUILD_WITH_CUDA_SUPPORT RESULT using_cuda)
+#        if(using_cuda)
+#          build_process_using_CUDA(...)
+#        else()
+#          build_process_without_CUDA(...)
+#        endif()
+#
 function(get_User_Option_Info)
 set(oneValueArgs OPTION RESULT)
 cmake_parse_arguments(GET_USER_OPTION_INFO "" "${oneValueArgs}" "" ${ARGN} )
