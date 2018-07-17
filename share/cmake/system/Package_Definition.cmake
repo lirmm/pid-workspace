@@ -33,7 +33,59 @@ include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
 include(CMakeParseArguments)
 
-### API : declare_PID_Package(AUTHOR main_author_name ... [INSTITUION ...] [MAIL ...] YEAR ... LICENSE license [ADDRESS address] DESCRIPTION ...)
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |declare_PID_Package| replace:: ``declare_PID_Package``
+#  .. _declare_PID_Package:
+#
+#  declare_PID_Package
+#  -------------------
+#
+#   .. command:: declare_PID_Package(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
+#
+#     Declare the current CMake project as a PID package with specific meta-information passed as parameters.
+#
+#     .. rubric:: Required parameters
+#
+#     :AUTHOR <name>: Defines the name of the reference author.
+#     :YEAR <dates>: Reflects the lifetime of the package, e.g. ``YYYY-ZZZZ`` where ``YYYY`` is the creation year and ``ZZZZ`` the latest modification date.
+#     :LICENSE <license name>: The name of the license applying to the package. This must match one of the existing license file in the ``licenses`` directory of the workspace.
+#     :DESCRIPTION <description>: A short description of the package usage and utility.
+#
+#     .. rubric:: Optional parameters
+#
+#     :INSTITUTION <institutions>: Define the institution(s) to which the reference author belongs.
+#     :MAIL <e-mail>: E-mail of the reference author.
+#     :ADDRESS <url>: The url of the package's official repository. Must be set once the package is published.
+#     :PUBLIC_ADDRESS <url>: Can be used to provide a public counterpart to the repository `ADDRESS`
+#     :README <path relative to share folder>: Used to define a user-defined README file for the package.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the root ``CMakeLists.txt`` file of the package before any other call to the PID API.
+#        - It must be called **exactly once**.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        Initialization of the package internal state. After this call the package's content can be defined.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        declare_PID_Package(
+#                          AUTHOR Robin Passama
+#                          INSTITUTION LIRMM
+#                          YEAR 2013-2018
+#                          LICENSE CeCILL
+#                          ADDRESS git@gite.lirmm.fr:passama/a-given-package.git
+#                          DESCRIPTION "an example PID package"
+#        )
+#
 macro(declare_PID_Package)
 set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
@@ -65,9 +117,46 @@ declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUT
 		"${DECLARE_PID_PACKAGE_DESCRIPTION}" "${DECLARE_PID_PACKAGE_README}")
 endmacro(declare_PID_Package)
 
-### API : set_PID_Package_Version(major minor [patch])
+#.rst:
+# .. ifmode:: user
+#
+#  .. |set_PID_Package_Version| replace:: ``set_PID_Package_Version``
+#  .. _set_PID_Package_Version:
+#
+#  set_PID_Package_Version
+#  -----------------------
+#
+#  .. command:: set_PID_Package_Version(MAJOR MINOR [PATCH])
+#
+#   Set the current version number of the package.
+#
+#   .. rubric:: Required parameters
+#
+#   :MAJOR: A positive number indicating the major version number.
+#   :MINOR: A positive number indicating the minor version number.
+#
+#   .. rubric:: Optional parameters
+#
+#   :PATCH: A positive number indicating the patch version number. If not defined, it will default to ``0``.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
+#      - It must be called **exactly once**.
+#
+#   .. admonition:: Effects
+#      :class: important
+#
+#      Setting the current version number will affect the binar installation folder and configuration files.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      set_PID_Package_Version(1 2)
+#
 macro(set_PID_Package_Version)
-
 if(${ARGC} EQUAL 3)
 	set_Current_Version(${ARGV0} ${ARGV1} ${ARGV2})
 elseif(${ARGC} EQUAL 2)
@@ -77,7 +166,43 @@ else()
 endif()
 endmacro(set_PID_Package_Version)
 
-### API : add_PID_Package_Author(AUTHOR ... [INSTITUTION ...])
+#.rst:
+# .. ifmode:: user
+#
+#  .. |add_PID_Package_Author| replace:: ``add_PID_Package_Author``
+#  .. _add_PID_Package_Author:
+#
+#  add_PID_Package_Author
+#  -----------------------
+#
+#  .. command:: add_PID_Package_Author(AUTHOR ... [INSTITUTION ...])
+#
+#   Add an author to the list of authors.
+#
+#   .. rubric:: Required parameters
+#
+#   :AUTHOR <name>: Name of the additional author.
+#
+#   .. rubric:: Optional parameters
+#
+#   :INSTITUTION <institutions>: Institution(s) to which the author belongs.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     Add an author to the list of authors.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      add_PID_Package_Author(AUTHOR Benjamin Navarro INSTITUTION LIRMM)
+#
 macro(add_PID_Package_Author)
 set(multiValueArgs AUTHOR INSTITUTION)
 cmake_parse_arguments(ADD_PID_PACKAGE_AUTHOR "" "" "${multiValueArgs}" ${ARGN} )
@@ -87,7 +212,47 @@ endif()
 add_Author("${ADD_PID_PACKAGE_AUTHOR_AUTHOR}" "${ADD_PID_PACKAGE_AUTHOR_INSTITUTION}")
 endmacro(add_PID_Package_Author)
 
-### API : 	add_PID_Package_Reference(VERSION major.minor[.patch] PLATFORM platform name URL url-rel url_dbg)
+#.rst:
+# .. ifmode:: user
+#
+#  add_PID_Package_Reference
+#  -------------------------
+#
+#  .. command:: add_PID_Package_Reference(VERSION ... PLATFORM ... URL ...)
+#
+#   Declare a reference to a known binary version of the package. This is useful to register various released version of the package.
+#
+#   .. rubric:: Required parameters
+#
+#   :VERSION <major>.<minor>[.<patch>]: The full version number of the referenced binary package. See |set_PID_Package_Version|_.
+#
+#   :PLATFORM <name>: The name of the target plaftorm for which the binary package has been built.
+#
+#   :URL <url-rel> <url-dbg>:
+#     - ``<url-rel>`` is the url of the package binary release build
+#     - ``<url-dbg>`` is the url of the package binary debug build.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     Declare a reference that defines where to find an installable binary for a given platform.
+#
+#     PID uses this information to generate a CMake configuration file that will be used to retrieve this package version. This is the only way to define direct references to binary packages.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#    add_PID_Package_Reference(VERSION 1.0.0 PLATFORM x86_linux_64_abi11
+#      URL https://gite.lirmm.fr/pid/pid-binaries/wikis/pid-rpath/1.0.0/linux64/pid-rpath-1.0.0-linux64.tar.gz
+#          https://gite.lirmm.fr/pid/pid-binaries/wikis/pid-rpath/1.0.0/linux64/pid-rpath-1.0.0-dbg-linux64.tar.gz
+#    )
+#
 macro(add_PID_Package_Reference)
 set(oneValueArgs VERSION PLATFORM)
 set(multiValueArgs  URL)
@@ -125,7 +290,39 @@ else()
 endif()
 endmacro(add_PID_Package_Reference)
 
-### API : add_PID_Package_Category(category_path)
+#.rst:
+# .. ifmode:: user
+#
+#  .. |add_PID_Package_Category| replace:: ``add_PID_Package_Category``
+#  .. _add_PID_Package_Category:
+#
+#  add_PID_Package_Category
+#  ------------------------
+#
+#  .. command:: add_PID_Package_Category(CATEGORY)
+#
+#   Declare that the current package belongs to a given category.
+#
+#   .. rubric:: Required parameters
+#
+#   :CATEGORY: A string describing the category to which the package belongs. Sub-categories are divided by ``/``.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     Register the package has being member of the given (sub)category. This information will be added to the :ref:`package reference file` when it is generated.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#    add_PID_Package_Category(example/packaging)
+#
 macro(add_PID_Package_Category)
 if(NOT ${ARGC} EQUAL 1)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the add_PID_Package_Category command requires one string argument of the form <category>[/subcategory]*.")
@@ -133,13 +330,85 @@ endif()
 add_Category("${ARGV0}")
 endmacro(add_PID_Package_Category)
 
-
-### API : declare_PID_Documentation()
 macro(declare_PID_Documentation)
 	message("[PID] WARNING : the declare_PID_Documentation is deprecated and is no more used in PID version 2. To define a documentation site please use declare_PID_Publishing function. Skipping documentation generation phase.")
 endmacro(declare_PID_Documentation)
 
-### API : declare_PID_Publishing()
+#.rst:
+# .. ifmode:: user
+#
+#  .. |declare_PID_Publishing| replace:: ``declare_PID_Publishing``
+#  .. _declare_PID_Publishing:
+#
+#  declare_PID_Publishing
+#  -----------------------
+#
+#  .. command:: declare_PID_Publishing(AUTHOR ... [INSTITUTION ...])
+#
+#   Declare a site where the package is published, i.e. an online website where documentation and binaries of the package ar stored and accessible. There are two alternative for this function: defining a lone static site or defining the publication of the package in a framework.
+#
+#   .. rubric:: Required parameters
+#
+#   :PROJECT <url>: Where to find the project page.
+#
+#   One of the two following options must be selected.
+#
+#   :FRAMEWORK <name>: The package belongs to the ``name`` framework. It will contribute to that site.
+#   :GIT <url>: A stand-alone package. ``<url>`` is the git repository for the static site of this package.
+#
+#   When the ``GIT`` option is used, the following argument is also required:
+#
+#   :PAGE <url>: ``<url>`` is the online url of the static site.
+#
+#   .. rubric:: Optional parameters
+#
+#   :DESCRIPTION <description>: A long description of the package utility.
+#   :TUTORIAL <file>: ``<file>`` should be a markdown file relative to the ``share/site`` folder of the package. This will be used to generate a tutorial webpage.
+#   :ADVANCED <file>: ``<file>`` should be a markdown file relative to the ``share/site`` folder of the package. This will be used to generate an advanced description page.
+#   :PUBLISH_BINARIES: If this is present, the package will automatically publish new binaries to the publication site.
+#   :PUBLISH_DEVELOPMENT_INFO: If this is present, the package website will contain information for developpers such as coverage reports and static checks.
+#   :ALLOWED_PLATFORMS <list of platforms>: This argument lists the set of platforms used for CI, only the specified platforms will be managed in the CI process. **WARNING: Due to gitlab limitation (only one pipeline can be defined) only ONE platform is allowed at the moment.**
+#
+#   When the ``GIT`` option is used, the following argument is also accepted:
+#
+#   :LOGO <path>: ``<path>`` is an image file that will be used as a logo. The file path is relative to the ``share/site`` folder of the package.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_. It should also be called after every call to |set_PID_Package_Version|_, |add_PID_Package_Author|_ and |add_PID_Package_Category|_.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     The main effect is to generate or update a static site for the project. This static site locally resides in a dedicated git repository. If the project belongs to no framework then it has its lone static site that can be found in sites/packages/<package name>. If it belongs to a framework, the framework repository can be found in sites/frameworks/<framework name>. In this later case, the package only contributes to its own related content not the overall content of the framework.
+#
+#     In both case, depending on how the package is built, the package will generate different kind of documentation (API documentatio, static check reports, coverage reports, etc.). Depending on options it can also deploy binaries or developper info for the current version and target platform into the static site repository (framework or lone static site).
+#
+#   .. rubric:: Example
+#
+#   Declaring the publication of the ``pid-rpath`` package as a stand-alone package:
+#
+#   .. code-block:: cmake
+#
+#    declare_PID_Publishing(PROJECT https://gite.lirmm.fr/pid/pid-rpath
+#    			GIT git@gite.lirmm.fr:pid/pid-rpath-pages.git
+#    			PAGE http://pid.lirmm.net/pid-rpath
+#    			DESCRIPTION pid-rpath is a package providing a little API to ease the management of runtime resources within a PID workspace. Runtime resources may be either configuration files, executables or module libraries. Its usage is completely bound to the use of PID system.
+#    			ADVANCED specific_usage.md
+#    			LOGO	img/rouage_PID.jpg
+#    			PUBLISH_BINARIES)
+#
+#  Declaring the publication of the ``pid-rpath`` package into the ``PID`` framework:
+#
+#  .. code-block:: cmake
+#
+#   declare_PID_Publishing(	PROJECT https://gite.lirmm.fr/pid/pid-rpath
+#   			FRAMEWORK pid
+#   			DESCRIPTION pid-rpath is a package providing a little API to ease the management of runtime resources within a PID workspace. Runtime resources may be either configuration files, executables or module libraries. Its usage is completely bound to the use of PID system.
+#   			ADVANCED specific_usage.md
+#   			PUBLISH_BINARIES)
+#
 macro(declare_PID_Publishing)
 set(optionArgs PUBLISH_BINARIES PUBLISH_DEVELOPMENT_INFO)
 set(oneValueArgs PROJECT FRAMEWORK GIT PAGE ADVANCED TUTORIAL LOGO)
@@ -233,7 +502,40 @@ else()
 endif()
 endmacro(declare_PID_Publishing)
 
-### API : declare_PID_Component_Documentation()
+#.rst:
+# .. ifmode:: user
+#
+#  .. |declare_PID_Component_Documentation| replace:: ``declare_PID_Component_Documentation``
+#  .. _declare_PID_Component_Documentation:
+#
+#  declare_PID_Component_Documentation
+#  -----------------------------------
+#
+#  .. command:: declare_PID_Component_Documentation(COMPONENT ... FILE ...)
+#
+#   Add specific documentation for a component
+#
+#   .. rubric:: Required parameters
+#
+#   :COMPONENT <name>: Name of the component for which a markdown page is provided.
+#   :FILE <path>: Path to the markdown page for the specified component. ``<path>`` is relative to the ``share/site`` folder of the package.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - The component must have been declared with |declare_PID_Component|_.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     This function registers a markdown page with documentation about the component. This page can be used to generate a specific web page for the component than will be put in the static site defined by the package deployment, see |declare_PID_Publishing|_.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#    declare_PID_Component_Documentation(COMPONENT my-lib FILE mylib_usage.md)
+#
 macro(declare_PID_Component_Documentation)
 set(oneValueArgs COMPONENT FILE)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DOCUMENTATION "" "${oneValueArgs}" "" ${ARGN} )
@@ -247,12 +549,59 @@ endif()
 define_Component_Documentation_Content(${DECLARE_PID_COMPONENT_DOCUMENTATION_COMPONENT} "${DECLARE_PID_COMPONENT_DOCUMENTATION_FILE}")
 endmacro(declare_PID_Component_Documentation)
 
-### API: check_PID_Platform(	[NAME resulting_name] is obsolete
-#				[TYPE x86 or arm]
-#				[OS osname]
-#				[ARCH 16 OR 32 OR 64]
-#				[ABI CXX or CXX11]
-#				CONFIGURATION ...)
+#.rst:
+# .. ifmode:: user
+#
+#  check_PID_Platform
+#  ------------------
+#
+#  .. command:: check_PID_Platform(CONFIGURATION ... [OPTIONS])
+#
+#   Check if the current target platform conforms to the given platform configuration. If constraints are violated then the configuration of the package fail. Otherwise the project will be configured and built accordingly. The configuration will be checked only if the current platform matches some constraints. If there is no constraint then the configuration is checked whatever the current target platform is.
+#
+#   .. rubric:: Required parameters
+#
+#   :CONFIGURATION <configurations>: Check the given configurations against the current target platform.
+#
+#   .. rubric:: Optional parameters
+#
+#   These parameters can be used to refine the configuration check.
+#
+#   :TYPE <arch>: Constraint on the processor type.
+#   :OS <name>: Constraint on the operating system.
+#   :ARCH <32|64>: Constraint on the processor architecture.
+#   :ABI <CXX|CXX11>: Constraint on the ABI of the compiler.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     Add an author to the list of authors.
+#     First it checks if the current target platform of the workspace satisfies the specified constraints (TYPE, OS, ARCH and ABI). If all constraints are not respected then nothing is checked and the configuration of the package continues. Otherwise, the package configuration must be checked before continuing the configuration. Each configuration required is then checked individually. This can lead to the automatic install of some configuration, if this is possible (i.e. if there is a known way to install this configuration), which is typically the case for system software dependencies like libraries when:
+#
+#     1. No cross compilation takes place
+#     2. The host system distribution is managed by the configuration (most of time debian like distributions are managed for installable configurations).
+#
+#     If the target plaform conforms to all required configurations, then the configuration continue. Otherwise the configuratin fails.
+#
+#   .. rubric:: Example
+#
+#   Checking that if the target platform is a linux with 32 bits architecture, then it must provide ``posix`` and ``x11`` configruation.
+#
+#   .. code-block:: cmake
+#
+#      check_PID_Platform(OS linux ARCH 32 CONFIGURATION posix x11)
+#
+#   Checking that any target platform provides an openssl configuration.
+#
+#   .. code-block:: cmake
+#
+#      check_PID_Platform(openssl)
+#
 macro(check_PID_Platform)
 set(oneValueArgs NAME OS ARCH ABI TYPE)
 set(multiValueArgs CONFIGURATION)
@@ -284,7 +633,42 @@ else()
 endif()
 endmacro(check_PID_Platform)
 
-### API: get_PID_Platform_Info([TYPE res_type] [OS res_os] [ARCH res_arch] [ABI res_abi])
+#.rst:
+# .. ifmode:: user
+#
+#  .. |get_PID_Platform_Info| replace:: ``get_PID_Platform_Info``
+#  .. _get_PID_Platform_Info:
+#
+#  get_PID_Platform_Info
+#  -----------------------
+#
+#  .. command:: get_PID_Platform_Info([OPTIONS])
+#
+#   Get information about the target platform. This can be used to configure the build accordingly.
+#
+#   .. rubric:: Optional parameters
+#
+#   All arguments are optional but at least one must be provided. All properties are retrieved for the target platform.
+#
+#   :NAME <VAR>: Output the name of the target platform in ``VAR``
+#   :TYPE <VAR>: Ouptut the processor type in ``VAR``
+#   :OS <VAR>: Output the OS name in ``VAR``
+#   :ARCH <VAR>: Output the architecture in ``VAR``
+#   :ABI <VAR>: Output the ABI in ``VAR``
+#   :DISTRIBUTION <VAR>: Output the distribution in ``VAR``
+#   :PYTHON <VAR>: Output the Python version in ``VAR``
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     After the call, the variables defined by the user will be set to the corresponding value. Then it can be used to control the configuration of the package.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      add_PID_Package_Author(AUTHOR Benjamin Navarro INSTITUTION LIRMM)
+#
 function(get_PID_Platform_Info)
 set(oneValueArgs NAME OS ARCH ABI TYPE PYTHON DISTRIBUTION VERSION)
 cmake_parse_arguments(GET_PID_PLATFORM_INFO "" "${oneValueArgs}" "" ${ARGN} )
@@ -326,7 +710,6 @@ if(NOT OK)
 endif()
 endfunction(get_PID_Platform_Info)
 
-### API: check_All_PID_Default_Platforms([CONFIGURATION] list of system constraints). Same as previously but without any condition
 macro(check_All_PID_Default_Platforms)
 set(multiValueArgs CONFIGURATION)
 message("[PID] WARNING : the check_All_PID_Default_Platforms function is deprecated as check_PID_Platform will now do the job equaly well.")
@@ -346,7 +729,35 @@ if(CHECK_PID_PLATFORM_CONFIGURATION)
 endif()
 endmacro(check_All_PID_Default_Platforms)
 
-### API : build_PID_Package()
+#.rst:
+# .. ifmode:: user
+#
+#  .. |build_PID_Package| replace:: ``build_PID_Package``
+#  .. _build_PID_Package:
+#
+#  build_PID_Package
+#  -----------------
+#
+#  .. command:: build_PID_Package()
+#
+#   Automatically configure a PID package according to previous information.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - This function must be called **last** in the root ``CMakeLists.txt`` file of the package.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     This function generates configuration files, manage the generation of the global native build process and include the `CMakeLists.txt` files from the following folders (in that order): ``src``, ``apps``, ``test``, ``share``.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      build_PID_Package()
+#
 macro(build_PID_Package)
 if(${ARGC} GREATER 0)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Package command requires no arguments.")
@@ -354,14 +765,69 @@ endif()
 build_Package()
 endmacro(build_PID_Package)
 
-### API : declare_PID_Component(NAME name
-#				DIRECTORY dirname
-#				<STATIC_LIB|SHARED_LIB|MODULE_LIB|HEADER_LIB|APPLICATION|EXAMPLE_APPLICATION|TEST_APPLICATION>
-#				[INTERNAL [DEFINITIONS def ...] [INCLUDE_DIRS dir ...] [COMPILER_OPTIONS ...] [LINKS link ...] ]
-#				[EXPORTED [DEFINITIONS def ...] [COMPILER_OPTIONS ...] [LINKS link ...]
-#				[RUNTIME_RESOURCES <some path to files in the share/resources dir>]
-#				[DESCRIPTION short description of the utility of this component]
-#				[USAGE includes...])
+#.rst:
+# .. ifmode:: user
+#
+#  .. |declare_PID_Component| replace:: ``declare_PID_Component``
+#  .. _declare_PID_Component:
+#
+#  declare_PID_Component
+#  -----------------------
+#
+#  .. command:: declare_PID_Component(<type> NAME ... DIRECTORY .. [OPTIONS])
+#
+#   Declare a new component in the current package.
+#
+#   .. rubric:: Required parameters
+#
+#   :<type>: - ``STATIC_LIB``: static library
+#            - ``SHARED_LIB``: shared library
+#            - ``MODULE_LIB``: shared library without header
+#            - ``HEADER_LIB``: header-only library
+#            - ``APPLICATION``: standard application
+#            - ``EXAMPLE_APPLICATION``: example code
+#            - ``TEST_APPLICATION``: unit test
+#   :NAME <name>: Unique identifier of the component. ``name`` cannot contain whitespaces.
+#   :DIRECTORY <dir>: Sub-folder where to find the component sources. This is relative to the current `CMakeLists.txt` folder.
+#
+#   .. rubric:: Optional parameters
+#
+#   :DESCRIPTION <text>: Provides a description of the component. This will be used in generated documentation.
+#   :USAGE <list of headers to include>: This should be used to list useful includes to put in client code. This is used for documentation purpose.
+#   :C_STANDARD <90|99|11>: C language standard used to build the component. Defaults to ``90`` (i.e. ANSI-C)
+#   :CXX_STANDARD <98|11|14|17>: C++ language standard used to build the component. Defaults to ``98``.
+#   :RUNTIME_RESOURCES <files>: ``<files>`` is a list of files and folders relative to the ``share/resources`` folder. These files will be installed automatically and should be accessed in a PID component using the `pid-rpath <http://pid.lirmm.net/pid-framework/packages/pid-rpath>`_ package.
+#   :INTERNAL: This flag is used to introduce compilation options that are only used by this component.
+#   :EXPORTED: This flag is used to export compilation options. Meaning, components that later refer to this component will be using these options.
+#
+#   The following options are supported by the ``INTERNAL`` and ``EXPORTED`` commands:
+#   :DEFINITIONS <defs>: Preprocessor definitions.
+#   :LINKS <links>: Linker flags.
+#   :COMPILER_OPTIONS <options>: Compiler-specific options.
+#
+#   Furthermore, the ``INTERNAL`` option also support the following commands:
+#   :INCLUDE_DIRS <dirs>: Additional include directories.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - <type> acceptability depends on the current folder.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     Defines a new component in the package. Will create related targets to build the component and install it (if applicable).
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      add_PID_Package_Author(AUTHOR Benjamin Navarro INSTITUTION LIRMM)
+#      declare_PID_Component(STATIC_LIB NAME my-static-lib DIRECTORY binary_lib
+#                            INTERNAL DEFINITIONS EXPORT_SYMBOLS
+#                            EXPORT DEFINITIONS IMPORT_SYMBOLS
+#     )
+#
 macro(declare_PID_Component)
 set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION PYTHON_PACK)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
@@ -540,9 +1006,63 @@ if(NOT "${DECLARE_PID_COMPONENT_DESCRIPTION}" STREQUAL "")
 endif()
 endmacro(declare_PID_Component)
 
-### API : declare_PID_Package_Dependency (	PACKAGE name
-#						<EXTERNAL VERSION version_string [EXACT] | NATIVE [VERSION major[.minor] [EXACT]]] >
-#						[COMPONENTS component ...])
+#.rst:
+# .. ifmode:: user
+#
+#  .. |declare_PID_Package_Dependency| replace:: ``declare_PID_Package_Dependency``
+#  .. _declare_PID_Package_Dependency:
+#
+#  declare_PID_Package_Dependency
+#  ------------------------------
+#
+#  .. command:: declare_PID_Package_Dependency(PACKAGE ... EXTERNAL|NATIVE [OPTIONS])
+#
+#   Declare a dependency between the current package and another package.
+#
+#   .. rubric:: Required parameters
+#
+#   :PACKAGE <name>: Name of the package the current package depends upon.
+#   :EXTERNAL: Use this keyword when ``name`` is an external package.
+#   :NATIVE: Use this keyword when ``name`` is a native PID package.
+#
+#   .. rubric:: Optional parameters
+#
+#   :OPTIONAL: Make the dependency optional.
+#   :(EXACT) VERSION <version>: Specifies the requested package version. ``EXACT`` means this exact version is required (patch revision may be ignored for native packages), otherwise this is treated as a minimum version requirement. Multiple exact versions may be specified. In that case, the first one is the default version.
+#   :COMPONENTS <components>: Specify which components of the given package are required.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     This function will register the target package as a dependency of the current package. The information will be added to the :ref:`package use file`.
+#
+#   .. rubric:: Example
+#
+#   Simple example:
+#
+#   .. code-block:: cmake
+#
+#      declare_PID_Package_Dependency (
+#                PACKAGE another-package
+#                NATIVE VERSION 1.0
+#                COMPONENTS lib-other-sh
+#      )
+#
+#   Specifying multiple acceptable versions:
+#
+#   .. code-block:: cmake
+#
+#      declare_PID_Package_Dependency (PACKAGE boost EXTERNAL
+#                                      EXACT VERSION 1.55.0
+#                                      EXACT VERSION 1.63.0
+#                                      EXACT VERSION 1.64.0
+#      )
+#
 macro(declare_PID_Package_Dependency)
 set(options EXTERNAL NATIVE OPTIONAL)
 set(oneValueArgs PACKAGE)
@@ -644,15 +1164,68 @@ endif()
 
 endfunction(used_Package_Dependency dep_package)
 
-### API : declare_PID_Component_Dependency (	COMPONENT name
-#						[EXPORT]
-#						<DEPEND|NATIVE dep_component [PACKAGE dep_package]
-#						| [EXTERNAL ext_package INCLUDE_DIRS dir ... RUNTIME_RESOURCES ...] LINKS [STATIC link ...] [SHARED link ...]>
-#						[INTERNAL_DEFINITIONS def ...]
-#						[IMPORTED_DEFINITIONS def ...]
-#						[EXPORTED_DEFINITIONS def ...]
+
+#.rst:
+# .. ifmode:: user
 #
-#						)
+#  .. |declare_PID_Component_Dependency| replace:: ``declare_PID_Component_Dependency``
+#  .. _declare_PID_Component_Dependency:
+#
+#  declare_PID_Component_Dependency
+#  --------------------------------
+#
+#  .. command:: declare_PID_Component_Dependency(COMPONENT ... [OPTIONS])
+#
+#   Declare a dependency for a component of the current package. The arguments differ whether the component is from a native PID package or an external/system dependency. Only the ``COMPONENT`` argument is always required.
+#
+#   .. rubric:: Common parameters
+#
+#   :COMPONENT <name>: Name of the component.
+#   :EXPORT: If this flag is present, the dependency is exported.
+#   :INTERNAL_DEFINITIONS <defs>: Definitions used internally in ``name`` when the dependency is used.
+#   :IMPORTED_DEFINITIONS <defs>: Definitions contained in the interface of the dependency that are set when the component uses this dependency.
+#   :EXPORTED_DEFINITIONS <defs>: Definitions that are exported by ``name`` when that dependency is used.
+#
+#   .. rubric:: Native component
+#
+#   Only the ``NATIVE`` argument is required in this case. ``PACKAGE`` is required if the depended-upon component is not internal.
+#
+#   :NATIVE <component>: ``component`` is the component that ``name`` depends upon.
+#   :PACKAGE <package>: ``component`` is part of the ``package`` native package. If ``PACKAGE`` is not used, it means ``component`` is part of the current package.
+#
+#   .. rubric:: External or system dependency
+#
+#   :EXTERNAL <package>: Name of the external package that is depended upon.
+#   :INCLUDE_DIRS <dirs>: Specify include directories for this dependency. For external packages, these paths must be relative to the package root dir (using ``<package>``). This should not be used for system packages as include directories should be in the default system folders.
+#   :RUNTIME_RESOURCES <paths>: Specify where to find runtime resources. For external package, these paths must be relative to the package root dir (using ``<package>``). This should not be used for system packages as shared resources should be in standard locations.
+#   :COMPILER_OPTIONS: Compiler options that are not definitions.
+#   :LINKS STATIC|SHARED <links>:
+#     - ``STATIC <links>``: static libraries. For system libraries, system referencing must be used (e.g. -lm for libm.a). For external packages, complete path (relative to the package root dir) must be used.
+#     - ``SHARED <links>``: shared libraries. For system libraries, system referencing must be used (e.g. -lm for libm.a). For external packages, complete path (relative to the package root dir) must be used.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - Must be called after the component has been declared using |declare_PID_Component|_.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     This function is used to defined a dependency between a component in the current package and another component. This will configure the build process accordingly.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      declare_PID_Component_Dependency(COMPONENT my-static-lib
+#                                       EXTERNAL boost INCLUDE_DIRS <boost>/include
+#      )
+#
+#      declare_PID_Component_Dependency(COMPONENT my-static-lib
+#                                       EXPORT DEPEND my-given-lib-bis
+#      )
+
+#
 macro(declare_PID_Component_Dependency)
 set(options EXPORT)
 set(oneValueArgs COMPONENT DEPEND NATIVE PACKAGE EXTERNAL C_STANDARD CXX_STANDARD)
@@ -840,11 +1413,62 @@ function(wrap_CTest_Call name command args)
 	endif()
 endfunction(wrap_CTest_Call)
 
-### API : run_PID_Test (NAME 			test_name
-#			<EXE name | COMPONENT 	name [PACKAGE name]>
-#			PRIVILEGED
-#			ARGUMENTS	 	list_of_args
-#			)
+#.rst:
+# .. ifmode:: user
+#
+#  .. |run_PID_Test| replace:: ``run_PID_Test``
+#  .. _run_PID_Test:
+#
+#  run_PID_Test
+#  -----------------------
+#
+#  .. command:: run_PID_Test(NAME ... [OPTIONS])
+#
+#   Run a test using an application.
+#
+#   The application can be:
+#   - an executable (e.g. valgrind)
+#   - a PID component (standard, example or test application)
+#   - a Python script
+#
+#   .. rubric:: Common parameters
+#
+#   :NAME <name>: Unique identifier for the test
+#   :ARGUMENTS <args>: (optional) Arguments passed to the executable, component or script
+#
+#   .. rubric:: Executable parameters
+#
+#   :EXE <name>: Name of the executable to run.
+#
+#   .. rubric:: Component parameters
+#
+#   :COMPONENT <name>: Name of the component to run.
+#   :PACKAGE <name>: Package to which the component belongs (defaults to the current package).
+#
+#   .. rubric:: Python script
+#
+#   :PYTHON: Flag the test as a Python test.
+#
+#   In that case, the first argument of ``ARGUMENTS`` is interpreted as a Python script, located in the ``test`` or ``share/script`` folder of the package.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - The component variant of this function must be called after the component has been declared.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     Adds a test to the ``make test`` target. When the test is run it will generate a ``PASSED`` or ``ERROR`` message according to the result.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      run_PID_Test (NAME correctness_of_my-shared-lib_step1 COMPONENT my-test ARGUMENTS "first" "124" "12")
+#      run_PID_Test (NAME correctness_of_my-shared-lib_step2 COMPONENT my-test ARGUMENTS "second" "12" "46")
+#      run_PID_Test (NAME correctness_of_my-shared-lib_step3 COMPONENT my-test ARGUMENTS "first" "0" "87")
+#
 function(run_PID_Test)
 set(options PRIVILEGED PYTHON)
 set(oneValueArgs NAME EXE COMPONENT PACKAGE)
@@ -929,7 +1553,41 @@ endfunction(run_PID_Test)
 ###########################Other functions of the API #######################################
 #############################################################################################
 
-### API : external_PID_Package_Path (NAME external_package PATH result)
+#.rst:
+# .. ifmode:: user-advanced
+#
+#  .. |external_PID_Package_Path| replace:: ``external_PID_Package_Path``
+#  .. _external_PID_Package_Path:
+#
+#  external_PID_Package_Path
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#  .. command:: external_PID_Package_Path(NAME ... PATH ...)
+#
+#   Get the path to a target external package that is supposed to exist in the local workspace.
+#
+#   .. rubric:: Required parameters
+#
+#   :NAME <name>: Name of the target external package.
+#   :PATH <var>: ``<var>`` will contain the package root folder.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - This function must be called after a dependency to ``name`` has been declared using |declare_PID_Package_Dependency|_.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     No effect on the project.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      external_PID_Package_Path(NAME boost PATH BOOST_ROOT_PATH)
+#      message(INFO "Boost root path is: ${BOOST_ROOT_PATH}")
+#
 function(external_PID_Package_Path)
 set(oneValueArgs NAME PATH)
 cmake_parse_arguments(EXT_PACKAGE_PATH "" "${oneValueArgs}" "" ${ARGN} )
@@ -945,7 +1603,42 @@ endif()
 endfunction(external_PID_Package_Path)
 
 
-### API : create_PID_Install_Symlink (PATH where_to_create NAME symlink_name TARGET target_of_symlink)
+#.rst:
+# .. ifmode:: user-advanced
+#
+#  .. |create_PID_Install_Symlink| replace:: ``create_PID_Install_Symlink``
+#  .. _create_PID_Install_Symlink:
+#
+#  create_PID_Install_Symlink
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#  .. command:: create_PID_Install_Symlink(NAME ... PATH ... TARGET ...)
+#
+#   Creates a symlink somewhere in the install folder of the package.
+#
+#   .. rubric:: Required parameters
+#
+#   :NAME <name>: Name of the created symlink.
+#   :PATH <var>: Path (relative to the package install folder) where the symlink will be put.
+#   :TARGET <path>: The absolute path targetted by the symlink.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - The target path must exist.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     This creates a package specific symlink. It is mostly used to manage runtime dependencies for specific external or system resources.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      external_PID_Package_Path (NAME boost PATH BOOST_ROOT_PATH)
+#      create_PID_Install_Symlink(NAME libboost_system.so PATH bin TARGET ${BOOST_ROOT_PATH}/lib/libboost_system.so)
+#
 macro(create_PID_Install_Symlink)
 set(oneValueArgs NAME PATH TARGET)
 cmake_parse_arguments(CREATE_INSTALL_SYMLINK "" "${oneValueArgs}" "" ${ARGN} )
