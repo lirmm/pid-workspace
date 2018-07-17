@@ -87,6 +87,7 @@ endif()
 set(deploy_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_DEPLOY_SCRIPT})
 set(TARGET_BUILD_DIR ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_VERSION})
 set(TARGET_INSTALL_DIR ${package_version_install_dir})
+set(TARGET_SOURCE_DIR ${package_version_src_dir})
 
 set(post_install_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_POST_INSTALL_SCRIPT})
 
@@ -110,7 +111,7 @@ if(NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true)
     message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} are satisfied !")
   endif()
 
-  #prepare deplyment script execution by caching build variable that may be used inside
+  #prepare deployment script execution by caching build variable that may be used inside
   configure_Wrapper_Build_Variables(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
 
   message("[PID] INFO : Executing deployment script ${package_version_src_dir}/${deploy_script_file}...")
