@@ -17,21 +17,7 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(CURRENT_TYPE CACHE INTERNAL "")
+# the gcc compiler is user for building codes on host
+set(PID_ENVIRONMENT_DESCRIPTION "The development environment is based on the host default configuration with GNU gcc toolchain" CACHE INTERNAL "")
 
-#test of processor type is based on system variables affected by cross compilation
-#So it adapts to the current development environment in use
-
-if("${CMAKE_SYSTEM_PROCESSOR}" MATCHES arm)
-	set(CURRENT_TYPE arm CACHE INTERNAL "")
-elseif(	"${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x64
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i686
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i386
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i486
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86_32
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86_64
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL amd64
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL AMD64)
-	set(CURRENT_TYPE x86 CACHE INTERNAL "")
-endif()# Note: add more check to test other processor architectures
+set(PID_CROSSCOMPILATION FALSE CACHE INTERNAL "") #do not crosscompile since it is the same environment (host)

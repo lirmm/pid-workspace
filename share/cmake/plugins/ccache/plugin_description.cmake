@@ -19,6 +19,8 @@
 
 set(ccache_PLUGIN_DESCRIPTION "use this plugin to cache compilation step using ccache" CACHE INTERNAL "")
 
-set(ccache_PLUGIN_ACTIVATION_MESSAGE "plugin ccache: caching compilation" CACHE INTERNAL "")
+set(ccache_PLUGIN_ACTIVATION_MESSAGE "caching compilation..." CACHE INTERNAL "")
+
+set(ccache_PLUGIN_ACTIVATED_MESSAGE "automatically caching the compilation process of packages." CACHE INTERNAL "")
 
 set(ccache_PLUGIN_RESIDUAL_FILES "" CACHE INTERNAL "")

@@ -6,12 +6,12 @@ Overview
 
 @PACKAGE_LICENSE_FOR_README@
 
-@README_USER_CONTENT@
-
 Installation and Usage
 =======================
 
 @INSTALL_USE_IN_README@
+
+@README_USER_CONTENT@
 
 About authors
 =====================
@@ -22,4 +22,3 @@ Please contact @README_CONTACT_AUTHOR@ for more information or questions.
 
 
 @PACKAGE_SITE_REF_IN_README@
-

@@ -17,21 +17,11 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(CURRENT_TYPE CACHE INTERNAL "")
+include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(${WORKSPACE_DIR}/share/cmake/plugins/pkg_config/pkg_config.cmake)
 
-#test of processor type is based on system variables affected by cross compilation
-#So it adapts to the current development environment in use
-
-if("${CMAKE_SYSTEM_PROCESSOR}" MATCHES arm)
-	set(CURRENT_TYPE arm CACHE INTERNAL "")
-elseif(	"${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x64
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i686
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i386
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i486
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86_32
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86_64
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL amd64
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL AMD64)
-	set(CURRENT_TYPE x86 CACHE INTERNAL "")
-endif()# Note: add more check to test other processor architectures
+foreach(library IN LISTS ${PROJECT_NAME}_COMPONENTS_LIBS)
+	if(NOT ${PROJECT_NAME}_${library}_TYPE STREQUAL "MODULE")#module libraries are not intended to be used at compile time
+		generate_Pkg_Config_Files(${CMAKE_BINARY_DIR}/share ${PROJECT_NAME} ${CURRENT_PLATFORM} ${${PROJECT_NAME}_VERSION} ${library} ${CMAKE_BUILD_TYPE})
+	endif()
+endforeach()

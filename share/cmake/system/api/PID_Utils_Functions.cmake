@@ -166,14 +166,56 @@ endfunction(normalize_Version_String)
 
 ###
 function(create_Symlink path_to_old path_to_new)
-if(	EXISTS ${path_to_new} AND IS_SYMLINK ${path_to_new})
-	execute_process(#removing the existing symlink
-		COMMAND ${CMAKE_COMMAND} -E remove -f ${path_to_new}
-	)
-endif()
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
-)
+    set(oneValueArgs WORKING_DIR)
+    cmake_parse_arguments(OPT "" "${oneValueArgs}" "" ${ARGN} )
+    if(WIN32)
+        string(REGEX REPLACE "/" "\\\\" path_to_old ${path_to_old})
+        string(REGEX REPLACE "/" "\\\\" path_to_new ${path_to_new})
+        if(OPT_WORKING_DIR)
+            string(REGEX REPLACE "/" "\\\\" OPT_WORKING_DIR ${OPT_WORKING_DIR})
+        endif()
+
+        # check if target is a directory or a file to pass to proper argument to mklink
+        get_filename_component(DIR ${path_to_old} DIRECTORY)
+        if(${path_to_old} STREQUAL ${DIR})
+            set(mklink_option "/D")
+        else()
+            set(mklink_option "")
+        endif()
+    endif()
+
+    if(EXISTS ${OPT_WORKING_DIR}/${path_to_new} AND IS_SYMLINK ${OPT_WORKING_DIR}/${path_to_new})
+        #remove the existing symlink
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E remove -f ${OPT_WORKING_DIR}/${path_to_new}
+        )
+    endif()
+
+    if(WIN32)
+        if(OPT_WORKING_DIR)
+            execute_process(
+                COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
+                WORKING_DIRECTORY ${OPT_WORKING_DIR}
+                OUTPUT_QUIET
+            )
+        else()
+            execute_process(
+                COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
+                OUTPUT_QUIET
+            )
+        endif()
+    else()
+        if(OPT_WORKING_DIR)
+            execute_process(
+                COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
+                WORKING_DIRECTORY ${OPT_WORKING_DIR}
+            )
+        else()
+            execute_process(
+                COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
+            )
+        endif()
+    endif()
 endfunction(create_Symlink)
 
 ###
@@ -191,14 +233,25 @@ function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_f
 	get_filename_component(A_FILE "${path_to_target}" NAME)
 	set(FULL_RPATH_DIR ${path_to_rpath_folder}/${rpath_sub_folder})
 	install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
+    if(WIN32)
+        string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_FILE ${FULL_RPATH_DIR}/${A_FILE})
+        string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_TARGET ${path_to_target})
+    endif()
 	install(CODE "
-	              if(EXISTS ${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${FULL_RPATH_DIR}/${A_FILE})
-									execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
-									                 WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-		            endif()
-		            execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
-	                              WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-		            message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+                    include(${WORKSPACE_DIR}/share/cmake/system/api/PID_Utils_Functions.cmake NO_POLICY_SCOPE)
+                    # if(EXISTS ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE})
+    		        #       execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
+        			# 	                  WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+                    # endif()
+                    message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+                    create_Symlink(${path_to_target} ${FULL_RPATH_DIR}/${A_FILE} WORKING_DIR ${CMAKE_INSTALL_PREFIX})
+                    # if(WIN32)
+                    #     execute_process(COMMAND cmd.exe /c mklink ${W32_PATH_FILE} ${W32_PATH_TARGET}
+                    #                     WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} OUTPUT_QUIET)
+                    # else()
+                    #     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
+                    #                     WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+                    # endif()
 	")# creating links "on the fly" when installing
 
 endfunction(install_Runtime_Symlink)
@@ -347,6 +400,19 @@ function(list_Version_Subdirectories result curdir)
   list(SORT dirlist)
 	set(${result} ${dirlist} PARENT_SCOPE)
 endfunction(list_Version_Subdirectories)
+
+###
+function(get_Greater_Version GREATER_ONE list_of_versions)
+  set(version_string_curr)
+  foreach(version IN LISTS list_of_versions)
+    if(NOT version_string_curr)
+        set(version_string_curr ${version})
+    elseif(version_string_curr VERSION_LESS ${version})
+      set(version_string_curr ${version})
+    endif()
+  endforeach()
+  set(${GREATER_ONE} ${version_string_curr} PARENT_SCOPE)
+endfunction(get_Greater_Version)
 
 ###
 function(list_Platform_Symlinks result curdir)
@@ -700,19 +766,23 @@ set(${SHARED} FALSE PARENT_SCOPE)
 get_filename_component(LIB_TYPE ${input_link} EXT)
 if(LIB_TYPE)
         if(APPLE)
-                if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
-			set(${SHARED} TRUE PARENT_SCOPE)
-		endif()
-	elseif(UNIX)
-                if(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib
-			set(${SHARED} TRUE PARENT_SCOPE)
-		endif()
-	endif()
+            if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
+			        set(${SHARED} TRUE PARENT_SCOPE)
+		        endif()
+	      elseif(UNIX)
+            if(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib
+			        set(${SHARED} TRUE PARENT_SCOPE)
+		        endif()
+        elseif(WIN32)
+           if(LIB_TYPE MATCHES "^\\.dll(\\.[0-9]+)*$")#found shared lib
+              set(${SHARED} TRUE PARENT_SCOPE)
+	         endif()
+        endif()
 else()
 	# no extenion may be possible with MACOSX frameworks
         if(APPLE)
-		set(${SHARED} TRUE PARENT_SCOPE)
-	endif()
+		       set(${SHARED} TRUE PARENT_SCOPE)
+	      endif()
 endif()
 endfunction(is_Shared_Lib_With_Path)
 
@@ -720,13 +790,17 @@ endfunction(is_Shared_Lib_With_Path)
 function(get_Link_Type RES_TYPE input_link)
 get_filename_component(LIB_TYPE ${input_link} EXT)
 if(LIB_TYPE)
-        if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
+    if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib (MACOSX)
 		set(${RES_TYPE} SHARED PARENT_SCOPE)
-	elseif(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib (MACOSX)
+	elseif(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib (UNIX)
 		set(${RES_TYPE} SHARED PARENT_SCOPE)
+    elseif(LIB_TYPE MATCHES "^\\.dll$")#found shared lib (windows)
+        set(${RES_TYPE} SHARED PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.a$")#found static lib (C)
 		set(${RES_TYPE} STATIC PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.la$")#found static lib (pkg-config)
+		set(${RES_TYPE} STATIC PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.lib$")#found lib (windows)
 		set(${RES_TYPE} STATIC PARENT_SCOPE)
 	else()#unknown extension => linker option
 		set(${RES_TYPE} OPTION PARENT_SCOPE)

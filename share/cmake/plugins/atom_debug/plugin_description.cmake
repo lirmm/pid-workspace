@@ -19,6 +19,8 @@
 
 set(atom_debug_PLUGIN_DESCRIPTION "use this plugin to generate configuration files to be used with the dbg-gdb atom plugin" CACHE INTERNAL "")
 
-set(atom_debug_PLUGIN_ACTIVATION_MESSAGE "plugin atom_debug: generating .atom-dbg.cson configuration files" CACHE INTERNAL "")
+set(atom_debug_PLUGIN_ACTIVATION_MESSAGE "generating debugger configuration files..." CACHE INTERNAL "")
+
+set(atom_debug_PLUGIN_ACTIVATED_MESSAGE "automatically generating .atom-dbg.cson configuration files in order to configure atom dbg-gdb plugin (c/c++ debugger)." CACHE INTERNAL "")
 
 set(atom_debug_PLUGIN_RESIDUAL_FILES ".atom-dbg.cson" CACHE INTERNAL "")

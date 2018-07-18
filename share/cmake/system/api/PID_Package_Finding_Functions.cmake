@@ -325,9 +325,9 @@ if(idx EQUAL -1)#the component is NOT an application
 			return()
 		endif()
 		#now checking for binaries if necessary
-		if(	"${package_name}_${component_name}_TYPE" STREQUAL "STATIC"
-			OR "${package_name}_${component_name}_TYPE" STREQUAL "SHARED"
-			OR "${package_name}_${component_name}_TYPE" STREQUAL "MODULE")
+		if(	${${package_name}_${component_name}_TYPE} STREQUAL "STATIC"
+			OR ${${package_name}_${component_name}_TYPE} STREQUAL "SHARED"
+			OR ${${package_name}_${component_name}_TYPE} STREQUAL "MODULE")
 			#checking release and debug binaries (at least one is required)
 			find_library(	PATH_TO_LIB
 					NAMES ${${package_name}_${component_name}_BINARY_NAME} ${${package_name}_${component_name}_BINARY_NAME_DEBUG}
@@ -919,7 +919,7 @@ macro(exitFindScript package message_to_send)
 	endif()
 endmacro(exitFindScript)
 
-### macro to be called in find script of packages. Implement the finding the standard way in CMake.
+### macro to be called in find script of packages. Implement the finding process the standard way in CMake.
 macro(finding_Package package)
 set(${package}_FOUND FALSE CACHE INTERNAL "")
 

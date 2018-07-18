@@ -236,27 +236,29 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		set(PACKAGE_SITE_REF_IN_README "")
 
 		# simplified install section
-		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is based on the [PID](http://pid.lirmm.net/pid-framework/pages/install.html) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
+		set(INSTALL_USE_IN_README "The detailed procedures for installing the ${PROJECT_NAME} package and for using its components is based on the [PID](http://pid.lirmm.net/pid-framework/pages/install.html) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
 	else()
 		# intro
 		generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
-		if("${RES_INTRO}" STREQUAL "")
+		if(RES_INTRO STREQUAL "")
 			set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site description use the short one
 		else()
 			set(README_OVERVIEW "${RES_INTRO}") #otherwise use detailed one specific for site
 		endif()
 
 		# install procedure
-		set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called [PID](http://pid.lirmm.net/pid-framework/pages/install.html). Just follow and read the links to understand how to install, use and call its API and/or applications.")
+		set(INSTALL_USE_IN_README "The detailed procedures for installing the ${PROJECT_NAME} package and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called [PID](http://pid.lirmm.net/pid-framework/pages/install.html). Just follow and read the links to understand how to install, use and call its API and/or applications.")
 
 		# reference to site page
 		set(PACKAGE_SITE_REF_IN_README "[package_site]: ${ADDRESS} \"${PROJECT_NAME} package\"
 ")
 	endif()
 
+  generate_Install_Procedure_Documentation(INSTALL_DOC ${PROJECT_NAME})
+  set(INSTALL_USE_IN_README "${INSTALL_USE_IN_README}\n${INSTALL_DOC}")
+
 	if(${PROJECT_NAME}_LICENSE)
 		set(PACKAGE_LICENSE_FOR_README "The license that applies to the whole package content is **${${PROJECT_NAME}_LICENSE}**. Please look at the license.txt file at the root of this repository.")
-
 	else()
 		set(PACKAGE_LICENSE_FOR_README "The package has no license defined yet.")
 	endif()
@@ -281,6 +283,32 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 endfunction(generate_Package_Readme_Files)
 
+###
+function(generate_Install_Procedure_Documentation RETURNED_INSTALL_DOC package)
+if(${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS)
+  set(DOC_STR "\nFor a quick installation:\n")
+  set(DOC_STR "${DOC_STR}\n## Installing the project into an existing PID workspace\n")
+  set(DOC_STR "${DOC_STR}\nTo get last version :\n")
+  set(DOC_STR "${DOC_STR} ```\ncd <path to pid workspace>/pid\nmake deploy package=${package}\n```\n")
+  set(DOC_STR "${DOC_STR}\nTo get a specific version of the package :\n")
+  set(DOC_STR "${DOC_STR} ```\ncd <path to pid workspace>/pid\nmake deploy package=${package} version=<version number>\n```\n")
+  set(DOC_STR "${DOC_STR}\n## Standalone install\n")
+  if(${package}_PUBLIC_ADDRESS)
+    set(DOC_STR "${DOC_STR} ```\ngit clone ${${package}_PUBLIC_ADDRESS}\ncd ${package}\n```\n")
+  elseif(${package}_ADDRESS)
+    set(DOC_STR "${DOC_STR} ```\ngit clone ${${package}_ADDRESS}\ncd ${package}\n```\n")
+  endif()
+  set(DOC_STR "${DOC_STR}\nThen run the adequate install script depending on your system. For instance on linux:\n")
+  set(DOC_STR "${DOC_STR}```\nsh share/install/standalone_install.sh\n```\n")
+  set(DOC_STR "${DOC_STR}\nThe pkg-config tool can be used to get all links and compilation flags for the libraries defined inthe project. To let pkg-config know these libraries, read the last output of the install_script and apply the given command. It consists in setting the PKG_CONFIG_PATH, for instance on linux do:\n")
+  set(DOC_STR "${DOC_STR}```\nexport PKG_CONFIG_PATH=<path to ${package}>/binaries/pid-workspace/share/pkgconfig:$PKG_CONFIG_PATH\n```\n")
+  set(DOC_STR "${DOC_STR}\nThen, to get compilation flags run:\n")
+  set(DOC_STR "${DOC_STR}\n```\npkg-config --static --cflags ${package}_<name of library>\n```\n")
+  set(DOC_STR "${DOC_STR}\nTo get linker flags run:\n")
+  set(DOC_STR "${DOC_STR}\n```\npkg-config --static --libs ${package}_<name of library>\n```\n")
+endif()
+set(${RETURNED_INSTALL_DOC} ${DOC_STR} PARENT_SCOPE)
+endfunction(generate_Install_Procedure_Documentation)
 
 ### create the index file for package in the framework
 function(generate_Package_Page_Index_In_Framework generated_site_folder)

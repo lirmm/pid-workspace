@@ -19,6 +19,8 @@
 
 set(cotire_PLUGIN_DESCRIPTION "use this plugin to speed up compilation" CACHE INTERNAL "")
 
-set(cotire_PLUGIN_ACTIVATION_MESSAGE "plugin cotire: speed up compilation time" CACHE INTERNAL "")
+set(cotire_PLUGIN_ACTIVATION_MESSAGE "speed up compilation time..." CACHE INTERNAL "")
+
+set(cotire_PLUGIN_ACTIVATED_MESSAGE "speed up compilation time of packages" CACHE INTERNAL "")
 
 set(cotire_PLUGIN_RESIDUAL_FILES "" CACHE INTERNAL "")

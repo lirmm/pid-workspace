@@ -17,21 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(CURRENT_TYPE CACHE INTERNAL "")
+set(pkg_config_PLUGIN_DESCRIPTION "use this plugin to generate configuration files for the pkg-config tool" CACHE INTERNAL "")
 
-#test of processor type is based on system variables affected by cross compilation
-#So it adapts to the current development environment in use
+set(pkg_config_PLUGIN_ACTIVATION_MESSAGE "generating pkg-config modules..." CACHE INTERNAL "")
 
-if("${CMAKE_SYSTEM_PROCESSOR}" MATCHES arm)
-	set(CURRENT_TYPE arm CACHE INTERNAL "")
-elseif(	"${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x64
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i686
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i386
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL i486
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86_32
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL x86_64
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL amd64
-	OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL AMD64)
-	set(CURRENT_TYPE x86 CACHE INTERNAL "")
-endif()# Note: add more check to test other processor architectures
+set(pkg_config_PLUGIN_ACTIVATED_MESSAGE "automatically generating pkg-config modules from packages description. To use pkg-config for retrieving generated libraries please set your environment variable PKG_CONFIG_PATH to ${WORKSPACE_DIR}/pid/share/pkgconfig (e.g. export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${WORKSPACE_DIR}/pid/share/pkgconfig). Typical usage: for building an executable use `pkg-config --static --cflags <name of the library>` ; for linking use `pkg-config --static --libs <name of the library>`" CACHE INTERNAL "")
+
+set(pkg_config_PLUGIN_RESIDUAL_FILES "" CACHE INTERNAL "")#no residual file live in the source tree
