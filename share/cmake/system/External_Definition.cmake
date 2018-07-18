@@ -37,6 +37,42 @@ include(CMakeParseArguments)
 ##################################################################################################
 #################### API to ease the description of external packages ############################
 ##################################################################################################
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |declare_PID_External_Package| replace:: ``declare_PID_External_Package``
+#  .. _declare_PID_External_Package:
+#
+#  declare_PID_External_Package
+#  ------------------------------
+#
+#   .. command:: declare_PID_External_Package(PACKAGE ...)
+#
+#      Declare that an external package defined in the context of the currently built PID native package provides a description of its content.
+#
+#     .. rubric:: Required parameters
+#
+#     :PACKAGE <name>: the name of the external package whose content is being described in subsequent calls.
+#
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the use file provided by external package version, before any other call to external package API .
+#        - Exactly one call to this macro is allowed for a given use file.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        Initialization of external package description : after this call the external package’s content is ready to be defined.
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        declare_PID_External_Package(PACKAGE boost)
+#
 macro(declare_PID_External_Package)
 	set(options)
 	set(oneValueArgs PACKAGE)
@@ -84,7 +120,44 @@ macro(declare_PID_External_Package)
 	set(${package}_DECLARED TRUE)
 endmacro(declare_PID_External_Package)
 
-### API: used to describe external package platform constraints
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |check_PID_External_Package_Platform| replace:: ``check_PID_External_Package_Platform``
+#  .. _check_PID_External_Package_Platform:
+#
+#  check_PID_External_Package_Platform
+#  -----------------------------------
+#
+#   .. command:: check_PID_External_Package_Platform(PACKAGE ... PLATFORM ... CONFIGURATION ...)
+#
+#      Check if the current target platform conforms to the given platform configuration. If constraints are violated then the configuration of the currently built package will fail. Otherwise the project will be configured and built accordingly.
+#
+#     .. rubric:: Required parameters
+#
+#     :PACKAGE <name>: the name of the external package being defined.
+#     :PLATFORM <platform string>: the target platform of the external package version being defined.
+#     :CONFIGURATION <list of configuration>: The list of configuration to check in order to use the external package version being defined.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the use file provided by external package version after the call to declare_PID_External_Package.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         First it checks if the current target platform used in currently built package conforms to the platform specified. If not this command has no effect.
+#         Otherwise, each configuration required is then checked individually. This can lead to the automatic install of some configuration, if this is possible (i.e. if there is a known way to install this configuration).
+#         If the target plaform conforms to all required configurations, then the configuration of the currently built PID package continues, otherwise it fails.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        check_PID_External_Package_Platform(PACKAGE boost PLATFORM x86_64_linux_abi11 CONFIGURATION posix)
+#
 macro(check_PID_External_Package_Platform)
 set(options)
 set(oneValueArgs PLATFORM PACKAGE)
@@ -106,7 +179,46 @@ else()
 endif()
 endmacro(check_PID_External_Package_Platform)
 
-### API: used to describe external package dependency to other external packages
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |declare_PID_External_Package_Dependency| replace:: ``declare_PID_External_Package_Dependency``
+#  .. _declare_PID_External_Package_Dependency:
+#
+#  declare_PID_External_Package_Dependency
+#  ---------------------------------------
+#
+#   .. command:: declare_PID_External_Package_Dependency(PACKAGE ... EXTERNAL ... [EXACT] VERSION ...)
+#
+#      Declare that an external package depends on another external package version.
+#
+#     .. rubric:: Required parameters
+#
+#     :PACKAGE <name>: the name of the external package being defined.
+#     :EXTERNAL <name>: the name of the external package that the external package being defined depends on (the dependency).
+#     :VERSION <version string>: the dotted notation defining the version of the dependency.
+#
+#     .. rubric:: Optional parameters
+#
+#     :EXACT: tells wether the required version of the dependency must be strictly respected (no adaptation to a compatible version allowed).
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the use file provided by external package version after the call to declare_PID_External_Package.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         The external package defines another external packageas as a dependency,it can then use this dependency's description and content.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        declare_PID_External_Package_Dependency(PACKAGE open-cv EXTERNAL freetype2 VERSION 2.6.1)
+#
 macro(declare_PID_External_Package_Dependency)
 	set(options EXACT)
 	set(oneValueArgs PACKAGE EXTERNAL VERSION)
@@ -151,7 +263,52 @@ macro(declare_PID_External_Package_Dependency)
 	endif()
 endmacro(declare_PID_External_Package_Dependency)
 
-### API: used to describe a component inside and external package
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |declare_PID_External_Component| replace:: ``declare_PID_External_Component``
+#  .. _declare_PID_External_Component:
+#
+#  declare_PID_External_Component
+#  ------------------------------
+#
+#   .. command:: declare_PID_External_Component(PACKAGE ... EXTERNAL ... [EXACT] VERSION ...)
+#
+#      Declare a new component (library, application) defined in the external package, that is then known in the context of the currently built PID package.
+#
+#     .. rubric:: Required parameters
+#
+#     :PACKAGE <name>: the name of the external package being defined.
+#     :COMPONENT <name>: the unique identifier of the component provided by the external package.
+#
+#     .. rubric:: Optional parameters
+#
+#     :ÌNCLUDES <list of folders>: list of include path, relative to external package version folder. These include directories contain the interface of the component.
+#     :DEFINITIONS <list of definitions>: list of preprocessor definitions to use when building a component that uses this external component.
+#     :COMPILER_OPTIONS <list of options>: list of compiler options to use when building a component that uses this external component. Should contain only real compiler options and not either definition or includes directives.
+#     :SHARED_LINKS <list of shared links>: list of path to shared library binaries, relative to external package version folder.
+#     :STATIC_LINKS <list of static links>: list of path to static library binaries, relative to external package version folder.
+#     :RUNTIME_RESOURCES <list of path>: list of path to runtime resources (i.e. files) that are used by the external component. These resources will be referenced by the rpath of native components that is this external component.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the use file provided by external package version, after the call to declare_PID_External_Package.
+#        - The name of the component must be unique.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         Define an external component as part of the external package being defined. This component is then usable in the context of currently built native package, particularly it creates adequate build targets with adequate configuration.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        declare_PID_External_Component(PACKAGE boost COMPONENT boost-headers INCLUDES include SHARED_LINKS ${posix_LINK_OPTIONS})
+#        declare_PID_External_Component(PACKAGE boost COMPONENT boost-atomic SHARED_LINKS lib/libboost_atomic)
+#
 macro(declare_PID_External_Component)
 	set(options)
 	set(oneValueArgs PACKAGE COMPONENT C_STANDARD CXX_STANDARD)
@@ -264,9 +421,59 @@ macro(declare_PID_External_Component)
 	endif()
 endmacro(declare_PID_External_Component)
 
-### declare_PID_External_Component_Dependency (PACKAGE current COMPONENT curr_comp [DEPENDS or EXPORT other] comp EXTERNAL other ext pack)
-### EXTERNAL may be not used if the dependency is INTERNAL to the external package
-### if EXTERNAL is used it may be use with a component name (using EXPORT or DEPENDS) or without (and so will directly use keywords: INCLUDES LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |declare_PID_External_Component_Dependency| replace:: ``declare_PID_External_Component_Dependency``
+#  .. _declare_PID_External_Component_Dependency:
+#
+#  declare_PID_External_Component_Dependency
+#  -----------------------------------------
+#
+#   .. command:: declare_PID_External_Component_Dependency(PACKAGE ... COMPONENT ... [EXTERNAL ...] USE|EXPORT ... [OPTIONS])
+#
+#      Declare a dependency for an external component in an external package, that is then known in the context of the currently built PID package.. This dependency specifies that external either:
+#      + depends on another external component, either belonging to the same or another external package.
+#      + directly depends on the use of headers and libraries if no component description exist.
+#
+#     .. rubric:: Required parameters
+#
+#     :PACKAGE <name>: the name of the external package being defined.
+#     :COMPONENT <name>: the unique identifier of the component provided by the external package.
+#
+#     .. rubric:: Optional parameters
+#
+#     :EXTERNAL <name>: If the dependency belongs to another external package, use this argument to define which one.
+#     :USE <name of the component used>: If the dependency is an external component described with this API, use USE keyword if the component is not exported (its interface is not exposed by the currently described external component). Cannot be used together with EXPORT keyword.
+#     :EXPORT <name of the component used>: If the dependency is an external component described with this API, use EXPORT keyword if the component is exported (its interface is exposed by the currently described external component). Cannot be used together with USE keyword.
+#     :ÌNCLUDES <list of folders>: list of include path, relative to external package version folder. These include directories contain the interface of the component. To be used when no component description is provided by the used external package.
+#     :DEFINITIONS <list of definitions>: list of preprocessor definitions to use when building a component that uses this external component. To be used when no component description is provided by the used external package.
+#     :COMPILER_OPTIONS <list of options>: list of compiler options to use when building a component that uses this external component. Should contain only real compiler options and not either definition or includes directives. To be used when no component description is provided by the used external package.
+#     :SHARED_LINKS <list of shared links>: list of path to shared library binaries, relative to external package version folder. To be used when no component description is provided by the used external package.
+#     :STATIC_LINKS <list of static links>: list of path to static library binaries, relative to external package version folder. To be used when no component description is provided by the used external package.
+#     :RUNTIME_RESOURCES <list of path>: list of path to runtime resources (i.e. files) that are used by the external component. These resources will be referenced by the rpath of native components that is this external component. To be used when no component description is provided by the used external package.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the use file provided by external package version, after the call to declare_PID_External_Package.
+#        - It must be called after the call to declare_PID_External_Component applied to the same declared external component.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         Define a dependency between an external component in a given external package and another external component or with another external package's content. This will configure the external component target adequately in the context of the currently built package.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#      declare_PID_External_Component(PACKAGE boost COMPONENT boost-headers INCLUDES include SHARED_LINKS ${posix_LINK_OPTIONS})
+#
+#      declare_PID_External_Component(PACKAGE boost COMPONENT boost-system SHARED_LINKS lib/libboost_system${EXTENSION})
+#      declare_PID_External_Component_Dependency(PACKAGE boost COMPONENT boost-system EXPORT boost-headers) #system depends on headers
+#
 macro(declare_PID_External_Component_Dependency)
 	set(options)
 	set(oneValueArgs PACKAGE COMPONENT EXTERNAL EXPORT USE)
