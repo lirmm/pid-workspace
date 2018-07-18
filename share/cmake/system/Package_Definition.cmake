@@ -49,7 +49,7 @@ include(CMakeParseArguments)
 #
 #     .. rubric:: Required parameters
 #
-#     :AUTHOR <name>: Defines the name of the reference author.
+#     :AUTHOR <name>: The name of the author in charge of maintaining the package.
 #     :YEAR <dates>: Reflects the lifetime of the package, e.g. ``YYYY-ZZZZ`` where ``YYYY`` is the creation year and ``ZZZZ`` the latest modification date.
 #     :LICENSE <license name>: The name of the license applying to the package. This must match one of the existing license file in the ``licenses`` directory of the workspace.
 #     :DESCRIPTION <description>: A short description of the package usage and utility.

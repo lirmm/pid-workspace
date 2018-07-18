@@ -14,6 +14,7 @@ Contents
    /pages/Package_API.rst
    /pages/Wrapper_API.rst
    /pages/External_API.rst
+   /pages/Framework_API.rst
    /pages/Package_Files.rst
    /pages/internal.rst
    /pages/developers.rst

@@ -34,6 +34,13 @@ include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 ##################  declaration of a lone package static site ####################
 ##################################################################################
 
+### final API used to configure lone static site of a package
+macro(declare_PID_Site)
+set(oneValueArgs PACKAGE_URL SITE_URL)
+cmake_parse_arguments(DECLARE_PID_SITE "" "${oneValueArgs}" "" ${ARGN} )
+declare_Site("${DECLARE_PID_SITE_PACKAGE_URL}" "${DECLARE_PID_SITE_SITE_URL}")
+endmacro(declare_PID_Site)
+
 ############ function used to create the README.md file of the site  ###########
 function(generate_Site_Readme_File)
 set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/static_sites/README.md.in)
