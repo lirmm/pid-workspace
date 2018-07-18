@@ -5,14 +5,21 @@ include(Package_Definition NO_POLICY_SCOPE)
 
 PROJECT(@PACKAGE_NAME@)
 
+<<<<<<< HEAD
 declare_PID_Package(
 			AUTHOR      @PACKAGE_AUTHOR_NAME@
 			YEAR        @PACKAGE_YEARS@
 			LICENSE     @PACKAGE_LICENSE@
 			DESCRIPTION @PACKAGE_DESCRIPTION@
+=======
+declare_PID_Package(	AUTHOR 		@PACKAGE_AUTHOR_NAME@
+			YEAR 		@PACKAGE_YEARS@
+			LICENSE 	@PACKAGE_LICENSE@
+			DESCRIPTION 	@PACKAGE_DESCRIPTION@
+>>>>>>> master
 		)
 
-set_PID_Package_Version(0 1)
+set_PID_Package_Version(0 0)
 
 #now finding packages
 
