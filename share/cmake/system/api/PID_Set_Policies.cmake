@@ -17,15 +17,26 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-##########################################################################################
-############################ Guard for optimization of configuration process #############
-##########################################################################################
+############ Guard for optimization of configuration process ############################
 if(PID_SET_POLICIES_INCLUDED)
   return()
 endif()
 set(PID_SET_POLICIES_INCLUDED TRUE)
 ##########################################################################################
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |policies| replace:: ``policies``
+#  .. _policies:
+#
+#  script for setting policies
+#  ---------------------------
+#
+#  Set the default policies applied by CMake during configuration process.
+#
 
 ########################################################################
 ##################### definition of CMake policies #####################

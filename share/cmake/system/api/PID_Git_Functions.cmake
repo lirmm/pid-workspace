@@ -32,7 +32,21 @@ set(PID_GIT_FUNCTIONS_INCLUDED TRUE)
 ############# function related to git tool configuration #############
 ######################################################################
 
-###
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_Git| replace:: ``configure_Git``
+#  .. _configure_Git:
+#
+#  configure_Git
+#  -------------
+#
+#   .. command:: configure_Git()
+#
+#      Memorize the version of the git tool used
+#
 function(configure_Git)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git --version OUTPUT_VARIABLE version_string)
 string(REGEX REPLACE "^[^0-9]*([0-9]+\\.[0-9]+\\.[0-9]+).*$" "\\1" VERSION ${version_string})
@@ -44,7 +58,24 @@ else()
 endif()
 endfunction(configure_Git)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |git_Provides_GETURL| replace:: ``git_Provides_GETURL``
+#  .. git_Provides_GETURL:
+#
+#  git_Provides_GETURL
+#  -------------------
+#
+#   .. command:: git_Provides_GETURL( RESULT )
+#
+#      Tells wether the git tool used provides the geturl command.
+#
+#      .. rubric:: Required parameters
+#
+#      :RESULT: The boolean variable that will be set to TRUE if git provides the geturl command, FALSE otherwise.
+#
 function(git_Provides_GETURL RESULT)
 
 if(GIT_VERSION AND NOT (GIT_VERSION VERSION_LESS 2.7.0))
@@ -52,7 +83,6 @@ if(GIT_VERSION AND NOT (GIT_VERSION VERSION_LESS 2.7.0))
 else()
 	set(${RESULT} FALSE PARENT_SCOPE)
 endif()
-
 endfunction(git_Provides_GETURL)
 
 ######################################################################
