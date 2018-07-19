@@ -1,15 +1,8 @@
-Internal commands
-*****************
-
-
-.. setmode:: internal
-
-.. cmake-module:: ../../system/api/PID_Git_Functions.cmake
-
-
+Internal functions
+******************
 
 Package Description
--------------------
+===================
 
 .. setmode:: internal
 
@@ -21,7 +14,7 @@ Package Description
 
 
 Framework Description
----------------------
+=====================
 
 .. setmode:: internal
 
@@ -29,7 +22,7 @@ Framework Description
 
 
 Wrapper Description
--------------------
+===================
 
 .. setmode:: internal
 
@@ -37,7 +30,7 @@ Wrapper Description
 
 
 Workspace Utilities
--------------------
+===================
 
 .. setmode:: internal
 
@@ -45,7 +38,7 @@ Workspace Utilities
 
 
 General Utilities
------------------
+=================
 
 .. setmode:: internal
 
@@ -53,7 +46,7 @@ General Utilities
 
 
 Git Utilities
--------------
+=============
 
 .. setmode:: internal
 
@@ -61,14 +54,14 @@ Git Utilities
 
 
 Finding Utilities
------------------
+=================
 
 .. setmode:: internal
 
 .. cmake-module:: ../../system/api/PID_Finding_Functions.cmake
 
 Deployment Utilities
---------------------
+====================
 
 .. setmode:: internal
 
@@ -76,7 +69,7 @@ Deployment Utilities
 
 
 Meta information Utilities
---------------------------
+==========================
 
 .. setmode:: internal
 
@@ -84,7 +77,7 @@ Meta information Utilities
 
 
 Documentation Utilities
------------------------
+=======================
 
 .. setmode:: internal
 
@@ -92,7 +85,7 @@ Documentation Utilities
 
 
 Static site Utilities
----------------------
+=====================
 
 .. setmode:: internal
 
@@ -100,7 +93,7 @@ Static site Utilities
 
 
 Continuous integration Utilities
---------------------------------
+================================
 
 .. setmode:: internal
 
@@ -108,7 +101,7 @@ Continuous integration Utilities
 
 
 Plugins Utilities
------------------
+=================
 
 .. setmode:: internal
 
@@ -116,7 +109,7 @@ Plugins Utilities
 
 
 Process Progress Utilities
---------------------------
+==========================
 
 .. setmode:: internal
 
@@ -124,7 +117,7 @@ Process Progress Utilities
 
 
 Policies
---------
+========
 
 .. setmode:: internal
 
@@ -132,7 +125,7 @@ Policies
 
 
 PID Version Compatibility
--------------------------
+=========================
 
 .. setmode:: internal
 

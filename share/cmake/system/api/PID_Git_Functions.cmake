@@ -32,7 +32,6 @@ set(PID_GIT_FUNCTIONS_INCLUDED TRUE)
 ############# function related to git tool configuration #############
 ######################################################################
 
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -45,7 +44,7 @@ set(PID_GIT_FUNCTIONS_INCLUDED TRUE)
 #
 #   .. command:: configure_Git()
 #
-#      Memorize the version of the git tool used
+#      Memorize the version of the git tool used.
 #
 function(configure_Git)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git --version OUTPUT_VARIABLE version_string)
@@ -72,8 +71,6 @@ endfunction(configure_Git)
 #
 #      Tells wether the git tool used provides the geturl command.
 #
-#      .. rubric:: Required parameters
-#
 #      :RESULT: The boolean variable that will be set to TRUE if git provides the geturl command, FALSE otherwise.
 #
 function(git_Provides_GETURL RESULT)
@@ -89,7 +86,22 @@ endfunction(git_Provides_GETURL)
 ############# function used to navigate between branches #############
 ######################################################################
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |prepare_Repository_Context_Switch| replace:: ``prepare_Repository_Context_Switch``
+#  .. _prepare_Repository_Context_Switch:
+#
+#  prepare_Repository_Context_Switch
+#  ---------------------------------
+#
+#   .. command:: prepare_Repository_Context_Switch(package)
+#
+#     Clean the git repository, which must be done before any git context switch (i.e. checkout).
+#
+#     :package: The target source package whose repository is cleaned
+#
 function(prepare_Repository_Context_Switch package)
 execute_process(
     COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git reset --hard # remove any change applied to the previous repository state
@@ -97,44 +109,149 @@ execute_process(
 		OUTPUT_QUIET ERROR_QUIET)#this is a mandatory step due to the generation of versionned files in source dir when build takes place (this should let the repository in same state as initially)
 endfunction(prepare_Repository_Context_Switch)
 
-###
-function(go_To_Commit repo branch)
-  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${repo} git checkout ${branch}
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |go_To_Commit| replace:: ``go_To_Commit``
+#  .. _go_To_Commit:
+#
+#  go_To_Commit
+#  ------------
+#
+#   .. command:: go_To_Commit(repo commit)
+#
+#     Checkout to the given commit in the target git repository.
+#
+#     :repo: The filesystem path to the target repository
+#
+#     :commit: the commit to go to
+#
+function(go_To_Commit repo commit)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${repo} git checkout ${commit}
 		              OUTPUT_QUIET ERROR_QUIET)
 endfunction(go_To_Commit)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |go_To_Integration| replace:: ``go_To_Integration``
+#  .. _go_To_Integration:
+#
+#  go_To_Integration
+#  -----------------
+#
+#   .. command:: go_To_Integration(package)
+#
+#     Checkout to the integration branch of the target source package.
+#
+#     :package: The target source package
+#
 function(go_To_Integration package)
   prepare_Repository_Context_Switch(${package})
   go_To_Commit(${WORKSPACE_DIR}/packages/${package} integration)
 endfunction(go_To_Integration)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |go_To_Master| replace:: ``go_To_Master``
+#  .. _go_To_Master:
+#
+#  go_To_Master
+#  -----------------
+#
+#   .. command:: go_To_Master(package)
+#
+#     Checkout to the master branch of the target source package.
+#
+#     :package: The target source package
+#
 function(go_To_Master package)
   prepare_Repository_Context_Switch(${package})
   go_To_Commit(${WORKSPACE_DIR}/packages/${package} master)
 endfunction(go_To_Master)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |go_To_Workspace_Master| replace:: ``go_To_Workspace_Master``
+#  .. _go_To_Workspace_Master:
+#
+#  go_To_Workspace_Master
+#  ----------------------
+#
+#   .. command:: go_To_Workspace_Master()
+#
+#     Checkout to the master branch of the PID workspace.
+#
 function(go_To_Workspace_Master)
   go_To_Commit(${WORKSPACE_DIR} master)
 endfunction(go_To_Workspace_Master)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |go_To_Workspace_Development| replace:: ``go_To_Workspace_Development``
+#  .. _go_To_Workspace_Development:
+#
+#  go_To_Workspace_Development
+#  ---------------------------
+#
+#   .. command:: go_To_Workspace_Development()
+#
+#     Checkout to the development branch of the PID workspace.
+#
 function(go_To_Workspace_Development)
   go_To_Commit(${WORKSPACE_DIR} development)
 endfunction(go_To_Workspace_Development)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |go_To_Version| replace:: ``go_To_Version``
+#  .. _go_To_Version:
+#
+#  go_To_Version
+#  -------------
+#
+#   .. command:: go_To_Version(package version)
+#
+#     Checkout to the target version commit of a package.
+#
+#     :package: The target source package
+#
+#     :version: the target version
+#
 function(go_To_Version package version)
   prepare_Repository_Context_Switch(${package})
   execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout tags/v${version}
 		              OUTPUT_QUIET ERROR_QUIET)
 endfunction(go_To_Version)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Repository_Version_Tags| replace:: ``get_Repository_Version_Tags``
+#  .. _get_Repository_Version_Tags:
+#
+#  get_Repository_Version_Tags
+#  ---------------------------
+#
+#   .. command:: get_Repository_Version_Tags(AVAILABLE_VERSION package)
+#
+#     Get all version tags of a package.
+#
+#     :package: The target source package
+#
+#     :AVAILABLE_VERSIONS: the variable that contains the list of all tagged versions
+#
 function(get_Repository_Version_Tags AVAILABLE_VERSIONS package)
 set(${AVAILABLE_VERSIONS} PARENT_SCOPE)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -l v*
@@ -147,7 +264,24 @@ string(REPLACE "\n" ";" GIT_VERSIONS ${res})
 set(${AVAILABLE_VERSIONS} ${GIT_VERSIONS} PARENT_SCOPE)
 endfunction(get_Repository_Version_Tags)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |normalize_Version_Tags| replace:: ``normalize_Version_Tags``
+#  .. _normalize_Version_Tags:
+#
+#  normalize_Version_Tags
+#  ----------------------
+#
+#   .. command:: normalize_Version_Tags(AVAILABLE_VERSION package)
+#
+#     Get all version tags of a package.
+#
+#     :package: The target source package
+#
+#     :AVAILABLE_VERSIONS: the output variable that contains the list of all tagged versions
+#
 function(normalize_Version_Tags VERSION_NUMBERS VERSIONS_TAGS)
 foreach(tag IN LISTS VERSIONS_TAGS)
 	string(REGEX REPLACE "^v(.*)$" "\\1" VNUMBERS ${tag})
@@ -156,8 +290,24 @@ endforeach()
 set(${VERSION_NUMBERS} ${result} PARENT_SCOPE)
 endfunction(normalize_Version_Tags)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Repository_Current_Branch| replace:: ``get_Repository_Current_Branch``
+#  .. _get_Repository_Current_Branch:
+#
+#  get_Repository_Current_Branch
+#  -----------------------------
+#
+#   .. command:: get_Repository_Current_Branch(BRANCH_NAME repo)
+#
+#     Get the current branch of a git repository.
+#
+#     :repo: the path to the repository on filesystem
+#
+#     :BRANCH_NAME: the output variable that contains the current branch name
+#
 function(get_Repository_Current_Branch BRANCH_NAME repo)
 set(${BRANCH_NAME} PARENT_SCOPE)
 execute_process(COMMAND git rev-parse --abbrev-ref HEAD
@@ -171,8 +321,24 @@ AND NOT current_branch MATCHES HEAD)
 endif()
 endfunction(get_Repository_Current_Branch)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Repository_Current_Commit| replace:: ``get_Repository_Current_Commit``
+#  .. _get_Repository_Current_Commit:
+#
+#  get_Repository_Current_Commit
+#  -----------------------------
+#
+#   .. command:: get_Repository_Current_Commit(COMMIT_NAME repo)
+#
+#     Get the current commit of a git repository.
+#
+#     :repo: the path to the repository on filesystem
+#
+#     :BRANCH_NAME: the output variable that contains the current commit id
+#
 function(get_Repository_Current_Commit COMMIT_NAME repo)
 set(${COMMIT_NAME} PARENT_SCOPE)
 execute_process(COMMAND git log -n 1
@@ -183,8 +349,26 @@ string(REGEX REPLACE "^commit ([^;]+).*$" "\\1" SHA1_ID ${LINES})
 set(${COMMIT_NAME} ${SHA1_ID} PARENT_SCOPE)
 endfunction(get_Repository_Current_Commit)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |save_Repository_Context| replace:: ``save_Repository_Context``
+#  .. _save_Repository_Context:
+#
+#  save_Repository_Context
+#  -----------------------
+#
+#   .. command:: save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT package)
+#
+#     Save and clean the current state of a package's repository.
+#
+#     :package: the name of target package  name
+#
+#     :INITIAL_COMMIT: the output variable that contains the current commit id
+#
+#     :SAVED_CONTENT: the output variable that is TRUE if some content has ben stashed, false otherwise
+#
 function(save_Repository_Context INITIAL_COMMIT SAVED_CONTENT package)
 get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${package})
 if(NOT BRANCH_NAME)
@@ -203,7 +387,26 @@ else()
 endif()
 endfunction(save_Repository_Context)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |restore_Repository_Context| replace:: ``restore_Repository_Context``
+#  .. _restore_Repository_Context:
+#
+#  restore_Repository_Context
+#  --------------------------
+#
+#   .. command:: restore_Repository_Context(package initial_commit saved_content)
+#
+#     Restore the previous state of a package's repository.
+#
+#     :package:  the name of target package  name
+#
+#     :initial_commit: the id of the commit to checkout to
+#
+#     :saved_content: if TRUE then stashed content will be pop
+#
 function(restore_Repository_Context package initial_commit saved_content)
   prepare_Repository_Context_Switch(${package})
   go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${initial_commit})
@@ -212,7 +415,24 @@ function(restore_Repository_Context package initial_commit saved_content)
   endif()
 endfunction(restore_Repository_Context)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |save_Workspace_Repository_Context| replace:: ``save_Workspace_Repository_Context``
+#  .. _save_Workspace_Repository_Context:
+#
+#  save_Workspace_Repository_Context
+#  ---------------------------------
+#
+#   .. command:: save_Workspace_Repository_Context(INITIAL_COMMIT SAVED_CONTENT))
+#
+#     Save and clean the current state of the workspace.
+#
+#     :INITIAL_COMMIT: the output variable that contains the current commit id of the workspace
+#
+#     :SAVED_CONTENT: the output variable that is TRUE if some content in workspace has ben stashed, false otherwise
+#
 function(save_Workspace_Repository_Context INITIAL_COMMIT SAVED_CONTENT)
 get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR})
 if(NOT BRANCH_NAME)
@@ -231,7 +451,24 @@ else()
 endif()
 endfunction(save_Workspace_Repository_Context)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |restore_Workspace_Repository_Context| replace:: ``restore_Workspace_Repository_Context``
+#  .. _restore_Workspace_Repository_Context:
+#
+#  restore_Workspace_Repository_Context
+#  ------------------------------------
+#
+#   .. command:: restore_Workspace_Repository_Context(initial_commit saved_content)
+#
+#     Restore the previous state of the workspace's repository.
+#
+#     :initial_commit: the id of the commit to checkout to
+#
+#     :saved_content: if TRUE then stashed content will be pop
+#
 function(restore_Workspace_Repository_Context initial_commit saved_content)
 go_To_Commit(${WORKSPACE_DIR} ${initial_commit})
 if(saved_content)
@@ -243,7 +480,26 @@ endfunction(restore_Workspace_Repository_Context)
 ############# function used to merge standard branches ###############
 ######################################################################
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |merge_Into_Master| replace:: ``merge_Into_Master``
+#  .. _merge_Into_Master:
+#
+#  merge_Into_Master
+#  -----------------
+#
+#   .. command:: merge_Into_Master(RESULT package version_string)
+#
+#     Merge the integration branch of a package into its master branch, then tag the current commit on master with a new version.
+#
+#     :package: the name of target package
+#
+#     :version_string: the new version to tag
+#
+#     :RESULT: the ouuput variable that is set to TRUE if merge succeeded, FALSE otherwise
+#
 function(merge_Into_Master RESULT package version_string)
 go_To_Master(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge --ff-only integration RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)
@@ -255,32 +511,110 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(merge_Into_Master)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |merge_Into_Integration| replace:: ``merge_Into_Integration``
+#  .. _merge_Into_Integration:
+#
+#  merge_Into_Integration
+#  ----------------------
+#
+#   .. command:: merge_Into_Integration(package)
+#
+#     Merge the master branch of a package into its integration branch.
+#
+#     :package: the name of target package
+#
 function(merge_Into_Integration package)
 go_To_Integration(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge --ff-only master)
 endfunction(merge_Into_Integration)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |integrate_Branch| replace:: ``integrate_Branch``
+#  .. _integrate_Branch:
+#
+#  integrate_Branch
+#  ----------------
+#
+#   .. command:: integrate_Branch(package branch)
+#
+#     Merge the target branch of a package into its current branch.
+#
+#     :package: the name of target package
+#
+#     :branch: the branch to merge
+#
 function(integrate_Branch package branch)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge ${branch} OUTPUT_QUIET ERROR_QUIET)
 endfunction(integrate_Branch)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |commit_Current_Repository_Branch| replace:: ``commit_Current_Repository_Branch``
+#  .. _commit_Current_Repository_Branch:
+#
+#  commit_Current_Repository_Branch
+#  --------------------------------
+#
+#   .. command:: commit_Current_Repository_Branch(package commit_message)
+#
+#     Commit all modifications inside a package's repository.
+#
+#     :package: the name of target package
+#
+#     :commit_message: the commit message
+#
 function(commit_Current_Repository_Branch package commit_message)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add --all)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "${commit_message}")
 endfunction(commit_Current_Repository_Branch)
 
-
-### registering the address means registering the CMakelists.txt
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |register_Repository_Address| replace:: ``register_Repository_Address``
+#  .. _register_Repository_Address:
+#
+#  register_Repository_Address
+#  ---------------------------
+#
+#   .. command:: register_Repository_Address(package)
+#
+#     Create a commit after update of the package repository address in its CMakeLists.txt.
+#
+#     :package: the name of target package
+#
 function(register_Repository_Address package)
 go_To_Integration(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add CMakeLists.txt) ### registering the address means registering the CMakelists.txt
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "adding repository address to the root CMakeLists.txt file")
 endfunction(register_Repository_Address)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |register_Repository_Version| replace:: ``register_Repository_Version``
+#  .. _register_Repository_Version:
+#
+#  register_Repository_Version
+#  ---------------------------
+#
+#   .. command:: register_Repository_Version(package version_string)
+#
+#     Create a commit after update of the package version in its CMakeLists.txt.
+#
+#     :package: the name of target package
+#
 function(register_Repository_Version package version_string)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "[skip ci] start new version ${version_string}")
@@ -290,7 +624,22 @@ endfunction(register_Repository_Version)
 ############# function used to publish/update modifications   ###############
 #############################################################################
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Package_References_In_Workspace_Repository| replace:: ``publish_Package_References_In_Workspace_Repository``
+#  .. _publish_Package_References_In_Workspace_Repository:
+#
+#  publish_Package_References_In_Workspace_Repository
+#  --------------------------------------------------
+#
+#   .. command:: publish_Package_References_In_Workspace_Repository(package)
+#
+#     Commit and push cmake script files (find and reference) used to reference a package.
+#
+#     :package: the name of target package
+#
 function(publish_Package_References_In_Workspace_Repository package)
 if(EXISTS ${WORKSPACE_DIR}/share/cmake/find/Find${package}.cmake AND EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/find/Find${package}.cmake OUTPUT_QUIET ERROR_QUIET)
@@ -302,8 +651,22 @@ else()
 endif()
 endfunction(publish_Package_References_In_Workspace_Repository)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Framework_References_In_Workspace_Repository| replace:: ``publish_Framework_References_In_Workspace_Repository``
+#  .. _publish_Framework_References_In_Workspace_Repository:
+#
+#  publish_Framework_References_In_Workspace_Repository
+#  ----------------------------------------------------
+#
+#   .. command:: publish_Framework_References_In_Workspace_Repository(package)
+#
+#     Commit and push cmake script files (reference) used to reference a framework.
+#
+#     :framework: the name of target framework
+#
 function(publish_Framework_References_In_Workspace_Repository framework)
 if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/references/ReferFramework${framework}.cmake OUTPUT_QUIET ERROR_QUIET)
@@ -314,14 +677,43 @@ else()
 endif()
 endfunction(publish_Framework_References_In_Workspace_Repository)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Workspace_Repository| replace:: ``update_Workspace_Repository``
+#  .. _update_Workspace_Repository:
+#
+#  update_Workspace_Repository
+#  ---------------------------
+#
+#   .. command:: update_Workspace_Repository(remote)
+#
+#     Pull the history of target git remote's master branch.
+#
+#     :remote: the target git remote
+#
 function(update_Workspace_Repository remote)
 go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git pull ${remote} master)#pulling master branch of origin or official
 endfunction(update_Workspace_Repository)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Repository_Integration| replace:: ``publish_Repository_Integration``
+#  .. _publish_Repository_Integration:
+#
+#  publish_Repository_Integration
+#  ------------------------------
+#
+#   .. command:: publish_Repository_Integration(package)
+#
+#     Push the integration of a package.
+#
+#     :package: the name of target package
+#
 function(publish_Repository_Integration package)
 go_To_Integration(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration OUTPUT_QUIET ERROR_QUIET)#try pushing on integration branch
@@ -339,8 +731,26 @@ if (NOT "${res}" STREQUAL "")
 endif()
 endfunction(publish_Repository_Integration)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Repository_Version| replace:: ``publish_Repository_Version``
+#  .. _publish_Repository_Version:
+#
+#  publish_Repository_Version
+#  --------------------------
+#
+#   .. command:: publish_Repository_Version(package version_string RESULT)
+#
+#     Publish a new version on a package official repository.
+#
+#     :package: the name of target package
+#
+#     :version_string: the version to push
+#
+#     :RESULT: the output variable that is TRUE if official remote has been update with new version, FALSE otherwise
+#
 function(publish_Repository_Version package version_string RESULT)
 go_To_Master(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push --porcelain official master OUTPUT_VARIABLE out ERROR_QUIET)#releasing on master branch of official
@@ -368,7 +778,26 @@ else()
 endif()
 endfunction(publish_Repository_Version)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |test_Remote_Connection| replace:: ``test_Remote_Connection``
+#  .. _test_Remote_Connection:
+#
+#  test_Remote_Connection
+#  ----------------------
+#
+#   .. command:: test_Remote_Connection(CONNECTED package remote)
+#
+#     Publish a new version on a package official repository.
+#
+#     :package: the name of target package
+#
+#     :remote: the name of teh target remote (origin or official)
+#
+#     :CONNECTED: the output variable that is TRUE if package connected to the target remote, FALSE otherwise
+#
 function(test_Remote_Connection CONNECTED package remote)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote show ${remote} OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE res)
 if(res EQUAL 0)
@@ -378,7 +807,24 @@ else()
 endif()
 endfunction(test_Remote_Connection)
 
-### DONE here manage PUBLIC ACCESS repositories
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Repository_Versions| replace:: ``update_Repository_Versions``
+#  .. _update_Repository_Versions:
+#
+#  update_Repository_Versions
+#  --------------------------
+#
+#   .. command:: update_Repository_Versions(CONNECTED package remote)
+#
+#     Update local package's repository known versions.
+#
+#     :package: the name of target package
+#
+#     :RESULT: the output variable that is TRUE if package versions are up to date, FALSE otherwise
+#
 function(update_Repository_Versions RESULT package)
 go_To_Master(${package})
 is_Package_Connected(CONNECTED ${package} official) #check if the package has a repository URL defined (fetch)
@@ -462,7 +908,24 @@ endfunction(update_Remotes package)
 ############################ other functions #########################
 ######################################################################
 
-### to know wether a package has modifications on its current branch
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |has_Modifications| replace:: ``has_Modifications``
+#  .. _has_Modifications:
+#
+#  has_Modifications
+#  -----------------
+#
+#   .. command:: has_Modifications(RESULT package)
+#
+#     Tell wether a package's repository has modifications to stage or commit on its current branch.
+#
+#     :package: the name of target package
+#
+#     :RESULT: the output variable that is TRUE if package has modifications, FALSE otherwise
+#
 function(has_Modifications RESULT package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git status --porcelain OUTPUT_VARIABLE res_out ERROR_QUIET)
 if(NOT res_out)# no modification to stage or commit
@@ -472,7 +935,26 @@ else()#there are modification
 endif()
 endfunction(has_Modifications)
 
-### to know wether a package has interesting commits that may be part of a release
+### to know
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_For_New_Commits_To_Release| replace:: ``check_For_New_Commits_To_Release``
+#  .. _check_For_New_Commits_To_Release:
+#
+#  check_For_New_Commits_To_Release
+#  --------------------------------
+#
+#   .. command:: check_For_New_Commits_To_Release(RESULT package)
+#
+#     Tell wether a package's repository has interesting commits that may be part of a release.
+#
+#     :package: the name of target package
+#
+#     :RESULT: the output variable that is TRUE if package has commit that may be part of a release, FALSE otherwise
+#
 function(check_For_New_Commits_To_Release RESULT package)
 go_To_Integration(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=2 OUTPUT_VARIABLE res ERROR_QUIET)
@@ -494,8 +976,26 @@ endif()
 set(${RESULT} FALSE PARENT_SCOPE)
 endfunction(check_For_New_Commits_To_Release)
 
-### to know whether a package as a remote or not
-## the connection is tested only on fetch address
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Package_Connected| replace:: ``is_Package_Connected``
+#  .. _is_Package_Connected:
+#
+#  is_Package_Connected
+#  --------------------
+#
+#   .. command:: is_Package_Connected(CONNECTED package remote)
+#
+#     Tell wether a package's repository is connected with a given remote (only fetch address is tested).
+#
+#     :package: the name of target package
+#
+#     :remote: the name of the remote
+#
+#     :CONNECTED: the output variable that is TRUE if package is connected to the remote, FALSE otherwise (including if teh remote does not exist)
+#
 function(is_Package_Connected CONNECTED package remote)
 	git_Provides_GETURL(RESULT)
 	if(RESULT)
@@ -520,7 +1020,26 @@ function(is_Package_Connected CONNECTED package remote)
 	endif()
 endfunction(is_Package_Connected)
 
-### function called when deploying a package from reference files
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |clone_Repository| replace:: ``clone_Repository``
+#  .. _clone_Repository:
+#
+#  clone_Repository
+#  ----------------
+#
+#   .. command:: clone_Repository(IS_DEPLOYED package url)
+#
+#     Cloning the repository of a package.
+#
+#     :package: the name of target package
+#
+#     :url: the git url to clone
+#
+#     :IS_DEPLOYED: the output variable that is TRUE if package has been cloned, FALSE otherwise
+#
 function(clone_Repository IS_DEPLOYED package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages git clone ${url})
 if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
@@ -538,12 +1057,49 @@ else()
 endif()
 endfunction(clone_Repository)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |initialize_Git_Repository_Push_Address| replace:: ``initialize_Git_Repository_Push_Address``
+#  .. _initialize_Git_Repository_Push_Address:
+#
+#  initialize_Git_Repository_Push_Address
+#  --------------------------------------
+#
+#   .. command:: initialize_Git_Repository_Push_Address(package url)
+#
+#     Initialize the push adress of a package's repository.
+#
+#     :package: the name of target package
+#
+#     :url: the git push url
+#
 function(initialize_Git_Repository_Push_Address package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push origin ${url})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${url})
 endfunction(initialize_Git_Repository_Push_Address)
 
-### testing if the repository is inialized (from git point of view) according to PID standard (basically it has an integration branch)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |test_Package_Remote_Initialized| replace:: ``test_Package_Remote_Initialized``
+#  .. _test_Package_Remote_Initialized:
+#
+#  test_Package_Remote_Initialized
+#  -------------------------------
+#
+#   .. command:: test_Package_Remote_Initialized(package url INITIALIZED)
+#
+#     Test is a remote repository of a package is initialized according to PID standard (basically it has an integration branch).
+#
+#     :package: the name of target package
+#
+#     :url: the git url of teh package repository
+#
+#     :INITIALIZED: the output variable that is TRUE if package's remote is initialized, FALSE otherwise
+#
 function(test_Package_Remote_Initialized package url INITIALIZED)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid git clone ${url} OUTPUT_QUIET ERROR_QUIET) #cloning in a temporary area
 
@@ -569,8 +1125,26 @@ endif()
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${package} OUTPUT_QUIET ERROR_QUIET)
 endfunction(test_Package_Remote_Initialized)
 
-
-### testing if the repository is inialized (from git point of view) according to PID standard (basically it has an integration branch)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |test_Remote_Initialized| replace:: ``test_Remote_Initialized``
+#  .. _test_Remote_Initialized:
+#
+#  test_Remote_Initialized
+#  ------------------------
+#
+#   .. command:: test_Remote_Initialized(repository url INITIALIZED)
+#
+#     Test is a remote repository is initialized (git initialization).
+#
+#     :repository: the name of the repository
+#
+#     :url: the git url of the repository
+#
+#     :INITIALIZED: the output variable that is TRUE if package's remote is initialized, FALSE otherwise
+#
 function(test_Remote_Initialized repository url INITIALIZED)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid git clone ${url} OUTPUT_QUIET ERROR_QUIET) #cloning in a temporary area
 
@@ -586,7 +1160,22 @@ endif()
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${repository} OUTPUT_QUIET ERROR_QUIET)
 endfunction(test_Remote_Initialized)
 
-### create a repository with no official remote specified (for now)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |init_Repository| replace:: ``init_Repository``
+#  .. _init_Repository:
+#
+#  init_Repository
+#  ---------------
+#
+#   .. command:: init_Repository(package)
+#
+#     Initialize a package folder as a git repository (with no official remote).
+#
+#     :package: the name of the package
+#
 function(init_Repository package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git init OUTPUT_QUIET ERROR_QUIET)#initialize the git repository
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add -A  OUTPUT_QUIET ERROR_QUIET)
@@ -598,7 +1187,24 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "starting work on package (version 0.1.0)" OUTPUT_QUIET ERROR_QUIET)
 endfunction(init_Repository)
 
-### first time the package is connected after its creation
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |connect_Repository| replace:: ``connect_Repository``
+#  .. _connect_Repository:
+#
+#  connect_Repository
+#  ------------------
+#
+#   .. command:: connect_Repository(package url)
+#
+#     Connect a package's repository to a remote (this later become origin and official in the same time). Used first time the package is connected after its creation.
+#
+#     :package: the name of the package
+#
+#     :url: the url of the package's remote
+#
 function(connect_Repository package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add origin ${url})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${url})
@@ -613,7 +1219,24 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official)
 endfunction(connect_Repository)
 
-### rare use function: when official repository has moved
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reconnect_Repository| replace:: ``reconnect_Repository``
+#  .. _reconnect_Repository:
+#
+#  reconnect_Repository
+#  --------------------
+#
+#   .. command:: reconnect_Repository(package url)
+#
+#     Reonnect an alraedy connected package's repository to another remote (this later becomes official). Used when official repository has moved.
+#
+#     :package: the name of the package
+#
+#     :url: the url of the package's remote
+#
 function(reconnect_Repository package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${url})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${url})
@@ -623,8 +1246,28 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 go_To_Integration(${package})
 endfunction(reconnect_Repository)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reconnect_Repository_Remote| replace:: ``reconnect_Repository_Remote``
+#  .. _reconnect_Repository_Remote:
+#
+#  reconnect_Repository_Remote
+#  ---------------------------
+#
+#   .. command:: reconnect_Repository_Remote(package url public_url remote_name)
+#
+#     Reconnect an alraedy connected package's repository to another remote (this later becomes official). Used when official repository has moved.
+#
+#     :package: the name of the package
+#
+#     :url: the url of the package's remote
+#
+#     :public_url: the public counterpart url of the package's remote
+#
+#     :remote_name: the name of the package's remote (official or origin)
+#
 function(reconnect_Repository_Remote package url public_url remote_name)
 	if(public_url AND NOT public_url STREQUAL "") #if there is a public URL the package is clonable from a public address
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url ${remote_name} ${public_url})
@@ -635,7 +1278,24 @@ function(reconnect_Repository_Remote package url public_url remote_name)
 	endif()
 endfunction(reconnect_Repository_Remote)
 
-### set the origin remote to a completely new address
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |change_Origin_Repository| replace:: ``change_Origin_Repository``
+#  .. _change_Origin_Repository:
+#
+#  change_Origin_Repository
+#  ------------------------
+#
+#   .. command:: change_Origin_Repository(package url)
+#
+#     Set the origin remote of a package to a completely new address. Used when a fork of a package's official repository is performed.
+#
+#     :package: the name of the package
+#
+#     :url: the url of the package's origin remote
+#
 function(change_Origin_Repository package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url origin ${url} OUTPUT_QUIET ERROR_QUIET)
 go_To_Integration(${package})
@@ -644,9 +1304,24 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 message("[PID] INFO: Origin remote has been changed to ${url}.")
 endfunction(change_Origin_Repository)
 
-
-
-### getting the project name given a repository address
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Repository_Name| replace:: ``get_Repository_Name``
+#  .. _get_Repository_Name:
+#
+#  get_Repository_Name
+#  -------------------
+#
+#   .. command:: get_Repository_Name(RES_NAME git_url)
+#
+#     Get the name of the project from a given git url.
+#
+#     :git_url: the url of the repository.
+#
+#     :RES_NAME: the output variable containing the name of the project.
+#
 function(get_Repository_Name RES_NAME git_url)
 #testing ssh address
 string(REGEX REPLACE "^[^@]+@[^:]+:(.+)$" "\\1" REPO_PATH ${git_url})
@@ -661,15 +1336,32 @@ get_filename_component(REPO_NAME ${REPO_PATH} NAME_WE)
 set(${RES_NAME} ${REPO_NAME} PARENT_SCOPE)
 endfunction(get_Repository_Name)
 
-### checking if package has official and origin remote repositories
-function(check_For_Remote_Respositories git_url)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_For_Remote_Respositories| replace:: ``check_For_Remote_Respositories``
+#  .. _check_For_Remote_Respositories:
+#
+#  check_For_Remote_Respositories
+#  ------------------------------
+#
+#   .. command:: check_For_Remote_Respositories(git_url)
+#
+#     Check, and eventually perform corrective actions, that package's repository origin and official remotes are defined.
+#
+#     :package: the name of the package.
+#
+#     :git_url: the url of the package's official repository.
+#
+function(check_For_Remote_Respositories package git_url)
 if(git_url STREQUAL "") #no official repository => do nothing
 	return()
 endif()
-is_Package_Connected(CONNECTED ${PROJECT_NAME} official)
+is_Package_Connected(CONNECTED ${package} official)
 if(CONNECTED) #the package has an official remote
 	#here check that official address conforms
-	get_Remotes_Address(${PROJECT_NAME} RES_OFFICIAL RES_ORIGIN)
+	get_Remotes_Address(${package} RES_OFFICIAL RES_ORIGIN)
 	if(NOT ${RES_OFFICIAL} STREQUAL ${git_url})#problem address do not match
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote set-url official ${git_url} OUTPUT_QUIET ERROR_QUIET)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official OUTPUT_QUIET ERROR_QUIET)
@@ -683,7 +1375,7 @@ else()
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official --tags OUTPUT_QUIET ERROR_QUIET)
 endif()
 #now checking that there is an origin remote
-is_Package_Connected(CONNECTED ${PROJECT_NAME} origin)
+is_Package_Connected(CONNECTED ${package} origin)
 if(NOT CONNECTED) #the package has no origin remote => create it and set it to the same address as official
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add origin ${git_url} OUTPUT_QUIET ERROR_QUIET)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch origin OUTPUT_QUIET ERROR_QUIET)
@@ -691,7 +1383,24 @@ if(NOT CONNECTED) #the package has no origin remote => create it and set it to t
 endif()
 endfunction(check_For_Remote_Respositories)
 
-### checking which remote integration branch can be updated
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Remotes_To_Update| replace:: ``get_Remotes_To_Update``
+#  .. _get_Remotes_To_Update:
+#
+#  get_Remotes_To_Update
+#  ---------------------
+#
+#   .. command:: get_Remotes_To_Update(REMOTES_TO_UPDATE package)
+#
+#     Get the package's remotes whose integration branch can be updated with new commits.
+#
+#     :package: the name of the package.
+#
+#     :REMOTES_TO_UPDATE: the output variable containing the list of remote to update.
+#
 function(get_Remotes_To_Update REMOTES_TO_UPDATE package)
 set(return_list)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=1 OUTPUT_VARIABLE res ERROR_QUIET)
@@ -705,11 +1414,29 @@ if (NOT "${res}" STREQUAL "")
 		list(APPEND return_list official)
 	endif()
 endif()
-
 set(${REMOTES_TO_UPDATE} ${return_list} PARENT_SCOPE)
 endfunction(get_Remotes_To_Update)
 
-### getting git address of remotes
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Remotes_Address| replace:: ``get_Remotes_Address``
+#  .. _get_Remotes_Address:
+#
+#  get_Remotes_Address
+#  --------------------
+#
+#   .. command:: get_Remotes_Address(package RES_OFFICIAL RES_ORIGIN)
+#
+#     Get the package's origin and official remotes addresses.
+#
+#     :package: the name of the package.
+#
+#     :RES_OFFICIAL: the output variable containg the address of package's official remote.
+#
+#     :RES_ORIGIN: the output variable containg the address of package's origin remote.
+#
 function(get_Remotes_Address package RES_OFFICIAL RES_ORIGIN)
 set(${RES_OFFICIAL} PARENT_SCOPE)
 set(${RES_ORIGIN} PARENT_SCOPE)
@@ -734,7 +1461,26 @@ endfunction(get_Remotes_Address)
 ############## wrappers repository related functions #########################
 ##############################################################################
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |clone_Wrapper_Repository| replace:: ``clone_Wrapper_Repository``
+#  .. _clone_Wrapper_Repository:
+#
+#  clone_Wrapper_Repository
+#  ------------------------
+#
+#   .. command:: clone_Wrapper_Repository(IS_DEPLOYED package url)
+#
+#     Clone the repository of a wrapper in adequate folder of the workspace.
+#
+#     :wrapper: the name of target wrapper
+#
+#     :url: the git url to clone
+#
+#     :IS_DEPLOYED: the output variable that is TRUE if wrapper has been cloned, FALSE otherwise
+#
 function(clone_Wrapper_Repository IS_DEPLOYED wrapper url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers git clone ${url} OUTPUT_QUIET ERROR_QUIET)
 if(EXISTS ${WORKSPACE_DIR}/wrappers/${wrapper} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper})
@@ -746,8 +1492,22 @@ else()
 endif()
 endfunction(clone_Wrapper_Repository)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |init_Wrapper_Repository| replace:: ``init_Wrapper_Repository``
+#  .. _init_Wrapper_Repository:
+#
+#  init_Wrapper_Repository
+#  -----------------------
+#
+#   .. command:: init_Wrapper_Repository(wrapper)
+#
+#     Initialize a wrapper folder as a git repository.
+#
+#     :wrapper: the name of the wrapper
+#
 function(init_Wrapper_Repository wrapper)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git init)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git add -A)
@@ -755,29 +1515,94 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wr
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git lfs track "*.tar.gz" OUTPUT_QUIET ERROR_QUIET)
 endfunction(init_Wrapper_Repository)
 
-
-### registering the address means registering the CMakelists.txt
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |register_Wrapper_Repository_Address| replace:: ``register_Wrapper_Repository_Address``
+#  .. _register_Wrapper_Repository_Address:
+#
+#  register_Wrapper_Repository_Address
+#  -----------------------------------
+#
+#   .. command:: register_Wrapper_Repository_Address(wrapper)
+#
+#     Create a commit after update of the wrapper repository address in its CMakeLists.txt.
+#
+#     :wrapper: the name of target wrapper
+#
 function(register_Wrapper_Repository_Address wrapper)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git add CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git add CMakeLists.txt) # registering the address means registering the CMakelists.txt
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git commit -m "adding repository address to the root CMakeLists.txt file")
 endfunction(register_Wrapper_Repository_Address)
 
-
-### first time the wrapper is connected after its creation
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |connect_Wrapper_Repository| replace:: ``connect_Wrapper_Repository``
+#  .. _connect_Wrapper_Repository:
+#
+#  connect_Wrapper_Repository
+#  --------------------------
+#
+#   .. command:: connect_Wrapper_Repository(wrapper url)
+#
+#     Connect a wrapper's repository to a remote. Used first time the wrapper is connected after its creation.
+#
+#     :wrapper: the name of the wrapper
+#
+#     :url: the url of the wrapper's remote
+#
 function(connect_Wrapper_Repository wrapper url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git remote add origin ${url})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git push origin master OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git fetch origin)
 endfunction(connect_Wrapper_Repository)
 
-### rare use function: when official repository has moved
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reconnect_Wrapper_Repository| replace:: ``reconnect_Wrapper_Repository``
+#  .. _reconnect_Wrapper_Repository:
+#
+#  reconnect_Wrapper_Repository
+#  ----------------------------
+#
+#   .. command:: reconnect_Wrapper_Repository(wrapper url)
+#
+#     Reonnect an already connected wrapper's repository to another remote.
+#
+#     :wrapper: the name of the wrapper
+#
+#     :url: the url of the wrapper's remote
+#
 function(reconnect_Wrapper_Repository wrapper url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git remote set-url origin ${url})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git pull origin master)#updating master
 endfunction(reconnect_Wrapper_Repository)
 
-
-### to know whether a wrapper as a remote or not
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Wrapper_Connected| replace:: ``is_Wrapper_Connected``
+#  .. is_Wrapper_Connected:
+#
+#  is_Wrapper_Connected
+#  --------------------
+#
+#   .. command:: is_Wrapper_Connected(CONNECTED wrapper remote)
+#
+#     Tell wether a wrapper's repository is connected with a given remote.
+#
+#     :wrapper: the name of target wrapper
+#
+#     :remote: the name of the remote
+#
+#     :CONNECTED: the output variable that is TRUE if wrapper is connected to the remote, FALSE otherwise (including if teh remote does not exist)
+#
 function(is_Wrapper_Connected CONNECTED wrapper remote)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git remote show ${remote} OUTPUT_QUIET ERROR_VARIABLE res)
 	if(NOT res OR res STREQUAL "")
@@ -787,22 +1612,73 @@ function(is_Wrapper_Connected CONNECTED wrapper remote)
 	endif()
 endfunction(is_Wrapper_Connected)
 
-###
-function(initialize_Wrapper_Git_Repository_Push_Address package url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git remote set-url --push origin ${url})
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |initialize_Wrapper_Git_Repository_Push_Address| replace:: ``initialize_Wrapper_Git_Repository_Push_Address``
+#  .. _initialize_Wrapper_Git_Repository_Push_Address:
+#
+#  initialize_Wrapper_Git_Repository_Push_Address
+#  ----------------------------------------------
+#
+#   .. command:: initialize_Wrapper_Git_Repository_Push_Address(wrapper url)
+#
+#     Initialize the push adress of a wrapper's repository.
+#
+#     :wrapper: the name of target wrapper
+#
+#     :url: the git push url
+#
+function(initialize_Wrapper_Git_Repository_Push_Address wrapper url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git remote set-url --push origin ${url})
 endfunction(initialize_Wrapper_Git_Repository_Push_Address)
 
-### update the repository of the wrapper
-function(update_Wrapper_Repository package)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git lfs pull origin master)#fetching master branch to get most up to date archives
-endfunction(update_Wrapper_Repository package)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Wrapper_Repository| replace:: ``update_Wrapper_Repository``
+#  .. _update_Wrapper_Repository:
+#
+#  update_Wrapper_Repository
+#  --------------------------
+#
+#   .. command:: update_Wrapper_Repository(wrapper)
+#
+#     Update local wrapper's repository (pull).
+#
+#     :wrapper: the name of target wrapper
+#
+function(update_Wrapper_Repository wrapper)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git lfs pull origin master)#fetching master branch to get most up to date archives
+endfunction(update_Wrapper_Repository)
 
 ##############################################################################
 ############## frameworks repository related functions #######################
 ##############################################################################
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |clone_Framework_Repository| replace:: ``clone_Framework_Repository``
+#  .. _clone_Framework_Repository:
+#
+#  clone_Framework_Repository
+#  --------------------------
+#
+#   .. command:: clone_Framework_Repository(IS_DEPLOYED framework url)
+#
+#     Clone the repository of a framework in adequate folder of the workspace.
+#
+#     :framework: the name of target framework
+#
+#     :url: the git url to clone
+#
+#     :IS_DEPLOYED: the output variable that is TRUE if framework has been cloned, FALSE otherwise
+#
 function(clone_Framework_Repository IS_DEPLOYED framework url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks git clone ${url} OUTPUT_QUIET ERROR_QUIET)
 
@@ -823,7 +1699,22 @@ else()
 endif()
 endfunction(clone_Framework_Repository)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |init_Framework_Repository| replace:: ``init_Framework_Repository``
+#  .. _init_Framework_Repository:
+#
+#  init_Framework_Repository
+#  -------------------------
+#
+#   .. command:: init_Framework_Repository(framework)
+#
+#     Initialize a framework folder as a git repository.
+#
+#     :framework: the name of the target framework
+#
 function(init_Framework_Repository framework)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git init)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git add -A)
@@ -831,13 +1722,43 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/framewo
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs track "*.tar.gz" OUTPUT_QUIET ERROR_QUIET)
 endfunction(init_Framework_Repository)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Framework_Repository| replace:: ``update_Framework_Repository``
+#  .. _update_Framework_Repository:
+#
+#  update_Framework_Repository
+#  ---------------------------
+#
+#   .. command:: update_Framework_Repository(framework)
+#
+#     Update local framework's repository (pull).
+#
+#     :framework: the name of target framework
+#
 function(update_Framework_Repository framework)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs pull origin master)#fetching master branch to get most up to date archives
 endfunction(update_Framework_Repository)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Framework_Repository| replace:: ``publish_Framework_Repository``
+#  .. _publish_Framework_Repository:
+#
+#  publish_Framework_Repository
+#  ----------------------------
+#
+#   .. command:: publish_Framework_Repository(framework PUBLISHED)
+#
+#     Commit and push unpublished content of local framework's repository.
+#
+#     :framework: the name of target framework
+#
 function(publish_Framework_Repository framework PUBLISHED)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git status --porcelain OUTPUT_VARIABLE res)
 if(res AND NOT res STREQUAL "")
@@ -852,28 +1773,94 @@ else()
 endif()
 endfunction(publish_Framework_Repository)
 
-### registering the address means registering the CMakelists.txt
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |register_Framework_Repository_Address| replace:: ``register_Framework_Repository_Address``
+#  .. _register_Framework_Repository_Address:
+#
+#  register_Framework_Repository_Address
+#  -------------------------------------
+#
+#   .. command:: register_Framework_Repository_Address(framework)
+#
+#     Create a commit after update of the framework repository address in its CMakeLists.txt.
+#
+#     :framework: the name of target framework
+#
 function(register_Framework_Repository_Address framework)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git add CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git commit -m "adding repository address to the root CMakeLists.txt file")
 endfunction(register_Framework_Repository_Address)
 
-
-### first time the framework is connected after its creation
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |connect_Framework_Repository| replace:: ``connect_Framework_Repository``
+#  .. _connect_Framework_Repository:
+#
+#  connect_Framework_Repository
+#  ----------------------------
+#
+#   .. command:: connect_Framework_Repository(framework url)
+#
+#     Connect a framework's repository to a remote. Used first time the framework is connected after its creation.
+#
+#     :framework: the name of the framework
+#
+#     :url: the url of the framework's remote
+#
 function(connect_Framework_Repository framework url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote add origin ${url})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git fetch origin)
 endfunction(connect_Framework_Repository)
 
-### rare use function: when official repository has moved
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reconnect_Framework_Repository| replace:: ``reconnect_Framework_Repository``
+#  .. _reconnect_Framework_Repository:
+#
+#  reconnect_Framework_Repository
+#  ------------------------------
+#
+#   .. command:: reconnect_Framework_Repository(framework url)
+#
+#     Reonnect an already connected framework's repository to another remote.
+#
+#     :framework: the name of the framework
+#
+#     :url: the url of the framework's remote
+#
 function(reconnect_Framework_Repository framework url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote set-url origin ${url})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master)#updating master
 endfunction(reconnect_Framework_Repository)
 
-
-### to know whether a package as a remote or not
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Framework_Connected| replace:: ``is_Framework_Connected``
+#  .. _is_Framework_Connected:
+#
+#  is_Framework_Connected
+#  ----------------------
+#
+#   .. command:: is_Framework_Connected(CONNECTED framework remote)
+#
+#     Tell wether a framework's repository is connected with a given remote.
+#
+#     :framework: the name of target framework
+#
+#     :remote: the name of the remote
+#
+#     :CONNECTED: the output variable that is TRUE if framework is connected to the remote, FALSE otherwise (including if the remote does not exist)
+#
 function(is_Framework_Connected CONNECTED framework remote)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote show ${remote} OUTPUT_QUIET ERROR_VARIABLE res)
 	if(NOT res OR res STREQUAL "")
@@ -883,8 +1870,24 @@ function(is_Framework_Connected CONNECTED framework remote)
 	endif()
 endfunction(is_Framework_Connected)
 
-
-### set the origin remote to a completely new address
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |change_Origin_Framework_Repository| replace:: ``change_Origin_Framework_Repository``
+#  .. _change_Origin_Framework_Repository:
+#
+#  change_Origin_Framework_Repository
+#  ----------------------------------
+#
+#   .. command:: change_Origin_Framework_Repository(framework url)
+#
+#     Set the origin remote to a completely new address.
+#
+#     :framework: the name of target framework
+#
+#     :url: the new url of the origin remote
+#
 function(change_Origin_Framework_Repository framework url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git remote set-url origin ${url} OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master OUTPUT_QUIET ERROR_QUIET)
@@ -896,7 +1899,28 @@ endfunction(change_Origin_Framework_Repository)
 ############## static site repository repository related functions #####################
 ########################################################################################
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |clone_Static_Site_Repository| replace:: ``clone_Static_Site_Repository``
+#  .. _clone_Static_Site_Repository:
+#
+#  clone_Static_Site_Repository
+#  ----------------------------
+#
+#   .. command:: clone_Static_Site_Repository(IS_INITIALIZED BAD_URL package url)
+#
+#     Clone the repository of the static site of a package in adequate folder of the workspace.
+#
+#     :package: the name of target package
+#
+#     :url: the git url to clone
+#
+#     :IS_INITIALIZED: the output variable that is TRUE if package's static site resides in workspace, FALSE otherwise
+#
+#     :BAD_URL: the output variable that is TRUE if package's static site URL is correct, FALSE otherwise
+#
 function(clone_Static_Site_Repository IS_INITIALIZED BAD_URL package url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages git clone ${url})
 
@@ -926,10 +1950,31 @@ else()
 endif()
 endfunction(clone_Static_Site_Repository)
 
-###
-function(init_Static_Site_Repository CONNECTED package wiki_git_url push_site)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |init_Static_Site_Repository| replace:: ``init_Static_Site_Repository``
+#  .. _init_Static_Site_Repository:
+#
+#  init_Static_Site_Repository
+#  ---------------------------
+#
+#   .. command:: init_Static_Site_Repository(CONNECTED package wiki_git_url push_site)
+#
+#     Initialize a package's static site folder as a git repository.
+#
+#     :package: the name of the target package
+#
+#     :site_git_url: the git url of the package static site
+#
+#     :push_site: if TRUE the origin remote is updated after local initialization
+#
+#     :CONNECTED: the output variable that is TRUE if package static site is connected to a remote repository
+#
+function(init_Static_Site_Repository CONNECTED package site_git_url push_site)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git init OUTPUT_QUIET ERROR_QUIET)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git remote add origin ${wiki_git_url} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git remote add origin ${site_git_url} OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git add -f build/.gitignore OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs track "*.tar.gz" OUTPUT_QUIET ERROR_QUIET) #tracking tar.gz archives with git LFS
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git add -A OUTPUT_QUIET ERROR_QUIET)
@@ -950,13 +1995,45 @@ endif()
 set(${CONNECTED} FALSE PARENT_SCOPE)
 endfunction(init_Static_Site_Repository)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Static_Site_Repository| replace:: ``update_Static_Site_Repository``
+#  .. _update_Static_Site_Repository:
+#
+#  update_Static_Site_Repository
+#  -----------------------------
+#
+#   .. command:: update_Static_Site_Repository(package)
+#
+#     Update local package's static site repository (pull).
+#
+#     :package: the name of target package
+#
 function(update_Static_Site_Repository package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git pull origin master OUTPUT_QUIET ERROR_QUIET)# pulling master branch of origin (in case of) => merge can take place
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs pull origin master)# pulling master branch of origin (in case of) => merge can take place
 endfunction(update_Static_Site_Repository)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Static_Site_Repository| replace:: ``publish_Static_Site_Repository``
+#  .. _publish_Static_Site_Repository:
+#
+#  publish_Static_Site_Repository
+#  ------------------------------
+#
+#   .. command:: publish_Static_Site_Repository(package PUBLISHED)
+#
+#     Commit and push unpublished content of local package's static site repository.
+#
+#     :package: the name of target package
+#
+#     :PUBLISHED: the output variable that is TRUE if package static site has been pushed to a remote repository
+#
 function(publish_Static_Site_Repository package PUBLISHED)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git status --porcelain OUTPUT_VARIABLE res)
 	if(res AND NOT res STREQUAL "")
@@ -969,5 +2046,4 @@ function(publish_Static_Site_Repository package PUBLISHED)
 	else()
 		set(${PUBLISHED} FALSE PARENT_SCOPE)
 	endif()
-
 endfunction(publish_Static_Site_Repository)
