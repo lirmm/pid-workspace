@@ -30,6 +30,60 @@ set(PID_PACKAGE_FINDING_FUNCTIONS_INCLUDED TRUE)
 ##################auxiliary functions to check package version####################
 ##################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Version_Strings| replace:: ``set_Version_Strings``
+#  .. _set_Version_Strings:
+#
+#  set_Version_Strings
+#  -------------------
+#
+#   .. command:: set_Version_Strings(package_name major minor patch)
+#
+#    Create the cache variables used to manage the version of a package/
+#
+#     :package: the name of the package.
+#
+#     :major: the major version number
+#
+#     :minor: the minor version number
+#
+#     :patch: the patch version number
+#
+function (set_Version_Strings package major minor patch)
+	set(${package}_VERSION_MAJOR ${major} CACHE INTERNAL "")
+	set(${package}_VERSION_MINOR ${minor} CACHE INTERNAL "")
+	set(${package}_VERSION_PATCH ${patch} CACHE INTERNAL "")
+	set(${package}_VERSION_STRING "${major}.${minor}.${patch}" CACHE INTERNAL "")
+	set(${package}_VERSION_RELATIVE_PATH "${major}.${minor}.${patch}" CACHE INTERNAL "")
+endfunction(set_Version_Strings)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_External_Version_Strings| replace:: ``set_External_Version_Strings``
+#  .. _set_External_Version_Strings:
+#
+#  set_External_Version_Strings
+#  ----------------------------
+#
+#   .. command:: set_External_Version_Strings(package version)
+#
+#    Create the cache variables used to manage the version of an external package
+#
+#     :package: the name of the external package.
+#
+#     :version: the version string for the package.
+#
+function (set_External_Version_Strings package version)
+	set(${package}_VERSION_STRING "${version}" CACHE INTERNAL "")
+	set(${package}_VERSION_RELATIVE_PATH "${version}" CACHE INTERNAL "")
+endfunction(set_External_Version_Strings)
+
+
 ### select the exact compatible version of a native package (with major.minor strict, only patch can be adapted)
 function(select_Exact_Native_Version RES_VERSION minimum_version available_versions)
 get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
@@ -159,7 +213,7 @@ if(version_dirs)#seaking for a good version only if there are versions installed
 
 	if(result)#at least a good version has been found
 		set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-		document_Version_Strings(${package_name} ${major_version} ${minor_version} ${curr_patch_version})
+		set_Version_Strings(${package_name} ${major_version} ${minor_version} ${curr_patch_version})
 		return()
 	endif()
 endif()
@@ -199,7 +253,7 @@ if(version_dirs)#seaking for a good version only if there are versions installed
 	endforeach()
 	if(result)#at least a good version has been found
 		set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-		document_Version_Strings(${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
+		set_Version_Strings(${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
 	endif()
 endif()
 endfunction(check_Best_Version)
@@ -220,7 +274,7 @@ if(local_versions)#seaking for a good version only if there are versions install
 		endif()
 	endforeach()
 	get_Version_String_Numbers(${version_string_curr} major minor patch)
-	document_Version_Strings(${package_name} ${major} ${minor} ${patch})
+	set_Version_Strings(${package_name} ${major} ${minor} ${patch})
 endif()
 endfunction(check_Last_Version)
 
@@ -251,7 +305,7 @@ if(VERSION_DIRS)
 	endforeach()
 	if(highest_version)
 		set(${VERSION_FOUND} ${highest_version} PARENT_SCOPE)
-		document_External_Version_Strings(${package} ${highest_version})
+		set_External_Version_Strings(${package} ${highest_version})
 	endif()
 endif()
 endfunction(check_External_Minimum_Version)
@@ -272,7 +326,7 @@ if(VERSION_DIRS)
 	endforeach()
 	if(highest_version)
 		set(${VERSION_FOUND} ${highest_version} PARENT_SCOPE)
-		document_External_Version_Strings(${package} ${highest_version})
+		set_External_Version_Strings(${package} ${highest_version})
 	endif()
 endif()
 endfunction(check_External_Last_Version)
@@ -288,7 +342,7 @@ if(VERSION_DIRS)
 		return()
 	endif()
 	set(${VERSION_FOUND} ${version} PARENT_SCOPE)
-	document_External_Version_Strings(${package} ${version})
+	set_External_Version_Strings(${package} ${version})
 endif()
 endfunction(check_External_Exact_Version)
 
