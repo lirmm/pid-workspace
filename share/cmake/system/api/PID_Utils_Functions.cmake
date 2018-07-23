@@ -1536,13 +1536,13 @@ endfunction(get_Link_Type)
 #  is_External_Package_Defined
 #  ---------------------------
 #
-#   .. command:: is_External_Package_Defined(ext_package mode RES_PATH_TO_PACKAGE)
+#   .. command:: is_External_Package_Defined(ext_package RES_PATH_TO_PACKAGE)
 #
 #    Get the path to the target external package install folder.
 #
 #     :ext_package: the name of external package
 #
-#     :RES_TYPE: the output variable that contains the path to the external package install folder or NOTFOUND if package cannot be found in workspace.
+#     :RES_PATH_TO_PACKAGE: the output variable that contains the path to the external package install folder or NOTFOUND if package cannot be found in workspace.
 #
 function(is_External_Package_Defined ext_package RES_PATH_TO_PACKAGE)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
@@ -1582,7 +1582,7 @@ foreach(link IN LISTS ext_links)
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
-		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		is_External_Package_Defined(${ext_package_name} PATHTO)
 		if(PATHTO STREQUAL NOTFOUND)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
 		else()
@@ -1594,7 +1594,7 @@ foreach(link IN LISTS ext_links)
 		if(NOT RES_WITH_PREFIX STREQUAL ${link})# a replacement has taken place
 			list(GET RES_WITH_PREFIX 0 link_prefix)
 			list(GET RES_WITH_PREFIX 1 ext_package_name)
-			is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+			is_External_Package_Defined(${ext_package_name} PATHTO)
 			if(PATHTO STREQUAL NOTFOUND)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!!")
 				return()
@@ -1641,7 +1641,7 @@ foreach(include_dir IN LISTS ext_inc_dirs)
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${include_dir})
 	if(NOT RES STREQUAL ${include_dir})# a replacement has taken place => this is a full path to an incude dir of an external package
 		list(GET RES 0 ext_package_name)
-		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		is_External_Package_Defined(${ext_package_name} PATHTO)
 		if(PATHTO STREQUAL NOTFOUND)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 		endif()
@@ -1658,7 +1658,7 @@ foreach(include_dir IN LISTS ext_inc_dirs)
 		if(NOT RES_WITH_PREFIX STREQUAL ${include_dir})
 			list(GET RES_WITH_PREFIX 1 relative_path)
 			list(GET RES_WITH_PREFIX 0 ext_package_name)
-			is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+			is_External_Package_Defined(${ext_package_name} PATHTO)
 			if(PATHTO STREQUAL NOTFOUND)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 			endif()
@@ -1705,7 +1705,7 @@ foreach(resource IN LISTS ext_resources)
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
-		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		is_External_Package_Defined(${ext_package_name} PATHTO)
 		if(PATHTO STREQUAL NOTFOUND)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for resource ${resource}!! Please set the path to this external package.")
 		else()
