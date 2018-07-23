@@ -53,6 +53,13 @@ Git Utilities
 .. cmake-module:: ../../system/api/PID_Git_Functions.cmake
 
 
+Platform Utilities
+===================
+
+.. setmode:: internal
+
+.. cmake-module:: ../../system/api/PID_Platform_Management_Functions.cmake
+
 Finding Utilities
 =================
 
