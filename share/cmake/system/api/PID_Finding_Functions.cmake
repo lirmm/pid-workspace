@@ -83,8 +83,26 @@ function (set_External_Version_Strings package version)
 	set(${package}_VERSION_RELATIVE_PATH "${version}" CACHE INTERNAL "")
 endfunction(set_External_Version_Strings)
 
-
-### select the exact compatible version of a native package (with major.minor strict, only patch can be adapted)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |select_Exact_Native_Version| replace:: ``select_Exact_Native_Version``
+#  .. _select_Exact_Native_Version:
+#
+#  select_Exact_Native_Version
+#  ---------------------------
+#
+#   .. command:: select_Exact_Native_Version(RES_VERSION minimum_version available_versions)
+#
+#    Select the exact compatible version among a list of versions, considering that the policy is native: major and minor number must be respected while patch number can be adapted (max patch available is used).
+#
+#     :minimum_version: the exact version to match.
+#
+#     :available_versions: the list of versions.
+#
+#     :RES_VERSION: the output variable containing the exact version chosen in the list, or empty if none compatible.
+#
 function(select_Exact_Native_Version RES_VERSION minimum_version available_versions)
 get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
 if(DEFINED PATCH)
@@ -108,8 +126,26 @@ else()
 endif()
 endfunction(select_Exact_Native_Version)
 
-### select the exact compatible version of an external package (with strict major.minor.patch)
-#simply consists in returning the version value if exists in the list
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |select_Exact_External_Version| replace:: ``select_Exact_External_Version``
+#  .. _select_Exact_External_Version:
+#
+#  select_Exact_External_Version
+#  -----------------------------
+#
+#   .. command:: select_Exact_External_Version(RES_VERSION exact_version available_versions)
+#
+#    Select the exact compatible version among a list of versions, considering that the policy is external: major minor and patch numbers must be respected. Simply consists in returning the version value if it exists in the list.
+#
+#     :exact_version: the exact version to match.
+#
+#     :available_versions: the list of versions.
+#
+#     :RES_VERSION: the output variable containing the exact version chosen in the list.
+#
 function(select_Exact_External_Version RES_VERSION exact_version available_versions)
 foreach(version IN LISTS available_versions)
 	if(version VERSION_EQUAL exact_version)
@@ -120,9 +156,26 @@ endforeach()
 set(${RES_VERSION} PARENT_SCOPE)
 endfunction(select_Exact_External_Version)
 
-
-
-### select the best compatible version of a native package (last major.minor available)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |select_Best_Native_Version| replace:: ``select_Best_Native_Version``
+#  .. _select_Best_Native_Version:
+#
+#  select_Best_Native_Version
+#  --------------------------
+#
+#   .. command:: select_Best_Native_Version(RES_VERSION exact_version available_versions)
+#
+#    Select the best compatible version among a list of versions, considering that the policy is native: major must match, while greater minor numbers can be used and finally greatest patch from this minor is used.
+#
+#     :minimum_version: the minimum version to match.
+#
+#     :available_versions: the list of versions.
+#
+#     :RES_VERSION: the output variable containing the best version chosen in the list.
+#
 function(select_Best_Native_Version RES_VERSION minimum_version available_versions)
 get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
 if(DEFINED PATCH)
@@ -151,7 +204,28 @@ else()
 endif()
 endfunction(select_Best_Native_Version)
 
-### select the best compatible version of a native package (last major.minor available)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |select_Best_External_Version| replace:: ``select_Best_External_Version``
+#  .. _select_Best_External_Version:
+#
+#  select_Best_External_Version
+#  ----------------------------
+#
+#   .. command:: select_Best_External_Version(RES_VERSION package minimum_version available_versions)
+#
+#    Select the best compatible version among a list of versions, considering that the policy is external: any version explicitly declared as compatible by the external package can be used instead.
+#
+#     :package: the name of target external package.
+#
+#     :minimum_version: the minimum version to match.
+#
+#     :available_versions: the list of versions.
+#
+#     :RES_VERSION: the output variable containing the best version chosen in the list.
+#
 function(select_Best_External_Version RES_VERSION package minimum_version available_versions)
 foreach(version IN LISTS available_versions)
 	if(version VERSION_EQUAL minimum_version
@@ -173,7 +247,24 @@ endforeach()
 set(${RES_VERSION} ${highest_version} PARENT_SCOPE)
 endfunction(select_Best_External_Version)
 
-### select the last available version of a native package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |select_Last_Version| replace:: ``select_Last_Version``
+#  .. _select_Last_Version:
+#
+#  select_Last_Version
+#  -------------------
+#
+#   .. command:: select_Last_Version(RES_VERSION available_versions)
+#
+#    Select the greatest version among a list of versions.
+#
+#     :available_versions: the list of versions.
+#
+#     :RES_VERSION: the output variable containing the best version chosen in the list.
+#
 function(select_Last_Version RES_VERSION available_versions)
 set(curr_version 0.0.0)
 foreach(version IN LISTS available_versions)
@@ -189,22 +280,46 @@ else()
 endif()
 endfunction(select_Last_Version)
 
-### check if an exact major.minor version exists (patch version is always let undefined)
-function (check_Exact_Version 	VERSION_HAS_BEEN_FOUND
-				package_name package_install_dir major_version minor_version patch_version) #minor version cannot be increased but patch version can
-set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
-list_Version_Subdirectories(version_dirs ${package_install_dir})
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Exact_Version| replace:: ``check_Exact_Version``
+#  .. _check_Exact_Version:
+#
+#  check_Exact_Version
+#  -------------------
+#
+#   .. command:: check_Exact_Version(VERSION_FOUND package install_dir major minor patch)
+#
+#    Check whether there is a compatible exact version of the package installed in the workspace, considering the native policy (any  version with greater patch number is valid).
+#
+#     :package: the name of package to check.
+#
+#     :install_dir: the path to package install folder.
+#
+#     :major: the major number of version.
+#
+#     :minor: the minor number of version.
+#
+#     :patch: the patch number of version.
+#
+#     :VERSION_FOUND: the output variable that contains the compatible version if it exists, empty otherwise.
+#
+function (check_Exact_Version VERSION_FOUND package install_dir major minor patch) #minor version cannot be increased but patch version can
+set(${VERSION_FOUND} FALSE PARENT_SCOPE)
+list_Version_Subdirectories(version_dirs ${install_dir})
 if(version_dirs)#seaking for a good version only if there are versions installed
-  if(patch_version)
-    update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} ${patch_version} true "${version_dirs}")#updating only if there are installed versions
-    set(curr_patch_version ${patch_version})
+  if(patch)
+    update_Package_Installed_Version(${package} ${major} ${minor} ${patch} true "${version_dirs}")#updating only if there are installed versions
+    set(curr_patch_version ${patch})
   else()#any patch version can be used
-    update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} "" true "${version_dirs}")#updating only if there are installed versions
+    update_Package_Installed_Version(${package} ${major} ${minor} "" true "${version_dirs}")#updating only if there are installed versions
     set(curr_patch_version -1)
   endif()
-	foreach(patch IN LISTS version_dirs)
-		string(REGEX REPLACE "^${major_version}\\.${minor_version}\\.([0-9]+)$" "\\1" A_VERSION "${patch}")
-		if(	NOT (A_VERSION STREQUAL "${patch}") #there is a match
+	foreach(patch_num IN LISTS version_dirs)
+		string(REGEX REPLACE "^${major}\\.${minor}\\.([0-9]+)$" "\\1" A_VERSION "${patch_num}")
+		if(	NOT (A_VERSION STREQUAL "${patch_num}") #there is a match
 			AND ${A_VERSION} GREATER ${curr_patch_version})#newer patch version
 			set(curr_patch_version ${A_VERSION})
 			set(result true)
@@ -212,61 +327,101 @@ if(version_dirs)#seaking for a good version only if there are versions installed
 	endforeach()
 
 	if(result)#at least a good version has been found
-		set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-		set_Version_Strings(${package_name} ${major_version} ${minor_version} ${curr_patch_version})
+		set(${VERSION_FOUND} TRUE PARENT_SCOPE)
+		set_Version_Strings(${package} ${major} ${minor} ${curr_patch_version})
 		return()
 	endif()
 endif()
 endfunction(check_Exact_Version)
 
-###  check if a version with constraints =major >=minor (with greater minor number available) exists
-# the patch version is used only if =major and =minor is found
-function(check_Best_Version 	VERSION_HAS_BEEN_FOUND
-				package_name package_install_dir major_version minor_version patch_version)#major version cannot be increased
-set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
-set(curr_max_minor_version ${minor_version})
-list_Version_Subdirectories(version_dirs ${package_install_dir})
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Best_Version| replace:: ``check_Best_Version``
+#  .. _check_Best_Version:
+#
+#  check_Best_Version
+#  ------------------
+#
+#   .. command:: check_Best_Version(VERSION_FOUND package install_dir major minor patch)
+#
+#    Check whether there is a compatible version of the package installed in the workspace, considering the native policy: any version with greater minor is valid. The patch argument is used only if =major and =minor is found.
+#
+#     :package: the name of package to check.
+#
+#     :install_dir: the path to package install folder.
+#
+#     :major: the major number of version.
+#
+#     :minor: the minor number of version.
+#
+#     :patch: the patch number of version.
+#
+#     :VERSION_FOUND: the output variable that contains the compatible version if it exists, empty otherwise.
+#
+function(check_Best_Version VERSION_FOUND package install_dir major minor patch)#major version cannot be increased
+set(${VERSION_FOUND} FALSE PARENT_SCOPE)
+set(curr_max_minor_version ${minor})
+list_Version_Subdirectories(version_dirs ${install_dir})
 if(version_dirs)#seaking for a good version only if there are versions installed
-  if(patch_version)
-    set(curr_patch_version ${patch_version})
+  if(patch)
+    set(curr_patch_version ${patch})
   else()#no preliminary contraints applies to version
     set(curr_patch_version 0)
   endif()
-  update_Package_Installed_Version(${package_name} ${major_version} ${minor_version} "${patch_version}" false "${version_dirs}")#updating only if there are installed versions
+  update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" false "${version_dirs}")#updating only if there are installed versions
 	foreach(version IN LISTS version_dirs)
-		string(REGEX REPLACE "^${major_version}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
+		string(REGEX REPLACE "^${major}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
 		if(NOT (A_VERSION STREQUAL "${version}"))#there is a match
-			list(GET A_VERSION 0 minor)
-			list(GET A_VERSION 1 patch)
-			if("${minor}" EQUAL "${curr_max_minor_version}"
-			AND ("${patch}" EQUAL "${curr_patch_version}" OR "${patch}" GREATER "${curr_patch_version}"))
+			list(GET A_VERSION 0 minor_num)
+			list(GET A_VERSION 1 patch_num)
+			if("${minor_num}" EQUAL "${curr_max_minor_version}"
+			AND ("${patch_num}" EQUAL "${curr_patch_version}" OR "${patch_num}" GREATER "${curr_patch_version}"))
 				set(result true)
 				#a more recent patch version found with same max minor version
-				set(curr_patch_version ${patch})
-			elseif("${minor}" GREATER "${curr_max_minor_version}")
+				set(curr_patch_version ${patch_num})
+			elseif("${minor_num}" GREATER "${curr_max_minor_version}")
 				set(result true)
 				#a greater minor version found
-				set(curr_max_minor_version ${minor})
-				set(curr_patch_version ${patch})
+				set(curr_max_minor_version ${minor_num})
+				set(curr_patch_version ${patch_num})
 			endif()
 		endif()
 	endforeach()
 	if(result)#at least a good version has been found
-		set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
-		set_Version_Strings(${package_name} ${major_version} ${curr_max_minor_version} ${curr_patch_version})
+		set(${VERSION_FOUND} TRUE PARENT_SCOPE)
+		set_Version_Strings(${package} ${major} ${curr_max_minor_version} ${curr_patch_version})
 	endif()
 endif()
 endfunction(check_Best_Version)
 
-
-### check if a version with constraints >=major >=minor (with greater major and minor number available) exists (patch version is always let undefined)
-function(check_Last_Version 	VERSION_HAS_BEEN_FOUND
-				package_name package_install_dir)#taking local version or the most recent if not available
-set(${VERSION_HAS_BEEN_FOUND} FALSE PARENT_SCOPE)
-list_Version_Subdirectories(local_versions ${package_install_dir})
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Last_Version| replace:: ``check_Last_Version``
+#  .. _check_Last_Version:
+#
+#  check_Last_Version
+#  ------------------
+#
+#   .. command:: check_Last_Version(VERSION_FOUND package install_dir)
+#
+#    Check whether there is a version of the package installed in the workspace and take the one with greatest number.
+#
+#     :package: the name of package to check.
+#
+#     :install_dir: the path to package install folder.
+#
+#     :VERSION_FOUND: the output variable that contains the version if any, empty otherwise.
+#
+function(check_Last_Version VERSION_FOUND package install_dir)#taking local version or the most recent if not available
+set(${VERSION_FOUND} FALSE PARENT_SCOPE)
+list_Version_Subdirectories(local_versions ${install_dir})
 if(local_versions)#seaking for a good version only if there are versions installed
-	update_Package_Installed_Version(${package_name} "" "" "" false "${local_versions}")#updating only if there are installed versions
-	set(${VERSION_HAS_BEEN_FOUND} TRUE PARENT_SCOPE)
+	update_Package_Installed_Version(${package} "" "" "" false "${local_versions}")#updating only if there are installed versions
+	set(${VERSION_FOUND} TRUE PARENT_SCOPE)
 	set(version_string_curr "0.0.0")
 	foreach(local_version_dir IN LISTS local_versions)
 		if("${version_string_curr}" VERSION_LESS "${local_version_dir}")
@@ -274,7 +429,7 @@ if(local_versions)#seaking for a good version only if there are versions install
 		endif()
 	endforeach()
 	get_Version_String_Numbers(${version_string_curr} major minor patch)
-	set_Version_Strings(${package_name} ${major} ${minor} ${patch})
+	set_Version_Strings(${package} ${major} ${minor} ${patch})
 endif()
 endfunction(check_Last_Version)
 
@@ -282,7 +437,28 @@ endfunction(check_Last_Version)
 ################# auxiliary functions to check external package version ###################
 ###########################################################################################
 
-### check if a version compatible with minimal version of the external package exists
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_External_Minimum_Version| replace:: ``check_External_Minimum_Version``
+#  .. _check_External_Minimum_Version:
+#
+#  check_External_Minimum_Version
+#  ------------------------------
+#
+#   .. command:: check_External_Minimum_Version(VERSION_FOUND package search_path version)
+#
+#    Check whether there is a compatible version of the external package installed in the workspace, considering the external policy: any older version declared as compatible with this one is eligible.
+#
+#     :package: the name of package to check.
+#
+#     :search_path: the path to external package install folder.
+#
+#     :version: the version number to check.
+#
+#     :VERSION_FOUND: the output variable that contains the compatible version if it exists, empty otherwise.
+#
 function(check_External_Minimum_Version VERSION_FOUND package search_path version)
 set(${VERSION_FOUND} PARENT_SCOPE)
 list_Version_Subdirectories(VERSION_DIRS ${search_path})
@@ -310,7 +486,26 @@ if(VERSION_DIRS)
 endif()
 endfunction(check_External_Minimum_Version)
 
-### check if the last version of the external package exists
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_External_Last_Version| replace:: ``check_External_Last_Version``
+#  .. _check_External_Last_Version:
+#
+#  check_External_Last_Version
+#  ---------------------------
+#
+#   .. command:: check_External_Last_Version(VERSION_FOUND package search_path)
+#
+#    Check whether there is a version of the external package installed in the workspace and take the greatest one.
+#
+#     :package: the name of package to check.
+#
+#     :search_path: the path to external package install folder.
+#
+#     :VERSION_FOUND: the output variable that contains the greatest version if any exists, empty otherwise.
+#
 function(check_External_Last_Version VERSION_FOUND package search_path)
 set(${VERSION_FOUND} PARENT_SCOPE)
 list_Version_Subdirectories(VERSION_DIRS ${search_path})
@@ -331,8 +526,28 @@ if(VERSION_DIRS)
 endif()
 endfunction(check_External_Last_Version)
 
-
-### check if an exact major.minor.patch version of the external package exists
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_External_Exact_Version| replace:: ``check_External_Exact_Version``
+#  .. _check_External_Exact_Version:
+#
+#  check_External_Exact_Version
+#  ----------------------------
+#
+#   .. command:: check_External_Exact_Version(VERSION_FOUND package search_path version)
+#
+#    Check whether there is an exact version of the external package installed in the workspace (n adaptation of version allowed).
+#
+#     :package: the name of package to check.
+#
+#     :search_path: the path to external package install folder.
+#
+#     :version: the version number to check.
+#
+#     :VERSION_FOUND: the output variable that contains the exact version if it exists, empty otherwise.
+#
 function(check_External_Exact_Version VERSION_FOUND package search_path version)
 set(${VERSION_FOUND} PARENT_SCOPE)
 list_Version_Subdirectories(VERSION_DIRS ${search_path})
@@ -350,24 +565,45 @@ endfunction(check_External_Exact_Version)
 ################## auxiliary functions to check components info (native packages only) ##################
 #########################################################################################################
 
-# checking that elements of a component (headers binary, etc.) exist
-function(check_Component_Elements_Exist COMPONENT_ELEMENT_NOTFOUND package_path package_name component_name)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Component_Elements_Exist| replace:: ``check_Component_Elements_Exist``
+#  .. _check_Component_Elements_Exist:
+#
+#  check_Component_Elements_Exist
+#  ------------------------------
+#
+#   .. command:: check_Component_Elements_Exist(COMPONENT_ELEMENT_NOTFOUND package_path package component)
+#
+#    Check whether all elements (headers binary, etc.) bound to a given component (belonging to a given package) exist in workspace.
+#
+#     :search_path: the path to external package install folder.
+#
+#     :package: the name of package to check.
+#
+#     :component: the name of the target component.
+#
+#     :COMPONENT_ELEMENT_NOTFOUND: the output variable that is TRUE if an element of the component has not been found, TRUE otherwise.
+#
+function(check_Component_Elements_Exist COMPONENT_ELEMENT_NOTFOUND search_path package component)
 set(${COMPONENT_ELEMENT_NOTFOUND} TRUE PARENT_SCOPE)
-if(NOT DEFINED ${package_name}_${component_name}_TYPE)#type of the component must be defined
+if(NOT DEFINED ${package}_${component}_TYPE)#type of the component must be defined
 	return()
 endif()
 
-list(FIND ${package_name}_COMPONENTS_APPS ${component_name} idx)
+list(FIND ${package}_COMPONENTS_APPS ${component} idx)
 if(idx EQUAL -1)#the component is NOT an application
-	list(FIND ${package_name}_COMPONENTS_LIBS ${component_name} idx)
+	list(FIND ${package}_COMPONENTS_LIBS ${component} idx)
 	if(idx EQUAL -1)#the component is NOT a library either
 		return() #ERROR
 	else()#the component is a library
 		#for a lib checking headers and then binaries
-		if(DEFINED ${package_name}_${component_name}_HEADERS)#a library must have HEADERS defined otherwise ERROR
+		if(DEFINED ${package}_${component}_HEADERS)#a library must have HEADERS defined otherwise ERROR
 			#checking existence of all its exported headers
-			foreach(header IN LISTS ${package_name}_${component_name}_HEADERS)
-				find_file(PATH_TO_HEADER NAMES ${header} PATHS ${package_path}/include/${${package_name}_${component_name}_HEADER_DIR_NAME} NO_DEFAULT_PATH)
+			foreach(header IN LISTS ${package}_${component}_HEADERS)
+				find_file(PATH_TO_HEADER NAMES ${header} PATHS ${search_path}/include/${${package}_${component}_HEADER_DIR_NAME} NO_DEFAULT_PATH)
 				if(PATH_TO_HEADER-NOTFOUND)
 					set(PATH_TO_HEADER CACHE INTERNAL "")
 					return()
@@ -379,13 +615,13 @@ if(idx EQUAL -1)#the component is NOT an application
 			return()
 		endif()
 		#now checking for binaries if necessary
-		if(	${${package_name}_${component_name}_TYPE} STREQUAL "STATIC"
-			OR ${${package_name}_${component_name}_TYPE} STREQUAL "SHARED"
-			OR ${${package_name}_${component_name}_TYPE} STREQUAL "MODULE")
+		if(	${${package}_${component}_TYPE} STREQUAL "STATIC"
+			OR ${${package}_${component}_TYPE} STREQUAL "SHARED"
+    OR ${${package}_${component}_TYPE} STREQUAL "MODULE")
 			#checking release and debug binaries (at least one is required)
 			find_library(	PATH_TO_LIB
-					NAMES ${${package_name}_${component_name}_BINARY_NAME} ${${package_name}_${component_name}_BINARY_NAME_DEBUG}
-					PATHS ${package_path}/lib NO_DEFAULT_PATH)
+					NAMES ${${package}_${component}_BINARY_NAME} ${${package}_${component}_BINARY_NAME_DEBUG}
+					PATHS ${search_path}/lib NO_DEFAULT_PATH)
 			if(PATH_TO_LIB-NOTFOUND)
 				set(PATH_TO_LIB CACHE INTERNAL "")
 				return()
@@ -397,11 +633,11 @@ if(idx EQUAL -1)#the component is NOT an application
 	endif()
 
 else()#the component is an application
-	if("${${package_name}_${component_name}_TYPE}" STREQUAL "APP")
+	if("${${package}_${component}_TYPE}" STREQUAL "APP")
 		#now checking for binary
 		find_program(	PATH_TO_EXE
-				NAMES ${${package_name}_${component_name}_BINARY_NAME} ${${package_name}_${component_name}_BINARY_NAME_DEBUG}
-				PATHS ${package_path}/bin NO_DEFAULT_PATH)
+				NAMES ${${package}_${component}_BINARY_NAME} ${${package}_${component}_BINARY_NAME_DEBUG}
+				PATHS ${search_path}/bin NO_DEFAULT_PATH)
 		if(PATH_TO_EXE-NOTFOUND)
 			set(PATH_TO_EXE CACHE INTERNAL "")
 			return()
@@ -413,38 +649,76 @@ else()#the component is an application
 		return()
 	endif()
 endif()
-
 endfunction(check_Component_Elements_Exist)
 
-# checking all component. See: check_Component_Elements_Exist.
-function (all_Components package_name package_version path_to_package_version)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |all_Components| replace:: ``all_Components``
+#  .. _all_Components:
+#
+#  all_Components
+#  --------------
+#
+#   .. command:: all_Components(package version search_path)
+#
+#    Check all components of a given package, to verify that all their elements (header, binary) exist.
+#
+#     :package: the name of package to check.
+#
+#     :version: version of the package.
+#
+#     :search_path: the path to package install folder.
+#
+function (all_Components package version search_path)
 set(USE_FILE_NOTFOUND FALSE PARENT_SCOPE)
-include(${path_to_package_version}/share/Use${package_name}-${package_version}.cmake  OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
+include(${search_path}/share/Use${package}-${version}.cmake  OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
 if(	${res} STREQUAL NOTFOUND
-	OR NOT DEFINED ${package_name}_COMPONENTS) #if there is no component defined for the package there is an error
+	OR NOT DEFINED ${package}_COMPONENTS) #if there is no component defined for the package there is an error
 	set(USE_FILE_NOTFOUND TRUE PARENT_SCOPE)
 	return()
 endif()
-set(${package_name}_${requested_component}_FOUND TRUE CACHE INTERNAL "")
-foreach(a_component IN LISTS ${package_name}_COMPONENTS)
-	check_Component_Elements_Exist(COMPONENT_ELEMENT_NOTFOUND ${path_to_package_version} ${package_name} ${a_component})
+foreach(a_component IN LISTS ${package}_COMPONENTS)
+  set(${package}_${a_component}_FOUND TRUE CACHE INTERNAL "")
+	check_Component_Elements_Exist(COMPONENT_ELEMENT_NOTFOUND ${search_path} ${package} ${a_component})
 	if(COMPONENT_ELEMENT_NOTFOUND)
-		set(${package_name}_${requested_component}_FOUND FALSE CACHE INTERNAL "")
+		set(${package}_${a_component}_FOUND FALSE CACHE INTERNAL "")
 	endif()
 endforeach()
-endfunction (all_Components)
+endfunction(all_Components)
 
-
-# checking a set of component. See: check_Component_Elements_Exist.
-function (select_Components package_name package_version path_to_package_version list_of_components)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |select_Components| replace:: ``select_Components``
+#  .. _select_Components:
+#
+#  select_Components
+#  -----------------
+#
+#   .. command:: select_Components(package version search_path list_of_components)
+#
+#    Check that the given components of a given package. It verifies that all their elements (header, binary) exist.
+#
+#     :package: the name of package to check.
+#
+#     :version: version of the package.
+#
+#     :search_path: the path to package install folder.
+#
+#     :list_of_components: the list of components to specifically check.
+#
+function (select_Components package version search_path list_of_components)
 set(USE_FILE_NOTFOUND FALSE PARENT_SCOPE)
-include(${path_to_package_version}/share/Use${package_name}-${package_version}.cmake OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
+include(${search_path}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
 if(${res} STREQUAL NOTFOUND)
 	set(USE_FILE_NOTFOUND TRUE PARENT_SCOPE)
 	return()
 endif()
 
-if(NOT DEFINED ${package_name}_COMPONENTS)#if there is no component defined for the package there is an error
+if(NOT DEFINED ${package}_COMPONENTS)#if there is no component defined for the package there is an error
 	set(USE_FILE_NOTFOUND TRUE PARENT_SCOPE)
 	return()
 endif()
@@ -452,49 +726,65 @@ endif()
 #checking that all requested components trully exist for this version
 set(ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND TRUE PARENT_SCOPE)
 foreach(requested_component IN LISTS list_of_components)
-	list(FIND ${package_name}_COMPONENTS ${requested_component} idx)
+	list(FIND ${package}_COMPONENTS ${requested_component} idx)
 	if(idx EQUAL -1)#component has not been found
-		set(${package_name}_${requested_component}_FOUND FALSE  CACHE INTERNAL "")
-		if(${${package_name}_FIND_REQUIRED_${requested_component}})
+		set(${package}_${requested_component}_FOUND FALSE  CACHE INTERNAL "")
+		if(${${package}_FIND_REQUIRED_${requested_component}})
 			set(ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND FALSE PARENT_SCOPE)
 		endif()
 	else()#component found
-		check_Component_Elements_Exist(COMPONENT_ELEMENT_NOTFOUND ${path_to_package_version} ${package_name} ${requested_component})
+		check_Component_Elements_Exist(COMPONENT_ELEMENT_NOTFOUND ${search_path} ${package} ${requested_component})
 		if(COMPONENT_ELEMENT_NOTFOUND)
-			set(${package_name}_${requested_component}_FOUND FALSE  CACHE INTERNAL "")
+			set(${package}_${requested_component}_FOUND FALSE  CACHE INTERNAL "")
 		else()
-			set(${package_name}_${requested_component}_FOUND TRUE  CACHE INTERNAL "")
+			set(${package}_${requested_component}_FOUND TRUE  CACHE INTERNAL "")
 		endif()
 	endif()
 endforeach()
-endfunction (select_Components)
+endfunction(select_Components)
 
 
 #########################################################################################################
 ######################### auxiliary functions to check version info (native packages) ###################
 #########################################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Exact_Version_Compatible_With_Previous_Constraints| replace:: ``is_Exact_Version_Compatible_With_Previous_Constraints``
+#  .. _is_Exact_Version_Compatible_With_Previous_Constraints:
+#
+#  is_Exact_Version_Compatible_With_Previous_Constraints
+#  -----------------------------------------------------
+#
+#   .. command:: is_Exact_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_FINDING package version)
+#
+#    Check if an exact version is compatible with previous version contrainsts that apply to the current build. This function is used during dependencies version resolutionn process.
+#
+#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
+#
+#     :NEED_FINDING: the output variable that is TRUE if the exact version needs to be find.
+#
+#     :package: the name of package to check.
+#
+#     :version: version of the package.
+#
+function(is_Exact_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE NEED_FINDING package version)
 
-### function used to check is an exact version is compatible with previous version contrainsts that apply to the current build.
-function(is_Exact_Version_Compatible_With_Previous_Constraints
-		is_compatible
-		need_finding
-		package
-		version_string)
-
-set(${is_compatible} FALSE PARENT_SCOPE)
-set(${need_finding} FALSE PARENT_SCOPE)
+set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
+set(${NEED_FINDING} FALSE PARENT_SCOPE)
 if(${package}_REQUIRED_VERSION_EXACT)
 	get_Version_String_Numbers("${${package}_REQUIRED_VERSION_EXACT}.0" exact_major exact_minor exact_patch)
-	is_Exact_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_string})
+	is_Exact_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version})
 	if(NOT COMPATIBLE_VERSION)#not compatible if versions are not the same major.minor
 		return()
 	endif()
-	set(${is_compatible} TRUE PARENT_SCOPE)
+	set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 	return()
 endif()
 #no exact version required
-get_Version_String_Numbers("${version_string}.0" exact_major exact_minor exact_patch)
+get_Version_String_Numbers("${version}.0" exact_major exact_minor exact_patch)
 foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	unset(COMPATIBLE_VERSION)
 	is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_required})
@@ -503,31 +793,47 @@ foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	endif()
 endforeach()
 
-set(${is_compatible} TRUE PARENT_SCOPE)
-if(NOT ${${package}_VERSION_STRING} VERSION_EQUAL ${version_string})
-	set(${need_finding} TRUE PARENT_SCOPE) #need to find the new exact version
+set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
+if(NOT ${package}_VERSION_STRING VERSION_EQUAL version)
+	set(${NEED_FINDING} TRUE PARENT_SCOPE) #need to find the new exact version
 endif()
 endfunction(is_Exact_Version_Compatible_With_Previous_Constraints)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Version_Compatible_With_Previous_Constraints| replace:: ``is_Version_Compatible_With_Previous_Constraints``
+#  .. _is_Version_Compatible_With_Previous_Constraints:
+#
+#  is_Version_Compatible_With_Previous_Constraints
+#  -----------------------------------------------
+#
+#   .. command:: is_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE VERSION_TO_FIND package version)
+#
+#    Check if a version is compatible with previous version contrainsts that apply to the current build. This function is used during dependencies version resolutionn process.
+#
+#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
+#
+#     :VERSION_TO_FIND: the output variable that contains the version that needs to be find.
+#
+#     :package: the name of package to check.
+#
+#     :version: version of the package.
+#
+function(is_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE VERSION_TO_FIND package version)
 
-### function used to check is a version is compatible with previous version contrainsts that apply to the current build.
-function(is_Version_Compatible_With_Previous_Constraints
-		is_compatible
-		version_to_find
-		package
-		version_string)
-
-set(${is_compatible} FALSE PARENT_SCOPE)
+set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
 # 1) testing compatibility and recording the higher constraint for minor version number
 if(${package}_REQUIRED_VERSION_EXACT)
 	get_Version_String_Numbers("${${package}_REQUIRED_VERSION_EXACT}.0" exact_major exact_minor exact_patch)
-	is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_string})
+	is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version})
 	if(COMPATIBLE_VERSION)
-		set(${is_compatible} TRUE PARENT_SCOPE)
+		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 	endif()
 	return()#no need to set the version to find
 endif()
-get_Version_String_Numbers("${version_string}.0" new_major new_minor new_patch)
+get_Version_String_Numbers("${version}.0" new_major new_minor new_patch)
 set(curr_major ${new_major})
 set(curr_max_minor 0)
 foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
@@ -540,14 +846,13 @@ foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 		set(curr_max_minor ${new_minor})
 	endif()
 endforeach()
-set(${is_compatible} TRUE PARENT_SCOPE)
+set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 
 # 2) now we have the greater constraint
 set(max_version_constraint "${curr_major}.${curr_max_minor}")
-if(NOT ${${package}_VERSION_STRING} VERSION_GREATER ${max_version_constraint})
-	set(${version_to_find} ${max_version_constraint} PARENT_SCOPE) #need to find the new version
+if(NOT ${package}_VERSION_STRING VERSION_GREATER ${max_version_constraint})
+	set(${VERSION_TO_FIND} ${max_version_constraint} PARENT_SCOPE) #need to find the new version
 endif()
-
 endfunction(is_Version_Compatible_With_Previous_Constraints)
 
 
@@ -556,80 +861,135 @@ endfunction(is_Version_Compatible_With_Previous_Constraints)
 #########################################################################################################
 
 ### function used to check the compatibility between two versions of an external package
-function(is_Compatible_External_Version is_compatible package reference_version version_to_compare)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Compatible_External_Version| replace:: ``is_Compatible_External_Version``
+#  .. _is_Compatible_External_Version:
+#
+#  is_Compatible_External_Version
+#  ------------------------------
+#
+#   .. command:: is_Compatible_External_Version(IS_COMPATIBLE package reference_version version_to_compare)
+#
+#    Check if a version of the given external package is compatible with a reference version. This compatibility is deduced from explicit declaration of compatibility in external packages.
+#
+#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
+#
+#     :package: the name of package to check.
+#
+#     :reference_version: the reference version of the package
+#
+#     :version_to_compare: version of the package to compare with reference version.
+#
+function(is_Compatible_External_Version IS_COMPATIBLE package reference_version version_to_compare)
 if(${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO)
-
-	if(${reference_version}   VERSION_LESS   ${${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO})
-		set(${is_compatible} TRUE PARENT_SCOPE)
+	if(reference_version VERSION_LESS ${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO)
+		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 	else()
-		set(${is_compatible} FALSE PARENT_SCOPE)
+		set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
 	endif()
 else()
-	set(${is_compatible} TRUE PARENT_SCOPE) #if not specified it means that there are no known greater version that is not compatible
+	set(${IS_COMPATIBLE} TRUE PARENT_SCOPE) #if not specified it means that there are no known greater version that is not compatible
 endif()
-endfunction()
+endfunction(is_Compatible_External_Version)
 
-
-### function used to check is an exact version of an external package is compatible with previous version contrainsts that apply to the current build.
-function(is_Exact_External_Version_Compatible_With_Previous_Constraints
-		is_compatible
-		need_finding
-		package
-		version_string)
-
-set(${is_compatible} FALSE PARENT_SCOPE)
-set(${need_finding} FALSE PARENT_SCOPE)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Exact_External_Version_Compatible_With_Previous_Constraints| replace:: ``is_Exact_External_Version_Compatible_With_Previous_Constraints``
+#  .. _is_Exact_External_Version_Compatible_With_Previous_Constraints:
+#
+#  is_Exact_External_Version_Compatible_With_Previous_Constraints
+#  --------------------------------------------------------------
+#
+#   .. command:: is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_FINDING package version)
+#
+#    Check if an exact version of an external package is compatible with previous version contrainsts that apply to the current build. This function is used during dependencies version resolutionn process.
+#
+#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
+#
+#     :NEED_FINDING: the output variable that is TRUE if the exact version needs to be find.
+#
+#     :package: the name of package to check.
+#
+#     :version: version of the package.
+#
+function(is_Exact_External_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE NEED_FINDING package version)
+set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
+set(${NEED_FINDING} FALSE PARENT_SCOPE)
 if(${package}_REQUIRED_VERSION_EXACT)
-	if(NOT ${${package}_REQUIRED_VERSION_EXACT}  VERSION_EQUAL  ${version_string})#not compatible if versions are not the same
+	if(NOT ${package}_REQUIRED_VERSION_EXACT VERSION_EQUAL version)#not compatible if versions are not the same
 		return()
 	endif()
-	set(${is_compatible} TRUE PARENT_SCOPE)
+	set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 	return()
 endif()
 
 #no exact version required
 foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	unset(COMPATIBLE_VERSION)
-	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version_string})
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version})
 	if(NOT COMPATIBLE_VERSION)
 		return()#not compatible
 	endif()
 endforeach()
 
-set(${is_compatible} TRUE PARENT_SCOPE)
-if(NOT ${${package}_VERSION_STRING} VERSION_EQUAL ${version_string})
-	set(${need_finding} TRUE PARENT_SCOPE) #need to find the new exact version
+set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
+if(NOT ${package}_VERSION_STRING VERSION_EQUAL version)
+	set(${NEED_FINDING} TRUE PARENT_SCOPE) #need to find the new exact version
 endif()
-endfunction()
+endfunction(is_Exact_External_Version_Compatible_With_Previous_Constraints)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_External_Version_Compatible_With_Previous_Constraints| replace:: ``is_External_Version_Compatible_With_Previous_Constraints``
+#  .. _is_External_Version_Compatible_With_Previous_Constraints:
+#
+#  is_External_Version_Compatible_With_Previous_Constraints
+#  --------------------------------------------------------
+#
+#   .. command:: is_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE VERSION_TO_FIND package version)
+#
+#    Check if a version of an external package is compatible with previous version contrainsts that apply to the current build. This function is used during dependencies version resolutionn process.
+#
+#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
+#
+#     :VERSION_TO_FIND: the output variable that contains the version that needs to be find.
+#
+#     :package: the name of package to check.
+#
+#     :version: version of the package.
+#
+#   .. todo::
+#     Check VERSION_TO_FIND: is it necessary or why not used ?
+#
+function(is_External_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE VERSION_TO_FIND package version)
 
-
-### function used to check is a version of an external package is compatible with previous version contrainsts that apply to the current build.
-function(is_External_Version_Compatible_With_Previous_Constraints
-		is_compatible
-		version_to_find
-		package
-		version_string)
-
-set(${is_compatible} FALSE PARENT_SCOPE)
+set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
 # 1) testing compatibility and recording the higher constraint for minor version number
 if(${package}_REQUIRED_VERSION_EXACT)
-	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${${package}_REQUIRED_VERSION_EXACT} ${version_string})
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${${package}_REQUIRED_VERSION_EXACT} ${version})
 	if(COMPATIBLE_VERSION)
-		set(${is_compatible} TRUE PARENT_SCOPE)
+		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 	endif()
 	return()#no need to set the version to find
 endif()
-
+set(max_version_constraint)
 foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	unset(COMPATIBLE_VERSION)
-	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version_string})
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version})
 	if(NOT COMPATIBLE_VERSION)
 		return()
 	endif()
+
 endforeach()
-set(${is_compatible} TRUE PARENT_SCOPE)
+set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 endfunction(is_External_Version_Compatible_With_Previous_Constraints)
 
 
@@ -637,7 +997,26 @@ endfunction(is_External_Version_Compatible_With_Previous_Constraints)
 ############### API functions for managing cache variables bound to package dependencies #####################
 ##############################################################################################################
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_To_Install_Package_Specification| replace:: ``add_To_Install_Package_Specification``
+#  .. _add_To_Install_Package_Specification:
+#
+#  add_To_Install_Package_Specification
+#  ------------------------------------
+#
+#   .. command:: add_To_Install_Package_Specification(package version version_exact)
+#
+#    Mark a given package version as "to be installed".
+#
+#     :package: the name of package to check.
+#
+#     :version: version of the package.
+#
+#     :version_exact: if TRUE then the version constraint is exact.
+#
 function(add_To_Install_Package_Specification package version version_exact)
 list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
 if(INDEX EQUAL -1)#not found
@@ -674,7 +1053,20 @@ else()#package already required as "to install"
 endif()
 endfunction(add_To_Install_Package_Specification)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_To_Install_Packages| replace:: ``reset_To_Install_Packages``
+#  .. _reset_To_Install_Packages:
+#
+#  reset_To_Install_Packages
+#  -------------------------
+#
+#   .. command:: reset_To_Install_Packages()
+#
+#    Reset all packages marked as "to be installed".
+#
 function(reset_To_Install_Packages)
 foreach(pack IN LISTS ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX})
 	foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${pack}_VERSIONS${USE_MODE_SUFFIX})
@@ -685,7 +1077,22 @@ endforeach()
 set(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_To_Install_Packages)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |need_Install_Packages| replace:: ``need_Install_Packages``
+#  .. _need_Install_Packages:
+#
+#  need_Install_Packages
+#  ---------------------
+#
+#   .. command:: need_Install_Packages(NEED)
+#
+#    Tell whether there are packages that need to be installed.
+#
+#     :NEED: the output variable that is TRUE is at least one package version must be installed.
+#
 function(need_Install_Packages NEED)
 if(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX})
 	set(${NEED} TRUE PARENT_SCOPE)
@@ -694,8 +1101,26 @@ else()
 endif()
 endfunction(need_Install_Packages)
 
-
-### set an external package as "to be installed"
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_To_Install_External_Package_Specification| replace:: ``add_To_Install_External_Package_Specification``
+#  .. _add_To_Install_External_Package_Specification:
+#
+#  add_To_Install_External_Package_Specification
+#  ---------------------------------------------
+#
+#   .. command:: add_To_Install_External_Package_Specification(package version version_exact)
+#
+#    Mark a given external package version as "to be installed".
+#
+#     :package: the name of package to check.
+#
+#     :version: version of the package.
+#
+#     :version_exact: if TRUE then the version constraint is exact.
+#
 function(add_To_Install_External_Package_Specification package version version_exact)
 list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
 if(INDEX EQUAL -1)#not found => adding it to "to install" packages
@@ -720,7 +1145,20 @@ else()#package already required as "to install"
 endif()
 endfunction(add_To_Install_External_Package_Specification)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_To_Install_External_Packages| replace:: ``reset_To_Install_External_Packages``
+#  .. _reset_To_Install_External_Packages:
+#
+#  reset_To_Install_External_Packages
+#  ----------------------------------
+#
+#   .. command:: reset_To_Install_External_Packages()
+#
+#    Reset all external packages marked as "to be installed".
+#
 function(reset_To_Install_External_Packages)
 foreach(pack IN LISTS ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX})
 	foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${pack}_VERSIONS${USE_MODE_SUFFIX})
@@ -731,8 +1169,20 @@ endforeach()
 set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_To_Install_External_Packages)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Found_External_Packages| replace:: ``reset_Found_External_Packages``
+#  .. _reset_Found_External_Packages:
+#
+#  reset_Found_External_Packages
+#  -----------------------------
+#
+#   .. command:: reset_Found_External_Packages()
+#
+#    Reset all external packages variables used during find process.
+#
 function(reset_Found_External_Packages)
 foreach(a_used_package IN LISTS ${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES)
 	set(${a_used_package}_FOUND CACHE INTERNAL "")
@@ -743,8 +1193,20 @@ endforeach()
 set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES CACHE INTERNAL "")
 endfunction(reset_Found_External_Packages)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Found_Native_Packages| replace:: ``reset_Found_Native_Packages``
+#  .. _reset_Found_Native_Packages:
+#
+#  reset_Found_Native_Packages
+#  ---------------------------
+#
+#   .. command:: reset_Found_Native_Packages()
+#
+#    Reset all native packages variables used during find process.
+#
 function(reset_Found_Native_Packages)
 foreach(a_used_package IN LISTS ${PROJECT_NAME}_ALL_USED_PACKAGES)
 	set(${a_used_package}_FOUND CACHE INTERNAL "")
@@ -755,7 +1217,22 @@ endforeach()
 set(${PROJECT_NAME}_ALL_USED_PACKAGES CACHE INTERNAL "")
 endfunction(reset_Found_Native_Packages)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |need_Install_External_Packages| replace:: ``need_Install_External_Packages``
+#  .. _need_Install_External_Packages:
+#
+#  need_Install_External_Packages
+#  ------------------------------
+#
+#   .. command:: need_Install_External_Packages(NEED)
+#
+#    Tell whether there are external packages that need to be installed.
+#
+#     :NEED: the output variable that is TRUE is at least one external package version must be installed.
+#
 function(need_Install_External_Packages NEED)
 if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX})
 	set(${NEED} TRUE PARENT_SCOPE)
@@ -764,7 +1241,20 @@ else()
 endif()
 endfunction(need_Install_External_Packages)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Packages_Finding_Variables| replace:: ``reset_Packages_Finding_Variables``
+#  .. _reset_Packages_Finding_Variables:
+#
+#  reset_Packages_Finding_Variables
+#  --------------------------------
+#
+#   .. command:: reset_Packages_Finding_Variables()
+#
+#    Reset all variables bound to find process in the context of a package.
+#
 function(reset_Packages_Finding_Variables)
 #unsetting all cache variables usefull to the find/configuration mechanism
 reset_Found_Native_Packages()
@@ -777,13 +1267,32 @@ endfunction(reset_Packages_Finding_Variables)
 ################## functions to resolve packages dependencies globally ##################################
 #########################################################################################################
 
-### Function used to find the best version of a dependency of a given package (i.e. another package). It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).
-# each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
-# other variables set by the package version use file
-# ${package}_DEPENDENCY_${dependency}_REQUIRED		# TRUE if package is required FALSE otherwise (QUIET MODE)
-# ${package}_DEPENDENCY_${dependency}_VERSION		# version if a version if specified
-# ${package}_DEPENDENCY_${dependency}_VERSION_EXACT	# TRUE if exact version is required
-# ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Package_Dependency| replace:: ``resolve_Package_Dependency``
+#  .. _resolve_Package_Dependency:
+#
+#  resolve_Package_Dependency
+#  --------------------------
+#
+#   .. command:: resolve_Package_Dependency(package dependency mode)
+#
+#    Find the best version of a dependency for a given package (i.e. another package). It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).
+#    each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
+#    other variables set by the package version use file
+#    ${package}_DEPENDENCY_${dependency}_REQUIRED		# TRUE if package is required FALSE otherwise (QUIET MODE)
+#    ${package}_DEPENDENCY_${dependency}_VERSION		# version if a version if specified
+#    ${package}_DEPENDENCY_${dependency}_VERSION_EXACT	# TRUE if exact version is required
+#    ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
+#
+#     :package: the name of package that has dependencies.
+#
+#     :dependency: the name of the native package that is a dependency of package
+#
+#     :mode: the build mode to consider.
+#
 function(resolve_Package_Dependency package dependency mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
@@ -870,7 +1379,26 @@ endif()
 
 endfunction(resolve_Package_Dependency)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_External_Package_Dependency| replace:: ``resolve_External_Package_Dependency``
+#  .. _resolve_External_Package_Dependency:
+#
+#  resolve_External_Package_Dependency
+#  -----------------------------------
+#
+#   .. command:: resolve_External_Package_Dependency(package external_dependency mode)
+#
+#    Find the best version of an external dependency for a given package. It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).
+#
+#     :package: the name of package that has dependencies.
+#
+#     :external_dependency: the name of the external package that is a dependency of package.
+#
+#     :mode: the build mode to consider.
+#
 function(resolve_External_Package_Dependency package external_dependency mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${external_dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
@@ -954,13 +1482,31 @@ else()#the dependency has not been already found
 		)
 	endif()
 endif()
-
 endfunction(resolve_External_Package_Dependency)
 
 
 ############################################################################
 ################ macros used to write cmake find scripts ###################
 ############################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |exitFindScript| replace:: ``exitFindScript``
+#  .. _exitFindScript:
+#
+#  exitFindScript
+#  --------------
+#
+#   .. command:: exitFindScript(package message_to_send)
+#
+#    Exitting the find script of a package with a message.
+#
+#     :package: the name of the package.
+#
+#     :message_to_send: message to print when exitting the script.
+#
 macro(exitFindScript package message_to_send)
 	if(${package}_FIND_REQUIRED)
 		message(SEND_ERROR "${message_to_send}")#fatal error
@@ -973,7 +1519,22 @@ macro(exitFindScript package message_to_send)
 	endif()
 endmacro(exitFindScript)
 
-### macro to be called in find script of packages. Implement the finding process the standard way in CMake.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |finding_Package| replace:: ``finding_Package``
+#  .. _finding_Package:
+#
+#  finding_Package
+#  ---------------
+#
+#   .. command:: finding_Package(package)
+#
+#     Launch the native package finding process. Macro to be called in find script of native packages.
+#
+#     :package: the name of the package.
+#
 macro(finding_Package package)
 set(${package}_FOUND FALSE CACHE INTERNAL "")
 
@@ -1073,13 +1634,27 @@ else() #if the directory does not exist it means the package cannot be found
 	endif()
 
 endif()
-
 endmacro(finding_Package)
 
-
-##find script for external packages
-# requires ${package}_PID_KNOWN_VERSION to be defined before calling this macro, set with at least one exact version (MAJOR.MINOR.PATCH)
-# optionnaly ${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO can be set to define which version (MAJOR.MINOR.PATCH) is no more compatible with ${version}. Can be done for any version defined as "known".
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |finding_External_Package| replace:: ``finding_External_Package``
+#  .. _finding_External_Package:
+#
+#  finding_External_Package
+#  ------------------------
+#
+#   .. command:: finding_External_Package(package)
+#
+#     Launch the external package finding process. Macro to be called in find script of external packages.
+#
+#      requires ${package}_PID_KNOWN_VERSION to be defined before calling this macro, set with at least one exact version (MAJOR.MINOR.PATCH)
+#      optionnaly ${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO can be set to define which version (MAJOR.MINOR.PATCH) is no more compatible with ${version}. Can be done for any version defined as "known".
+#
+#     :package: the name of the package.
+#
 macro(finding_External_Package package)
 set(${package}_FOUND FALSE CACHE INTERNAL "")
 #workspace dir must be defined for each package build
@@ -1156,5 +1731,4 @@ else() #if the directory does not exist it means the external package cannot be 
 	endif()
 
 endif()
-
 endmacro(finding_External_Package)
