@@ -193,8 +193,7 @@ add_custom_target(hard_clean
 add_custom_target(remove
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
 					-DTARGET_FRAMEWORK=$(framework)
-					-D
-ORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Remove_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
