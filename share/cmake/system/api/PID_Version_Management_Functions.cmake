@@ -26,7 +26,20 @@ endif()
 set(PID_VERSION_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
 
-### setting global variable describing versions used
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |init_PID_Version_Variable| replace:: ``init_PID_Version_Variable``
+#  .. _init_PID_Version_Variable:
+#
+#  init_PID_Version_Variable
+#  -------------------------
+#
+#   .. command:: init_PID_Version_Variable()
+#
+#     Initialize global variable describing the version of PID in use
+#
 function(init_PID_Version_Variable)
 if(NOT EXISTS ${WORKSPACE_DIR}/pid/PID_version.cmake)#if workspace has not been built (or build files deleted), then build it to get the version
 	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
@@ -53,33 +66,84 @@ else()
 endif()
 endfunction(init_PID_Version_Variable)
 
-
-function(PID_Package_Is_With_Development_Info_In_Use_Files RES package)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |PID_Package_Is_With_Development_Info_In_Use_Files| replace:: ``PID_Package_Is_With_Development_Info_In_Use_Files``
+#  .. _PID_Package_Is_With_Development_Info_In_Use_Files:
+#
+#  PID_Package_Is_With_Development_Info_In_Use_Files
+#  -------------------------------------------------
+#
+#   .. command:: PID_Package_Is_With_Development_Info_In_Use_Files(RESULT package)
+#
+#     Tell wether target package in use has been developped with a version of PID that supports developer info in use files.
+#
+#      :package: the name of target package.
+#
+#      :RESULT: the output variable that is TRUE if package use file contains developer info.
+#
+function(PID_Package_Is_With_Development_Info_In_Use_Files RESULT package)
 	if(NOT ${package}_PID_VERSION)
-		set(${RES} FALSE PARENT_SCOPE)
+		set(${RESULT} FALSE PARENT_SCOPE)
 		return()
 	endif()
 	if(${${package}_PID_VERSION} GREATER 1) #with packages generated with version > 1 we can find development info about packages
-		set(${RES} TRUE PARENT_SCOPE)
+		set(${RESULT} TRUE PARENT_SCOPE)
 	else()
-		set(${RES} FALSE PARENT_SCOPE)
+		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 endfunction(PID_Package_Is_With_Development_Info_In_Use_Files)
 
-
-function(PID_Package_Is_With_Site_Info_In_Use_Files RES package)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |PID_Package_Is_With_Site_Info_In_Use_Files| replace:: ``PID_Package_Is_With_Site_Info_In_Use_Files``
+#  .. _PID_Package_Is_With_Site_Info_In_Use_Files:
+#
+#  PID_Package_Is_With_Site_Info_In_Use_Files
+#  ------------------------------------------
+#
+#   .. command:: PID_Package_Is_With_Site_Info_In_Use_Files(RESULT package)
+#
+#     Tell wether target package in use has been developped with a version of PID that supports static site info in use files.
+#
+#      :package: the name of target package.
+#
+#      :RESULT: the output variable that is TRUE if package use file contains static site info.
+#
+function(PID_Package_Is_With_Site_Info_In_Use_Files RESULT package)
 	if(NOT ${package}_PID_VERSION)
-		set(${RES} FALSE PARENT_SCOPE)
+		set(${RESULT} FALSE PARENT_SCOPE)
 		return()
 	endif()
 	if(${${package}_PID_VERSION} GREATER 1) #with packages generated with version > 1 we can find web site info about packages
-		set(${RES} TRUE PARENT_SCOPE)
+		set(${RESULT} TRUE PARENT_SCOPE)
 	else()
-		set(${RES} FALSE PARENT_SCOPE)
+		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 endfunction(PID_Package_Is_With_Site_Info_In_Use_Files)
 
-
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |PID_Package_Is_With_V2_Platform_Info_In_Use_Files| replace:: ``PID_Package_Is_With_V2_Platform_Info_In_Use_Files``
+#  .. _PID_Package_Is_With_V2_Platform_Info_In_Use_Files:
+#
+#  PID_Package_Is_With_V2_Platform_Info_In_Use_Files
+#  -------------------------------------------------
+#
+#   .. command:: PID_Package_Is_With_V2_Platform_Info_In_Use_Files(RESULT package)
+#
+#     Tell wether target package in use has been developped with a version of PID that supports platform info Version 2 in use files.
+#
+#      :package: the name of target package.
+#
+#      :RESULT: the output variable that is TRUE if package use file contains new way to describe platform info.
+#
 function(PID_Package_Is_With_V2_Platform_Info_In_Use_Files RES package)
 	if(NOT ${package}_PID_VERSION)
 		set(${RES} FALSE PARENT_SCOPE)
