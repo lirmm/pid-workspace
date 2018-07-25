@@ -34,7 +34,22 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 ############### API functions for managing references on dependent packages #################
 #############################################################################################
 
-### generate the reference file used to retrieve packages
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_Reference_File| replace:: ``generate_Package_Reference_File``
+#  .. _generate_Package_Reference_File:
+#
+#  generate_Package_Reference_File
+#  -------------------------------
+#
+#   .. command:: generate_Package_Reference_File(pathtonewfile)
+#
+#      Generate the reference file used to retrieve the currently built package from online repositories (source git repository and binaries repositories).
+#
+#      :pathtonewfile: The path where to generate the reference file.
+#
 function(generate_Package_Reference_File pathtonewfile)
 set(file ${pathtonewfile})
 file(WRITE ${file} "")
@@ -79,8 +94,22 @@ foreach(ref_version IN LISTS ${PROJECT_NAME}_REFERENCES) #for each available ver
 endforeach()
 endfunction(generate_Package_Reference_File)
 
-
-### generate the reference file used to retrieve packages
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_Reference_File| replace:: ``generate_Wrapper_Reference_File``
+#  .. _generate_Wrapper_Reference_File:
+#
+#  generate_Wrapper_Reference_File
+#  -------------------------------
+#
+#   .. command:: generate_Wrapper_Reference_File(pathtonewfile)
+#
+#      Generate the reference file used to retrieve the currently built wrapper from online repositories (source git repository and binaries repositories).
+#
+#      :pathtonewfile: The path where to generate the reference file.
+#
 function(generate_Wrapper_Reference_File pathtonewfile)
 set(file ${pathtonewfile})
 #1) write information related only to the wrapper project itself (not used in resulting installed external package description)
@@ -140,7 +169,24 @@ endfunction(generate_Wrapper_Reference_File)
 ################ external) in the workspace #################################################
 #############################################################################################
 
-### resolving dependencies means that each dependency of teh package finally targets a given package located in the workspace. This can lead to the install of packages either direct or undirect dependencies of the target package.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Package_Dependencies| replace:: ``resolve_Package_Dependencies``
+#  .. _resolve_Package_Dependencies:
+#
+#  resolve_Package_Dependencies
+#  ----------------------------
+#
+#   .. command:: resolve_Package_Dependencies(package mode)
+#
+#      Resolve dependencies of a given package: each dependency is defined as a path to the adequate package version located in the workspace. This can lead to the install of packages either direct or undirect dependencies of the target package.
+#
+#      :package: The name of given package for which dependencies are resolved.
+#
+#      :mode: The build mode (Debug or Release) of the package.
+#
 function(resolve_Package_Dependencies package mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 ################## management of external packages : for both external and native packages ##################
@@ -235,7 +281,32 @@ endfunction(resolve_Package_Dependencies)
 ############## General functions to deploy  Native Packages (binary or source) ##############
 #############################################################################################
 
-### function called by find script subfunctions to automatically update a package, if possible
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Package_Installed_Version| replace:: ``update_Package_Installed_Version``
+#  .. _update_Package_Installed_Version:
+#
+#  update_Package_Installed_Version
+#  --------------------------------
+#
+#   .. command:: update_Package_Installed_Version(package major minor patch exact already_installed)
+#
+#      Update a package to the given version. Function called by find script subfunctions to automatically update a package, if possible.
+#
+#      :package: The name of given package to update.
+#
+#      :major: major number of package version.
+#
+#      :minor: minor number of package version.
+#
+#      :patch: patch number of package version.
+#
+#      :exact: if TRUE the version constraint is exact.
+#
+#      :already_installed: the list of versions of teh package already installed in the workspace.
+#
 function(update_Package_Installed_Version package major minor patch exact already_installed)
 first_Called_Build_Mode(FIRST_TIME) # do the update only once per global configuration of the project
 if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_UPDATE) #if no automatic download then simply do nothing
@@ -299,10 +370,29 @@ if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_UPDATE) #if no automatic download 
 endif()
 endfunction(update_Package_Installed_Version)
 
-
-### function used to select an adequate version to install for a given native package.
-# given the currently required versions
-function(resolve_Required_Native_Package_Version version_possible min_version is_exact package)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Required_Native_Package_Version| replace:: ``resolve_Required_Native_Package_Version``
+#  .. _resolve_Required_Native_Package_Version:
+#
+#  resolve_Required_Native_Package_Version
+#  ---------------------------------------
+#
+#   .. command:: resolve_Required_Native_Package_Version(RESOLUTION_OK MINIMUM_VERSION IS_EXACT package)
+#
+#     Select the adequate version of a given package to be used in current build process.
+#
+#      :package: The name of the package for which a version must be found.
+#
+#      :RESOLUTION_OK: the output variable that is TRUE if a version of the package has been proposed by teh resolution process, FALSE otherwise.
+#
+#      :MINIMUM_VERSION: the output variable that contains the minimum version to use.
+#
+#      :IS_EXACT: the output variable that is TRUE if MINIMUM_VERSION must be exact, false otherwise.
+#
+function(resolve_Required_Native_Package_Version RESOLUTION_OK MINIMUM_VERSION IS_EXACT package)
 
 foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	get_Version_String_Numbers("${version}" compare_major compare_minor compared_patch)
@@ -320,10 +410,10 @@ foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE
 			set(CURR_EXACT FALSE)
 		endif()
 	elseif(NOT compare_major EQUAL ${MAJOR_RESOLVED})
-		set(${version_possible} FALSE PARENT_SCOPE)
+		set(${RESOLUTION_OK} FALSE PARENT_SCOPE)
 		return()
 	elseif(CURR_EXACT AND (compare_minor GREATER ${CUR_MINOR_RESOLVED}))
-		set(${version_possible} FALSE PARENT_SCOPE)
+		set(${RESOLUTION_OK} FALSE PARENT_SCOPE)
 		return()
 	elseif(NOT CURR_EXACT AND (compare_minor GREATER ${CUR_MINOR_RESOLVED}))
 		set(CUR_MINOR_RESOLVED ${compare_minor})
@@ -335,13 +425,31 @@ foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE
 		endif()
 	endif()
 endforeach()
-set(${version_possible} TRUE PARENT_SCOPE)
-set(${min_version} "${MAJOR_RESOLVED}.${CUR_MINOR_RESOLVED}.${CUR_PATCH_RESOLVED}" PARENT_SCOPE)
-set(${is_exact} ${CURR_EXACT} PARENT_SCOPE)
+set(${RESOLUTION_OK} TRUE PARENT_SCOPE)
+set(${MINIMUM_VERSION} "${MAJOR_RESOLVED}.${CUR_MINOR_RESOLVED}.${CUR_PATCH_RESOLVED}" PARENT_SCOPE)
+set(${IS_EXACT} ${CURR_EXACT} PARENT_SCOPE)
 endfunction(resolve_Required_Native_Package_Version)
 
-
-### root function for launching automatic installation of all dependencies of a given package.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_Required_Native_Packages| replace:: ``install_Required_Native_Packages``
+#  .. _install_Required_Native_Packages:
+#
+#  install_Required_Native_Packages
+#  --------------------------------
+#
+#   .. command:: install_Required_Native_Packages(list_of_packages_to_install INSTALLED_PACKAGES NOT_INSTALLED)
+#
+#     Install a set of packages. Root function for launching automatic installation of all dependencies of a given package.
+#
+#      :list_of_packages_to_install: The list of packages to be installed.
+#
+#      :INSTALLED_PACKAGES: the output variable that contains the list of installed packages.
+#
+#      :NOT_INSTALLED: the output variable that contains the list of packages not installed.
+#
 function(install_Required_Native_Packages list_of_packages_to_install INSTALLED_PACKAGES NOT_INSTALLED)
 set(successfully_installed )
 set(not_installed )
@@ -364,7 +472,26 @@ if(not_installed)
 endif()
 endfunction(install_Required_Native_Packages)
 
-### check if the repository of a package already lies in the workspace.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |package_Source_Exists_In_Workspace| replace:: ``package_Source_Exists_In_Workspace``
+#  .. _package_Source_Exists_In_Workspace:
+#
+#  package_Source_Exists_In_Workspace
+#  ----------------------------------
+#
+#   .. command:: package_Source_Exists_In_Workspace(EXIST RETURNED_PATH package)
+#
+#     Check wether the repository of a package already lies in the workspace.
+#
+#      :package: The name of target package.
+#
+#      :EXIST: the output variable that is TRUE if repository exists, FALSE otherwise.
+#
+#      :RETURNED_PATH: the output variable that contains the path to the package reposotiry on filesystem.
+#
 function(package_Source_Exists_In_Workspace EXIST RETURNED_PATH package)
 set(res FALSE)
 if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
@@ -374,7 +501,24 @@ endif()
 set(${EXIST} ${res} PARENT_SCOPE)
 endfunction(package_Source_Exists_In_Workspace)
 
-### check if the reference file of a package lies in the workspace.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |package_Reference_Exists_In_Workspace| replace:: ``package_Reference_Exists_In_Workspace``
+#  .. _package_Reference_Exists_In_Workspace:
+#
+#  package_Reference_Exists_In_Workspace
+#  -------------------------------------
+#
+#   .. command:: package_Reference_Exists_In_Workspace(EXIST package)
+#
+#     Check whether the reference file of a given package lies in the workspace.
+#
+#      :package: The name of target package.
+#
+#      :EXIST: the output variable that is TRUE if reference file exists, FALSE otherwise.
+#
 function(package_Reference_Exists_In_Workspace EXIST package)
 set(res FALSE)
 if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
@@ -383,18 +527,24 @@ endif()
 set(${EXIST} ${res} PARENT_SCOPE)
 endfunction(package_Reference_Exists_In_Workspace)
 
-### include the reference file of a package that lies in the workspace.
-function(get_Package_References LIST_OF_REFS package)
-include(Refer${package} OPTIONAL RESULT_VARIABLE res)
-if(	${res} STREQUAL NOTFOUND) #if there is no component defined for the package there is an error
-	set(${EXIST} ${FALSE} PARENT_SCOPE)
-	return()
-endif()
-set(${EXIST} ${FALSE} PARENT_SCOPE)
-endfunction(get_Package_References)
-
-
-### install a package for the first time
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_Native_Package| replace:: ``install_Native_Package``
+#  .. _install_Native_Package:
+#
+#  install_Native_Package
+#  ----------------------
+#
+#   .. command:: install_Native_Package(INSTALL_OK package)
+#
+#     Install a given native package in workspace.
+#
+#      :package: The name of the package to install.
+#
+#      :INSTALL_OK: the output variable that is TRUE is package is installed, FALSE otherwise.
+#
 function(install_Native_Package INSTALL_OK package)
 
 # 0) test if either reference or source of the package exist in the workspace
@@ -495,8 +645,29 @@ else()#using references
 endif()
 endfunction(install_Native_Package)
 
-### Get the references to binary archives containing package versions.
-# Constraint: the reference file of the package must be loaded before this call.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |load_Package_Binary_References| replace:: ``load_Package_Binary_References``
+#  .. _load_Package_Binary_References:
+#
+#  load_Package_Binary_References
+#  ------------------------------
+#
+#   .. command:: load_Package_Binary_References(REFERENCES_FOUND package)
+#
+#    Get the references to binary archives containing versions of a given package.
+#
+#      :package: The name of the package.
+#
+#      :REFERENCES_FOUND: the output variable that is TRUE is package binary references has been found, FALSE otherwise.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        The reference file of the given package must be loaded before this call. No automatic automatic (re)load id performed to improve performance.
+#
 function(load_Package_Binary_References REFERENCES_FOUND package)
 set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
 if(${package}_FRAMEWORK) #references are deployed in a framework
@@ -537,7 +708,24 @@ endfunction(load_Package_Binary_References)
 ############################### functions for native source Packages #############################
 ##################################################################################################
 
-### function used to put into workspace the repository of the native package.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Package_Repository| replace:: ``deploy_Package_Repository``
+#  .. _deploy_Package_Repository:
+#
+#  deploy_Package_Repository
+#  -------------------------
+#
+#   .. command:: deploy_Package_Repository(REFERENCES_FOUND package)
+#
+#    Deploy the source repository of a given native package into the workspace.
+#
+#      :package: The name of the package.
+#
+#      :IS_DEPLOYED: the output variable that is TRUE if package source repository is deployed, FALSE otherwise.
+#
 function(deploy_Package_Repository IS_DEPLOYED package)
 if(${package}_ADDRESS)
 	if(ADDITIONNAL_DEBUG_INFO)
@@ -565,7 +753,26 @@ else()
 endif()
 endfunction(deploy_Package_Repository)
 
-### function used to configure and build the target package version. Called by: deploy_Source_Native_Package and deploy_Source_Native_Package_Version.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |build_And_Install_Source| replace:: ``build_And_Install_Source``
+#  .. _build_And_Install_Source:
+#
+#  build_And_Install_Source
+#  ------------------------
+#
+#   .. command:: build_And_Install_Source(DEPLOYED package version)
+#
+#   Build and install a version of a given package from its source repository. Called by: deploy_Source_Native_Package and deploy_Source_Native_Package_Version.
+#
+#      :package: The name of the package.
+#
+#      :version: The target version to build.
+#
+#      :IS_DEPLOYED: the output variable that is TRUE if package source repository is deployed, FALSE otherwise.
+#
 function(build_And_Install_Source DEPLOYED package version)
 	if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : configuring version ${version} of package ${package} ...")
@@ -602,7 +809,26 @@ function(build_And_Install_Source DEPLOYED package version)
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 endfunction(build_And_Install_Source)
 
-### deploy a package means manage git repository + configure + build the native SOURCE package in the workspace so that it can be used by a third party package. It goes to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it. See: build_And_Install_Package. See: build_And_Install_Source.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Source_Native_Package| replace:: ``deploy_Source_Native_Package``
+#  .. _deploy_Source_Native_Package:
+#
+#  deploy_Source_Native_Package
+#  ----------------------------
+#
+#   .. command:: deploy_Source_Native_Package(DEPLOYED package already_installed_versions)
+#
+#   Deploy a native package (last version) from its source repository. Means deploy git repository + configure + build/install the native SOURCE package in the workspace so that it can be used by a third party package.
+#
+#      :package: The name of the package.
+#
+#      :already_installed_versions: The list of versions of the package that are already installed.
+#
+#      :DEPLOYED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
+#
 function(deploy_Source_Native_Package DEPLOYED package already_installed_versions)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 set(${DEPLOYED} FALSE PARENT_SCOPE)
@@ -667,11 +893,34 @@ endif()
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Native_Package)
 
-
-### deploy a version means manage git repository + configure + build the native SOURCE package version in the workspace so that it can be used by a third party package. It goes to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it. See: build_And_Install_Package.
-function(deploy_Source_Native_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Source_Native_Package_Version| replace:: ``deploy_Source_Native_Package_Version``
+#  .. _deploy_Source_Native_Package_Version:
+#
+#  deploy_Source_Native_Package_Version
+#  ------------------------------------
+#
+#   .. command:: deploy_Source_Native_Package_Version(DEPLOYED package min_version is_exact already_installed_versions)
+#
+#   Deploy a given version of a native package from its source repository. Means deploy git repository + configure + build/install the native SOURCE package in the workspace so that it can be used by a third party package.
+#   Process checkout to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it.
+#
+#      :package: The name of the package.
+#
+#      :min_version: The minimum required version.
+#
+#      :is_exact: if TRUE then version_min is an exact required version.
+#
+#      :already_installed_versions: The list of versions of the package that are already installed.
+#
+#      :DEPLOYED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
+#
+function(deploy_Source_Native_Package_Version DEPLOYED package min_version is_exact already_installed_versions)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
-# go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
+# go to package source and find all version matching the pattern of min_version : if exact taking min_version, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
 if(NOT UPDATE_OK)
@@ -689,10 +938,10 @@ endif()
 
 normalize_Version_Tags(VERSION_NUMBERS "${GIT_VERSIONS}")
 
-if(EXACT)
-	select_Exact_Native_Version(RES_VERSION ${VERSION_MIN} "${VERSION_NUMBERS}")
+if(is_exact)
+	select_Exact_Native_Version(RES_VERSION ${min_version} "${VERSION_NUMBERS}")
 else()
-	select_Best_Native_Version(RES_VERSION ${VERSION_MIN} "${VERSION_NUMBERS}")
+	select_Best_Native_Version(RES_VERSION ${min_version} "${VERSION_NUMBERS}")
 endif()
 if(NOT RES_VERSION)
 	message("[PID] WARNING : no adequate version found for source package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package). Otherwise that may mean you use a non released version of ${package} (in development version).")
@@ -741,8 +990,26 @@ endif()
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Native_Package_Version)
 
-
-### intermediate internal function that is used to put the source package in an adequate version (using git tags) and then build it. See: build_And_Install_Source.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |build_And_Install_Package| replace:: ``build_And_Install_Package``
+#  .. _build_And_Install_Package:
+#
+#  build_And_Install_Package
+#  -------------------------
+#
+#   .. command:: build_And_Install_Package(DEPLOYED package version)
+#
+#    Build and install a given native package version from its sources. intermediate internal function that is used to put the source package in an adequate version (using git tags) and then build it. See: build_And_Install_Source.
+#
+#      :package: The name of the package.
+#
+#      :version: The version to install.
+#
+#      :DEPLOYED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
+#
 function(build_And_Install_Package DEPLOYED package version)
 
 # 1) going to the adequate git tag matching the selected version
@@ -763,7 +1030,26 @@ endfunction(build_And_Install_Package)
 ############################### functions for native binary Packages #############################
 ##################################################################################################
 
-### function to test if platforms configurations defined for binary packages are matching the current platform
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Package_Platform_Against_Current| replace:: ``check_Package_Platform_Against_Current``
+#  .. _check_Package_Platform_Against_Current:
+#
+#  check_Package_Platform_Against_Current
+#  --------------------------------------
+#
+#   .. command:: check_Package_Platform_Against_Current(package platform CHECK_OK)
+#
+#    Check whether platform configurations defined for binary packages are matching the current platform.
+#
+#      :package: The name of the package.
+#
+#      :platform: The platform string used to filter configuation constraints. If different from current platform then configurations defined for that platorm are not checked.
+#
+#      :CHECK_OK: the output variable that is TRUE if current platform conforms to package required configurations, FALSE otherwise.
+#
 function(check_Package_Platform_Against_Current package platform CHECK_OK)
 set(${CHECK_OK} TRUE PARENT_SCOPE)
 get_System_Variables(PLATFORM_STRING PACKAGE_STRING)
@@ -809,9 +1095,27 @@ else()#the binary is not eligible since does not match either familly, os, arch 
 endif()
 endfunction(check_Package_Platform_Against_Current)
 
-
-### get the list of binary versions of a given packages that conforms to current platform constraints
-function(get_Available_Binary_Package_Versions package list_of_versions list_of_versions_with_platform)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Available_Binary_Package_Versions| replace:: ``get_Available_Binary_Package_Versions``
+#  .. _get_Available_Binary_Package_Versions:
+#
+#  get_Available_Binary_Package_Versions
+#  --------------------------------------
+#
+#   .. command:: get_Available_Binary_Package_Versions(package LIST_OF_VERSIONS LIST_OF_VERSION_PLATFORM)
+#
+#    Get the list of versions of a given package that conforms to current platform constraints and for which a binary archive is available.
+#
+#      :package: The name of the package.
+#
+#      :LIST_OF_VERSIONS: the output variable that contains the list of versions of package that are available with a binary archive.
+#
+#      :LIST_OF_VERSION_PLATFORM: the output variable that contains the list of versions+platform of package that are available with a binary archive.
+#
+function(get_Available_Binary_Package_Versions package LIST_OF_VERSIONS LIST_OF_VERSION_PLATFORM)
 # listing available binaries of the package and searching if there is any "good version"
 set(available_binary_package_version "")
 foreach(ref_version IN LISTS ${package}_REFERENCES)
@@ -830,11 +1134,30 @@ if(NOT available_binary_package_version)
 endif()
 list(REMOVE_DUPLICATES available_binary_package_version)
 list(REMOVE_DUPLICATES available_binary_package_version_with_platform)
-set(${list_of_versions} ${available_binary_package_version} PARENT_SCOPE)
-set(${list_of_versions_with_platform} ${available_binary_package_version_with_platform} PARENT_SCOPE)
+set(${LIST_OF_VERSIONS} ${available_binary_package_version} PARENT_SCOPE)
+set(${LIST_OF_VERSION_PLATFORM} ${available_binary_package_version_with_platform} PARENT_SCOPE)
 endfunction(get_Available_Binary_Package_Versions)
 
-### select the version passed as argument in the list of binary versions of a package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |select_Platform_Binary_For_Version| replace:: ``select_Platform_Binary_For_Version``
+#  .. _select_Platform_Binary_For_Version:
+#
+#  select_Platform_Binary_For_Version
+#  ----------------------------------
+#
+#   .. command:: select_Platform_Binary_For_Version(version list_of_bin_with_platform RES_FOR_PLATFORM)
+#
+#    Select the version passed as argument in the list of binary versions of a package and get corresponding platform.
+#
+#      :version: The selected version.
+#
+#      :list_of_bin_with_platform: list of available version+platform for a package (returned from get_Available_Binary_Package_Versions).
+#
+#      :RES_FOR_PLATFORM: the output variable that contains the platform to use.
+#
 function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_FOR_PLATFORM)
 if(list_of_bin_with_platform)
 	foreach(bin IN LISTS list_of_bin_with_platform)
@@ -848,7 +1171,31 @@ endif()
 set(${RES_FOR_PLATFORM} PARENT_SCOPE)
 endfunction(select_Platform_Binary_For_Version)
 
-### deploying a binary package, if necessary. It means that last version is installed and configured in the workspace.  See: download_And_Install_Binary_Native_Package. Constraints: package binary references must be loaded before.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Binary_Native_Package| replace:: ``deploy_Binary_Native_Package``
+#  .. _deploy_Binary_Native_Package:
+#
+#  deploy_Binary_Native_Package
+#  ----------------------------
+#
+#   .. command:: deploy_Binary_Native_Package(DEPLOYED package already_installed_versions)
+#
+#    Deploy a package (last version) binary archive. It means that last version is installed and configured in the workspace.  See: download_And_Install_Binary_Native_Package.
+#
+#      :package: The name of package to deploy.
+#
+#      :already_installed_versions: list of already installed versions for that package.
+#
+#      :DEPLOYED: the output variable that contains is TRUE if binary archive has been deployed, FALSE otherwise.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        package binary references must be loaded before the call.
+#
 function(deploy_Binary_Native_Package DEPLOYED package already_installed_versions)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
@@ -891,9 +1238,36 @@ endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
 endfunction(deploy_Binary_Native_Package)
 
-### deploying a given binary version package, if necessary.
-# The package version archive is installed and configured in the workspace. See: download_And_Install_Binary_Native_Package.  Constraints: package binary references must be loaded before.
-function(deploy_Binary_Native_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Binary_Native_Package_Version| replace:: ``deploy_Binary_Native_Package_Version``
+#  .. _deploy_Binary_Native_Package_Version:
+#
+#  deploy_Binary_Native_Package_Version
+#  ------------------------------------
+#
+#   .. command:: deploy_Binary_Native_Package_Version(DEPLOYED package min_version is_exact already_installed_versions)
+#
+#    Deploy a given version of package from a binary archive. The package version archive is installed and configured in the workspace. See: download_And_Install_Binary_Native_Package.
+#
+#      :package: The name of package to deploy.
+#
+#      :min_version: The minimum allowed version for the binary archive
+#
+#      :is_exact: if TRUE then the exact constraint applies to min_version.
+#
+#      :already_installed_versions: list of already installed versions for that package.
+#
+#      :DEPLOYED: the output variable that contains is TRUE if binary archive has been deployed, FALSE otherwise.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        package binary references must be loaded before the call.
+#
+function(deploy_Binary_Native_Package_Version DEPLOYED package min_version is_exact already_installed_versions)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
@@ -905,17 +1279,17 @@ if(NOT available_versions)
 endif()
 
 # taking the adequate version from the list of all eligible versions
-if(EXACT)
-	select_Exact_Native_Version(RES_VERSION ${VERSION_MIN} "${available_versions}")
+if(is_exact)
+	select_Exact_Native_Version(RES_VERSION ${min_version} "${available_versions}")
 else()
-	select_Best_Native_Version(RES_VERSION ${VERSION_MIN} "${available_versions}")
+	select_Best_Native_Version(RES_VERSION ${min_version} "${available_versions}")
 endif()
 
 if(NOT RES_VERSION)
-	if(EXACT)
-		message("[PID] INFO : no adequate binary compatible for ${package} version ${VERSION_MIN} found.")
+	if(is_exact)
+		message("[PID] INFO : no adequate binary compatible for ${package} version ${min_version} found.")
 	else()
-		message("[PID] INFO : no adequate binary version of package ${package} found with minimum version ${VERSION_MIN}.")
+		message("[PID] INFO : no adequate binary version of package ${package} found with minimum version ${min_version}.")
 	endif()
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
@@ -951,10 +1325,34 @@ else()
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 endif()
 set(${DEPLOYED} ${INSTALLED} PARENT_SCOPE)
-
 endfunction(deploy_Binary_Native_Package_Version)
 
-### get the filename of a binary archive for a given package, version, platform and build mode.  Constraints: package binary references must be loaded before.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Binary_Package_Name| replace:: ``generate_Binary_Package_Name``
+#  .. _generate_Binary_Package_Name:
+#
+#  generate_Binary_Package_Name
+#  ----------------------------
+#
+#   .. command:: generate_Binary_Package_Name(package version platform mode RES_FILE RES_FOLDER)
+#
+#    Get filesystem names usefull to manage package binary archives built for a given version of a package, for a target platform and in specific build mode.
+#
+#      :package: The name of package.
+#
+#      :version: version of the package.
+#
+#      :platform: target platform for archive binary content.
+#
+#      :mode: build mode  for archive binary content.
+#
+#      :RES_FILE: the output variable that contains the name of the archive (generated by PID)
+#
+#      :RES_FOLDER: the output variable that contains the name of the root folder contained in the archive (generated by CPack)
+#
 function(generate_Binary_Package_Name package version platform mode RES_FILE RES_FOLDER)
 get_System_Variables(PLATFORM_STRING PACKAGE_STRING)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
@@ -962,12 +1360,33 @@ set(${RES_FILE} "${package}-${version}${TARGET_SUFFIX}-${platform}.tar.gz" PAREN
 set(${RES_FOLDER} "${package}-${version}${TARGET_SUFFIX}-${PACKAGE_STRING}" PARENT_SCOPE)#this is the folder name generated by CPack
 endfunction(generate_Binary_Package_Name)
 
-### download the target binary version archive of a package and then intsall it. Constraint: the binary references of the package must be loaded before this call
-function(download_And_Install_Binary_Native_Package INSTALLED package version_string platform)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |download_And_Install_Binary_Native_Package| replace:: ``download_And_Install_Binary_Native_Package``
+#  .. _download_And_Install_Binary_Native_Package:
+#
+#  download_And_Install_Binary_Native_Package
+#  ------------------------------------------
+#
+#   .. command:: download_And_Install_Binary_Native_Package(INSTALLED package version platform)
+#
+#    Download the  binary archive of target package version and then intsall it. This call install Debug and Release mode versions of the package in the same time.
+#
+#      :package: The name of package.
+#
+#      :version: version of the package to install.
+#
+#      :platform: target platform for archive binary content.
+#
+#      :INSTALLED: the output variable that is TRUE if binary package has been installed.
+#
+function(download_And_Install_Binary_Native_Package INSTALLED package version platform)
 
-message("[PID] INFO : deploying the binary package ${package} with version ${version_string} for platform ${platform}, please wait ...")
+message("[PID] INFO : deploying the binary package ${package} with version ${version} for platform ${platform}, please wait ...")
 if(ADDITIONNAL_DEBUG_INFO)
-	message("[PID] INFO : downloading the binary package ${package} version ${version_string} for platform ${platform}, please wait ...")
+	message("[PID] INFO : downloading the binary package ${package} version ${version} for platform ${platform}, please wait ...")
 endif()
 
 ###### downloading the binary package ######
@@ -975,22 +1394,22 @@ endif()
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
 
-generate_Binary_Package_Name(${package} ${version_string} ${platform} Release FILE_BINARY FOLDER_BINARY)
-set(download_url ${${package}_REFERENCE_${version_string}_${platform}_URL})
+generate_Binary_Package_Name(${package} ${version} ${platform} Release FILE_BINARY FOLDER_BINARY)
+set(download_url ${${package}_REFERENCE_${version}_${platform}_URL})
 file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : problem when downloading binary version ${version_string} of package ${package} (release binaries) from address ${download_url}: ${status}")
+	message("[PID] ERROR : problem when downloading binary version ${version} of package ${package} (release binaries) from address ${download_url}: ${status}")
 	return()
 endif()
 
 #debug code
 set(FILE_BINARY_DEBUG "")
 set(FOLDER_BINARY_DEBUG "")
-generate_Binary_Package_Name(${package} ${version_string} ${platform} Debug FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
-set(download_url_dbg ${${package}_REFERENCE_${version_string}_${platform}_URL_DEBUG})
+generate_Binary_Package_Name(${package} ${version} ${platform} Debug FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
+set(download_url_dbg ${${package}_REFERENCE_${version}_${platform}_URL_DEBUG})
 file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res-dbg 0 numeric_error_dbg)
 list(GET res-dbg 1 status_dbg)
@@ -998,7 +1417,7 @@ if(NOT numeric_error_dbg EQUAL 0)#there is an error
 	package_License_Is_Closed_Source(CLOSED ${package} FALSE)#limit this high cost function when an error occurs
 	if(NOT CLOSED) #generate an error if the package is not closed source (there is a missing archive)
 		set(${INSTALLED} FALSE PARENT_SCOPE)
-		message("[PID] ERROR : problem when downloading binary version ${version_string} of package ${package} (debug binaries) from address ${download_url_dbg} : ${status_dbg}.")
+		message("[PID] ERROR : problem when downloading binary version ${version} of package ${package} (debug binaries) from address ${download_url_dbg} : ${status_dbg}.")
 		return()
 	else()
 		set(MISSING_DEBUG_VERSION TRUE)
@@ -1076,7 +1495,7 @@ endif()
 
 # 3) copying resulting folders into the install path in a cross platform way
 if(ADDITIONNAL_DEBUG_INFO)
-	message("[PID] INFO : installing the binary package ${package} (version ${version_string}) into the workspace, please wait ...")
+	message("[PID] INFO : installing the binary package ${package} (version ${version}) into the workspace, please wait ...")
 endif()
 
 set(error_res "")
@@ -1106,7 +1525,7 @@ else()#QUIET mode
 endif()
 
 
-if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
+if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
 	#try again
 	if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
 		if(MISSING_DEBUG_VERSION)  #no debug archive to manage
@@ -1132,7 +1551,7 @@ if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version_string}
 		 		ERROR_QUIET OUTPUT_QUIET)
 		endif()
 	endif()
-	if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version_string}/share/Use${package}-${version_string}.cmake)
+	if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
 		set(${INSTALLED} FALSE PARENT_SCOPE)
 		if(MISSING_DEBUG_VERSION)  #no debug archive to manage
 			message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY}.")
@@ -1145,22 +1564,40 @@ endif()
 
 ############ post install configuration of the workspace ############
 set(PACKAGE_NAME ${package})
-set(PACKAGE_VERSION ${version_string})
+set(PACKAGE_VERSION ${version})
 set(PLATFORM_NAME ${platform})
 include(${WORKSPACE_DIR}/share/cmake/system/commands/Bind_PID_Package.cmake NO_POLICY_SCOPE)
 if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] WARNING : cannot configure runtime dependencies for installed version ${version_string} of package ${package}.")
+	message("[PID] WARNING : cannot configure runtime dependencies for installed version ${version} of package ${package}.")
 	return()
 endif()
 set(${INSTALLED} TRUE PARENT_SCOPE)
-message("[PID] INFO : binary package ${package} (version ${version_string}) has been installed into the workspace.")
+message("[PID] INFO : binary package ${package} (version ${version}) has been installed into the workspace.")
 endfunction(download_And_Install_Binary_Native_Package)
 
 #############################################################################################
 ############################### functions for external Packages #############################
 #############################################################################################
-###
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |load_And_Configure_Wrapper| replace:: ``load_And_Configure_Wrapper``
+#  .. _load_And_Configure_Wrapper:
+#
+#  load_And_Configure_Wrapper
+#  --------------------------
+#
+#   .. command:: load_And_Configure_Wrapper(LOADED package)
+#
+#   Load the description provided by an external package wrapper into current build process.
+#
+#      :package: The name of external package.
+#
+#      :LOADED: the output variable that is TRUE if external package wrapper has been loaded.
+#
 function(load_And_Configure_Wrapper LOADED package)
 	if(NOT EXISTS ${WORKSPACE_DIR}/wrappers/${package}/CMakeLists.txt)
 		message("[PID] ERROR : cannot find external package ${package} wrapper in workspace !")
@@ -1185,12 +1622,55 @@ function(load_And_Configure_Wrapper LOADED package)
 	set(${LOADED} TRUE PARENT_SCOPE)
 endfunction(load_And_Configure_Wrapper)
 
-### Suppose that the wrapper has been configured and loaded before (see load_And_Configure_Wrapper)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Wrapper_Known_Versions| replace:: ``get_Wrapper_Known_Versions``
+#  .. get_Wrapper_Known_Versions:
+#
+#  get_Wrapper_Known_Versions
+#  --------------------------
+#
+#   .. command:: get_Wrapper_Known_Versions(RES_VERSIONS package)
+#
+#   Get all versions that can be built from an external package wrapper.
+#
+#      :package: The name of external package.
+#
+#      :RES_VERSIONS: the output variable that contains the list of versions of an external package provided by its wrapper.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        Wrapper must be configured and loaded before the call to this function (see load_And_Configure_Wrapper)
+#
 function(get_Wrapper_Known_Versions RES_VERSIONS package)
 set(${RES_VERSIONS} ${${package}_KNOWN_VERSIONS} PARENT_SCOPE)
 endfunction(get_Wrapper_Known_Versions RES_VERSIONS package)
 
 ### building an external package from its wrapper
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |build_And_Install_External_Package_Version| replace:: ``build_And_Install_External_Package_Version``
+#  .. _build_And_Install_External_Package_Version:
+#
+#  build_And_Install_External_Package_Version
+#  ------------------------------------------
+#
+#   .. command:: build_And_Install_External_Package_Version(INSTALLED package version)
+#
+#    Build and install a given external package version from its wrapper.
+#
+#      :package: The name of the external package.
+#
+#      :version: The version to install.
+#
+#      :INSTALLED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
+#
 function(build_And_Install_External_Package_Version INSTALLED package version)
  if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : building version ${version} of external package ${package} ...")
@@ -1214,7 +1694,24 @@ function(build_And_Install_External_Package_Version INSTALLED package version)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
 endfunction(build_And_Install_External_Package_Version)
 
-### function used to put into workspace the repository of the external package wrapper.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Wrapper_Repository| replace:: ``deploy_Wrapper_Repository``
+#  .. _deploy_Wrapper_Repository:
+#
+#  deploy_Wrapper_Repository
+#  -------------------------
+#
+#   .. command:: deploy_Wrapper_Repository(INSTALLED package version platform)
+#
+#    Deploy into workspace the git repository of the given external package wrapper.
+#
+#      :package: The name of external package.
+#
+#      :IS_DEPLOYED: the output variable that is TRUE if external package wrapper has been deployed in workspace, FALSE otherwise.
+#
 function(deploy_Wrapper_Repository IS_DEPLOYED package)
 if(${package}_PID_WRAPPER_ADDRESS)
 	if(ADDITIONNAL_DEBUG_INFO)
@@ -1242,8 +1739,26 @@ else()
 endif()
 endfunction(deploy_Wrapper_Repository)
 
-
-### deploy a wrapper means manage git repository + configure + build the external wrapper SOURCE package in the workspace so that it can be used by a third party package. It goes to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it. See: build_And_Install_Package. See: build_And_Install_Source.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Source_External_Package| replace:: ``deploy_Source_External_Package``
+#  .. _deploy_Source_External_Package:
+#
+#  deploy_Source_External_Package
+#  ------------------------------
+#
+#   .. command:: deploy_Source_External_Package(DEPLOYED package already_installed_versions)
+#
+#   Deploy an external package (last version) into workspace from its wrapper. Consists in cloning wrapper git repository then configure then build/install the external wrapper SOURCE package in the workspace so that it can be used by a third party package.
+#
+#      :package: The name of the external package.
+#
+#      :already_installed_versions: The list of versions of the external package that are already installed.
+#
+#      :DEPLOYED: the output variable that is TRUE if external package version is installed in workspace, FALSE otherwise.
+#
 function(deploy_Source_External_Package DEPLOYED package already_installed_versions)
 # go to wrapper source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 set(${DEPLOYED} FALSE PARENT_SCOPE)
@@ -1280,12 +1795,34 @@ add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
 endif()
 endfunction(deploy_Source_External_Package)
 
-### deploy a version means manage git repository + configure + build the wrapper SOURCE package version in the workspace so that it can be used by a third party package.
-# It goes to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it.
-# See: build_And_Install_Package.
-function(deploy_Source_External_Package_Version DEPLOYED package VERSION_MIN EXACT already_installed_versions)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Source_External_Package_Version| replace:: ``deploy_Source_External_Package_Version``
+#  .. _deploy_Source_External_Package_Version:
+#
+#  deploy_Source_External_Package_Version
+#  --------------------------------------
+#
+#   .. command:: deploy_Source_External_Package_Version(DEPLOYED package min_version is_exact already_installed_versions)
+#
+#   Deploy a given version of an external package from its wrapper. Means deploy wrapper git repository + configure + build/install the native SOURCE package in the workspace so that it can be used by a third party package.
+#   Process checkout to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it.
+#
+#      :package: The name of the external package.
+#
+#      :min_version: The minimum required version.
+#
+#      :is_exact: if TRUE then version_min is an exact required version.
+#
+#      :already_installed_versions: The list of versions of the external package that are already installed.
+#
+#      :DEPLOYED: the output variable that is TRUE if external package version is installed in workspace, FALSE otherwise.
+#
+function(deploy_Source_External_Package_Version DEPLOYED package min_version is_exact already_installed_versions)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
-# go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
+# go to package source and find all version matching the pattern of min_version : if exact taking min_version, otherwise taking the greatest version number
 
 update_Wrapper_Repository(${package})#update wrapper repository
 load_And_Configure_Wrapper(LOADED ${package})
@@ -1294,10 +1831,10 @@ if(NOT LOADED)
 endif()
 get_Wrapper_Known_Versions(ALL_VERSIONS ${package})
 
-if(EXACT)
-	select_Exact_External_Version(RES_VERSION ${VERSION_MIN} "${ALL_VERSIONS}")
+if(is_exact)
+	select_Exact_External_Version(RES_VERSION ${min_version} "${ALL_VERSIONS}")
 else()
-	select_Best_External_Version(RES_VERSION ${package} ${VERSION_MIN} "${ALL_VERSIONS}")
+	select_Best_External_Version(RES_VERSION ${package} ${min_version} "${ALL_VERSIONS}")
 endif()
 
 if(NOT RES_VERSION)
@@ -1324,19 +1861,39 @@ else() #nothing to do but result is OK
 endif()
 endfunction(deploy_Source_External_Package_Version)
 
-### function used to select an adequate version to install for a given native package.
-# given the currently required versions
-function(resolve_Required_External_Package_Version VERSION_POSSIBLE SELECTED_VERSION IS_EXACT package)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Required_External_Package_Version| replace:: ``resolve_Required_External_Package_Version``
+#  .. _resolve_Required_External_Package_Version:
+#
+#  resolve_Required_External_Package_Version
+#  -----------------------------------------
+#
+#   .. command:: resolve_Required_External_Package_Version(RESOLUTION_OK SELECTED_VERSION IS_EXACT package)
+#
+#     Select the adequate version of a given external package to be used in current build process.
+#
+#      :package: The name of the external package for which a version must be found.
+#
+#      :RESOLUTION_OK: the output variable that is TRUE if a version of the package has been proposed by teh resolution process, FALSE otherwise.
+#
+#      :SELECTED_VERSION: the output variable that contains the selected version to use.
+#
+#      :IS_EXACT: the output variable that is TRUE if SELECTED_VERSION must be exact, false otherwise.
+#
+function(resolve_Required_External_Package_Version RESOLUTION_OK SELECTED_VERSION IS_EXACT package)
 	list(REMOVE_DUPLICATES ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	set(CURRENT_EXACT FALSE)
 	#1) first pass to eliminate everything impossible just when considering exactness
 	foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 		if(CURRENT_EXACT)#current version is an exact version
 			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX}) #impossible to find two different exact versions solution
-				set(${VERSION_POSSIBLE} FALSE PARENT_SCOPE)
+				set(${RESOLUTION_OK} FALSE PARENT_SCOPE)
 				return()
 			elseif(${version} VERSION_GREATER ${CURRENT_VERSION})#any not exact version that is greater than current exact one makes the solution impossible
-				set(${VERSION_POSSIBLE} FALSE PARENT_SCOPE)
+				set(${RESOLUTION_OK} FALSE PARENT_SCOPE)
 				return()
 			endif()
 		else()#current version is not exact
@@ -1346,7 +1903,7 @@ function(resolve_Required_External_Package_Version VERSION_POSSIBLE SELECTED_VER
 					set(CURRENT_EXACT TRUE)
 					set(CURRENT_VERSION ${version})
 				else()# current version is greater than exact one currently required => impossible to find a solution
-					set(${VERSION_POSSIBLE} FALSE PARENT_SCOPE)
+					set(${RESOLUTION_OK} FALSE PARENT_SCOPE)
 					return()
 				endif()
 
@@ -1363,18 +1920,33 @@ function(resolve_Required_External_Package_Version VERSION_POSSIBLE SELECTED_VER
 		if(NOT ${version} VERSION_EQUAL ${CURRENT_VERSION})
 			if(DEFINED ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO
 			AND NOT ${CURRENT_VERSION} VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
-				set(${VERSION_POSSIBLE} FALSE PARENT_SCOPE) #there is no solution
+				set(${RESOLUTION_OK} FALSE PARENT_SCOPE) #there is no solution
 				return()
 			endif()
 		endif()
 	endforeach()
 
-	set(${VERSION_POSSIBLE} TRUE PARENT_SCOPE)
+	set(${RESOLUTION_OK} TRUE PARENT_SCOPE)
 	set(${SELECTED_VERSION} "${CURRENT_VERSION}" PARENT_SCOPE)
 	set(${IS_EXACT} ${CURRENT_EXACT} PARENT_SCOPE)
 endfunction(resolve_Required_External_Package_Version)
 
-### functio used to uninstall an external package from the workspace
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |uninstall_External_Package| replace:: ``uninstall_External_Package``
+#  .. _uninstall_External_Package:
+#
+#  uninstall_External_Package
+#  --------------------------
+#
+#   .. command:: uninstall_External_Package(package)
+#
+#     Uninstall a given external package from the workspace. All versions of this external package are removed from install tree.
+#
+#      :package: The name of the external package to uninstall.
+#
 function(uninstall_External_Package package)
 set(version ${${package}_VERSION_STRING})
 get_System_Variables(PLATFORM_STRING PACKAGE_STRING)
@@ -1384,7 +1956,24 @@ if(EXISTS ${path_to_install_dir} AND IS_DIRECTORY ${path_to_install_dir})
 endif()
 endfunction(uninstall_External_Package)
 
-### function used to prepare the loading of external package references
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |memorize_External_Binary_References| replace:: ``memorize_External_Binary_References``
+#  .. _memorize_External_Binary_References:
+#
+#  memorize_External_Binary_References
+#  -----------------------------------
+#
+#   .. command:: memorize_External_Binary_References(REFERENCES_FOUND package)
+#
+#     Put into memory of current build process the references to binary archives for the given external package.
+#
+#      :package: The name of the external package.
+#
+#      :REFERENCES_FOUND: The output variable that is TRUE if binary references for external package have been found.
+#
 function(memorize_External_Binary_References REFERENCES_FOUND package)
 set(IS_EXISTING FALSE)
 package_Reference_Exists_In_Workspace(IS_EXISTING External${package})
@@ -1405,9 +1994,26 @@ load_Package_Binary_References(RES ${package}) #getting the references (address 
 set(${REFERENCES_FOUND} ${RES} PARENT_SCOPE) #returns wether refernces have been found or not
 endfunction(memorize_External_Binary_References)
 
-### function used to install a single external package.
-# It leads to the resolution of the adequate package version and the deployment of that version.
-# See: deploy_Binary_External_Package_Version and resolve_Required_External_Package_Version.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_External_Package| replace:: ``install_External_Package``
+#  .. _install_External_Package:
+#
+#  install_External_Package
+#  ------------------------
+#
+#   .. command:: install_External_Package(INSTALL_OK package force)
+#
+#     Install a given external package in workspace.
+#
+#      :package: The name of the external package to install.
+#
+#      :force: if TRUE the external package will be reinstalled if already installed.
+#
+#      :INSTALL_OK: the output variable that is TRUE is external package is installed, FALSE otherwise.
+#
 function(install_External_Package INSTALL_OK package force)
 
 set(USE_SOURCE FALSE)#by default try to install from binaries, if they are available
@@ -1523,7 +2129,26 @@ endif()
 set(${INSTALL_OK} FALSE PARENT_SCOPE)
 endfunction(install_External_Package)
 
-### function used to install a list of external packages. See : install_External_Package.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_Required_External_Packages| replace:: ``install_Required_External_Packages``
+#  .. _install_Required_External_Packages:
+#
+#  install_Required_External_Packages
+#  ----------------------------------
+#
+#   .. command:: install_Required_External_Packages(list_of_packages_to_install INSTALLED_PACKAGES NOT_INSTALLED_PACKAGES)
+#
+#     Install a set of external packages. Root function for launching automatic installation of all dependencies of a given package.
+#
+#      :list_of_packages_to_install: The list of external packages to be installed.
+#
+#      :INSTALLED_PACKAGES: the output variable that contains the list of installed external packages.
+#
+#      :NOT_INSTALLED_PACKAGES: the output variable that contains the list of external packages not installed.
+#
 function(install_Required_External_Packages list_of_packages_to_install INSTALLED_PACKAGES NOT_INSTALLED_PACKAGES)
 set(successfully_installed "")
 set(not_installed "")
@@ -1545,7 +2170,31 @@ if(not_installed)
 endif()
 endfunction(install_Required_External_Packages)
 
-### deploy means download + install + configure the external package in the workspace so that it can be used by a third party package.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Binary_External_Package| replace:: ``deploy_Binary_External_Package``
+#  .. _deploy_Binary_External_Package:
+#
+#  deploy_Binary_External_Package
+#  ------------------------------
+#
+#   .. command:: deploy_Binary_External_Package(DEPLOYED package already_installed_versions)
+#
+#    Deploy an external package (last version) binary archive. It means that last version is installed and configured in the workspace.  See: download_And_Install_Binary_External_Package.
+#
+#      :package: The name of the external package to deploy.
+#
+#      :already_installed_versions: list of already installed versions for that package.
+#
+#      :DEPLOYED: the output variable that contains is TRUE if binary archive has been deployed, FALSE otherwise.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        external package binary references must be loaded before the call.
+#
 function(deploy_Binary_External_Package DEPLOYED package already_installed_versions)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
@@ -1566,8 +2215,6 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 			set(${DEPLOYED} FALSE PARENT_SCOPE)
 			return()
 		endif()
-
-		message("TARGET_PLATFORM=${TARGET_PLATFORM}")
 
 		download_And_Install_Binary_External_Package(INSTALLED ${package} "${RES_VERSION}" "${TARGET_PLATFORM}")
 		if(INSTALLED)
@@ -1601,6 +2248,36 @@ endfunction(deploy_Binary_External_Package)
 
 
 ### deploy means download + install + configure the external package in the workspace so that it can be used by a third party package.
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Binary_External_Package_Version| replace:: ``deploy_Binary_External_Package_Version``
+#  .. _deploy_Binary_External_Package_Version:
+#
+#  deploy_Binary_External_Package_Version
+#  --------------------------------------
+#
+#   .. command:: deploy_Binary_External_Package_Version(DEPLOYED package min_version is_exact already_installed_versions)
+#
+#    Deploy a given version of an external package from a binary archive. The external package version archive is installed  in the workspace and configured. See: download_And_Install_Binary_External_Package.
+#
+#      :package: The name of external package to deploy.
+#
+#      :min_version: The minimum allowed version for the binary archive
+#
+#      :is_exact: if TRUE then the exact constraint applies to min_version.
+#
+#      :already_installed_versions: list of already installed versions for that external package.
+#
+#      :DEPLOYED: the output variable that contains is TRUE if binary archive has been deployed, FALSE otherwise.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        package binary references must be loaded before the call.
+#
 function(deploy_Binary_External_Package_Version DEPLOYED package version force)
 set(available_versions "")
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
@@ -1645,8 +2322,28 @@ endif()
 set(${DEPLOYED} TRUE PARENT_SCOPE)
 endfunction(deploy_Binary_External_Package_Version)
 
-
-### function to get the target external package version and put it in the workspace. Constraint: the reference file for that package must be loaded before. See: deploy_Binary_External_Package_Version
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |download_And_Install_Binary_External_Package| replace:: ``download_And_Install_Binary_External_Package``
+#  .. _download_And_Install_Binary_External_Package:
+#
+#  download_And_Install_Binary_External_Package
+#  --------------------------------------------
+#
+#   .. command:: download_And_Install_Binary_External_Package(INSTALLED package version platform)
+#
+#    Download the binary archive of target external package version and then install it. This call install all available build mode versions (Release and/or Debug) of the package in the same time.
+#
+#      :package: The name of the external package.
+#
+#      :version: version of the external package to install.
+#
+#      :platform: target platform for archive binary content.
+#
+#      :INSTALLED: the output variable that is TRUE if binary archive has been installed.
+#
 function(download_And_Install_Binary_External_Package INSTALLED package version platform)
 set(${INSTALLED} FALSE PARENT_SCOPE)
 
@@ -1771,10 +2468,28 @@ endif()
 set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_External_Package)
 
-
-### configure the external package, after it has been installed.
-# It can lead to the install of OS related packages depending of its system configuration.
-# See: deploy_Binary_External_Package_Version.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_External_Package| replace:: ``configure_External_Package``
+#  .. _configure_External_Package:
+#
+#  configure_External_Package
+#  --------------------------
+#
+#   .. command:: configure_External_Package(package version platform mode)
+#
+#    Configure the external package after it has been installed in workspace. It can lead to the install of OS related packages depending of its system configuration.
+#
+#      :package: The name of the external package.
+#
+#      :version: version of the external package to install.
+#
+#      :platform: target platform for archive binary content.
+#
+#      :mode: the build mode of the content installed.
+#
 function(configure_External_Package package version platform mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share)
@@ -1826,7 +2541,24 @@ endfunction(configure_External_Package)
 ############################### functions for frameworks ####################################
 #############################################################################################
 
-### function used to put into workspace the repository of the target framework
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Framework_Repository| replace:: ``deploy_Framework_Repository``
+#  .. _deploy_Framework_Repository:
+#
+#  deploy_Framework_Repository
+#  ---------------------------
+#
+#   .. command:: deploy_Framework_Repository(IS_DEPLOYED framework)
+#
+#    Deploy a framework git repository into the workspace.
+#
+#      :framework: The name of the framework.
+#
+#      :IS_DEPLOYED: the output variable that is TRUE if framework has ben deployed.
+#
 function(deploy_Framework_Repository IS_DEPLOYED framework)
 if(${framework}_FRAMEWORK_ADDRESS)
 	if(ADDITIONNAL_DEBUG_INFO)
