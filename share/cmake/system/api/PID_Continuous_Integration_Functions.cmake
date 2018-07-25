@@ -26,13 +26,40 @@ endif()
 set(PID_CONTINUOUS_INTEGRATION_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_CI_Variables| replace:: ``reset_CI_Variables``
+#  .. _reset_CI_Variables:
+#
+#  reset_CI_Variables
+#  ------------------
+#
+#   .. command:: reset_CI_Variables()
+#
+#    Reset the cached variables used in current project continuous integration.
+#
 function(reset_CI_Variables)
 		set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS CACHE INTERNAL "")
 endfunction(reset_CI_Variables)
 
-### allow to specify the set of platforms for which the CI will take place
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |allow_CI_For_Platform| replace:: ``allow_CI_For_Platform``
+#  .. _allow_CI_For_Platform:
+#
+#  allow_CI_For_Platform
+#  ---------------------
+#
+#   .. command:: allow_CI_For_Platform()
+#
+#    Add a platform for which the CI will take place.
+#
+#      :platform: The target platform.
+#
 function(allow_CI_For_Platform platform)
 	set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS} ${platform} CACHE INTERNAL "")
 endfunction(allow_CI_For_Platform)
@@ -41,8 +68,20 @@ endfunction(allow_CI_For_Platform)
 ############################# CI for native packges #####################################
 #########################################################################################
 
-
-### sets the adequate ci scripts in the package repository
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |verify_Package_CI_Content| replace:: ``verify_Package_CI_Content``
+#  .. _verify_Package_CI_Content:
+#
+#  verify_Package_CI_Content
+#  -------------------------
+#
+#   .. command:: verify_Package_CI_Content()
+#
+#    Verify that package CI scripts exist in package repository and perform corrective action otherwise.
+#
 function(verify_Package_CI_Content)
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/share/ci)#the ci folder is missing
@@ -59,7 +98,20 @@ else() #updating these files by silently replacing the ci folder
 endif()
 endfunction(verify_Package_CI_Content)
 
-### configure the ci by generating the adequate gitlab-ci.yml file for the project
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_CI_Config_File| replace:: ``generate_Package_CI_Config_File``
+#  .. _generate_Package_CI_Config_File:
+#
+#  generate_Package_CI_Config_File
+#  -------------------------------
+#
+#   .. command:: generate_Package_CI_Config_File()
+#
+#    Generate the configuration file that is used to manage current package CI (gitlab-ci.yml file).
+#
 function(generate_Package_CI_Config_File)
 
 if(NOT ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
@@ -125,13 +177,47 @@ endforeach()
 file(COPY ${TARGET_TEMPORARY_FILE} DESTINATION ${CMAKE_SOURCE_DIR})
 endfunction(generate_Package_CI_Config_File)
 
-##subsidiary function used to write how a runner is selected according to a given platform
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_CI_Config_File_Runner_Selection_By_Platform| replace:: ``add_CI_Config_File_Runner_Selection_By_Platform``
+#  .. _add_CI_Config_File_Runner_Selection_By_Platform:
+#
+#  add_CI_Config_File_Runner_Selection_By_Platform
+#  -----------------------------------------------
+#
+#   .. command:: add_CI_Config_File_Runner_Selection_By_Platform(configfile platform)
+#
+#    Subsidiary CI generation function used to write how a runner is selected according to a given platform
+#
+#      :configfile: The path to the CI configuration file to write in.
+#
+#      :platform: the platform identifier.
+#
 function(add_CI_Config_File_Runner_Selection_By_Platform configfile platform)
 file(APPEND ${configfile} "#platform ${platform}\n\n")
 file(APPEND ${configfile} ".selection_platform_${platform}_: &selection_platform_${platform}\n    tags:\n        - pid\n        - ${platform}\n\n")
 endfunction(add_CI_Config_File_Runner_Selection_By_Platform)
 
-##subsidiary function used to write how a runner is selected according to a given platform, for all jabs of the pid CI pipeline
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_CI_Config_File_Jobs_Definitions_By_Platform| replace:: ``add_CI_Config_File_Jobs_Definitions_By_Platform``
+#  .. _add_CI_Config_File_Jobs_Definitions_By_Platform:
+#
+#  add_CI_Config_File_Jobs_Definitions_By_Platform
+#  -----------------------------------------------
+#
+#   .. command:: add_CI_Config_File_Jobs_Definitions_By_Platform(configfile platform)
+#
+#    Subsidiary CI generation function used to write how a runner is selected according to a given platform, for all jabs of the pid CI pipeline
+#
+#      :configfile: The path to the CI configuration file to write in.
+#
+#      :platform: the platform identifier.
+#
 function(add_CI_Config_File_Jobs_Definitions_By_Platform configfile platform)
 file(APPEND ${configfile} "#pipeline generated for platform: ${platform}\n\n")
 
@@ -152,7 +238,20 @@ endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform)
 ############################ CI for external packges wrappers ###########################
 #########################################################################################
 
-### sets the adequate ci scripts in the wrapper repository
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |verify_Wrapper_CI_Content| replace:: ``verify_Wrapper_CI_Content``
+#  .. _verify_Wrapper_CI_Content:
+#
+#  verify_Wrapper_CI_Content
+#  -------------------------
+#
+#   .. command:: verify_Wrapper_CI_Content()
+#
+#    Verify that wrapper CI scripts exist in wrapper repository and perform corrective action otherwise.
+#
 function(verify_Wrapper_CI_Content)
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/share/ci)#the ci folder is missing
@@ -169,7 +268,24 @@ else() #updating these files by silently replacing the ci folder
 endif()
 endfunction(verify_Wrapper_CI_Content)
 
-##subsidiary function used to write how a runner is selected according to a given platform, for all jabs of the pid CI pipeline
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper| replace:: ``add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper``
+#  .. _add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper:
+#
+#  add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper
+#  -----------------------------------------------------------
+#
+#   .. command:: add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper(configfile platform)
+#
+#    Subsidiary CI generation function used to write how a runner is selected according to a given platform, for all jobs of the pid CI pipeline
+#
+#      :configfile: The path to the CI configuration file to write in.
+#
+#      :platform: the platform identifier.
+#
 function(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper configfile platform)
 file(APPEND ${configfile} "#pipeline generated for platform: ${platform}\n\n")
 file(APPEND ${configfile} "#jobs for platform ${platform}\n\n")
@@ -179,7 +295,20 @@ file(APPEND ${configfile} "deploy_wrapper_${platform}:\n  <<: *deploy_wrapper\n 
 file(APPEND ${configfile} "cleanup_wrapper_${platform}:\n  <<: *cleanup_wrapper\n  <<: *selection_platform_${platform}\n\n")
 endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper)
 
-### configure the ci by generating the adequate gitlab-ci.yml file for the project
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_CI_Config_File| replace:: ``generate_Wrapper_CI_Config_File``
+#  .. _generate_Wrapper_CI_Config_File:
+#
+#  generate_Wrapper_CI_Config_File
+#  -------------------------------
+#
+#   .. command:: generate_Wrapper_CI_Config_File()
+#
+#    Generate the configuration file that is used to manage current wrapper CI (gitlab-ci.yml file).
+#
 function(generate_Wrapper_CI_Config_File)
 
 if(NOT ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
