@@ -26,7 +26,24 @@ endif()
 set(PID_META_INFORMATION_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Author| replace:: ``add_Author``
+#  .. _add_Author:
+#
+#  add_Author
+#  ----------
+#
+#   .. command:: add_Author(author institution)
+#
+#     Add an author to the list of current project authors.
+#
+#      :author: The name of the author.
+#
+#      :institution: the name of author institution.
+#
 function(add_Author author institution)
 	set(res_string_author)
 	foreach(string_el IN LISTS author)
@@ -43,13 +60,48 @@ function(add_Author author institution)
 	endif()
 endfunction(add_Author)
 
-###
-function(add_Category category_spec)
-	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category_spec} CACHE INTERNAL "")
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Category| replace:: ``add_Category``
+#  .. _add_Category:
+#
+#  add_Category
+#  ------------
+#
+#   .. command:: add_Category(category)
+#
+#     Add a category to the current project.
+#
+#      :category: The string representing the category. May be expressed as a path if it defines a subcategory (e.g. math/geometry)
+#
+function(add_Category category)
+	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category} CACHE INTERNAL "")
 endfunction(add_Category)
 
-
-### add a direct reference to a binary version of the package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Reference| replace:: ``add_Reference``
+#  .. _add_Reference:
+#
+#  add_Reference
+#  -------------
+#
+#   .. command:: add_Reference(version platform url url-dbg)
+#
+#     Add a direct reference to a binary archive for a given version of the current project.
+#
+#      :version: version of the binary archive content.
+#
+#      :platform: target platform for binary archive content.
+#
+#      :url: url where to find the binary archive for release mode content.
+#
+#      :url-dbg: url where to find the binary archive for debug mode content.
+#
 function(add_Reference version platform url url-dbg)
 set(LIST_OF_VERSIONS ${${PROJECT_NAME}_REFERENCES} ${version})
 list(REMOVE_DUPLICATES LIST_OF_VERSIONS)
@@ -62,7 +114,20 @@ if(INDEX EQUAL -1)#this version for tha target platform is not already registere
 endif()
 endfunction(add_Reference)
 
-### reset variables describing direct references to binaries
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_References_Info| replace:: ``reset_References_Info``
+#  .. _reset_References_Info:
+#
+#  reset_References_Info
+#  ---------------------
+#
+#   .. command:: reset_References_Info()
+#
+#     Reset all direct references to binary archives in current project.
+#
 function(reset_References_Info)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
@@ -78,7 +143,38 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 endfunction(reset_References_Info)
 
-### resetting meta information variables to be sure package is cleaned before configruation
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |init_Meta_Info_Cache_Variables| replace:: ``init_Meta_Info_Cache_Variables``
+#  .. _init_Meta_Info_Cache_Variables:
+#
+#  init_Meta_Info_Cache_Variables
+#  ------------------------------
+#
+#   .. command:: init_Meta_Info_Cache_Variables(author institution mail description year license address public_address readme_file)
+#
+#     Resetting meta information variables to be sure package is cleaned before configruation, then initialize variable describing meta information on current project.
+#
+#      :author: name of the contact author.
+#
+#      :institution: name of contact author institution.
+#
+#      :mail: email of the contact author.
+#
+#      :description: description of current project.
+#
+#      :year: current project lifecycle dates
+#
+#      :license: license applying to current project.
+#
+#      :address: private git address (used by project developpers and registered members)
+#
+#      :public_address: public https git address (use to clone project without restriction)
+#
+#      :readme_file: the user defined readme file for the current project.
+#
 function(init_Meta_Info_Cache_Variables author institution mail description year license address public_address readme_file)
 set(res_string_auth "")
 foreach(string_el IN LISTS author)
@@ -119,7 +215,30 @@ set(${PROJECT_NAME}_USER_README_FILE ${readme_file} CACHE INTERNAL "")
 reset_References_Info()
 endfunction(init_Meta_Info_Cache_Variables)
 
-### documentation sites related cache variables management
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |init_Documentation_Info_Cache_Variables| replace:: ``init_Documentation_Info_Cache_Variables``
+#  .. _init_Documentation_Info_Cache_Variables:
+#
+#  init_Documentation_Info_Cache_Variables
+#  ---------------------------------------
+#
+#   .. command:: init_Documentation_Info_Cache_Variables(framework project_page repo home_page introduction)
+#
+#     Initialize variables related to current project documentation.
+#
+#      :framework: name of the framework to which the current project belongs.
+#
+#      :project_page: online url where to find the the project page of current project.
+#
+#      :repo: git repository of current project static site.
+#
+#      :home_page: online url where to find the current project lone static site.
+#
+#      :introduction: The introduction text used in current project static site (lone or framework)
+#
 function(init_Documentation_Info_Cache_Variables framework project_page repo home_page introduction)
 if(framework STREQUAL "")
 	set(${PROJECT_NAME}_FRAMEWORK CACHE INTERNAL "")
@@ -135,7 +254,20 @@ endif()
 set(${PROJECT_NAME}_SITE_INTRODUCTION "${introduction}" CACHE INTERNAL "")
 endfunction(init_Documentation_Info_Cache_Variables)
 
-### reset all cache variables used in static web site based documentation
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Documentation_Info| replace:: ``reset_Documentation_Info``
+#  .. _reset_Documentation_Info:
+#
+#  reset_Documentation_Info
+#  ------------------------
+#
+#   .. command:: reset_Documentation_Info()
+#
+#     Reset all cache variables used in static web site based documentation.
+#
 function(reset_Documentation_Info)
 	set(${PROJECT_NAME}_FRAMEWORK CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PROJECT_PAGE CACHE INTERNAL "")
@@ -147,13 +279,42 @@ function(reset_Documentation_Info)
 	set(${PROJECT_NAME}_USER_README_FILE CACHE INTERNAL "")
 endfunction(reset_Documentation_Info)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Binaries| replace:: ``publish_Binaries``
+#  .. _publish_Binaries:
+#
+#  publish_Binaries
+#  ----------------
+#
+#   .. command:: publish_Binaries(true_or_false)
+#
+#     Set the publication policy for current project binaries.
+#
+#      :true_or_false: if TRUE current project CI automatically publish binary archives of current project.
+#
 function(publish_Binaries true_or_false)
 set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERNAL "")
 endfunction(publish_Binaries)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Development_Info| replace:: ``publish_Development_Info``
+#  .. _publish_Development_Info:
+#
+#  publish_Development_Info
+#  ------------------------
+#
+#   .. command:: publish_Development_Info(true_or_false)
+#
+#     Set the publication policy for current project development information (coverage, static checks).
+#
+#      :true_or_false: if TRUE current project CI automatically publish developers information of current project.
+#
 function(publish_Development_Info true_or_false)
 set(${PROJECT_NAME}_DEV_INFO_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERNAL "")
 endfunction(publish_Development_Info)

@@ -32,25 +32,68 @@ include(PID_Static_Site_Management_Functions NO_POLICY_SCOPE)
 #################### common function between native and wrapper ################
 ################################################################################
 
-### create the data files for jekyll
-function(generate_Static_Site_Data_Files generated_site_folder)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Static_Site_Jekyll_Data_File| replace:: ``generate_Static_Site_Jekyll_Data_File``
+#  .. _generate_Static_Site_Jekyll_Data_File:
+#
+#  generate_Static_Site_Jekyll_Data_File
+#  -------------------------------------
+#
+#   .. command:: generate_Static_Site_Jekyll_Data_File(generated_site_folder)
+#
+#     Generate the configuration file for a lone static site (either for an external package wrapper or for a native package).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages.
+#
+function(generate_Static_Site_Jekyll_Data_File generated_site_folder)
 #generating the data file for package site description
 file(MAKE_DIRECTORY ${generated_site_folder}/_data) # create the _data folder to put configuration files inside
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/package.yml.in ${generated_site_folder}/_data/package.yml @ONLY)
-endfunction(generate_Static_Site_Data_Files)
+endfunction(generate_Static_Site_Jekyll_Data_File)
 
 
 ################################################################################
 ######################## Native packages related functions #####################
 ################################################################################
 
-### adding source code of the example components to the API doc
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Example_To_Doc| replace:: ``add_Example_To_Doc``
+#  .. _add_Example_To_Doc:
+#
+#  add_Example_To_Doc
+#  ------------------
+#
+#   .. command:: add_Example_To_Doc(c_name)
+#
+#     Add source code of the example component to the API documentation of current project.
+#
+#      :c_name: name of the example component.
+#
 function(add_Example_To_Doc c_name)
 	file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/share/doc/examples/)
 	file(COPY ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR} DESTINATION ${PROJECT_BINARY_DIR}/share/doc/examples/)
 endfunction(add_Example_To_Doc c_name)
 
-### generating API documentation for the package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_API| replace:: ``generate_API``
+#  .. _generate_API:
+#
+#  generate_API
+#  ------------
+#
+#   .. command:: generate_API()
+#
+#     Generate the doxygen API documentation for current package project.
+#
 function(generate_API)
 
 if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
@@ -182,8 +225,20 @@ endif()
 endif()
 endfunction(generate_API)
 
-
-############ function used to create the license.txt file of the package  ###########
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_License_File| replace:: ``generate_Package_License_File``
+#  .. _generate_Package_License_File:
+#
+#  generate_Package_License_File
+#  -----------------------------
+#
+#   .. command:: generate_Package_License_File()
+#
+#     Create the license.txt file current package project.
+#
 function(generate_Package_License_File)
 if(CMAKE_BUILD_TYPE MATCHES Release)
 	if(EXISTS ${CMAKE_SOURCE_DIR}/license.txt)# a license has already been generated
@@ -221,8 +276,20 @@ if(CMAKE_BUILD_TYPE MATCHES Release)
 endif()
 endfunction(generate_Package_License_File)
 
-
-############ function used to create the README.md file of the package  ###########
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_Readme_Files| replace:: ``generate_Package_Readme_Files``
+#  .. _generate_Package_Readme_Files:
+#
+#  generate_Package_Readme_Files
+#  -----------------------------
+#
+#   .. command:: generate_Package_Readme_Files()
+#
+#     Create the README.md file for current package project.
+#
 function(generate_Package_Readme_Files)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/packages/README.md.in)
@@ -283,7 +350,24 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 endfunction(generate_Package_Readme_Files)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Install_Procedure_Documentation| replace:: ``generate_Install_Procedure_Documentation``
+#  .. _generate_Install_Procedure_Documentation:
+#
+#  generate_Install_Procedure_Documentation
+#  ----------------------------------------
+#
+#   .. command:: generate_Install_Procedure_Documentation(RETURNED_INSTALL_DOC package)
+#
+#     Generate the string describing the install procedure for given package.
+#
+#      :package: name of the target package.
+#
+#      :RETURNED_INSTALL_DOC: the output variable containing the string describing the install procedure.
+#
 function(generate_Install_Procedure_Documentation RETURNED_INSTALL_DOC package)
 if(${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS)
   set(DOC_STR "\nFor a quick installation:\n")
@@ -310,12 +394,42 @@ endif()
 set(${RETURNED_INSTALL_DOC} ${DOC_STR} PARENT_SCOPE)
 endfunction(generate_Install_Procedure_Documentation)
 
-### create the index file for package in the framework
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_Page_Index_In_Framework| replace:: ``generate_Package_Page_Index_In_Framework``
+#  .. _generate_Package_Page_Index_In_Framework:
+#
+#  generate_Package_Page_Index_In_Framework
+#  ----------------------------------------
+#
+#   .. command:: generate_Package_Page_Index_In_Framework(generated_site_folder)
+#
+#      Create the index file for target package when it is published in a framework
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target package.
+#
 function(generate_Package_Page_Index_In_Framework generated_site_folder)
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/index.html.in ${generated_site_folder}/index.html @ONLY)
 endfunction(generate_Package_Page_Index_In_Framework)
 
-### create introduction page
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_Static_Site_Page_Introduction| replace:: ``generate_Package_Static_Site_Page_Introduction``
+#  .. _generate_Package_Static_Site_Page_Introduction:
+#
+#  generate_Package_Static_Site_Page_Introduction
+#  ----------------------------------------------
+#
+#   .. command:: generate_Package_Static_Site_Page_Introduction(generated_site_folder)
+#
+#      Create the introduction page for target package (for framework or lone site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target package.
+#
 function(generate_Package_Static_Site_Page_Introduction generated_pages_folder)
 
 # categories
@@ -364,7 +478,22 @@ endif()
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/introduction.md.in ${generated_pages_folder}/introduction.md @ONLY)
 endfunction(generate_Package_Static_Site_Page_Introduction)
 
-### create HOWTO install page
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_Static_Site_Page_Install| replace:: ``generate_Package_Static_Site_Page_Install``
+#  .. _generate_Package_Static_Site_Page_Install:
+#
+#  generate_Package_Static_Site_Page_Install
+#  -----------------------------------------
+#
+#   .. command:: generate_Package_Static_Site_Page_Install(generated_site_folder)
+#
+#      Create the HOWTO install page for target package (for framework or lone site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target package.
+#
 function(generate_Package_Static_Site_Page_Install generated_pages_folder)
 
 #getting git references of the project (for manual installation explanation)
@@ -392,7 +521,22 @@ endif()
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/install.md.in ${generated_pages_folder}/install.md @ONLY)
 endfunction(generate_Package_Static_Site_Page_Install)
 
-### create use page
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_Static_Site_Page_Use| replace:: ``generate_Package_Static_Site_Page_Use``
+#  .. _generate_Package_Static_Site_Page_Use:
+#
+#  generate_Package_Static_Site_Page_Use
+#  -------------------------------------
+#
+#   .. command:: generate_Package_Static_Site_Page_Use(generated_site_folder)
+#
+#      Create the usage page for target package (for framework or lone site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target package.
+#
 function(generate_Package_Static_Site_Page_Use generated_pages_folder)
 
 # package components
@@ -408,19 +552,66 @@ endif()
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/use.md.in ${generated_pages_folder}/use.md @ONLY)
 endfunction(generate_Package_Static_Site_Page_Use)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_Static_Site_Page_Contact| replace:: ``generate_Package_Static_Site_Page_Contact``
+#  .. _generate_Package_Static_Site_Page_Contact:
+#
+#  generate_Package_Static_Site_Page_Contact
+#  -----------------------------------------
+#
+#   .. command:: generate_Package_Static_Site_Page_Contact(generated_site_folder)
+#
+#      Create the contact page for target package (for framework or lone site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target package.
+#
 function(generate_Package_Static_Site_Page_Contact generated_pages_folder)
 # generating the install file for package site
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/contact.md.in ${generated_pages_folder}/contact.md @ONLY)
 endfunction(generate_Package_Static_Site_Page_Contact)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_Static_Site_Page_License| replace:: ``generate_Package_Static_Site_Page_License``
+#  .. _generate_Package_Static_Site_Page_License:
+#
+#  generate_Package_Static_Site_Page_License
+#  -----------------------------------------
+#
+#   .. command:: generate_Package_Static_Site_Page_License(generated_site_folder)
+#
+#      Create the license page for target package (for framework or lone site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target package.
+#
 function(generate_Package_Static_Site_Page_License generated_pages_folder)
 #adding a license file in markdown format in the site pages (to be copied later if any modification occurred)
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/license.md.in ${generated_pages_folder}/license.md @ONLY)
 endfunction(generate_Package_Static_Site_Page_License)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |define_Component_Documentation_Content| replace:: ``define_Component_Documentation_Content``
+#  .. _define_Component_Documentation_Content:
+#
+#  define_Component_Documentation_Content
+#  --------------------------------------
+#
+#   .. command:: define_Component_Documentation_Content(component file)
+#
+#      Memorize the documentation file for a given component of current package project.
+#
+#      :component: the name of the component.
+#
+#      :file: the memorized path to documentation file.
+#
 function(define_Component_Documentation_Content component file)
 set(DECLARED FALSE)
 is_Declared(${component} DECLARED)
@@ -431,23 +622,44 @@ else()
 endif()
 endfunction(define_Component_Documentation_Content)
 
-###
-function(define_Documentation_Content name file)
-set(${PROJECT_NAME}_${name}_SITE_CONTENT_FILE ${file} CACHE INTERNAL "")
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |define_Documentation_Content| replace:: ``define_Documentation_Content``
+#  .. _define_Documentation_Content:
+#
+#  define_Documentation_Content
+#  ----------------------------
+#
+#   .. command:: define_Documentation_Content(label file)
+#
+#      Memorize the path to a documentation file with a given unique label.
+#
+#      :label: the label attached to the file.
+#
+#      :file: the memorized path to documentation file.
+#
+function(define_Documentation_Content label file)
+set(${PROJECT_NAME}_${label}_SITE_CONTENT_FILE ${file} CACHE INTERNAL "")
 endfunction(define_Documentation_Content)
 
-###
-function(define_Component_Documentation_Content component file)
-set(DECLARED FALSE)
-is_Declared(${component} DECLARED)
-if(DECLARED AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${file})
-	define_Documentation_Content(${component} ${file})
-else()
-	message("[PID] WARNING : documentation file for component ${component} cannot be found at ${CMAKE_SOURCE_DIR}/share/site/${file}. Documentation for this component will not reference this specific content.")
-endif()
-endfunction(define_Component_Documentation_Content)
-
-### create the data files from package description
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_Static_Site_Pages| replace:: ``generate_Package_Static_Site_Pages``
+#  .. _generate_Package_Static_Site_Pages:
+#
+#  generate_Package_Static_Site_Pages
+#  ----------------------------------
+#
+#   .. command:: generate_Package_Static_Site_Pages(generated_site_folder)
+#
+#      Create the static site data files for a package (framework or statis site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target package.
+#
 function(generate_Package_Static_Site_Pages generated_pages_folder)
 	generate_Package_Static_Site_Page_Introduction(${generated_pages_folder}) # create introduction page
 	generate_Package_Static_Site_Page_Install(${generated_pages_folder})# create install page
@@ -460,7 +672,22 @@ endfunction(generate_Package_Static_Site_Pages)
 #################### Static sites for wrappers #################################
 ################################################################################
 
-### create introduction page
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_Static_Site_Page_Introduction| replace:: ``generate_Wrapper_Static_Site_Page_Introduction``
+#  .. _generate_Wrapper_Static_Site_Page_Introduction:
+#
+#  generate_Wrapper_Static_Site_Page_Introduction
+#  ----------------------------------------------
+#
+#   .. command:: generate_Wrapper_Static_Site_Page_Introduction(generated_site_folder)
+#
+#      Create the introduction page for target wrapper (for framework or lone site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target wrapper.
+#
 function(generate_Wrapper_Static_Site_Page_Introduction generated_pages_folder)
 
 # categories
@@ -507,12 +734,42 @@ endif()
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/introduction_wrapper.md.in ${generated_pages_folder}/introduction.md @ONLY)
 endfunction(generate_Wrapper_Static_Site_Page_Introduction)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_Static_Site_Page_Contact| replace:: ``generate_Wrapper_Static_Site_Page_Contact``
+#  .. _generate_Wrapper_Static_Site_Page_Contact:
+#
+#  generate_Wrapper_Static_Site_Page_Contact
+#  -----------------------------------------
+#
+#   .. command:: generate_Wrapper_Static_Site_Page_Contact(generated_site_folder)
+#
+#      Create the contact page for target wrapper (for framework or lone site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target wrapper.
+#
 function(generate_Wrapper_Static_Site_Page_Contact generated_pages_folder)
   configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/contact_wrapper.md.in ${generated_pages_folder}/contact.md @ONLY)
 endfunction(generate_Wrapper_Static_Site_Page_Contact)
 
-
-### create HOWTO install page
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_Static_Site_Page_Install| replace:: ``generate_Wrapper_Static_Site_Page_Install``
+#  .. _generate_Wrapper_Static_Site_Page_Install:
+#
+#  generate_Wrapper_Static_Site_Page_Install
+#  -----------------------------------------
+#
+#   .. command:: generate_Wrapper_Static_Site_Page_Install(generated_site_folder)
+#
+#      Create the  HOWTO install page for target wrapper (for framework or lone site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target wrapper.
+#
 function(generate_Wrapper_Static_Site_Page_Install generated_pages_folder)
 
 #getting git references of the project (for manual installation explanation)
@@ -540,8 +797,26 @@ endif()
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/install_wrapper.md.in ${generated_pages_folder}/install.md @ONLY)
 endfunction(generate_Wrapper_Static_Site_Page_Install)
 
-
-## generate the section of md file to describe a component of the package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Component_Site_For_Wrapper| replace:: ``generate_Component_Site_For_Wrapper``
+#  .. _generate_Component_Site_For_Wrapper:
+#
+#  generate_Component_Site_For_Wrapper
+#  -----------------------------------
+#
+#   .. command:: generate_Component_Site_For_Wrapper(prefix component RES_CONTENT)
+#
+#      Generate the description (section of md file) for a given component defined in an external package wrapper.
+#
+#      :prefix: prefix to use to target adequate version of external package.
+#
+#      :component: the name of teh component.
+#
+#      :RES_CONTENT: the output variable containing the generated markdown content.
+#
 function(generate_Component_Site_For_Wrapper prefix component RES_CONTENT)
 
 set(RES "## ${component}\n") # adding a section fo this component
@@ -624,8 +899,22 @@ set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applic
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Component_Site_For_Wrapper)
 
-
-### create use page
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_Static_Site_Page_Use| replace:: ``generate_Wrapper_Static_Site_Page_Use``
+#  .. _generate_Wrapper_Static_Site_Page_Use:
+#
+#  generate_Wrapper_Static_Site_Page_Use
+#  -------------------------------------
+#
+#   .. command:: generate_Wrapper_Static_Site_Page_Use(generated_site_folder)
+#
+#      Create the usage page for target wrapper (for framework or lone site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target wrapper.
+#
 function(generate_Wrapper_Static_Site_Page_Use generated_pages_folder)
 
 # package components
@@ -644,14 +933,43 @@ endif()
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/use_wrapper.md.in ${generated_pages_folder}/use.md @ONLY)
 endfunction(generate_Wrapper_Static_Site_Page_Use)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_Static_Site_Page_License| replace:: ``generate_Wrapper_Static_Site_Page_License``
+#  .. _generate_Wrapper_Static_Site_Page_License:
+#
+#  generate_Wrapper_Static_Site_Page_License
+#  -----------------------------------------
+#
+#   .. command:: generate_Wrapper_Static_Site_Page_License(generated_site_folder)
+#
+#      Create the license page for target wrapper (for framework or lone site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target wrapper.
+#
 function(generate_Wrapper_Static_Site_Page_License generated_pages_folder)
 #adding a license file in markdown format in the site pages (to be copied later if any modification occurred)
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/license_wrapper.md.in ${generated_pages_folder}/license.md @ONLY)
 endfunction(generate_Wrapper_Static_Site_Page_License)
 
-### create the data files from wrapper description
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_Static_Site_Pages| replace:: ``generate_Wrapper_Static_Site_Pages``
+#  .. _generate_Wrapper_Static_Site_Pages:
+#
+#  generate_Wrapper_Static_Site_Pages
+#  ----------------------------------
+#
+#   .. command:: generate_Wrapper_Static_Site_Pages(generated_site_folder)
+#
+#      Create the static site data files for a wrapper (framework or statis site).
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target wrapper.
+#
 function(generate_Wrapper_Static_Site_Pages generated_pages_folder)
   generate_Wrapper_Static_Site_Page_Introduction(${generated_pages_folder}) # create introduction page
   generate_Wrapper_Static_Site_Page_Install(${generated_pages_folder})# create install page
@@ -660,7 +978,20 @@ function(generate_Wrapper_Static_Site_Pages generated_pages_folder)
 	generate_Wrapper_Static_Site_Page_License(${generated_pages_folder}) #create license page
 endfunction(generate_Wrapper_Static_Site_Pages)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_Static_Site_Generation_Variables| replace:: ``configure_Static_Site_Generation_Variables``
+#  .. _configure_Static_Site_Generation_Variables:
+#
+#  configure_Static_Site_Generation_Variables
+#  ------------------------------------------
+#
+#   .. command:: configure_Static_Site_Generation_Variables()
+#
+#      Configure all variable used for static site generation (native pakages or external package wrappers)
+#
 macro(configure_Static_Site_Generation_Variables)
 set(PACKAGE_NAME ${PROJECT_NAME})
 set(PACKAGE_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_PROJECT_PAGE})
@@ -777,10 +1108,22 @@ set(PACKAGE_HAS_STATIC_CHECKS true)
 else()
 set(PACKAGE_HAS_STATIC_CHECKS false)
 endif()
-
 endmacro(configure_Static_Site_Generation_Variables)
 
-### package site pages generation
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_Package_Pages| replace:: ``configure_Package_Pages``
+#  .. _configure_Package_Pages:
+#
+#  configure_Package_Pages
+#  -----------------------
+#
+#   .. command:: configure_Package_Pages()
+#
+#      Configure and generate static site pages for a package.
+#
 function(configure_Package_Pages)
 if(NOT ${CMAKE_BUILD_TYPE} MATCHES Release)
 	return()
@@ -806,7 +1149,7 @@ configure_Static_Site_Generation_Variables()
 
 #1) generate the data files for jekyll (vary depending on the site creation mode
 if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
-	generate_Static_Site_Data_Files(${PATH_TO_SITE})
+	generate_Static_Site_Jekyll_Data_File(${PATH_TO_SITE})
 
 else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 	#find the framework in workspace
@@ -822,10 +1165,26 @@ endif()
 
 #2) generate pages
 generate_Package_Static_Site_Pages(${PATH_TO_SITE_PAGES})
-
 endfunction(configure_Package_Pages)
 
-## generate the section of md file to describe native package dependencies
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Dependency_Site| replace:: ``generate_Dependency_Site``
+#  .. _generate_Dependency_Site:
+#
+#  generate_Dependency_Site
+#  ------------------------
+#
+#   .. command:: generate_Dependency_Site(dependency RES_CONTENT)
+#
+#      Generate section of md file for a native package dependency. This defines markdown links to the static static site of the dependency.
+#
+#      :dependency: the name of the dependency.
+#
+#      :RES_CONTENT: output variable containing the markdown content used to target the dependency static site.
+#
 function(generate_Dependency_Site dependency RES_CONTENT)
 if(${dependency}_SITE_ROOT_PAGE)
 	set(RES "+ [${dependency}](${${dependency}_SITE_ROOT_PAGE})") #creating a link to the package site
@@ -856,7 +1215,24 @@ endif()
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Dependency_Site)
 
-## generate the section of md file to describe external package dependencies
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_External_Dependency_Site| replace:: ``generate_External_Dependency_Site``
+#  .. _generate_External_Dependency_Site:
+#
+#  generate_External_Dependency_Site
+#  ---------------------------------
+#
+#   .. command:: generate_External_Dependency_Site(dependency RES_CONTENT)
+#
+#      Generate section of md file for an external package dependency. This defines markdown links to the static static site of the dependency.
+#
+#      :dependency: the name of the dependency.
+#
+#      :RES_CONTENT: output variable containing the markdown content used to target the dependency static site.
+#
 function(generate_External_Dependency_Site dependency version exact RES_CONTENT)
 if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${dependency}.cmake)
 	include (${WORKSPACE_DIR}/share/cmake/references/ReferExternal${dependency}.cmake) #get the information about the framework
@@ -887,8 +1263,24 @@ endif()
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_External_Dependency_Site)
 
-
-## generate the section of md file to describe a component of the package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Component_Site_For_Package| replace:: ``generate_Component_Site_For_Package``
+#  .. _generate_Component_Site_For_Package:
+#
+#  generate_Component_Site_For_Package
+#  -----------------------------------
+#
+#   .. command:: generate_Component_Site_For_Package(component RES_CONTENT)
+#
+#      Generate the section of md file to describe a component of the currently built package.
+#
+#      :component: the name of the component.
+#
+#      :RES_CONTENT: output variable containing the markdown content used to describe the component.
+#
 function(generate_Component_Site_For_Package component RES_CONTENT)
 is_Externally_Usable(IS_EXT_USABLE ${component})
 if(NOT IS_EXT_USABLE)#component cannot be used from outside package => no need to document it
@@ -1040,12 +1432,41 @@ endif()
 # for any kind of usable component
 set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applications, libraries or tests:\n\n{% highlight cmake %}\ndeclare_PID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tNATIVE\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n{% endhighlight %}\n\n")
 
-
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Component_Site_For_Package)
 
-
-### copying documentation content to the site repository
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |produce_Package_Static_Site_Content| replace:: ``produce_Package_Static_Site_Content``
+#  .. _produce_Package_Static_Site_Content:
+#
+#  produce_Package_Static_Site_Content
+#  -----------------------------------
+#
+#   .. command:: produce_Package_Static_Site_Content(package framework version platform include_api_doc include_coverage include_staticchecks include_installer force)
+#
+#      Copy generated documentation and binaries content to the package static site repository (framework or lone site).
+#
+#      :package: the name of the package.
+#
+#      :framework: the name of the framework (or empty string if package belongs to no framework).
+#
+#      :version: the version for wich the documentation is generated.
+#
+#      :platform: the platform for wich the published binaries is generated.
+#
+#      :include_api_doc: TRUE if API documentation must be included in static site.
+#
+#      :include_coverage: TRUE if coverage report must be included in static site.
+#
+#      :include_staticchecks: TRUE if static checks report must be included in static site.
+#
+#      :include_installer: TRUE if generated binaries are published by the static site.
+#
+#      :force: if TRUE the whole content is copied, otherwise only detected modifications are copied.
+#
 function(produce_Package_Static_Site_Content package framework version platform include_api_doc include_coverage include_staticchecks include_installer force) # copy everything needed
 
 #### preparing the copy depending on the target: lone static site or framework ####
@@ -1210,7 +1631,24 @@ endfunction(produce_Package_Static_Site_Content)
 ###################Framework usage functions ########################
 #####################################################################
 
-### Get the root address of the package page (either if it belongs to a framework or has its own lone static site)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Package_Site_Address| replace:: ``get_Package_Site_Address``
+#  .. _get_Package_Site_Address:
+#
+#  get_Package_Site_Address
+#  ------------------------
+#
+#   .. command:: generate_Component_Site_For_Package(SITE_ADDRESS package)
+#
+#      Get the root address of the package page (either if it belongs to a framework or has its own lone static site)
+#
+#      :package: the name of the package.
+#
+#      :SITE_ADDRESS: the output variable that contains the online address of the package static site.
+#
 function(get_Package_Site_Address SITE_ADDRESS package)
 set(${SITE_ADDRESS} PARENT_SCOPE)
 if(${package}_FRAMEWORK) #package belongs to a framework
@@ -1227,7 +1665,20 @@ endfunction(get_Package_Site_Address)
 ################## External package wrapper related functions ##################
 ################################################################################
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_Readme_Files| replace:: ``generate_Wrapper_Readme_Files``
+#  .. _generate_Wrapper_Readme_Files:
+#
+#  generate_Wrapper_Readme_Files
+#  -----------------------------
+#
+#   .. command:: generate_Wrapper_Readme_Files()
+#
+#     Create the README.md file for current wrapper project.
+#
 function(generate_Wrapper_Readme_Files)
 set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/wrappers/README.md.in)
 ## introduction (more detailed description, if any)
@@ -1277,7 +1728,20 @@ set(README_CONTACT_AUTHOR "${RES_STRING}")
 configure_file(${README_CONFIG_FILE} ${CMAKE_SOURCE_DIR}/README.md @ONLY)#put the readme in the source dir
 endfunction(generate_Wrapper_Readme_Files)
 
-### generating the license file used in wrapper (differs a bit from those of the native packages)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_License_File| replace:: ``generate_Wrapper_License_File``
+#  .. _generate_Wrapper_License_File:
+#
+#  generate_Wrapper_License_File
+#  -----------------------------
+#
+#   .. command:: generate_Wrapper_License_File()
+#
+#     Create the license file for current wrapper project (differs a bit from those of the native packages).
+#
 function(generate_Wrapper_License_File)
 if(EXISTS ${CMAKE_SOURCE_DIR}/license.txt)# a license has already been generated
 	if(NOT REGENERATE_LICENSE)# avoid regeneration if nothing changed
@@ -1310,14 +1774,40 @@ if(${PROJECT_NAME}_LICENSE)
 endif()
 endfunction(generate_Wrapper_License_File)
 
-
-### create the index file for wrapper in the framework
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_Page_Index_In_Framework| replace:: ``generate_Wrapper_Page_Index_In_Framework``
+#  .. _generate_Wrapper_Page_Index_In_Framework:
+#
+#  generate_Wrapper_Page_Index_In_Framework
+#  ----------------------------------------
+#
+#   .. command:: generate_Wrapper_Page_Index_In_Framework(generated_site_folder)
+#
+#      Create the index file for target wrapper when it is published in a framework
+#
+#      :generated_site_folder: path to the folder that contains generated site pages for target wrapper.
+#
 function(generate_Wrapper_Page_Index_In_Framework generated_site_folder)
 configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/index_wrapper.html.in ${generated_site_folder}/index.html @ONLY)
 endfunction(generate_Wrapper_Page_Index_In_Framework)
 
-
-### package site pages generation
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_Wrapper_Pages| replace:: ``configure_Wrapper_Pages``
+#  .. _configure_Wrapper_Pages:
+#
+#  configure_Wrapper_Pages
+#  -----------------------
+#
+#   .. command:: configure_Wrapper_Pages()
+#
+#      Configure and generate static site pages for a wrapper.
+#
 function(configure_Wrapper_Pages)
 if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS) #no web site definition simply exit
 	#no static site definition done so we create a fake "site" command in realease mode
@@ -1340,7 +1830,7 @@ configure_Static_Site_Generation_Variables()
 
 #1) generate the data files for jekyll (vary depending on the site creation mode
 if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
-	generate_Static_Site_Data_Files(${PATH_TO_SITE})
+	generate_Static_Site_Jekyll_Data_File(${PATH_TO_SITE})
 
 else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 	#find the framework in workspace
@@ -1358,7 +1848,32 @@ endif()
 generate_Wrapper_Static_Site_Pages(${PATH_TO_SITE_PAGES})
 endfunction(configure_Wrapper_Pages)
 
-### produce content from wrapper
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |produce_Wrapper_Static_Site_Content| replace:: ``produce_Wrapper_Static_Site_Content``
+#  .. _produce_Wrapper_Static_Site_Content:
+#
+#  produce_Wrapper_Static_Site_Content
+#  -----------------------------------
+#
+#   .. command:: produce_Wrapper_Static_Site_Content(package framework version platform include_api_doc include_coverage include_staticchecks include_installer force)
+#
+#      Copy generated documentation and binaries content to the external package static site repository (framework or lone site).
+#
+#      :package: the name of the external package.
+#
+#      :framework: the name of the framework (or empty string if package belongs to no framework).
+#
+#      :versions: the version for wich the documentation is generated.
+#
+#      :platform: the platform for wich the published binaries is generated.
+#
+#      :include_installer: TRUE if generated binaries are published by the static site.
+#
+#      :force: if TRUE the whole content is copied, otherwise only detected modifications are copied.
+#
 function(produce_Wrapper_Static_Site_Content package framework versions platform include_installer force)
 
   #### preparing the copy depending on the target: lone static site or framework ####

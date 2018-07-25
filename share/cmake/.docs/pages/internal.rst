@@ -74,21 +74,14 @@ Deployment Utilities
 
 .. cmake-module:: ../../system/api/PID_Deployment_Functions.cmake
 
-
-Meta information Utilities
-==========================
-
-.. setmode:: internal
-
-.. cmake-module:: ../../system/api/PID_Meta_Information_Management_Functions.cmake
-
-
 Documentation Utilities
 =======================
 
 .. setmode:: internal
 
 .. cmake-module:: ../../system/api/PID_Documentation_Management_Functions.cmake
+
+.. cmake-module:: ../../system/api/PID_Meta_Information_Management_Functions.cmake
 
 
 Static site Utilities
