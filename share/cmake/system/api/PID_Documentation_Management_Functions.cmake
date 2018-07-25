@@ -1153,7 +1153,7 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
 
 else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 	#find the framework in workspace
-	check_Framework(FRAMEWORK_OK ${${PROJECT_NAME}_FRAMEWORK})
+	check_Framework_Exists(FRAMEWORK_OK ${${PROJECT_NAME}_FRAMEWORK})
 	if(NOT FRAMEWORK_OK)
 		message(FATAL_ERROR "[PID] ERROR : the framework you specified (${${PROJECT_NAME}_FRAMEWORK}) is unknown in the workspace.")
 		return()
@@ -1834,7 +1834,7 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
 
 else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 	#find the framework in workspace
-	check_Framework(FRAMEWORK_OK ${${PROJECT_NAME}_FRAMEWORK})
+	check_Framework_Exists(FRAMEWORK_OK ${${PROJECT_NAME}_FRAMEWORK})
 	if(NOT FRAMEWORK_OK)
 		message(FATAL_ERROR "[PID] ERROR : the framework you specified (${${PROJECT_NAME}_FRAMEWORK}) is unknown in the workspace.")
 		return()
