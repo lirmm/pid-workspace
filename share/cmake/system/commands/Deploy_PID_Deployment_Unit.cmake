@@ -168,7 +168,7 @@ else()# a package deployment is required
 	if(is_external)#external package is deployed
 		deploy_PID_External_Package(${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} ${redeploy})
 	else()#native package is deployed
-		deploy_PID_Native_Package(${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} ${redeploy})
+		deploy_PID_Native_Package(${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source})
 	endif()
 
 	## global management of the process

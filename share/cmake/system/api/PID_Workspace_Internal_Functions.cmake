@@ -37,7 +37,20 @@ include(External_Definition NO_POLICY_SCOPE) #to interpret content description o
 ########## Categories (classification of packages) management ##########
 ########################################################################
 
-### function used to classify all packages into categories. Usefull to prepare calls to info script.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |classify_Packages| replace:: ``classify_Packages``
+#  .. _classify_Packages:
+#
+#  classify_Packages
+#  -----------------
+#
+#   .. command:: classify_Packages()
+#
+#   Classify all known packages into categories. Used to prepare call to the "info" command in workspace.
+#
 function(classify_Packages)
 #1) get the root of categories (cmake variables) where to start recursion of the classification process
 extract_Root_Categories()
@@ -54,7 +67,24 @@ foreach(a_framework IN LISTS FRAMEWORKS_CATEGORIES)
 endforeach()
 endfunction(classify_Packages)
 
-## subsidiary function to classify all packages according to categories,without taking into account frameworks information
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |classify_Root_Category| replace:: ``classify_Root_Category``
+#  .. _classify_Root_Category:
+#
+#  classify_Root_Category
+#  ----------------------
+#
+#   .. command:: classify_Root_Category(root_category all_packages)
+#
+#   Classify all packages from a given root category. Subsidiary function to classify all packages according to categories,without taking into account frameworks information.
+#
+#      :root_category: the name of the root category.
+#
+#      :all_packages: the list of all packages known in workspace.
+#
 function(classify_Root_Category root_category all_packages)
 foreach(package IN LISTS all_packages)
 	foreach(a_category IN LISTS ${package}_CATEGORIES)
@@ -63,8 +93,26 @@ foreach(package IN LISTS all_packages)
 endforeach()
 endfunction(classify_Root_Category)
 
-
-## subsidiary function to classify all packages from a given framework into the categories defined by this framework. This results in creation of variables
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |classify_Framework_Root_Category| replace:: ``classify_Framework_Root_Category``
+#  .. _classify_Framework_Root_Category:
+#
+#  classify_Framework_Root_Category
+#  --------------------------------
+#
+#   .. command:: classify_Framework_Root_Category(framework root_category all_packages)
+#
+#   Classify all packages from a given root category defined in a framework. Subsidiary function to classify all packages according to categories defined by frameworks.
+#
+#      :framework: the name of the framework.
+#
+#      :root_category: the name of the root category defined in framework.
+#
+#      :all_packages: the list of all packages known in workspace.
+#
 function(classify_Framework_Root_Category framework root_category all_packages)
 foreach(package IN LISTS all_packages)
 	if(${package}_FRAMEWORK STREQUAL "${framework}")#check if the package belongs to the framework
@@ -78,8 +126,28 @@ foreach(package IN LISTS all_packages)
 endforeach()
 endfunction(classify_Framework_Root_Category)
 
-
-## subsidiary function to create variables that describe the organization of a given framework in terms of categories
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |classify_Framework_Category| replace:: ``classify_Framework_Category``
+#  .. _classify_Framework_Category:
+#
+#  classify_Framework_Category
+#  ---------------------------
+#
+#   .. command:: classify_Framework_Category(framework category_full_string root_category target_package)
+#
+#   Classify a given package into a given category defined in a framework. Subsidiary function used to create variables that describe the organization of a given framework in terms of categories.
+#
+#      :framework: the name of the framework.
+#
+#      :category_full_string: the complete category string (e.g. math/geometry).
+#
+#      :root_category: the name of the root category defined in framework.
+#
+#      :target_package: the name of package to classify.
+#
 function(classify_Framework_Category framework category_full_string root_category target_package)
 if("${category_full_string}" STREQUAL "${root_category}")#OK, so the package directly belongs to this category
 	set(FRAMEWORK_${framework}_CAT_${category_full_string}_CATEGORY_CONTENT ${FRAMEWORK_${framework}_CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
@@ -105,7 +173,20 @@ else()#not OK we need to know if this is a subcategory or not
 endif()
 endfunction(classify_Framework_Category)
 
-### macro to reset variables containing workspace content information, according to reference files found in workspace (macro to keep the current scope, important for reference files inclusion)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Workspace_Content_Information| replace:: ``reset_Workspace_Content_Information``
+#  .. _reset_Workspace_Content_Information:
+#
+#  reset_Workspace_Content_Information
+#  -----------------------------------
+#
+#   .. command:: reset_Workspace_Content_Information()
+#
+#   Reset variables defining workspace content information, according to reference files found in workspace (macro is used instead of a function to work in the current scope, important for reference files inclusion).
+#
 macro(reset_Workspace_Content_Information)
 # 1) fill the two root variables, by searching in all reference files lying in the workspace
 set(ALL_AVAILABLE_PACKAGES)
@@ -128,7 +209,20 @@ set(ALL_PACKAGES ${ALL_AVAILABLE_PACKAGES} CACHE INTERNAL "")
 set(ALL_FRAMEWORKS ${ALL_AVAILABLE_FRAMEWORKS} CACHE INTERNAL "")
 endmacro(reset_Workspace_Content_Information)
 
-## subsidiary function to reset all variables describing categories to start from a clean situation
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_All_Categories| replace:: ``reset_All_Categories``
+#  .. _reset_All_Categories:
+#
+#  reset_All_Categories
+#  --------------------
+#
+#   .. command:: reset_All_Categories()
+#
+#   Reset all variables describing categories, used to start from a clean situation when configuring workspace.
+#
 function(reset_All_Categories)
 foreach(a_category IN LISTS ROOT_CATEGORIES)
 	reset_Category(${a_category})
@@ -141,7 +235,22 @@ foreach(a_framework IN LISTS FRAMEWORKS_CATEGORIES)
 endforeach()
 endfunction(reset_All_Categories)
 
-## subsidiary function to reset all variables of a given category
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Category| replace:: ``reset_Category``
+#  .. _reset_Category:
+#
+#  reset_Category
+#  --------------
+#
+#   .. command:: reset_Category(category)
+#
+#   Reset all variables describing a given category.
+#
+#      :category: the string describing the category.
+#
 function(reset_Category category)
 	foreach(a_sub_category IN LISTS CAT_${category}_CATEGORIES)
 		reset_Category("${category}/${a_sub_category}")#recursive call
@@ -153,8 +262,24 @@ endif()
 set(CAT_${category}_CATEGORIES CACHE INTERNAL "")
 endfunction()
 
-
-## subsidiary function to reset all variables of a given category
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Framework_Category| replace:: ``reset_Framework_Category``
+#  .. _reset_Framework_Category:
+#
+#  reset_Framework_Category
+#  ------------------------
+#
+#   .. command:: reset_Framework_Category(framework category)
+#
+#   Reset all variables describing a given category defined in a given framework.
+#
+#      :framework: the name of the framework.
+#
+#      :category: the string describing the category.
+#
 function(reset_Framework_Category framework category)
 if(FRAMEWORK_${framework}_CAT_${category}_CATEGORIES)
 	foreach(a_sub_category IN LISTS FRAMEWORK_${framework}_CAT_${category}_CATEGORIES)
@@ -167,7 +292,24 @@ endif()
 set(FRAMEWORK_${framework}_CAT_${category}_CATEGORIES CACHE INTERNAL "")
 endfunction()
 
-## subsidiary function to get the names of all the root categories to which belong a given package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Root_Categories| replace:: ``get_Root_Categories``
+#  .. _get_Root_Categories:
+#
+#  get_Root_Categories
+#  -------------------
+#
+#   .. command:: get_Root_Categories(package RETURNED_ROOTS)
+#
+#   Get the names of all the root categories to which belong a given package.
+#
+#      :package: the name of the package.
+#
+#      :RETURNED_ROOTS: the output variable containing the roots categories.
+#
 function(get_Root_Categories package RETURNED_ROOTS)
 	set(ROOTS_FOUND)
 	foreach(a_category IN LISTS ${package}_CATEGORIES)
@@ -185,8 +327,24 @@ function(get_Root_Categories package RETURNED_ROOTS)
 	set(${RETURNED_ROOTS} ${ROOTS_FOUND} PARENT_SCOPE)
 endfunction(get_Root_Categories)
 
-
-## subsidiary function to get the names of all the root categories defined by a framework
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Framework_Root_Categories| replace:: ``get_Framework_Root_Categories``
+#  .. _get_Framework_Root_Categories:
+#
+#  get_Framework_Root_Categories
+#  -----------------------------
+#
+#   .. command:: get_Framework_Root_Categories(framework RETURNED_ROOTS)
+#
+#   Get the names of all the root categories defined by a framework.
+#
+#      :framework: the name of the framework.
+#
+#      :RETURNED_ROOTS: the output variable containing the roots categories.
+#
 function(get_Framework_Root_Categories framework RETURNED_ROOTS)
 	set(ROOTS_FOUND)
 	foreach(a_category IN LISTS ${framework}_FRAMEWORK_CATEGORIES)
@@ -204,7 +362,20 @@ function(get_Framework_Root_Categories framework RETURNED_ROOTS)
 	set(${RETURNED_ROOTS} ${ROOTS_FOUND} PARENT_SCOPE)
 endfunction(get_Framework_Root_Categories)
 
-## subsidiary function for extracting root categories from workspace description. It consists in classifying all packages and frameworks relative to category structure.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |extract_Root_Categories| replace:: ``extract_Root_Categories``
+#  .. _extract_Root_Categories:
+#
+#  extract_Root_Categories
+#  -----------------------
+#
+#   .. command:: extract_Root_Categories()
+#
+#   Extract all root categories from workspace content and pu them in cache variables.
+#
 function(extract_Root_Categories)
 # extracting category information from packages
 set(ALL_ROOTS)
@@ -239,7 +410,26 @@ else()
 endif()
 endfunction(extract_Root_Categories)
 
-### classifying all packages and frameworks according to categories structure
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |classify_Category| replace:: ``classify_Category``
+#  .. _classify_Category:
+#
+#  classify_Category
+#  -----------------
+#
+#   .. command:: classify_Category(category_full_string root_category target_package)
+#
+#   Classify all packages and frameworks according to categories structure. This function sets the cache variables describing the categorization of packages and frameworks.
+#
+#      :category_full_string: the string describing the category being currently classified.
+#
+#      :root_category: the name of the root category that is currently managed in classification process.
+#
+#      :target_package: the name of the package to classify.
+#
 function(classify_Category category_full_string root_category target_package)
 if("${category_full_string}" STREQUAL "${root_category}")#OK, so the package directly belongs to this category
 	set(CAT_${category_full_string}_CATEGORY_CONTENT ${CAT_${category_full_string}_CATEGORY_CONTENT} ${target_package} CACHE INTERNAL "") #end of recursion
@@ -267,7 +457,20 @@ else()#not OK we need to know if this is a subcategory or not
 endif()
 endfunction(classify_Category)
 
-### write in a file that will be used by script for finding info on categories
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Categories_File| replace:: ``write_Categories_File``
+#  .. _write_Categories_File:
+#
+#  write_Categories_File
+#  ---------------------
+#
+#   .. command:: write_Categories_File()
+#
+#   Write in the workspace category description file (pid-workspace/pid/CategoriesInfo.cmake) all the cache variables generated by the classification process. This file is used by script for finding info on categories.
+#
 function(write_Categories_File)
 set(file ${CMAKE_BINARY_DIR}/CategoriesInfo.cmake)
 file(WRITE ${file} "")
@@ -289,7 +492,24 @@ foreach(framework IN LISTS FRAMEWORKS_CATEGORIES)
 endforeach()
 endfunction(write_Categories_File)
 
-## subidiary function to write info about a given category into the file
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Category_In_File| replace:: ``write_Category_In_File``
+#  .. _write_Category_In_File:
+#
+#  write_Category_In_File
+#  ----------------------
+#
+#   .. command:: write_Category_In_File(category thefile)
+#
+#   Write in file the cache variables used to describe a given category. See: write_Categories_File.
+#
+#      :category: the name of the category.
+#
+#      :thefile: the file to append cache variable in.
+#
 function(write_Category_In_File category thefile)
 file(APPEND ${thefile} "set(CAT_${category}_CATEGORY_CONTENT \"${CAT_${category}_CATEGORY_CONTENT}\" CACHE INTERNAL \"\")\n")
 if(CAT_${category}_CATEGORIES)
@@ -300,13 +520,48 @@ if(CAT_${category}_CATEGORIES)
 endif()
 endfunction(write_Category_In_File)
 
-
-## subsidiary function to write info about root categories defined by a framework into the file
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Framework_Root_Categories_In_File| replace:: ``write_Framework_Root_Categories_In_File``
+#  .. _write_Framework_Root_Categories_In_File:
+#
+#  write_Framework_Root_Categories_In_File
+#  ---------------------------------------
+#
+#   .. command:: write_Framework_Root_Categories_In_File(framework thefile)
+#
+#   Write in file the cache variables used to describe categories defined by a given framework. See: write_Categories_File.
+#
+#      :framework: the name of the framework.
+#
+#      :thefile: the file to append cache variable in.
+#
 function(write_Framework_Root_Categories_In_File framework thefile)
 file(APPEND ${thefile} "set(FRAMEWORK_${framework}_ROOT_CATEGORIES \"${FRAMEWORK_${framework}_ROOT_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 endfunction(write_Framework_Root_Categories_In_File)
 
-## subsidiary function to write info about categories defined by a framework into the file
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Framework_Category_In_File| replace:: ``write_Framework_Category_In_File``
+#  .. _write_Framework_Category_In_File:
+#
+#  write_Framework_Category_In_File
+#  --------------------------------
+#
+#   .. command:: write_Framework_Category_In_File(framework category thefile)
+#
+#   Write in file the cache variables used to describe a given category defined by a given framework. See: write_Categories_File.
+#
+#      :framework: the name of the framework.
+#
+#      :category: the string defining the category.
+#
+#      :thefile: the file to append cache variable in.
+#
 function(write_Framework_Category_In_File framework category thefile)
 file(APPEND ${thefile} "set(FRAMEWORK_${framework}_CAT_${category}_CATEGORY_CONTENT \"${FRAMEWORK_${framework}_CAT_${category}_CATEGORY_CONTENT}\" CACHE INTERNAL \"\")\n")
 if(FRAMEWORK_${framework}_CAT_${category}_CATEGORIES)
@@ -317,14 +572,48 @@ if(FRAMEWORK_${framework}_CAT_${category}_CATEGORIES)
 endif()
 endfunction(write_Framework_Category_In_File)
 
-### function to find and print the sreached term in all (sub-)categories
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_In_Categories| replace:: ``find_In_Categories``
+#  .. _find_In_Categories:
+#
+#  find_In_Categories
+#  ------------------
+#
+#   .. command:: find_In_Categories(searched_category_term)
+#
+#   Find and print to standard output the searched term in all (sub-)categories.
+#
+#      :searched_category_term: the term to search in categories description.
+#
 function(find_In_Categories searched_category_term)
 foreach(root_cat IN LISTS ROOT_CATEGORIES)
 	find_Category("" ${root_cat} ${searched_category_term})
 endforeach()
 endfunction(find_In_Categories)
 
-## subsidiary function to print to standard output the "path" generated by a given category
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_Category| replace:: ``find_Category``
+#  .. _find_Category:
+#
+#  find_Category
+#  -------------
+#
+#   .. command:: find_Category(root_category current_category_full_path searched_category)
+#
+#   Print to standard output the "path" generated by a given category if found from a given root category. Subsidiary function for find_In_Categories.
+#
+#      :root_category: the name of root category.
+#
+#      :current_category_full_path: the full path of the currently managed category.
+#
+#      :searched_category_term: the term to search in categories description.
+#
 function(find_Category root_category current_category_full_path searched_category)
 string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${searched_category})
 if(NOT CATEGORY_STRING_CONTENT STREQUAL ${searched_category})# it macthes => searching category into a specific "category path"
@@ -357,8 +646,28 @@ else()#this is a simple category name (end of recursion on path), just testing i
 endif()
 endfunction(find_Category)
 
-
-## subsidiary function to print to standard output the "path" generated by category structure
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Category_Names| replace:: ``get_Category_Names``
+#  .. _get_Category_Names:
+#
+#  get_Category_Names
+#  ------------------
+#
+#   .. command:: get_Category_Names(root_category category_full_string RESULTING_SHORT_NAME RESULTING_LONG_NAME)
+#
+#   Get short name and path of a given category that belongs to a root category. Subsidiary function for find_Category.
+#
+#      :root_category: the name of root category.
+#
+#      :current_category_full_path: the full path of the currently managed category.
+#
+#      :RESULTING_SHORT_NAME: the output variable containing the short name of the category.
+#
+#      :RESULTING_LONG_NAME: the output variable containing the the full path of the category.
+#
 function(get_Category_Names root_category category_full_string RESULTING_SHORT_NAME RESULTING_LONG_NAME)
 	if("${root_category}" STREQUAL "")
 		set(${RESULTING_SHORT_NAME} ${category_full_string} PARENT_SCOPE)
@@ -375,8 +684,26 @@ function(get_Category_Names root_category category_full_string RESULTING_SHORT_N
 	endif()
 endfunction(get_Category_Names)
 
-
-## subsidiary function to print to standard output a description of a given category
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Category| replace:: ``print_Category``
+#  .. _print_Category:
+#
+#  print_Category
+#  --------------
+#
+#   .. command:: print_Category(root_category category number_of_tabs)
+#
+#   Print to standard output the description generated by a given category structure. Subsidiary function for find_Category.
+#
+#      :root_category: the name of root category.
+#
+#      :current_category_full_path: the full path of the currently managed category.
+#
+#      :number_of_tabs: number of tabulations to use before printing category information.
+#
 function(print_Category root_category category number_of_tabs)
 	set(PRINTED_VALUE "")
 	set(RESULT_STRING "")
@@ -406,8 +733,28 @@ function(print_Category root_category category number_of_tabs)
 	endif()
 endfunction(print_Category)
 
-
-### subsidiary function to print to standard output a description of a given category defined by a framework
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Framework_Category| replace:: ``print_Framework_Category``
+#  .. _print_Framework_Category:
+#
+#  print_Framework_Category
+#  ------------------------
+#
+#   .. command:: print_Framework_Category(framework root_category category number_of_tabs)
+#
+#   Print to standard output the description generated by a given category defined by a given framework. Subsidiary function for print_Framework_Categories.
+#
+#      :framework: the name of the framework.
+#
+#      :root_category: the name of root category.
+#
+#      :current_category_full_path: the full path of the currently managed category.
+#
+#      :number_of_tabs: number of tabulations to use before printing category information.
+#
 function(print_Framework_Category framework root_category category number_of_tabs)
 	set(PRINTED_VALUE "")
 	set(RESULT_STRING "")
@@ -435,8 +782,22 @@ function(print_Framework_Category framework root_category category number_of_tab
 	endforeach()
 endfunction(print_Framework_Category)
 
-
-## subsidiary function to print to standard output a description of all categories defined by a framework
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Framework_Categories| replace:: ``print_Framework_Categories``
+#  .. _print_Framework_Categories:
+#
+#  print_Framework_Categories
+#  --------------------------
+#
+#   .. command:: print_Framework_Categories(framework)
+#
+#   Print to standard output the description generated by all categories defined by a given framework.
+#
+#      :framework: the name of the framework.
+#
 function(print_Framework_Categories framework)
 message("---------------------------------")
 list(FIND FRAMEWORKS_CATEGORIES ${framework} INDEX)
@@ -455,19 +816,64 @@ endfunction(print_Framework_Categories)
 ##################### Packages info management #########################
 ########################################################################
 
-## subsidiary function to print information about an author
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Author| replace:: ``print_Author``
+#  .. _print_Author:
+#
+#  print_Author
+#  ------------
+#
+#   .. command:: print_Author(author)
+#
+#   Print to standard output information about an author.
+#
+#      :author: the name of the author.
+#
 function(print_Author author)
 	get_Formatted_Author_String("${author}" RES_STRING)
 	message("	${RES_STRING}")
 endfunction(print_Author)
 
-## subsidiary function to print information about contact author
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Package_Contact| replace:: ``print_Package_Contact``
+#  .. _print_Package_Contact:
+#
+#  print_Package_Contact
+#  ---------------------
+#
+#   .. command:: print_Package_Contact(package)
+#
+#   Print to standard output information about a contact author of a package.
+#
+#      :package: the name of the package.
+#
 function(print_Package_Contact package)
 	get_Formatted_Package_Contact_String(${package} RES_STRING)
 	message("CONTACT: ${RES_STRING}")
 endfunction(print_Package_Contact)
 
-### function used to print a basic description of a native package to the standard output
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Package_Info| replace:: ``print_Package_Info``
+#  .. _print_Package_Info:
+#
+#  print_Package_Info
+#  ------------------
+#
+#   .. command:: print_Package_Info(package)
+#
+#   Print to standard output information about a given native package.
+#
+#      :package: the name of the package.
+#
 function(print_Package_Info package)
 	message("NATIVE PACKAGE: ${package}")
 	fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
@@ -499,7 +905,22 @@ function(print_Package_Info package)
 	endif()
 endfunction(print_Package_Info)
 
-### function used to print a basic description of an external package to the standard output
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_External_Package_Info| replace:: ``print_External_Package_Info``
+#  .. _print_External_Package_Info:
+#
+#  print_External_Package_Info
+#  ---------------------------
+#
+#   .. command:: print_External_Package_Info(package)
+#
+#   Print to standard output information about a given external package.
+#
+#      :package: the name of the external package.
+#
 function(print_External_Package_Info package)
 	message("EXTERNAL PACKAGE: ${package}")
 	fill_List_Into_String("${${package}_DESCRIPTION}" descr_string)
@@ -520,7 +941,22 @@ function(print_External_Package_Info package)
 	endif()
 endfunction(print_External_Package_Info)
 
-## subsidiary function to print information about contact author
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_External_Package_Contact| replace:: ``print_External_Package_Contact``
+#  .. _print_External_Package_Contact:
+#
+#  print_External_Package_Contact
+#  ------------------------------
+#
+#   .. command:: print_External_Package_Contact(package)
+#
+#   Print to standard output information about the contact author of a given external package.
+#
+#      :package: the name of the external package.
+#
 function(print_External_Package_Contact package)
 	fill_List_Into_String("${${package}_PID_WRAPPER_CONTACT_AUTHOR}" AUTHOR_STRING)
 	fill_List_Into_String("${${package}_PID_WRAPPER_CONTACT_INSTITUTION}" INSTITUTION_STRING)
@@ -539,20 +975,61 @@ function(print_External_Package_Contact package)
 	endif()
 endfunction(print_External_Package_Contact)
 
-
-### Constraint: the reference file of the package must be loaded before thsi call.
-## subsidiary function to print information about binary versions available for that package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Package_Binaries| replace:: ``print_Package_Binaries``
+#  .. _print_Package_Binaries:
+#
+#  print_Package_Binaries
+#  ----------------------
+#
+#   .. command:: print_Package_Binaries(package)
+#
+#   Print to standard output the information about available binary archives for a given package.
+#
+#      :package: the name of the package.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        The reference file of the given package must be loaded before this call. No automatic automatic (re)load id performed to improve performance.
+#
 function(print_Package_Binaries package)
 	foreach(version IN LISTS ${package}_REFERENCES)
 		message("	${version}: ")
 		foreach(platform IN LISTS ${package}_REFERENCE_${version})
-			print_Platform_Compatible_Binary(${package} ${version} ${platform})
+			print_Platform_Compatible_Binary(${package} ${platform})
 		endforeach()
 	endforeach()
 endfunction(print_Package_Binaries)
 
-### Constraint: the binary references of the package must be loaded before this call.
-## subsidiary function to check if a given version of the package exists
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |exact_Version_Archive_Exists| replace:: ``exact_Version_Archive_Exists``
+#  .. _exact_Version_Archive_Exists:
+#
+#  exact_Version_Archive_Exists
+#  ----------------------------
+#
+#   .. command:: exact_Version_Archive_Exists(package version RESULT)
+#
+#   Check whether a given exact version of a package is provided as a binary archive.
+#
+#      :package: the name of the package.
+#
+#      :version: the version to check.
+#
+#      :RESULT: the output variable that is TRUE if a binary archive exists for the package version, FALSE otherwise.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        The reference file of the given package must be loaded before this call. No automatic automatic (re)load id performed to improve performance.
+#
 function(exact_Version_Archive_Exists package version RESULT)
 if(${package}_REFERENCES)
 	list(FIND ${package}_REFERENCES ${version} INDEX)
@@ -571,9 +1048,29 @@ if(${package}_REFERENCES)
 endif()
 endfunction(exact_Version_Archive_Exists)
 
-
-### Constraint: the binary references of the package must be loaded before this call.
-## subsidiary function to check if a given version of the package exists
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |greatest_Version_Archive| replace:: ``greatest_Version_Archive``
+#  .. _greatest_Version_Archive:
+#
+#  greatest_Version_Archive
+#  ------------------------
+#
+#   .. command:: greatest_Version_Archive(package RES_VERSION)
+#
+#   Check whether any version of a package is provided as a binary archive.
+#
+#      :package: the name of the package.
+#
+#      :RES_VERSION: the output variable that contains the greatest version for which a binary archive is available, FALSE otherwise.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        The reference file of the given package must be loaded before this call. No automatic automatic (re)load id performed to improve performance.
+#
 function(greatest_Version_Archive package RES_VERSION)
 if(${package}_REFERENCES)
 		get_Available_Binary_Package_Versions(${package} list_of_versions list_of_versions_with_platform)
@@ -589,8 +1086,30 @@ if(${package}_REFERENCES)
 endif()
 endfunction(greatest_Version_Archive)
 
-## subsidiary function to print all binaries of a package for a given platform
-function(print_Platform_Compatible_Binary package version platform)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Platform_Compatible_Binary| replace:: ``print_Platform_Compatible_Binary``
+#  .. _print_Platform_Compatible_Binary:
+#
+#  print_Platform_Compatible_Binary
+#  --------------------------------
+#
+#   .. command:: print_Platform_Compatible_Binary(package platform)
+#
+#   Print to standard output all available binary archives of a given package compatible with a given platform.
+#
+#      :package: the name of the package.
+#
+#      :platform: the identifier of the platform.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        The reference file of the given package must be loaded before this call. No automatic automatic (re)load id performed to improve performance.
+#
+function(print_Platform_Compatible_Binary package platform)
 	set(printed_string "		${platform}:")
 	#1) testing if binary can be installed
 	check_Package_Platform_Against_Current(${package} ${platform} BINARY_OK)
@@ -602,8 +1121,27 @@ function(print_Platform_Compatible_Binary package version platform)
 	message("${printed_string}")
 endfunction(print_Platform_Compatible_Binary)
 
-
-### function to print brief description of a framework
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Framework_Info| replace:: ``print_Framework_Info``
+#  .. _print_Framework_Info:
+#
+#  print_Framework_Info
+#  --------------------
+#
+#   .. command:: print_Framework_Info(framework)
+#
+#   Print brief description of a framework.
+#
+#      :framework: the name of the framework.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        The reference file of the given framework must be loaded before this call. No automatic automatic (re)load id performed to improve performance.
+#
 function(print_Framework_Info framework)
 	message("FRAMEWORK: ${framework}")
 	fill_List_Into_String("${${framework}_FRAMEWORK_DESCRIPTION}" descr_string)
@@ -629,7 +1167,28 @@ endfunction(print_Framework_Info)
 #################### Packages lifecycle management #####################
 ########################################################################
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_PID_Wrapper| replace:: ``create_PID_Wrapper``
+#  .. _create_PID_Wrapper:
+#
+#  create_PID_Wrapper
+#  ------------------
+#
+#   .. command:: create_PID_Wrapper(wrapper author institution license)
+#
+#   Create a wrapper project into workspace.
+#
+#      :wrapper: the name of the wrapper to create.
+#
+#      :author: the name of the wrapper's author.
+#
+#      :institution: the institution of the wrapper's author.
+#
+#      :license: the name of license applying to the wrapper.
+#
 function(create_PID_Wrapper wrapper author institution license)
 #copying the pattern folder into the package folder and renaming it
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/wrappers/package ${WORKSPACE_DIR}/wrappers/${wrapper} OUTPUT_QUIET ERROR_QUIET)
@@ -661,8 +1220,30 @@ configure_file(${WORKSPACE_DIR}/share/patterns/wrappers/CMakeLists.txt.in ../wra
 init_Wrapper_Repository(${wrapper})
 endfunction(create_PID_Wrapper)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_PID_Framework| replace:: ``create_PID_Framework``
+#  .. _create_PID_Framework:
+#
+#  create_PID_Framework
+#  --------------------
+#
+#   .. command:: create_PID_Framework(framework author institution license site)
+#
+#   Create a framework project into workspace.
+#
+#      :framework: the name of the framework to create.
+#
+#      :author: the name of the framework's author.
+#
+#      :institution: the institution of the framework's author.
+#
+#      :license: the name of license applying to the framework.
+#
+#      :site: the URL of the static site generated by the framework.
+#
 function(create_PID_Framework framework author institution license site)
 #copying the pattern folder into the package folder and renaming it
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/frameworks/framework ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET)
@@ -699,7 +1280,28 @@ configure_file(${WORKSPACE_DIR}/share/patterns/frameworks/CMakeLists.txt.in ${WO
 init_Framework_Repository(${framework})
 endfunction(create_PID_Framework)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_PID_Package| replace:: ``create_PID_Package``
+#  .. _create_PID_Package:
+#
+#  create_PID_Package
+#  ------------------
+#
+#   .. command:: create_PID_Package(package author institution license)
+#
+#   Create a native package project into workspace.
+#
+#      :package: the name of the package to create.
+#
+#      :author: the name of the package's author.
+#
+#      :institution: the institution of the package's author.
+#
+#      :license: the name of license applying to the package.
+#
 function(create_PID_Package package author institution license)
 #copying the pattern folder into the package folder and renaming it
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/packages/package ${WORKSPACE_DIR}/packages/${package} OUTPUT_QUIET ERROR_QUIET)
@@ -735,8 +1337,24 @@ configure_file(${WORKSPACE_DIR}/share/patterns/packages/CMakeLists.txt.in ../pac
 init_Repository(${package})
 endfunction(create_PID_Package)
 
-
-### Installing a framework on the workspace filesystem from an existing framework repository, known in the workspace.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_PID_Framework| replace:: ``deploy_PID_Framework``
+#  .. _deploy_PID_Framework:
+#
+#  deploy_PID_Framework
+#  --------------------
+#
+#   .. command:: deploy_PID_Framework(framework verbose)
+#
+#   Deploy a framework into workspace. Result in installing an existing framework repository in the workspace filesystem.
+#
+#      :framework: the name of the framework to deploy.
+#
+#      :verbose: if TRUE the deployment will print more information to standard output.
+#
 function(deploy_PID_Framework framework verbose)
 set(PROJECT_NAME ${framework})
 if(verbose)
@@ -752,9 +1370,29 @@ endif()
 	endif()
 endfunction(deploy_PID_Framework)
 
-
-### Installing a package on the workspace filesystem from an existing package repository, known in the workspace. All its dependencies will be deployed, either has binary (if available) or has source (if not).
-function(deploy_PID_Native_Package package version verbose can_use_source redeploy)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_PID_Native_Package| replace:: ``deploy_PID_Native_Package``
+#  .. _deploy_PID_Native_Package:
+#
+#  deploy_PID_Native_Package
+#  -------------------------
+#
+#   .. command:: deploy_PID_Native_Package(package version verbose can_use_source)
+#
+#   Deploy a native package into workspace. Finally results in installing an existing package version in the workspace install tree.
+#
+#      :package: the name of the package to deploy.
+#
+#      :version: the version to deploy.
+#
+#      :verbose: if TRUE the deployment will print more information to standard output.
+#
+#      :can_use_source: if TRUE the deployment can be done from the package source repository.
+#
+function(deploy_PID_Native_Package package version verbose can_use_source)
 set(PROJECT_NAME ${package})
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
 if(verbose)
@@ -838,8 +1476,30 @@ else()#deploying a specific version
 endif()
 endfunction(deploy_PID_Native_Package)
 
-
-### Installing an external package binary on the workspace filesystem from an existing download point. Constraint: the reference file of the package must be loaded before thsi call.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_PID_External_Package| replace:: ``deploy_PID_External_Package``
+#  .. _deploy_PID_External_Package:
+#
+#  deploy_PID_External_Package
+#  ---------------------------
+#
+#   .. command:: deploy_PID_External_Package(package version verbose can_use_source redeploy)
+#
+#   Deploy an external package into workspace. Finally results in installing an existing external package version in the workspace install tree.
+#
+#      :package: the name of the external package to deploy.
+#
+#      :version: the version to deploy.
+#
+#      :verbose: if TRUE the deployment will print more information to standard output.
+#
+#      :can_use_source: if TRUE the deployment can be done from the external package wrapper (if any).
+#
+#      :redeploy: if TRUE the external package version is redeployed even if it was existing before.
+#
 function(deploy_PID_External_Package package version verbose can_use_source redeploy)
 if(verbose)
 	set(ADDITIONNAL_DEBUG_INFO ON)
@@ -946,7 +1606,26 @@ else()#deploying a specific version of the external package
 endif()
 endfunction(deploy_PID_External_Package)
 
-### Configuring the official remote repository of current wrapper
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |connect_PID_Wrapper| replace:: ``connect_PID_Wrapper``
+#  .. _connect_PID_Wrapper:
+#
+#  connect_PID_Wrapper
+#  -------------------
+#
+#   .. command:: connect_PID_Wrapper(wrapper git_url first_time)
+#
+#    Configuring the official remote repository of the given external package wrapper.
+#
+#      :wrapper: the name of the external package.
+#
+#      :git_url: the url of the official remote used for that wrapper.
+#
+#      :first_time: if FALSE a reconnection of official repository will take place.
+#
 function(connect_PID_Wrapper wrapper git_url first_time)
 if(first_time)#first time this wrapper is connected because newly created
 	# set the address of the official repository in the CMakeLists.txt of the framework
@@ -963,7 +1642,26 @@ else() #forced reconnection
 endif()
 endfunction(connect_PID_Wrapper)
 
-### Configuring the official remote repository of current package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |connect_PID_Framework| replace:: ``connect_PID_Framework``
+#  .. _connect_PID_Framework:
+#
+#  connect_PID_Framework
+#  ---------------------
+#
+#   .. command:: connect_PID_Framework(framework git_url first_time)
+#
+#    Configuring the official remote repository of the given framework.
+#
+#      :framework: the name of the framework.
+#
+#      :git_url: the url of the official remote used for that framework.
+#
+#      :first_time: if FALSE a reconnection of official repository will take place.
+#
 function(connect_PID_Framework framework git_url first_time)
 if(first_time)#first time this framework is connected because newly created
 	# set the address of the official repository in the CMakeLists.txt of the framework
@@ -980,7 +1678,26 @@ else() #forced reconnection
 endif()
 endfunction(connect_PID_Framework)
 
-### Configuring the official remote repository of current package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |connect_PID_Package| replace:: ``connect_PID_Package``
+#  .. _connect_PID_Package:
+#
+#  connect_PID_Package
+#  -------------------
+#
+#   .. command:: connect_PID_Package(package git_url first_time)
+#
+#    Configuring the official remote repository of the given package.
+#
+#      :package: the name of the native package.
+#
+#      :git_url: the url of the official remote used for that package.
+#
+#      :first_time: if FALSE a reconnection of official repository will take place.
+#
 function(connect_PID_Package package git_url first_time)
 save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package}) # saving local repository state
 go_To_Integration(${package})
@@ -1000,15 +1717,48 @@ endif()
 restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT}) # restoring local repository state
 endfunction(connect_PID_Package)
 
-### reconnecting the origin BUT letting the official remote unchanged
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Connection_To_PID_Package| replace:: ``add_Connection_To_PID_Package``
+#  .. _add_Connection_To_PID_Package:
+#
+#  add_Connection_To_PID_Package
+#  -----------------------------
+#
+#   .. command:: add_Connection_To_PID_Package(package git_url)
+#
+#    Configuring the origin remote repository of the given package, but let its official repository unchanged.
+#
+#      :package: the name of the native package.
+#
+#      :git_url: the url of the origin remote used for that package.
+#
 function(add_Connection_To_PID_Package package git_url)
 save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package}) # saving local repository state
 change_Origin_Repository(${package} ${git_url} origin) # synchronizing with the remote "origin" git repository
 restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT})# restoring local repository state
 endfunction(add_Connection_To_PID_Package)
 
-
-### reconnecting the origin BUT letting the official remote unchanged
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Connection_To_PID_Framework| replace:: ``add_Connection_To_PID_Framework``
+#  .. _add_Connection_To_PID_Framework:
+#
+#  add_Connection_To_PID_Framework
+#  -------------------------------
+#
+#   .. command:: add_Connection_To_PID_Framework(framework git_url)
+#
+#    Configuring the origin remote repository of the given framework, but let its official repository unchanged.
+#
+#      :framework: the name of the native framework.
+#
+#      :git_url: the url of the origin remote used for that framework.
+#
 function(add_Connection_To_PID_Framework framework git_url)
 change_Origin_Framework_Repository(${framework} ${git_url} origin) # synchronizing with the remote "origin" git repository
 endfunction(add_Connection_To_PID_Framework)
@@ -1017,7 +1767,26 @@ endfunction(add_Connection_To_PID_Framework)
 ###### clearing/removing deployment units ########
 ##################################################
 
-### clearing consist in clearing a package version related folder from the workspace
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |clear_PID_Package| replace:: ``clear_PID_Package``
+#  .. _clear_PID_Package:
+#
+#  clear_PID_Package
+#  -----------------
+#
+#   .. command:: clear_PID_Package(RESULT package version)
+#
+#    Remove the installed version of a given package from workspace install tree.
+#
+#      :package: the name of the package.
+#
+#      :version: the installed version to remove.
+#
+#      :RESULT: the output variable that is TRUE if package version has been removed, FALSE otherwise.
+#
 function(clear_PID_Package RESULT package version)
 get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 set(${RESULT} TRUE PARENT_SCOPE)
@@ -1054,7 +1823,22 @@ else()
 endif()
 endfunction(clear_PID_Package)
 
-### removing consists in clearing the workspace of any trace of the target package (including its source repository)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |remove_PID_Package| replace:: ``remove_PID_Package``
+#  .. _remove_PID_Package:
+#
+#  remove_PID_Package
+#  ------------------
+#
+#   .. command:: remove_PID_Package(package)
+#
+#    Clear the workspace of any trace of the target package (including its source repository).
+#
+#      :package: the name of the package.
+#
 function(remove_PID_Package package)
 get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 #clearing install folder
@@ -1065,8 +1849,22 @@ endif()
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/packages/${package})
 endfunction(remove_PID_Package)
 
-
-###  removing consists in removing the git repository of the framework from the workspace
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |remove_PID_Framework| replace:: ``remove_PID_Framework``
+#  .. _remove_PID_Framework:
+#
+#  remove_PID_Framework
+#  --------------------
+#
+#   .. command:: remove_PID_Framework(framework)
+#
+#    Remove the repository of a given framework from the workspace.
+#
+#      :framework: the name of the framework.
+#
 function(remove_PID_Framework framework)
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/frameworks/${framework})
 endfunction(remove_PID_Framework)
@@ -1076,8 +1874,22 @@ endfunction(remove_PID_Framework)
 ############ registering deployment units ########
 ##################################################
 
-
-### registering consists in updating the workspace repository with an updated reference file for this package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |register_PID_Package| replace:: ``register_PID_Package``
+#  .. _register_PID_Package:
+#
+#  register_PID_Package
+#  --------------------
+#
+#   .. command:: register_PID_Package(package)
+#
+#     Updating the workspace repository with updated (or newly created) reference and find files for a given package.
+#
+#      :package: the name of the package to register.
+#
 function(register_PID_Package package)
 go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} install)
@@ -1085,8 +1897,22 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 publish_Package_References_In_Workspace_Repository(${package})
 endfunction(register_PID_Package)
 
-
-### registering consists in updating the workspace repository with an updated reference file for this framework
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |register_PID_Framework| replace:: ``register_PID_Framework``
+#  .. _register_PID_Framework:
+#
+#  register_PID_Framework
+#  ----------------------
+#
+#   .. command:: register_PID_Framework(framework)
+#
+#     Updating the workspace repository with an updated (or newly created) reference file for a given framework.
+#
+#      :framework: the name of the framework to register.
+#
 function(register_PID_Framework framework)
 go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework}/build ${CMAKE_MAKE_PROGRAM} build)
@@ -1098,8 +1924,26 @@ endfunction(register_PID_Framework)
 ############ releasing packages ##########
 ##########################################
 
-
-### releasing the package version => registering the current version with a git tag
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |release_PID_Package| replace:: ``release_PID_Package``
+#  .. _release_PID_Package:
+#
+#  release_PID_Package
+#  -------------------
+#
+#   .. command:: release_PID_Package(RESULT package next)
+#
+#     Release the currently developed package version. This results in marking the currnt version with a git tag.
+#
+#      :package: the name of the package to release.
+#
+#      :next: the next version of the package after current has been released.
+#
+#      :RESULT: the output variable that is TRUE if package has been released, FALSE otherwise.
+#
 function(release_PID_Package RESULT package next)
 set(${RESULT} FALSE PARENT_SCOPE)
 # check that current branc of package is integration
@@ -1214,8 +2058,22 @@ endfunction(release_PID_Package)
 ############ updating packages ###########
 ##########################################
 
-
-### update a source package based on git tags of its repository
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_PID_Source_Package| replace:: ``update_PID_Source_Package``
+#  .. _update_PID_Source_Package:
+#
+#  update_PID_Source_Package
+#  -------------------------
+#
+#   .. command:: update_PID_Source_Package(package)
+#
+#     Update a native package based on git tags of its source repository.
+#
+#      :package: the name of the native package to update.
+#
 function(update_PID_Source_Package package)
 get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 set(INSTALLED FALSE)
@@ -1229,8 +2087,22 @@ else()
 endif()
 endfunction(update_PID_Source_Package)
 
-
-### update a binary package based on available binary references
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_PID_Binary_Package| replace:: ``update_PID_Binary_Package``
+#  .. _update_PID_Binary_Package:
+#
+#  update_PID_Binary_Package
+#  -------------------------
+#
+#   .. command:: update_PID_Binary_Package(package)
+#
+#     Update a native package based on references on its available binary archives.
+#
+#      :package: the name of the naive package to update.
+#
 function(update_PID_Binary_Package package)
 get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
 message("[PID] INFO : launch the update of binary package ${package}...")
@@ -1243,12 +2115,40 @@ else()
 endif()
 endfunction(update_PID_Binary_Package)
 
-### update an external package based on available binary references
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_PID_External_Package| replace:: ``update_PID_External_Package``
+#  .. _update_PID_External_Package:
+#
+#  update_PID_External_Package
+#  ---------------------------
+#
+#   .. command:: update_PID_External_Package(package)
+#
+#     Deprecated. Update an external package based on references on its available binary archives.
+#
+#      :package: the name of the external package to update.
+#
 function(update_PID_External_Package package)
 message("[PID] INFO : new versions of external binary package ${package} will not be installed automatically (only if a new version is required by native package)...")
 endfunction(update_PID_External_Package)
 
-### update all packages of the workspace
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_PID_All_Packages| replace:: ``update_PID_All_Packages``
+#  .. _update_PID_All_Packages:
+#
+#  update_PID_All_Packages
+#  -----------------------
+#
+#   .. command:: update_PID_All_Packages()
+#
+#     Update all packages versions of all packages deployed in workspace.
+#
 function(update_PID_All_Packages)
 set(NATIVES)
 set(EXTERNALS)
@@ -1286,7 +2186,24 @@ if(EXTERNALS)
 endif()
 endfunction(update_PID_All_Packages)
 
-### UPGRADE COMMAND IMPLEMENTATION
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |upgrade_Workspace| replace:: ``upgrade_Workspace``
+#  .. _upgrade_Workspace:
+#
+#  upgrade_Workspace
+#  -----------------
+#
+#   .. command:: upgrade_Workspace(remote update)
+#
+#     Upgrade the worskpace. This resultats in getting last version of PID APIs and updated references to packages/framework/wrappers.
+#
+#      :remote: the remote of workspace to use for update (origin or official).
+#
+#      :update: if TRUE all packages will be updated after the workspace upgrade.
+#
 function(upgrade_Workspace remote update)
 save_Workspace_Repository_Context(CURRENT_COMMIT SAVED_CONTENT)
 update_Workspace_Repository(${remote})
@@ -1297,12 +2214,24 @@ if(update)
 endif()
 endfunction(upgrade_Workspace)
 
-
 ########################################################################
 ######################## Licenses management ###########################
 ########################################################################
 
-### print description on all available licenses
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Available_Licenses| replace:: ``print_Available_Licenses``
+#  .. _print_Available_Licenses:
+#
+#  print_Available_Licenses
+#  ------------------------
+#
+#   .. command:: print_Available_Licenses()
+#
+#     Print brief description of all licenses available in workspace.
+#
 function(print_Available_Licenses)
 file(GLOB ALL_AVAILABLE_LICENSES ${WORKSPACE_DIR}/share/cmake/licenses/*.cmake)
 list(REMOVE_DUPLICATES ALL_AVAILABLE_LICENSES)
@@ -1317,22 +2246,50 @@ endforeach()
 set(res_licenses_string "")
 fill_List_Into_String("${licenses}" res_licenses_string)
 message("AVAILABLE LICENSES: ${res_licenses_string}")
-endfunction()
+endfunction(print_Available_Licenses)
 
-### print description of a given license
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_License_Info| replace:: ``print_License_Info``
+#  .. _print_License_Info:
+#
+#  print_License_Info
+#  ------------------
+#
+#   .. command:: print_License_Info(license)
+#
+#     Print description of a given license.
+#
+#      :license: the name of the license to print (e.g. GNUGPL).
+#
 function(print_License_Info license)
 message("LICENSE: ${LICENSE_NAME}")
 message("VERSION: ${LICENSE_VERSION}")
 message("OFFICIAL NAME: ${LICENSE_FULLNAME}")
 message("AUTHORS: ${LICENSE_AUTHORS}")
-endfunction()
+endfunction(print_License_Info)
 
 
 ########################################################################
 ######################## Platforms management ##########################
 ########################################################################
 
-## subsidiary function that puts into cmake variables the description of available platforms
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |detect_Current_Platform| replace:: ``detect_Current_Platform``
+#  .. detect_Current_Platform:
+#
+#  detect_Current_Platform
+#  -----------------------
+#
+#   .. command:: detect_Current_Platform()
+#
+#     Puts into cmake variables the description of current platform, deduced from current environment.
+#
 function(detect_Current_Platform)
 	# Now detect the current platform maccording to host environemnt selection (call to script for platform detection)
 	include(CheckTYPE)
@@ -1376,7 +2333,22 @@ function(detect_Current_Platform)
 	endif()
 endfunction(detect_Current_Platform)
 
-## subsidiary function to append to a file the content of advanced options of CMAKE
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Current_Configuration_Build_Related_Variables| replace:: ``write_Current_Configuration_Build_Related_Variables``
+#  .. _write_Current_Configuration_Build_Related_Variables:
+#
+#  write_Current_Configuration_Build_Related_Variables
+#  ---------------------------------------------------
+#
+#   .. command:: write_Current_Configuration_Build_Related_Variables(file)
+#
+#     Append to a given file the content of advanced build options used by CMake.
+#
+#      :file: the path to the file to write in.
+#
 function(write_Current_Configuration_Build_Related_Variables file)
 file(WRITE ${file} "")
 file(APPEND ${file} "set(CMAKE_AR \"${CMAKE_AR}\" CACHE FILEPATH \"\" FORCE)\n")
@@ -1470,8 +2442,22 @@ if(PID_CROSSCOMPILATION) #only write these information if we are trully cross co
 endif()
 endfunction(write_Current_Configuration_Build_Related_Variables)
 
-
-## subsidiary function for writing a global description of the workspace into a cmake file
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Platform_Description| replace:: ``write_Platform_Description``
+#  .. _write_Platform_Description:
+#
+#  write_Platform_Description
+#  --------------------------
+#
+#   .. command:: write_Platform_Description(file)
+#
+#     (Re)Writing to a given file the cache variables of the workspace defining the current platform in use.
+#
+#      :file: the path to the file to write in.
+#
 function(write_Platform_Description file)
 file(WRITE ${file} "")#reset the file
 
@@ -1502,7 +2488,22 @@ endif()
 	file(APPEND ${file} "set(CURRENT_PYTHON_INCLUDE_DIRS ${CURRENT_PYTHON_INCLUDE_DIRS} CACHE INTERNAL \"\" FORCE)\n")
 endfunction(write_Platform_Description)
 
-## subsidiary function for writing workspace configuration to a cmake file
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Current_Configuration| replace:: ``write_Current_Configuration``
+#  .. _write_Current_Configuration:
+#
+#  write_Current_Configuration
+#  ---------------------------
+#
+#   .. command:: write_Current_Configuration(file)
+#
+#     Writing to the global file allowing to access all workspace related global variables.
+#
+#      :file: the path to the file to write in.
+#
 function(write_Current_Configuration file)
 file(WRITE ${file} "")
 write_Platform_Description(${CMAKE_BINARY_DIR}/Workspace_Platforms_Description.cmake)
@@ -1512,11 +2513,24 @@ file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_P
 # defining all build configuration variables related to the current platform
 endfunction(write_Current_Configuration)
 
-### define the current platform in use and provide to the user some options to control finally targetted platform
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Platforms| replace:: ``manage_Platforms``
+#  .. _manage_Platforms:
+#
+#  manage_Platforms
+#  ----------------
+#
+#   .. command:: manage_Platforms(path_to_workspace)
+#
+#     Define the current platform in use and provide to the user some options to control finally targetted platform.
+#
+#      :path_to_workspace: the path to the workspace root.
+#
 function(manage_Platforms path_to_workspace)
-
 set(WORKSPACE_DIR ${path_to_workspace} CACHE INTERNAL "")
-
 if(CURRENT_ENVIRONMENT)
 	#load the environment description
 	include(${CMAKE_SOURCE_DIR}/environments/${CURRENT_ENVIRONMENT}/PID_Environment_Description.cmake)
@@ -1539,7 +2553,20 @@ endfunction(manage_Platforms)
 ########################## Plugins management ##########################
 ########################################################################
 
-## subsidiary function for retrieving available plugins and creating options to activate them
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |register_Available_Plugins| replace:: ``register_Available_Plugins``
+#  .. _register_Available_Plugins:
+#
+#  register_Available_Plugins
+#  --------------------------
+#
+#   .. command:: register_Available_Plugins()
+#
+#     Find available plugins in workspace and create user options to (de)activate them.
+#
 function(register_Available_Plugins)
 file(GLOB ALL_AVAILABLE_PLUGINS RELATIVE ${CMAKE_SOURCE_DIR}/share/cmake/plugins ${CMAKE_SOURCE_DIR}/share/cmake/plugins/*) #getting plugins container folders names
 	if(NOT ALL_AVAILABLE_PLUGINS)
@@ -1579,7 +2606,22 @@ file(GLOB ALL_AVAILABLE_PLUGINS RELATIVE ${CMAKE_SOURCE_DIR}/share/cmake/plugins
 	set(WORKSPACE_INACTIVE_PLUGINS ${ALL_PLUGINS_INACTIVE} CACHE INTERNAL "")
 endfunction(register_Available_Plugins)
 
-## subsidiary function for writing workspace active plugins configuration to a cmake file
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Plugins_Info_File| replace:: ``write_Plugins_Info_File``
+#  .. _write_Plugins_Info_File:
+#
+#  write_Plugins_Info_File
+#  -----------------------
+#
+#   .. command:: write_Plugins_Info_File(file)
+#
+#     Write workspace cache variable related to plugins management into a cmake file.
+#
+#      :file: the path to the file to write in.
+#
 function(write_Plugins_Info_File file)
 file(WRITE ${file} "")
 file(APPEND ${file} "set(WORKSPACE_ALL_PLUGINS ${WORKSPACE_ALL_PLUGINS} CACHE INTERNAL \"\")\n")
@@ -1594,7 +2636,20 @@ if(WORKSPACE_ACTIVE_PLUGINS)
 endif()
 endfunction(write_Plugins_Info_File)
 
-### define active plugins among available plugins
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Plugins| replace:: ``manage_Plugins``
+#  .. _manage_Plugins:
+#
+#  manage_Plugins
+#  --------------
+#
+#   .. command:: manage_Plugins()
+#
+#     Define active plugins among available ones in workspace and depending on user options.
+#
 function(manage_Plugins)
 
 # listing all available plugins from plugins definitions cmake files found in the workspace
