@@ -51,6 +51,6 @@ upgrade_Workspace(${TARGET_REMOTE} ${UPDATE_PACKS})
 if(UPDATE_PACKS)
 	message("--------------------------------------------")
 	message("All packages deployed during this process : ")
-	print_Deployed_Packages()
+	print_Managed_Packages()
 endif()
 finish_Progress(TRUE) #reset the build progress information

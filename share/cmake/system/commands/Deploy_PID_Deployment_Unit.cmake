@@ -174,7 +174,7 @@ else()# a package deployment is required
 	## global management of the process
 	message("--------------------------------------------")
 	message("All packages deployed during this process : ")
-	print_Deployed_Packages()
+	print_Managed_Packages()
 	finish_Progress(TRUE) #reset the build progress information
 	message("--------------------------------------------")
 endif()

@@ -54,5 +54,5 @@ endforeach()
 message("--------------------------------------------")
 message("All packages built during this process : ${LIST_OF_TARGETS}")
 message("Other Packages deployed/updated/checked during this process : ")
-print_Deployed_Packages()
+print_Managed_Packages()
 finish_Progress(TRUE) #reset the build progress information
