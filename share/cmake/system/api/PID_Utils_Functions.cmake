@@ -1557,7 +1557,6 @@ function(shared_Library_Extension_Has_Soname HAS_SONAME library_path)
 	set(${HAS_SONAME} FALSE PARENT_SCOPE)
 endfunction(shared_Library_Extension_Has_Soname)
 
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -1599,6 +1598,63 @@ else()
 	set(${RES_TYPE} OPTION PARENT_SCOPE)
 endif()
 endfunction(get_Link_Type)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Library_Type| replace:: ``is_Library_Type``
+#  .. _is_Library_Type:
+#
+#  is_Library_Type
+#  ---------------
+#
+#   .. command:: is_Library_Type(RESULT keyword)
+#
+#    Check whether the type of a component is a library.
+#
+#     :keyword: the type of the component.
+#
+#     :RESULT: the output variable that is TRUE if the component is a library, FALSE otherwise.
+#
+function(is_Library_Type RESULT keyword)
+	if(keyword STREQUAL "HEADER"
+		OR keyword STREQUAL "STATIC"
+		OR keyword STREQUAL "SHARED"
+		OR keyword STREQUAL "MODULE")
+		set(${RESULT} TRUE PARENT_SCOPE)
+	else()
+		set(${RESULT} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Library_Type)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Application_Type| replace:: ``is_Application_Type``
+#  .. _is_Application_Type:
+#
+#  is_Application_Type
+#  -------------------
+#
+#   .. command:: is_Application_Type(RESULT keyword)
+#
+#    Check whether the type of a component is an application.
+#
+#     :keyword: the type of the component.
+#
+#     :RESULT: the output variable that is TRUE if the component is an application, FALSE otherwise.
+#
+function(is_Application_Type RESULT keyword)
+	if(	keyword STREQUAL "TEST"
+		OR keyword STREQUAL "APP"
+		OR keyword STREQUAL "EXAMPLE")
+		set(${RESULT} TRUE PARENT_SCOPE)
+	else()
+		set(${RESULT} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Application_Type)
 
 #.rst:
 #

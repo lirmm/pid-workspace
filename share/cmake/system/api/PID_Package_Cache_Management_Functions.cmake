@@ -29,8 +29,7 @@ set(PID_PACKAGE_CACHE_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 #############################################################################################
 #################### API functions for managing dependency constraints when building ########
 #############################################################################################
-
-###
+############### W I P ############
 function(erase_Previous_Build_Constraint_From_Package)
 #prepare the package constraints to be registered
 if(RECEIVED_CONSTRAINTS) #there were constraints previously registered
@@ -98,7 +97,20 @@ endfunction(configured_With_Build_Constraints)
 #############################################################################################
 include(CMakeDependentOption)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Native_Global_Cache_Options| replace:: ``declare_Native_Global_Cache_Options``
+#  .. _declare_Native_Global_Cache_Options:
+#
+#  declare_Native_Global_Cache_Options
+#  -----------------------------------
+#
+#   .. command:: declare_Native_Global_Cache_Options()
+#
+#   Define the generic PID Cmake options that can be set by the user.
+#
 macro(declare_Native_Global_Cache_Options)
 
 # base options
@@ -119,12 +131,23 @@ CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api docu
 CMAKE_DEPENDENT_OPTION(BUILD_TESTS_IN_DEBUG "Package build and run test in debug mode also" OFF "BUILD_AND_RUN_TESTS" OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_COVERAGE_REPORT "Package build a coverage report in debug mode" ON "BUILD_AND_RUN_TESTS;BUILD_TESTS_IN_DEBUG" OFF)
 CMAKE_DEPENDENT_OPTION(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF "REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD" OFF)
-
 endmacro(declare_Native_Global_Cache_Options)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Parrallel_Build_Option| replace:: ``manage_Parrallel_Build_Option``
+#  .. _manage_Parrallel_Build_Option:
+#
+#  manage_Parrallel_Build_Option
+#  -----------------------------
+#
+#   .. command:: manage_Parrallel_Build_Option()
+#
+#   Set the cache variable that defines the generator flags to use when doing parallel build.
+#
 macro(manage_Parrallel_Build_Option)
-
 ### parallel builds management
 if(ENABLE_PARALLEL_BUILD)
 	include(ProcessorCount)
@@ -136,9 +159,22 @@ if(ENABLE_PARALLEL_BUILD)
 else()
 	set(PARALLEL_JOBS_FLAG CACHE INTERNAL "")
 endif()
-
 endmacro(manage_Parrallel_Build_Option)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Mode_Specific_Options_From_Global| replace:: ``set_Mode_Specific_Options_From_Global``
+#  .. _set_Mode_Specific_Options_From_Global:
+#
+#  set_Mode_Specific_Options_From_Global
+#  -------------------------------------
+#
+#   .. command:: set_Mode_Specific_Options_From_Global()
+#
+#   Generate the cache file containing build options from cache of the current project global cache.
+#
 function(set_Mode_Specific_Options_From_Global)
 	execute_process(COMMAND ${CMAKE_COMMAND} -L -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR} OUTPUT_FILE ${CMAKE_BINARY_DIR}/options.txt)
 	#parsing option file and generating a load cache cmake script
@@ -179,8 +215,21 @@ function(set_Mode_Specific_Options_From_Global)
 	endif()
 endfunction(set_Mode_Specific_Options_From_Global)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Global_Options_From_Mode_Specific| replace:: ``set_Global_Options_From_Mode_Specific``
+#  .. _set_Global_Options_From_Mode_Specific:
+#
+#  set_Global_Options_From_Mode_Specific
+#  -------------------------------------
+#
+#   .. command:: set_Global_Options_From_Mode_Specific()
+#
+#   Force the build options of the global build mode from cache of the current specific build mode (Release or Debug). Use to update global cache options related to the specific build mode in order to keep consistency of cache at global level.
+#
 function(set_Global_Options_From_Mode_Specific)
-
 	# copying new cache entries in the global build cache
 	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
@@ -258,8 +307,22 @@ execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
 endfunction(set_Global_Options_From_Mode_Specific)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Mode_Cache_Options| replace:: ``reset_Mode_Cache_Options``
+#  .. _reset_Mode_Cache_Options:
+#
+#  reset_Mode_Cache_Options
+#  ------------------------
+#
+#   .. command:: reset_Mode_Cache_Options(CACHE_POPULATED)
+#
+#   Force the reset of the current specific build mode (Release or Debug) cache with content coming from the global cache.
+#
+#     :CACHE_POPULATED: output variable that is TRUE if cache of the current specific build mode has been reset with values coming from the global cache.
+#
 function(reset_Mode_Cache_Options CACHE_POPULATED)
 
 #unset all global options
@@ -292,9 +355,22 @@ set(PROJECT_RUN_TESTS FALSE CACHE INTERNAL "")
 set(RUN_TESTS_WITH_PRIVILEGES FALSE CACHE INTERNAL "")
 endfunction(reset_Mode_Cache_Options)
 
-
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |first_Called_Build_Mode| replace:: ``first_Called_Build_Mode``
+#  .. _first_Called_Build_Mode:
+#
+#  first_Called_Build_Mode
+#  -----------------------
+#
+#   .. command:: first_Called_Build_Mode(RESULT)
+#
+#   Tells whether the current specific build mode is the first one called during global build process (depends on CMake options chosen by the user).
+#
+#     :RESULT: output variable that is TRUE if current specific build mode is the first to execute.
+#
 function(first_Called_Build_Mode RESULT)
 set(${RESULT} FALSE PARENT_SCOPE)
 if(CMAKE_BUILD_TYPE MATCHES Debug OR (CMAKE_BUILD_TYPE MATCHES Release AND BUILD_RELEASE_ONLY))
@@ -306,8 +382,23 @@ endfunction(first_Called_Build_Mode)
 ############### API functions for setting global package info ##############
 ############################################################################
 
-### printing variables for components in the package ################
-macro(print_Component component imported)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Component| replace:: ``print_Component``
+#  .. _print_Component:
+#
+#  print_Component
+#  ----------------
+#
+#   .. command:: print_Component(component)
+#
+#   Print the  variables for the target of a given component in the currenlty defined package.
+#
+#     :component: the name of the component to print.
+#
+macro(print_Component component)
 	if(NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")
 		message("COMPONENT : ${component}${INSTALL_NAME_SUFFIX}")
 		message("INTERFACE : ")
@@ -318,7 +409,7 @@ macro(print_Component component imported)
 		get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INTERFACE_LINK_LIBRARIES)
 		message("libraries of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
 
-		if(NOT ${imported} AND NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+		if(NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 			message("IMPLEMENTATION :")
 			get_target_property(RES_VAR ${component}${INSTALL_NAME_SUFFIX} INCLUDE_DIRECTORIES)
 			message("includes of ${component}${INSTALL_NAME_SUFFIX} = ${RES_VAR}")
@@ -332,6 +423,20 @@ macro(print_Component component imported)
 	endif()
 endmacro(print_Component)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Component_Variables| replace:: ``print_Component_Variables``
+#  .. _print_Component_Variables:
+#
+#  print_Component_Variables
+#  -------------------------
+#
+#   .. command:: print_Component_Variables()
+#
+#   Print target related variables for all components of the currenlty defined package.
+#
 macro(print_Component_Variables)
 	message("components of package ${PROJECT_NAME} are :" ${${PROJECT_NAME}_COMPONENTS})
 	message("libraries : " ${${PROJECT_NAME}_COMPONENTS_LIBS})
@@ -339,18 +444,44 @@ macro(print_Component_Variables)
 	message("applications : " ${${PROJECT_NAME}_COMPONENTS_SCRIPTS})
 
 	foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
-		print_Component(${component} FALSE)
+		print_Component(${component})
 	endforeach()
 endmacro(print_Component_Variables)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |init_Standard_Path_Cache_Variables| replace:: ``init_Standard_Path_Cache_Variables``
+#  .. _init_Standard_Path_Cache_Variables:
+#
+#  init_Standard_Path_Cache_Variables
+#  ----------------------------------
+#
+#   .. command:: init_Standard_Path_Cache_Variables()
+#
+#   Initialize generic cache variables values in currently defined package (for instance used to set CMAKE_INSTALL_PREFIX).
+#
 function(init_Standard_Path_Cache_Variables)
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
 set(CMAKE_INSTALL_PREFIX "${${PROJECT_NAME}_INSTALL_PATH}"  CACHE INTERNAL "")
 set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resources CACHE INTERNAL "")
 endfunction(init_Standard_Path_Cache_Variables)
 
-
-### set cache variable for install
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Install_Cache_Variables| replace:: ``set_Install_Cache_Variables``
+#  .. _set_Install_Cache_Variables:
+#
+#  set_Install_Cache_Variables
+#  ---------------------------
+#
+#   .. command:: set_Install_Cache_Variables()
+#
+#   Set cache variables values for all PID standard variable used for install in currently defined package.
+#
 function(set_Install_Cache_Variables)
 	set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
 	set ( ${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
@@ -363,7 +494,26 @@ function(set_Install_Cache_Variables)
 	set ( ${PROJECT_NAME}_ROOT_DIR ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} CACHE INTERNAL "")
 endfunction(set_Install_Cache_Variables)
 
-### setting cache variable for versionning
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Version_Cache_Variables| replace:: ``set_Version_Cache_Variables``
+#  .. _set_Version_Cache_Variables:
+#
+#  set_Version_Cache_Variables
+#  ---------------------------
+#
+#   .. command:: set_Version_Cache_Variables(major minor patch)
+#
+#   Set cache variables values for PID standard variable used for version description in currently defined package.
+#
+#     :major: the major version number
+#
+#     :minor: the minor version number
+#
+#     :patch: the patch version number
+#
 function(set_Version_Cache_Variables major minor patch)
 	set (${PROJECT_NAME}_VERSION_MAJOR ${major} CACHE INTERNAL "")
 	set (${PROJECT_NAME}_VERSION_MINOR ${minor} CACHE INTERNAL "")
@@ -372,6 +522,20 @@ function(set_Version_Cache_Variables major minor patch)
 endfunction(set_Version_Cache_Variables)
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Version_Cache_Variables| replace:: ``reset_Version_Cache_Variables``
+#  .. _reset_Version_Cache_Variables:
+#
+#  reset_Version_Cache_Variables
+#  -----------------------------
+#
+#   .. command:: reset_Version_Cache_Variables()
+#
+#   Reset cache variables values for PID standard variable used for version description in currently defined package. Used for cleaning the project before starting configuration.
+#
 function(reset_Version_Cache_Variables)
 #resetting general info about the package : only list are reset
 set (${PROJECT_NAME}_VERSION_MAJOR CACHE INTERNAL "" )
@@ -380,7 +544,30 @@ set (${PROJECT_NAME}_VERSION_PATCH CACHE INTERNAL "" )
 set (${PROJECT_NAME}_VERSION CACHE INTERNAL "" )
 endfunction(reset_Version_Cache_Variables)
 
-### define a set of configuration constraints that applies to all platforms with specific condition specified by type arch os and abi
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Platform_Constraint_Set| replace:: ``add_Platform_Constraint_Set``
+#  .. _add_Platform_Constraint_Set:
+#
+#  add_Platform_Constraint_Set
+#  ---------------------------
+#
+#   .. command:: add_Platform_Constraint_Set(type arch os abi constraints)
+#
+#   Define a new set of configuration constraints that applies to all platforms matching all conditions imposed by filters used.
+#
+#     :type: the type of processor architecture (e.g. x86) used as a filter.
+#
+#     :arch: the bits of the processor architecture (e.g. 64) used as a filter.
+#
+#     :os: the operating system kernel (e.g. linux) used as a filter.
+#
+#     :abi: the compiler abi (abi98 or abi11) used as a filter.
+#
+#     :constraints: the list of configuration to check if current platform matches all the filters.
+#
 function(add_Platform_Constraint_Set type arch os abi constraints)
 	if(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX})
 		set(CURRENT_INDEX ${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}}) #current index is the current number of all constraint sets
@@ -398,7 +585,22 @@ function(add_Platform_Constraint_Set type arch os abi constraints)
 	set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} ${NEW_SET_SIZE} CACHE INTERNAL "")
 endfunction(add_Platform_Constraint_Set)
 
-### add a set of configuration constraints that are satisfied by the current platform
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Configuration_To_Platform| replace:: ``add_Configuration_To_Platform``
+#  .. _add_Configuration_To_Platform:
+#
+#  add_Configuration_To_Platform
+#  -----------------------------
+#
+#   .. command:: add_Configuration_To_Platform(constraints)
+#
+#   Add to internal cache a set of configuration constraints that are satisfied by the current platform.
+#
+#     :constraints: the list of platform configurations that are valid for the current platform.
+#
 function(add_Configuration_To_Platform constraints)
 	list(APPEND ${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} ${constraints})
 	list(REMOVE_DUPLICATES ${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX})
@@ -409,7 +611,22 @@ endfunction(add_Configuration_To_Platform)
 ############### API functions for setting components related cache variables ################
 #############################################################################################
 
-### to know wehether a package has something to build
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |package_Has_Nothing_To_Build| replace:: ``package_Has_Nothing_To_Build``
+#  .. _package_Has_Nothing_To_Build:
+#
+#  package_Has_Nothing_To_Build
+#  ----------------------------
+#
+#   .. command:: package_Has_Nothing_To_Build(NOTHING_BUILT)
+#
+#   Tell whether a package has something to build or not.
+#
+#     :NOTHING_BUILT: the output variable that is TRUE if the package content define nothing to build (depending on options chosen by the user and content of the package).
+#
 function(package_Has_Nothing_To_Build NOTHING_BUILT)
 	foreach(comp IN LISTS ${PROJECT_NAME}_COMPONENTS)
 		will_be_Built(RES ${comp})
@@ -421,7 +638,22 @@ function(package_Has_Nothing_To_Build NOTHING_BUILT)
 	set(${NOTHING_BUILT} TRUE PARENT_SCOPE)
 endfunction(package_Has_Nothing_To_Build)
 
-### to know whether a package has something to install
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |package_Has_Nothing_To_Install| replace:: ``package_Has_Nothing_To_Install``
+#  .. _package_Has_Nothing_To_Install:
+#
+#  package_Has_Nothing_To_Install
+#  ------------------------------
+#
+#   .. command:: package_Has_Nothing_To_Install(NOTHING_INSTALLED)
+#
+#   Tell whether a package has something to install or not.
+#
+#     :NOTHING_INSTALLED: the output variable that is TRUE if the package content define nothing to install (depending on options chosen by the user and content of the package).
+#
 function(package_Has_Nothing_To_Install NOTHING_INSTALLED)
 	if(${PROJECT_NAME}_COMPONENTS)
 		foreach(comp IN LISTS ${PROJECT_NAME}_COMPONENTS)
@@ -435,8 +667,26 @@ function(package_Has_Nothing_To_Install NOTHING_INSTALLED)
 	set(${NOTHING_INSTALLED} TRUE PARENT_SCOPE)
 endfunction(package_Has_Nothing_To_Install)
 
-
-### to know wehether a module is a python wrapped module
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Python_Module| replace:: ``is_Python_Module``
+#  .. _is_Python_Module:
+#
+#  is_Python_Module
+#  ----------------
+#
+#   .. command:: is_Python_Module(IS_PYTHON package component)
+#
+#   Check whether a component is a python wrapped module.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component to check.
+#
+#     :IS_PYTHON: the output variable that is TRUE if the package content define nothing to install (depending on options chosen by the user and content of the package).
+#
 function(is_Python_Module IS_PYTHON package component)
 	if(${package}_${component}_TYPE STREQUAL "MODULE")
 		set(${IS_PYTHON} ${${package}_${component}_HAS_PYTHON_WRAPPER} PARENT_SCOPE)
@@ -445,11 +695,43 @@ function(is_Python_Module IS_PYTHON package component)
 	endif()
 endfunction(is_Python_Module)
 
-
-
-### configure variables exported by component that will be used to generate the package cmake use file
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_Install_Variables| replace:: ``configure_Install_Variables``
+#  .. _configure_Install_Variables:
+#
+#  configure_Install_Variables
+#  ---------------------------
+#
+#   .. command:: configure_Install_Variables(component export include_dirs dep_defs exported_defs exported_options static_links shared_links c_standard cxx_standard runtime_resources)
+#
+#   Configure cache variables defining a component of the currenlty defined package. These variables will be used to generate the part of the package cmake use file related to the component.
+#
+#     :component: the name of the component.
+#
+#     :export: if TRUE means that the component description is exported by the package (i.e. may be used by other packages).
+#
+#     :include_dirs: the list of external include path known by the component.
+#
+#     :dep_defs:  the list of preprocessor definitions defined by the component but used in the interface of its external dependencies.
+#
+#     :exported_defs:  the list of preprocessor definitions defined by the component and used in its own interface.
+#
+#     :exported_options:  the list of compiler options exported by the component.
+#
+#     :static_links:  the list of path to external static libraries used by the component.
+#
+#     :shared_links:  the list of path to external shared libraries used by the component.
+#
+#     :c_standard:  the C language standard used by component.
+#
+#     :cxx_standard:  the C++ language standard used by component.
+#
+#     :runtime_resources: the list of path to runtime resources used by the component.
+#
 function (configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links c_standard cxx_standard runtime_resources)
-
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(	NOT dep_defs STREQUAL ""
@@ -530,8 +812,24 @@ if(NOT runtime_resources STREQUAL "")#runtime resources are exported in any case
 endif()
 endfunction(configure_Install_Variables)
 
-
-### test if a native or external package is a dependency of the current package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Package_Dependency| replace:: ``is_Package_Dependency``
+#  .. _is_Package_Dependency:
+#
+#  is_Package_Dependency
+#  ---------------------
+#
+#   .. command:: is_Package_Dependency(IS_DEPENDENCY dep_package)
+#
+#   Check whether a native or external package is a dependency of the currently defined package.
+#
+#     :dep_package: the name of the package to check.
+#
+#     :IS_DEPENDENCY: the output variable that is TRUE if dep_package is a dependency of the current package, FALSE otherwise.
+#
 function(is_Package_Dependency IS_DEPENDENCY dep_package)
 set(${IS_DEPENDENCY} FALSE PARENT_SCOPE)
 if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})#there are dependencies to sreach in
@@ -550,7 +848,28 @@ if(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})#there are external d
 endif()
 endfunction(is_Package_Dependency)
 
-### set cached variable for packages dependency
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Package_Dependency_To_Cache| replace:: ``add_Package_Dependency_To_Cache``
+#  .. _add_Package_Dependency_To_Cache:
+#
+#  add_Package_Dependency_To_Cache
+#  -------------------------------
+#
+#   .. command:: add_Package_Dependency_To_Cache(dep_package version exact list_of_components)
+#
+#   Set adequate cache variables of currently defined package when defining a native package dependency.
+#
+#     :dep_package: the name of the native package that IS the dependency.
+#
+#     :version: the version constraint on dep_package (may be empty string if no version constraint applies).
+#
+#     :exact: if TRUE the version constraint is exact.
+#
+#     :list_of_components: the list of components that must belong to dep_package.
+#
 function(add_Package_Dependency_To_Cache dep_package version exact list_of_components)
 	set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${list_of_components} CACHE INTERNAL "")
@@ -560,7 +879,28 @@ function(add_Package_Dependency_To_Cache dep_package version exact list_of_compo
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
 endfunction(add_Package_Dependency_To_Cache)
 
-### set cached variable for external packages dependency
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_External_Package_Dependency_To_Cache| replace:: ``add_External_Package_Dependency_To_Cache``
+#  .. _add_External_Package_Dependency_To_Cache:
+#
+#  add_External_Package_Dependency_To_Cache
+#  ----------------------------------------
+#
+#   .. command:: add_External_Package_Dependency_To_Cache(dep_package version exact list_of_components)
+#
+#   Set adequate cache variables of currently defined package when defining an external package dependency.
+#
+#     :dep_package: the name of the external package that IS the dependency.
+#
+#     :version: the version constraint on dep_package (may be empty string if no version constraint applies).
+#
+#     :exact: if TRUE the version constraint is exact.
+#
+#     :list_of_components: the list of components that must belong to dep_package.
+#
 function(add_External_Package_Dependency_To_Cache dep_package version exact list_of_components)
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${list_of_components} CACHE INTERNAL "")
@@ -570,7 +910,22 @@ function(add_External_Package_Dependency_To_Cache dep_package version exact list
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
 endfunction(add_External_Package_Dependency_To_Cache)
 
-### reset components related cached variables
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Component_Cached_Variables| replace:: ``reset_Component_Cached_Variables``
+#  .. _reset_Component_Cached_Variables:
+#
+#  reset_Component_Cached_Variables
+#  --------------------------------
+#
+#   .. command:: reset_Component_Cached_Variables(component)
+#
+#   Reset all cache internal variables related to a given component. Used to ensure the cache is clean before configuring.
+#
+#     :component: the name of the target component.
+#
 function(reset_Component_Cached_Variables component)
 
 # resetting package dependencies
@@ -606,6 +961,34 @@ set(${PROJECT_NAME}_${component}_DESCRIPTION CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_USAGE_INCLUDES CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |init_Component_Cached_Variables_For_Export| replace:: ``init_Component_Cached_Variables_For_Export``
+#  .. _init_Component_Cached_Variables_For_Export:
+#
+#  init_Component_Cached_Variables_For_Export
+#  ------------------------------------------
+#
+#   .. command:: init_Component_Cached_Variables_For_Export(component c_standard cxx_standard exported_defs exported_options exported_links runtime_resources)
+#
+#   Initialize cache internal variables related to a given component.
+#
+#     :component: the name of the target component.
+#
+#     :c_standard:  the C language standard used by component.
+#
+#     :cxx_standard:  the C++ language standard used by component.
+#
+#     :exported_defs:  the list of preprocessor definitions defined by the component and used in its own interface.
+#
+#     :exported_options:  the list of compiler options exported by the component.
+#
+#     :exported_links:  the list of links used by the component and exported in its description.
+#
+#     :runtime_resources: the list of path to runtime resources used by the component.
+#
 function(init_Component_Cached_Variables_For_Export component c_standard cxx_standard exported_defs exported_options exported_links runtime_resources)
 set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
 set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${exported_links}" CACHE INTERNAL "") #exported links
@@ -616,7 +999,20 @@ set(${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX} "${c_standard}" CA
 set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} "${cxx_standard}" CACHE INTERNAL "")#minimum C++ standard of the component interface
 endfunction(init_Component_Cached_Variables_For_Export)
 
-### resetting all internal cached variables that would cause some troubles
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Package_Description_Cached_Variables| replace:: ``reset_Package_Description_Cached_Variables``
+#  .. _reset_Package_Description_Cached_Variables:
+#
+#  reset_Package_Description_Cached_Variables
+#  ------------------------------------------
+#
+#   .. command:: reset_Package_Description_Cached_Variables()
+#
+#   Resetting all internal cached variables defined by a package. Used to start reconfiguration from a clean situation.
+#
 function(reset_Package_Description_Cached_Variables)
 	# package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
@@ -645,58 +1041,123 @@ function(reset_Package_Description_Cached_Variables)
 	set(${PROJECT_NAME}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
 endfunction(reset_Package_Description_Cached_Variables)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |init_Component_Description| replace:: ``init_Component_Description``
+#  .. _init_Component_Description:
+#
+#  init_Component_Description
+#  --------------------------
+#
+#   .. command:: init_Component_Description(component description usage)
+#
+#   Initialize cache internal variables related to the documentation of a given component.
+#
+#     :component: the name of the target component.
+#
+#     :description:  the long description of component utility.
+#
+#     :usage: the list of path to header files to include in order to use the component.
+#
 function(init_Component_Description component description usage)
 generate_Formatted_String("${description}" RES_STRING)
 set(${PROJECT_NAME}_${component}_DESCRIPTION "${RES_STRING}" CACHE INTERNAL "")
 set(${PROJECT_NAME}_${component}_USAGE_INCLUDES "${usage}" CACHE INTERNAL "")
 endfunction(init_Component_Description)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |mark_As_Declared| replace:: ``mark_As_Declared``
+#  .. _mark_As_Declared:
+#
+#  mark_As_Declared
+#  ----------------
+#
+#   .. command:: mark_As_Declared(component)
+#
+#   Memorize that the component has been declare in current configuration process.
+#
+#     :component: the name of the target component.
+#
 function(mark_As_Declared component)
 set(${PROJECT_NAME}_DECLARED_COMPS ${${PROJECT_NAME}_DECLARED_COMPS} ${component} CACHE INTERNAL "")
 endfunction(mark_As_Declared)
 
-###
-function(is_Declared component RES)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Declared| replace:: ``is_Declared``
+#  .. _is_Declared:
+#
+#  is_Declared
+#  -----------
+#
+#   .. command:: is_Declared(component RESULT)
+#
+#   Check whether a component has been declared in current configuration process, or not.
+#
+#     :component: the name of the component to check.
+#
+#     :RESULT: the output variable that is TRUE if component has been declared, FALSE otherwise.
+#
+function(is_Declared component RESULT)
 list(FIND ${PROJECT_NAME}_DECLARED_COMPS ${component} INDEX)
 if(INDEX EQUAL -1)
-	set(${RES} FALSE PARENT_SCOPE)
+	set(${RESULT} FALSE PARENT_SCOPE)
 else()
-	set(${RES} TRUE PARENT_SCOPE)
+	set(${RESULT} TRUE PARENT_SCOPE)
 endif()
-
 endfunction(is_Declared)
 
-
-###
-function(is_Library_Type RES keyword)
-	if(keyword STREQUAL "HEADER"
-		OR keyword STREQUAL "STATIC"
-		OR keyword STREQUAL "SHARED"
-		OR keyword STREQUAL "MODULE")
-		set(${RES} TRUE PARENT_SCOPE)
-	else()
-		set(${RES} FALSE PARENT_SCOPE)
-	endif()
-endfunction(is_Library_Type)
-
-###
-function(is_Application_Type RES keyword)
-	if(	keyword STREQUAL "TEST"
-		OR keyword STREQUAL "APP"
-		OR keyword STREQUAL "EXAMPLE")
-		set(${RES} TRUE PARENT_SCOPE)
-	else()
-		set(${RES} FALSE PARENT_SCOPE)
-	endif()
-endfunction(is_Application_Type)
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Declared| replace:: ``reset_Declared``
+#  .. _reset_Declared:
+#
+#  reset_Declared
+#  --------------
+#
+#   .. command:: reset_Declared()
+#
+#   Reset all declared component in currenlty defined package.
+#
 function(reset_Declared)
 set(${PROJECT_NAME}_DECLARED_COMPS CACHE INTERNAL "")
 endfunction(reset_Declared)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |export_Component| replace:: ``export_Component``
+#  .. _export_Component:
+#
+#  export_Component
+#  ----------------
+#
+#   .. command:: export_Component(IS_EXPORTING package component dep_package dep_component mode)
+#
+#   Check whether a component exports another component.
+#
+#     :package: the name of the package containing the exporting component.
+#
+#     :component: the name of the exporting component.
+#
+#     :dep_package: the name of the package containing the exported component.
+#
+#     :dep_component: the name of the exported component.
+#
+#     :mode: the build mode to consider (Debug or Release)
+#
+#     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise.
+#
 function(export_Component IS_EXPORTING package component dep_package dep_component mode)
 is_HeaderFree_Component(IS_HF ${package} ${component})
 if(IS_HF)
@@ -717,54 +1178,127 @@ else()
 	else()
 		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
 	endif()
-
 endif()
-
 endfunction(export_Component)
 
-### to know if the component is an application
-function(is_HeaderFree_Component ret_var package component)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_HeaderFree_Component| replace:: ``is_HeaderFree_Component``
+#  .. _is_HeaderFree_Component:
+#
+#  is_HeaderFree_Component
+#  -----------------------
+#
+#   .. command:: is_HeaderFree_Component(RESULT package component)
+#
+#   Check whether a component has a public interface (i.e. a set of public headers).
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :RESULT: the output variable that is TRUE if component has NO public interface, FALSE otherwise.
+#
+function(is_HeaderFree_Component RESULT package component)
 if (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${package}_${component}_TYPE STREQUAL "TEST"
 	OR ${package}_${component}_TYPE STREQUAL "MODULE"
 	OR ${package}_${component}_TYPE STREQUAL "PYTHON"
 	)
-	set(${ret_var} TRUE PARENT_SCOPE)
+	set(${RESULT} TRUE PARENT_SCOPE)
 else()
-	set(${ret_var} FALSE PARENT_SCOPE)
+	set(${RESULT} FALSE PARENT_SCOPE)
 endif()
 endfunction(is_HeaderFree_Component)
 
-
-### to know if the component is an application
-function(is_Runtime_Component ret_var package component)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Runtime_Component| replace:: ``is_Runtime_Component``
+#  .. _is_Runtime_Component:
+#
+#  is_Runtime_Component
+#  --------------------
+#
+#   .. command:: is_Runtime_Component(RESULT package component)
+#
+#   Check whether a component exists at runtime or not.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :RESULT: the output variable that is TRUE if component exists at runtime, FALSE otherwise.
+#
+function(is_Runtime_Component RESULT package component)
 if (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${package}_${component}_TYPE STREQUAL "TEST"
 	OR ${package}_${component}_TYPE STREQUAL "SHARED"
 	OR ${package}_${component}_TYPE STREQUAL "MODULE"
 	)
-	set(${ret_var} TRUE PARENT_SCOPE)
+	set(${RESULT} TRUE PARENT_SCOPE)
 else()
-	set(${ret_var} FALSE PARENT_SCOPE)
+	set(${RESULT} FALSE PARENT_SCOPE)
 endif()
 endfunction(is_Runtime_Component)
 
-### to know if the component is an application
-function(is_Executable_Component ret_var package component)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Executable_Component| replace:: ``is_Executable_Component``
+#  .. _is_Executable_Component:
+#
+#  is_Executable_Component
+#  -----------------------
+#
+#   .. command:: is_Executable_Component(RESULT package component)
+#
+#   Check whether a component is an executable.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :RESULT: the output variable that is TRUE if component is an executable, FALSE otherwise.
+#
+function(is_Executable_Component RESULT package component)
 if (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${package}_${component}_TYPE STREQUAL "TEST"
 	)
-	set(${ret_var} TRUE PARENT_SCOPE)
+	set(${RESULT} TRUE PARENT_SCOPE)
 else()
-	set(${ret_var} FALSE PARENT_SCOPE)
+	set(${RESULT} FALSE PARENT_SCOPE)
 endif()
 endfunction(is_Executable_Component)
 
-### to know if component will be built
-function (is_Built_Component ret_var  package component)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Built_Component| replace:: ``is_Built_Component``
+#  .. _is_Built_Component:
+#
+#  is_Built_Component
+#  ------------------
+#
+#   .. command:: is_Built_Component(RESULT package component)
+#
+#   Check whether a component is built by the build process or simply installed (e.g. header only libraries and python scripts are not built).
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :RESULT: the output variable that is TRUE if component is built, FALSE otherwise.
+#
+function (is_Built_Component RESULT  package component)
 if (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${package}_${component}_TYPE STREQUAL "TEST"
@@ -772,16 +1306,143 @@ if (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "SHARED"
 	OR ${package}_${component}_TYPE STREQUAL "MODULE"
 )
-	set(${ret_var} TRUE PARENT_SCOPE)
+	set(${RESULT} TRUE PARENT_SCOPE)
 else()
-	set(${ret_var} FALSE PARENT_SCOPE)#scripts and headers libraries are not built
+	set(${RESULT} FALSE PARENT_SCOPE)#scripts and headers libraries are not built
 endif()
 endfunction(is_Built_Component)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |will_be_Built| replace:: ``will_be_Built``
+#  .. _will_be_Built:
+#
+#  will_be_Built
+#  -------------
+#
+#   .. command:: will_be_Built(RESULT component)
+#
+#   Check whether a component of the currently defined package  will built depending on cache variables chosen by the user.
+#
+#     :component: the name of the component.
+#
+#     :RESULT: the output variable that is TRUE if component will be built by current build process, FALSE otherwise.
+#
+function(will_be_Built RESULT component)
+if((${PROJECT_NAME}_${component}_TYPE STREQUAL "SCRIPT") #python scripts are never built
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
+	set(${RESULT} FALSE PARENT_SCOPE)
+	return()
+else()
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")### to know wehether a module is a python wrapped module and is really compilable
+		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
+		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#wthe module will not be built as there is no python configuration
+			set(${RESULT} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+	set(${RESULT} TRUE PARENT_SCOPE)
+endif()
+endfunction(will_be_Built)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |will_be_Installed| replace:: ``will_be_Installed``
+#  .. _will_be_Installed:
+#
+#  will_be_Installed
+#  -----------------
+#
+#   .. command:: will_be_Installed(RESULT component)
+#
+#   Check whether a component of the currently defined package will installed depending on cache variables chosen by the user and component nature.
+#
+#     :component: the name of the component.
+#
+#     :RESULT: the output variable that is TRUE if component will be installed by current build process, FALSE otherwise.
+#
+function(will_be_Installed RESULT component)
+if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
+	set(${RESULT} FALSE PARENT_SCOPE)
+else()
+	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")### to know wehether a module is a python wrapped module and is really compilable
+		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
+		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#the module will not be installed as there is no python configuration
+			set(${RESULT} FALSE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+	set(${RESULT} TRUE PARENT_SCOPE)
+endif()
+endfunction(will_be_Installed)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Externally_Usable| replace:: ``is_Externally_Usable``
+#  .. _is_Externally_Usable:
+#
+#  is_Externally_Usable
+#  --------------------
+#
+#   .. command:: is_Externally_Usable(RESULT component)
+#
+#   Check whether a component of the currently defined package is, by nature, usable by another package.
+#
+#     :component: the name of the component.
+#
+#     :RESULT: the output variable that is TRUE if component can be used by another package, FALSE otherwise.
+#
+function(is_Externally_Usable RESULT component)
+if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
+	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"))
+	set(${RESULT} FALSE PARENT_SCOPE)
+else()
+	set(${RESULT} TRUE PARENT_SCOPE)
+endif()
+endfunction(is_Externally_Usable)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |build_Option_For_Example| replace:: ``build_Option_For_Example``
+#  .. _build_Option_For_Example:
+#
+#  build_Option_For_Example
+#  ------------------------
+#
+#   .. command:: build_Option_For_Example(example_comp)
+#
+#   Create a cache option to active/deactivate the build of an example.
+#
+#     :example_comp: the name of the example component.
+#
 function(build_Option_For_Example example_comp)
 CMAKE_DEPENDENT_OPTION(BUILD_EXAMPLE_${example_comp} "Package build the example application ${example_comp}" ON "BUILD_EXAMPLES" ON)
 endfunction(build_Option_For_Example)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Removed_Examples_Build_Option| replace:: ``reset_Removed_Examples_Build_Option``
+#  .. _reset_Removed_Examples_Build_Option:
+#
+#  reset_Removed_Examples_Build_Option
+#  -----------------------------------
+#
+#   .. command:: reset_Removed_Examples_Build_Option()
+#
+#   Remove all cache variables related to examples in currently defined package.
+#
 function(reset_Removed_Examples_Build_Option)
 get_cmake_property(ALL_CACHED_VARIABLES CACHE_VARIABLES) #getting all cache variables
 foreach(a_cache_var ${ALL_CACHED_VARIABLES})
@@ -797,60 +1458,49 @@ foreach(a_cache_var ${ALL_CACHED_VARIABLES})
 endforeach()
 endfunction(reset_Removed_Examples_Build_Option)
 
-###
-function(will_be_Built result component)
-if((${PROJECT_NAME}_${component}_TYPE STREQUAL "SCRIPT") #python scripts are never built
-	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
-	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
-	set(${result} FALSE PARENT_SCOPE)
-	return()
-else()
-	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")### to know wehether a module is a python wrapped module and is really compilable
-		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
-		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#wthe module will not be built as there is no python configuration
-			set(${result} FALSE PARENT_SCOPE)
-			return()
-		endif()
-	endif()
-	set(${result} TRUE PARENT_SCOPE)
-endif()
-endfunction(will_be_Built)
-
-###
-function(will_be_Installed result component)
-if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
-	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
-	set(${result} FALSE PARENT_SCOPE)
-else()
-	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")### to know wehether a module is a python wrapped module and is really compilable
-		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
-		if(HAS_WRAPPER AND NOT CURRENT_PYTHON)#wthe module will not be installed as there is no python configuration
-			set(${result} FALSE PARENT_SCOPE)
-			return()
-		endif()
-	endif()
-	set(${result} TRUE PARENT_SCOPE)
-endif()
-endfunction(will_be_Installed)
-
-###
-function(is_Externally_Usable result component)
-if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
-	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"))
-	set(${result} FALSE PARENT_SCOPE)
-else()
-	set(${result} TRUE PARENT_SCOPE)
-endif()
-endfunction(is_Externally_Usable)
-
-
-### registering the binary name of a component
-function(register_Component_Binary c_name)
-	set(${PROJECT_NAME}_${c_name}_BINARY_NAME${USE_MODE_SUFFIX} "$<TARGET_FILE_NAME:${c_name}${INSTALL_NAME_SUFFIX}>" CACHE INTERNAL "")
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |register_Component_Binary| replace:: ``register_Component_Binary``
+#  .. _register_Component_Binary:
+#
+#  register_Component_Binary
+#  -------------------------
+#
+#   .. command:: register_Component_Binary(component)
+#
+#   Memorize in cache the generated binary name of a component. Warining: the binary name uses Cmake generator expressions.
+#
+#     :component: the name of the component.
+#
+function(register_Component_Binary component)
+	set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} "$<TARGET_FILE_NAME:${component}${INSTALL_NAME_SUFFIX}>" CACHE INTERNAL "")
 endfunction(register_Component_Binary)
 
-#resolving dependencies
-function(is_Bin_Component_Exporting_Other_Components RESULT package component mode)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Component_Exporting_Other_Components| replace:: ``is_Component_Exporting_Other_Components``
+#  .. _is_Bin_Component_Exporting_Other_Components:
+#
+#  is_Component_Exporting_Other_Components
+#  ---------------------------------------
+#
+#   .. command:: is_Component_Exporting_Other_Components(RESULT package component mode)
+#
+#   Check whether a component exports other components.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode considered (Release or Debug).
+#
+#     :RESULT: the output variable that is TRUE if the component export other components, FALSE otherwise.
+#
+function(is_Component_Exporting_Other_Components RESULT package component mode)
 set(${RESULT} FALSE PARENT_SCOPE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
@@ -877,13 +1527,34 @@ foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 		endif()
 	endforeach()
 endforeach()
-endfunction(is_Bin_Component_Exporting_Other_Components)
+endfunction(is_Component_Exporting_Other_Components)
 
 
 ##################################################################################
 ############################## install the dependancies ##########################
 ########### functions used to create the use<package><version>.cmake  ############
 ##################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Use_File| replace:: ``write_Use_File``
+#  .. _write_Use_File:
+#
+#  write_Use_File
+#  --------------
+#
+#   .. command:: write_Use_File(file package build_mode)
+#
+#   Write the use file of a package for the given build mode.
+#
+#     :file: the path to file to write in.
+#
+#     :package: the name of the package.
+#
+#     :build_mode: the build mode considered (Release or Debug).
+#
 function(write_Use_File file package build_mode)
 set(MODE_SUFFIX "")
 if(${build_mode} MATCHES Release) #mode independent info written only once in the release mode
@@ -1021,6 +1692,20 @@ foreach(a_component IN LISTS ${package}_COMPONENTS)
 endforeach()
 endfunction(write_Use_File)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Use_File| replace:: ``create_Use_File``
+#  .. _create_Use_File:
+#
+#  create_Use_File
+#  ---------------
+#
+#   .. command:: create_Use_File()
+#
+#   Create the use file for the currenlt defined package.
+#
 function(create_Use_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode
 	set(file ${CMAKE_BINARY_DIR}/share/UseReleaseTemp)
@@ -1051,7 +1736,20 @@ endfunction(create_Use_File)
 ############################## providing info on the package content ##########################
 ###############################################################################################
 
-#################### function used to create the Info<package>.cmake  #########################
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Info_File| replace:: ``generate_Info_File``
+#  .. _generate_Info_File:
+#
+#  generate_Info_File
+#  ------------------
+#
+#   .. command:: generate_Info_File()
+#
+#   Create the info file (Info<package>.cmake) for the currenlty defined package. This info file is used at build time to know whether the content of the package has changed.
+#
 function(generate_Info_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode
 	set(file ${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake)
@@ -1072,11 +1770,22 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once
 		endif()
 	endforeach()
 endif()
-
 endfunction(generate_Info_File)
 
-
-############ function used to create the  Find<package>.cmake file of the package  ###########
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Find_File| replace:: ``generate_Find_File``
+#  .. _generate_Find_File:
+#
+#  generate_Find_File
+#  ------------------
+#
+#   .. command:: generate_Find_File()
+#
+#   Create and install the find file (Find<package>.cmake) for the currenlty defined package.
+#
 function(generate_Find_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	# generating/installing the generic cmake find file for the package
@@ -1085,7 +1794,20 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 endfunction(generate_Find_File)
 
-############ function used to create the Use<package>-<version>.cmake file of the package  ###########
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Use_File| replace:: ``generate_Use_File``
+#  .. _generate_Use_File:
+#
+#  generate_Use_File
+#  -----------------
+#
+#   .. command:: generate_Use_File()
+#
+#   Create and install the use file (Use<package>-<version>.cmake) for the currenlty defined package.
+#
 macro(generate_Use_File)
 create_Use_File()
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
@@ -1099,8 +1821,29 @@ endmacro(generate_Use_File)
 ############ function used to create the Dep<package>.cmake file of the package  ###########
 ############################################################################################
 
-## subsidiary function to write the description of native dependencies of a given package in the dependencies description file
-function(current_Native_Dependencies_For_Package package depfile PACKAGES_ALREADY_MANAGED PACKAGES_NEWLY_MANAGED)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |current_Native_Dependencies_For_Package| replace:: ``current_Native_Dependencies_For_Package``
+#  .. _current_Native_Dependencies_For_Package:
+#
+#  current_Native_Dependencies_For_Package
+#  ---------------------------------------
+#
+#   .. command:: current_Native_Dependencies_For_Package(package depfile packages_already_managed PACKAGES_NEWLY_MANAGED)
+#
+#   Write the description of native dependencies of a given package in the dependencies description file.
+#
+#     :package: the name of the package.
+#
+#     :file: the path to file to write in.
+#
+#     :packages_already_managed: the list of packages already managed in the process of writing dependency file.
+#
+#     :PACKAGES_NEWLY_MANAGED: the output variable containing the list of package newly managed after this call.
+#
+function(current_Native_Dependencies_For_Package package depfile packages_already_managed PACKAGES_NEWLY_MANAGED)
 get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
 #information on package to register
 file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_VERSION${MODE_SUFFIX} ${${package}_VERSION_STRING} CACHE INTERNAL \"\")\n")
@@ -1137,7 +1880,26 @@ endforeach()
 set(${PACKAGES_NEWLY_MANAGED} ${NEWLY_MANAGED} PARENT_SCOPE)
 endfunction(current_Native_Dependencies_For_Package)
 
-## subsidiary function to write the description of external dependencies of a given package in the dependencies description file
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |current_External_Dependencies_For_Package| replace:: ``current_External_Dependencies_For_Package``
+#  .. _current_External_Dependencies_For_Package:
+#
+#  current_External_Dependencies_For_Package
+#  -----------------------------------------
+#
+#   .. command:: current_External_Dependencies_For_Package(package depfile PACKAGES_NEWLY_MANAGED)
+#
+#   Write the description of external dependencies of a given package in the dependencies description file.
+#
+#     :package: the name of the package.
+#
+#     :file: the path to file to write in.
+#
+#     :PACKAGES_NEWLY_MANAGED: the output variable containing the list of external package newly managed after this call.
+#
 function(current_External_Dependencies_For_Package package depfile PACKAGES_NEWLY_MANAGED)
 get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
 #information on package to register
@@ -1151,8 +1913,20 @@ set(NEWLY_MANAGED ${package})
 set(${PACKAGES_NEWLY_MANAGED} ${NEWLY_MANAGED} PARENT_SCOPE)
 endfunction(current_External_Dependencies_For_Package)
 
-
-### generate the dependencies description file
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Dependencies_File| replace:: ``generate_Dependencies_File``
+#  .. _generate_Dependencies_File:
+#
+#  generate_Dependencies_File
+#  --------------------------
+#
+#   .. command:: generate_Dependencies_File()
+#
+#   Create the dependencies description file (Dep<package>.cmake) for the currenlty defined package. This file is used to track modifications of packages used.
+#
 macro(generate_Dependencies_File)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})

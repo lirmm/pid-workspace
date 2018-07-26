@@ -26,7 +26,20 @@ endif()
 set(PID_PACKAGE_CODING_SUPPORT_INCLUDED TRUE)
 ##########################################################################################
 
-### generating test coverage reports for the package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Coverage| replace:: ``generate_Coverage``
+#  .. _generate_Coverage:
+#
+#  generate_Coverage
+#  -----------------
+#
+#   .. command:: generate_Coverage()
+#
+#   Generate test coverage reports for the currently defined package. This function create the "coverage" target that launch tests and generate the coverage report.
+#
 function(generate_Coverage)
 
 if(${CMAKE_BUILD_TYPE} MATCHES Debug) # coverage is well generated in debug mode only
@@ -118,10 +131,24 @@ else() #no coverage wanted or possible (no test defined), create a do nothing ru
 endif()
 endfunction(generate_Coverage)
 
-
-### generating static code checking reports for the package
-
-### target configuration for cppcheck
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Static_Check| replace:: ``add_Static_Check``
+#  .. _add_Static_Check:
+#
+#  add_Static_Check
+#  ----------------
+#
+#   .. command:: add_Static_Check(component is_library)
+#
+#   Add a specific static check target for a component of the currenlty defined package. This target launches a static code check (based on cppcheck) for that component that is added to the test target.
+#
+#     :component: the name of target component to check.
+#
+#     :is_library: if TRUE the component is a library.
+#
 function(add_Static_Check component is_library)
 
 	if(NOT TARGET ${component})
@@ -175,10 +202,22 @@ function(add_Static_Check component is_library)
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
 		VERBATIM)
-
 endfunction(add_Static_Check)
 
-##global configuration function
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Static_Checks| replace:: ``generate_Static_Checks``
+#  .. _generate_Static_Checks:
+#
+#  generate_Static_Checks
+#  ----------------------
+#
+#   .. command:: generate_Static_Checks()
+#
+#   Generate static check reports for the currently built package.
+#
 function(generate_Static_Checks)
 
 if(${CMAKE_BUILD_TYPE} MATCHES Release)

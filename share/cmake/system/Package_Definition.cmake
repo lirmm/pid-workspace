@@ -1353,7 +1353,7 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
 			endif()
 		endif()
 
-		declare_External_Wrapper_Component_Dependency(
+		declare_External_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}
@@ -1375,7 +1375,7 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)#external dependency
         message(WARNING "[PID] WARNING : bad arguments when declaring dependency for component ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}, the component depends on an unknown external package ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} !")
 			endif()
 		endif()
-		declare_External_Component_Dependency(
+		declare_External_Package_Component_Dependency(
 					${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT}
 					${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL}
 					${export}

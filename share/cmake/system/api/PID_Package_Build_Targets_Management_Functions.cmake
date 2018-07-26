@@ -30,6 +30,30 @@ set(PID_PACKAGE_BUILD_TARGETS_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 ####################### build command creation auxiliary function ##########
 ############################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Global_Build_Command| replace:: ``create_Global_Build_Command``
+#  .. _create_Global_Build_Command:
+#
+#  create_Global_Build_Command
+#  -------------------------------------
+#
+#   .. command:: create_Global_Build_Command(privileges gen_install gen_build gen_package gen_doc gen_test_or_cover)
+#
+#     Create the global build target for current native package.
+#
+#     :privileges: the OS command to get privileged (root) permissions. Useful to run tests with root privileges if required.
+#
+#     :gen_install: if TRUE the build command launch installation.
+#
+#     :gen_build: if TRUE the build command launch compilation.
+#
+#     :gen_doc: if TRUE the build command generates API documentation.
+#
+#     :gen_test_or_cover: if value is "coverage" the build command generates coverage report after launching tests, if value is "test" the build command launch tests.
+#
 function(create_Global_Build_Command privileges gen_install gen_build gen_package gen_doc gen_test_or_cover)
 if(gen_install)
 	if(gen_build) #build package
@@ -230,10 +254,20 @@ else()
 endif()
 endfunction(create_Global_Build_Command)
 
-
-############################################################################
-####################### Language standard management #######################
-############################################################################
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |initialize_Build_System| replace:: ``initialize_Build_System``
+#  .. _initialize_Build_System:
+#
+#  initialize_Build_System
+#  -----------------------
+#
+#   .. command:: initialize_Build_System()
+#
+#     Initialize current package with specific PID properties used to manage language standards.
+#
 function(initialize_Build_System)
 
 	## create a property to deal with language standard in targets (created for compatibility with CMake 3.0.2 and CMake version < 3.8 when c++17 is used)
@@ -247,6 +281,22 @@ function(initialize_Build_System)
 
 endfunction(initialize_Build_System)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Component_Language| replace:: ``resolve_Component_Language``
+#  .. _resolve_Component_Language:
+#
+#  resolve_Component_Language
+#  --------------------------
+#
+#   .. command:: resolve_Component_Language(component_target)
+#
+#     Set adequate language standard properties or compilation flags for a component, depending on CMake version.
+#
+#     :component_target: name of the target used for a given component.
+#
 function(resolve_Component_Language component_target)
 	if(CMAKE_VERSION VERSION_LESS 3.1)#this is only usefll if CMake does not automatically deal with standard related properties
 		get_target_property(STD_C ${component_target} PID_C_STANDARD)
@@ -282,10 +332,24 @@ function(resolve_Component_Language component_target)
 			CXX_STANDARD_REQUIRED YES
 			CXX_EXTENSIONS NO
 	)#setting the standard in use locally
-
 endfunction(resolve_Component_Language)
 
-### global function that set compile option for all components that are build given some info not directly managed by CMake
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Compile_Options_For_Targets| replace:: ``resolve_Compile_Options_For_Targets``
+#  .. _resolve_Compile_Options_For_Targets:
+#
+#  resolve_Compile_Options_For_Targets
+#  -----------------------------------
+#
+#   .. command:: resolve_Compile_Options_For_Targets(mode)
+#
+#     Set compile option for all components that are build given some info not directly managed by CMake.
+#
+#     :mode: the given buildmode for components (Release or Debug).
+#
 function(resolve_Compile_Options_For_Targets mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
@@ -296,7 +360,28 @@ foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 endforeach()
 endfunction(resolve_Compile_Options_For_Targets)
 
-### filter the options lines to get those options related to language standard in USE
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |filter_Compiler_Options| replace:: ``filter_Compiler_Options``
+#  .. _filter_Compiler_Options:
+#
+#  filter_Compiler_Options
+#  -----------------------
+#
+#   .. command:: filter_Compiler_Options(STD_C_OPT STD_CXX_OPT FILTERED_OPTS opts)
+#
+#     Filter the options to get those related to language standard used.
+#
+#     :opts: the list of compilation options.
+#
+#     :STD_C_OPT: the output variable containg the C language standard used, if any.
+#
+#     :STD_CXX_OPT: the output variable containg the C++ language standard used, if any.
+#
+#     :FILTERED_OPTS: the output variable containg the options fromopts not related to language standard, if any.
+#
 function(filter_Compiler_Options STD_C_OPT STD_CXX_OPT FILTERED_OPTS opts)
 set(RES_FILTERED)
 foreach(opt IN LISTS opts)
@@ -320,7 +405,25 @@ endfunction(filter_Compiler_Options)
 ############################################################################
 ############### API functions for internal targets management ##############
 ############################################################################
-###create a fake target for a python component
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Python_Scripts| replace:: ``manage_Python_Scripts``
+#  .. _manage_Python_Scripts:
+#
+#  manage_Python_Scripts
+#  ---------------------
+#
+#   .. command:: manage_Python_Scripts(c_name dirname)
+#
+#     Create a target for intalling python code.
+#
+#     :c_name: the name of component that provide python code (MODULE or SCRIPT).
+#
+#     :dirname: the nameof the folder that contains python code.
+#
 function(manage_Python_Scripts c_name dirname)
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES PREFIX "")#specific requirement for python, not lib prefix at beginning of the module
@@ -339,8 +442,6 @@ function(manage_Python_Scripts c_name dirname)
 						PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 	endif()
 
-
-	#get_Binary_Location(RES_LOC ${PROJECT_NAME} ${c_name} Release) should be used but not usable due to a bug in install(CODE ...) avoiding to use generator expressions
 	install(#install symlinks that target the python module either in install directory and (undirectly) in the python install dir
 			CODE
 			"execute_process(
@@ -358,7 +459,36 @@ function(manage_Python_Scripts c_name dirname)
 	)
 endfunction(manage_Python_Scripts)
 
-###create a module lib target for a newly defined library
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Module_Lib_Target| replace:: ``create_Module_Lib_Target``
+#  .. _create_Module_Lib_Target:
+#
+#  create_Module_Lib_Target
+#  ------------------------
+#
+#   .. command:: create_Module_Lib_Target(c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
+#
+#     Create a target for a module library (shared object without a specific header and supposed to be used only at runtime to implement plugin like mechanism). Modules export nothing as they do not have public headers.
+#
+#     :c_name: the name of the library.
+#
+#     :c_standard: the C language standard used for that library.
+#
+#     :cxx_standard: the C++ language standard used for that library.
+#
+#     :sources: the source files of the library.
+#
+#     :internal_inc_dirs: list of additional include path to use when building the library.
+#
+#     :internal_defs: list of private definitions to use when building the library.
+#
+#     :internal_compiler_options: list of private compiler options to use when building the library.
+#
+#     :internal_links: list of private links to use when building the library.
+#
 function(create_Module_Lib_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} MODULE ${sources})
 	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
@@ -373,7 +503,44 @@ function(create_Module_Lib_Target c_name c_standard cxx_standard sources interna
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 endfunction(create_Module_Lib_Target)
 
-###create a shared lib target for a newly defined library
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Shared_Lib_Target| replace:: ``create_Shared_Lib_Target``
+#  .. _create_Shared_Lib_Target:
+#
+#  create_Shared_Lib_Target
+#  ------------------------
+#
+#   .. command:: create_Shared_Lib_Target(c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
+#
+#     Create a target for a shared library.
+#
+#     :c_name: the name of the library.
+#
+#     :c_standard: the C language standard used for that library.
+#
+#     :cxx_standard: the C++ language standard used for that library.
+#
+#     :sources: the source files of the library.
+#
+#     :exported_inc_dirs: list of include path exported by the library.
+#
+#     :internal_inc_dirs: list of additional include path to use when building the library.
+#
+#     :exported_defs: list of definitions exported by the library.
+#
+#     :internal_defs: list of private definitions to use when building the library.
+#
+#     :exported_compiler_options: list of compiler options exported by the library.
+#
+#     :internal_compiler_options: list of private compiler options to use when building the library.
+#
+#     :exported_links: list of links exported by the library.
+#
+#     :internal_links: list of private links to use when building the library.
+#
 function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
 
@@ -397,7 +564,42 @@ function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exporte
 	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endfunction(create_Shared_Lib_Target)
 
-###create a static lib target for a newly defined library
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Static_Lib_Target| replace:: ``create_Static_Lib_Target``
+#  .. _create_Static_Lib_Target:
+#
+#  create_Static_Lib_Target
+#  ------------------------
+#
+#   .. command:: create_Static_Lib_Target(c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links)
+#
+#     Create a target for a static library (they export all their links by construction)
+#
+#     :c_name: the name of the library.
+#
+#     :c_standard: the C language standard used for that library.
+#
+#     :cxx_standard: the C++ language standard used for that library.
+#
+#     :sources: the source files of the library.
+#
+#     :exported_inc_dirs: list of include path exported by the library.
+#
+#     :internal_inc_dirs: list of additional include path to use when building the library.
+#
+#     :exported_defs: list of definitions exported by the library.
+#
+#     :internal_defs: list of private definitions to use when building the library.
+#
+#     :exported_compiler_options: list of compiler options exported by the library.
+#
+#     :internal_compiler_options: list of private compiler options to use when building the library.
+#
+#     :exported_links: list of links exported by the library.
+#
 function(create_Static_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${sources})
 	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
@@ -408,16 +610,71 @@ function(create_Static_Lib_Target c_name c_standard cxx_standard sources exporte
 	set(COMP_OPTS ${exported_compiler_options} ${internal_compiler_options})
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${INC_DIRS}" "${DEFS}" "${COMP_OPTS}" "")#no linking with static libraries so do not manage internal_flags
 	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
-
 endfunction(create_Static_Lib_Target)
 
-###create a shared lib target for a newly defined library
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Header_Lib_Target| replace:: ``create_Header_Lib_Target``
+#  .. _create_Header_Lib_Target:
+#
+#  create_Header_Lib_Target
+#  ------------------------
+#
+#   .. command:: create_Header_Lib_Target(c_name c_standard cxx_standard exported_inc_dirs exported_defs exported_compiler_options exported_links)
+#
+#     Create a target for a header only library (they export everything by construction and have no sources).
+#
+#     :c_name: the name of the library.
+#
+#     :c_standard: the C language standard used for that library.
+#
+#     :cxx_standard: the C++ language standard used for that library.
+#
+#     :exported_inc_dirs: list of include path exported by the library.
+#
+#     :exported_defs: list of definitions exported by the library.
+#
+#     :exported_compiler_options: list of compiler options exported by the library.
+#
+#     :exported_links: list of links exported by the library.
+#
 function(create_Header_Lib_Target c_name c_standard cxx_standard exported_inc_dirs exported_defs exported_compiler_options exported_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} INTERFACE)
 	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endfunction(create_Header_Lib_Target)
 
-###create an executable target for a newly defined application
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Executable_Target| replace:: ``create_Executable_Target``
+#  .. _create_Executable_Target:
+#
+#  create_Executable_Target
+#  ------------------------
+#
+#   .. command:: create_Executable_Target(c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
+#
+#     Create a target for a executable (applications and examples). Applications export nothing as they do not have public headers.
+#
+#     :c_name: the name of executable.
+#
+#     :c_standard: the C language standard used for that executable.
+#
+#     :cxx_standard: the C++ language standard used for that executable.
+#
+#     :sources: the source files of the executable.
+#
+#     :internal_inc_dirs: list of additional include path to use when building the executable.
+#
+#     :internal_defs: list of private definitions to use when building the executable.
+#
+#     :internal_compiler_options: list of private compiler options to use when building the executable.
+#
+#     :internal_links: list of private links to use when building the executable.
+#
 function(create_Executable_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
@@ -435,12 +692,67 @@ function(create_Executable_Target c_name c_standard cxx_standard sources interna
 	endif()
 endfunction(create_Executable_Target)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_TestUnit_Target| replace:: ``create_TestUnit_Target``
+#  .. _create_TestUnit_Target:
+#
+#  create_TestUnit_Target
+#  ----------------------
+#
+#   .. command:: create_TestUnit_Target(c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
+#
+#     Create a target for an executable test unit. Test units export nothing as they do not have public headers. Difference with other applications is that test units are not installed (not useful for end users only for developers).
+#
+#     :c_name: the name of executable.
+#
+#     :c_standard: the C language standard used for that executable.
+#
+#     :cxx_standard: the C++ language standard used for that executable.
+#
+#     :sources: the source files of the executable.
+#
+#     :internal_inc_dirs: list of additional include path to use when building the executable.
+#
+#     :internal_defs: list of private definitions to use when building the executable.
+#
+#     :internal_compiler_options: list of private compiler options to use when building the executable.
+#
+#     :internal_links: list of private links to use when building the executable.
+#
 function(create_TestUnit_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 endfunction(create_TestUnit_Target)
 
-### configure the target with exported flags (cflags and ldflags)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Additional_Component_Exported_Flags| replace:: ``manage_Additional_Component_Exported_Flags``
+#  .. _manage_Additional_Component_Exported_Flags:
+#
+#  manage_Additional_Component_Exported_Flags
+#  ------------------------------------------
+#
+#   .. command:: manage_Additional_Component_Exported_Flags(component_name mode_suffix inc_dirs defs options links)
+#
+#     Configure a component target with exported flags (cflags and ldflags).
+#
+#     :component_name: the name of the component.
+#
+#     :mode_suffix: the build mode of the target.
+#
+#     :inc_dirs: the list of includes to export.
+#
+#     :defs: the list of preprocessor definitions to export.
+#
+#     :options: the list of compiler options to export.
+#
+#     :links: list of links to export.
+#
 function(manage_Additional_Component_Exported_Flags component_name mode_suffix inc_dirs defs options links)
 #message("manage_Additional_Component_Exported_Flags comp=${component_name} include dirs=${inc_dirs} defs=${defs} links=${links}")
 # managing compile time flags (-I<path>)
@@ -463,8 +775,36 @@ foreach(link IN LISTS links)
 endforeach()
 endfunction(manage_Additional_Component_Exported_Flags)
 
-
-### configure the target with internal flags (cflags only)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Additional_Component_Internal_Flags| replace:: ``manage_Additional_Component_Internal_Flags``
+#  .. _manage_Additional_Component_Internal_Flags:
+#
+#  manage_Additional_Component_Internal_Flags
+#  ------------------------------------------
+#
+#   .. command:: manage_Additional_Component_Internal_Flags(component_name mode_suffix inc_dirs defs options links)
+#
+#     Configure a component target with internal flags (cflags and ldflags).
+#
+#     :component_name: the name of the component.
+#
+#     :c_standard: the C language standard to use.
+#
+#     :cxx_standard: the C++ language standard to use.
+#
+#     :mode_suffix: the build mode of the target.
+#
+#     :inc_dirs: the list of includes to use.
+#
+#     :defs: the list of preprocessor definitions to use.
+#
+#     :options: the list of compiler options to use.
+#
+#     :links: list of links to use.
+#
 function(manage_Additional_Component_Internal_Flags component_name c_standard cxx_standard mode_suffix inc_dirs defs options links)
 # managing compile time flags
 foreach(dir IN LISTS inc_dirs)
@@ -499,6 +839,28 @@ if(IS_LESS)
 endif()
 endfunction(manage_Additional_Component_Internal_Flags)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Additionnal_Component_Inherited_Flags| replace:: ``manage_Additionnal_Component_Inherited_Flags``
+#  .. _manage_Additionnal_Component_Inherited_Flags:
+#
+#  manage_Additionnal_Component_Inherited_Flags
+#  --------------------------------------------
+#
+#   .. command:: manage_Additionnal_Component_Inherited_Flags(component dep_component mode_suffix export)
+#
+#     Configure a component target with flags (cflags and ldflags) inherited from a dependency.
+#
+#     :component_name: the name of the component to configure.
+#
+#     :dep_component: the name of the component that IS the dependency.
+#
+#     :mode_suffix: the build mode of the target.
+#
+#     :export: TRUE if component exports dep_component.
+#
 function(manage_Additionnal_Component_Inherited_Flags component dep_component mode_suffix export)
 	if(export)
 		target_include_directories(	${component}${mode_suffix}
@@ -532,7 +894,32 @@ function(manage_Additionnal_Component_Inherited_Flags component dep_component mo
 	endif()
 endfunction(manage_Additionnal_Component_Inherited_Flags)
 
-### configure the target to link with another target issued from a component of the same package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |fill_Component_Target_With_Internal_Dependency| replace:: ``fill_Component_Target_With_Internal_Dependency``
+#  .. _fill_Component_Target_With_Internal_Dependency:
+#
+#  fill_Component_Target_With_Internal_Dependency
+#  ----------------------------------------------
+#
+#   .. command:: fill_Component_Target_With_Internal_Dependency(component dep_component export comp_defs comp_exp_defs dep_defs)
+#
+#     Configure a component target to link with another component target from current package.
+#
+#     :component: the name of the component to configure.
+#
+#     :dep_component: the name of the component that IS the dependency.
+#
+#     :export: TRUE if component exports dep_component.
+#
+#     :comp_defs: preprocessor definitions defined in implementation of component.
+#
+#     :comp_exp_defs: preprocessor definitions defined in interface (public headers) of component.
+#
+#     :dep_defs: preprocessor definitions used in interface of dep_component but defined by implementation of component.
+#
 function (fill_Component_Target_With_Internal_Dependency component dep_component export comp_defs comp_exp_defs dep_defs)
 is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_component})
 if(NOT DEP_IS_HF)#the required internal component is a library
@@ -550,8 +937,34 @@ if(NOT DEP_IS_HF)#the required internal component is a library
 endif()#else, it is an application or a module => runtime dependency declaration
 endfunction(fill_Component_Target_With_Internal_Dependency)
 
-
-### configure the target to link with another component issued from another package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |fill_Component_Target_With_Package_Dependency| replace:: ``fill_Component_Target_With_Package_Dependency``
+#  .. _fill_Component_Target_With_Package_Dependency:
+#
+#  fill_Component_Target_With_Package_Dependency
+#  ---------------------------------------------
+#
+#   .. command:: fill_Component_Target_With_Package_Dependency(component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
+#
+#     Configure a component target to link with another component target from another native package.
+#
+#     :component: the name of the component to configure.
+#
+#     :dep_package: the name of the native package that contains the dependency.
+#
+#     :dep_component: the name of the component that IS the dependency.
+#
+#     :export: TRUE if component exports dep_component.
+#
+#     :comp_defs: preprocessor definitions defined in implementation of component.
+#
+#     :comp_exp_defs: preprocessor definitions defined in interface (public headers) of component.
+#
+#     :dep_defs: preprocessor definitions used in interface of dep_component but defined by implementation of component.
+#
 function (fill_Component_Target_With_Package_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
 is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
 if(NOT DEP_IS_HF)#the required package component is a library
@@ -568,8 +981,38 @@ if(NOT DEP_IS_HF)#the required package component is a library
 endif()	#else, it is an application or a module => runtime dependency declaration
 endfunction(fill_Component_Target_With_Package_Dependency)
 
-
-### configure the target to link with an external dependancy
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |fill_Component_Target_With_External_Dependency| replace:: ``fill_Component_Target_With_External_Dependency``
+#  .. _fill_Component_Target_With_External_Dependency:
+#
+#  fill_Component_Target_With_External_Dependency
+#  ----------------------------------------------
+#
+#   .. command:: fill_Component_Target_With_External_Dependency(component export comp_defs comp_exp_defs dep_defs)
+#
+#     Configure a component target to link with external content (from external packages or operating system).
+#
+#     :component: the name of the component to configure.
+#
+#     :export: TRUE if component exports the content.
+#
+#     :comp_defs: preprocessor definitions defined in implementation of component.
+#
+#     :comp_exp_defs: preprocessor definitions defined in interface (public headers) of component.
+#
+#     :dep_defs: preprocessor definitions used in interface of dep_component but defined by implementation of component.
+#
+#     :ext_inc_dirs: list of include path, either absolute or relative to external packages.
+#
+#     :ext_links: list of path to libraries, either absolute or relative to external packages, or linker options.
+#
+#     :c_standard: C language standard to use when using these dependencies.
+#
+#     :cxx_standard: C++ language standard to use when using these dependencies.
+#
 function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_links c_standard cxx_standard)
 if(ext_links)
 	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${ext_links}" ${CMAKE_BUILD_TYPE})
@@ -603,12 +1046,32 @@ else()#otherwise only definitions for interface of the current component is expo
 	manage_Additional_Component_Internal_Flags(${component} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${INTERNAL_DEFS}" "" "${EXT_LINKS}")
 	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "" "${EXT_LINKS}")
 endif()
-
 endfunction(fill_Component_Target_With_External_Dependency)
 
 ############################################################################
 ############### API functions for imported targets management ##############
 ############################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_All_Imported_Dependency_Targets| replace:: ``create_All_Imported_Dependency_Targets``
+#  .. _create_All_Imported_Dependency_Targets:
+#
+#  create_All_Imported_Dependency_Targets
+#  --------------------------------------
+#
+#   .. command:: create_All_Imported_Dependency_Targets(package component mode)
+#
+#     Create imported targets in current package project for a given component belonging to another package. This may ends up in defining multiple target if this component also has dependencies.
+#
+#     :package: the name of the package that contains the component.
+#
+#     :component: the name of the component for which a target has to be created.
+#
+#     :mode: the build mode for the imported target.
+#
 function (create_All_Imported_Dependency_Targets package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #collect only the package dependencies, not the internal ones
@@ -626,6 +1089,26 @@ foreach(a_dep_package IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX}
 endforeach()
 endfunction(create_All_Imported_Dependency_Targets)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_External_Dependency_Target| replace:: ``create_External_Dependency_Target``
+#  .. _create_External_Dependency_Target:
+#
+#  create_External_Dependency_Target
+#  ---------------------------------
+#
+#   .. command:: create_External_Dependency_Target(EXT_TARGET_NAME link mode)
+#
+#     Create an imported target for an external dependency (external components or OS dependencies).
+#
+#     :link: the name of the link option. If this is a real linker option and not a library then no target is created.
+#
+#     :mode: the build mode for the imported target.
+#
+#     :EXT_TARGET_NAME: the output variable that contains the created target name.
+#
 function (create_External_Dependency_Target EXT_TARGET_NAME link mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 get_Link_Type(RES_TYPE ${link})
@@ -648,7 +1131,26 @@ else(RES_TYPE STREQUAL STATIC)
 endif()
 endfunction(create_External_Dependency_Target)
 
-
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Dependency_Target| replace:: ``create_Dependency_Target``
+#  .. _create_Dependency_Target:
+#
+#  create_Dependency_Target
+#  ------------------------
+#
+#   .. command:: create_Dependency_Target(dep_package dep_component mode)
+#
+#     Create an imported target for a dependency that is a native component belonging to another package than currently built one. This ends up in creating all targets required by this dependency if it has dependencies (recursion).
+#
+#     :dep_package: the name of the package that contains the dependency.
+#
+#     :dep_component: the name of the component that IS the dependency.
+#
+#     :mode: the build mode for the imported target.
+#
 function (create_Dependency_Target dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(NOT TARGET ${dep_package}-${dep_component}${TARGET_SUFFIX})#check that this target does not exist, otherwise naming conflict
@@ -669,9 +1171,39 @@ if(NOT TARGET ${dep_package}-${dep_component}${TARGET_SUFFIX})#check that this t
 endif()
 endfunction(create_Dependency_Target)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Additional_Imported_Component_Flags| replace:: ``manage_Additional_Imported_Component_Flags``
+#  .. _manage_Additional_Imported_Component_Flags:
+#
+#  manage_Additional_Imported_Component_Flags
+#  ------------------------------------------
+#
+#   .. command:: manage_Additional_Imported_Component_Flags(package component mode inc_dirs defs options public_links private_links)
+#
+#     Setting the build properties of an imported target of a component. This may ends up in creating new targets if the component has external dependencies.
+#
+#     :package: the name of the package that contains the component.
+#
+#     :component: the name of the component whose target properties has to be set.
+#
+#     :mode: the build mode for the imported target.
+#
+#     :inc_dirs: the list of path to include folders to set.
+#
+#     :defs: the list of preprocessor definitions to set.
+#
+#     :options: the list of compiler options to set.
+#
+#     :public_links: the list of path to linked libraries that are exported by component, or exported linker options.
+#
+#     :private_links: the list of path to linked libraries that are internal to component, or internal linker options.
+#
 function(manage_Additional_Imported_Component_Flags package component mode inc_dirs defs options public_links private_links)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-
+# managing include folders (-I<path>)
 foreach(dir IN LISTS inc_dirs)
 	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${dir}")
 endforeach()
@@ -723,10 +1255,30 @@ foreach(link IN LISTS private_links)
 		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${link})
 	endif()
 endforeach()
-
 endfunction(manage_Additional_Imported_Component_Flags)
 
-#function used to define which mode to use depending on the build mode in build (Release=release Debug= Debug or Release if Closed source and no debug binary available)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Imported_Target_Mode| replace:: ``get_Imported_Target_Mode``
+#  .. _get_Imported_Target_Mode:
+#
+#  get_Imported_Target_Mode
+#  ------------------------
+#
+#   .. command:: get_Imported_Target_Mode(MODE_TO_IMPORT imported_package imported_binary_location build_mode)
+#
+#     Deduce which mode to use depending on the build mode required for the imported target. Release mode implies using Release binary ; Debug mode implies using Debug mode binaries or Release mode binaries if component is Closed source or whenever no Debug binary available.
+#
+#     :imported_package: the name of the package that contains the imported target.
+#
+#     :imported_binary_location: the path to the binary that is imported.
+#
+#     :build_mode: the build mode for the imported target.
+#
+#     :MODE_TO_IMPORT: the output variable that contains the build mode to finally use for the imported target.
+#
 function(get_Imported_Target_Mode MODE_TO_IMPORT imported_package imported_binary_location build_mode)
 	if(mode MATCHES Debug)
 			is_Closed_Source_Dependency_Package(CLOSED ${imported_package})
@@ -740,7 +1292,26 @@ function(get_Imported_Target_Mode MODE_TO_IMPORT imported_package imported_binar
 	endif()
 endfunction(get_Imported_Target_Mode)
 
-# imported target, by definition, do not belog to the currently build package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Imported_Header_Library_Target| replace:: ``create_Imported_Header_Library_Target``
+#  .. _create_Imported_Header_Library_Target:
+#
+#  create_Imported_Header_Library_Target
+#  -------------------------------------
+#
+#   .. command:: create_Imported_Header_Library_Target(package component mode)
+#
+#     Create the imported target for a header only library belonging to a given native package.
+#
+#     :package: the name of the package that contains the library.
+#
+#     :component: the name of the header library.
+#
+#     :mode: the build mode for the imported target.
+#
 function(create_Imported_Header_Library_Target package component mode) #header libraries are never closed by definition
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
 	add_library(${package}-${component}${TARGET_SUFFIX} INTERFACE IMPORTED GLOBAL)#suffix used only for target name
@@ -749,10 +1320,30 @@ function(create_Imported_Header_Library_Target package component mode) #header l
 	list_Public_Definitions(DEFS ${package} ${component} ${mode})
 	list_Public_Options(OPTS ${package} ${component} ${mode})
 	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "")
-	# check that C/C++ languages are defined or defult them
+	# check that C/C++ languages are defined or set them to default
 	manage_Language_Standards(${package} ${component} ${mode})
 endfunction(create_Imported_Header_Library_Target)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Imported_Static_Library_Target| replace:: ``create_Imported_Static_Library_Target``
+#  .. _create_Imported_Static_Library_Target:
+#
+#  create_Imported_Static_Library_Target
+#  -------------------------------------
+#
+#   .. command:: create_Imported_Static_Library_Target(package component mode)
+#
+#     Create the imported target for a static library belonging to a given native package.
+#
+#     :package: the name of the package that contains the library.
+#
+#     :component: the name of the header library.
+#
+#     :mode: the build mode for the imported target.
+#
 function(create_Imported_Static_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode}) #get variables related to the current build mode
 	add_library(${package}-${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL) #create the target for the imported library
@@ -775,6 +1366,26 @@ function(create_Imported_Static_Library_Target package component mode)
 	manage_Language_Standards(${package} ${component} ${mode})
 endfunction(create_Imported_Static_Library_Target)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Imported_Shared_Library_Target| replace:: ``create_Imported_Shared_Library_Target``
+#  .. _create_Imported_Shared_Library_Target:
+#
+#  create_Imported_Shared_Library_Target
+#  -------------------------------------
+#
+#   .. command:: create_Imported_Shared_Library_Target(package component mode)
+#
+#     Create the imported target for a shared library belonging to a given native package.
+#
+#     :package: the name of the package that contains the library.
+#
+#     :component: the name of the header library.
+#
+#     :mode: the build mode for the imported target.
+#
 function(create_Imported_Shared_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
     if(WIN32)
@@ -807,6 +1418,26 @@ function(create_Imported_Shared_Library_Target package component mode)
 	manage_Language_Standards(${package} ${component} ${mode})
 endfunction(create_Imported_Shared_Library_Target)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Imported_Module_Library_Target| replace:: ``create_Imported_Module_Library_Target``
+#  .. _create_Imported_Module_Library_Target:
+#
+#  create_Imported_Module_Library_Target
+#  -------------------------------------
+#
+#   .. command:: create_Imported_Module_Library_Target(package component mode)
+#
+#     Create the imported target for a module library belonging to a given native package.
+#
+#     :package: the name of the package that contains the library.
+#
+#     :component: the name of the header library.
+#
+#     :mode: the build mode for the imported target.
+#
 function(create_Imported_Module_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
 	add_library(${package}-${component}${TARGET_SUFFIX} MODULE IMPORTED GLOBAL)#create the target for the imported library
@@ -821,7 +1452,26 @@ function(create_Imported_Module_Library_Target package component mode)
 	#no need to do more, a module is kind of an executable so it stops build recursion
 endfunction(create_Imported_Module_Library_Target)
 
-
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Imported_Executable_Target| replace:: ``create_Imported_Executable_Target``
+#  .. _create_Imported_Executable_Target:
+#
+#  create_Imported_Executable_Target
+#  ---------------------------------
+#
+#   .. command:: create_Imported_Executable_Target(package component mode)
+#
+#     Create the imported target for an executable belonging to a given native package.
+#
+#     :package: the name of the package that contains the executable.
+#
+#     :component: the name of the executable.
+#
+#     :mode: the build mode for the imported target.
+#
 function(create_Imported_Executable_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
 	add_executable(${package}-${component}${TARGET_SUFFIX} IMPORTED GLOBAL)#create the target for the imported executable
@@ -836,7 +1486,32 @@ function(create_Imported_Executable_Target package component mode)
 	#no need to do more, executable will not be linked in the build process (it stops build recursion)
 endfunction(create_Imported_Executable_Target)
 
-### resolving the standard to use depending on the standard used in dependency
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Standard_Before_Linking| replace:: ``resolve_Standard_Before_Linking``
+#  .. _resolve_Standard_Before_Linking:
+#
+#  resolve_Standard_Before_Linking
+#  -------------------------------
+#
+#   .. command:: resolve_Standard_Before_Linking(package component dep_package dep_component mode configure_build)
+#
+#    Resolve the final language standard to use for a component of the current native package depending on the standard used in one of its dependencies.
+#
+#     :package: the name of the package that contains the component that HAS a dependency (package currenlty built).
+#
+#     :component: the name of the component that HAS a dependency.
+#
+#     :dep_package: the name of the package that contains the dependency.
+#
+#     :dep_component: the name of the component that IS the dependency.
+#
+#     :mode: the build mode for the imported target.
+#
+#     :configure_build: if TRUE then set component's target properties adequately.
+#
 function(resolve_Standard_Before_Linking package component dep_package dep_component mode configure_build)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
@@ -861,7 +1536,36 @@ if( IS_LESS )#dependency has greater or equal level of standard required
 endif()
 endfunction(resolve_Standard_Before_Linking)
 
-### bind a component build locally to a component belonging to another package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |bind_Target| replace:: ``bind_Target``
+#  .. _bind_Target:
+#
+#  bind_Target
+#  -----------
+#
+#   .. command:: bind_Target(component dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
+#
+#   Bind the target of a component build locally to the target of a component belonging to another package.
+#
+#     :component: the name of the component whose target has to be bound to another target.
+#
+#     :dep_package: the name of the package that contains the dependency.
+#
+#     :dep_component: the name of the component that IS the dependency.
+#
+#     :mode: the build mode for the targets.
+#
+#     :export: if TRUE then set component's target export dep_component's target.
+#
+#     :comp_defs: the preprocessor definitions defined in component implementation that conditionate the use of dep_component.
+#
+#     :comp_exp_defs: the preprocessor definitions defined in component interface that conditionate the use of dep_component.
+#
+#     :dep_defs: the preprocessor definitions used in dep_component interface that are defined by dep_component.
+#
 function(bind_Target component dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
@@ -914,7 +1618,34 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Target)
 
-### bind a component built locally with another component buit locally
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |bind_Internal_Target| replace:: ``bind_Internal_Target``
+#  .. _bind_Internal_Target:
+#
+#  bind_Internal_Target
+#  --------------------
+#
+#   .. command:: bind_Internal_Target(component dep_component mode export comp_defs comp_exp_defs dep_defs)
+#
+#   Bind the targets of two components built in current package.
+#
+#     :component: the name of the component whose target has to be bound to another target.
+#
+#     :dep_component: the name of the component that IS the dependency.
+#
+#     :mode: the build mode for the targets.
+#
+#     :export: if TRUE then set component's target export dep_component's target.
+#
+#     :comp_defs: the preprocessor definitions defined in component implementation that conditionate the use of dep_component.
+#
+#     :comp_exp_defs: the preprocessor definitions defined in component interface that conditionate the use of dep_component.
+#
+#     :dep_defs: the preprocessor definitions used in dep_component interface that are defined by dep_component.
+#
 function(bind_Internal_Target component dep_component mode export comp_defs comp_exp_defs dep_defs)
 
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
@@ -973,7 +1704,30 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Internal_Target)
 
-### bind an imported target with another imported target
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |bind_Imported_Target| replace:: ``bind_Imported_Target``
+#  .. _bind_Imported_Target:
+#
+#  bind_Imported_Target
+#  --------------------
+#
+#   .. command:: bind_Imported_Target(package component dep_package dep_component mode)
+#
+#   Bind two imported targets.
+#
+#     :package: the name of the package that contains the component whose target depends on another imported target.
+#
+#     :component: the name of the component whose target depends on another imported target.
+#
+#     :dep_package: the name of the package that contains the dependency.
+#
+#     :dep_component: the name of the component that IS the dependency.
+#
+#     :mode: the build mode for the targets.
+#
 function(bind_Imported_Target package component dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 export_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${mode})
@@ -1008,8 +1762,38 @@ endif()	#else, it is an application or a module => runtime dependency declaratio
 endfunction(bind_Imported_Target)
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |fill_Component_Target_With_Dependency| replace:: ``fill_Component_Target_With_Dependency``
+#  .. _fill_Component_Target_With_Dependency:
+#
+#  fill_Component_Target_With_Dependency
+#  -------------------------------------
+#
+#   .. command:: fill_Component_Target_With_Dependency(component dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
+#
+#   Fill a component's target of the package currently built with information coming from another component (from same or another package). Subsidiary function that perform adeqaute actions depending on the package containing the dependency.
+#
+#     :component: the name of the component whose target depends on another component.
+#
+#     :dep_package: the name of the package that contains the dependency.
+#
+#     :dep_component: the name of the component that IS the dependency.
+#
+#     :mode: the build mode for the targets.
+#
+#     :export: if TRUE then set component's target export dep_component's target.
+#
+#     :comp_defs: the preprocessor definitions defined in component implementation that conditionate the use of dep_component.
+#
+#     :comp_exp_defs: the preprocessor definitions defined in component interface that conditionate the use of dep_component.
+#
+#     :dep_defs: the preprocessor definitions used in dep_component interface that are defined by dep_component.
+#
 function (fill_Component_Target_With_Dependency component dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
-if(${PROJECT_NAME} STREQUAL ${dep_package})#target already created elsewhere since internal target
+if(PROJECT_NAME STREQUAL ${dep_package})#target already created elsewhere since internal target
 	bind_Internal_Target(${component} ${dep_component} ${mode} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 else()# it is a dependency to another package
 	create_Dependency_Target(${dep_package} ${dep_component} ${mode})

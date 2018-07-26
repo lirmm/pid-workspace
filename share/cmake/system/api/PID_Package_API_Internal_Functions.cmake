@@ -42,9 +42,30 @@ include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 #################### package management public functions and macros ##############
 ##################################################################################
 
-##################################################################################
-###########################  declaration of the package ##########################
-##################################################################################
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Package| replace:: ``declare_Package``
+#  .. declare_Package:
+#
+#  declare_Package
+#  ---------------
+#
+#   .. command:: declare_Package(author institution mail year license address public_address description readme_file)
+#
+#     Declare the current CMake project as a native package. Internal counterpart to declare_PID_Package.
+#
+#     :author: the name of the contact author.
+#     :institution: the institution(s) to which the contact author belongs.
+#     :mail: E-mail of the contact author.
+#     :year: reflects the lifetime of the package.
+#     :license: The name of the license applying to the package.
+#     :address: The url of the package's official repository.
+#     :public_address: the public counterpart url to address.
+#     :description: a short description of the package.
+#     :readme_file: the path to a user-defined content of the readme file of the package.
+#
 macro(declare_Package author institution mail year license address public_address description readme_file)
 activate_Adequate_Languages()
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
@@ -406,11 +427,20 @@ init_Standard_Path_Cache_Variables()
 begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 endmacro(declare_Package)
 
-#####################################################################################
-################## setting info on documentation ####################################
-#####################################################################################
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Documentation_Target| replace:: ``create_Documentation_Target``
+#  .. _create_Documentation_Target:
+#
+#  create_Documentation_Target
+#  ---------------------------
+#
+#   .. command:: create_Documentation_Target()
+#
+#     Create the "site" target for currently defined package project, used to launch static site update.
+#
 function(create_Documentation_Target)
 if(NOT ${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
 	return()
@@ -480,17 +510,57 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 endif()
 endfunction(create_Documentation_Target)
 
-############################################################################
-################## setting currently developed version number ##############
-############################################################################
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Current_Version| replace:: ``set_Current_Version``
+#  .. _set_Current_Version:
+#
+#  set_Current_Version
+#  -------------------
+#
+#   .. command:: set_Current_Version(major minor patch)
+#
+#     Set the version of currently defined package project.
+#
+#     :major: the major version number
+#
+#     :minor: the minor version number
+#
+#     :patch: the patch version number
+#
 function(set_Current_Version major minor patch)
 	set_Version_Cache_Variables("${major}" "${minor}" "${patch}")
 	set_Install_Cache_Variables()
 endfunction(set_Current_Version)
 
-#####################################################################################################
-################## checking that the platfoprm description match the current platform ###############
-#####################################################################################################
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Platform_Constraints| replace:: ``check_Platform_Constraints``
+#  .. _check_Platform_Constraints:
+#
+#  check_Platform_Constraints
+#  --------------------------
+#
+#   .. command:: check_Platform_Constraints(RESULT IS_CURRENT type arch os abi constraints)
+#
+#     Check that the platform constraints provided match the current platform configuration. Constraints are checked only if the current platform matches platform filters provided.
+#
+#     :type: the target processor type used as a filter (may be empty string if no filter).
+#
+#     :arch: the target processor architecture (bits) used as a filter (may be empty string if no filter).
+#
+#     :os: the target kernel used as a filter (may be empty string if no filter).
+#
+#     :abi: the target abi type used as a filter (may be empty string if no filter).
+#
+#     :RESULT: the output variable that is TRUE if constraints are satisfied or if no constraint appliesdu to filters, FALSE if any constraint cannot be satisfied.
+#
+#     :IS_CURRENT: the output variable that contains the current platform identifier if current platformmatches all filters.
+#
 function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints)
 set(SKIP FALSE)
 #The check of compatibility between the target platform and the constraints is immediate using platform configuration information (platform files) + additionnal global information (distribution for instance) coming from the workspace
@@ -550,9 +620,20 @@ endif()
 add_Platform_Constraint_Set("${type}" "${arch}" "${os}" "${abi}" "${constraints}")
 endfunction(check_Platform_Constraints)
 
-##################################################################################
-################################### building the package #########################
-##################################################################################
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |build_Package| replace:: ``build_Package``
+#  .. _build_Package:
+#
+#  build_Package
+#  -------------
+#
+#   .. command:: build_Package()
+#
+#     Finalize configuration of the current package build process. Internal counterpart of build_PID_Package.
+#
 macro(build_Package)
 get_System_Variables(CURRENT_PLATFORM_NAME PACKAGE_SYSTEM_STRING)
 
@@ -983,15 +1064,46 @@ reset_Removed_Examples_Build_Option()
 finish_Progress(${GLOBAL_PROGRESS_VAR}) #managing the build from a global point of view
 endmacro(build_Package)
 
-##################################################################################
-###################### declaration of a library component ########################
-##################################################################################
-# internal_defs : definitions that affects the implementation of the library component
-# exported_defs : definitions that affects the interface of the library component
-# internal_inc_dirs : additionnal include dirs (internal to package, that contains header files, e.g. like common definition between package components, that don't have to be exported since not in the interface)
-# internal_links : only for module or shared libs some internal linker flags used to build the component
-# exported_links : only for static and shared libs : some linker flags (not a library inclusion, e.g. -l<li> or full path to a lib) that must be used when linking with the component
-#runtime resources: for all, path to file relative to and present in share/resources folder
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Library_Component| replace:: ``declare_Library_Component``
+#  .. _declare_Library_Component:
+#
+#  declare_Library_Component
+#  -------------------------
+#
+#   .. command:: declare_Library_Component(c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options exported_defs exported_compiler_options internal_links exported_links runtime_resources)
+#
+#     Declare a library in the currently defined package.
+#
+#     :c_name: the name of the library.
+#
+#     :dirname: the name of the folder that contains includes and/or source code of the library.
+#
+#     :type: the type of the library (HEADER, STATIC, SHARED or MODULE).
+#
+#     :c_standard: the C language standard used (may be empty).
+#
+#     :cxx_standard: the C++ language standard used (98, 11, 14, 17).
+#
+#     :internal_inc_dirs: additionnal include dirs (internal to package, that contains header files, e.g. like common definition between package components), that don't have to be exported since not in the interface of the library.
+#
+#     :internal_defs: definitions that affects only the implementation of the library.
+#
+#     :internal_compiler_options: compiler options used for building the library but not exported to component using the library.
+#
+#     :exported_defs: definitions that affects the interface (public headers) of the library.
+#
+#     :exported_compiler_options: compiler options that need to be used whenever a component uses the library.
+#
+#     :internal_links: only for module or shared libs some internal linker flags used to build the component.
+#
+#     :exported_links: only for static and shared libs : some linker flags (not a library inclusion, e.g. -l<li> or full path to a lib) that must be used when linking with the component.
+#
+#     :runtime_resources: list of path to files relative to share/resources folder, supposed to be used at runtime by the library.
+#
 function(declare_Library_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options exported_defs exported_compiler_options internal_links exported_links runtime_resources)
 #indicating that the component has been declared and need to be completed
 is_Library_Type(RES "${type}")
@@ -1113,14 +1225,40 @@ append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS_LIBS ${c_name})
 mark_As_Declared(${c_name})
 endfunction(declare_Library_Component)
 
-
-##################################################################################
-################# declaration of an application component ########################
-##################################################################################
-# internal_defs : definitions that affects the implementation of the application component
-# internal_link_flags : additionnal linker flags that affects required to link the application component
-# internal_inc_dirs : additionnal include dirs (internal to project, that contains header files, e.g. common definition between components that don't have to be exported)
-# FILTERED_EXPORTED_OPTS : additionnal compiler options to use when building the executable
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Application_Component| replace:: ``declare_Application_Component``
+#  .. _declare_Application_Component:
+#
+#  declare_Application_Component
+#  -----------------------------
+#
+#   .. command:: declare_Application_Component(c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options internal_link_flags runtime_resources)
+#
+#     Declare an  application (executable) in the currently defined package.
+#
+#     :c_name: the name of the application.
+#
+#     :dirname: the name of the folder that contains source code of the application.
+#
+#     :type: the type of the applciation (APPLICATION, EXAMPLE, TEST).
+#
+#     :c_standard: the C language standard used (may be empty).
+#
+#     :cxx_standard: the C++ language standard used (98, 11, 14, 17).
+#
+#     :internal_inc_dirs: additionnal include dirs (internal to package, that contains header files, e.g. like common definition between package components).
+#
+#     :internal_defs: preprocessor definitions used for building the application.
+#
+#     :internal_compiler_options: compiler options used for building the application.
+#
+#     :internal_link_flags: internal linker flags used to build the application.
+#
+#     :runtime_resources: list of path to files relative to share/resources folder, supposed to be used at runtime by the application.
+#
 function(declare_Application_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options internal_link_flags runtime_resources)
 
 is_Application_Type(RES "${type}")#double check, for internal use only (purpose: simplify PID code debugging)
@@ -1221,12 +1359,30 @@ append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS_SCRIPTS ${c_name})
 mark_As_Declared(${c_name})
 endfunction(declare_Python_Component)
 
-##################################################################################
-####### specifying a dependency between the current package and another one ######
-### global dependencies between packages (the system package is considered #######
-###### as external but requires no additionnal info (default system folders) #####
-### these functions are to be used after a find_package command. #################
-##################################################################################
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Package_Dependency| replace:: ``declare_Package_Dependency``
+#  .. _declare_Package_Dependency:
+#
+#  declare_Package_Dependency
+#  --------------------------
+#
+#   .. command:: declare_Package_Dependency(dep_package optional list_of_versions exact_versions list_of_components)
+#
+#     Specify a dependency between the currently defined package and another native package.
+#
+#     :dep_package: the package that is the dependency.
+#
+#     :optional: if TRUE the dependency is optional.
+#
+#     :list_of_versions: the list of possible incompatible versions for the dependency.
+#
+#     :exact_versions: the list of exact version among possible ones.
+#
+#     :list_of_components: the list of required components that must belong to dependency.
+#
 function(declare_Package_Dependency dep_package optional list_of_versions exact_versions list_of_components)
 # ${PROJECT_NAME}_DEPENDENCIES				# packages required by current package
 # ${PROJECT_NAME}__DEPENDENCY_${dep_package}_VERSION		# version constraint for package ${dep_package}   required by ${PROJECT_NAME}
@@ -1350,7 +1506,30 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 	endif()
 endfunction(declare_Package_Dependency)
 
-### declare external dependancies
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_External_Package_Dependency| replace:: ``declare_External_Package_Dependency``
+#  .. _declare_External_Package_Dependency:
+#
+#  declare_External_Package_Dependency
+#  -----------------------------------
+#
+#   .. command:: declare_External_Package_Dependency(dep_package optional list_of_versions exact_versions list_of_components)
+#
+#     Specify a dependency between the currently defined native package and an external package.
+#
+#     :dep_package: the external package that is the dependency.
+#
+#     :optional: if TRUE the dependency is optional.
+#
+#     :list_of_versions: the list of possible incompatible versions for the dependency.
+#
+#     :exact_versions: the list of exact version among possible ones.
+#
+#     :list_of_components: the list of required components that must belong to dependency.
+#
 function(declare_External_Package_Dependency dep_package optional list_of_versions exact_versions components_list)
 set(unused FALSE)
 # 0) check if a version of this dependency is required by another package
@@ -1497,19 +1676,32 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 endif()
 endfunction(declare_External_Package_Dependency)
 
-
-##################################################################################
-################# local dependencies between components ##########################
-### these functions are to be used after a find_package command and after ########
-### the declaration of internal components (otherwise will not work) #############
-##################################################################################
-
-### declare internal dependancies between components of the same package ${PROJECT_NAME}
-### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of ${dep_component}, if any  => definitions are exported
-### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of ${dep_component}, if any => definitions are not exported
-### dep_defs  : definitions in the interface of ${dep_component} that must be defined when ${component} uses ${dep_component}, if any => definitions are exported if dep_component is exported
-### export : if true the component export the dep_component in its interface (export is always false if component is an application)
-
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Internal_Component_Dependency| replace:: ``declare_Internal_Component_Dependency``
+#  .. _declare_Internal_Component_Dependency:
+#
+#  declare_Internal_Component_Dependency
+#  -------------------------------------
+#
+#   .. command:: declare_Internal_Component_Dependency(component dep_component export comp_defs comp_exp_defs dep_defs)
+#
+#     Specify a dependency between two components of the currently defined native package.
+#
+#     :component: the name of the component that have a dependency.
+#
+#     :dep_component: the name of the component that IS the dependency.
+#
+#     :export: if TRUE component exports dep_component (i.e. public headers of component include public headers of dep_component)
+#
+#     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of dep_component (may be an empty string). These definitions are not exported by component.
+#
+#     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of dep_component (may be an empty string). These definitions are exported by component.
+#
+#     :dep_defs: preprocessor definitions used in the interface of dep_component, that are set when component uses dep_component (may be an empty string). These definitions are exported if dep_component is exported by component.
+#
 function(declare_Internal_Component_Dependency component dep_component export comp_defs comp_exp_defs dep_defs)
 #message("declare_Internal_Component_Dependency : component = ${component}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
 set(COMP_WILL_BE_BUILT FALSE)
@@ -1575,12 +1767,34 @@ set(	${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}
 	CACHE INTERNAL "")
 endfunction(declare_Internal_Component_Dependency)
 
-
-### declare package dependancies between components of two packages ${PROJECT_NAME} and ${dep_package}
-### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of ${dep_component}, if any => definitions are exported
-### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of ${dep_component}, if any => definitions are not exported
-### dep_defs  : definitions in the interface of ${dep_component} that must be defined when ${component} uses ${dep_component}, if any => definitions are exported if dep_component is exported
-### export : if true the component export the dep_component in its interface (export is always false if component is an application or a module library)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Package_Component_Dependency| replace:: ``declare_Package_Component_Dependency``
+#  .. _declare_Package_Component_Dependency:
+#
+#  declare_Package_Component_Dependency
+#  ------------------------------------
+#
+#   .. command:: declare_Package_Component_Dependency(component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
+#
+#     Specify a dependency between a component of the currently defined native package and a component belonging to another native package.
+#
+#     :component: the name of the component that have a dependency.
+#
+#     :dep_package: the name of the package that contains the dependency.
+#
+#     :dep_component: the name of the component that IS the dependency,which belongs to dep_package.
+#
+#     :export: if TRUE component exports dep_component (i.e. public headers of component include public headers of dep_component)
+#
+#     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of dep_component (may be an empty string). These definitions are not exported by component.
+#
+#     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of dep_component (may be an empty string). These definitions are exported by component.
+#
+#     :dep_defs: preprocessor definitions used in the interface of dep_component, that are set when component uses dep_component (may be an empty string). These definitions are exported if dep_component is exported by component.
+#
 function(declare_Package_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
 	# ${PROJECT_NAME}_${component}_DEPENDENCIES			# packages used by the component ${component} of the current package
 	# ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS	# components of package ${dep_package} used by component ${component} of current package
@@ -1647,19 +1861,48 @@ set(	${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE
 	${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}}
 	${dep_component}
 	CACHE INTERNAL "")
-
 endfunction(declare_Package_Component_Dependency)
 
-### declare system (add-hoc) dependancy between a component of the current package and system components.
-### details: declare an dependancy that does not create new targets, it directly configure the "component" with adequate flags coming from the OS components. Should be used as rarely as possible, except for "true" system dependencies like math, threads, etc. Use -l option when linking with libraries (eventually together with -L options).
-### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of the system dependancy, if any  => definitions are exported
-### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of system dependancy, if any => definitions are not exported
-### dep_defs  : definitions in the interface of the system dependancy that must be defined when using this system dependancy, if any => definitions are exported if dependancy is exported
-### export : if true the component export the depenancy in its interface (export is always false if component is an application)
-### inc_dirs : include directories to add to target component in order to build (these include dirs are expressed with absolute path)
-### links : links defined by the system dependancy, will be exported in any case (except by executables components). shared or static links should always be in a default system path (e.g. /usr/lib) or retrieved by LD_LIBRARY_PATH for shared. Otherwise (not recommended) all path to libraries should be absolute.
-### compiler_options: compiler options used when compiling with system dependency. if the system dependency is exported, these options will be exported too.
-### runtime_resources: for executable runtime resources, they should always be in the PATH environment variable. For modules libraries they should always be in a default system path (e.g. /usr/lib) or retrieved by LD_LIBRARY_PATH. Otherwise (not recommended) they should be referenced with absolute path. For file resources absolute paths must be used.
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_System_Component_Dependency| replace:: ``declare_System_Component_Dependency``
+#  .. _declare_System_Component_Dependency:
+#
+#  declare_System_Component_Dependency
+#  -----------------------------------
+#
+#   .. command:: declare_System_Component_Dependency(component export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
+#
+#     Specify a dependency between a component of the currently defined native package and system components.
+#     details: declare a dependancy that does not create new targets, but directly configures the component with adequate flags coming from system dependencies.
+#     Should be avoided anytime possible, but useful to configure a component with flags and options coming from a platform configuration.
+#
+#     :component: the name of the component that have a dependency.
+#
+#     :export: if TRUE component exports the content of the dependency.
+#
+#     :inc_dirs: path to include directories required by the component in order to build.
+#
+#     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of system dependencies (may be an empty string). These definitions are not exported by component.
+#
+#     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of system dependencies (may be an empty string). These definitions are exported by component.
+#
+#     :dep_defs: preprocessor definitions used in the headers system dependencies, that are defined by component (may be an empty string). These definitions are exported if dep_component is exported by component.
+#
+#     :compiler_options: compiler options to use for this dependency (may be let empty).
+#
+#     :static_links: list of path to static libraries (may be let empty).
+#
+#     :shared_links: list of path to shared libraries or linker options (may be let empty).
+#
+#     :c_standard: the C language standard to use because of the dependency (may be let empty).
+#
+#     :cxx_standard: the C++ language standard to use because of the dependency (may be let empty).
+#
+#     :runtime_resources: set of path to files or folder used at runtime (may be let empty).
+#
 function(declare_System_Component_Dependency component export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
@@ -1697,21 +1940,51 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 else()
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()
-
 endfunction(declare_System_Component_Dependency)
 
-
-### declare external (add-hoc) dependancy between components of current and an external package.
-### details: declare an external dependancy that does not create new targets, it directly configure the "component" with adequate flags coming from "dep_package". Should be used prior to system dependencies for all dependencies that are not true system dependencies, even if installed in default systems folders).
-### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of the exported dependancy, if any  => definitions are exported
-### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of external dependancy, if any => definitions are not exported
-### dep_defs  : definitions in the interface of the external dependancy that must be defined when using this external dependancy, if any => definitions are exported if dependancy is exported
-### export : if true the component export the external depenancy in its interface (export is always false if component is an application)
-### inc_dirs : include directories to add to target component in order to build (these include dirs are expressed relatively) to the reference path to the external dependancy root dir
-### links : links defined by the system dependancy, will be exported in any case (except by executables components). shared or static links must always be given relative to the dep_package root dir.
-### compiler_options: compiler options used when compiling with external dependency. if the external dependency is exported, these options will be exported too.
-### runtime_resources: resources used at runtime (module libs, executable or files). They must always be specified according to the dep_package root dir.
-function(declare_External_Component_Dependency component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_External_Package_Component_Dependency| replace:: ``declare_External_Package_Component_Dependency``
+#  .. _declare_External_Package_Component_Dependency:
+#
+#  declare_External_Package_Component_Dependency
+#  ---------------------------------------------
+#
+#   .. command:: declare_External_Package_Component_Dependency(component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
+#
+#     Specify a dependency between a component of the currently defined native package and the content of an external package.
+#     details: declare an external dependancy that does not create new targets, but directly configures the component with adequate flags coming from dep_package.
+#     Should be used prior to system dependencies for all dependencies that are not true system dependencies but should be avoided everytime the external package provide a content description (use file).
+#
+#     :component: the name of the component that have a dependency.
+#
+#     :dep_package: the name of the external package that contains the dependency.
+#
+#     :export: if TRUE component exports the content of dep_package.
+#
+#     :inc_dirs: include directories to add to component in order to build it. These include dirs are expressed relatively to dep_package root dir using "<dep_package>" expression (e.g. <boost>).
+#
+#     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of dep_package (may be an empty string). These definitions are not exported by component.
+#
+#     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of dep_package (may be an empty string). These definitions are exported by component.
+#
+#     :dep_defs: preprocessor definitions used in the headers of dep_package, that are set by component(may be an empty string). These definitions are exported if dep_component is exported by component.
+#
+#     :compiler_options: compiler options to use for this dependency (may be let empty).
+#
+#     :static_links: list of path to static libraries relative to dep_package root dir (may be let empty).
+#
+#     :shared_links: list of path to shared libraries relative to dep_package root dir or linker options (may be let empty).
+#
+#     :c_standard: the C language standard to use because of the dependency (may be let empty).
+#
+#     :cxx_standard: the C++ language standard to use because of the dependency (may be let empty).
+#
+#     :runtime_resources: st of path to files or folder used at runtime relative to dep_package root dir (may be let empty).
+#
+function(declare_External_Package_Component_Dependency component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
@@ -1753,10 +2026,42 @@ else()
 		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 	endif()
 endif()
+endfunction(declare_External_Package_Component_Dependency)
 
-endfunction(declare_External_Component_Dependency)
-
-
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |collect_Links_And_Flags_For_External_Component| replace:: ``collect_Links_And_Flags_For_External_Component``
+#  .. _collect_Links_And_Flags_For_External_Component:
+#
+#  collect_Links_And_Flags_For_External_Component
+#  ----------------------------------------------
+#
+#   .. command:: collect_Links_And_Flags_For_External_Component(dep_package dep_component RES_INCS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_C_STANDARD RES_CXX_STANDARD RES_RUNTIME)
+#
+#     Get all required options needed to use an external component.
+#
+#     :dep_package: the name of the external package that contains the external component.
+#
+#     :dep_component: the name of the target external component.
+#
+#     :RES_INCS: output variable containing include path to use when using dep_component.
+#
+#     :RES_DEFS: output variable containing preprocessor definitions to use when using dep_component.
+#
+#     :RES_OPTS: output variable containing compiler options to use when using dep_component.
+#
+#     :RES_LINKS_STATIC: output variable containing the list of path to static libraries to use when using dep_component.
+#
+#     :RES_LINKS_SHARED: output variable containing the list of path to shared libraries and linker options to use when using dep_component.
+#
+#     :RES_C_STANDARD: output variable containing the C language standard to use when using dep_component.
+#
+#     :RES_CXX_STANDARD: output variable containing the C++ language standard to use when using dep_component.
+#
+#     :RES_RUNTIME: output variable containing the list of path to files or folder used at runtime by dep_component.
+#
 function(collect_Links_And_Flags_For_External_Component dep_package dep_component
 RES_INCS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_C_STANDARD RES_CXX_STANDARD RES_RUNTIME)
 set(INCS_RESULT)
@@ -1923,16 +2228,35 @@ set(${RES_C_STANDARD} ${C_STD_RESULT} PARENT_SCOPE)
 set(${RES_CXX_STANDARD} ${CXX_STD_RESULT} PARENT_SCOPE)
 endfunction(collect_Links_And_Flags_For_External_Component)
 
-### declare external structured dependancy (whose  has been provided) between components of current component and a component belonging to an external package.
-### detail: external structured dependancy are expressed quite like native ones. This requires that the external package is provided with a PID like description using dedicated API
-### details: declare an external dependancy that CREATES new targets, it directly configure the "component" with adequate flags coming from "dep_package". Should be used prior to system dependencies for all dependencies that are not true system dependencies, even if installed in default systems folders).
-### dep_package: the external package
-### dep_component: the component belonging to that external package
-### export : if true the component export the external depenancy in its interface (export is always false if component is an application)
-### comp_exp_defs : definitions in the interface of ${component} that conditionnate the use of ${dep_component}, if any => definitions are exported
-### comp_defs  : definitions in the implementation of ${component} that conditionnate the use of ${dep_component}, if any => definitions are not exported
-### dep_defs  : definitions in the interface of ${dep_component} that must be defined when ${component} uses ${dep_component}, if any => definitions are exported if dep_component is exported
-function(declare_External_Wrapper_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_External_Component_Dependency| replace:: ``declare_External_Component_Dependency``
+#  .. _declare_External_Component_Dependency:
+#
+#  declare_External_Component_Dependency
+#  -------------------------------------
+#
+#   .. command:: declare_External_Component_Dependency(component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
+#
+#     Specify a dependency between a component of the currently defined native package and a component belonging to an external package.
+#
+#     :component: the name of the component that have a dependency.
+#
+#     :dep_package: the name of the external package that contains the dependency.
+#
+#     :dep_component: the name of the external component that IS the dependency, which belongs to dep_package.
+#
+#     :export: if TRUE component exports dep_component (i.e. public headers of component include public headers of dep_component)
+#
+#     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of dep_component (may be an empty string). These definitions are not exported by component.
+#
+#     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of dep_component (may be an empty string). These definitions are exported by component.
+#
+#     :dep_defs: preprocessor definitions used in the interface of dep_component, that are set when component uses dep_component (may be an empty string). These definitions are exported if dep_component is exported by component.
+#
+function(declare_External_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
 
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
@@ -2000,9 +2324,22 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER") #a pure header comp
 else()
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()
+endfunction(declare_External_Component_Dependency)
 
-endfunction(declare_External_Wrapper_Component_Dependency)
-
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_Install_Script| replace:: ``generate_Package_Install_Script``
+#  .. _generate_Package_Install_Script:
+#
+#  generate_Package_Install_Script
+#  -------------------------------
+#
+#   .. command:: generate_Package_Install_Script()
+#
+#     (Re)Generate the stand alone install script into share folder of current package project.
+#
 function(generate_Package_Install_Script)
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/share/install)
 	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/install DESTINATION ${CMAKE_SOURCE_DIR}/share)

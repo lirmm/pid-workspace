@@ -31,6 +31,20 @@ set(PID_PACKAGE_CONFIGURATION_FUNCTIONS_INCLUDED TRUE)
 ####################### new API => configure the package with dependencies  #####################
 #################################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Closed_Source_Dependency_Packages| replace:: ``list_Closed_Source_Dependency_Packages``
+#  .. _list_Closed_Source_Dependency_Packages:
+#
+#  list_Closed_Source_Dependency_Packages
+#  --------------------------------------
+#
+#   .. command:: list_Closed_Source_Dependency_Packages()
+#
+#   List all dependencies (packages) of the currenlty defined package that have a close source license. The list is put in CLOSED_SOURCE_DEPENDENCIES cache variable.
+#
 function (list_Closed_Source_Dependency_Packages)
 set(CLOSED_PACKS)
 foreach(pack IN LISTS ${PROJECT_NAME}_ALL_USED_PACKAGES)
@@ -45,6 +59,24 @@ endif()
 set(CLOSED_SOURCE_DEPENDENCIES ${CLOSED_PACKS} CACHE INTERNAL "")
 endfunction(list_Closed_Source_Dependency_Packages)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Closed_Source_Dependency_Package| replace:: ``is_Closed_Source_Dependency_Package``
+#  .. _is_Closed_Source_Dependency_Package:
+#
+#  is_Closed_Source_Dependency_Package
+#  -----------------------------------
+#
+#   .. command:: is_Closed_Source_Dependency_Package(CLOSED package)
+#
+#   Checking whether a package is a closed source dependency of currenlty defined package.
+#
+#     :package: the name of the package that IS the dependency.
+#
+#     :CLOSED: the output variable that is TRUE if package is a close source dependency.
+#
 function(is_Closed_Source_Dependency_Package CLOSED package)
 list(FIND CLOSED_SOURCE_DEPENDENCIES ${package} INDEX)
 if(INDEX EQUAL -1)
@@ -54,7 +86,28 @@ else()#package found in closed source packs => it is closed source
 endif()
 endfunction(is_Closed_Source_Dependency_Package)
 
-### list all public headers of a component
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Public_Includes| replace:: ``list_Public_Includes``
+#  .. _list_Public_Includes:
+#
+#  list_Public_Includes
+#  --------------------
+#
+#   .. command:: list_Public_Includes(INCLUDES package component mode)
+#
+#   List all public include path of a component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :INCLUDES: the output variable that contains the list of public include path.
+#
 function(list_Public_Includes INCLUDES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
@@ -67,7 +120,28 @@ endif()
 set(${INCLUDES} ${RES} PARENT_SCOPE)
 endfunction(list_Public_Includes)
 
-### list all public links of a component
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Public_Links| replace:: ``list_Public_Links``
+#  .. _list_Public_Links:
+#
+#  list_Public_Links
+#  -----------------
+#
+#   .. command:: list_Public_Links(LINKS package component mode)
+#
+#   List all public links of a component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :LINKS: the output variable that contains the list of public links.
+#
 function(list_Public_Links LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #provided additionnal ld flags (exported external/system libraries and ldflags)
@@ -77,7 +151,28 @@ set(${LINKS} "${RES_LINKS}" PARENT_SCOPE)
 endif()
 endfunction(list_Public_Links)
 
-### list all public definitions of a component
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Public_Definitions| replace:: ``list_Public_Definitions``
+#  .. _list_Public_Definitions:
+#
+#  list_Public_Definitions
+#  -----------------------
+#
+#   .. command:: list_Public_Definitions(DEFS package component mode)
+#
+#   List all public preprocessor definitions of a component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :DEFS: the output variable that contains the list of public definitions.
+#
 function(list_Public_Definitions DEFS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${package}_${component}_DEFS${VAR_SUFFIX})
@@ -85,7 +180,28 @@ if(${package}_${component}_DEFS${VAR_SUFFIX})
 endif()
 endfunction(list_Public_Definitions)
 
-### list all public compile options of a component
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Public_Options| replace:: ``list_Public_Options``
+#  .. _list_Public_Options:
+#
+#  list_Public_Options
+#  -------------------
+#
+#   .. command:: list_Public_Options(OPTS package component mode)
+#
+#   List all public compiler options of a component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :OPTS: the output variable that contains the list of public compiler options.
+#
 function(list_Public_Options OPTS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #checking that no compiler option is used directly to set the standard
@@ -116,7 +232,28 @@ endforeach()
 set(${OPTS} ${FILTERED_OPTS} PARENT_SCOPE)
 endfunction(list_Public_Options)
 
-### get the location of a given component resulting binary on the filesystem
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Binary_Location| replace:: ``get_Binary_Location``
+#  .. _get_Binary_Location:
+#
+#  get_Binary_Location
+#  -------------------
+#
+#   .. command:: get_Binary_Location(LOCATION_RES package component mode)
+#
+#   Get the path of a given component's resulting binary in the filesystem.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :LOCATION_RES: the output variable that contains the path to the component's binary.
+#
 function(get_Binary_Location LOCATION_RES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 is_Executable_Component(IS_EXE ${package} ${component})
@@ -127,7 +264,28 @@ elseif(NOT ${package}_${component}_TYPE STREQUAL "HEADER")
 endif()
 endfunction(get_Binary_Location)
 
-### list all the private links of a component (its symbols are not exported, but need to be known in order to manage the link of executables adequately)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Private_Links| replace:: ``list_Private_Links``
+#  .. _list_Private_Links:
+#
+#  list_Private_Links
+#  ------------------
+#
+#   .. command:: list_Private_Links(PRIVATE_LINKS package component mode)
+#
+#   List all private links of a component. Symbolf of private links are not exported, but need to be known at executable link time in order to resolve global symbol resolution.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :PRIVATE_LINKS: the output variable that contains the list of private links.
+#
 function(list_Private_Links PRIVATE_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #provided additionnal ld flags (exported external/system libraries and ldflags)
@@ -137,14 +295,56 @@ set(${PRIVATE_LINKS} "${RES_LINKS}" PARENT_SCOPE)
 endif()
 endfunction(list_Private_Links)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Language_Standards| replace:: ``get_Language_Standards``
+#  .. _get_Language_Standards:
+#
+#  get_Language_Standards
+#  ----------------------
+#
+#   .. command:: get_Language_Standards(STD_C STD_CXX package component mode)
+#
+#   Get C and C++ language standard used for a component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :STD_C: the output variable that contains the C language standard used.
+#
+#     :STD_CXX: the output variable that contains the C++ language standard used.
+#
 function(get_Language_Standards STD_C STD_CXX package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(${STD_C} ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
 set(${STD_CXX} ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
 endfunction(get_Language_Standards)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Language_Standards| replace:: ``manage_Language_Standards``
+#  .. _manage_Language_Standards:
+#
+#  manage_Language_Standards
+#  -------------------------
+#
+#   .. command:: manage_Language_Standards(package component mode)
+#
+#   Set C and C++ language standard default values if not set for a component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
 function(manage_Language_Standards package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(NOT ${package}_${component}_C_STANDARD${VAR_SUFFIX})
@@ -158,6 +358,290 @@ endfunction(manage_Language_Standards)
 ###################### runtime dependencies management API #######################
 ##################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Bin_Component_Direct_Runtime_Resources_Dependencies| replace:: ``get_Bin_Component_Direct_Runtime_Resources_Dependencies``
+#  .. _get_Bin_Component_Direct_Runtime_Resources_Dependencies:
+#
+#  get_Bin_Component_Direct_Runtime_Resources_Dependencies
+#  -------------------------------------------------------
+#
+#   .. command:: get_Bin_Component_Direct_Runtime_Resources_Dependencies(RES_RESOURCES package component mode)
+#
+#   Get list of path to all resources (executables, modules, files and folders) directly used by a component (from another package than currenlty defined one) at runtime.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
+#
+function(get_Bin_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(result)
+if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
+	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${package} "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
+	foreach(path IN LISTS COMPLETE_RESOURCES_PATH)
+		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
+			list(APPEND result ${${package}_ROOT_DIR}/share/resources/${path})#the path contained by the link
+		else() #external or absolute resource path coming from external dependencies
+			list(APPEND result ${path})#the direct path to the dependency (absolute or relative to the external package)
+		endif()
+	endforeach()
+endif()
+set(${RES_RESOURCES} ${result} PARENT_SCOPE)
+endfunction(get_Bin_Component_Direct_Runtime_Resources_Dependencies)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Bin_Component_Runtime_Resources_Dependencies| replace:: ``get_Bin_Component_Runtime_Resources_Dependencies``
+#  .. _get_Bin_Component_Runtime_Resources_Dependencies:
+#
+#  get_Bin_Component_Runtime_Resources_Dependencies
+#  ------------------------------------------------
+#
+#   .. command:: get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES package component mode)
+#
+#   Get list of path to all resources (executables, modules, files and folders) directly or undirectly used by a component at runtime.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
+#
+function(get_Bin_Component_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(result)
+get_Bin_Component_Direct_Runtime_Resources_Dependencies(DIRECT_RESOURCES ${package} ${component} ${mode})
+list(APPEND result ${DIRECT_RESOURCES})
+
+foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
+		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
+		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
+		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
+		if(INT_DEP_RUNTIME_RESOURCES)
+			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
+		endif()
+		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+		endif()
+
+	endforeach()
+endforeach()
+
+# 3) adding internal components dependencies
+foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
+	#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
+	get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode})
+	if(INT_DEP_RUNTIME_RESOURCES)
+		list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
+	endif()
+	if(${package}_${int_dep}_TYPE STREQUAL "MODULE")
+		list(APPEND result ${${package}_ROOT_DIR}/lib/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+	elseif(${package}_${int_dep}_TYPE STREQUAL "APP" OR ${package}_${int_dep}_TYPE STREQUAL "EXAMPLE")
+		list(APPEND result ${${package}_ROOT_DIR}/bin/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+	endif()
+endforeach()
+
+set(${RES_RESOURCES} ${result} PARENT_SCOPE)
+endfunction(get_Bin_Component_Runtime_Resources_Dependencies)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Bin_Component_Direct_Internal_Runtime_Dependencies| replace:: ``get_Bin_Component_Direct_Internal_Runtime_Dependencies``
+#  .. _get_Bin_Component_Direct_Internal_Runtime_Dependencies:
+#
+#  get_Bin_Component_Direct_Internal_Runtime_Dependencies
+#  ------------------------------------------------------
+#
+#   .. command:: get_Bin_Component_Direct_Internal_Runtime_Dependencies(RES_RESOURCES package component mode prefix_path suffix_ext)
+#
+#   Get list of internal dependencies of a component that are runtime components.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :prefix_path: the prefix path to append to names of components targets found.
+#
+#     :suffix_ext: the suffix extension name to append to names of components targets found.
+#
+#     :RES_RESOURCES: the output variable that contains the list of internal runtime dependencies.
+#
+function(get_Bin_Component_Direct_Internal_Runtime_Dependencies RES_RESOURCES package component mode prefix_path suffix_ext)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(RES)
+foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	is_Runtime_Component(IS_RUNTIME ${package} ${int_dep})
+	if(IS_RUNTIME)
+		list(APPEND RES ${prefix_path}${int_dep}${TARGET_SUFFIX}${suffix_ext})
+	endif()
+endforeach()
+set(${RES_RESOURCES} ${RES} PARENT_SCOPE)
+endfunction(get_Bin_Component_Direct_Internal_Runtime_Dependencies)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Bin_Component_Direct_Runtime_Links_Dependencies| replace:: ``get_Bin_Component_Direct_Runtime_Links_Dependencies``
+#  .. _get_Bin_Component_Direct_Runtime_Links_Dependencies:
+#
+#  get_Bin_Component_Direct_Runtime_Links_Dependencies
+#  ---------------------------------------------------
+#
+#   .. command:: get_Bin_Component_Direct_Runtime_Links_Dependencies(RES_LINKS package component mode)
+#
+#   Get list of all public shared links directly used by a component at runtime.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :RES_LINKS: the output variable that contains the list of shared links used by component at runtime.
+#
+function(get_Bin_Component_Direct_Runtime_Links_Dependencies RES_LINKS package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(result)
+if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
+  resolve_External_Libs_Path(RES "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+	foreach(lib IN LISTS RES)
+		is_Shared_Lib_With_Path(IS_SHARED ${lib})
+		if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
+			list(APPEND result ${lib})
+		endif()
+	endforeach()
+endif()
+set(${RES_LINKS} ${result} PARENT_SCOPE)
+endfunction(get_Bin_Component_Direct_Runtime_Links_Dependencies)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Bin_Component_Runtime_Dependencies| replace:: ``get_Bin_Component_Runtime_Dependencies``
+#  .. _get_Bin_Component_Runtime_Dependencies:
+#
+#  get_Bin_Component_Runtime_Dependencies
+#  --------------------------------------
+#
+#   .. command:: get_Bin_Component_Runtime_Dependencies(ALL_RUNTIME_RESOURCES package component mode)
+#
+#   Get list of all public runtime dependencies used by a component at runtime. Used to generate PID symlinks to resolve loading of shared libraries used by the component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :ALL_RUNTIME_RESOURCES: the output variable that contains the list of all runtime dependencies of the component.
+#
+function(get_Bin_Component_Runtime_Dependencies ALL_RUNTIME_RESOURCES package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(result "")
+
+# 1) adding directly used external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
+
+get_Bin_Component_Direct_Runtime_Links_Dependencies(RES_LINKS ${package} ${component} ${mode})
+list(APPEND result ${RES_LINKS})
+
+# 2) adding package components dependencies
+foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
+		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC")
+			get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
+			if(INT_DEP_RUNTIME_RESOURCES)
+				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
+			endif()
+		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED")
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the shared library is a direct dependency of the component
+			is_Component_Exporting_Other_Components(EXPORTING ${dep_pack} ${dep_comp} ${mode})
+			if(EXPORTING) # doing transitive search only if shared libs export something
+				get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #need to resolve more external symbols only if the component is exported
+				if(INT_DEP_RUNTIME_RESOURCES)# guarding against shared libs presence
+					list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
+				endif()
+			endif() #no need to resolve external symbols if the shared library component is not exported
+		endif()
+	endforeach()
+endforeach()
+
+# 3) adding internal components dependencies
+foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")
+		get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
+		if(INT_DEP_RUNTIME_RESOURCES)
+			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
+		endif()
+	elseif(${package}_${int_dep}_TYPE STREQUAL "SHARED")
+		# no need to link internal dependencies with symbolic links (they will be found automatically)
+		is_Component_Exporting_Other_Components(EXPORTING ${package} ${int_dep} ${mode})
+		if(EXPORTING) # doing transitive search only if shared libs export something
+			get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode}) #need to resolve external symbols only if the component is exported
+			if(INT_DEP_RUNTIME_RESOURCES)# guarding against shared libs presence
+				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
+			endif()
+		endif() #no need to resolve external symbols if the shared library component is not exported
+	endif()
+endforeach()
+
+# 4) adequately removing first duplicates in the list
+list(REVERSE result)
+list(REMOVE_DUPLICATES result)
+list(REVERSE result)
+set(${ALL_RUNTIME_RESOURCES} ${result} PARENT_SCOPE)
+endfunction(get_Bin_Component_Runtime_Dependencies)
+
+##################################################################################
+################## finding shared libs dependencies for the linker ###############
+##################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_Dependent_Private_Shared_Libraries| replace:: ``find_Dependent_Private_Shared_Libraries``
+#  .. _find_Dependent_Private_Shared_Libraries:
+#
+#  find_Dependent_Private_Shared_Libraries
+#  ---------------------------------------
+#
+#   .. command:: find_Dependent_Private_Shared_Libraries(LIST_OF_UNDIRECT_DEPS package component is_direct mode)
+#
+#   Get the list of all private shared libraries that are undirect dependencies of a given component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :is_direct: if TRUE then links to external libraries of the component are not taken into account.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :LIST_OF_UNDIRECT_DEPS: the output variable that is the list of undirect shared libraries used by component.
+#
 function(find_Dependent_Private_Shared_Libraries LIST_OF_UNDIRECT_DEPS package component is_direct mode)
 set(undirect_list)
 get_Mode_Variables(mode_binary_suffix mode_var_suffix ${mode})
@@ -267,95 +751,28 @@ if(undirect_list) #if true we need to be sure that the rpath-link does not conta
 endif()
 endfunction(find_Dependent_Private_Shared_Libraries)
 
-function(get_Bin_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(result)
-if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
-	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${package} "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
-	foreach(path IN LISTS COMPLETE_RESOURCES_PATH)
-		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
-			list(APPEND result ${${package}_ROOT_DIR}/share/resources/${path})#the path contained by the link
-		else() #external or absolute resource path coming from external dependencies
-			list(APPEND result ${path})#the direct path to the dependency (absolute or relative to the external package)
-		endif()
-	endforeach()
-endif()
-set(${RES_RESOURCES} ${result} PARENT_SCOPE)
-endfunction(get_Bin_Component_Direct_Runtime_Resources_Dependencies)
-
-###
-function(get_Bin_Component_Direct_Internal_Runtime_Dependencies RES_RESOURCES package component mode prefix_path suffix_ext)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(RES)
-foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	is_Runtime_Component(IS_RUNTIME ${package} ${int_dep})
-	if(IS_RUNTIME)
-		list(APPEND RES ${prefix_path}${int_dep}${TARGET_SUFFIX}${suffix_ext})
-	endif()
-endforeach()
-set(${RES_RESOURCES} ${RES} PARENT_SCOPE)
-endfunction(get_Bin_Component_Direct_Internal_Runtime_Dependencies)
-
-###
-function(get_Bin_Component_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(result)
-get_Bin_Component_Direct_Runtime_Resources_Dependencies(DIRECT_RESOURCES ${package} ${component} ${mode})
-list(APPEND result ${DIRECT_RESOURCES})
-
-foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
-	foreach(dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
-		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
-		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
-		if(INT_DEP_RUNTIME_RESOURCES)
-			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
-		endif()
-		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
-		endif()
-
-	endforeach()
-endforeach()
-
-# 3) adding internal components dependencies
-foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
-	#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-	get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode})
-	if(INT_DEP_RUNTIME_RESOURCES)
-		list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
-	endif()
-	if(${package}_${int_dep}_TYPE STREQUAL "MODULE")
-		list(APPEND result ${${package}_ROOT_DIR}/lib/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-	elseif(${package}_${int_dep}_TYPE STREQUAL "APP" OR ${package}_${int_dep}_TYPE STREQUAL "EXAMPLE")
-		list(APPEND result ${${package}_ROOT_DIR}/bin/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
-	endif()
-endforeach()
-
-set(${RES_RESOURCES} ${result} PARENT_SCOPE)
-endfunction(get_Bin_Component_Runtime_Resources_Dependencies)
-
-
-###
-function(get_Bin_Component_Direct_Runtime_Links_Dependencies RES_LINKS package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(result)
-if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
-  resolve_External_Libs_Path(RES "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
-	foreach(lib IN LISTS RES)
-		is_Shared_Lib_With_Path(IS_SHARED ${lib})
-		if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
-			list(APPEND result ${lib})
-		endif()
-	endforeach()
-endif()
-set(${RES_LINKS} ${result} PARENT_SCOPE)
-endfunction(get_Bin_Component_Direct_Runtime_Links_Dependencies)
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies| replace:: ``get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies``
+#  .. _get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies:
+#
+#  get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies
+#  ----------------------------------------------------------
+#
+#   .. command:: get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS package component mode)
+#
+#   Get list of all private shared links directly used by a component at runtime.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :RES_PRIVATE_LINKS: the output variable that contains the list of private shared links used by component at runtime.
+#
 function(get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies RES_PRIVATE_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
@@ -372,69 +789,26 @@ endif()
 set(${RES_PRIVATE_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies)
 
-
-### recursive function to find runtime dependencies
-function(get_Bin_Component_Runtime_Dependencies ALL_RUNTIME_RESOURCES package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(result "")
-
-# 1) adding directly used external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
-
-get_Bin_Component_Direct_Runtime_Links_Dependencies(RES_LINKS ${package} ${component} ${mode})
-list(APPEND result ${RES_LINKS})
-
-# 2) adding package components dependencies
-foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
-	foreach(dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
-		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER" OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC")
-			get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
-			if(INT_DEP_RUNTIME_RESOURCES)
-				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
-			endif()
-		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the shared library is a direct dependency of the component
-			is_Bin_Component_Exporting_Other_Components(EXPORTING ${dep_pack} ${dep_comp} ${mode})
-			if(EXPORTING) # doing transitive search only if shared libs export something
-				get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #need to resolve more external symbols only if the component is exported
-				if(INT_DEP_RUNTIME_RESOURCES)# guarding against shared libs presence
-					list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
-				endif()
-			endif() #no need to resolve external symbols if the shared library component is not exported
-		endif()
-	endforeach()
-endforeach()
-
-# 3) adding internal components dependencies
-foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	if(${package}_${int_dep}_TYPE STREQUAL "HEADER" OR ${package}_${int_dep}_TYPE STREQUAL "STATIC")
-		get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
-		if(INT_DEP_RUNTIME_RESOURCES)
-			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
-		endif()
-	elseif(${package}_${int_dep}_TYPE STREQUAL "SHARED")
-		# no need to link internal dependencies with symbolic links (they will be found automatically)
-		is_Bin_Component_Exporting_Other_Components(EXPORTING ${package} ${int_dep} ${mode})
-		if(EXPORTING) # doing transitive search only if shared libs export something
-			get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode}) #need to resolve external symbols only if the component is exported
-			if(INT_DEP_RUNTIME_RESOURCES)# guarding against shared libs presence
-				list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
-			endif()
-		endif() #no need to resolve external symbols if the shared library component is not exported
-	endif()
-endforeach()
-
-# 4) adequately removing first duplicates in the list
-list(REVERSE result)
-list(REMOVE_DUPLICATES result)
-list(REVERSE result)
-set(${ALL_RUNTIME_RESOURCES} ${result} PARENT_SCOPE)
-endfunction(get_Bin_Component_Runtime_Dependencies)
-
-
-##################################################################################
-################## finding shared libs dependencies for the linker ###############
-##################################################################################
-
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Source_Component_Linktime_Dependencies| replace:: ``resolve_Source_Component_Linktime_Dependencies``
+#  .. _resolve_Source_Component_Linktime_Dependencies:
+#
+#  resolve_Source_Component_Linktime_Dependencies
+#  ----------------------------------------------
+#
+#   .. command:: resolve_Source_Component_Linktime_Dependencies(component mode THIRD_PARTY_LINKS)
+#
+#   Resolve required symbols for building a component contained in currently defined package. This consists in finding undirect shared libraries that are theorically unknown in the context of the component but that are required in order to globally resolve symbols when linking the executable.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :THIRD_PARTY_LINKS: the output variable that contains the list of undirect private shared dependencies of component.
+#
 function(resolve_Source_Component_Linktime_Dependencies component mode THIRD_PARTY_LINKS)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
@@ -491,7 +865,24 @@ endfunction(resolve_Source_Component_Linktime_Dependencies)
 ################## binary packages configuration #################################
 ##################################################################################
 
-### resolve runtime dependencies for packages
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Package_Runtime_Dependencies| replace:: ``resolve_Package_Runtime_Dependencies``
+#  .. _resolve_Package_Runtime_Dependencies:
+#
+#  resolve_Package_Runtime_Dependencies
+#  ------------------------------------
+#
+#   .. command:: resolve_Package_Runtime_Dependencies(package mode)
+#
+#   Resolve all runtime dependencies for all components of a given package.
+#
+#     :package: the name of the package.
+#
+#     :mode: the build mode (Release or Debug) for the package.
+#
 function(resolve_Package_Runtime_Dependencies package mode)
 if(${package}_PREPARE_RUNTIME)#this is a guard to limit recursion -> the runtime has already been prepared
 	return()
@@ -518,8 +909,26 @@ set(${package}_DURING_PREPARE_RUNTIME FALSE)
 set(${package}_PREPARE_RUNTIME TRUE)
 endfunction(resolve_Package_Runtime_Dependencies)
 
-
-### resolve runtime dependencies for components
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Bin_Component_Runtime_Dependencies| replace:: ``resolve_Bin_Component_Runtime_Dependencies``
+#  .. _resolve_Bin_Component_Runtime_Dependencies:
+#
+#  resolve_Bin_Component_Runtime_Dependencies
+#  ------------------------------------------
+#
+#   .. command:: resolve_Bin_Component_Runtime_Dependencies(package component mode)
+#
+#   Resolve runtime dependencies for a component contained in another package than currenlty defined one (a binary component). Resolution consists in creating adequate symlinks for shared libraries used by component.
+#
+#     :package: the name of the package that contains the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
 function(resolve_Bin_Component_Runtime_Dependencies package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(	${package}_${component}_TYPE STREQUAL "SHARED"
@@ -563,43 +972,144 @@ if(	${package}_${component}_TYPE STREQUAL "SHARED"
 endif()
 endfunction(resolve_Bin_Component_Runtime_Dependencies)
 
-
-### configuring components runtime paths (links to libraries)
-function(create_Bin_Component_Symlinks bin_package bin_component mode resources)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Bin_Component_Symlinks| replace:: ``create_Bin_Component_Symlinks``
+#  .. _create_Bin_Component_Symlinks:
+#
+#  create_Bin_Component_Symlinks
+#  -----------------------------
+#
+#   .. command:: create_Bin_Component_Symlinks(package component mode)
+#
+#   Generating symlinks to a set of runtime resources used by a component contained in a package that is not the currenlty defined one.
+#
+#     :package: the name of the package that contains the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :resources: the list of path to resources that need to be symlinked.
+#
+function(create_Bin_Component_Symlinks package component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #creatings symbolic links
 foreach(resource IN LISTS resources)
-	create_Runtime_Symlink("${resource}" "${${bin_package}_ROOT_DIR}/.rpath" ${bin_component}${TARGET_SUFFIX})
+	create_Runtime_Symlink("${resource}" "${${package}_ROOT_DIR}/.rpath" ${component}${TARGET_SUFFIX})
 endforeach()
 endfunction(create_Bin_Component_Symlinks)
 
-function(create_Bin_Component_Python_Symlinks bin_package bin_component mode resources)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Bin_Component_Python_Symlinks| replace:: ``create_Bin_Component_Python_Symlinks``
+#  .. _create_Bin_Component_Python_Symlinks:
+#
+#  create_Bin_Component_Python_Symlinks
+#  ------------------------------------
+#
+#   .. command:: create_Bin_Component_Python_Symlinks(package component mode)
+#
+#   Generating symlinks to a set of resources needed by a component contained in a package that is not the currenlty defined one. These symlinks are created in a place where python scripts can find them.
+#
+#     :package: the name of the package that contains the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :resources: the list of path to runtime resources that need to be symlinked.
+#
+function(create_Bin_Component_Python_Symlinks package component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(resource IN LISTS resources)
-	create_Runtime_Symlink("${resource}" "${${bin_package}_ROOT_DIR}/share/script" ${bin_component})#installing Debug and Release modes links in the same script folder
+	create_Runtime_Symlink("${resource}" "${${package}_ROOT_DIR}/share/script" ${component})#installing Debug and Release modes links in the same script folder
 endforeach()
 endfunction(create_Bin_Component_Python_Symlinks)
 
 ##################################################################################
 ################### source package run time dependencies in install tree #########
 ##################################################################################
-function(create_Source_Component_Python_Symlinks component mode targets)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Source_Component_Python_Symlinks| replace:: ``create_Source_Component_Python_Symlinks``
+#  .. _create_Source_Component_Python_Symlinks:
+#
+#  create_Source_Component_Python_Symlinks
+#  ---------------------------------------
+#
+#   .. command:: create_Source_Component_Python_Symlinks(component mode resources)
+#
+#   Installing symlinks to a set of resources needed by a component of the currenlty defined package. These symlinks are installed in a place where python scripts can find them.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :resources: the list of path to runtime resources that need to be symlinked.
+#
+function(create_Source_Component_Python_Symlinks component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-foreach(target IN LISTS targets)
-	install_Runtime_Symlink(${target} "${${PROJECT_NAME}_DEPLOY_PATH}/share/script" ${component})#installing Debug and Release modes links in the same script folder
+foreach(resource IN LISTS resources)
+	install_Runtime_Symlink(${resource} "${${PROJECT_NAME}_DEPLOY_PATH}/share/script" ${component})#installing Debug and Release modes links in the same script folder
 endforeach()
 endfunction(create_Source_Component_Python_Symlinks)
 
-### configuring source components (currently built) runtime paths (links to libraries, executable, modules, files, etc.)
-function(create_Source_Component_Symlinks component mode targets)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Source_Component_Symlinks| replace:: ``create_Source_Component_Symlinks``
+#  .. _create_Source_Component_Symlinks:
+#
+#  create_Source_Component_Symlinks
+#  --------------------------------
+#
+#   .. command:: create_Source_Component_Symlinks(component mode resources)
+#
+#   Installing symlinks to a set of resources needed by a component of the currenlty defined package.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :resources: the list of path to runtime resources that need to be symlinked.
+#
+function(create_Source_Component_Symlinks component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-foreach(target IN LISTS targets)
-	install_Runtime_Symlink(${target} "${${PROJECT_NAME}_DEPLOY_PATH}/.rpath" ${component}${TARGET_SUFFIX})
+foreach(resource IN LISTS resources)
+	install_Runtime_Symlink(${resource} "${${PROJECT_NAME}_DEPLOY_PATH}/.rpath" ${component}${TARGET_SUFFIX})
 endforeach()
-###
 endfunction(create_Source_Component_Symlinks)
 
-function(resolve_Source_Component_Runtime_Dependencies component mode THIRD_PARTY_LIBS)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Source_Component_Runtime_Dependencies| replace:: ``resolve_Source_Component_Runtime_Dependencies``
+#  .. _resolve_Source_Component_Runtime_Dependencies:
+#
+#  resolve_Source_Component_Runtime_Dependencies
+#  ---------------------------------------------
+#
+#   .. command:: resolve_Source_Component_Runtime_Dependencies(component mode third_party_libs)
+#
+#   Resolve runtime dependencies of a component in the currenlty defined package. Finally create symlinks to these runtime resources in the install tree.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :third_party_libs: the list of third party libraries for which symlinks must be created in addition of those resolved by the function. Used when creating symlinks for an application to ensure the executable will finally load the goos libraries (for instance instead of OS ones).
+#
+function(resolve_Source_Component_Runtime_Dependencies component mode third_party_libs)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE"
@@ -614,8 +1124,8 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
 	# 3) in case of an executable component add third party (undirect) links
-  if(THIRD_PARTY_LIBS)
-		list(APPEND ALL_RUNTIME_DEPS ${THIRD_PARTY_LIBS})
+  if(third_party_libs)
+		list(APPEND ALL_RUNTIME_DEPS ${third_party_libs})
   endif()
 
 	create_Source_Component_Symlinks(${component} ${CMAKE_BUILD_TYPE} "${ALL_RUNTIME_DEPS}")
@@ -644,7 +1154,26 @@ endfunction(resolve_Source_Component_Runtime_Dependencies)
 ################### source package run time dependencies in build tree ###########
 ##################################################################################
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Source_Component_Direct_Runtime_Resources_Dependencies| replace:: ``get_Source_Component_Direct_Runtime_Resources_Dependencies``
+#  .. _get_Source_Component_Direct_Runtime_Resources_Dependencies:
+#
+#  get_Source_Component_Direct_Runtime_Resources_Dependencies
+#  ----------------------------------------------------------
+#
+#   .. command:: get_Source_Component_Direct_Runtime_Resources_Dependencies(RES_RESOURCES component mode)
+#
+#   Get list of path to all runtime resources (executables, modules, files and folders) directly used by a component (from currenlty defined package) at runtime.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
+#
 function(get_Source_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCES component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
@@ -662,6 +1191,26 @@ endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Source_Component_Direct_Runtime_Resources_Dependencies)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Source_Component_Runtime_Resources_Dependencies| replace:: ``get_Source_Component_Runtime_Resources_Dependencies``
+#  .. get_Source_Component_Runtime_Resources_Dependencies:
+#
+#  get_Source_Component_Runtime_Resources_Dependencies
+#  ---------------------------------------------------
+#
+#   .. command:: get_Source_Component_Runtime_Resources_Dependencies(RES_RESOURCES component mode)
+#
+#   Get list of path to all resources (executables, modules, files and folders) directly or undirectly used by a component (from currenlty defined package) at runtime.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
+#
 function(get_Source_Component_Runtime_Resources_Dependencies RES_RESOURCES component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
@@ -703,8 +1252,26 @@ endforeach()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Source_Component_Runtime_Resources_Dependencies)
 
-
-### configuring source components (currntly built) runtime paths (links to libraries, executable, modules, files, etc.)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Source_Component_Symlinks_Build_Tree| replace:: ``create_Source_Component_Symlinks_Build_Tree``
+#  .. _create_Source_Component_Symlinks_Build_Tree:
+#
+#  create_Source_Component_Symlinks_Build_Tree
+#  -------------------------------------------
+#
+#   .. command:: create_Source_Component_Symlinks_Build_Tree(component mode resources)
+#
+#   In build tree, create symlinks to a set of runtime resources (executables, modules, files, folders) needed by a component of the currenlty defined package.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :resources: the list of path to runtime resources that need to be symlinked.
+#
 function(create_Source_Component_Symlinks_Build_Tree component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(NOT "${resources}" STREQUAL "")
@@ -714,7 +1281,24 @@ if(NOT "${resources}" STREQUAL "")
 endif()
 endfunction(create_Source_Component_Symlinks_Build_Tree)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Source_Component_Runtime_Dependencies_Build_Tree| replace:: ``resolve_Source_Component_Runtime_Dependencies_Build_Tree``
+#  .. _resolve_Source_Component_Runtime_Dependencies_Build_Tree:
+#
+#  resolve_Source_Component_Runtime_Dependencies_Build_Tree
+#  --------------------------------------------------------
+#
+#   .. command:: resolve_Source_Component_Runtime_Dependencies_Build_Tree(component mode)
+#
+#   Resolve runtime dependencies of a component in the currenlty defined package. Finally create symlinks to these runtime resources in the build tree. This differentiation is mandatory to get runtime resource mechanism working in build tree (required for runninf test units using runtime resources for instance).
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
 function(resolve_Source_Component_Runtime_Dependencies_Build_Tree component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
@@ -732,6 +1316,21 @@ endfunction(resolve_Source_Component_Runtime_Dependencies_Build_Tree)
 ###############################################################################################
 ############################## cleaning the installed tree ####################################
 ###############################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |clean_Install_Dir| replace:: ``clean_Install_Dir``
+#  .. clean_Install_Dir:
+#
+#  clean_Install_Dir
+#  -----------------
+#
+#   .. command:: clean_Install_Dir()
+#
+#   Define a target that automatically cleans the install folder of the currenlty defined package anytime the build target is launched.
+#
 function(clean_Install_Dir)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 if(	${CMAKE_BUILD_TYPE} MATCHES Release
