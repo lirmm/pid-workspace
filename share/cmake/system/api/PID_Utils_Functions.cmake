@@ -1488,6 +1488,80 @@ endfunction(is_Shared_Lib_With_Path)
 #
 # .. ifmode:: internal
 #
+#  .. |create_Shared_Lib_Extension| replace:: ``create_Shared_Lib_Extension``
+#  .. create_Shared_Lib_Extension:
+#
+#  _create_Shared_Lib_Extension
+#  ----------------------------
+#
+#   .. command:: create_Shared_Lib_Extension(RES_EXT platform soname)
+#
+#    Get the extension string to use for shared libraries.
+#
+#     :platform: the identifier of target platform.
+#
+#     :soname: the soname to use for unix shared objects
+#
+#     :RES_EXT: the output variable containing the resulting extension to use for shared objects, depending on platform.
+#
+function(create_Shared_Lib_Extension RES_EXT platform soname)
+	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
+	if(RES_OS STREQUAL macosx)
+		set(${RES_EXT} ".dylib" PARENT_SCOPE)
+	elseif(RES_OS STREQUAL windows)
+		set(${RES_EXT} ".dll" PARENT_SCOPE)
+	else()# Linux or any other standard UNIX system
+		if(soname)
+			string(REGEX MATCH "^\\.[0-9].*$" MATCHED ${soname})
+			if(MATCHED)#MATCH: the expression start with a dot
+				set(${RES_EXT} ".so${MATCHED}" PARENT_SCOPE)
+			else()#the expression starts with a number, simply add the dot
+				set(${RES_EXT} ".so.${soname}" PARENT_SCOPE)
+			endif()
+		else()
+			set(${RES_EXT} ".so" PARENT_SCOPE)
+		endif()
+	endif()
+endfunction(create_Shared_Lib_Extension)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |shared_Library_Extension_Has_Soname| replace:: ``shared_Library_Extension_Has_Soname``
+#  .. _shared_Library_Extension_Has_Soname:
+#
+#  shared_Library_Extension_Has_Soname
+#  -----------------------------------
+#
+#   .. command:: shared_Library_Extension_Has_Soname(HAS_SONAME library_path)
+#
+#    Check whether a shared library has a soname appended to its extension.
+#
+#     :library_path: the path to the library.
+#
+#     :HAS_SONAME: the output variable that is TRUE if the extension finish by a SONAME.
+#
+function(shared_Library_Extension_Has_Soname HAS_SONAME library_path)
+	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
+	if(NOT RES_OS STREQUAL macosx
+		AND NOT RES_OS STREQUAL windows)
+		get_filename_component(EXTENSION ${library_path} EXT)#get the longest extension of the file
+		if(EXTENSION MATCHES "^\\.so(\\.[0-9]+)*$")
+			# this check is here to ensure that a library name ending with a dot followed by any characters
+			# will not be considered as a library extension (e.g. example for which this check has been done : libusb-1.0)
+			set(${HAS_SONAME} TRUE PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+	set(${HAS_SONAME} FALSE PARENT_SCOPE)
+endfunction(shared_Library_Extension_Has_Soname)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |get_Link_Type| replace:: ``get_Link_Type``
 #  .. _get_Link_Type:
 #

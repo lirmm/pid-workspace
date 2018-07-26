@@ -36,13 +36,39 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 ############ description of functions implementing the wrapper API #############
 ################################################################################
 
-### reconfiguring a wrapper
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reconfigure_Wrapper_Build| replace:: ``reconfigure_Wrapper_Build``
+#  .. _reconfigure_Wrapper_Build:
+#
+#  reconfigure_Wrapper_Build
+#  -------------------------
+#
+#   .. command:: reconfigure_Wrapper_Build()
+#
+#     Reconfigure the currently built wrapper (i.e. launch cmake configuration).
+#
 function(reconfigure_Wrapper_Build)
 set(TARGET_BUILD_FOLDER ${${PROJECT_NAME}_ROOT_DIR}/build)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
 endfunction(reconfigure_Wrapper_Build)
 
-### reset whole data from version description to ensure there is no faulty description due to content change
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Wrapper_Description_Cached_Variables| replace:: ``reset_Wrapper_Description_Cached_Variables``
+#  .. _reset_Wrapper_Description_Cached_Variables:
+#
+#  reset_Wrapper_Description_Cached_Variables
+#  ------------------------------------------
+#
+#   .. command:: reset_Wrapper_Description_Cached_Variables()
+#
+#     Reset all cache variables of the currently built wrapper. Used to ensure consistency of wrapper description.
+#
 function(reset_Wrapper_Description_Cached_Variables)
 
 #reset versions description
@@ -137,10 +163,38 @@ foreach(opt IN LISTS ${PROJECT_NAME}_USER_OPTIONS)
 	set(${PROJECT_NAME}_USER_OPTION_${opt}_VALUE CACHE INTERNAL "")
 endforeach()
 set(${PROJECT_NAME}_USER_OPTIONS CACHE INTERNAL "")
-
 endfunction(reset_Wrapper_Description_Cached_Variables)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Wrapper| replace:: ``declare_Wrapper``
+#  .. _declare_Wrapper:
+#
+#  declare_Wrapper
+#  ---------------
+#
+#   .. command:: declare_Wrapper(author institution mail year license address public_address description readme_file)
+#
+#     Declare the current CMake project has a PID external project wrapper. Internal counterpart of declare_PID_Wrapper.
+#
+#      :author: the name of the contact author.
+#
+#      :institution: the name of the contact author institution.
+#
+#      :year: the dates of project lifecyle.
+#
+#      :license: the name of the license applying to the wrapper's content.
+#
+#      :address: the url of the wrapper repository.
+#
+#      :public_address: the public counterpart (http) of address.
+#
+#      :description: description of the wrapper.
+#
+#      :readme_file: user defined  content of wrapper readme file.
+#
 macro(declare_Wrapper author institution mail year license address public_address description readme_file)
 set(${PROJECT_NAME}_ROOT_DIR ${WORKSPACE_DIR}/wrappers/${PROJECT_NAME} CACHE INTERNAL "")
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
@@ -244,11 +298,46 @@ else()
 endif()
 endmacro(declare_Wrapper)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Wrapper_Global_Cache_Options| replace:: ``declare_Wrapper_Global_Cache_Options``
+#  .. _declare_Wrapper_Global_Cache_Options:
+#
+#  declare_Wrapper_Global_Cache_Options
+#  ------------------------------------
+#
+#   .. command:: declare_Wrapper_Global_Cache_Options()
+#
+#     Declare configurable options for the currently built wrapper.
+#
 macro(declare_Wrapper_Global_Cache_Options)
 option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 endmacro(declare_Wrapper_Global_Cache_Options)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Wrapper_Option| replace:: ``set_Wrapper_Option``
+#  .. _set_Wrapper_Option:
+#
+#  set_Wrapper_Option
+#  ------------------
+#
+#   .. command:: set_Wrapper_Option(name type default_value description)
+#
+#     Declare a user defined option for the currently built wrapper.
+#
+#      :name: the name of the option as it will appear in cmake gui.
+#
+#      :type: the type of the option as it will appear in cmake gui.
+#
+#      :default_value: the default value for the option (depends on type).
+#
+#      :description: the user readable description of the option as it will appear in cmake gui.
+#
 function(set_Wrapper_Option name type default_value description)
 set(${name} ${default_value} CACHE ${type} "${description}")
 set(${PROJECT_NAME}_USER_OPTIONS ${${PROJECT_NAME}_USER_OPTIONS} ${name} CACHE INTERNAL "")
@@ -257,14 +346,50 @@ set(${PROJECT_NAME}_USER_OPTION_${name}_VALUE ${${name}} CACHE INTERNAL "")
 message("[PID] INFO : Value of user option ${name} is \"${${PROJECT_NAME}_USER_OPTION_${name}_VALUE}\"")
 endfunction(set_Wrapper_Option name type default_value)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |define_Wrapped_Project| replace:: ``define_Wrapped_Project``
+#  .. _define_Wrapped_Project:
+#
+#  define_Wrapped_Project
+#  ----------------------
+#
+#   .. command:: define_Wrapped_Project(authors_references licenses original_project_url)
+#
+#     Define the meta-data related to the wrapped external project, for the currently built wrapper.
+#
+#      :authors_references: the string explaining who are the original authors.
+#
+#      :licenses: the string explaining what licenses are used in original project.
+#
+#      :original_project_url: the url of the original project site.
+#
 function(define_Wrapped_Project authors_references licenses original_project_url)
 set(${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_AUTHORS ${authors_references} CACHE INTERNAL "")
 set(${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_LICENSES ${licenses} CACHE INTERNAL "")
 set(${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_SITE ${original_project_url} CACHE INTERNAL "")
 endfunction(define_Wrapped_Project)
 
-### Get the root address of the wrapper page (either if it belongs to a framework or has its own lone static site)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Wrapper_Site_Address| replace:: ``get_Wrapper_Site_Address``
+#  .. _get_Wrapper_Site_Address:
+#
+#  get_Wrapper_Site_Address
+#  ------------------------
+#
+#   .. command:: get_Wrapper_Site_Address(SITE_ADDRESS wrapper)
+#
+#     Get the root address of a wrapper static site page (either if it belongs to a framework or has its own lone static site)
+#
+#      :wrapper: the name of the wrapper.
+#
+#      :SITE_ADDRESS: the url of the wrapper static site.
+#
 function(get_Wrapper_Site_Address SITE_ADDRESS wrapper)
 set(${SITE_ADDRESS} PARENT_SCOPE)
 if(${wrapper}_FRAMEWORK) #package belongs to a framework
@@ -277,7 +402,26 @@ elseif(${wrapper}_SITE_GIT_ADDRESS AND ${wrapper}_SITE_ROOT_PAGE)
 endif()
 endfunction(get_Wrapper_Site_Address)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_External_Version_Compatibility| replace:: ``check_External_Version_Compatibility``
+#  .. _check_External_Version_Compatibility:
+#
+#  check_External_Version_Compatibility
+#  ------------------------------------
+#
+#   .. command:: check_External_Version_Compatibility(IS_COMPATIBLE ref_version version_to_check)
+#
+#     Check, in the context of currently built external package wrapper, whether a given version of the external package is compatible with (i.e. can be used instead of) another one.
+#
+#      :ref_version: the reference version of the external project.
+#
+#      :version_to_check: the version whose compatibility is checked.
+#
+#      :IS_COMPATIBLE: the output variable that is TRUE if version_to_check is compatible with ref_version.
+#
 function(check_External_Version_Compatibility IS_COMPATIBLE ref_version version_to_check)
 if(version_to_check VERSION_GREATER ref_version)#the version to check is greater to the reference version
 	# so we need to check the compatibility constraints of that version => recursive call
@@ -293,7 +437,20 @@ else()#the version to check is compatible as it target a version lower or equal 
 endif()
 endfunction(check_External_Version_Compatibility)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_Find_File| replace:: ``generate_Wrapper_Find_File``
+#  .. _generate_Wrapper_Find_File:
+#
+#  generate_Wrapper_Find_File
+#  --------------------------
+#
+#   .. command:: generate_Wrapper_Find_File()
+#
+#     Generate the find file of the currently built wrapper.
+#
 function(generate_Wrapper_Find_File)
 	set(FIND_FILE_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS})
 	set(FIND_FILE_VERSIONS_COMPATIBLITY)
@@ -345,7 +502,22 @@ function(generate_Wrapper_Find_File)
 	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
 endfunction(generate_Wrapper_Find_File)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_Build_File| replace:: ``generate_Wrapper_Build_File``
+#  .. _generate_Wrapper_Build_File:
+#
+#  generate_Wrapper_Build_File
+#  ---------------------------
+#
+#   .. command:: generate_Wrapper_Build_File(path_to_file)
+#
+#     Generate the cmake file of the currently built wrapper that constains information about its built content.
+#
+#      :path_to_file: the path to the file where build info is written.
+#
 function(generate_Wrapper_Build_File path_to_file)
 #write info about versions
 file(WRITE ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS} CACHE INTERNAL \"\")\n")
@@ -425,7 +597,20 @@ foreach(opt IN LISTS ${PROJECT_NAME}_USER_OPTIONS)
 endforeach()
 endfunction(generate_Wrapper_Build_File)
 
-### craete a "site" target taht will update the sattic site information about the current package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Wrapper_Documentation_Target| replace:: ``create_Wrapper_Documentation_Target``
+#  .. _create_Wrapper_Documentation_Target:
+#
+#  create_Wrapper_Documentation_Target
+#  -----------------------------------
+#
+#   .. command:: create_Wrapper_Documentation_Target()
+#
+#    Create a "site" target used to update the sattic site of the currentlt built external package wrapper.
+#
 function(create_Wrapper_Documentation_Target)
 package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME} TRUE)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
@@ -473,8 +658,20 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 endif()
 endfunction(create_Wrapper_Documentation_Target)
 
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |build_Wrapped_Project| replace:: ``build_Wrapped_Project``
+#  .. _build_Wrapped_Project:
+#
+#  build_Wrapped_Project
+#  ---------------------
+#
+#   .. command:: build_Wrapped_Project()
+#
+#    Finalize the configuration of the current wrapper project and create adequate targets for building/installating it. Internal counterpart of build_PID_Wrapper function.
+#
 macro(build_Wrapped_Project)
 
 #####################################################################################################################
@@ -502,7 +699,24 @@ create_Wrapper_Documentation_Target() # create target for generating documentati
 finish_Progress("${GLOBAL_PROGRESS_VAR}") #managing the build from a global point of view
 endmacro(build_Wrapped_Project)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |belongs_To_Known_Versions| replace:: ``belongs_To_Known_Versions``
+#  .. _belongs_To_Known_Versions:
+#
+#  belongs_To_Known_Versions
+#  -------------------------
+#
+#   .. command:: belongs_To_Known_Versions(BELONGS_TO version)
+#
+#    Check whether a given version of the currently built wrapper belongs to already defined versions in this wrapper.
+#
+#      :version: the given external package version.
+#
+#      :BELONGS_TO: the output variable that is TRUE if version belongs to versions already defined in wrapper.
+#
 function(belongs_To_Known_Versions BELONGS_TO version)
 	list(FIND ${PROJECT_NAME}_KNOWN_VERSIONS ${version} INDEX)
 	if(INDEX EQUAL -1)
@@ -512,7 +726,30 @@ function(belongs_To_Known_Versions BELONGS_TO version)
 	endif()
 endfunction(belongs_To_Known_Versions)
 
-#	memorizing a new known version (the target folder that can be found in src folder contains the script used to install the project)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Known_Version| replace:: ``add_Known_Version``
+#  .. _add_Known_Version:
+#
+#  add_Known_Version
+#  -----------------
+#
+#   .. command:: add_Known_Version(version deploy_file_name compatible_with_version so_name post_install_script)
+#
+#    Memorize a new known version of the external package in the context of currently built wrapper (the target version folder that can be found in src folder and contains the script used to build/install the project). Internal counterpart of add_PID_Wrapper_Known_Version.
+#
+#      :version: the given external package version.
+#
+#      :deploy_file_name: the path to the deployment script used to build/install the given version, relative to this version folder.
+#
+#      :compatible_with_version: the immediate previous version defined in the wrapper, with which the given version is compatible with. May be let empty if teh given version is not compatible with a previous one.
+#
+#      :so_name: the soname to use by default for all shared libraries of the version (may be empty of no soname used).
+#
+#      :post_install_script: the path to the post install script that must be executed anytime the given version is deployed, relative to this version folder.
+#
 function(add_Known_Version version deploy_file_name compatible_with_version so_name post_install_script)
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
@@ -533,7 +770,24 @@ endif()
 set(CURRENT_MANAGED_VERSION ${version} CACHE INTERNAL "")
 endfunction(add_Known_Version)
 
-### dependency to another external package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Wrapped_Configuration| replace:: ``declare_Wrapped_Configuration``
+#  .. _declare_Wrapped_Configuration:
+#
+#  declare_Wrapped_Configuration
+#  -----------------------------
+#
+#   .. command:: declare_Wrapped_Configuration(platform configurations)
+#
+#    Declare a platform constraint for currenlty described version of the external package. Internal counterpart of declare_PID_Wrapper_Platform_Configuration.
+#
+#      :platform: the identifier of the platform.
+#
+#      :configurations: the list of configurations that must be validated by current platform.
+#
 function(declare_Wrapped_Configuration platform configurations)
 # update the list of required configurations
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${configurations}")
@@ -576,12 +830,32 @@ else()#no platform constraint applies => this platform configuration is adequate
 		endif()
 	endforeach()
 endif()
-
-
 endfunction(declare_Wrapped_Configuration)
 
-
-### set cached variable for external packages dependency
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_External_Package_Dependency_To_Wrapper| replace:: ``add_External_Package_Dependency_To_Wrapper``
+#  .. _add_External_Package_Dependency_To_Wrapper:
+#
+#  add_External_Package_Dependency_To_Wrapper
+#  ------------------------------------------
+#
+#   .. command:: add_External_Package_Dependency_To_Wrapper(external_version dep_package list_of_versions exact_versions list_of_components)
+#
+#    Set the cache variables describing a dependency between a version a version of the external package and another external package.
+#
+#      :external_version: the given version of the currently described external package.
+#
+#      :dep_package: the name of external package that is the dependency.
+#
+#      :list_of_versions: the list of possible version for the dependency.
+#
+#      :exact_versions: the list of exact versions among possible ones for the dependency.
+#
+#      :list_of_components: the list of components that must exist in dependency.
+#
 function(add_External_Package_Dependency_To_Wrapper external_version dep_package list_of_versions exact_versions list_of_components)
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCIES ${dep_package})#dep package must be deployed in irder t use current project
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_VERSIONS "${list_of_versions}")
@@ -589,7 +863,28 @@ function(add_External_Package_Dependency_To_Wrapper external_version dep_package
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${external_version}_DEPENDENCY_${dep_package}_COMPONENTS "${list_of_components}")
 endfunction(add_External_Package_Dependency_To_Wrapper)
 
-### dependency to another external package
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Wrapped_External_Dependency| replace:: ``declare_Wrapped_External_Dependency``
+#  .. _declare_Wrapped_External_Dependency:
+#
+#  declare_Wrapped_External_Dependency
+#  -----------------------------------
+#
+#   .. command:: declare_Wrapped_External_Dependency(external_version dep_package list_of_versions exact_versions list_of_components)
+#
+#    Define a dependency between the currenlty defined version of the external package and another external package. Internal counterpart of declare_PID_Wrapper_External_Dependency.
+#
+#      :dep_package: the name of external package that is the dependency.
+#
+#      :list_of_versions: the list of possible version for the dependency.
+#
+#      :exact_versions: the list of exact versions among possible ones for the dependency.
+#
+#      :list_of_components: the list of components that must exist in dependency.
+#
 function(declare_Wrapped_External_Dependency dep_package list_of_versions exact_versions list_of_components)
 if(NOT CURRENT_MANAGED_VERSION)#may be necessary to avoid errors at first configuration
 	return()
@@ -636,7 +931,40 @@ else()#there are version specified
 endif()
 endfunction(declare_Wrapped_External_Dependency)
 
-### define a component
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Wrapped_Component| replace:: ``declare_Wrapped_Component``
+#  .. _declare_Wrapped_Component:
+#
+#  declare_Wrapped_Component
+#  -------------------------
+#
+#   .. command:: declare_Wrapped_Component(component shared_links soname static_links includes definitions options c_standard cxx_standard runtime_resources)
+#
+#    Define a new component for currently described external package version. Internal counterpart of declare_PID_Wrapper_Component.
+#
+#      :component: the name of the component.
+#
+#      :shared_links: the list of path to shared objects that are part of the component, relative to external package root install folder.
+#
+#      :soname: the soname to use for that specific component's shared objects.
+#
+#      :static_links: the list of path to static libraries that are part of the component, relative to external package root install folder.
+#
+#      :includes: the list of includes path that are part of the component, relative to external package root install folder.
+#
+#      :definitions: the list preprocessor definitions that must be defined when using of the component.
+#
+#      :options: the list of compiler options that must be used when using the component.
+#
+#      :c_standard: the C language standard in use (may be empty).
+#
+#      :cxx_standard: the C++ language standard that is mandatory when using the component.
+#
+#      :runtime_resources: the list of path to file and folder used at runtime by the component, relative to external package root install folder.
+#
 function(declare_Wrapped_Component component shared_links soname static_links includes definitions options c_standard cxx_standard runtime_resources)
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENTS ${component})
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SHARED_LINKS ${shared_links} CACHE INTERNAL "")
@@ -650,7 +978,30 @@ set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${compone
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_RUNTIME_RESOURCES ${runtime_resources} CACHE INTERNAL "")
 endfunction(declare_Wrapped_Component)
 
-### define a component
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Wrapped_Component_Dependency_To_Explicit_Component| replace:: ``declare_Wrapped_Component_Dependency_To_Explicit_Component``
+#  .. _declare_Wrapped_Component_Dependency_To_Explicit_Component:
+#
+#  declare_Wrapped_Component_Dependency_To_Explicit_Component
+#  ----------------------------------------------------------
+#
+#   .. command:: declare_Wrapped_Component_Dependency_To_Explicit_Component(component package dependency_component exported definitions)
+#
+#    Define a dependency between a local component defined by current version and a component belonging to another external package. Used when this external package provides a description.
+#
+#      :component: the name of the component.
+#
+#      :package: the name of the external package used as a dependency.
+#
+#      :dependency_component: the name of the component used as a dependency, and taht belongs to package.
+#
+#      :exported: TRUE if component exports dependency_component (i.e. if public headers of component include headers of dependency_component).
+#
+#      :definitions: the list preprocessor definitions used in dependency_component headers but set by component.
+#
 function(declare_Wrapped_Component_Dependency_To_Explicit_Component component package dependency_component exported definitions)
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCIES ${package})
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package} ${dependency_component})
@@ -658,7 +1009,40 @@ append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_${dependency_component}_EXPORTED ${exported} CACHE INTERNAL "")
 endfunction(declare_Wrapped_Component_Dependency_To_Explicit_Component)
 
-### define a component
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Wrapped_Component_Dependency_To_Implicit_Components| replace:: ``declare_Wrapped_Component_Dependency_To_Implicit_Components``
+#  .. _declare_Wrapped_Component_Dependency_To_Implicit_Components:
+#
+#  declare_Wrapped_Component_Dependency_To_Implicit_Components
+#  -----------------------------------------------------------
+#
+#   .. command:: declare_Wrapped_Component_Dependency_To_Implicit_Components(component package includes shared static definitions options c_standard cxx_standard runtime_resources)
+#
+#    Define a dependency between a local component defined by current version and another external package's content. Used when this external package provides no description in use file.
+#
+#      :component: the name of the component.
+#
+#      :package: the name of the external package used as a dependency.
+#
+#      :includes: the list of includes path that are used by the component, relative to external package dependency root install folder.
+#
+#      :shared: the list of path to shared objects that are used by the component, relative to external package dependency root install folder.
+#
+#      :static: the list of path to static libraries that are used by the component, relative to external package dependency root install folder.
+#
+#      :definitions: the list preprocessor definitions that must be defined when using of the component.
+#
+#      :options: the list of compiler options that must be used when using the component.
+#
+#      :c_standard: the C language standard in use (may be empty).
+#
+#      :cxx_standard: the C++ language standard that is mandatory when using the component.
+#
+#      :runtime_resources: the list of path to file and folder used at runtime by the component, relative to external package dependency root install folder.
+#
 function(declare_Wrapped_Component_Dependency_To_Implicit_Components component package includes shared static definitions options c_standard cxx_standard runtime_resources)
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCIES ${package})
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_INCLUDES "${includes}")
@@ -671,21 +1055,80 @@ set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${compone
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_RUNTIME_RESOURCES "${runtime_resources}")
 endfunction(declare_Wrapped_Component_Dependency_To_Implicit_Components)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Wrapped_Component_Internal_Dependency| replace:: ``declare_Wrapped_Component_Internal_Dependency``
+#  .. _declare_Wrapped_Component_Internal_Dependency:
+#
+#  declare_Wrapped_Component_Internal_Dependency
+#  ---------------------------------------------
+#
+#   .. command:: declare_Wrapped_Component_Internal_Dependency(component dependency_component exported definitions)
+#
+#    Define a dependency between two local components defined by current version.
+#
+#      :component: the name of the component that defines a dependency.
+#
+#      :dependency_component: the name of the component that is the dependency.
+#
+#      :exported: TRUE if component exports dependency_component.
+#
+#      :definitions: the list preprocessor definitions used in dependency_component headers but defined by component.
+#
 function(declare_Wrapped_Component_Internal_Dependency component dependency_component exported definitions)
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_INTERNAL_DEPENDENCIES ${dependency_component})
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency_component}_DEFINITIONS "${definitions}")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency_component}_EXPORTED ${exported} CACHE INTERNAL "")
 endfunction(declare_Wrapped_Component_Internal_Dependency)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_External_Use_File_For_Version| replace:: ``install_External_Use_File_For_Version``
+#  .. _install_External_Use_File_For_Version:
+#
+#  install_External_Use_File_For_Version
+#  -------------------------------------
+#
+#   .. command:: install_External_Use_File_For_Version(package version platform)
+#
+#    Copy the use file of a given version of an external package into install tree of the workspace.
+#
+#      :package: the name of the external package.
+#
+#      :version: the version of the external package for which a use file is installed.
+#
+#      :platform: the identifier of the platform to use in workspace install tree.
+#
 function(install_External_Use_File_For_Version package version platform)
 	set(file_path ${WORKSPACE_DIR}/wrappers/${package}/build/Use${package}-${version}.cmake)
 	set(target_folder ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share)
 	file(COPY ${file_path} DESTINATION ${target_folder})
 endfunction(install_External_Use_File_For_Version)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_External_Use_File_For_Version| replace:: ``generate_External_Use_File_For_Version``
+#  .. _generate_External_Use_File_For_Version:
+#
+#  generate_External_Use_File_For_Version
+#  --------------------------------------
+#
+#   .. command:: generate_External_Use_File_For_Version(package version platform)
+#
+#    Generate the use file of a given version of an external package.
+#
+#      :package: the name of the external package.
+#
+#      :version: the version of the external package for which a use file is installed.
+#
+#      :platform: the identifier of the target platform for the installed version.
+#
 function(generate_External_Use_File_For_Version package version platform)
 	set(file_for_version ${WORKSPACE_DIR}/wrappers/${package}/build/Use${package}-${version}.cmake)
 	file(WRITE ${file_for_version} "#############################################\n")#reset file content (if any) or create file
@@ -734,44 +1177,30 @@ function(generate_External_Use_File_For_Version package version platform)
 	endforeach()
 endfunction(generate_External_Use_File_For_Version)
 
-###
-function(create_Shared_Lib_Extension RES_EXT platform soname)
-	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
-	if(RES_OS STREQUAL macosx)
-		set(${RES_EXT} ".dylib" PARENT_SCOPE)
-	elseif(RES_OS STREQUAL windows)
-		set(${RES_EXT} ".dll" PARENT_SCOPE)
-	else()# Linux or any other standard UNIX system
-		if(soname)
-			string(REGEX MATCH "^\\.[0-9].*$" MATCHED ${soname})
-			if(MATCHED)#MATCH: the expression start with a dot
-				set(${RES_EXT} ".so${MATCHED}" PARENT_SCOPE)
-			else()#the expression starts with a number, simply add the dot
-				set(${RES_EXT} ".so.${soname}" PARENT_SCOPE)
-			endif()
-		else()
-			set(${RES_EXT} ".so" PARENT_SCOPE)
-		endif()
-	endif()
-endfunction(create_Shared_Lib_Extension)
-
-###
-function(shared_Library_Has_Extension HAS_EXTENSION library_path)
-	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
-	if(NOT RES_OS STREQUAL macosx
-		AND NOT RES_OS STREQUAL windows)
-		get_filename_component(EXTENSION ${library_path} EXT)#get the longest extension of the file
-		if(EXTENSION MATCHES "^\\.so(\\.[0-9]+)*$")
-			# this check is here to ensure that a library name ending with a dot followed by any characters
-			# will not be considered as a library extension (e.g. example for which this check has been done : libusb-1.0)
-			set(${HAS_EXTENSION} TRUE PARENT_SCOPE)
-			return()
-		endif()
-	endif()
-	set(${HAS_EXTENSION} FALSE PARENT_SCOPE)
-endfunction(shared_Library_Has_Extension)
-
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Description_For_External_Component_Internal_Dependency| replace:: ``generate_Description_For_External_Component_Internal_Dependency``
+#  .. _generate_Description_For_External_Component_Internal_Dependency:
+#
+#  generate_Description_For_External_Component_Internal_Dependency
+#  ---------------------------------------------------------------
+#
+#   .. command:: generate_Description_For_External_Component_Internal_Dependency(file_for_version package version component dependency)
+#
+#    Append the description of an internal component dependency to a given external package's use file.
+#
+#      :file_for_version: the path to the file to write in..
+#
+#      :package: the name of target external package.
+#
+#      :version: the target version of external package.
+#
+#      :component: the name of the component that declares the dependency.
+#
+#      :dependency: the name of the component that is the dependency.
+#
 function(generate_Description_For_External_Component_Internal_Dependency file_for_version package version component dependency)
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency}_DEFINITIONS)
 	fill_List_Into_String("${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency}_DEFINITIONS}" RES_STR)
@@ -787,8 +1216,31 @@ endif()
 file(APPEND ${file_for_version} "declare_PID_External_Component_Dependency(PACKAGE ${package} COMPONENT ${component} ${usage} ${dependency}${defs})\n")
 endfunction(generate_Description_For_External_Component_Internal_Dependency)
 
-###
-function(generate_Description_For_External_Component_Dependency file_for_version package platform version component external_package_dependency)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Description_For_External_Component_Dependency| replace:: ``generate_Description_For_External_Component_Dependency``
+#  .. _generate_Description_For_External_Component_Dependency:
+#
+#  generate_Description_For_External_Component_Dependency
+#  ------------------------------------------------------
+#
+#   .. command:: generate_Description_For_External_Component_Dependency(file_for_version package version component external_package_dependency)
+#
+#    Append the description of a component dependency to another external package to a given external package's use file.
+#
+#      :file_for_version: the path to the file to write in..
+#
+#      :package: the name of target external package.
+#
+#      :version: the target version of external package.
+#
+#      :component: the name of the component that declares the dependency.
+#
+#      :external_package_dependency: the name of the external package that is the dependency.
+#
+function(generate_Description_For_External_Component_Dependency file_for_version package version component external_package_dependency)
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency})
 foreach(dep_component IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency})
 	#managing each component individually
@@ -867,7 +1319,30 @@ if(package_rel_to_write)#write all the imported stuff from another external pack
 endif()
 endfunction(generate_Description_For_External_Component_Dependency)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Description_For_External_Component| replace:: ``generate_Description_For_External_Component``
+#  .. _generate_Description_For_External_Component:
+#
+#  generate_Description_For_External_Component
+#  -------------------------------------------
+#
+#   .. command:: generate_Description_For_External_Component(file_for_version package platform version component)
+#
+#    Append the description of a component to a given external package use file.
+#
+#      :file_for_version: the path to the file to write in..
+#
+#      :package: the name of target external package.
+#
+#      :platform: the identifier of target platform in workspace install tree.
+#
+#      :version: the target version of external package.
+#
+#      :component: the name of the target component.
+#
 function(generate_Description_For_External_Component file_for_version package platform version component)
 	file(APPEND ${file_for_version} "#component ${component}\n")
 	set(options_str "")
@@ -884,7 +1359,7 @@ function(generate_Description_For_External_Component file_for_version package pl
 					OR shared_lib_path MATCHES "^[^\\.]+\\.so(\\.[^\\.]+)*$")
 					list(APPEND final_list_of_shared "${shared_lib_path}")#keep the library path as is because it already contains the shared object extension or is a system library path
 				else()
-					shared_Library_Has_Extension(HAS_EXTENSION ${shared_lib_path})
+					shared_Library_Extension_Has_Soname(HAS_EXTENSION ${shared_lib_path})
 					if(NOT HAS_EXTENSION)#OK no extension defined we can apply
 						list(APPEND final_list_of_shared "${shared_lib_path}${RES_EXT}")
 					else()
@@ -938,13 +1413,31 @@ function(generate_Description_For_External_Component file_for_version package pl
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES)
 		file(APPEND ${file_for_version} "#declaring external dependencies for component ${component}\n")
 		foreach(dep_pack IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES)
-			generate_Description_For_External_Component_Dependency(${file_for_version} ${package} ${platform} ${version} ${component} ${dep_pack})
+			generate_Description_For_External_Component_Dependency(${file_for_version} ${package} ${version} ${component} ${dep_pack})
 		endforeach()
 	endif()
 endfunction(generate_Description_For_External_Component)
 
-
-### defining a framework static site the package belongs to
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |define_Wrapper_Framework_Contribution| replace:: ``define_Wrapper_Framework_Contribution``
+#  .. _define_Wrapper_Framework_Contribution:
+#
+#  define_Wrapper_Framework_Contribution
+#  -------------------------------------
+#
+#   .. command:: define_Wrapper_Framework_Contribution(framework url description)
+#
+#    Declare that the external project wrapper is contibuting content to a framework generated site.
+#
+#      :framework: the name of target framework.
+#
+#      :url: the url of wrapper project page.
+#
+#      :description: string containing a detailed description of the external package to be used in statoc site.
+#
 macro(define_Wrapper_Framework_Contribution framework url description)
 if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
 	message("[PID] ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
@@ -956,24 +1449,54 @@ endif()
 init_Documentation_Info_Cache_Variables("${framework}" "${url}" "" "" "${description}")
 endmacro(define_Wrapper_Framework_Contribution)
 
-
 ################################################################################
 ################## Functions used inside build wrapper command #################
 ################################################################################
 
-### deduce the options than can be used when building an external package that depends on the target package
-# based on the description provided by external package use file
-# FOR LINKS: path to links folders or direct link options
-# !! remove the -l option so that we can use it even with projects that do not use direct compiler options like those using cmake)
-# !! do not remove the -l if no absolute path can be deduced
-# !! resolve the path for those that can be translated into absolute path
-# FOR INCLUDES: only the list of path to include folders
-# !! remove the -I option so that we can use it even with projects that do not use direct compiler options like those using cmake)
-# !! systematically translated into absolute path
-# FOR DEFINITIONS:  only the list of definitions used to compile the project version
-# !! remove the -D option so that we can use it even with projects that do not use direct compiler options like those using cmake)
-# FOR COMPILER OPTIONS: return the list of other compile options used to compile the project version
-# !! option are kept "as is" EXCEPT those setting the C and CXX languages standards to use to build the package
+#
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |agregate_All_Build_Info_For_Component| replace:: ``agregate_All_Build_Info_For_Component``
+#  .. _agregate_All_Build_Info_For_Component:
+#
+#  agregate_All_Build_Info_For_Component
+#  -------------------------------------
+#
+#   .. command:: agregate_All_Build_Info_For_Component(package component mode RES_INCS RES_DEFS RES_OPTS RES_STD_C RES_STD_CXX RES_LINKS RES_RESOURCES)
+#
+#    Agregate and get all information necessary to use the given component of the given external package, in a specific build mode (Debug or Release).
+#    Deduce the options than can be used when building an external package that depends on the target package based on the description provided by external package use file
+#
+#    - FOR LINKS: path to links folders or direct link options: remove the -l option so that we can use it even with projects that do not use direct compiler options like those using cmake) ; do not remove the -l if no absolute path can be deduced ; resolve the path for those that can be translated into absolute path
+#
+#    - FOR INCLUDES: only the list of path to include folders: remove the -I option so that we can use it even with projects that do not use direct compiler options like those using cmake) ; systematically translated into absolute path
+#
+#    - FOR DEFINITIONS:  only the list of definitions used to compile the project version ; remove the -D option so that we can use it even with projects that do not use direct compiler options like those using cmake)
+#
+#    - FOR COMPILER OPTIONS: return the list of other compile options used to compile the project version ; option are kept "as is" EXCEPT those setting the C and CXX languages standards to use to build the package
+#
+#      :package: the name of target external package.
+#
+#      :component: the name of the target component.
+#
+#      :mode: the given build mode.
+#
+#      :RES_INCS: the output variable containing all include path to set when using the component.
+#
+#      :RES_DEFS: the output variable containing all definitions to set when using the component.
+#
+#      :RES_OPTS: the output variable containing all compiler options to set when using the component.
+#
+#      :RES_STD_C: the output variable containing the C language standard to set when using the component.
+#
+#      :RES_STD_CXX: the output variable containing the C++ language standard to set when using the component.
+#
+#      :RES_LINKS: the output variable containing all links to set when using the component.
+#
+#      :RES_RESOURCES: the output variable containing all runtime resources used by the component.
+#
 function(agregate_All_Build_Info_For_Component package component mode RES_INCS RES_DEFS RES_OPTS RES_STD_C RES_STD_CXX RES_LINKS RES_RESOURCES)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
@@ -1024,6 +1547,27 @@ set(${RES_LINKS} ${all_links} PARENT_SCOPE)
 set(${RES_RESOURCES} ${all_resources} PARENT_SCOPE)
 endfunction(agregate_All_Build_Info_For_Component)
 
+#
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Build_Info_For_Component| replace:: ``set_Build_Info_For_Component``
+#  .. _set_Build_Info_For_Component:
+#
+#  set_Build_Info_For_Component
+#  ----------------------------
+#
+#   .. command:: set_Build_Info_For_Component(package component version)
+#
+#    Set the cache variable containing Build information for a given component of a given external package version.
+#
+#      :package: the name of target external package.
+#
+#      :component: the name of the target component.
+#
+#      :version: the given version.
+#
 function(set_Build_Info_For_Component package component version)
 	set(prefix ${package}_KNOWN_VERSION_${version})
 	set(links)
@@ -1090,10 +1634,26 @@ function(set_Build_Info_For_Component package component version)
 	set(${prefix}_COMPONENT_${component}_BUILD_RESOURCES ${res} CACHE INTERNAL "")
 endfunction(set_Build_Info_For_Component)
 
-
-### set the the list of compilation option used to build the external package version
-### get the complete configruation data required to build versions (includes, flags, links)
-### those variables will be usable inside deploy script to help configuring adequately the wrapped project
+#
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_Wrapper_Build_Variables| replace:: ``configure_Wrapper_Build_Variables``
+#  .. _configure_Wrapper_Build_Variables:
+#
+#  configure_Wrapper_Build_Variables
+#  ---------------------------------
+#
+#   .. command:: configure_Wrapper_Build_Variables(package version)
+#
+#    Set all cache variables containing Build information (includes, flags, links, options, etc.) for a given external package version.
+#    Those variables will be usable inside deploy script to help configuring adequately the wrapped project.
+#
+#      :package: the name of target external package.
+#
+#      :version: the given version.
+#
 function(configure_Wrapper_Build_Variables package version)
 	set(prefix ${package}_KNOWN_VERSION_${version})#just for a simpler description
 	set(all_links)
@@ -1129,6 +1689,28 @@ endfunction(configure_Wrapper_Build_Variables)
 ################################################################################
 ############ resolve dependencies from full package description ################
 ################################################################################
+
+#
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Wrapper_Configuration| replace:: ``resolve_Wrapper_Configuration``
+#  .. _resolve_Wrapper_Configuration:
+#
+#  resolve_Wrapper_Configuration
+#  -----------------------------
+#
+#   .. command:: resolve_Wrapper_Configuration(RESULT_OK package version)
+#
+#    Resolve platform configuration constraints for a given external package version. The constraints will be checked to ensure the external package wrapper description is consistent.
+#
+#      :package: the name of target external package.
+#
+#      :version: the given version.
+#
+#      :RESULT_OK: the output variable that is TRUE if all configuration constraint are satisfied for current platform.
+#
 function(resolve_Wrapper_Configuration RESULT_OK package version)
 	set(IS_CONFIGURED TRUE)
 	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
@@ -1150,6 +1732,27 @@ function(resolve_Wrapper_Configuration RESULT_OK package version)
 	endif()
 endfunction(resolve_Wrapper_Configuration)
 
+#
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Wrapper_Dependency| replace:: ``resolve_Wrapper_Dependency``
+#  .. _resolve_Wrapper_Dependency:
+#
+#  resolve_Wrapper_Dependency
+#  --------------------------
+#
+#   .. command:: resolve_Wrapper_Dependency(package version dep_package)
+#
+#    Resolve dependency between a given external project version and another external package. Will end up in deploying the dependency if necessery and possible.
+#
+#      :package: the name of target external package.
+#
+#      :version: the given version.
+#
+#      :dep_package: the name of the external package that is a depenency.
+#
 function(resolve_Wrapper_Dependency package version dep_package)
 set(PROJECT_NAME ${package})
 set(prefix ${package}_KNOWN_VERSION_${version})
@@ -1209,7 +1812,27 @@ else()#if something found then it becomes the real version used in the end (may 
 endif()
 endfunction(resolve_Wrapper_Dependency)
 
-### resolve the dependencies of the wrapper for the given version
+#
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Wrapper_Dependencies| replace:: ``resolve_Wrapper_Dependencies``
+#  .. _resolve_Wrapper_Dependencies:
+#
+#  resolve_Wrapper_Dependencies
+#  ----------------------------
+#
+#   .. command:: resolve_Wrapper_Dependencies(RESULT_OK package version)
+#
+#    Resolve all dependency of a given external project version. Will end up in deploying the dependencies that are not satisfied, if they exist.
+#
+#      :package: the name of target external package.
+#
+#      :version: the given version.
+#
+#      :RESULT_OK: the output variable that is TRUE if all dependencies are satisfied.
+#
 function(resolve_Wrapper_Dependencies RESULT_OK package version)
 	set(PROJECT_NAME ${package}) #to be suer that all functions will work properly
 	set(prefix ${package}_KNOWN_VERSION_${version})
