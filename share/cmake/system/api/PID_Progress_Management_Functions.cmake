@@ -318,23 +318,23 @@ endfunction(check_Package_Version_State_In_Current_Process)
 #
 #      :RESULT: the output variable that is TRUE if the given package has already been managed in current build process.
 #
-function(check_Package_Managed_In_Current_Process package RES)
+function(check_Package_Managed_In_Current_Process package RESULT)
 set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# package already managed
-		set(${RES} TRUE PARENT_SCOPE) #MANAGED !!
+		set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
 		return()
 	endif()
 else() #it may be an external package
 	list(FIND MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# package already managed
-		set(${RES} TRUE PARENT_SCOPE) #MANAGED !!
+		set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
 		return()
 	endif()
 endif()
-set(${RES} FALSE PARENT_SCOPE) #not already managed of no file exists
+set(${RESULT} FALSE PARENT_SCOPE) #not already managed of no file exists
 endfunction(check_Package_Managed_In_Current_Process)
 
 

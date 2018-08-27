@@ -880,20 +880,22 @@ endfunction(is_Version_Compatible_With_Previous_Constraints)
 #
 #     :package: the name of package to check.
 #
-#     :reference_version: the reference version of the package
+#     :reference_version: the reference version of the package.
 #
-#     :version_to_compare: version of the package to compare with reference version.
+#     :version_to_compare: version of the package to compare with reference version to know whether one can use it instead of reference_version.
 #
 function(is_Compatible_External_Version IS_COMPATIBLE package reference_version version_to_compare)
-if(${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO)
-	if(reference_version VERSION_LESS ${package}_PID_KNOWN_VERSION_${version_to_compare}_GREATER_VERSIONS_COMPATIBLE_UP_TO)
-		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
-	else()
-		set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
-	endif()
-else()
-	set(${IS_COMPATIBLE} TRUE PARENT_SCOPE) #if not specified it means that there are no known greater version that is not compatible
-endif()
+  set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
+  if(reference_version VERSION_EQUAL version_to_compare)
+    set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)#same versions so they are compatible
+    return()
+  endif()
+  if(${package}_PID_KNOWN_VERSION_${reference_version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #there are known versions that are compatible with reference version
+  	if(${package}_PID_KNOWN_VERSION_${reference_version}_GREATER_VERSIONS_COMPATIBLE_UP_TO VERSION_GREATER version_to_compare #the first incompatible version with reference_version is greater than version_to_compare
+      AND version_to_compare VERSION_GREATER reference_version)# version_to_compare is greater than reference_version
+  		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
+  	endif()
+  endif()
 endfunction(is_Compatible_External_Version)
 
 #.rst:
@@ -922,24 +924,26 @@ function(is_Exact_External_Version_Compatible_With_Previous_Constraints IS_COMPA
 set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
 set(${NEED_FINDING} FALSE PARENT_SCOPE)
 if(${package}_REQUIRED_VERSION_EXACT)
-	if(NOT ${package}_REQUIRED_VERSION_EXACT VERSION_EQUAL version)#not compatible if versions are not the same
+  if(NOT ${package}_REQUIRED_VERSION_EXACT VERSION_EQUAL version)#not compatible if versions are not exactly the same
 		return()
 	endif()
-	set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
+	set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)#otherwise same version so exactly compatible
 	return()
 endif()
+#from here, no exact version already required
 
-#no exact version required
+#checking compatibility between the new exact required version and previous constraints targetting not exact versions
 foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	unset(COMPATIBLE_VERSION)
-	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version})
+	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version})#the exact version must be usable instead of all other required non exact versions
 	if(NOT COMPATIBLE_VERSION)
 		return()#not compatible
 	endif()
 endforeach()
 
 set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
-if(NOT ${package}_VERSION_STRING VERSION_EQUAL version)
+if(NOT ${package}_ALL_REQUIRED_VERSIONS #no version already required !! => we can use this exact version => we need to launch the find script to set all adequate variables (PID variables used to memorize which version have already been managed)
+  OR NOT ${package}_VERSION_STRING VERSION_EQUAL version) #case where the new exact version constraint must be set adequately using the find script (i.e. not the same version as the previously found not exact version) => reset the variables with this new version
 	set(${NEED_FINDING} TRUE PARENT_SCOPE) #need to find the new exact version
 endif()
 endfunction(is_Exact_External_Version_Compatible_With_Previous_Constraints)
@@ -972,23 +976,35 @@ endfunction(is_Exact_External_Version_Compatible_With_Previous_Constraints)
 function(is_External_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE VERSION_TO_FIND package version)
 
 set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
-# 1) testing compatibility and recording the higher constraint for minor version number
+# 1) testing compatibility from current required version with a previous exact version constraint (current is compatible )
 if(${package}_REQUIRED_VERSION_EXACT)
-	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${${package}_REQUIRED_VERSION_EXACT} ${version})
-	if(COMPATIBLE_VERSION)
-		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
-	endif()
-	return()#no need to set the version to find
+  if(NOT ${package}_REQUIRED_VERSION_EXACT VERSION_EQUAL version)#not compatible if versions are not exactly the same
+    return()
+  endif()
+  set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
+  return()#no need to set the version to find, because the exact version has already been found by definition
 endif()
-set(max_version_constraint)
-foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
-	unset(COMPATIBLE_VERSION)
-	is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version_required} ${version})
-	if(NOT COMPATIBLE_VERSION)
-		return()
-	endif()
+#from here, no exact version already required
 
-endforeach()
+#checking compatibility between the new required version and previous constraints targetting not exact versions
+get_Greater_Version(MAX_VERSION ${${package}_ALL_REQUIRED_VERSIONS})#we know that all these versions are compatible between themselves
+if(MAX_VERSION VERSION_GREATER version)
+  unset(COMPATIBLE_VERSION)
+  is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${version} ${MAX_VERSION})#max version must be usable instead of current version
+  if(NOT COMPATIBLE_VERSION)
+    return()
+  endif()
+  #no need to set the version to find since max version is already found
+elseif(MAX_VERSION VERSION_LESS version)
+  unset(COMPATIBLE_VERSION)
+  is_Compatible_External_Version(COMPATIBLE_VERSION ${package} ${MAX_VERSION} ${version})#current version must be usable instead of max version
+  if(NOT COMPATIBLE_VERSION)
+    return()
+  endif()
+  set(${VERSION_TO_FIND} ${version} PARENT_SCOPE)
+# else both are equal so compatible => no need to find again the same version
+endif()
+
 set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 endfunction(is_External_Version_Compatible_With_Previous_Constraints)
 
@@ -1367,7 +1383,7 @@ else()#the dependency has not been already found
 				${${package}_DEPENDENCY_${dependency}_COMPONENTS${VAR_SUFFIX}}
 			)
 		endif()
-	else()
+	else() # not version specified
 		find_package(
 			${dependency}
 			MODULE
@@ -1404,7 +1420,6 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${external_dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
 	if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}) # a specific version is required
 	 	if( ${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version is required
-
 			is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
 
 			if(IS_COMPATIBLE)
@@ -1429,22 +1444,22 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
 			is_External_Version_Compatible_With_Previous_Constraints (
 					COMPATIBLE_VERSION VERSION_TO_FIND
 					${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}})
-			if(COMPATIBLE_VERSION)
-				if(VERSION_TO_FIND)
-					find_package(
-						${external_dependency}
-						${VERSION_TO_FIND}
-						MODULE
-						REQUIRED
-						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${VAR_SUFFIX}}
-					)
-				else()
-					return() # nothing to do more, the current used version is compatible with everything
-				endif()
-			else()
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}.")
-				return()
-			endif()
+          if(COMPATIBLE_VERSION)
+    				if(VERSION_TO_FIND)
+    					find_package(
+    						${external_dependency}
+    						${VERSION_TO_FIND}
+    						MODULE
+    						REQUIRED
+    						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${VAR_SUFFIX}}
+    					)
+    				else()
+    					return() # nothing to do more, the current used version is compatible with everything
+    				endif()
+  			else()
+  				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${external_dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${external_dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${external_dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}.")
+  				return()
+  			endif()
 		endif()
 	else()
 		return()#by default the version is compatible (no constraints) so return
@@ -1454,7 +1469,7 @@ else()#the dependency has not been already found
 
 		if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version has been specified
 			#WARNING recursive call to find package
-			find_package(
+      find_package(
 				${external_dependency}
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
 				EXACT
@@ -1465,7 +1480,7 @@ else()#the dependency has not been already found
 
 		else()
 			#WARNING recursive call to find package
-			find_package(
+      find_package(
 				${external_dependency}
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
 				MODULE
@@ -1474,7 +1489,7 @@ else()#the dependency has not been already found
 			)
 		endif()
 	else()
-		find_package(
+    find_package(
 			${external_dependency}
 			MODULE
 			REQUIRED
@@ -1583,8 +1598,9 @@ if(EXIST)
 		#here everything has been found => setting global standard CMake find process variables to adequate values
 		set(${package}_FOUND TRUE CACHE INTERNAL "")
 		set(${package}_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_ALL_USED_PACKAGES ${${PROJECT_NAME}_ALL_USED_PACKAGES} ${package} CACHE INTERNAL "")
-		if(${package}_FIND_VERSION)
+    append_Unique_In_Cache(${PROJECT_NAME}_ALL_USED_PACKAGES ${package})
+
+    if(${package}_FIND_VERSION)
 			if(${package}_FIND_VERSION_EXACT)
 				set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
 				set(${package}_REQUIRED_VERSION_EXACT "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" CACHE INTERNAL "")
@@ -1684,12 +1700,7 @@ if(EXIST)
 		set(${package}_ROOT_DIR ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH}/${VERSION_TO_USE} CACHE INTERNAL "")
 		include(${${package}_ROOT_DIR}/share/Use${package}-${VERSION_TO_USE}.cmake  OPTIONAL)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
 		#add the undirectly used packages as well
-		set(LIST_OF_EXTS ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES} ${package})
-		if(LIST_OF_EXTS)
-			list(REMOVE_DUPLICATES LIST_OF_EXTS)
-		endif()
-		set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES ${LIST_OF_EXTS} CACHE INTERNAL "")
-
+    append_Unique_In_Cache(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES ${package})
 		if(${package}_FIND_VERSION)
 			if(${package}_FIND_VERSION_EXACT)
 				set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
