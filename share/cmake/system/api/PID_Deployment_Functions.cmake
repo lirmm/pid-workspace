@@ -187,20 +187,29 @@ endfunction(generate_Wrapper_Reference_File)
 #
 #      :mode: The build mode (Debug or Release) of the package.
 #
-function(resolve_Package_Dependencies package mode)
+#      :first_time: the boolean indicating (if true) that the resolution process has been launch for firt time in build process, FALSE otherwise.
+#
+function(resolve_Package_Dependencies package mode first_time)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 ################## management of external packages : for both external and native packages ##################
-
+set(list_of_conflicting_dependencies)
 # 1) managing external package dependencies (the list of dependent packages is defined as ${package}_EXTERNAL_DEPENDENCIES)
 # - locating dependent external packages in the workspace and configuring their build variables recursively
 set(TO_INSTALL_EXTERNAL_DEPS)
-if(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+if(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})#the package has external dependencies
 	foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 		# 1) resolving direct dependencies
-		resolve_External_Package_Dependency(${package} ${dep_ext_pack} ${mode})
+		resolve_External_Package_Dependency(IS_COMPATIBLE ${package} ${dep_ext_pack} ${mode})
 		if(NOT ${dep_ext_pack}_FOUND)
 			list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
-		endif()
+    elseif(NOT IS_COMPATIBLE)#the dependency version is not compatible with previous constraints set by other packages
+      list(APPEND list_of_conflicting_dependencies ${dep_ext_pack})#try to reinstall it from sources if possible, simply add it to the list of packages to install
+    else()#OK resolution took place and is OK
+      add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack})#memorize chosen version in progress file to share this information with dependent packages
+      if(${dep_ext_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})#the external package has external dependencies !!
+        resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE)#recursion : resolving dependencies for each external package dependency
+      endif()
+    endif()
 	endforeach()
 endif()
 
@@ -218,14 +227,21 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 			return()
 		endif()
 		foreach(installed IN LISTS INSTALLED_EXTERNAL_PACKAGES)#recursive call for newly installed packages
-			resolve_External_Package_Dependency(${package} ${installed} ${mode})
-			if(NOT ${installed}_FOUND)
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find installed external package ${installed}. This is an internal bug maybe due to a bad find file.")
+			resolve_External_Package_Dependency(IS_COMPATIBLE ${package} ${installed} ${mode})
+			if(NOT ${installed}_FOUND)#this time the package must be found since installed => internak BUG in PID
+        finish_Progress(GLOBAL_PROGRESS_VAR)
+				message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${installed}. This is an internal bug maybe due to a bad find file.")
 				return()
-			endif()
-			if(${installed}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
-				resolve_Package_Dependencies(${installed} ${mode})#recursion : resolving dependencies for each external package dependency
-			endif()
+      elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
+        finish_Progress(GLOBAL_PROGRESS_VAR)
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${installed} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${installed}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${installed}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${installed}_VERSION${VAR_SUFFIX}}.")
+        return()
+      else()
+        add_Chosen_Package_Version_In_Current_Process(${installed})#memorize chosen version in progress file to share this information with dependent packages
+        if(${installed}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
+  				resolve_Package_Dependencies(${installed} ${mode} TRUE)#recursion : resolving dependencies for each external package dependency
+  			endif()
+      endif()
 		endforeach()
 	else()
     finish_Progress(GLOBAL_PROGRESS_VAR)
@@ -239,18 +255,20 @@ endif()
 # 1) managing package dependencies (the list of dependent packages is defined as ${package}_DEPENDENCIES)
 # - locating dependent packages in the workspace and configuring their build variables recursively
 set(TO_INSTALL_DEPS)
-if(${package}_DEPENDENCIES${VAR_SUFFIX})
+if(${package}_DEPENDENCIES${VAR_SUFFIX})#the package has native dependencies
 	foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
 		# 1) resolving direct dependencies
-		resolve_Package_Dependency(${package} ${dep_pack} ${mode})
-		if(${dep_pack}_FOUND)
-			#message("resolve_Package_Dependencies ${package} ${dep_pack} deps = ${${dep_pack}_DEPENDENCIES${VAR_SUFFIX}} extdeps= ${${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}}")
-			if(${dep_pack}_DEPENDENCIES${VAR_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (native or external) for this package
-				resolve_Package_Dependencies(${dep_pack} ${mode})#recursion : resolving dependencies for each package dependency
-			endif()
-		else()
-			list(APPEND TO_INSTALL_DEPS ${dep_pack})
-		endif()
+		resolve_Package_Dependency(IS_COMPATIBLE ${package} ${dep_pack} ${mode})
+		if(NOT ${dep_pack}_FOUND)# package is not found => need to install it
+      list(APPEND TO_INSTALL_DEPS ${dep_pack})
+    elseif(NOT IS_COMPATIBLE)
+      list(APPEND list_of_conflicting_dependencies ${dep_pack})
+		else()# resolution took place and is OK
+      add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
+      if(${dep_pack}_DEPENDENCIES${VAR_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (native or external) for this package
+  			resolve_Package_Dependencies(${dep_pack} ${mode} TRUE)#recursion : resolving dependencies for each package dependency
+  		endif()
+    endif()
 	endforeach()
 endif()
 
@@ -263,20 +281,63 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 		endif()
 		install_Required_Native_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES NOT_INSTALLED)
 		foreach(installed IN LISTS INSTALLED_PACKAGES)#recursive call for newly installed packages
-			resolve_Package_Dependency(${package} ${installed} ${mode})
-			if(${installed}_FOUND)
-				if(${installed}_DEPENDENCIES${VAR_SUFFIX})
-					resolve_Package_Dependencies(${installed} ${mode})#recursion : resolving dependencies for each package dependency
-				endif()
-			else()
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find installed package ${installed}")
-			endif()
+			resolve_Package_Dependency(IS_COMPATIBLE ${package} ${installed} ${mode})
+			if(NOT ${installed}_FOUND)
+        finish_Progress(GLOBAL_PROGRESS_VAR)
+        message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed package ${installed}")
+        return()
+      elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been reinstalled
+        finish_Progress(GLOBAL_PROGRESS_VAR)
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${installed} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${installed}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${installed}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${installed}_VERSION${VAR_SUFFIX}}.")
+        return()
+      else()
+        add_Chosen_Package_Version_In_Current_Process(${installed})#memorize chosen version in progress file to share this information with dependent packages
+        if(${installed}_DEPENDENCIES${VAR_SUFFIX} OR ${installed}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})#are there any dependency (native or external) for this package
+  				resolve_Package_Dependencies(${installed} ${mode} TRUE)#recursion : resolving dependencies for each package dependency
+  			endif()
+      endif()
 		endforeach()
 	else()
     finish_Progress(GLOBAL_PROGRESS_VAR)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${VAR_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
+endif()
+
+if(list_of_conflicting_dependencies)#the package has conflicts in its dependencies
+  message("[PID] WARNING : package ${package} has conflicting dependencies:")
+  foreach(dep IN LISTS list_of_conflicting_dependencies)
+    if(${dep}_REQUIRED_VERSION_EXACT)
+      set(OUTPUT_STR "exact version already required is ${${dep}_REQUIRED_VERSION_EXACT}")
+    elseif(${dep}_REQUIRED_VERSION_EXACT)
+      set(OUTPUT_STR "required versions are : ${${dep}_ALL_REQUIRED_VERSIONS}")
+    endif()
+    message("  - dependent package ${dep} is required with version ${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}: ${OUTPUT_STR}.")
+  endforeach()
+  if(NOT first_time)# we are currently trying to reinstall the same package !!
+    finish_Progress(GLOBAL_PROGRESS_VAR)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : Impossible to solve conflicting dependencies for package ${package}. Try to solve these problems by setting adequate versions to dependencies.")
+    return()
+  else()#OK first time package is resolved during the build process
+    message("LAUNCH reinstall package=${package} ${package}_VERSION_STRING=${${package}_VERSION_STRING}")
+    get_Package_Type(${package} PACK_TYPE)
+    set(INSTALL_OK)
+    if(PACK_TYPE STREQUAL "EXTERNAL")
+      install_External_Package(INSTALL_OK ${package} TRUE TRUE)
+    elseif(PACK_TYPE STREQUAL "NATIVE")
+      install_Native_Package(INSTALL_OK ${package} TRUE)
+    endif()
+    if(INSTALL_OK)
+      message("${package}_VERSION_STRING=${${package}_VERSION_STRING}")
+      find_package(${package} ${${package}_VERSION_STRING} REQUIRED)#find again the package
+      message("LAUNCH package=${package} resolution again !!")
+      resolve_Package_Dependencies(${package} ${mode} FALSE)#resolving again the dependencies
+    else()# cannot do much more about that !!
+      finish_Progress(GLOBAL_PROGRESS_VAR)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has conflicting dependencies. See below what are the dependencies !")
+      return()
+    endif()
+  endif()
 endif()
 endfunction(resolve_Package_Dependencies)
 
@@ -459,7 +520,7 @@ set(not_installed )
 set(${NOT_INSTALLED} PARENT_SCOPE)
 foreach(dep_package IN LISTS list_of_packages_to_install) #while there are still packages to install
 	set(INSTALL_OK FALSE)
-	install_Native_Package(INSTALL_OK ${dep_package})
+	install_Native_Package(INSTALL_OK ${dep_package} FALSE)
 	if(INSTALL_OK)
 		list(APPEND successfully_installed ${dep_package})
 	else()
@@ -525,7 +586,7 @@ endfunction(package_Source_Exists_In_Workspace)
 function(package_Reference_Exists_In_Workspace EXIST package)
 set(res FALSE)
 if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
-set(res TRUE)
+  set(res TRUE)
 endif()
 set(${EXIST} ${res} PARENT_SCOPE)
 endfunction(package_Reference_Exists_In_Workspace)
@@ -540,24 +601,24 @@ endfunction(package_Reference_Exists_In_Workspace)
 #  install_Native_Package
 #  ----------------------
 #
-#   .. command:: install_Native_Package(INSTALL_OK package)
+#   .. command:: install_Native_Package(INSTALL_OK package reinstall)
 #
 #     Install a given native package in workspace.
 #
 #      :package: The name of the package to install.
 #
+#      :reinstall: a boolean to indicate if version must be reinstalled
+#
 #      :INSTALL_OK: the output variable that is TRUE is package is installed, FALSE otherwise.
 #
-function(install_Native_Package INSTALL_OK package)
+function(install_Native_Package INSTALL_OK package reinstall)
 
 # 0) test if either reference or source of the package exist in the workspace
-set(IS_EXISTING FALSE)
 set(PATH_TO_SOURCE "")
 package_Source_Exists_In_Workspace(IS_EXISTING PATH_TO_SOURCE ${package})
 if(IS_EXISTING)
 	set(USE_SOURCES TRUE)
 else()
-	set(IS_EXISTING)
 	package_Reference_Exists_In_Workspace(IS_EXISTING ${package})
 	if(IS_EXISTING)
 		set(USE_SOURCES FALSE)
@@ -567,12 +628,18 @@ else()
 		return()
 	endif()
 endif()
-if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
+if(reinstall)#the same version must be reinstalled from sources
+  # package does not belong to packages to install then it means that its version is not adequate and it must be reinstalled from sources
+	set(USE_SOURCE TRUE)# we need to build this package from sources, if any available
+  set(NO_VERSION FALSE)# we need to specify a version !
+  get_Compatible_Version_To_Reinstall(${package} VERSION_MIN IS_EXACT)
+  message("reinstalling version = ${VERSION_MIN} exact = ${IS_EXACT}")
+elseif(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
   # 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
 	set(POSSIBLE FALSE)
 	set(VERSION_MIN)
-	set(EXACT FALSE)
-	resolve_Required_Native_Package_Version(POSSIBLE VERSION_MIN EXACT ${package})
+	set(IS_EXACT FALSE)
+	resolve_Required_Native_Package_Version(POSSIBLE VERSION_MIN IS_EXACT ${package})
 	if(NOT POSSIBLE)
 		message("[PID] ERROR : When deploying package ${package}, impossible to find an adequate version for package ${package}.")
 		set(${INSTALL_OK} FALSE PARENT_SCOPE)
@@ -586,11 +653,10 @@ else()
 endif()
 
 if(USE_SOURCES) #package sources reside in the workspace
-  set(SOURCE_DEPLOYED FALSE)
-	if(NOT NO_VERSION)
-		deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
+	if(NO_VERSION)
+    deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "") # case when the sources exist but haven't been installed yet (should never happen)
 	else()
-		deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "") # case when the sources exist but haven't been installed yet (should never happen)
+    deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "")
 	endif()
 	if(NOT SOURCE_DEPLOYED)
 		message("[PID] ERROR : impossible to deploy package ${package} from sources. Try \"by hand\".")
@@ -613,7 +679,7 @@ else()#using references
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
 	if(NOT ${refer_path} STREQUAL NOTFOUND)
 		if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number
-			deploy_Binary_Native_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
+			deploy_Binary_Native_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "")
 		else()# deploying the most up to date version
 			deploy_Binary_Native_Package(PACKAGE_BINARY_DEPLOYED ${package} "")
 		endif()
@@ -627,9 +693,8 @@ else()#using references
 		set(DEPLOYED FALSE)
 		deploy_Package_Repository(DEPLOYED ${package})
 		if(DEPLOYED) # doing the same as for the USE_SOURCES step
-			set(SOURCE_DEPLOYED FALSE)
 			if(NOT NO_VERSION)
-				deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${EXACT} "")
+				deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "")
 			else()
 				deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "")
 			endif()
@@ -2007,17 +2072,19 @@ endfunction(memorize_External_Binary_References)
 #  install_External_Package
 #  ------------------------
 #
-#   .. command:: install_External_Package(INSTALL_OK package force)
+#   .. command:: install_External_Package(INSTALL_OK package force reinstall)
 #
 #     Install a given external package in workspace.
 #
 #      :package: The name of the external package to install.
 #
-#      :force: if TRUE the external package will be reinstalled if already installed.
+#      :reinstall: if TRUE force the reinstall of binary version.
+#
+#      :from_sources: if TRUE the external package will be reinstalled from sources if already installed.
 #
 #      :INSTALL_OK: the output variable that is TRUE is external package is installed, FALSE otherwise.
 #
-function(install_External_Package INSTALL_OK package force)
+function(install_External_Package INSTALL_OK package reinstall from_sources)
 
 set(USE_SOURCE FALSE)#by default try to install from binaries, if they are available
 set(SELECTED)
@@ -2030,8 +2097,12 @@ if(NOT RES)# no binary reference found...
 endif()
 
 # resolve finally required package version by current project, if any specific version required
-if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
-	set(POSSIBLE_VERSION FALSE)
+if(reinstall AND from_sources)#if the package does not belong to packages to install then it means that its version is not adequate and it must be reinstalled
+  set(USE_SOURCE TRUE) # by definition reinstall from sources
+  set(NO_VERSION FALSE)# we need to specify a version !
+  get_Compatible_Version_To_Reinstall(${package} SELECTED IS_EXACT)
+  set(FORCE_REBUILD TRUE)
+elseif(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	resolve_Required_External_Package_Version(VERSION_POSSIBLE SELECTED IS_EXACT ${package})
 	if(NOT VERSION_POSSIBLE)
 		message("[PID] ERROR : When deploying package ${package}, impossible to find an adequate version for package ${package}.")
@@ -2080,7 +2151,7 @@ if(NOT USE_SOURCE)# we can still try a binary archive deployment
 	if(NO_VERSION)#there is no constraint on the version to use for package
 		deploy_Binary_External_Package(BINARY_DEPLOYED ${package} "")
 	else()	#we know there is at least an adequate version in binary format, the target version is SELECTED
-		deploy_Binary_External_Package_Version(BINARY_DEPLOYED ${package} ${SELECTED} ${force})
+		deploy_Binary_External_Package_Version(BINARY_DEPLOYED ${package} ${SELECTED} ${reinstall})
 	endif()
 	if(BINARY_DEPLOYED)
 		if(NO_VERSION)
@@ -2113,16 +2184,19 @@ set(list_of_installed_versions)
 if(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package}/)
 	list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package})
 	set(list_of_installed_versions ${RES_VERSIONS})
+  if(FORCE_REBUILD)
+    list(REMOVE_ITEM list_of_installed_versions ${SELECTED})
+  endif()
 endif()
 
 #now deploy
 if(NO_VERSION)
-	deploy_Source_External_Package(DEPLOYED ${package} "${list_of_installed_versions}")
+	deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "${list_of_installed_versions}")
 else()
-	deploy_Source_External_Package_Version(DEPLOYED ${package} ${SELECTED} ${IS_EXACT} "${list_of_installed_versions}")
+	deploy_Source_External_Package_Version(SOURCE_DEPLOYED ${package} ${SELECTED} ${IS_EXACT} "${list_of_installed_versions}")
 endif()
 
-if(DEPLOYED)
+if(SOURCE_DEPLOYED)
 		message("[PID] INFO : external package ${package} has been deployed from its wrapper repository.")
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 		return()
@@ -2157,7 +2231,7 @@ set(successfully_installed "")
 set(not_installed "")
 foreach(dep_package IN LISTS list_of_packages_to_install) #while there are still packages to install
 	set(INSTALL_OK FALSE)
-	install_External_Package(INSTALL_OK ${dep_package} FALSE)
+	install_External_Package(INSTALL_OK ${dep_package} FALSE FALSE)
 	if(INSTALL_OK)
 		list(APPEND successfully_installed ${dep_package})
 	else()
@@ -2520,21 +2594,23 @@ foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this pla
 	if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
 		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 			if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
+        finish_Progress(GLOBAL_PROGRESS_VAR)
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
 				return()
 			else()
 				message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
 			endif()
 		else()
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${package}.")
+      finish_Progress(GLOBAL_PROGRESS_VAR)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${package}.")
 			return()
 		endif()
 	endforeach()
 
 #TODO UNCOMMENT AND TEST DEPLOYMENT
 # Manage external package dependencies => need to deploy other external packages
-#if(${package}_EXTERNAL_DEPENDENCIES) #the external package has external dependencies
-#	foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES) #recursive call for deployment of dependencies
+#if(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #the external package has external dependencies
+#	foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #recursive call for deployment of dependencies
 #		deploy_Binary_External_Package_Version(DEPLOYED ${dep_pack} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION})
 #	endforeach()
 #endif()

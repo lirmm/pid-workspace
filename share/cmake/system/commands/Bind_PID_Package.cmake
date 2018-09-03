@@ -150,8 +150,8 @@ set(${PACKAGE_NAME}_ROOT_DIR ${BIN_PACKAGE_PATH} CACHE INTERNAL "")
 set(${PACKAGE_NAME}_FOUND TRUE CACHE INTERNAL "")
 
 # finding all package dependencies
-resolve_Package_Dependencies(${PACKAGE_NAME} Debug)
-resolve_Package_Dependencies(${PACKAGE_NAME} Release)
+resolve_Package_Dependencies(${PACKAGE_NAME} Debug TRUE)
+resolve_Package_Dependencies(${PACKAGE_NAME} Release TRUE)
 
 # resolving runtime dependencies
 resolve_Package_Runtime_Dependencies(${PACKAGE_NAME} Debug)

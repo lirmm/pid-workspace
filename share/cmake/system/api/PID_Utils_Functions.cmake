@@ -884,7 +884,7 @@ endfunction(list_Regular_Files)
 #
 #   .. command:: is_Compatible_Version(COMPATIBLE reference_major reference_minor version_to_compare)
 #
-#    Tell whether a version is compatible with a reference version. Means that their major version are the same and compared version has same or greater minor version number.
+#    Tell whether a reference version is compatible with (i.e. can be used instead of) another version. Means that their major version are the same and compared version has same or lower minor version number.
 #
 #     :reference_major: the major number of the reference version.
 #
@@ -892,13 +892,12 @@ endfunction(list_Regular_Files)
 #
 #     :version_to_compare: the version string of the compared version
 #
-#     :COMPATIBLE: the output variable that is TRUE if version_to_compare is compatible with reference version
+#     :COMPATIBLE: the output variable that is TRUE if reference version is compatible with version_to_compare.
 #
 function(is_Compatible_Version COMPATIBLE reference_major reference_minor version_to_compare)
 set(${COMPATIBLE} FALSE PARENT_SCOPE)
 get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)
-if(	NOT ${compare_major} EQUAL ${reference_major}
-	OR ${compare_minor} GREATER ${reference_minor})
+if(NOT compare_major EQUAL reference_major OR compare_minor GREATER reference_minor)
 	return()#not compatible
 endif()
 set(${COMPATIBLE} TRUE PARENT_SCOPE)
@@ -929,8 +928,7 @@ endfunction(is_Compatible_Version)
 function(is_Exact_Compatible_Version COMPATIBLE reference_major reference_minor version_to_compare)
 set(${COMPATIBLE} FALSE PARENT_SCOPE)
 get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)
-if(	NOT ${compare_major} EQUAL ${reference_major}
-		OR NOT ${compare_minor} EQUAL ${reference_minor})
+if(	NOT compare_major EQUAL reference_major OR NOT compare_minor EQUAL reference_minor)
 	return()#not compatible
 endif()
 set(${COMPATIBLE} TRUE PARENT_SCOPE)
@@ -1656,6 +1654,17 @@ function(is_Application_Type RESULT keyword)
 		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 endfunction(is_Application_Type)
+
+function(get_Package_Type package PACK_TYPE)
+get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+if(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${package})
+	set(${TYPE} EXTERNAL PARENT_SCOPE)
+elseif(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package})
+	set(${PACK_TYPE} NATIVE PARENT_SCOPE)
+else()
+  set(${PACK_TYPE} UNKNOWN PARENT_SCOPE)
+endif()
+endfunction(get_Package_Type)
 
 #.rst:
 #

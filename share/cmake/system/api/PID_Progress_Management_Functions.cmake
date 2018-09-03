@@ -26,6 +26,18 @@ endif()
 set(PID_PROGRESS_MANAGEMENT_INCLUDED TRUE)
 ##########################################################################################
 
+#############################################################################################
+#################### API functions for managing dependency constraints when building ########
+#############################################################################################
+############### W I P ############
+# Explanations:
+# 1) among all possible alternative we may have to select the adequate one depending on alternatives chosen previously by another package
+# to do this, the package must get a set of internal variables that define what are the selected altervatives in a build that uses the current package as a dependency.
+# 2) once received, the chosen alternatives must be set adequately OR an ERROR has to be generated (if the selected alternative of the same package is not managed locally).
+# 3) when finding a dependency (into install tree) not only the version has to be checked but also the alternatives used by that package.
+# If the binary is not using a compatible version with the selected one then it must be removed and reinstalled from source using alternative constraints.
+# This ends up in going back to point 1
+
 #################################################################################################################
 ######################## Utility functions to change the content of the progress file ###########################
 #################################################################################################################
@@ -66,7 +78,7 @@ endfunction(init_Progress_File)
 #
 #   .. command:: reset_Progress_File()
 #
-#    Reset the content of the current build progress management file (pid-workspace/pid/pid_progress.cmake).
+#    Reset the content of the current build progress management file (pid-workspace/pid/pid_progress.cmake) while keeping information about process launcher unchanged.
 #
 function(reset_Progress_File)
 set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
@@ -144,6 +156,47 @@ if(EXISTS ${thefile})
 endif()
 endfunction(remove_Progress_File)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Progress_File| replace:: ``update_Progress_File``
+#  .. _update_Progress_File:
+#
+#  update_Progress_File
+#  --------------------
+#
+#   .. command:: update_Progress_File()
+#
+#    Update progress file with local content.
+#
+function(update_Progress_File)
+set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+reset_Progress_File()#reset the file but keep its header
+# updating information about managed packages
+file(APPEND ${thefile} "set(MANAGED_PACKAGES_IN_CURRENT_PROCESS ${MANAGED_PACKAGES_IN_CURRENT_PROCESS})\n")
+file(APPEND ${thefile} "set(MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS ${MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS})\n")
+foreach(pack IN LISTS MANAGED_PACKAGES_IN_CURRENT_PROCESS)
+  file(APPEND ${thefile} "set(${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS ${${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS})\n")
+  foreach(vers IN LISTS ${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
+    file(APPEND ${thefile} "set(${pack}_${vers}_STATE_IN_CURRENT_PROCESS ${${pack}_${vers}_STATE_IN_CURRENT_PROCESS})\n")
+  endforeach()
+endforeach()
+foreach(pack IN LISTS MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS)
+  file(APPEND ${thefile} "set(${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS ${${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS})\n")
+  foreach(vers IN LISTS ${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
+    file(APPEND ${thefile} "set(${pack}_${vers}_STATE_IN_CURRENT_PROCESS ${${pack}_${vers}_STATE_IN_CURRENT_PROCESS})\n")
+  endforeach()
+endforeach()
+# updating information about packages version that have been chosen
+file(APPEND ${thefile} "set(CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS})\n")
+foreach(pack IN LISTS CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS)
+  file(APPEND ${thefile} "set(${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS ${${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS})\n")
+  file(APPEND ${thefile} "set(${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT ${${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT})\n")
+endforeach()
+endfunction(update_Progress_File)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -180,29 +233,65 @@ if(EXISTS ${thefile})
 	else()
 		list(APPEND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package})
 		list(REMOVE_DUPLICATES MANAGED_PACKAGES_IN_CURRENT_PROCESS)
+    list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}")
+    list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
 		get_Version_String_Numbers(${version} major minor patch)
-		list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${major}.${minor}")
-		list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
 		set(${package}_${major}.${minor}_STATE_IN_CURRENT_PROCESS ${state})
 	endif()
-	reset_Progress_File()
-	file(APPEND ${thefile} "set(MANAGED_PACKAGES_IN_CURRENT_PROCESS ${MANAGED_PACKAGES_IN_CURRENT_PROCESS})\n")
-	file(APPEND ${thefile} "set(MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS ${MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS})\n")
-	foreach(pack IN LISTS MANAGED_PACKAGES_IN_CURRENT_PROCESS)
-		file(APPEND ${thefile} "set(${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS ${${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS})\n")
-		foreach(vers IN LISTS ${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
-			file(APPEND ${thefile} "set(${pack}_${vers}_STATE_IN_CURRENT_PROCESS ${${pack}_${vers}_STATE_IN_CURRENT_PROCESS})\n")
-		endforeach()
-	endforeach()
-	foreach(pack IN LISTS MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS)
-		file(APPEND ${thefile} "set(${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS ${${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS})\n")
-		foreach(vers IN LISTS ${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
-			file(APPEND ${thefile} "set(${pack}_${vers}_STATE_IN_CURRENT_PROCESS ${${pack}_${vers}_STATE_IN_CURRENT_PROCESS})\n")
-		endforeach()
-	endforeach()
+  update_Progress_File()
 endif()
 endfunction(add_Managed_Package_In_Current_Process)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Chosen_Package_Version_In_Current_Process| replace:: ``add_Chosen_Package_Version_In_Current_Process``
+#  .. _add_Chosen_Package_Version_In_Current_Process:
+#
+#  add_Chosen_Package_Version_In_Current_Process
+#  ---------------------------------------------
+#
+#   .. command:: add_Chosen_Package_Version_In_Current_Process(package version external)
+#
+#    Set the chosen version for a given package in the build progress management file.
+#
+#      :package: the name of package.
+#
+#      :version: the chosen version of package.
+#
+#      :exact: if TRUE package version chosen is exact.
+#
+#      :external: if TRUE package is an external package.
+#
+function(add_Chosen_Package_Version_In_Current_Process package)
+set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+if(EXISTS ${thefile})
+	include (${thefile})
+  set(version ${${package}_VERSION_STRING})
+  if(${package}_REQUIRED_VERSION_EXACT)
+    set(exact TRUE)
+  else()
+    set(exact FALSE)
+  endif()
+	#updating variables
+	list(APPEND CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package})
+	list(REMOVE_DUPLICATES CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS)
+  if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#the variable already exists
+    if(version VERSION_GREATER ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#update chosen version only if greater than current one
+      set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
+      set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
+    elseif(version VERSION_EQUAL ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS AND exact)#the new version constraint is exact so set it
+      set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
+    endif()
+  else()
+    set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
+    set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
+  endif()
+  update_Progress_File()
+endif()
+endfunction(add_Chosen_Package_Version_In_Current_Process)
 
 ####################################################################################################
 ######################## Utility functions to check state of the process ###########################
@@ -326,17 +415,32 @@ if(EXISTS ${thefile})
 	if(NOT FOUND EQUAL -1)# package already managed
 		set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
 		return()
-	endif()
-else() #it may be an external package
-	list(FIND MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
-	if(NOT FOUND EQUAL -1)# package already managed
-		set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
-		return()
-	endif()
+  else() #it may be an external package
+  	list(FIND MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
+  	if(NOT FOUND EQUAL -1)# package already managed
+  		set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
+  		return()
+  	endif()
+  endif()
 endif()
 set(${RESULT} FALSE PARENT_SCOPE) #not already managed of no file exists
 endfunction(check_Package_Managed_In_Current_Process)
 
+
+function(get_Chosen_Version_In_Current_Process VERSION IS_EXACT package)
+set(${VERSION} PARENT_SCOPE)
+set(${IS_EXACT} FALSE PARENT_SCOPE)
+set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+if(EXISTS ${thefile})
+	include (${thefile})
+  list(FIND CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package} FOUND)
+	if(NOT FOUND EQUAL -1)# there is a chosen version for that package
+    set(${VERSION} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS} PARENT_SCOPE)
+		set(${IS_EXACT} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT} PARENT_SCOPE) #MANAGED !!
+		return()
+  endif()
+endif()
+endfunction(get_Chosen_Version_In_Current_Process)
 
 ###########################################################################################
 ######################## Control progress of a current process ############################

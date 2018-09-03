@@ -27,72 +27,6 @@ set(PID_PACKAGE_CACHE_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
 
 #############################################################################################
-#################### API functions for managing dependency constraints when building ########
-#############################################################################################
-############### W I P ############
-function(erase_Previous_Build_Constraint_From_Package)
-#prepare the package constraints to be registered
-if(RECEIVED_CONSTRAINTS) #there were constraints previously registered
-	#reset all previous info from this package
-	if(RECEIVED_CONSTRAINTS_${RECEIVED_CONSTRAINTS})
-		foreach(dep IN LISTS RECEIVED_CONSTRAINTS_${RECEIVED_CONSTRAINTS})
-			set(RECEIVED_CONSTRAINTS_${RECEIVED_CONSTRAINTS}_${dep} CACHE INTERNAL "")
-			set(RECEIVED_CONSTRAINTS_${RECEIVED_CONSTRAINTS}_${dep}_EXACT CACHE INTERNAL "")
-		endforeach()
-		set(RECEIVED_CONSTRAINTS_${RECEIVED_CONSTRAINTS} CACHE INTERNAL "")
-	endif()
-endif()
-endfunction(erase_Previous_Build_Constraint_From_Package)
-
-###
-function(set_Build_Constraints_From_Package package)
-	#set the global memory adequately
-set(RECEIVED_CONSTRAINTS ${package} CACHE INTERNAL "")
-set(RECEIVED_CONSTRAINTS_${package} ${SET_BUILD_CONSTRAINTS_${package}} CACHE INTERNAL "")
-foreach(dep IN LISTS RECEIVED_CONSTRAINTS_${package})
-	set(RECEIVED_CONSTRAINTS_${package}_${dep} ${SET_BUILD_CONSTRAINTS_${package}_${dep}} CACHE INTERNAL "")
-	set(RECEIVED_CONSTRAINTS_${package}_${dep}_EXACT ${SET_BUILD_CONSTRAINTS_${package}_${dep}_EXACT} CACHE INTERNAL "")
-endforeach()
-endfunction(set_Build_Constraints_From_Package)
-
-###
-function(reset_Build_Constraint_Variables_For_Interaction)
-foreach(dep IN LISTS SET_BUILD_CONSTRAINTS_${SET_BUILD_CONSTRAINTS})#reset the build constraints passed by a given package
-	set(SET_BUILD_CONSTRAINTS_${SET_BUILD_CONSTRAINTS}_${dep} CACHE INTERNAL "")
-	set(SET_BUILD_CONSTRAINTS_${SET_BUILD_CONSTRAINTS}_${dep}_EXACT CACHE INTERNAL "")
-endforeach()
-set(SET_BUILD_CONSTRAINTS_${SET_BUILD_CONSTRAINTS} CACHE INTERNAL "")#reset the build constraints
-set(SET_BUILD_CONSTRAINTS CACHE INTERNAL "")#reset the build constraints
-endfunction(reset_Build_Constraint_Variables_For_Interaction)
-
-###
-function(received_Build_Contraints)
-if(SET_BUILD_CONSTRAINTS)#if another set of constraints is provided then reconfigure, otherwise keep configuration "as is"
-	erase_Previous_Build_Constraint_From_Package()
-	set_Build_Constraints_From_Package(${SET_BUILD_CONSTRAINTS})
-	reset_Build_Constraint_Variables_For_Interaction() #need to reset before another package ask for specific constraints
-endif()
-endfunction(received_Build_Contraints)
-
-### HERE TODO : use all the received constraints from one package to configure dependency alternatives/option chosen
-function(configured_With_Build_Constraints VERSION IS_EXACT dep_package)
-if(RECEIVED_CONSTRAINTS)
-	set(package ${RECEIVED_CONSTRAINTS})
-	if(RECEIVED_CONSTRAINTS_${package})
-		list(FIND RECEIVED_CONSTRAINTS_${package} ${dep_package} INDEX)
-		if(NOT INDEX EQUAL -1)#the dependency is also used locally
-			set(${VERSION} ${RECEIVED_CONSTRAINTS_${package}_${dep_package}} PARENT_SCOPE)
-			set(${IS_EXACT} ${RECEIVED_CONSTRAINTS_${package}_${dep_package}_EXACT} PARENT_SCOPE)
-			return()
-		endif()
-	endif()
-endif()
-#otherwise no constraint on version
-set(${VERSION} PARENT_SCOPE)
-set(${IS_EXACT} PARENT_SCOPE)
-endfunction(configured_With_Build_Constraints)
-
-#############################################################################################
 ############### API functions for managing user options cache variables #####################
 #############################################################################################
 include(CMakeDependentOption)
@@ -871,10 +805,8 @@ endfunction(is_Package_Dependency)
 #     :list_of_components: the list of components that must belong to dep_package.
 #
 function(add_Package_Dependency_To_Cache dep_package version exact list_of_components)
-	set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${list_of_components} CACHE INTERNAL "")
-	list(REMOVE_DUPLICATES ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-	list(REMOVE_DUPLICATES ${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})
+  append_Unique_In_Cache(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+  append_Unique_In_Cache(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} "${list_of_components}")
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
 endfunction(add_Package_Dependency_To_Cache)
@@ -902,11 +834,9 @@ endfunction(add_Package_Dependency_To_Cache)
 #     :list_of_components: the list of components that must belong to dep_package.
 #
 function(add_External_Package_Dependency_To_Cache dep_package version exact list_of_components)
-	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_package} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}} ${list_of_components} CACHE INTERNAL "")
-	list(REMOVE_DUPLICATES ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-	list(REMOVE_DUPLICATES ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX})
-	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+  append_Unique_In_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+  append_Unique_In_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} "${list_of_components}")
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
 endfunction(add_External_Package_Dependency_To_Cache)
 

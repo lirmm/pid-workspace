@@ -1862,7 +1862,12 @@ function(resolve_Wrapper_Dependencies RESULT_OK package version)
 		endif()
 		foreach(a_dep IN LISTS INSTALLED_PACKAGES)#do the recursion on installed external packages
 			#perform a new refind to be sure that all direct dependencies are well configured
-			resolve_External_Package_Dependency(${package}_KNOWN_VERSION_${version} ${a_dep} Release)
+			resolve_External_Package_Dependency(IS_COMPATIBLE ${package}_KNOWN_VERSION_${version} ${a_dep} Release)
+			if(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been reinstalled
+				finish_Progress(GLOBAL_PROGRESS_VAR)
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${a_dep} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${a_dep}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${a_dep}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${a_dep}_VERSION${USE_MODE_SUFFIX}}.")
+				return()
+			endif()
 		endforeach()
 	endif()
 	#resolving external dependencies for project external dependencies
@@ -1870,6 +1875,6 @@ function(resolve_Wrapper_Dependencies RESULT_OK package version)
 	# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN LISTS ${prefix}_EXTERNAL_DEPENDENCIES)
-		resolve_Package_Dependencies(${dep_pack} Release)
+		resolve_Package_Dependencies(${dep_pack} Release TRUE)
 	endforeach()
 endfunction(resolve_Wrapper_Dependencies)
