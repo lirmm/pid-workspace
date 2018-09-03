@@ -134,6 +134,7 @@ message("[PID] INFO : Installing external package ${TARGET_EXTERNAL_PACKAGE} ver
 #create the output folder
 file(MAKE_DIRECTORY ${TARGET_INSTALL_DIR}/share)
 install_External_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION} ${CURRENT_PLATFORM})
+install_External_Find_File_For_Version(${TARGET_EXTERNAL_PACKAGE})
 
 if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install_script_file})
   file(COPY ${package_version_src_dir}/${post_install_script_file} DESTINATION  ${TARGET_INSTALL_DIR}/share)

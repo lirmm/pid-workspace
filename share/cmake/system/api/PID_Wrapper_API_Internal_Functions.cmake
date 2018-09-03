@@ -490,10 +490,10 @@ function(generate_Wrapper_Find_File)
 				endif()
 			endforeach()
 			if(FIRST_INCOMPATIBLE_VERSION)#if there is a known incompatible version
-				set(FIND_FILE_VERSIONS_COMPATIBLITY "${FIND_FILE_VERSIONS_COMPATIBLITY}\nset(${PROJECT_NAME}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO ${FIRST_INCOMPATIBLE_VERSION})")
+				set(FIND_FILE_VERSIONS_COMPATIBLITY "${FIND_FILE_VERSIONS_COMPATIBLITY}\nset(${PROJECT_NAME}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO ${FIRST_INCOMPATIBLE_VERSION} CACHE INTERNAL \"\")")
 		  elseif(COMPATIBLE_VERSION_FOUND)#at least one compatible version has been found but no incompatible versions defined
 				#we need to say that version are all compatible by specifying an "infinite version"
-				set(FIND_FILE_VERSIONS_COMPATIBLITY "${FIND_FILE_VERSIONS_COMPATIBLITY}\nset(${PROJECT_NAME}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO 100000.100000.100000)")
+				set(FIND_FILE_VERSIONS_COMPATIBLITY "${FIND_FILE_VERSIONS_COMPATIBLITY}\nset(${PROJECT_NAME}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO 100000.100000.100000 CACHE INTERNAL \"\")")
 			endif()
 		endforeach()
 	endif()
@@ -1114,6 +1114,27 @@ function(install_External_Use_File_For_Version package version platform)
 	set(target_folder ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share)
 	file(COPY ${file_path} DESTINATION ${target_folder})
 endfunction(install_External_Use_File_For_Version)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_External_Find_File_For_Version| replace:: ``install_External_Find_File_For_Version``
+#  .. _install_External_Find_File_For_Version:
+#
+#  install_External_Find_File_For_Version
+#  -------------------------------------
+#
+#   .. command:: install_External_Find_File_For_Version(package version platform)
+#
+#    Copy the find file of a given version of an external package into install tree of the workspace.
+#
+#      :package: the name of the external package.
+#
+function(install_External_Find_File_For_Version package)
+	set(wrapper_path ${WORKSPACE_DIR}/wrappers/${package}/build)
+	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} install WORKING_DIRECTORY ${wrapper_path})#simply call the install function of the wrapper
+endfunction(install_External_Find_File_For_Version)
 
 #.rst:
 #
