@@ -217,13 +217,13 @@ endfunction(extract_All_Words_From_Path)
 #
 # .. ifmode:: internal
 #
-#  .. |fill_List_Into_String| replace:: ``fill_List_Into_String``
-#  .. _fill_List_Into_String:
+#  .. |fill_String_From_List| replace:: ``fill_String_From_List``
+#  .. _fill_String_From_List:
 #
-#  fill_List_Into_String
+#  fill_String_From_List
 #  ---------------------
 #
-#   .. command:: fill_List_Into_String(input_list RES_STRING)
+#   .. command:: fill_String_From_List(input_list RES_STRING)
 #
 #    Create a string with space separators from a list.
 #
@@ -231,14 +231,14 @@ endfunction(extract_All_Words_From_Path)
 #
 #     :RES_STRING: the output variable containg the resulting string
 #
-function(fill_List_Into_String input_list RES_STRING)
+function(fill_String_From_List input_list RES_STRING)
 set(res "")
 foreach(element IN LISTS input_list)
 	set(res "${res} ${element}")
 endforeach()
 string(STRIP "${res}" res_finished)
 set(${RES_STRING} ${res_finished} PARENT_SCOPE)
-endfunction(fill_List_Into_String)
+endfunction(fill_String_From_List)
 
 
 #.rst:
@@ -682,6 +682,7 @@ else()#testing with only two elements
 			set(${MINOR} PARENT_SCOPE)
 			set(${PATCH} PARENT_SCOPE)
 		else() #not even a number
+      finish_Progress(GLOBAL_PROGRESS_VAR)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : corrupted version string ${version_string}.")
 		endif()
 	endif()
@@ -969,8 +970,8 @@ else()
 endif()
 extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
 extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_String_From_List("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
 	set(${RES_STRING} "${AUTHOR_STRING} (${INSTITUTION_STRING})" PARENT_SCOPE)
 else()
@@ -1000,7 +1001,7 @@ endfunction(generate_Full_Author_String)
 #
 function(generate_Contact_String author mail RES_STRING)
 extract_All_Words("${author}" "_" AUTHOR_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 if(mail AND NOT mail STREQUAL "")
 	set(${RES_STRING} "${AUTHOR_STRING} (${mail})" PARENT_SCOPE)
 else()
@@ -1029,8 +1030,8 @@ endfunction()
 function(get_Formatted_Framework_Contact_String framework RES_STRING)
 extract_All_Words("${${framework}_FRAMEWORK_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
 extract_All_Words("${${framework}_FRAMEWORK_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_String_From_List("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
 	if(${framework}_FRAMEWORK_CONTACT_MAIL)
 		set(${RES_STRING} "${AUTHOR_STRING} (${${framework}_FRAMEWORK_CONTACT_MAIL}) - ${INSTITUTION_STRING}" PARENT_SCOPE)
@@ -1066,7 +1067,7 @@ endfunction(get_Formatted_Framework_Contact_String)
 #
 function(generate_Formatted_String input RES_STRING)
 extract_All_Words("${input}" "_" INPUT_ALL_WORDS)
-fill_List_Into_String("${INPUT_ALL_WORDS}" INPUT_STRING)
+fill_String_From_List("${INPUT_ALL_WORDS}" INPUT_STRING)
 set(${RES_STRING} "${INPUT_STRING}" PARENT_SCOPE)
 endfunction(generate_Formatted_String)
 
@@ -1096,12 +1097,12 @@ list(GET author_institution 0 AUTHOR_NAME)
 list(GET author_institution 1 INSTITUTION_NAME)
 extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
 extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_String_From_List("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 elseif(${SIZE} EQUAL 1)
 list(GET author_institution 0 AUTHOR_NAME)
 extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
 set(INSTITUTION_STRING "")
 endif()
 if(NOT INSTITUTION_STRING STREQUAL "")
@@ -1132,8 +1133,8 @@ endfunction(get_Formatted_Author_String)
 function(get_Formatted_Package_Contact_String package RES_STRING)
 extract_All_Words("${${package}_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
 extract_All_Words("${${package}_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
-fill_List_Into_String("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_List_Into_String("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_String_From_List("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
 	if(${package}_CONTACT_MAIL)
 		set(${RES_STRING} "${AUTHOR_STRING} (${${package}_CONTACT_MAIL}) - ${INSTITUTION_STRING}" PARENT_SCOPE)
