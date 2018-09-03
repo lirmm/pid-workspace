@@ -752,11 +752,13 @@ endfunction(belongs_To_Known_Versions)
 #
 function(add_Known_Version version deploy_file_name compatible_with_version so_name post_install_script)
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
+	finish_Progress(GLOBAL_PROGRESS_VAR)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
 	return()
 endif()
 list(FIND ${PROJECT_NAME}_KNOWN_VERSIONS ${version} INDEX)
 if(NOT INDEX EQUAL -1)
+	finish_Progress(GLOBAL_PROGRESS_VAR)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, version \"${version}\" is already registered !")
 	return()
 endif()
@@ -808,9 +810,11 @@ if(platform AND NOT platform STREQUAL "")# if a platform constraint applies
 			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
 				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
 				if(NOT CHECK_${config}_RESULT)# not found, trying to see if it can be installed
+					finish_Progress(GLOBAL_PROGRESS_VAR)
 					message(FATAL_ERROR "[PID] CRITICAL ERROR : the configuration ${config} cannot be find or installed on target platform !")
 				endif()
 			else()
+				finish_Progress(GLOBAL_PROGRESS_VAR)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown configuration ${config} !")
 			endif()
 		endif()
@@ -909,6 +913,7 @@ else()#there are version specified
 		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} to be used among versions : ${available_versions}")
 		#check if the user input is not faulty (version is in the list)
 		if(NOT ${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED)
+			finish_Progress(GLOBAL_PROGRESS_VAR)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : you did not define any version for dependency ${dep_package}.")
 			return()
 		endif()
@@ -920,6 +925,7 @@ else()#there are version specified
 		else()# a version has been specified
 			list(FIND list_of_versions ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 			if(INDEX EQUAL -1 )#no possible version found corresponding to user input
+				finish_Progress(GLOBAL_PROGRESS_VAR)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value (${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED}) for dependency ${dep_package}.")
 				return()
 			endif()

@@ -56,12 +56,14 @@ foreach(config IN LISTS ${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS_DEBUG)#if empty 
 	if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
 		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 			if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
+				finish_Progress(GLOBAL_PROGRESS_VAR)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${PACKAGE_NAME}.")
 				return()
 			else()
 				message("[PID] INFO : platform configuration ${config} for package ${PACKAGE_NAME} is satisfied.")
 			endif()
 		else()
+			finish_Progress(GLOBAL_PROGRESS_VAR)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this configuration is unknown within PID. Please contact the administrator of package ${PACKAGE_NAME}.")
 			return()
 		endif()
@@ -72,10 +74,12 @@ foreach(config IN LISTS ${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS)#if empty no con
 	if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
 		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 			if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
+				finish_Progress(GLOBAL_PROGRESS_VAR)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${PACKAGE_NAME}.")
 				return()
 			endif()
 		else()
+			finish_Progress(GLOBAL_PROGRESS_VAR)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this configuration is unknown within PID. Please contact the administrator of package ${PACKAGE_NAME}.")
 			return()
 		endif()

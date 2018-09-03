@@ -42,6 +42,7 @@ load_Current_Platform() #loading the current platform configuration before execu
 message("[PID] INFO : building wrapper for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
 #checking that user input is coherent
 if(NOT TARGET_EXTERNAL_VERSION OR TARGET_EXTERNAL_VERSION STREQUAL "")
+  finish_Progress(GLOBAL_PROGRESS_VAR)
   message(FATAL_ERROR "[PID] CRITICAL ERROR: you must define the version to build and deploy using version= argument to the build command")
   return()
 endif()
@@ -62,6 +63,7 @@ if(NOT EXISTS ${package_version_build_dir})
 endif()
 
 if(NOT EXISTS ${package_dir}/build/Build${TARGET_EXTERNAL_PACKAGE}.cmake)
+  finish_Progress(GLOBAL_PROGRESS_VAR)
   message(FATAL_ERROR "[PID] CRITICAL ERROR : build configuration file has not been generated for ${TARGET_EXTERNAL_PACKAGE}, please rerun wrapper configruation...")
   return()
 endif()
@@ -71,10 +73,12 @@ include(${package_dir}/build/Build${TARGET_EXTERNAL_PACKAGE}.cmake)#load the con
 if(${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS) #check that the target version exist
   list(FIND ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS ${TARGET_EXTERNAL_VERSION} INDEX)
   if(INDEX EQUAL -1)
+    finish_Progress(GLOBAL_PROGRESS_VAR)
     message(FATAL_ERROR "[PID] CRITICAL ERROR : ${TARGET_EXTERNAL_PACKAGE} external package version ${TARGET_EXTERNAL_VERSION} is not defined by wrapper of ${TARGET_EXTERNAL_PACKAGE}")
     return()
   endif()
 else()
+  finish_Progress(GLOBAL_PROGRESS_VAR)
   message(FATAL_ERROR "[PID] CRITICAL ERROR : wrapper of ${TARGET_EXTERNAL_PACKAGE} does not define any version !!! Build aborted ...")
   return()
 endif()

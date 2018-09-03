@@ -152,6 +152,7 @@ endfunction(generate_Coverage)
 function(add_Static_Check component is_library)
 
 	if(NOT TARGET ${component})
+    finish_Progress(GLOBAL_PROGRESS_VAR)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target name ${component} when trying to cppcheck !")
 	endif()
   # getting include automatically search by the compiler => this allow also to be robust to cross compilation requests
