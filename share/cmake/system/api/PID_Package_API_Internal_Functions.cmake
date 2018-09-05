@@ -156,7 +156,7 @@ elseif(DIR_NAME STREQUAL "build")
 	add_custom_target(integrate
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DWITH_OFFICIAL=$(official)
+						-DWITH_OFFICIAL=\${official}
 						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Integrate_PID_Package.cmake
 		COMMENT "[PID] Integrating modifications ..."
 		VERBATIM
@@ -175,7 +175,7 @@ elseif(DIR_NAME STREQUAL "build")
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DGIT_REPOSITORY=${CMAKE_SOURCE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DFORCE_RELEASE_BUILD=$(force)
+					-DFORCE_RELEASE_BUILD=\${force}
 						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Check_PID_Package_Branch.cmake
 		COMMENT "[PID] Checking branch..."
 	)
@@ -485,8 +485,8 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 						-DINCLUDES_COVERAGE=${INCLUDING_COVERAGE}
 						-DINCLUDES_STATIC_CHECKS=${INCLUDING_STATIC_CHECKS}
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
-						-DSYNCHRO=$(synchro)
-						-DFORCED_UPDATE=$(force)
+						-DSYNCHRO=\${synchro}
+						-DFORCED_UPDATE=\${force}
 						-DSITE_GIT="${${PROJECT_NAME}_SITE_GIT_ADDRESS}"
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 						-DPACKAGE_SITE_URL="${${PROJECT_NAME}_SITE_ROOT_PAGE}"
@@ -505,7 +505,7 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 						-DINCLUDES_COVERAGE=${INCLUDING_COVERAGE}
 						-DINCLUDES_STATIC_CHECKS=${INCLUDING_STATIC_CHECKS}
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
-						-DSYNCHRO=$(synchro)
+						-DSYNCHRO=\${synchro}
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 			 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Site.cmake
 	)
@@ -959,8 +959,8 @@ add_custom_target(list_dependencies
 					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
 					-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
-					-DFLAT_PRESENTATION="$(flat)"
-					-DWRITE_TO_FILE="$(write_file)"
+					-DFLAT_PRESENTATION="\${flat}"
+					-DWRITE_TO_FILE="\${write_file}"
 					-P ${WORKSPACE_DIR}/share/cmake/system/commands/Listing_PID_Package_Dependencies.cmake
 	VERBATIM
 )
@@ -1410,7 +1410,6 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 	set(unused FALSE)
 	# 0) check if a version of this dependency is required by another package
 	get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT ${dep_package})
-	message("declare_Package_Dependency package=${dep_package} REQUIRED_VERSION=${REQUIRED_VERSION} IS_EXACT=${IS_EXACT}")
 
 	# 1) the package may be required at that time
 	# defining if there is either a specific version to use or not
@@ -1562,7 +1561,6 @@ function(declare_External_Package_Dependency dep_package optional list_of_versio
 set(unused FALSE)
 # 0) check if a version of this dependency is required by another package used in the current build process and memorize this version
 get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT ${dep_package})
-message("declare_External_Package_Dependency in ${PROJECT_NAME} dep_package=${dep_package} REQUIRED_VERSION=${REQUIRED_VERSION} IS_EXACT=${IS_EXACT}")
 
 # defining if there is either a specific version to use or not
 if(NOT list_of_versions) # no version constraint specified

@@ -96,9 +96,9 @@ add_custom_target(man ALL
 
 ## getting info on the workspace, packages, frameworks or licenses
 add_custom_target(info
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
-					-DTARGET_FRAMEWORK=$(framework)
-					-DTARGET_LICENSE=$(license)
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE="\${package}"
+					-DTARGET_FRAMEWORK=\${framework}
+					-DTARGET_LICENSE=\${license}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Print_PID_Workspace_Info.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -106,12 +106,14 @@ add_custom_target(info
 
 ## deploying a package (either soure repository or binary package relocatable archive)
 add_custom_target(deploy
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
-					-DTARGET_VERSION=$(version)
-					-DTARGET_FRAMEWORK=$(framework)
-					-DVERBOSE_MODE=$(verbose)
-					-DFORCE_REDEPLOY=$(force)
-					-DNO_SOURCE=$(no_source)
+	COMMAND ${CMAKE_COMMAND} -DTARGET_PACKAGE=\${package}
+					-DTARGET_VERSION=\${version}
+					-DTARGET_FRAMEWORK=\${framework}
+					-DVERBOSE_MODE=\${verbose}
+					-DFORCE_REDEPLOY=\${force}
+					-DNO_SOURCE=\${no_source}
+					-DUSE_BRANCH=\${branch}
+					-DRUN_TESTS=\${test}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Deploy_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -119,7 +121,7 @@ add_custom_target(deploy
 
 ## building a list of source packages
 add_custom_target(build
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="$(package)"
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="\${package}"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Build_PID_Packages.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -127,7 +129,7 @@ add_custom_target(build
 
 ## rebuilding a list of source packages
 add_custom_target(rebuild
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="$(package)"
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="\${package}"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Rebuild_PID_Packages.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -135,8 +137,8 @@ add_custom_target(rebuild
 
 ## resolving runtime dependencies of an already installed package
 add_custom_target(resolve
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
-					-DTARGET_VERSION=$(version)
+	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
+					-DTARGET_VERSION=\${version}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Resolve_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -144,14 +146,14 @@ add_custom_target(resolve
 
 ## creating a new package
 add_custom_target(create
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
-					-DTARGET_FRAMEWORK=$(framework)
-					-DTARGET_WRAPPER=$(wrapper)
-					-DOPTIONAL_AUTHOR="$(author)"
-					-DOPTIONAL_INSTITUTION="$(affiliation)"
-					-DOPTIONAL_LICENSE=$(license)
-					-DOPTIONNAL_GIT_URL=$(url)
-					-DOPTIONNAL_SITE=$(site)
+COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
+					-DTARGET_FRAMEWORK=\${framework}
+					-DTARGET_WRAPPER=\${wrapper}
+					-DOPTIONAL_AUTHOR="\${author}"
+					-DOPTIONAL_INSTITUTION="\${affiliation}"
+					-DOPTIONAL_LICENSE=\${license}
+					-DOPTIONNAL_GIT_URL=\${url}
+					-DOPTIONNAL_SITE=\${site}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Create_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -159,12 +161,12 @@ add_custom_target(create
 
 ## connect to newly created PID package to an existing empty repository
 add_custom_target(connect
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_FRAMEWORK=$(framework)
-					-DTARGET_PACKAGE=$(package)
-					-DTARGET_WRAPPER=$(wrapper)
-					-DOFFICIAL_GIT_URL=$(official)
-					-DORIGIN_GIT_URL=$(origin)
-					-DFORCED_RECONNECTION=$(force)
+COMMAND ${CMAKE_COMMAND} 	-DTARGET_FRAMEWORK=\${framework}
+					-DTARGET_PACKAGE=\${package}
+					-DTARGET_WRAPPER=\${wrapper}
+					-DOFFICIAL_GIT_URL=\${official}
+					-DORIGIN_GIT_URL=\${origin}
+					-DFORCED_RECONNECTION=\${force}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Connect_PID_Deployment_Unit.cmake
@@ -174,8 +176,8 @@ add_custom_target(connect
 
 ## clearing a package install directory
 add_custom_target(clear
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
-					-DTARGET_VERSION=$(version)
+COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
+					-DTARGET_VERSION=\${version}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Clear_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -183,7 +185,7 @@ add_custom_target(clear
 
 ## clearing a package install directory
 add_custom_target(hard_clean
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
+COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Hard_Clean_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -191,8 +193,8 @@ add_custom_target(hard_clean
 
 ## completely remove a package from workspace
 add_custom_target(remove
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
-					-DTARGET_FRAMEWORK=$(framework)
+COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
+					-DTARGET_FRAMEWORK=\${framework}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Remove_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -201,8 +203,8 @@ add_custom_target(remove
 
 ## register a package in the workspace
 add_custom_target(register
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
-					-DTARGET_FRAMEWORK=$(framework)
+COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
+					-DTARGET_FRAMEWORK=\${framework}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Register_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -211,8 +213,8 @@ add_custom_target(register
 
 ## releasing a package
 add_custom_target(release
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
-					-DNEXT_VERSION=$(nextversion)
+COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
+					-DNEXT_VERSION=\${nextversion}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Release_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -221,7 +223,7 @@ add_custom_target(release
 
 ## updating a package
 add_custom_target(update
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=$(package)
+COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Update_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -229,8 +231,8 @@ add_custom_target(update
 
 ## upgrading the workspace
 add_custom_target(upgrade
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_OFFICIAL=$(official)
-					-DUPDATE_ALL_PACKAGES=$(update)
+COMMAND ${CMAKE_COMMAND} 	-DTARGET_OFFICIAL=\${official}
+					-DUPDATE_ALL_PACKAGES=\${update}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Upgrade_PID_Workspace.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -238,8 +240,8 @@ add_custom_target(upgrade
 
 ## configuring the workspace
 add_custom_target(configure
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_ENVIRONMENT=$(environment)
-					-DTARGET_VERSION=$(version)
+COMMAND ${CMAKE_COMMAND} 	-DTARGET_ENVIRONMENT=\${environment}
+					-DTARGET_VERSION=\${version}
 					-DCURRENT_ENVIRONMENT=${CURRENT_ENVIRONMENT}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Configure_PID_Environment.cmake

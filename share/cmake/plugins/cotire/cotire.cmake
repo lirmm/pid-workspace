@@ -862,7 +862,7 @@ macro (cotire_set_cmd_to_prologue _cmdVar)
 	if (COTIRE_VERBOSE)
 		list (APPEND ${_cmdVar} "-DCOTIRE_VERBOSE:BOOL=ON")
 	elseif("${CMAKE_GENERATOR}" MATCHES "Makefiles")
-		list (APPEND ${_cmdVar} "-DCOTIRE_VERBOSE:BOOL=$(VERBOSE)")
+		list (APPEND ${_cmdVar} "-DCOTIRE_VERBOSE:BOOL=\${VERBOSE}")
 	endif()
 endmacro()
 

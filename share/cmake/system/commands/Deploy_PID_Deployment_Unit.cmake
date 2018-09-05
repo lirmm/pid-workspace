@@ -91,8 +91,6 @@ else()# a package deployment is required
 			if(NOT redeploy)
 				message("[PID] WARNING : ${TARGET_PACKAGE} binary version ${TARGET_VERSION} already resides in the workspace. Use force=true to force the redeployment.")
 				return()
-			else()
-
 			endif()
 		elseif( NOT is_external AND	EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION}
 			AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION})
@@ -106,7 +104,7 @@ else()# a package deployment is required
 	# check in case when direct binary deployment asked
 	set(references_loaded FALSE)
 	if(NO_SOURCE AND (NO_SOURCE STREQUAL "true" OR NO_SOURCE STREQUAL "TRUE"))
-		#if no source required than binary references must exist
+		#if no source required then binary references must exist
 		load_Package_Binary_References(REFERENCES_OK ${TARGET_PACKAGE})# now load the binary references of the package
 		set(references_loaded TRUE)#memorize that references have been loaded
 		if(NOT REFERENCES_OK)
@@ -121,6 +119,7 @@ else()# a package deployment is required
 			endif()
 		endif()
 	endif()
+
 
 		####################################################################
 		##########################  OPERATIONS  ############################

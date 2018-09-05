@@ -253,10 +253,10 @@ if(DIR_NAME STREQUAL "build")
 	add_custom_target(build
     ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
            -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
-           -DTARGET_EXTERNAL_VERSION=$(version)
-           -DTARGET_BUILD_MODE=$(mode)
-					 -DGENERATE_BINARY_ARCHIVE=$(archive)
-           -DDO_NOT_EXECUTE_SCRIPT=$(skip_script)
+           -DTARGET_EXTERNAL_VERSION=\${version}
+				 	 -DTARGET_BUILD_MODE=\${mode}
+				   -DGENERATE_BINARY_ARCHIVE=\${archive}
+           -DDO_NOT_EXECUTE_SCRIPT=\${skip_script}
 					 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Wrapper.cmake
     COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
     VERBATIM
@@ -266,7 +266,7 @@ if(DIR_NAME STREQUAL "build")
 	add_custom_target(uninstall
 		${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
            -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
-           -DTARGET_EXTERNAL_VERSION=$(version)
+           -DTARGET_EXTERNAL_VERSION=\${version}
 					 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Uninstall_PID_Wrapper.cmake
 		COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
 		COMMENT "[PID] Uninstalling external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} ..."
@@ -634,8 +634,8 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
-						-DSYNCHRO=$(synchro)
-						-DFORCED_UPDATE=$(force)
+						-DSYNCHRO=\${synchro}
+						-DFORCED_UPDATE=\${force}
 						-DSITE_GIT="${${PROJECT_NAME}_SITE_GIT_ADDRESS}"
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 						-DPACKAGE_SITE_URL="${${PROJECT_NAME}_SITE_ROOT_PAGE}"
@@ -650,8 +650,8 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
-						-DSYNCHRO=$(synchro)
-						-DFORCED_UPDATE=$(force)
+						-DSYNCHRO=\${synchro}
+						-DFORCED_UPDATE=\${force}
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 			 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Site.cmake
 	)
