@@ -1658,8 +1658,6 @@ else()#there are version(s) specified
 						message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} a bad version (${${dep_package}_ALTERNATIVE_VERSION_USED}) was used for dependency ${dep_package}.")
 						return()
 					endif()
-				else()
-
 				endif()
 			endif()
 		endif()
