@@ -149,6 +149,113 @@ function(set_Mode_Specific_Options_From_Global)
 	endif()
 endfunction(set_Mode_Specific_Options_From_Global)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Option_Line_Info| replace:: ``get_Option_Line_Info``
+#  .. _get_Option_Line_Info:
+#
+#  get_Option_Line_Info
+#  --------------------
+#
+#   .. command:: get_Option_Line_Info(NAME TYPE VALUE COMMENT line)
+#
+#   Extracting information from a line contained in a CMake cache file.
+#
+#     :line: string taht contains a given line from a cache file.
+#
+#     :NAME: output variable that contains the name of the option if any in the line, empty otherwise.
+#
+#     :TYPE: output variable that contains the type of the option if any in the line, empty otherwise.
+#
+#     :VALUE: output variable that contains the value of the option if any in the line, empty otherwise.
+#
+#     :COMMENT: output variable that contains the comment if any in the line, empty otherwise.
+#
+function(get_Option_Line_Info NAME TYPE VALUE COMMENT line)
+  set(${NAME} PARENT_SCOPE)
+  set(${TYPE} PARENT_SCOPE)
+  set(${VALUE} PARENT_SCOPE)
+  set(${COMMENT} PARENT_SCOPE)
+  if(line AND (NOT line STREQUAL "-- Cache values"))#this line may contain option info
+    string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT_LINE ${line})
+    if(line STREQUAL "${COMMENT_LINE}") #no match => this NOT a comment =>  is an option line
+      string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\2;\\3" AN_OPTION "${line}") #indexes 0: name, 1:type, 2: value
+      list(GET AN_OPTION 0 var_name)
+      list(GET AN_OPTION 1 var_type)
+      list(GET AN_OPTION 2 var_value)
+      set(${NAME} ${var_name} PARENT_SCOPE)
+      set(${TYPE} ${var_type} PARENT_SCOPE)
+      set(${VALUE} ${var_value} PARENT_SCOPE)
+    else()#match is OK => this is a comment line
+      set(${COMMENT} "${COMMENT_LINE}" PARENT_SCOPE)
+    endif()
+  endif()#if first line simply do nothing (because no information)
+endfunction(get_Option_Line_Info)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_Option_Into_List| replace:: ``find_Option_Into_List``
+#  .. _find_Option_Into_List:
+#
+#  find_Option_Into_List
+#  ---------------------
+#
+#   .. command:: find_Option_Into_List(INDEX option_name option_type list_name)
+#
+#   Finding the given CMake cache option from a list of cache file lines.
+#
+#     :option_name: the name of the cmake cache option to find.
+#
+#     :option_type: the type of the cmake cache option to find (STRING, PATH, INTERNAL, BOOL).
+#
+#     :list_name: the name of the list where finding lines from a cache file.
+#
+#     :INDEX: output variable that contains the index of the line that matches in number of characters, -1 if not found.
+#
+function(find_Option_Into_List INDEX option_name option_type list_name)
+  string(FIND "${${list_name}}" "${option_name}:${option_type}=" POS)
+  set(${INDEX} ${POS} PARENT_SCOPE)
+endfunction(find_Option_Into_List)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Option_Value_From_List| replace:: ``get_Option_Value_From_List``
+#  .. _get_Option_Value_From_List:
+#
+#  get_Option_Value_From_List
+#  --------------------------
+#
+#   .. command:: get_Option_Value_From_List(VALUE option_name option_type list_name)
+#
+#   Getting the value of an option from a list of cache file lines.
+#
+#     :option_name: the name of the cmake cache option to get value from.
+#
+#     :option_type: the type of the cmake cache option to get value from (STRING, PATH, INTERNAL, BOOL).
+#
+#     :list_name: the name of the list where finding lines from a cache file.
+#
+#     :VALUE: output variable that contains the value of the cache option (may be empty if option has no value or does not exist).
+#
+function(get_Option_Value_From_List VALUE option_name option_type list_name)
+  set(${VALUE} PARENT_SCOPE)
+  foreach(line IN LISTS ${list_name})#value of list name is a list in enclosing scope
+    if(line AND (NOT line STREQUAL "-- Cache values"))#this line may contain option info
+      string(REGEX REPLACE "^${option_name}:${option_type}=(.*)$" "\\1" AN_OPTION_VAL "${line}")
+      if(NOT (line STREQUAL "${AN_OPTION_VAL}"))#MATCH => the option has been found
+        set(${VALUE} ${AN_OPTION_VAL} PARENT_SCOPE)
+      endif()
+    endif()
+  endforeach()
+endfunction(get_Option_Value_From_List)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -164,75 +271,70 @@ endfunction(set_Mode_Specific_Options_From_Global)
 #   Force the build options of the global build mode from cache of the current specific build mode (Release or Debug). Use to update global cache options related to the specific build mode in order to keep consistency of cache at global level.
 #
 function(set_Global_Options_From_Mode_Specific)
-	# copying new cache entries in the global build cache
-	execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
-execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+	# GOAL: copying new cache entries in the global build cache
+  #first get cache entries from debug and release mode
+  execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+  execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
 	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES_GLOBAL)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
-	# searching new cache entries in release mode cache
+  # searching new cache entries in release mode cache
 	foreach(line IN LISTS LINES_RELEASE)
-		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")#this line may contain option info
-			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
-			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
-				string(REGEX REPLACE "^([^:]+):([^=]+)=(.+)$" "\\1;\\2;\\3" AN_OPTION "${line}") #indexes 0: name, 1:value, 2: type
-				if("${AN_OPTION}" STREQUAL "${line}")#no match this is certainly
-					string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\2;\\3" AN_OPTION "${line}") #there is certainly no value set for the option
-					list(GET AN_OPTION 0 var_name)
-					string(FIND "${LINES}" "${var_name}" POS)
-					if(POS EQUAL -1)#not found, this a new cache entry
-						list(GET AN_OPTION 1 var_type)
-						set(${var_name} CACHE ${var_type} "${last_comment}")
-					endif()
-				else() #OK the option has a value
-					list(GET AN_OPTION 0 var_name)
-					string(FIND "${LINES}" "${var_name}" POS)
-					if(POS EQUAL -1)#not found, this a new cache entry
-						list(GET AN_OPTION 1 var_type)
-						list(GET AN_OPTION 2 var_value)
-						set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
-					endif()
-				endif()
-			else()#match is OK this is a comment line
-				set(last_comment "${COMMENT}")
-			endif()
-		endif()
+    get_Option_Line_Info(OPT_NAME OPT_TYPE OPT_VALUE OPT_COMMENT "${line}")
+    if(OPT_COMMENT)#the line contains a comment, simply memorize it (will be used for immediate next option)
+      set(last_comment "${OPT_COMMENT}")
+    elseif(OPT_NAME AND OPT_TYPE)#the line contains an option
+      find_Option_Into_List(INDEX ${OPT_NAME} ${OPT_TYPE} LINES_GLOBAL)#search for same option in global cache
+      if(INDEX EQUAL -1)#not found in global cache => this a new cache entry coming from mode specific build
+        set(${OPT_NAME} ${OPT_VALUE} CACHE ${OPT_TYPE} "${last_comment}")#value may be empty
+      elseif(BUILD_RELEASE_ONLY)
+        set(${OPT_NAME} ${OPT_VALUE} CACHE ${OPT_TYPE} "${last_comment}" FORCE)#value may be empty
+      endif()
+    endif()
 	endforeach()
+  set(last_comment "")
 
-
-	# searching new cache entries in debug mode cache
-	foreach(line IN LISTS LINES_DEBUG)
-		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")
-			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
-			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
-				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
-				list(GET AN_OPTION 0 var_name)
-				string(FIND "${LINES}" "${var_name}" POS)
-				string(FIND "${LINES_RELEASE}" "${var_name}" POS_REL)
-				if(POS EQUAL -1 AND POS_REL EQUAL -1)#not found
-					list(GET AN_OPTION 1 var_value)
-					list(GET AN_OPTION 2 var_type)
-					set(${var_name} ${var_value} CACHE ${var_type} "${last_comment}")
-				endif()
-			else()#match is OK this is a comment line
-				set(last_comment "${COMMENT}")
-			endif()
-		endif()
+  # searching new cache entries in debug mode cache
+  foreach(line IN LISTS LINES_DEBUG)
+    get_Option_Line_Info(OPT_NAME OPT_TYPE OPT_VALUE OPT_COMMENT "${line}")
+    if(OPT_COMMENT)#the line contains a comment, simply memorize it (will be used for immediate next option)
+      set(last_comment "${OPT_COMMENT}")
+    elseif(OPT_NAME AND OPT_TYPE)#the line contains an option
+      find_Option_Into_List(INDEX_GLOB ${OPT_NAME} ${OPT_TYPE} LINES_GLOBAL)#search for same option in global cache
+      find_Option_Into_List(INDEX_REL ${OPT_NAME} ${OPT_TYPE} LINES_RELEASE)#search for same option in global cache
+      if(INDEX_GLOB EQUAL -1 AND INDEX_REL EQUAL -1)#not found in global and release caches
+        set(${OPT_NAME} ${OPT_VALUE} CACHE ${OPT_TYPE} "${last_comment}")#add it to global cache
+      elseif((NOT POS_REL EQUAL -1) AND (NOT POS EQUAL -1))#found in both global and release caches
+        #1) check if release and debug have same value
+        set(debug_value ${OPT_VALUE})
+        get_Option_Value_From_List(release_value ${OPT_NAME} ${OPT_TYPE} LINES_RELEASE)
+        if(debug_value STREQUAL release_value) #debug and release have same value
+          #1) if their value differ from global one then apply it
+          get_Option_Value_From_List(global_value ${OPT_NAME} ${OPT_TYPE} LINES_GLOBAL)
+          if(NOT (release_value STREQUAL global_value))#their value is different from value of same global option => need to update
+            set(${OPT_NAME} ${release_value} CACHE ${OPT_TYPE} "${last_comment}" FORCE)#add it to global cache
+          endif()
+        #else debug and release mode variables differ (rare case, except for CMAKE_BUILD_TYPE)
+        #simply do nothing : DO NOT remove otherwise at next configuration time it will be added with the value of a mode
+        endif()
+      endif()
+    endif()
 	endforeach()
-	# searching removed cache entries in release and debug mode caches => then remove them from global cache
+  set(last_comment "")
+
+  # searching removed cache entries in release and debug mode caches => then remove them from global cache
 	foreach(line IN LISTS LINES_GLOBAL)
-		if(NOT "${line}" STREQUAL "-- Cache values" AND NOT "${line}" STREQUAL "")#this line may contain option info
-			string(REGEX REPLACE "^//(.*)$" "\\1" COMMENT ${line})
-			if("${line}" STREQUAL "${COMMENT}") #no match this is an option line
-				string(REGEX REPLACE "^([^:]+):([^=]+)=(.*)$" "\\1;\\3;\\2" AN_OPTION "${line}")
-				list(GET AN_OPTION 0 var_name)
-				string(FIND "${LINES_DEBUG}" "${var_name}" POS_DEB)
-				string(FIND "${LINES_RELEASE}" "${var_name}" POS_REL)
-				if(POS_DEB EQUAL -1 AND POS_REL EQUAL -1)#not found in any mode specific cache
-					unset(${var_name} CACHE)
-				endif()
-			endif()
-		endif()
+    get_Option_Line_Info(OPT_NAME OPT_TYPE OPT_VALUE OPT_COMMENT "${line}")
+    if(OPT_NAME AND OPT_TYPE)#the line contains an option
+      if(NOT BUILD_RELEASE_ONLY)
+        set(INDEX_DEBUG -1)
+        find_Option_Into_List(INDEX_DEBUG ${OPT_NAME} ${OPT_TYPE} LINES_DEBUG)#search for same option in global cache
+      endif()
+      find_Option_Into_List(INDEX_REL ${OPT_NAME} ${OPT_TYPE} LINES_RELEASE)#search for same option in global cache
+      if(INDEX_DEBUG EQUAL -1 AND INDEX_REL EQUAL -1)#not found in debug and release caches
+        unset(${OPT_NAME} CACHE) #the option ${OPT_NAME} does not belong to release or debug, simply remove it from global cache
+      endif()
+    endif()
 	endforeach()
 
 	#removing temporary files containing cache entries
