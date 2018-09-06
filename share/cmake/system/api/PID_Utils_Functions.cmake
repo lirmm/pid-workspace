@@ -574,6 +574,8 @@ endfunction(check_Required_Directories_Exist)
 ################ Management of version information ##########
 #############################################################
 
+
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -682,9 +684,10 @@ else()#testing with only two elements
 			set(${MINOR} PARENT_SCOPE)
 			set(${PATCH} PARENT_SCOPE)
 		else() #not even a number
-      finish_Progress(GLOBAL_PROGRESS_VAR)
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : corrupted version string ${version_string}.")
-		endif()
+      set(${MAJOR} PARENT_SCOPE)
+      set(${MINOR} PARENT_SCOPE)
+      set(${PATCH} PARENT_SCOPE)
+    endif()
 	endif()
 endif()
 endfunction(get_Version_String_Numbers)
@@ -928,7 +931,8 @@ endfunction(is_Compatible_Version)
 function(is_Exact_Compatible_Version COMPATIBLE reference_major reference_minor version_to_compare)
 set(${COMPATIBLE} FALSE PARENT_SCOPE)
 get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)
-if(	NOT compare_major EQUAL reference_major OR NOT compare_minor EQUAL reference_minor)
+if(	NOT (compare_major EQUAL reference_major)
+    OR NOT (compare_minor EQUAL reference_minor))
 	return()#not compatible
 endif()
 set(${COMPATIBLE} TRUE PARENT_SCOPE)

@@ -458,6 +458,10 @@ function(resolve_Required_Native_Package_Version RESOLUTION_OK MINIMUM_VERSION I
 
 foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	get_Version_String_Numbers("${version}" compare_major compare_minor compared_patch)
+  if(NOT DEFINED compare_major)
+    finish_Progress(GLOBAL_PROGRESS_VAR)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} corrupted version string ${version_string} for dependency to package ${package}.")
+  endif()
 	if(NOT MAJOR_RESOLVED)#first time
 		set(MAJOR_RESOLVED ${compare_major})
 		set(CUR_MINOR_RESOLVED ${compare_minor})
@@ -471,13 +475,13 @@ foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE
 		else()
 			set(CURR_EXACT FALSE)
 		endif()
-	elseif(NOT compare_major EQUAL ${MAJOR_RESOLVED})
+	elseif(NOT compare_major EQUAL MAJOR_RESOLVED)
 		set(${RESOLUTION_OK} FALSE PARENT_SCOPE)
 		return()
-	elseif(CURR_EXACT AND (compare_minor GREATER ${CUR_MINOR_RESOLVED}))
+	elseif(CURR_EXACT AND (compare_minor GREATER CUR_MINOR_RESOLVED))
 		set(${RESOLUTION_OK} FALSE PARENT_SCOPE)
 		return()
-	elseif(NOT CURR_EXACT AND (compare_minor GREATER ${CUR_MINOR_RESOLVED}))
+	elseif(NOT CURR_EXACT AND (compare_minor GREATER CUR_MINOR_RESOLVED))
 		set(CUR_MINOR_RESOLVED ${compare_minor})
     set(CUR_PATCH_RESOLVED 0) #reset the patch version as we changed the minor version number
 		if(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX})

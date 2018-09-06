@@ -233,10 +233,12 @@ if(EXISTS ${thefile})
 	else()
 		list(APPEND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package})
 		list(REMOVE_DUPLICATES MANAGED_PACKAGES_IN_CURRENT_PROCESS)
-    list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}")
-    list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
-		get_Version_String_Numbers(${version} major minor patch)
-		set(${package}_${major}.${minor}_STATE_IN_CURRENT_PROCESS ${state})
+    get_Version_String_Numbers(${version} major minor patch)
+    if(DEFINED major)# valid version string
+      list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}")
+      list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
+      set(${package}_${major}.${minor}_STATE_IN_CURRENT_PROCESS ${state})
+    endif()
 	endif()
   update_Progress_File()
 endif()
@@ -324,7 +326,11 @@ if(EXISTS ${thefile})
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# native package is already managed
 		get_Version_String_Numbers(${version} major minor patch)
-		list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${major}.${minor}" FOUND)
+    if(NOT DEFINED major)#not a valid version string
+      set(${RESULT} FALSE PARENT_SCOPE) #MANAGED !!
+			return()
+    endif()
+    list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${major}.${minor}" FOUND)
 		if(NOT FOUND EQUAL -1)# version of this package already managed
 			set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
 			return()
@@ -370,7 +376,11 @@ if(EXISTS ${thefile})
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# native package already managed
 		get_Version_String_Numbers(${version} major minor patch)
-		list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${major}.${minor}" FOUND)
+    if(NOT DEFINED major)#not a valid version string
+      set(${RESULT} "UNKNOWN" PARENT_SCOPE) #MANAGED !!
+      return()
+    endif()
+    list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${major}.${minor}" FOUND)
 		if(NOT FOUND EQUAL -1)# version of this package already managed
 			set(${RESULT} ${${package}_${major}.${minor}_STATE_IN_CURRENT_PROCESS} PARENT_SCOPE) #not already managed or no file exists
 			return()

@@ -105,6 +105,9 @@ endfunction(set_External_Version_Strings)
 #
 function(select_Exact_Native_Version RES_VERSION minimum_version available_versions)
 get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
+if(NOT DEFINED MAJOR)#not a valid version string
+  set(${RES_VERSION} PARENT_SCOPE)
+endif()
 if(DEFINED PATCH)
 	set(curr_max_patch_number ${PATCH})
 else()
@@ -113,9 +116,9 @@ endif()
 
 foreach(version IN LISTS available_versions)
 	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
-	if(	COMPARE_MAJOR EQUAL ${MAJOR}
-		AND COMPARE_MINOR EQUAL ${MINOR}
-		AND COMPARE_PATCH GREATER ${curr_max_patch_number})
+  if(	COMPARE_MAJOR EQUAL MAJOR
+		AND COMPARE_MINOR EQUAL MINOR
+		AND COMPARE_PATCH GREATER curr_max_patch_number)
 		set(curr_max_patch_number ${COMPARE_PATCH})# taking the last patch version available for this major.minor
 	endif()
 endforeach()
@@ -178,6 +181,9 @@ endfunction(select_Exact_External_Version)
 #
 function(select_Best_Native_Version RES_VERSION minimum_version available_versions)
 get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
+if(NOT DEFINED MAJOR)#not a valid version string
+  set(${RES_VERSION} PARENT_SCOPE)
+endif()
 if(DEFINED PATCH)
 	set(curr_max_patch_number ${PATCH})
 else()
@@ -186,9 +192,9 @@ endif()
 set(curr_max_minor_number ${MINOR})
 foreach(version IN LISTS available_versions)
 	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
-	if(COMPARE_MAJOR EQUAL ${MAJOR})
-		if(	COMPARE_MINOR EQUAL ${curr_max_minor_number}
-			AND COMPARE_PATCH GREATER ${curr_max_patch_number})
+	if(COMPARE_MAJOR EQUAL MAJOR)
+		if(	COMPARE_MINOR EQUAL curr_max_minor_number
+			AND COMPARE_PATCH GREATER curr_max_patch_number)
 			set(curr_max_patch_number ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
 		elseif(COMPARE_MINOR GREATER ${curr_max_minor_number})
 			set(curr_max_patch_number ${COMPARE_PATCH})# taking the patch version of this major.minor
@@ -429,7 +435,10 @@ if(local_versions)#seaking for a good version only if there are versions install
 		endif()
 	endforeach()
 	get_Version_String_Numbers(${version_string_curr} major minor patch)
-	set_Version_Strings(${package} ${major} ${minor} ${patch})
+  if(NOT major)#not a valid version string
+    return()
+  endif()
+  set_Version_Strings(${package} ${major} ${minor} ${patch})
 endif()
 endfunction(check_Last_Version)
 
@@ -776,7 +785,10 @@ set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
 set(${NEED_FINDING} FALSE PARENT_SCOPE)
 if(${package}_REQUIRED_VERSION_EXACT)
 	get_Version_String_Numbers("${${package}_REQUIRED_VERSION_EXACT}.0" exact_major exact_minor exact_patch)
-	is_Exact_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version})
+  if(NOT DEFINED exact_major)#not a valid version string
+    return()
+  endif()
+  is_Exact_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version})
 	if(NOT COMPATIBLE_VERSION)#not compatible if versions are not the same major.minor
 		return()
 	endif()
@@ -785,6 +797,9 @@ if(${package}_REQUIRED_VERSION_EXACT)
 endif()
 #no exact version required
 get_Version_String_Numbers("${version}.0" exact_major exact_minor exact_patch)
+if(NOT exact_major)#not a valid version string
+  return()
+endif()
 foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	unset(COMPATIBLE_VERSION)
 	is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_required})
@@ -827,13 +842,19 @@ set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
 # 1) testing compatibility and recording the higher constraint for minor version number
 if(${package}_REQUIRED_VERSION_EXACT)
 	get_Version_String_Numbers("${${package}_REQUIRED_VERSION_EXACT}.0" exact_major exact_minor exact_patch)
-	is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version})
+  if(NOT DEFINED exact_major)#not a valid version string
+    return()
+  endif()
+  is_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version})
 	if(COMPATIBLE_VERSION)
 		set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 	endif()
 	return()#no need to set the version to find
 endif()
 get_Version_String_Numbers("${version}.0" new_major new_minor new_patch)
+if(NOT new_major)#not a valid version string
+  return()
+endif()
 set(curr_major ${new_major})
 set(curr_max_minor ${new_minor})
 foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
@@ -928,7 +949,10 @@ if(external)
 else()#native package
   if(version_to_test_is_exact) #the version to test is EXACT, so impossible to change it after build of current project
     get_Version_String_Numbers("${version_to_test}.0" exact_major exact_minor exact_patch)
-  	is_Exact_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_in_use})
+    if(NOT DEFINED exact_major)#not a valid version string
+      return()
+    endif()
+    is_Exact_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_in_use})
     if(COMPATIBLE_VERSION)
       set(${COMPATIBLE_VERSION_IN_LIST} ${version_to_test} PARENT_SCOPE)
     endif()
@@ -936,7 +960,10 @@ else()#native package
     if(version_in_use_is_exact) #the version currenlty in use is exact
       #the exact version in use must be compatible with (usable instead of) the tested one (since in final build version_in_use_will be used)
       get_Version_String_Numbers("${version_in_use}.0" exact_major exact_minor exact_patch)
-    	is_Compatible_Version(IS_COMPATIBLE ${exact_major} ${exact_minor} ${version_to_test})
+      if(NOT DEFINED exact_major)#not a valid version string
+        return()
+      endif()
+      is_Compatible_Version(IS_COMPATIBLE ${exact_major} ${exact_minor} ${version_to_test})
       if(IS_COMPATIBLE)#OK version in use can be substituted to version to test in the final build process
         set(${COMPATIBLE_VERSION_IN_LIST} ${version_to_test} PARENT_SCOPE)#use currenlty required version as we can replace it by version one in final build
       endif()
@@ -944,11 +971,17 @@ else()#native package
       # so in the end the global build process using current project as a dependency can be adapted to use the "most compatible" version
       # there is no problem to build the current project with this "most compatible version"
       get_Version_String_Numbers("${version_in_use}.0" exact_major exact_minor exact_patch)
+      if(NOT DEFINED exact_major)#not a valid version string
+        return()
+      endif()
       is_Compatible_Version(IS_COMPATIBLE ${exact_major} ${exact_minor} ${version_to_test})
       if(IS_COMPATIBLE)
         set(${COMPATIBLE_VERSION_IN_LIST} ${version_in_use} PARENT_SCOPE)#use previously required version
       else()
         get_Version_String_Numbers("${version_to_test}.0" exact_major exact_minor exact_patch)
+        if(NOT DEFINED exact_major)#not a valid version string
+          return()
+        endif()
         is_Compatible_Version(IS_COMPATIBLE ${exact_major} ${exact_minor} ${version_in_use})
         if(IS_COMPATIBLE)
           set(${COMPATIBLE_VERSION_IN_LIST} ${version_to_test} PARENT_SCOPE)#use currenlty required version

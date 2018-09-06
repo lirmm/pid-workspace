@@ -283,7 +283,11 @@ if(NOT ADD_PID_PACKAGE_REFERENCE_VERSION)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to input a target version number (with major and minor values, optionnaly you can also set a patch value which is considered as 0 if not set) using VERSION keyword.")
 else()
 	get_Version_String_Numbers(${ADD_PID_PACKAGE_REFERENCE_VERSION} MAJOR MINOR PATCH)
-	#manage PID v1 API way of doing
+  if(NOT DEFINED MAJOR)
+    finish_Progress(GLOBAL_PROGRESS_VAR)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the version number is corrupted (should follow the pattern major.minor[.patch]).")
+  endif()
+  #manage PID v1 API way of doing
 	set(TARGET_PLATFORM_FOR_REFERENCE ${ADD_PID_PACKAGE_REFERENCE_PLATFORM})
 
 	if(TARGET_PLATFORM_FOR_REFERENCE)#target platform cannot be determined
