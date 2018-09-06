@@ -113,13 +113,13 @@ endfunction(prepare_Repository_Context_Switch)
 #
 # .. ifmode:: internal
 #
-#  .. |go_To_Commit| replace:: ``go_To_Commit``
-#  .. _go_To_Commit:
+#  .. |checkout_To_Commit| replace:: ``checkout_To_Commit``
+#  .. _checkout_To_Commit:
 #
-#  go_To_Commit
-#  ------------
+#  checkout_To_Commit
+#  ------------------
 #
-#   .. command:: go_To_Commit(repo commit)
+#   .. command:: checkout_To_Commit(repo commit)
 #
 #     Checkout to the given commit in the target git repository.
 #
@@ -127,9 +127,32 @@ endfunction(prepare_Repository_Context_Switch)
 #
 #     :commit: the commit to go to
 #
-function(go_To_Commit repo commit)
+function(checkout_To_Commit repo commit)
   execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${repo} git checkout ${commit}
 		              OUTPUT_QUIET ERROR_QUIET)
+endfunction(checkout_To_Commit)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |go_To_Commit| replace:: ``go_To_Commit``
+#  .. _go_To_Commit:
+#
+#  go_To_Commit
+#  ------------
+#
+#   .. command:: go_To_Commit(package commit_or_branch)
+#
+#     Checkout to the integration branch of the target source package.
+#
+#     :package: The target source package
+#
+#     :commit_or_branch: The target commit to go to
+#
+function(go_To_Commit package commit_or_branch)
+  prepare_Repository_Context_Switch(${package})
+  checkout_To_Commit(${WORKSPACE_DIR}/packages/${package} ${commit_or_branch})
 endfunction(go_To_Commit)
 
 #.rst:
@@ -149,8 +172,7 @@ endfunction(go_To_Commit)
 #     :package: The target source package
 #
 function(go_To_Integration package)
-  prepare_Repository_Context_Switch(${package})
-  go_To_Commit(${WORKSPACE_DIR}/packages/${package} integration)
+  go_To_Commit(${package} integration)
 endfunction(go_To_Integration)
 
 #.rst:
@@ -170,8 +192,7 @@ endfunction(go_To_Integration)
 #     :package: The target source package
 #
 function(go_To_Master package)
-  prepare_Repository_Context_Switch(${package})
-  go_To_Commit(${WORKSPACE_DIR}/packages/${package} master)
+  go_To_Commit(${package} master)
 endfunction(go_To_Master)
 
 #.rst:
@@ -189,7 +210,7 @@ endfunction(go_To_Master)
 #     Checkout to the master branch of the PID workspace.
 #
 function(go_To_Workspace_Master)
-  go_To_Commit(${WORKSPACE_DIR} master)
+  checkout_To_Commit(${WORKSPACE_DIR} master)
 endfunction(go_To_Workspace_Master)
 
 #.rst:
@@ -207,7 +228,7 @@ endfunction(go_To_Workspace_Master)
 #     Checkout to the development branch of the PID workspace.
 #
 function(go_To_Workspace_Development)
-  go_To_Commit(${WORKSPACE_DIR} development)
+  checkout_To_Commit(${WORKSPACE_DIR} development)
 endfunction(go_To_Workspace_Development)
 
 #.rst:
@@ -229,9 +250,7 @@ endfunction(go_To_Workspace_Development)
 #     :version: the target version
 #
 function(go_To_Version package version)
-  prepare_Repository_Context_Switch(${package})
-  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout tags/v${version}
-		              OUTPUT_QUIET ERROR_QUIET)
+  go_To_Commit(${package} tags/v${version})
 endfunction(go_To_Version)
 
 #.rst:
@@ -409,7 +428,7 @@ endfunction(save_Repository_Context)
 #
 function(restore_Repository_Context package initial_commit saved_content)
   prepare_Repository_Context_Switch(${package})
-  go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${initial_commit})
+  checkout_To_Commit(${WORKSPACE_DIR}/packages/${package} ${initial_commit})
   if(saved_content)
   	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git stash pop --index OUTPUT_QUIET ERROR_QUIET)
   endif()
@@ -470,7 +489,7 @@ endfunction(save_Workspace_Repository_Context)
 #     :saved_content: if TRUE then stashed content will be pop
 #
 function(restore_Workspace_Repository_Context initial_commit saved_content)
-go_To_Commit(${WORKSPACE_DIR} ${initial_commit})
+checkout_To_Commit(${WORKSPACE_DIR} ${initial_commit})
 if(saved_content)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git stash pop OUTPUT_QUIET ERROR_QUIET)
 endif()
