@@ -1606,7 +1606,7 @@ else()#there are version(s) specified
 	endif()
 
 	##### create the cache variables for user at first time #####
-	set(message_for_variable "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}.")
+	set(message_for_variable "Select the version of dependency ${dep_package} : ${available_versions}.")
 	if(optional) #message for the optional dependency includes the possiiblity to input NONE
 		set(message_for_variable "${message_for_variable} Or use NONE to avoid using this dependency.")
 	endif()

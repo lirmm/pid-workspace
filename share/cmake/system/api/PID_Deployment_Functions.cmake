@@ -319,7 +319,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
     message(FATAL_ERROR "[PID] CRITICAL ERROR : Impossible to solve conflicting dependencies for package ${package}. Try to solve these problems by setting adequate versions to dependencies.")
     return()
   else()#OK first time package is resolved during the build process
-    message("LAUNCH reinstall package=${package} ${package}_VERSION_STRING=${${package}_VERSION_STRING}")
+    message("PID [INFO] rebuild package ${package} version ${${package}_VERSION_STRING}...")
     get_Package_Type(${package} PACK_TYPE)
     set(INSTALL_OK)
     if(PACK_TYPE STREQUAL "EXTERNAL")
@@ -328,9 +328,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
       install_Native_Package(INSTALL_OK ${package} TRUE)
     endif()
     if(INSTALL_OK)
-      message("${package}_VERSION_STRING=${${package}_VERSION_STRING}")
       find_package(${package} ${${package}_VERSION_STRING} REQUIRED)#find again the package
-      message("LAUNCH package=${package} resolution again !!")
       resolve_Package_Dependencies(${package} ${mode} FALSE)#resolving again the dependencies
     else()# cannot do much more about that !!
       finish_Progress(GLOBAL_PROGRESS_VAR)
@@ -633,7 +631,6 @@ if(reinstall)#the same version must be reinstalled from sources
 	set(USE_SOURCE TRUE)# we need to build this package from sources, if any available
   set(NO_VERSION FALSE)# we need to specify a version !
   get_Compatible_Version_To_Reinstall(${package} VERSION_MIN IS_EXACT)
-  message("reinstalling version = ${VERSION_MIN} exact = ${IS_EXACT}")
 elseif(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
   # 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
 	set(POSSIBLE FALSE)
