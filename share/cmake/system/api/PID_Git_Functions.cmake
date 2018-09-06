@@ -1080,6 +1080,30 @@ endfunction(clone_Repository)
 #
 # .. ifmode:: internal
 #
+#  .. |track_Repository_Branch| replace:: ``track_Repository_Branch``
+#  .. _track_Repository_Branch:
+#
+#  track_Repository_Branch
+#  -----------------------
+#
+#   .. command:: track_Repository_Branch(package remote branch)
+#
+#     Make the local repository of package track the given branch from given remote.
+#
+#     :package: the name of target package
+#
+#     :remote: the name of remote whose branch will be tracked
+#
+#     :branch: the name of the branch
+#
+function(track_Repository_Branch package remote branch)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout --track -b ${branch} ${remote}/${branch})#updating reference on branch defined in  remote
+endfunction(track_Repository_Branch)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |initialize_Git_Repository_Push_Address| replace:: ``initialize_Git_Repository_Push_Address``
 #  .. _initialize_Git_Repository_Push_Address:
 #

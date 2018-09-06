@@ -319,7 +319,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
     message(FATAL_ERROR "[PID] CRITICAL ERROR : Impossible to solve conflicting dependencies for package ${package}. Try to solve these problems by setting adequate versions to dependencies.")
     return()
   else()#OK first time package is resolved during the build process
-    message("PID [INFO] rebuild package ${package} version ${${package}_VERSION_STRING}...")
+    message("[PID] INFO: rebuild package ${package} version ${${package}_VERSION_STRING}...")
     get_Package_Type(${package} PACK_TYPE)
     set(INSTALL_OK)
     if(PACK_TYPE STREQUAL "EXTERNAL")
@@ -399,12 +399,12 @@ if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_UPDATE) #if no automatic download 
 		if(SOURCE_EXIST) # updating the source package, if possible
 			if(WITH_VERSION)
         if(patch)
-				  deploy_Source_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}.${patch}" ${exact} "${already_installed}")
+				  deploy_Source_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}.${patch}" ${exact} "${already_installed}" FALSE)
         else()
-          deploy_Source_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}")
+          deploy_Source_Native_Package_Version(IS_DEPLOYED ${package} "${major}.${minor}" ${exact} "${already_installed}" FALSE)
         endif()
       else()
-				deploy_Source_Native_Package(IS_DEPLOYED ${package} "${already_installed}") #install last version available
+				deploy_Source_Native_Package(IS_DEPLOYED ${package} "${already_installed}" FALSE) #install last version available
 			endif()
 		else() # updating the binary package, if possible
 			include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
@@ -655,9 +655,9 @@ endif()
 
 if(USE_SOURCES) #package sources reside in the workspace
 	if(NO_VERSION)
-    deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "") # case when the sources exist but haven't been installed yet (should never happen)
+    deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "" FALSE) # case when the sources exist but haven't been installed yet (should never happen)
 	else()
-    deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "")
+    deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "" FALSE)
 	endif()
 	if(NOT SOURCE_DEPLOYED)
 		message("[PID] ERROR : impossible to deploy package ${package} from sources. Try \"by hand\".")
@@ -695,9 +695,9 @@ else()#using references
 		deploy_Package_Repository(DEPLOYED ${package})
 		if(DEPLOYED) # doing the same as for the USE_SOURCES step
 			if(NOT NO_VERSION)
-				deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "")
+				deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "" FALSE)
 			else()
-				deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "")
+				deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "" FALSE)
 			endif()
 			if(NOT SOURCE_DEPLOYED)
 				set(${INSTALL_OK} FALSE PARENT_SCOPE)
@@ -832,7 +832,7 @@ endfunction(deploy_Package_Repository)
 #  build_And_Install_Source
 #  ------------------------
 #
-#   .. command:: build_And_Install_Source(DEPLOYED package version)
+#   .. command:: build_And_Install_Source(DEPLOYED package version run_tests)
 #
 #   Build and install a version of a given package from its source repository. Called by: deploy_Source_Native_Package and deploy_Source_Native_Package_Version.
 #
@@ -840,40 +840,73 @@ endfunction(deploy_Package_Repository)
 #
 #      :version: The target version to build.
 #
+#      :branch: The target branch to build.
+#
+#      :run_tests: if true the build process will run the tests and tests fail the install is not performed.
+#
 #      :IS_DEPLOYED: the output variable that is TRUE if package source repository is deployed, FALSE otherwise.
 #
-function(build_And_Install_Source DEPLOYED package version)
+function(build_And_Install_Source DEPLOYED package version branch run_tests)
 	if(ADDITIONNAL_DEBUG_INFO)
-		message("[PID] INFO : configuring version ${version} of package ${package} ...")
+    if(version)
+      message("[PID] INFO : configuring version ${version} of package ${package} ...")
+    else()
+      message("[PID] INFO : configuring package ${package} (from branch ${branch}) ...")
+    endif()
 	endif()
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=OFF -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF -D ADDITIONNAL_DEBUG_INFO:BOOL=${ADDITIONNAL_DEBUG_INFO} ..
+  if(run_tests)
+    set(TESTS_ARE_USED ON)
+  else()
+    set(TESTS_ARE_USED OFF)
+  endif()
+  execute_process(
+		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=${TESTS_ARE_USED} -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF -D ADDITIONNAL_DEBUG_INFO:BOOL=${ADDITIONNAL_DEBUG_INFO} ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 		RESULT_VARIABLE CONFIG_RES
 	)
 
 	if(CONFIG_RES EQUAL 0)
 		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : building version ${version} of package ${package} ...")
+      if(version)
+        message("[PID] INFO : building version ${version} of package ${package} ...")
+      else()
+        message("[PID] INFO : building of package ${package} (from branch ${branch}) ...")
+      endif()
 		endif()
 		execute_process(
 			COMMAND ${CMAKE_MAKE_PROGRAM} build "force=true"
 			WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
 			RESULT_VARIABLE BUILD_RES
 			)
-		get_System_Variables(platform package_string)
-		if(BUILD_RES EQUAL 0 AND EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
-			set(${DEPLOYED} TRUE PARENT_SCOPE)
-			if(ADDITIONNAL_DEBUG_INFO)
-				message("[PID] INFO : ... package ${package} version ${version} built !")
-			endif()
-			return()
-		else()
-			message("[PID] ERROR : ... building package ${package} version ${version} has FAILED !")
-		endif()
-
+    if(version)
+  		get_System_Variables(platform package_string)
+  		if(BUILD_RES EQUAL 0
+        AND EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
+  			set(${DEPLOYED} TRUE PARENT_SCOPE)
+  			if(ADDITIONNAL_DEBUG_INFO)
+  				message("[PID] INFO : ... package ${package} version ${version} built !")
+  			endif()
+  			return()
+  		else()
+  			message("[PID] ERROR : ... building package ${package} version ${version} has FAILED !")
+  		endif()
+    else()
+      if(BUILD_RES EQUAL 0)
+        set(${DEPLOYED} TRUE PARENT_SCOPE)
+  			if(ADDITIONNAL_DEBUG_INFO)
+  				message("[PID] INFO : ... package ${package} built (from branch ${branch})!")
+  			endif()
+  			return()
+      else()
+  			message("[PID] ERROR : ... building package ${package} (from branch ${branch}) has FAILED !")
+      endif()
+    endif()
 	else()
-		message("[PID] ERROR : ... configuration of package ${package} version ${version} has FAILED !")
+    if(version)
+      message("[PID] ERROR : ... configuration of package ${package} version ${version} has FAILED !")
+    else()
+      message("[PID] ERROR : ... configuration of package ${package} (from branch ${branch}) has FAILED !")
+    endif()
 	endif()
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 endfunction(build_And_Install_Source)
@@ -888,7 +921,7 @@ endfunction(build_And_Install_Source)
 #  deploy_Source_Native_Package
 #  ----------------------------
 #
-#   .. command:: deploy_Source_Native_Package(DEPLOYED package already_installed_versions)
+#   .. command:: deploy_Source_Native_Package(DEPLOYED package already_installed_versions run_tests)
 #
 #   Deploy a native package (last version) from its source repository. Means deploy git repository + configure + build/install the native SOURCE package in the workspace so that it can be used by a third party package.
 #
@@ -896,9 +929,11 @@ endfunction(build_And_Install_Source)
 #
 #      :already_installed_versions: The list of versions of the package that are already installed.
 #
+#      :run_tests: if true the build process will run the tests and tests they fail the deployment is aborted.
+#
 #      :DEPLOYED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
 #
-function(deploy_Source_Native_Package DEPLOYED package already_installed_versions)
+function(deploy_Source_Native_Package DEPLOYED package already_installed_versions run_tests)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
@@ -927,7 +962,7 @@ if(INDEX EQUAL -1) #not found in installed versions
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN" OR RES STREQUAL "PROBLEM") # this package version has not been build since beginning of the process  OR this package version has FAILED TO be deployed from binary during current process
 		set(ALL_IS_OK FALSE)
-		build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
+		build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}" "${run_tests}")
 
 		if(ALL_IS_OK)
 			message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
@@ -962,6 +997,46 @@ endif()
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Native_Package)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Source_Native_Package_From_Branch| replace:: ``deploy_Source_Native_Package_From_Branch``
+#  .. _deploy_Source_Native_Package_From_Branch:
+#
+#  deploy_Source_Native_Package_From_Branch
+#  ----------------------------
+#
+#   .. command:: deploy_Source_Native_Package_From_Branch(DEPLOYED package branch run_tests)
+#
+#   Deploy a native package (last version) from its source repository. Means deploy git repository + configure + build/install the native SOURCE package in the workspace so that it can be used by a third party package.
+#
+#      :package: The name of the package.
+#
+#      :branch: The name of branch or ID of commit to deploy.
+#
+#      :run_tests: if true the build process will run the tests and tests fail the deployment is aborted.
+#
+#      :DEPLOYED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
+#
+function(deploy_Source_Native_Package_From_Branch DEPLOYED package branch run_tests)
+  # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
+  set(${DEPLOYED} FALSE PARENT_SCOPE)
+  save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
+  set(ALL_IS_OK FALSE)
+	build_And_Install_Package(ALL_IS_OK ${package} "${branch}" "${run_tests}")
+  if(ALL_IS_OK)
+		message("[PID] INFO : package ${package} branch ${branch} has been deployed ...")
+		set(${DEPLOYED} TRUE PARENT_SCOPE)
+		add_Managed_Package_In_Current_Process(${package} "" "SUCCESS" FALSE)
+	else()
+		message("[PID] ERROR : automatic build and install of source package ${package} from branch ${branch} FAILED !!")
+		add_Managed_Package_In_Current_Process(${package} "" "FAIL" FALSE)
+	endif()
+	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+endfunction(deploy_Source_Native_Package_From_Branch)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -972,7 +1047,7 @@ endfunction(deploy_Source_Native_Package)
 #  deploy_Source_Native_Package_Version
 #  ------------------------------------
 #
-#   .. command:: deploy_Source_Native_Package_Version(DEPLOYED package min_version is_exact already_installed_versions)
+#   .. command:: deploy_Source_Native_Package_Version(DEPLOYED package min_version is_exact already_installed_versions run_tests)
 #
 #   Deploy a given version of a native package from its source repository. Means deploy git repository + configure + build/install the native SOURCE package in the workspace so that it can be used by a third party package.
 #   Process checkout to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it.
@@ -985,9 +1060,11 @@ endfunction(deploy_Source_Native_Package)
 #
 #      :already_installed_versions: The list of versions of the package that are already installed.
 #
+#      :run_tests: if true the build process will run the tests and tests they fail the deployment is aborted.
+#
 #      :DEPLOYED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
 #
-function(deploy_Source_Native_Package_Version DEPLOYED package min_version is_exact already_installed_versions)
+function(deploy_Source_Native_Package_Version DEPLOYED package min_version is_exact already_installed_versions run_tests)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of min_version : if exact taking min_version, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
@@ -1023,7 +1100,7 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN" OR RES STREQUAL "PROBLEM") # this package version has not been build since last command OR this package version has FAILED TO be deployed from binary during current process
 		set(ALL_IS_OK FALSE)
-		build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}")
+		build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}" "${run_tests}")
 		if(ALL_IS_OK)
 			message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
 			set(${DEPLOYED} TRUE PARENT_SCOPE)
@@ -1069,24 +1146,32 @@ endfunction(deploy_Source_Native_Package_Version)
 #  build_And_Install_Package
 #  -------------------------
 #
-#   .. command:: build_And_Install_Package(DEPLOYED package version)
+#   .. command:: build_And_Install_Package(DEPLOYED package version run_tests)
 #
 #    Build and install a given native package version from its sources. intermediate internal function that is used to put the source package in an adequate version (using git tags) and then build it. See: build_And_Install_Source.
 #
 #      :package: The name of the package.
 #
-#      :version: The version to install.
+#      :version_or_branch: The version or the name of branch to build.
+#
+#      :run_tests: if true the build process will run the tests and tests fail the install is not performed.
 #
 #      :DEPLOYED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
 #
-function(build_And_Install_Package DEPLOYED package version)
+function(build_And_Install_Package DEPLOYED package version_or_branch run_tests)
 
-# 1) going to the adequate git tag matching the selected version
-go_To_Version(${package} ${version})
-# 2) building sources
-set(IS_BUILT FALSE)
 
-build_And_Install_Source(IS_BUILT ${package} ${version})
+get_Version_String_Numbers(${version_or_branch} MAJOR MINOR PATCH)
+message("build_And_Install_Package ${package} version_or_branch=${version_or_branch} version = ${MAJOR} ${MINOR} ${PATCH}")
+
+if(NOT DEFINED MAJOR)#not a version string
+  track_Repository_Branch(${package} official ${version_or_branch})
+  go_To_Commit(${package} ${version_or_branch})
+  build_And_Install_Source(IS_BUILT ${package} "" ${version_or_branch} "${run_tests}") # 2) building sources
+else()
+  go_To_Version(${package} ${version_or_branch})# 1) going to the adequate git tag matching the selected version
+  build_And_Install_Source(IS_BUILT ${package} ${version_or_branch} "" "${run_tests}") # 2) building sources
+endif()
 
 if(IS_BUILT)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)

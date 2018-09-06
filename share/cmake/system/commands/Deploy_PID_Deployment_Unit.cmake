@@ -103,7 +103,7 @@ else()# a package deployment is required
 
 	# check in case when direct binary deployment asked
 	set(references_loaded FALSE)
-	if(NO_SOURCE AND (NO_SOURCE STREQUAL "true" OR NO_SOURCE STREQUAL "TRUE"))
+	if(NO_SOURCE STREQUAL "true" OR NO_SOURCE STREQUAL "TRUE")
 		#if no source required then binary references must exist
 		load_Package_Binary_References(REFERENCES_OK ${TARGET_PACKAGE})# now load the binary references of the package
 		set(references_loaded TRUE)#memorize that references have been loaded
@@ -118,9 +118,42 @@ else()# a package deployment is required
 				return()
 			endif()
 		endif()
+		set(can_use_source FALSE)
+	else()
+		set(can_use_source TRUE)
 	endif()
 
+	if(USE_BRANCH)
+		if(is_external)
+			message("[PID] ERROR : Cannot deploy a specific branch of ${TARGET_PACKAGE} because it is an external package.")
+			return()
+		endif()
+		if(NOT can_use_source)#need to run the deployment from sources !!
+			message("[PID] ERROR : Cannot deploy a specific branch of ${TARGET_PACKAGE} if no source deployment is required (using argument no_source=true).")
+			return()
+		endif()
+		if(TARGET_VERSION)
+			message("[PID] ERROR : Cannot deploy a specific branch of ${TARGET_PACKAGE} if a specific version is required (using argument version=${TARGET_VERSION}).")
+			return()
+		endif()
+		set(branch ${USE_BRANCH})
+	else()
+		set(branch)
+	endif()
 
+	if(RUN_TESTS STREQUAL "true" OR RUN_TESTS STREQUAL "TRUE")
+		if(is_external)
+			message("[PID] ERROR : Cannot run test during deployment of ${TARGET_PACKAGE} because it is an external package.")
+			return()
+		endif()
+		if(NOT can_use_source)#need to run the deployment from sources !!
+			message("[PID] ERROR : Cannot run test during deployment of ${TARGET_PACKAGE} if no source deployment is required (using argument no_source=true).")
+			return()
+		endif()
+		set(run_tests TRUE)
+	else()#do not run tests
+		set(run_tests FALSE)
+	endif()
 		####################################################################
 		##########################  OPERATIONS  ############################
 		####################################################################
@@ -143,12 +176,17 @@ else()# a package deployment is required
 				message("[PID] INFO : package ${TARGET_PACKAGE} version ${TARGET_VERSION} has been uninstalled ...")
 			endif()
 		endif()
-	else()
+	else()#no version specified
+		if(branch)#a given branch must be deployed
+			set(version_info "version from branch ${branch}")
+		else()#no more info = deploying last version
+			set(version_info "last version")
+		endif()
 		if(is_external)#external package is deployed
-			set(message_to_print "[PID] INFO : deploying external package ${TARGET_PACKAGE} (last version) in the workspace ...")
+			set(message_to_print "[PID] INFO : deploying external package ${TARGET_PACKAGE} (${version_info}) in the workspace ...")
 		else()#native package is deployed
 			message("")
-			set(message_to_print "[PID] INFO : deploying native package ${TARGET_PACKAGE} (last version) in the workspace ...")
+			set(message_to_print "[PID] INFO : deploying native package ${TARGET_PACKAGE} (${version_info}) in the workspace ...")
 		endif()
 	endif()
 
@@ -156,18 +194,12 @@ else()# a package deployment is required
 		load_Package_Binary_References(REFERENCES_OK ${TARGET_PACKAGE})
 	endif()
 
-	if(NO_SOURCE AND (NO_SOURCE STREQUAL "true" OR NO_SOURCE STREQUAL "TRUE"))
-		set(can_use_source FALSE)
-	else()
-		set(can_use_source TRUE)
-	endif()
-
 	message("${message_to_print}")
 	# now do the deployment
 	if(is_external)#external package is deployed
 		deploy_PID_External_Package(${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} ${redeploy})
 	else()#native package is deployed
-		deploy_PID_Native_Package(${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source})
+		deploy_PID_Native_Package(${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} "${branch}" ${run_tests})
 	endif()
 
 	## global management of the process
