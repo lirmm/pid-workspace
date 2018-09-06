@@ -280,7 +280,7 @@ if(EXISTS ${thefile})
 	#updating variables
 	list(APPEND CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package})
 	list(REMOVE_DUPLICATES CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS)
-  if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#the variable already exists
+  if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#the variable already exists (i.e. a version has already been selected)
     if(version VERSION_GREATER ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#update chosen version only if greater than current one
       set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
       set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
