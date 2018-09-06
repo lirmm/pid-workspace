@@ -1427,7 +1427,11 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
 		endif()#else no message since nohting to say to the user
 		if(NOT unused)
-			add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
+			if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
+				add_Package_Dependency_To_Cache(${dep_package} ${REQUIRED_VERSION} ${IS_EXACT} "${list_of_components}") #set the dependency
+			else()#no version required
+				add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
+			endif()
 		endif()
 	else()#there are version specified
 		fill_String_From_List("${list_of_versions}" available_versions) #get available version as a string (used to print them)
@@ -1442,21 +1446,23 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 		endif()
 
 		##### create the cache variables for user at first time #####
+		set(message_for_variable "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}.")
+		if(optional) #message for the optional dependency includes the possiiblity to input NONE
+			set(message_for_variable "${message_for_variable} Or use NONE to avoid using this dependency.")
+		endif()
 		if(version) #the package may be already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
-			if(optional) #set version of an optional dependency
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}. Or use NONE set to avoid using this dependency.")#initial value set to unused
-			elseif(SIZE EQUAL 1)
+			if(SIZE EQUAL 1)
 				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
 			else()
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}. Or use NONE set to avoid using this dependency.")#initial value set to unused
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "${message_for_variable}")
 			endif()
 		else()#no version, only possible if in a dependent build process
-			if(optional) #set version of an optional dependency
+			if(optional)
 				# since dependency is optional, we simply just do not use it to avoid unresolvable configuration
-				set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}. Or use NONE set to avoid using this dependency.")#initial value set to unused
+				set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_for_variable}.")#initial value set to unused
 			else() #version of a required dependency
 				#no version compatible => use default version as base value (will generate an error just after BUT will be usable if the user then run a non depednent build of dep_package later)
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}")
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_for_variable}")
 			endif()
 		endif()
 
@@ -1475,7 +1481,7 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 		##### check if the variable value is not faulty #####
 		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)#check if there is a value set by user
 			if(optional)#hopefully the dependency is optional so we can force its deactivation
-				set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}. Or use NONE set to avoid using this dependency." FORCE)
+				set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_for_variable}" FORCE)
 			else()
 				finish_Progress(GLOBAL_PROGRESS_VAR)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} no version version is defined for dependency ${dep_package}.")
@@ -1484,13 +1490,15 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 		else()#a version constraint was specified
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE" OR NOT optional)#it is not a deactivated optional dependency
 				if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#special case where any version was previously specified (due to a change in specification of the dependency)
-					if(version)
-						set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}. Or use NONE set to avoid using this dependency." FORCE)
-					else()#use default version instead
-						set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}. Or use NONE set to avoid using this dependency." FORCE)
+					if(NOT version)
+						set(version ${default_version})
 					endif()
+					set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "${message_for_variable}" FORCE)
 				else()#otherwise there is a version constraint specified
-					if(NOT REQUIRED_VERSION)#other compatible versions may be used with dependent builds so simply do not check that
+					if(REQUIRED_VERSION)#we are currently in the context of a dependent build
+						#need to force the usage of the chosen alternative
+						set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "${message_for_variable}" FORCE)
+					else()#classic build: other compatible versions may be used with dependent builds so simply do not check that
 						list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 						if(INDEX EQUAL -1 )#no possible version found
 							finish_Progress(GLOBAL_PROGRESS_VAR)
@@ -1580,8 +1588,8 @@ if(NOT list_of_versions) # no version constraint specified
 	if(NOT unused)#if dependency is used (i.e. not optional or optional and set to ANY)
 		# now checking if a version is already required by current build process
 		if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
-			add_External_Package_Dependency_To_Cache(${dep_package} ${REQUIRED_VERSION} ${REQUIRED_VERSION} "${list_of_components}") #set the dependency
-		else()#not required yet so simply
+			add_External_Package_Dependency_To_Cache(${dep_package} ${REQUIRED_VERSION} ${IS_EXACT} "${list_of_components}") #set the dependency
+		else()#no version required
 			add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}") #set the dependency
 		endif()
 	endif()
@@ -1596,11 +1604,12 @@ else()#there are version(s) specified
 	else()
 		set(version ${default_version})
 	endif()
+
+	##### create the cache variables for user at first time #####
 	set(message_for_variable "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}.")
 	if(optional) #message for the optional dependency includes the possiiblity to input NONE
 		set(message_for_variable "${message_for_variable} Or use NONE to avoid using this dependency.")
 	endif()
-	##### create the cache variables for user at first time #####
 	if(version) #the package may be already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
 		if(SIZE EQUAL 1)
 			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
