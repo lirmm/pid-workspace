@@ -1284,13 +1284,16 @@ file(	GLOB_RECURSE
 	RES
 	RELATIVE ${dir}
 	"${dir}/*.c"
+	"${dir}/*.C"
 	"${dir}/*.cc"
 	"${dir}/*.cpp"
 	"${dir}/*.cxx"
+	"${dir}/*.c++"
 	"${dir}/*.h"
 	"${dir}/*.hpp"
 	"${dir}/*.hh"
 	"${dir}/*.hxx"
+	"${dir}/*.h++"
 	"${dir}/*.s"
 	"${dir}/*.S"
 	"${dir}/*.asm"
@@ -1323,11 +1326,14 @@ file(	GLOB_RECURSE
 	RES
 	${dir}
 	"${dir}/*.c"
+	"${dir}/*.C"
 	"${dir}/*.cc"
 	"${dir}/*.cpp"
+	"${dir}/*.c++"
 	"${dir}/*.cxx"
 	"${dir}/*.h"
 	"${dir}/*.hpp"
+	"${dir}/*.h++"
 	"${dir}/*.hh"
 	"${dir}/*.hxx"
 	"${dir}/*.s"
@@ -1337,6 +1343,53 @@ file(	GLOB_RECURSE
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Absolute)
+
+function(get_All_Sources_Absolute_From PATH_TO_SOURCES LIST_OF_INCLUDES root_dir list_of_path)
+set(all_sources)
+set(all_includes)
+set(${PATH_TO_SOURCES} PARENT_SCOPE)
+set(${LIST_OF_INCLUDES} PARENT_SCOPE)
+foreach(path IN LISTS list_of_path)
+  if(EXISTS "${root_dir}/${path}")
+    if(IS_DIRECTORY "${root_dir}/${path}")
+      get_All_Sources_Absolute(DIR_SRC "${root_dir}/${path}")
+      list(APPEND all_sources "${DIR_SRC}")
+      get_All_Headers_Absolute(ALL_HEADERS "${root_dir}/${path}" "")
+      if(ALL_HEADERS)#if there are headers into the folder simply add this folder as an include folder
+        list(APPEND all_includes "${root_dir}/${path}")
+      endif()
+    else()
+      list(APPEND all_sources "${root_dir}/${path}")
+    endif()
+  endif()
+endforeach()
+set(${LIST_OF_INCLUDES} ${all_includes}  PARENT_SCOPE)
+set(${PATH_TO_SOURCES} ${all_sources} PARENT_SCOPE)
+endfunction(get_All_Sources_Absolute_From)
+
+
+function(get_All_Sources_Relative_From PATH_TO_SOURCES MONITORED_FOLDER root_dir list_of_path)
+set(RESULT)
+set(MONITOR)
+set(${PATH_TO_SOURCES} PARENT_SCOPE)
+set(${MONITORED_FOLDER} PARENT_SCOPE)
+foreach(path IN LISTS list_of_path)
+  if(EXISTS "${root_dir}/${path}")
+    if(IS_DIRECTORY "${root_dir}/${path}")
+      list(APPEND MONITOR ${path})#directly add the relative path to monitored elements
+      get_All_Sources_Relative(DIR_SRC "${root_dir}/${path}")
+      foreach(src IN LISTS DIR_SRC)
+        list(APPEND temp_rel_src "${path}/${src}")
+      endforeach()
+      list(APPEND RESULT ${temp_rel_src})
+    else()
+      list(APPEND RESULT "${path}")
+    endif()
+  endif()
+endforeach()
+set(${PATH_TO_SOURCES} ${RESULT} PARENT_SCOPE)
+set(${MONITORED_FOLDER} ${MONITOR} PARENT_SCOPE)
+endfunction(get_All_Sources_Relative_From)
 
 #.rst:
 #
@@ -1400,9 +1453,16 @@ endfunction(contains_Python_Package_Description)
 #
 #     :dir: the path to the folder
 #
+#     :filters: custom filters provided by the user, that target header files relative to dir (used for instance for headers without extension)
+#
 #     :RESULT: the output variable that contains all header files path relative to the folder.
 #
-function(get_All_Headers_Relative RESULT dir)
+function(get_All_Headers_Relative RESULT dir filters)
+set(LIST_OF_FILTERS)
+foreach(filter IN LISTS filters)
+  list(APPEND LIST_OF_FILTERS "${dir}/${filter}")
+endforeach()
+
 file(	GLOB_RECURSE
 	RES
 	RELATIVE ${dir}
@@ -1410,6 +1470,8 @@ file(	GLOB_RECURSE
 	"${dir}/*.hpp"
 	"${dir}/*.hh"
 	"${dir}/*.hxx"
+	"${dir}/*.h++"
+  ${LIST_OF_FILTERS}
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Headers_Relative)
@@ -1424,15 +1486,22 @@ endfunction(get_All_Headers_Relative)
 #  get_All_Headers_Absolute
 #  ------------------------
 #
-#   .. command:: get_All_Headers_Absolute(RESULT dir)
+#   .. command:: get_All_Headers_Absolute(RESULT dir filters)
 #
 #    Get the absolute path of all the header files found in a folder (and subfolders).
 #
 #     :dir: the path to the folder
 #
+#     :filters: custom filters provided by the user, that target header files relative to dir (used for instance for headers without extension)
+#
 #     :RESULT: the output variable that contains all header files absolute path.
 #
-function(get_All_Headers_Absolute RESULT dir)
+function(get_All_Headers_Absolute RESULT dir filters)
+  set(LIST_OF_FILTERS)
+  foreach(filter IN LISTS filters)
+    list(APPEND LIST_OF_FILTERS "${dir}/${filter}")
+  endforeach()
+
 file(	GLOB_RECURSE
 	RES
 	${dir}
@@ -1440,6 +1509,7 @@ file(	GLOB_RECURSE
 	"${dir}/*.hpp"
 	"${dir}/*.hh"
 	"${dir}/*.hxx"
+  ${LIST_OF_FILTERS}
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Headers_Absolute)

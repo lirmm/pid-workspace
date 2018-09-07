@@ -1125,7 +1125,12 @@ endmacro(build_Package)
 #
 #     :runtime_resources: list of path to files relative to share/resources folder, supposed to be used at runtime by the library.
 #
-function(declare_Library_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options exported_defs exported_compiler_options internal_links exported_links runtime_resources)
+#     :more_headers: list of path to files or globing expressions relative to src/${dirname} folder, targetting additionnal headers to be part of the interface of the library (used to target files with no extension for instance).
+#
+#     :more_sources: list of path to files and folders relative to arc folder, containing auxiliary sources to be used for building the library.
+#
+function(declare_Library_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options exported_defs
+exported_compiler_options internal_links exported_links runtime_resources more_headers more_sources)
 #indicating that the component has been declared and need to be completed
 is_Library_Type(RES "${type}")
 if(RES)
@@ -1175,14 +1180,15 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") # a module library has 
 	set(${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${dirname})
 	#a library defines a folder containing one or more headers and/or subdirectories
 	set(${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME ${dirname} CACHE INTERNAL "")
-	get_All_Headers_Relative(${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR})
+	set(${PROJECT_NAME}_${c_name}_HEADERS_ADDITIONAL_FILTERS ${more_headers} CACHE INTERNAL "")
+	get_All_Headers_Relative(${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} "${${PROJECT_NAME}_${c_name}_HEADERS_ADDITIONAL_FILTERS}")
 	set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
 	foreach(header IN LISTS ${PROJECT_NAME}_${c_name}_HEADERS)
 		set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "^.*${header}$|${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 	endforeach()
 	install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
-	get_All_Headers_Absolute(${PROJECT_NAME}_${c_name}_ALL_HEADERS ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR})
+	get_All_Headers_Absolute(${PROJECT_NAME}_${c_name}_ALL_HEADERS ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} "${more_headers}")
 endif()
 
 ### managing sources and defining targets ###
@@ -1196,19 +1202,32 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 		set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
 		get_All_Sources_Relative(${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 		set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
-
+		if(more_sources)
+			get_All_Sources_Relative_From(SOURCES PATH_TO_MONITOR ${CMAKE_SOURCE_DIR}/src "${more_sources}")
+			set(${PROJECT_NAME}_${c_name}_AUX_SOURCE_CODE ${SOURCES} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_${c_name}_AUX_MONITORED_PATH ${PATH_TO_MONITOR} CACHE INTERNAL "")
+		endif()
 	endif()
 	## 2) collect sources for build process
+	set(use_includes ${internal_inc_dirs})
+
 	get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
+	if(more_sources)
+		get_All_Sources_Absolute_From(SOURCES INCLUDES ${CMAKE_SOURCE_DIR}/src "${more_sources}")
+		list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${SOURCES})
+		if(INCLUDES)
+			list(APPEND use_includes ${INCLUDES})
+		endif()
+	endif()
 	list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_ALL_HEADERS})
 
 	#defining shared and/or static targets for the library and
 	#adding the targets to the list of installed components when make install is called
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "STATIC") #a static library has no internal links (never trully linked)
-		create_Static_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}")
+		create_Static_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${use_includes}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}")
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
-		create_Shared_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${internal_inc_dirs}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}" "${internal_links}")
+		create_Shared_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${use_includes}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}" "${internal_links}")
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
@@ -1218,11 +1237,11 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 				return()
 			endif()
 			#adding adequate path to pyhton librairies
-			list(APPEND INCLUDE_DIRS_WITH_PYTHON ${internal_inc_dirs} ${CURRENT_PYTHON_INCLUDE_DIRS})
+			list(APPEND INCLUDE_DIRS_WITH_PYTHON ${use_includes} ${CURRENT_PYTHON_INCLUDE_DIRS})
 			list(APPEND LIBRARIES_WITH_PYTHON ${internal_links} ${CURRENT_PYTHON_LIBRARIES})
 			create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${INCLUDE_DIRS_WITH_PYTHON}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${LIBRARIES_WITH_PYTHON}")
 		else()
-			create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
+			create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
 		endif()
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 		register_Component_Binary(${c_name})#need to register before calling manage python
@@ -1281,7 +1300,10 @@ endfunction(declare_Library_Component)
 #
 #     :runtime_resources: list of path to files relative to share/resources folder, supposed to be used at runtime by the application.
 #
-function(declare_Application_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options internal_link_flags runtime_resources)
+#     :more_sources: list of path to files and folders relative to app folder, containing auxiliary sources to be used for building the application.
+#
+function(declare_Application_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs
+internal_compiler_options internal_link_flags runtime_resources more_sources)
 
 is_Application_Type(RES "${type}")#double check, for internal use only (purpose: simplify PID code debugging)
 if(RES)
@@ -1335,15 +1357,23 @@ elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
 endif()
 will_be_Installed(COMP_WILL_BE_INSTALLED ${c_name})
 
+set(use_includes ${internal_inc_dirs})
 get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
+if(more_sources)
+	get_All_Sources_Absolute_From(SOURCES INCLUDES ${CMAKE_SOURCE_DIR}/apps "${more_sources}")
+	list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${SOURCES})
+	if(INCLUDES)
+		list(APPEND use_includes ${INCLUDES})
+	endif()
+endif()
 #defining the target to build the application
 
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need to be relocatable since they are purely local
-	create_Executable_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
+	create_Executable_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
 
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 else()
-	create_TestUnit_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${internal_inc_dirs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
+	create_TestUnit_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
 endif()
 register_Component_Binary(${c_name})# resgistering name of the executable
 
@@ -1352,6 +1382,11 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	get_All_Sources_Relative(${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 	set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
+	if(more_sources)
+		get_All_Sources_Relative_From(SOURCES PATH_TO_MONITOR ${CMAKE_SOURCE_DIR}/apps "${more_sources}")
+		set(${PROJECT_NAME}_${c_name}_AUX_SOURCE_CODE ${SOURCES} CACHE INTERNAL "")
+		set(${PROJECT_NAME}_${c_name}_AUX_MONITORED_PATH ${PATH_TO_MONITOR} CACHE INTERNAL "")
+	endif()
 endif()
 
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
@@ -1373,6 +1408,11 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	get_All_Sources_Relative(${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 	set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
+	if(more_sources)
+		get_All_Sources_Relative_From(SOURCES PATH_TO_MONITOR ${CMAKE_SOURCE_DIR}/share/script "${more_sources}")
+		set(${PROJECT_NAME}_${c_name}_AUX_SOURCE_CODE ${SOURCES} CACHE INTERNAL "")
+		set(${PROJECT_NAME}_${c_name}_AUX_MONITORED_PATH ${PATH_TO_MONITOR} CACHE INTERNAL "")
+	endif()
 endif()
 manage_Python_Scripts(${c_name} ${dirname})
 #updating global variables of the CMake process
