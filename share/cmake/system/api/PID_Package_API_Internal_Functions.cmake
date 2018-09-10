@@ -1129,8 +1129,12 @@ endmacro(build_Package)
 #
 #     :more_sources: list of path to files and folders relative to arc folder, containing auxiliary sources to be used for building the library.
 #
-function(declare_Library_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options exported_defs
-exported_compiler_options internal_links exported_links runtime_resources more_headers more_sources)
+#     :symlink_folders: list of path to folders where to install symlinks.
+#
+function(declare_Library_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs
+                                   internal_compiler_options exported_defs exported_compiler_options
+																   internal_links exported_links runtime_resources more_headers more_sources
+															 		 symlink_folders)
 #indicating that the component has been declared and need to be completed
 is_Library_Type(RES "${type}")
 if(RES)
@@ -1233,7 +1237,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
 		contains_Python_Code(HAS_WRAPPER ${CMAKE_CURRENT_SOURCE_DIR}/${dirname})
 		if(HAS_WRAPPER)
-			if(NOT CURRENT_PYTHON)#we cannot build the module as there is no python module
+			if(NOT CURRENT_PYTHON)#we cannot build the module because there is no python module
 				return()
 			endif()
 			#adding adequate path to pyhton librairies
@@ -1251,6 +1255,11 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 		else()
 			set(${PROJECT_NAME}_${c_name}_HAS_PYTHON_WRAPPER FALSE CACHE INTERNAL "")
 		endif()
+	endif()
+	if(symlink_folders)
+		foreach(symlink IN LISTS symlink_folders)
+			install_Additional_Binary_Symlink(${c_name} ${symlink})
+		endforeach()
 	endif()
 else()#simply creating a "fake" target for header only library
 	create_Header_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}")
@@ -1302,8 +1311,10 @@ endfunction(declare_Library_Component)
 #
 #     :more_sources: list of path to files and folders relative to app folder, containing auxiliary sources to be used for building the application.
 #
+#     :symlink_folders: list of path to folders where to install symlinks.
+#
 function(declare_Application_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs
-internal_compiler_options internal_link_flags runtime_resources more_sources)
+internal_compiler_options internal_link_flags runtime_resources more_sources symlinks)
 
 is_Application_Type(RES "${type}")#double check, for internal use only (purpose: simplify PID code debugging)
 if(RES)
@@ -1372,6 +1383,11 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need t
 	create_Executable_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
 
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+	if(symlinks AND ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP")
+		foreach(symlink IN LISTS symlinks)
+			install_Additional_Binary_Symlink(${c_name} ${symlink})
+		endforeach()
+	endif()
 else()
 	create_TestUnit_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
 endif()

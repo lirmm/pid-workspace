@@ -473,28 +473,45 @@ function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_f
 	get_filename_component(A_FILE "${path_to_target}" NAME)
 	set(FULL_RPATH_DIR ${path_to_rpath_folder}/${rpath_sub_folder})
 	install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
-    if(WIN32)
-        string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_FILE ${FULL_RPATH_DIR}/${A_FILE})
-        string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_TARGET ${path_to_target})
-    endif()
+  if(WIN32)
+      string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_FILE ${FULL_RPATH_DIR}/${A_FILE})
+      string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_TARGET ${path_to_target})
+  endif()
 	install(CODE "
                     include(${WORKSPACE_DIR}/share/cmake/system/api/PID_Utils_Functions.cmake NO_POLICY_SCOPE)
-                    # if(EXISTS ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE} AND IS_SYMLINK ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE})
-    		        #       execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_RPATH_DIR}/${A_FILE}
-        			# 	                  WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-                    # endif()
                     message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
                     create_Symlink(${path_to_target} ${FULL_RPATH_DIR}/${A_FILE} WORKING_DIR ${CMAKE_INSTALL_PREFIX})
-                    # if(WIN32)
-                    #     execute_process(COMMAND cmd.exe /c mklink ${W32_PATH_FILE} ${W32_PATH_TARGET}
-                    #                     WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} OUTPUT_QUIET)
-                    # else()
-                    #     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_target} ${FULL_RPATH_DIR}/${A_FILE}
-                    #                     WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})
-                    # endif()
 	")# creating links "on the fly" when installing
-
 endfunction(install_Runtime_Symlink)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_Additional_Binary_Symlink| replace:: ``install_Additional_Binary_Symlink``
+#  .. _install_Additional_Binary_Symlink:
+#
+#  install_Additional_Binary_Symlink
+#  ---------------------------------
+#
+#   .. command:: install_Additional_Binary_Symlink(component additional_install_folder)
+#
+#    Install symlink for a given component of current project if this component generates a binary.
+#
+#     :component: the name of the component to symlink.
+#
+#     :additional_install_folder: folder where to put symlinks (if a system folder need to use sudo when building).
+#
+function(install_Additional_Binary_Symlink component additional_install_folder)
+  get_Component_Binary_Elements(PREFIX EXTENSION ${PROJECT_NAME} ${component} ${CURRENT_PLATFORM})
+  set(component_install_name ${PREFIX}${component}${INSTALL_NAME_SUFFIX}${EXTENSION})
+  set(component_install_path ${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_INSTALL_LIB_PATH}/${component_install_name})
+  install(CODE "
+                    include(${WORKSPACE_DIR}/share/cmake/system/api/PID_Utils_Functions.cmake NO_POLICY_SCOPE)
+                    message(\"-- Installing: ${additional_install_folder}/${component_install_name} source is ${component_install_path}\")
+                    create_Symlink(${component_install_path} ${additional_install_folder}/${component_install_name})
+  ")# creating links "on the fly" when installing
+endfunction(install_Additional_Binary_Symlink)
 
 #.rst:
 #
@@ -1655,8 +1672,8 @@ if(LIB_TYPE)
 		set(${RES_TYPE} SHARED PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib (UNIX)
 		set(${RES_TYPE} SHARED PARENT_SCOPE)
-    elseif(LIB_TYPE MATCHES "^\\.dll$")#found shared lib (windows)
-        set(${RES_TYPE} SHARED PARENT_SCOPE)
+  elseif(LIB_TYPE MATCHES "^\\.dll$")#found shared lib (windows)
+    set(${RES_TYPE} SHARED PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.a$")#found static lib (C)
 		set(${RES_TYPE} STATIC PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.la$")#found static lib (libtools archives)
@@ -1700,6 +1717,61 @@ function(is_Library_Type RESULT keyword)
 		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 endfunction(is_Library_Type)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Component_Binary_Elements| replace:: ``get_Component_Binary_Elements``
+#  .. _get_Component_Binary_Elements:
+#
+#  get_Component_Binary_Elements
+#  -----------------------------
+#
+#   .. command:: get_Component_Binary_Elements(PREFIX EXTENSION package component platform)
+#
+#    Get elements of the name for a given component binary that depends on the platform and type of component.
+#
+#     :package: the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :platform: the target platform for the component binary.
+#
+#     :PREFIX: the output variable that contains the prefix of the binary.
+#
+#     :EXTENSION: the output variable that contains the extension of the binary.
+#
+function(get_Component_Binary_Elements PREFIX EXTENSION package component platform)
+  set(${EXTENSION} PARENT_SCOPE)
+  set(${PREFIX} PARENT_SCOPE)
+  extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
+  if(${package}_${component}_TYPE STREQUAL "STATIC")
+    if(RES_OS STREQUAL "windows")
+      set(${EXTENSION} .lib PARENT_SCOPE)
+    else()
+      set(${EXTENSION} .a PARENT_SCOPE)
+      set(${PREFIX} lib PARENT_SCOPE)
+    endif()
+  elseif(${package}_${component}_TYPE STREQUAL "SHARED"
+  OR ${package}_${component}_TYPE STREQUAL "MODULE")
+    if(RES_OS STREQUAL "windows")
+      set(${EXTENSION} .dll PARENT_SCOPE)
+    elseif(RES_OS STREQUAL "macosx")
+      set(${EXTENSION} .dylib PARENT_SCOPE)
+      set(${PREFIX} lib PARENT_SCOPE)
+    else()
+      set(${EXTENSION} .so PARENT_SCOPE)
+      set(${PREFIX} lib PARENT_SCOPE)
+    endif()
+  elseif(${package}_${component}_TYPE STREQUAL "APPLICATION")
+    if(RES_OS STREQUAL "windows")
+      set(${EXTENSION} .exe PARENT_SCOPE)
+    else()
+      set(${EXTENSION} PARENT_SCOPE)
+    endif()
+  endif()
+endfunction(get_Component_Binary_Elements)
 
 #.rst:
 #

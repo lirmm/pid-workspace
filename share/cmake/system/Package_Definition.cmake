@@ -834,6 +834,9 @@ endmacro(build_PID_Package)
 #   :RUNTIME_RESOURCES <files>: ``<files>`` is a list of files and folders relative to the ``share/resources`` folder. These files will be installed automatically and should be accessed in a PID component using the `pid-rpath <http://pid.lirmm.net/pid-framework/packages/pid-rpath>`_ package.
 #   :INTERNAL: This flag is used to introduce compilation options that are only used by this component.
 #   :EXPORTED: This flag is used to export compilation options. Meaning, components that later refer to this component will be using these options.
+#   :SPECIAL_HEADERS: Specify specific files to export from the include folder of the component. Used for instance to export file without explicit header extension.
+#   :AUXILIARY_SOURCES: Specify auxiliary source folder or files ti use when building the component. Used for instance to share private code between component of the project.
+#   :INSTALL_SYMLINKS: Specify folders where to install symlinks pointing to the component binary.
 #
 #   The following options are supported by the ``INTERNAL`` and ``EXPORTED`` commands:
 #   :DEFINITIONS <defs>: Preprocessor definitions.
@@ -866,7 +869,7 @@ endmacro(build_PID_Package)
 macro(declare_PID_Component)
 set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION PYTHON_PACK)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
-set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES)
+set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES INSTALL_SYMLINKS)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
   finish_Progress(GLOBAL_PROGRESS_VAR)
@@ -1032,7 +1035,8 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 					"${internal_compiler_options}"
 					"${internal_link_flags}"
 					"${runtime_resources}"
-          "${DECLARE_PID_COMPONENT_AUXILIARY_SOURCES}")
+          "${DECLARE_PID_COMPONENT_AUXILIARY_SOURCES}"
+          "${DECLARE_PID_COMPONENT_INSTALL_SYMLINKS}")
 elseif(type MATCHES "PYTHON")#declare a python package
 	declare_Python_Component(${DECLARE_PID_COMPONENT_NAME} ${DECLARE_PID_COMPONENT_DIRECTORY})
 else() #it is a library
@@ -1050,7 +1054,8 @@ else() #it is a library
 					"${exported_link_flags}"
 					"${runtime_resources}"
           "${DECLARE_PID_COMPONENT_SPECIAL_HEADERS}"
-          "${DECLARE_PID_COMPONENT_AUXILIARY_SOURCES}")
+          "${DECLARE_PID_COMPONENT_AUXILIARY_SOURCES}"
+          "${DECLARE_PID_COMPONENT_INSTALL_SYMLINKS}")
 endif()
 if(NOT "${DECLARE_PID_COMPONENT_DESCRIPTION}" STREQUAL "")
 	init_Component_Description(${DECLARE_PID_COMPONENT_NAME} "${DECLARE_PID_COMPONENT_DESCRIPTION}" "${DECLARE_PID_COMPONENT_USAGE}")
