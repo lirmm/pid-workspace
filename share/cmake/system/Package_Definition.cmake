@@ -378,7 +378,7 @@ endmacro(declare_PID_Documentation)
 #   :ADVANCED <file>: ``<file>`` should be a markdown file relative to the ``share/site`` folder of the package. This will be used to generate an advanced description page.
 #   :PUBLISH_BINARIES: If this is present, the package will automatically publish new binaries to the publication site.
 #   :PUBLISH_DEVELOPMENT_INFO: If this is present, the package website will contain information for developpers such as coverage reports and static checks.
-#   :ALLOWED_PLATFORMS <list of platforms>: This argument lists the set of platforms used for CI, only the specified platforms will be managed in the CI process. **WARNING: Due to gitlab limitation (only one pipeline can be defined) only ONE platform is allowed at the moment.**
+#   :ALLOWED_PLATFORMS <list of platforms>: list of platforms used for CI, only the specified platforms will be managed in the CI process. **WARNING: Due to gitlab limitation (only one pipeline can be defined) only ONE platform is allowed at the moment OR all pipelines must build to produce the output.**
 #
 #   When the ``GIT`` option is used, the following argument is also accepted:
 #
@@ -408,7 +408,8 @@ endmacro(declare_PID_Documentation)
 #    			DESCRIPTION pid-rpath is a package providing a little API to ease the management of runtime resources within a PID workspace. Runtime resources may be either configuration files, executables or module libraries. Its usage is completely bound to the use of PID system.
 #    			ADVANCED specific_usage.md
 #    			LOGO	img/rouage_PID.jpg
-#    			PUBLISH_BINARIES)
+#    			PUBLISH_BINARIES
+#         ALLOWED_PLATFORMS x86_64_linux_abi11)
 #
 #  Declaring the publication of the ``pid-rpath`` package into the ``PID`` framework:
 #
@@ -418,7 +419,8 @@ endmacro(declare_PID_Documentation)
 #   			FRAMEWORK pid
 #   			DESCRIPTION pid-rpath is a package providing a little API to ease the management of runtime resources within a PID workspace. Runtime resources may be either configuration files, executables or module libraries. Its usage is completely bound to the use of PID system.
 #   			ADVANCED specific_usage.md
-#   			PUBLISH_BINARIES)
+#   			PUBLISH_BINARIES
+#         ALLOWED_PLATFORMS x86_64_linux_abi11)
 #
 macro(declare_PID_Publishing)
 set(optionArgs PUBLISH_BINARIES PUBLISH_DEVELOPMENT_INFO)
