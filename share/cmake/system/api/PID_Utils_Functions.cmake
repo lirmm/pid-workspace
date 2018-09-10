@@ -1368,6 +1368,29 @@ file(	GLOB_RECURSE
 set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Absolute)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Sources_Absolute_From| replace:: ``get_All_Sources_Absolute_From``
+#  .. _get_All_Sources_Absolute_From:
+#
+#  get_All_Sources_Absolute_From
+#  -----------------------------
+#
+#   .. command:: get_All_Sources_Absolute_From(PATH_TO_SOURCES LIST_OF_INCLUDES root_dir list_of_path)
+#
+#    List all source files absolute path that are contained in a set of path expressed relative to a root path. If a path given targets a folder that contains header files, this  path is added to the list of monitored include folders.
+#    Path to source files are simply added to the list.
+#
+#     :root_dir: the path to the root folder, path are expressed reltive to.
+#
+#     :list_of_path: the list of path to scan.
+#
+#     :PATH_TO_SOURCES: the ouput variable containing the list of path to source files that are contained in list_of_path.
+#
+#     :LIST_OF_INCLUDES: the ouput variable containing the list of absolute path to include folder from list_of_path.
+#
 function(get_All_Sources_Absolute_From PATH_TO_SOURCES LIST_OF_INCLUDES root_dir list_of_path)
 set(all_sources)
 set(all_includes)
@@ -1392,6 +1415,28 @@ set(${PATH_TO_SOURCES} ${all_sources} PARENT_SCOPE)
 endfunction(get_All_Sources_Absolute_From)
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Sources_Relative_From| replace:: ``get_All_Sources_Relative_From``
+#  .. _get_All_Sources_Relative_From:
+#
+#  get_All_Sources_Relative_From
+#  -----------------------------
+#
+#   .. command:: get_All_Sources_Relative_From(PATH_TO_SOURCES MONITORED_FOLDER root_dir list_of_path)
+#
+#    List all source files path relative from a root path that are contained in a set of path. If a path given target a folder its content is recursively added and the path is added to the monitored folders. Path to source files are simply added to the list.
+#
+#     :root_dir: the path to the root folder, path are expressed reltive to.
+#
+#     :list_of_path: the list of path to scan.
+#
+#     :PATH_TO_SOURCES: the ouput variable containing the list of path to source files that are contained in list_of_path.
+#
+#     :MONITORED_FOLDER: the ouput variable containing the list of path to folder from list_of_path.
+#
 function(get_All_Sources_Relative_From PATH_TO_SOURCES MONITORED_FOLDER root_dir list_of_path)
 set(RESULT)
 set(MONITOR)
@@ -1808,6 +1853,24 @@ function(is_Application_Type RESULT keyword)
 	endif()
 endfunction(is_Application_Type)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Package_Type| replace:: ``get_Package_Type``
+#  .. _get_Package_Type:
+#
+#  get_Package_Type
+#  ----------------
+#
+#   .. command:: get_Package_Type(package PACK_TYPE)
+#
+#    Given a package name, detects if this package is an external package or a native package depending on workspace content.
+#
+#     :package: the name of the package.
+#
+#     :PACK_TYPE: the output variable that contains the package type (NATIVE or EXTERNAL) if detected, UNKNOWN otherwise.
+#
 function(get_Package_Type package PACK_TYPE)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 if(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${package})

@@ -917,31 +917,58 @@ function(is_Compatible_External_Version IS_COMPATIBLE package reference_version 
   endif()
 endfunction(is_Compatible_External_Version)
 
-
-function(get_Compatible_Version COMPATIBLE_VERSION_IN_LIST external package version_in_use version_in_use_is_exact version_to_test version_to_test_is_exact)
-set(${COMPATIBLE_VERSION_IN_LIST} PARENT_SCOPE)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Compatible_Version| replace:: ``get_Compatible_Version``
+#  .. _get_Compatible_Version:
+#
+#  get_Compatible_Version
+#  ----------------------
+#
+#   .. command:: get_Compatible_Version(RES_VERSION_TO_USE external package version_in_use version_in_use_is_exact version_to_test version_to_test_is_exact)
+#
+#    From a version constraint of a given package already used in the build process, test if another version version constraint is compatible with this one.
+#
+#     :RES_VERSION_TO_USE: the output variable that contains the new version to use if both constraints are applied (may be same as previously). May be empty if no version compatibility is possible between between both constraints
+#
+#     :external: if TRUE the package to check is an external package.
+#
+#     :package: the name of package to check.
+#
+#     :version_in_use: the version constraint of package, already used in the current build process.
+#
+#     :version_in_use_is_exact: if TRUE the version constraint already used in the current build process is EXACT.
+#
+#     :version_to_test: the version constraint of package, that may be used instead of current version.
+#
+#     :version_in_use_is_exact: if TRUE the version constraint that may be used is EXACT.
+#
+function(get_Compatible_Version RES_VERSION_TO_USE external package version_in_use version_in_use_is_exact version_to_test version_to_test_is_exact)
+set(${RES_VERSION_TO_USE} PARENT_SCOPE)
 if(external)
   if(version_to_test_is_exact) #the version to test is EXACT, so impossible to change it after build of current project
     if(version_to_test VERSION_EQUAL version_in_use)#they simply need to be the same in any case
-      set(${COMPATIBLE_VERSION_IN_LIST} ${version_to_test} PARENT_SCOPE)
+      set(${RES_VERSION_TO_USE} ${version_to_test} PARENT_SCOPE)
     endif()
   else()#the version to test is NOT exact, so we can theorically change it in final build with version_in_use (or any compatible version)
     if(version_in_use_is_exact) #the version currenlty in use is exact
       #the exact version in use must be compatible with (usable instead of) the tested one (since in final build version_in_use_will be used)
       is_Compatible_External_Version(IS_COMPATIBLE ${package} ${version_to_test} ${version_in_use})
       if(IS_COMPATIBLE)
-        set(${COMPATIBLE_VERSION_IN_LIST} ${version_to_test} PARENT_SCOPE)#use currenlty required version as we can replace it by version one in final build
+        set(${RES_VERSION_TO_USE} ${version_to_test} PARENT_SCOPE)#use currenlty required version as we can replace it by version one in final build
       endif()
     else()#none of the version constraints is exact
       # so in the end the global build process using current project as a dependency can be adapted to use the "most compatible" version
       # there is no problem to build the current project with this "most compatible version"
       is_Compatible_External_Version(IS_COMPATIBLE_PREV ${package} ${version_to_test} ${version_in_use})
       if(IS_COMPATIBLE_PREV)
-        set(${COMPATIBLE_VERSION_IN_LIST} ${version_in_use} PARENT_SCOPE)#use previously required version
+        set(${RES_VERSION_TO_USE} ${version_in_use} PARENT_SCOPE)#use previously required version
       else()
         is_Compatible_External_Version(IS_COMPATIBLE_CURR ${package} ${version_in_use} ${version_to_test})
         if(IS_COMPATIBLE_CURR)
-          set(${COMPATIBLE_VERSION_IN_LIST} ${version_to_test} PARENT_SCOPE)#use currenlty required version
+          set(${RES_VERSION_TO_USE} ${version_to_test} PARENT_SCOPE)#use currenlty required version
         endif()
       endif()
     endif()
@@ -954,7 +981,7 @@ else()#native package
     endif()
     is_Exact_Compatible_Version(COMPATIBLE_VERSION ${exact_major} ${exact_minor} ${version_in_use})
     if(COMPATIBLE_VERSION)
-      set(${COMPATIBLE_VERSION_IN_LIST} ${version_to_test} PARENT_SCOPE)
+      set(${RES_VERSION_TO_USE} ${version_to_test} PARENT_SCOPE)
     endif()
   else()#the version to test is NOT exact, so we can theorically change it in final build with version_in_use (or any compatible version)
     if(version_in_use_is_exact) #the version currenlty in use is exact
@@ -965,7 +992,7 @@ else()#native package
       endif()
       is_Compatible_Version(IS_COMPATIBLE ${exact_major} ${exact_minor} ${version_to_test})
       if(IS_COMPATIBLE)#OK version in use can be substituted to version to test in the final build process
-        set(${COMPATIBLE_VERSION_IN_LIST} ${version_to_test} PARENT_SCOPE)#use currenlty required version as we can replace it by version one in final build
+        set(${RES_VERSION_TO_USE} ${version_to_test} PARENT_SCOPE)#use currenlty required version as we can replace it by version one in final build
       endif()
     else()#none of the version constraints is exact
       # so in the end the global build process using current project as a dependency can be adapted to use the "most compatible" version
@@ -976,7 +1003,7 @@ else()#native package
       endif()
       is_Compatible_Version(IS_COMPATIBLE ${exact_major} ${exact_minor} ${version_to_test})
       if(IS_COMPATIBLE)
-        set(${COMPATIBLE_VERSION_IN_LIST} ${version_in_use} PARENT_SCOPE)#use previously required version
+        set(${RES_VERSION_TO_USE} ${version_in_use} PARENT_SCOPE)#use previously required version
       else()
         get_Version_String_Numbers("${version_to_test}.0" exact_major exact_minor exact_patch)
         if(NOT DEFINED exact_major)#not a valid version string
@@ -984,14 +1011,41 @@ else()#native package
         endif()
         is_Compatible_Version(IS_COMPATIBLE ${exact_major} ${exact_minor} ${version_in_use})
         if(IS_COMPATIBLE)
-          set(${COMPATIBLE_VERSION_IN_LIST} ${version_to_test} PARENT_SCOPE)#use currenlty required version
+          set(${RES_VERSION_TO_USE} ${version_to_test} PARENT_SCOPE)#use currenlty required version
         endif()
       endif()
     endif()
   endif()
 endif()
 endfunction(get_Compatible_Version)
-
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_Best_Compatible_Version| replace:: ``find_Best_Compatible_Version``
+#  .. _find_Best_Compatible_Version:
+#
+#  find_Best_Compatible_Version
+#  ----------------------------
+#
+#   .. command:: find_Best_Compatible_Version(BEST_VERSION_IN_LIST external package version_in_use version_in_use_exact list_of_versions exact_versions)
+#
+#    From a version constraint of a given package already used in the build process, get the best compatible version from a listr of version constrainnts (if any).
+#
+#     :BEST_VERSION_IN_LIST: the output variable that contains the new version constraint to use (may be same as previously).
+#
+#     :external: if TRUE the package to check is an external package.
+#
+#     :package: the name of package to check.
+#
+#     :version_in_use: the version constraint of package, already used in the current build process.
+#
+#     :version_in_use_is_exact: if TRUE the version constraint already used in the current build process is EXACT.
+#
+#     :list_of_versions: the list of alternative version constraints for package.
+#
+#     :exact_versions: the sublist of list_of_versions that contains only exact versions constraints.
+#
 function(find_Best_Compatible_Version BEST_VERSION_IN_LIST external package version_in_use version_in_use_exact list_of_versions exact_versions)
   set(${BEST_VERSION_IN_LIST} PARENT_SCOPE)
   #first step: build the list of compatible versions
@@ -1014,7 +1068,7 @@ function(find_Best_Compatible_Version BEST_VERSION_IN_LIST external package vers
     endif()
   endforeach()
   #second step: find the best version
-  if(list_of_compatible_versions)#always prefer non exact version to avoid imposing to string constraints
+  if(list_of_compatible_versions)#always prefer non exact version to avoid imposing to strong constraints
     list(GET list_of_compatible_versions 0 min_version)#take the non exact version with lowest number that is compatible
     foreach(version IN LISTS list_of_compatible_versions)
       if(version VERSION_LESS min_version)
