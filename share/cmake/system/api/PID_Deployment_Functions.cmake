@@ -367,7 +367,7 @@ endfunction(resolve_Package_Dependencies)
 #
 #      :exact: if TRUE the version constraint is exact.
 #
-#      :already_installed: the list of versions of teh package already installed in the workspace.
+#      :already_installed: the list of versions of the package already installed in the workspace.
 #
 function(update_Package_Installed_Version package major minor patch exact already_installed)
 first_Called_Build_Mode(FIRST_TIME) # do the update only once per global configuration of the project
@@ -884,28 +884,28 @@ function(build_And_Install_Source DEPLOYED package version branch run_tests)
         AND EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
   			set(${DEPLOYED} TRUE PARENT_SCOPE)
   			if(ADDITIONNAL_DEBUG_INFO)
-  				message("[PID] INFO : ... package ${package} version ${version} built !")
+  				message("[PID] INFO : package ${package} version ${version} built !")
   			endif()
   			return()
   		else()
-  			message("[PID] ERROR : ... building package ${package} version ${version} has FAILED !")
+  			message("[PID] ERROR : building package ${package} version ${version} has FAILED !")
   		endif()
     else()
       if(BUILD_RES EQUAL 0)
         set(${DEPLOYED} TRUE PARENT_SCOPE)
   			if(ADDITIONNAL_DEBUG_INFO)
-  				message("[PID] INFO : ... package ${package} built (from branch ${branch})!")
+  				message("[PID] INFO : package ${package} built (from branch ${branch})!")
   			endif()
   			return()
       else()
-  			message("[PID] ERROR : ... building package ${package} (from branch ${branch}) has FAILED !")
+  			message("[PID] ERROR : building package ${package} (from branch ${branch}) has FAILED !")
       endif()
     endif()
 	else()
     if(version)
-      message("[PID] ERROR : ... configuration of package ${package} version ${version} has FAILED !")
+      message("[PID] ERROR : configuration of package ${package} version ${version} has FAILED !")
     else()
-      message("[PID] ERROR : ... configuration of package ${package} (from branch ${branch}) has FAILED !")
+      message("[PID] ERROR : configuration of package ${package} (from branch ${branch}) has FAILED !")
     endif()
 	endif()
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
@@ -955,6 +955,7 @@ select_Last_Version(RES_VERSION "${VERSION_NUMBERS}")
 if(NOT RES_VERSION)
 	message("[PID] WARNING : no adequate version found for source package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package). Otherwise that may mean you use a non released version of ${package} (in development version).")
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+
 	return()
 endif()
 list(FIND already_installed_versions ${RES_VERSION} INDEX)
@@ -997,7 +998,6 @@ endif()
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Native_Package)
 
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -1036,6 +1036,53 @@ function(deploy_Source_Native_Package_From_Branch DEPLOYED package branch run_te
 	endif()
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Native_Package_From_Branch)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |try_In_Development_Version| replace:: ``try_In_Development_Version``
+#  .. _try_In_Development_Version:
+#
+#  try_In_Development_Version
+#  --------------------------
+#
+#   .. command:: try_In_Development_Version(DEPLOYMENT_OK package version_to_check is_exact run_tests)
+#
+#   Try to deploy a given version of a package from its source repository's integration branch.
+#
+#      :package: The name of the package.
+#
+#      :version_to_check: The version that is required and is maybe installed by integration branch.
+#
+#      :is_exact: if TRUE the version to check must be exact.
+#
+#      :run_tests: if true the build process will run the tests and tests fail the deployment is aborted.
+#
+#      :DEPLOYED_VERSION: the output variable that contains the deployed version, empty if deployment failed.
+#
+function(try_In_Development_Version DEPLOYED_VERSION package version_to_check is_exact run_tests)
+  list_Version_Subdirectories(already_installed ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
+  set(${DEPLOYED_VERSION} PARENT_SCOPE)
+  build_And_Install_Package(ALL_IS_OK ${package} "integration" "${run_tests}")
+  if(ALL_IS_OK)
+    list_Version_Subdirectories(installed_after_build ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
+    list(REMOVE_ITEM installed_after_build ${already_installed})
+    if(installed_after_build)#a new version has been installed
+      get_Version_String_Numbers("${version_to_check}.0" major minor patch)
+      if(is_exact)#version constraint is exact
+        is_Exact_Compatible_Version(IS_COMPATIBLE ${major} ${minor} ${installed_after_build})
+      else()
+        is_Compatible_Version(IS_COMPATIBLE ${major} ${minor} ${installed_after_build})
+      endif()
+      if(IS_COMPATIBLE) #the installed version (from integration branch) is compatible with the constraint
+        set(${DEPLOYED_VERSION} ${installed_after_build} PARENT_SCOPE)
+      else()#not a compatible version, simply clean the install folder
+        file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${installed_after_build})
+      endif()
+    endif()#if no new version installed simply exit
+  endif()
+endfunction(try_In_Development_Version)
 
 #.rst:
 #
@@ -1089,10 +1136,18 @@ if(is_exact)
 else()
 	select_Best_Native_Version(RES_VERSION ${min_version} "${VERSION_NUMBERS}")
 endif()
-if(NOT RES_VERSION)
-	message("[PID] WARNING : no adequate version found for source package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package). Otherwise that may mean you use a non released version of ${package} (in development version).")
-	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
-	return()
+if(NOT RES_VERSION)#no adequate version found, this may be due to the use of a non release version
+  try_In_Development_Version(RES_VERSION ${package} ${min_version} ${is_exact} "${run_tests}")#mainly usefull in CI process to build unreleased dependencies
+  if(RES_VERSION)
+    message("[PID] INFO : deployed version ${RES_VERSION} of source package ${package} is in development (found on integration branch.")
+    set(${DEPLOYED} TRUE PARENT_SCOPE)
+    add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
+  else()
+  	message("[PID] WARNING : no adequate version found for source package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package). Otherwise that may mean you use a non released version of ${package} (in development version) that cannot be found on integration branch.")
+    add_Managed_Package_In_Current_Process(${package} ${min_version} "FAIL" FALSE)
+  endif()
+  restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+  return()
 endif()
 
 list(FIND already_installed_versions ${RES_VERSION} INDEX)
@@ -1118,7 +1173,6 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 			endif()
 			set(${DEPLOYED} TRUE PARENT_SCOPE)
 		endif()
-
 	endif()
 else()#selected version excluded from current process
 	is_Binary_Package_Version_In_Development(IN_DEV ${package} ${RES_VERSION})
@@ -1167,10 +1221,10 @@ message("build_And_Install_Package ${package} version_or_branch=${version_or_bra
 if(NOT DEFINED MAJOR)#not a version string
   track_Repository_Branch(${package} official ${version_or_branch})
   go_To_Commit(${package} ${version_or_branch})
-  build_And_Install_Source(IS_BUILT ${package} "" ${version_or_branch} "${run_tests}") # 2) building sources
+  build_And_Install_Source(IS_BUILT ${package} "" ${version_or_branch} "${run_tests}") # 2) building sources from a branch
 else()
   go_To_Version(${package} ${version_or_branch})# 1) going to the adequate git tag matching the selected version
-  build_And_Install_Source(IS_BUILT ${package} ${version_or_branch} "" "${run_tests}") # 2) building sources
+  build_And_Install_Source(IS_BUILT ${package} ${version_or_branch} "" "${run_tests}") # 2) building sources from a version tag
 endif()
 
 if(IS_BUILT)

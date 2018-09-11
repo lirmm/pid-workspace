@@ -2529,7 +2529,7 @@ endfunction(hard_Clean_Package_Release)
 #
 function(reconfigure_Package_Build package)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} -DBUILD_RELEASE_ONLY:BOOL=OFF ..)
 endfunction(reconfigure_Package_Build)
 
 #.rst:
@@ -2598,12 +2598,18 @@ set(list_of_bad_deps)
 #check that the files describing the dependencies are existing
 if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake
 OR NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
-	message("[PID] ERROR : no dependency description found in package ${package} ! cannot check version of its dependencies.")
-	return()
+  #simply reconfigure to get the dependencies
+  reconfigure_Package_Build(${package})
+  if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake
+    OR NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
+    message("[PID] WARNING : no dependency description found in package ${package}: cannot check version of its dependencies. The configuration of this package should fail at some point.")
+    return()
+  endif()
 endif()
 # loading variables describing dependencies
 include(${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake)
 include(${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
+
 # now check that target dependencies
 #debug
 foreach(dep IN LISTS TARGET_NATIVE_DEPENDENCIES_DEBUG)
@@ -2620,11 +2626,11 @@ foreach(dep IN LISTS TARGET_NATIVE_DEPENDENCIES_DEBUG)
 			normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
 
 			list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
-			if(INDEX EQUAL -1)
-				list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG}")#using # instead of _ since names of package can contain _
-			endif()
-		endif()#else no version bound to dependency == no constraint
-		endif()
+  			if(INDEX EQUAL -1)# the version of dependency has not been released yet
+  				list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG}")#using # instead of _ since names of package can contain _
+  			endif()
+  		endif()#else no version bound to dependency == no constraint
+	  endif()
 	endforeach()
 
 #release
@@ -2641,7 +2647,7 @@ foreach(dep IN LISTS TARGET_NATIVE_DEPENDENCIES)
 		if(TARGET_NATIVE_DEPENDENCY_${dep}_VERSION)
 			normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
 			list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
-			if(INDEX EQUAL -1)
+			if(INDEX EQUAL -1)# the version of dependency has not been released yet
 				list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION}")#using # instead of _ since names of package can contain _
 			endif()
 		endif()#no version bound to dependency == no constraint

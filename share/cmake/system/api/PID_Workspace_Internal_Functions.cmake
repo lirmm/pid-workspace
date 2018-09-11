@@ -1946,9 +1946,11 @@ endfunction(register_PID_Framework)
 #
 #      :next: the next version of the package after current has been released.
 #
+#      :manage_deps: if TRUE the release process will also apply to unreleased dependencies of the package.
+#
 #      :RESULT: the output variable that is TRUE if package has been released, FALSE otherwise.
 #
-function(release_PID_Package RESULT package next)
+function(release_PID_Package RESULT package next manage_deps)
 set(${RESULT} FALSE PARENT_SCOPE)
 # check that current branc of package is integration
 get_Repository_Current_Branch(CURRENT_BRANCH ${WORKSPACE_DIR}/packages/${package})
@@ -1992,7 +1994,7 @@ if(NOT VERSION_NUMBERS)
 	return()
 endif()
 foreach(version IN LISTS VERSION_NUMBERS)
-	if(version STREQUAL "${STRING_NUMBER}")
+	if(version STREQUAL STRING_NUMBER)
 		message("[PID] ERROR : cannot release version ${STRING_NUMBER} for package ${package}, because this version already exists.")
 		return()
 	endif()
@@ -2001,21 +2003,48 @@ endforeach()
 # check that there are things to commit to master
 check_For_New_Commits_To_Release(COMMITS_AVAILABLE ${package})
 if(NOT COMMITS_AVAILABLE)
-	message("[PID] ERROR : cannot release package ${package} because integration branch has no commits to contribute to new version.")
+	message("[PID] WARNING : cannot release package ${package} because integration branch has no commits to contribute to new version.")
 	return()
 endif()
 
 # check that version of dependencies exist
 check_For_Dependencies_Version(BAD_VERSION_OF_DEPENDENCIES ${package})
-if(BAD_VERSION_OF_DEPENDENCIES)
-	message("[PID] ERROR : cannot release package ${package} because of invalid version of dependencies:")
-	foreach(dep IN LISTS BAD_VERSION_OF_DEPENDENCIES)
-		extract_All_Words(${dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
-		list(GET RES_LIST 0 DEP_PACKAGE)
-		list(GET RES_LIST 1 DEP_VERSION)
-		message("- dependency ${DEP_PACKAGE} has unknown version ${DEP_VERSION}")
-	endforeach()
-	return()
+if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
+	if(manage_deps)#the call asks to release the unreleased dependencies
+		set(unreleased_dependencies)
+		foreach(dep IN LISTS BAD_VERSION_OF_DEPENDENCIES)
+			extract_All_Words(${dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
+			list(GET RES_LIST 0 DEP_PACKAGE)
+			list(GET RES_LIST 1 DEP_VERSION)
+			message("[PID] releasing dependency ${DEP_PACKAGE} of ${package}...")
+			release_PID_Package(DEP_RESULT ${dep} ${next} TRUE)
+			if(NOT DEP_RESULT)
+				list(APPEND unreleased_dependencies ${dep})
+			endif()
+		endforeach()
+		if(unreleased_dependencies)
+			message("[PID] ERROR : cannot release package ${package} because of problem in release of some of its dependencies:")
+			foreach(unreleased_dep IN LISTS unreleased_dependencies)
+				extract_All_Words(${unreleased_dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
+				list(GET RES_LIST 0 DEP_PACKAGE)
+				list(GET RES_LIST 1 DEP_VERSION)
+				message("- dependency ${DEP_PACKAGE} version ${DEP_VERSION}")
+			endforeach()
+		else()
+			check_For_Dependencies_Version(BAD_VERSION_OF_DEPENDENCIES ${package})
+		endif()
+	endif()
+
+	if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
+		message("[PID] ERROR : cannot release package ${package} because of invalid version of dependencies:")
+		foreach(dep IN LISTS BAD_VERSION_OF_DEPENDENCIES)
+			extract_All_Words(${dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
+			list(GET RES_LIST 0 DEP_PACKAGE)
+			list(GET RES_LIST 1 DEP_VERSION)
+			message("- dependency ${DEP_PACKAGE} has unknown version ${DEP_VERSION}")
+		endforeach()
+		return()
+	endif()
 endif()
 
 # check that integration is a fast forward of master
