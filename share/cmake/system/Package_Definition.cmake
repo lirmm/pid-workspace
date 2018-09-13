@@ -895,9 +895,9 @@ endif()
 unset(DECLARED)
 
 #check for directory argument
-if(NOT DECLARE_PID_COMPONENT_DIRECTORY)
+if(NOT DECLARE_PID_COMPONENT_DIRECTORY AND NOT DECLARE_PID_COMPONENT_HEADER_LIB)
   finish_Progress(GLOBAL_PROGRESS_VAR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword (except for pure header library).")
 endif()
 
 if(DECLARE_PID_COMPONENT_C_STANDARD)
@@ -913,9 +913,9 @@ endif()
 if(DECLARE_PID_COMPONENT_CXX_STANDARD)
 	set(cxx_language_standard ${DECLARE_PID_COMPONENT_CXX_STANDARD})
 	if(	NOT cxx_language_standard EQUAL 98
-	AND NOT cxx_language_standard EQUAL 11
-	AND NOT cxx_language_standard EQUAL 14
-	AND NOT cxx_language_standard EQUAL 17 )
+    	AND NOT cxx_language_standard EQUAL 11
+    	AND NOT cxx_language_standard EQUAL 14
+    	AND NOT cxx_language_standard EQUAL 17 )
   finish_Progress(GLOBAL_PROGRESS_VAR)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad CXX_STANDARD argument, the value used must be 98, 11, 14 or 17.")
 	endif()
@@ -961,10 +961,12 @@ if(NOT nb_options EQUAL 1)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION or TEST_APPLICATION) must be given for the component.")
 endif()
 #checking that the required directories exist
-check_Required_Directories_Exist(PROBLEM ${type} ${DECLARE_PID_COMPONENT_DIRECTORY})
-if(PROBLEM)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring ${DECLARE_PID_COMPONENT_NAME}, the source directory ${DECLARE_PID_COMPONENT_DIRECTORY} cannot be found in ${CMAKE_CURRENT_SOURCE_DIR} (${PROBLEM}).")
+if(DECLARE_PID_COMPONENT_DIRECTORY)
+  check_Required_Directories_Exist(PROBLEM ${type} ${DECLARE_PID_COMPONENT_DIRECTORY})
+  if(PROBLEM)
+    finish_Progress(GLOBAL_PROGRESS_VAR)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring ${DECLARE_PID_COMPONENT_NAME}, the source directory ${DECLARE_PID_COMPONENT_DIRECTORY} cannot be found in ${CMAKE_CURRENT_SOURCE_DIR} (${PROBLEM}).")
+  endif()
 endif()
 
 set(internal_defs "")
@@ -1043,7 +1045,7 @@ elseif(type MATCHES "PYTHON")#declare a python package
 	declare_Python_Component(${DECLARE_PID_COMPONENT_NAME} ${DECLARE_PID_COMPONENT_DIRECTORY})
 else() #it is a library
 	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME}
-					${DECLARE_PID_COMPONENT_DIRECTORY}
+					"${DECLARE_PID_COMPONENT_DIRECTORY}"
 					${type}
 					"${c_language_standard}"
 					"${cxx_language_standard}"

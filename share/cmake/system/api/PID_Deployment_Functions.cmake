@@ -1214,7 +1214,6 @@ endfunction(deploy_Source_Native_Package_Version)
 #
 function(build_And_Install_Package DEPLOYED package version_or_branch run_tests)
 
-
 get_Version_String_Numbers(${version_or_branch} MAJOR MINOR PATCH)
 # message("build_And_Install_Package ${package} version_or_branch=${version_or_branch} version = ${MAJOR} ${MINOR} ${PATCH}")
 
