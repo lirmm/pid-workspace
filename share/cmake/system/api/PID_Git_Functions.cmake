@@ -526,9 +526,36 @@ if(NOT res EQUAL 0)
 	set(${RESULT} FALSE PARENT_SCOPE)
 	return()
 endif()
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v${version_string} -m "releasing version ${version_string}")
 set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(merge_Into_Master)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |tag_Version| replace:: ``tag_Version``
+#  .. _tag_Version:
+#
+#  tag_Version
+#  -----------
+#
+#   .. command:: tag_Version(package version_string)
+#
+#     Tag the given package repository with given version..
+#
+#     :package: the name of target package
+#
+#     :version_string: the new version to tag
+#
+#     :add_it: if TRUE the tag is added, removed otherwise
+#
+function(tag_Version package version_string add_it)
+if(add_it)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v${version_string} -m "releasing version ${version_string}")
+else()
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -d v${version_string})
+endif()
+endfunction(tag_Version)
 
 #.rst:
 #

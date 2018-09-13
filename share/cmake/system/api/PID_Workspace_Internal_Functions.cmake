@@ -2047,6 +2047,13 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 	endif()
 endif()
 
+# build one time to be sure it builds and tests are passing
+build_And_Install_Source(IS_BUILT ${package} "" "integration" TRUE)
+if(NOT IS_BUILT)
+	message("[PID] ERROR : cannot release package ${package}, because its integration branch doesnot build.")
+	return()
+endif()
+
 # check that integration is a fast forward of master
 merge_Into_Master(MERGE_OK ${package} ${STRING_NUMBER})
 if(NOT MERGE_OK)
@@ -2054,12 +2061,19 @@ if(NOT MERGE_OK)
 	go_To_Integration(${package}) #always go back to integration branch
 	return()
 endif()
+tag_Version(${package} ${STRING_NUMBER} TRUE)#create the version tag
 publish_Repository_Version(${package} ${STRING_NUMBER} RESULT_OK)
 if(NOT RESULT_OK) #the user has no sufficient push rights
+	tag_Version(${package} ${STRING_NUMBER} FALSE)#remove local tag
 	message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push to its master branch !")
 	go_To_Integration(${package}) #always go back to integration branch
 	return()
 endif()
+#remove the installed version built from integration branch
+file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${STRING_NUMBER}
+#rebuild package from master branch to get a clean installed version (getting clean use file)
+build_And_Install_Source(IS_BUILT ${package} ${STRING_NUMBER} "" FALSE)
+#merge back master into integration
 merge_Into_Integration(${package})
 
 ### now starting a new version
