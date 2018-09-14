@@ -2070,7 +2070,7 @@ if(NOT RESULT_OK) #the user has no sufficient push rights
 	return()
 endif()
 #remove the installed version built from integration branch
-file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${STRING_NUMBER}
+file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${STRING_NUMBER})
 #rebuild package from master branch to get a clean installed version (getting clean use file)
 build_And_Install_Source(IS_BUILT ${package} ${STRING_NUMBER} "" FALSE)
 #merge back master into integration
