@@ -332,9 +332,7 @@ set(${BRANCH_NAME} PARENT_SCOPE)
 execute_process(COMMAND git rev-parse --abbrev-ref HEAD
 		WORKING_DIRECTORY ${repo}
 		OUTPUT_VARIABLE current_branch ERROR_QUIET)
-if(current_branch
-	AND NOT current_branch STREQUAL ""
-AND NOT current_branch MATCHES HEAD)
+if(current_branch AND NOT current_branch MATCHES "HEAD")
 	string(REGEX REPLACE "^[ \t\n]*([^ \t\n]+)[ \t\n]*$" "\\1" RES_BRANCH ${current_branch})
 	set(${BRANCH_NAME} ${RES_BRANCH} PARENT_SCOPE)
 endif()
@@ -873,66 +871,11 @@ endfunction(test_Remote_Connection)
 #
 function(update_Repository_Versions RESULT package)
 go_To_Master(${package})
-is_Package_Connected(CONNECTED ${package} official) #check if the package has a repository URL defined (fetch)
-get_Package_Repository_Address(${package} URL PUBLIC_URL)
-if(NOT CONNECTED)#no official remote (due to old package style or due to a misuse of git command within a package)
-	if(URL AND NOT URL STREQUAL "")
-		if(PUBLIC_URL AND NOT PUBLIC_URL STREQUAL "")#the package has a public address where anyone can get it
-			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${PUBLIC_URL} ERROR_QUIET OUTPUT_QUIET)
-			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${URL} ERROR_QUIET OUTPUT_QUIET)
-			message("[PID] WARNING : package ${package} has no official remote defined (malformed package), set it to ${URL} (for push) and ${PUBLIC_URL} (for fetch).")
-		else() #default situation
-			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${URL} ERROR_QUIET OUTPUT_QUIET)
-			message("[PID] WARNING : package ${package} has no official remote defined (malformed package), set it to ${URL}.")
-		endif()
-	else() #no official repository and no URL defined for the package => the package has never been connected (normal situation)
-		set(${RESULT} FALSE PARENT_SCOPE)
-		return()
-	endif()
-elseif(URL AND NOT URL STREQUAL "") # official package is connected
-	get_Remotes_Address(${package} RES_OFFICIAL RES_ORIGIN)#get the adress of the official git remote
-	if(NOT RES_OFFICIAL STREQUAL URL AND NOT RES_OFFICIAL STREQUAL PUBLIC_URL) #the address of official is not the same as the one specified in the package description
-		if(PUBLIC_URL AND NOT PUBLIC_URL STREQUAL "")#the package has a public address where anyone can get it
-			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${PUBLIC_URL} ERROR_QUIET OUTPUT_QUIET)
-			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${URL} ERROR_QUIET OUTPUT_QUIET)
-			message("[PID] WARNING : local package ${package} official remote defined in package description (push=${URL} fetch=${PUBLIC_URL}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in pakage description !")
-		else() #default situation
-			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${URL} ERROR_QUIET OUTPUT_QUIET)
-			execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${URL} ERROR_QUIET OUTPUT_QUIET)
-			message("[PID] WARNING : local package ${package} official remote defined in package description (${URL}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in pakage description !")
-		endif()
-	else()#package remotes are consistent, but this can be an old version of the package before a migration occurred
-		test_Remote_Connection(CONNECTED ${package} official)
-		if(NOT CONNECTED) #problem if not connected a migration occurred, we have to update everything
-			include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake OPTIONAL RESULT_VARIABLE res)
-			if(res STREQUAL NOTFOUND) #reference not found, may mean the package has been removed
-				message("[PID] WARNING : local package ${package} cannot update from its official remote and is not know into workspace, aborting its update ! Please check that the package still exists or try upgrading your workspace.")
-				set(${RESULT} FALSE PARENT_SCOPE) #simply exitting
-				return()
-			endif()
-			#from here the package is known and its reference related variables have been updated
-			if (${package}_PUBLIC_ADDRESS STREQUAL RES_OFFICIAL
-				OR ${package}_ADDRESS STREQUAL RES_OFFICIAL)#OK so no problem detected but cannot interact with the remote repository
-				message("[PID] WARNING : local package ${package} cannot be update from its official remote, aborting its update ! Please check your connection.")
-				set(${RESULT} FALSE PARENT_SCOPE) #simply exitting
-				return()
-			else() #for now only updating the official remote address so that update can occur
-				if(PUBLIC_URL AND NOT PUBLIC_URL STREQUAL "")#the package has a public address where anyone can get it
-					execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${${package}_PUBLIC_ADDRESS} ERROR_QUIET OUTPUT_QUIET)
-					execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${${package}_ADDRESS} ERROR_QUIET OUTPUT_QUIET)
-					message("[PID] WARNING : local package ${package} official remote defined in package description (push=${${package}_ADDRESS}, fetch=${${package}_PUBLIC_ADDRESS}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in pakage description !")
-				else() #default situation
-					execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${${package}_ADDRESS} ERROR_QUIET OUTPUT_QUIET)
-					execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${${package}_ADDRESS} ERROR_QUIET OUTPUT_QUIET)
-					message("[PID] WARNING : local package ${package} official remote defined in package description (${${package}_ADDRESS}) differs from the one defined by git (${RES_OFFICIAL}) ! Use the one defined in pakage description !")
-				endif()
-				# once the update will be done the official address in description should have changed accordingly
-			endif()
-		endif()
-	endif()
-else() # PROBLEM: no URL defined in description !!
-	message("[PID] WARNING : local package ${package} has no official remote defined while an official remote is defined by git ! This is an uncoherent package state !")
-	set(${RESULT} FALSE PARENT_SCOPE)
+adjust_Official_Remote_Address(OFFICIAL_CONNECTED ${package} TRUE)
+if(NOT OFFICIAL_CONNECTED)
+  message("[PID] WARNING : cannot get connection with official remote (see previous outputs). Aborting ${package} update !")
+	set(${RESULT} TRUE PARENT_SCOPE) #this is not an error since no official defined
+	return()
 endif()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags  OUTPUT_QUIET ERROR_QUIET)#getting new tags
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull --ff-only official master RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)#pulling master branch of official
@@ -944,11 +887,193 @@ endif()
 set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(update_Repository_Versions)
 
-###
-function(update_Remotes package)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |adjust_Official_Remote_Address| replace:: ``adjust_Official_Remote_Address``
+#  .. _adjust_Official_Remote_Address:
+#
+#  adjust_Official_Remote_Address
+#  ------------------------------
+#
+#   .. command:: adjust_Official_Remote_Address(OFFICIAL_REMOTE_CONNECTED package verbose)
+#
+#     Check, and eventually perform corrective actions, that package's repository origin and official remotes are defined.
+#
+#     :package: the name of the package.
+#
+#     :git_url: the url of the package's official repository.
+#
+function(adjust_Official_Remote_Address OFFICIAL_REMOTE_CONNECTED package verbose)
+set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE)
+is_Package_Connected(CONNECTED ${package} official) #check if the package has a repository URL defined (fetch)
+get_Package_Repository_Address(${package} URL PUBLIC_URL) #get addresses of official remote from package description
+if(NOT CONNECTED)#no official remote (due to old package style or due to a misuse of git command within a package)
+	if(URL)#the package has an official repository declared
+    reconnect_Repository_Remote(${package} ${URL} "${PUBLIC_URL}" official)
+    test_Remote_Connection(CONNECTED ${package} official) #test again connection
+    if(NOT CONNECTED)#remote currently in use is a bad one (migration took place and for any reason the official remote has been deleted)
+      include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake OPTIONAL RESULT_VARIABLE res)
+			if(res STREQUAL NOTFOUND) #reference not found, may mean the package has been removed
+        if(verbose)
+          message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable, and ${package} is not referenced into workspace ! Please check that the package still exists or try upgrading your workspace.")
+        endif()
+        disconnect_Repository_Remote(${package} official) #remove the remote
+        set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+				return()
+			endif()
+			#from here the package is known and its reference related variables have been updated
+      if(NOT ${package}_ADDRESS)#Nothing more to do
+        disconnect_Repository_Remote(${package} official) #remove the remote
+        if(verbose)
+          message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable, and ${package} reference defines no official address ! Please check that the package still exists or try upgrading your workspace.")
+        endif()
+        set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+				return()
+      elseif (${package}_PUBLIC_ADDRESS STREQUAL PUBLIC_URL
+				    OR ${package}_ADDRESS STREQUAL URL)#OK so no problem detected but cannot interact with the remote repository
+        #do not remove the remote as it is supposed to be the good one !
+        if(verbose)
+          message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable ! Please check your network connection.")
+        endif()
+        set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+				return()
+			else()
+        #for now only updating the official remote address so that update can occur
+        reconnect_Repository_Remote(${package} ${${package}_ADDRESS} "${${package}_PUBLIC_ADDRESS}" official)
+        test_Remote_Connection(CONNECTED ${package} official) #test again connection
+        if(NOT CONNECTED)#cannot do mush more, even the referenced address is bad
+          if(verbose)
+            if(PUBLIC_URL)#the package has a public address where anyone can get it
+              message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its reference (${${package}_PUBLIC_ADDRESS}) is no more reachable ! Please check your network connection.")
+            else()
+              message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its reference (${${package}_ADDRESS}) is no more reachable ! Please check your network connection or that you still have rights to clone this package.")
+            endif()
+          endif()
+          set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+         return()
+        endif()
+      	# once the update will be done the official address in description should have changed accordingly
+			endif()
+    endif()
+	else() #no official repository and no URL defined for the package => the package has never been connected since last release (normal situation)
+		set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE)
+		return()
+	endif()
+elseif(URL) # official package is connected and has an official repository declared
+	get_Remotes_Address(${package} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN)#get the adress of the official and origin git remotes
+	if((NOT RES_OFFICIAL_FETCH STREQUAL URL)
+      AND (NOT RES_OFFICIAL_FETCH STREQUAL PUBLIC_URL))
+      # the address of official is not the same as the one specified in the package description
+      # this can be due to a migration of the repository since last release
+      test_Remote_Connection(CONNECTED ${package} official)
+  		if(NOT CONNECTED)#remote currently in use is a bad one (strange situation, maybe due to a bad command from user)
+        #try with declared one
+        reconnect_Repository_Remote(${package} ${URL} "${PUBLIC_URL}" official)
+        test_Remote_Connection(CONNECTED ${package} official)
+        if(NOT CONNECTED)#remote defined by description is also a bad one
+          # put again original addresses
+          reconnect_Repository_Remote(${package} ${RES_OFFICIAL_PUSH} "${RES_OFFICIAL_FETCH}" official)
+          include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake OPTIONAL RESULT_VARIABLE res)
+    			if(res STREQUAL NOTFOUND) #reference not found, may mean the package has been removed
+            if(verbose)
+              message("[PID] WARNING : local package ${package} lost connection with its official remote : an unreachable official remote is defined, address from its description (${URL}) is no more reachable, and ${package} is not referenced into workspace ! Please check that the package still exists or try upgrading your workspace.")
+            endif()
+            #do not disconnect as the problem may be due to a bad network connection
+            set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+    				return()
+    			endif()
+    			#from here the package is known and its reference related variables have been updated
+          if(NOT ${package}_ADDRESS)#no address bound to the package
+            if(verbose)
+              message("[PID] WARNING : local package ${package} lost connection with its official remote : an unreachable official remote is defined, address from its description (${URL}) is no more reachable, and ${package} reference defines no official address ! Please check that the package still exists or try upgrading your workspace.")
+            endif()
+            set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+    				return()
+          elseif (${package}_PUBLIC_ADDRESS STREQUAL PUBLIC_URL
+    				    OR ${package}_ADDRESS STREQUAL URL)#OK so no problem detected but cannot interact with the remote repository
+            #do not remove the remote as it is supposed to be the good one !
+            if(verbose)
+              message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable ! Please check your network connection.")
+            endif()
+            set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+    				return()
+    			else()
+            #for now only updating the official remote address so that update can occur
+            reconnect_Repository_Remote(${package} ${${package}_ADDRESS} "${${package}_PUBLIC_ADDRESS}" official)
+            test_Remote_Connection(CONNECTED ${package} official) #test again connection
+            if(NOT CONNECTED)#cannot do mush more, even the referenced address is bad
+              reconnect_Repository_Remote(${package} ${RES_OFFICIAL_PUSH} "${RES_OFFICIAL_FETCH}" official)
+              if(verbose)
+                if(PUBLIC_URL)#the package has a public address where anyone can get it
+                  message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its reference (${${package}_PUBLIC_ADDRESS}) is no more reachable ! Please check your network connection.")
+                else()
+                  message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its reference (${${package}_ADDRESS}) is no more reachable ! Please check your network connection or that you still have rights to clone this package.")
+                endif()
+              endif()
+              set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+             return()
+            endif()
+          	# once the update will be done the official address in description should have changed accordingly
+    			endif()
+        endif()
+      endif()# else the current official remote in use is OK, so description is bad (migration occurred since last release) !
+	else()#package remotes are consistent, but this can be an old version of the package before a migration occurred
+		test_Remote_Connection(CONNECTED ${package} official)
+		if(NOT CONNECTED) #problem if not connected a migration occurred, we have to update everything
+			include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake OPTIONAL RESULT_VARIABLE res)
+			if(res STREQUAL NOTFOUND) #reference not found, may mean the package has been removed
+				message("[PID] WARNING : local package ${package} lost connection with its official remote and is not know into workspace ! Please check that the package still exists or try upgrading your workspace.")
+				set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+				return()
+			endif()
+			#from here the package is known and its reference related variables have been updated
+			if (${package}_PUBLIC_ADDRESS STREQUAL RES_OFFICIAL_FETCH
+				OR ${package}_ADDRESS STREQUAL RES_OFFICIAL_PUSH)#OK so no problem detected but cannot interact with the remote repository
+				message("[PID] WARNING : local package ${package} lost connection with its official remote ! Please check your network connection.")
+				set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+				return()
+			else() #for now only updating the official remote address so that update can occur
+        reconnect_Repository_Remote(${package} ${${package}_ADDRESS} "${${package}_PUBLIC_ADDRESS}" official)
+        test_Remote_Connection(CONNECTED ${package} official)
+        if(NOT CONNECTED) #problem if not connected a migration occurred but has not been referenced
+          disconnect_Repository_Remote(${package} official) #remove the remote
+          if(verbose)
+            message("[PID] WARNING : local package ${package} lost connection with its official remote : a migration of this package probably occurred but has not been referenced into workspace ! Please check that the package still exists, or try upgrading your workspace to get an up to date reference of this package.")
+          endif()
+          set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+          return()
+        endif()
+				# once the update will be done the official address in description should have changed accordingly
+			endif()
+		endif()
+	endif()
+# else No URL defined in description : maybe the remote has been defined on integration branch after previous release
+endif()
+endfunction(adjust_Official_Remote_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Package_Repository_From_Remotes| replace:: ``update_Package_Repository_From_Remotes``
+#  .. _update_Package_Repository_From_Remotes:
+#
+#  update_Package_Repository_From_Remotes
+#  --------------------------------------
+#
+#   .. command:: update_Package_Repository_From_Remotes(package)
+#
+#     Update the local graph of commits from official and origin remotes.
+#
+#     :package: name of target package.
+#
+function(update_Package_Repository_From_Remotes package)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official OUTPUT_QUIET ERROR_QUIET)#fetching official
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch origin OUTPUT_QUIET ERROR_QUIET)#fetching origin
-endfunction(update_Remotes package)
+endfunction(update_Package_Repository_From_Remotes)
 
 ######################################################################
 ############################ other functions #########################
@@ -1301,15 +1426,14 @@ endfunction(connect_Repository)
 #
 #   .. command:: reconnect_Repository(package url)
 #
-#     Reonnect an alraedy connected package's repository to another remote (this later becomes official). Used when official repository has moved.
+#     Reconnect an already connected package's repository to another remote (this later becomes official). Used when official repository has moved.
 #
 #     :package: the name of the package
 #
 #     :url: the url of the package's remote
 #
 function(reconnect_Repository package url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url official ${url})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push official ${url})
+reconnect_Repository_Remote(${package} ${url} ${url} official)
 go_To_Master(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git pull official master)#updating master
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags  OUTPUT_QUIET ERROR_QUIET)
@@ -1328,18 +1452,18 @@ endfunction(reconnect_Repository)
 #
 #   .. command:: reconnect_Repository_Remote(package url public_url remote_name)
 #
-#     Reconnect an alraedy connected package's repository to another remote (this later becomes official). Used when official repository has moved.
+#     Change the target remote of a package repository.
 #
 #     :package: the name of the package
 #
-#     :url: the url of the package's remote
+#     :url: the new private url of the package's remote
 #
 #     :public_url: the public counterpart url of the package's remote
 #
 #     :remote_name: the name of the package's remote (official or origin)
 #
 function(reconnect_Repository_Remote package url public_url remote_name)
-	if(public_url AND NOT public_url STREQUAL "") #if there is a public URL the package is clonable from a public address
+	if(public_url) #if there is a public URL the package is clonable from a public address
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url ${remote_name} ${public_url})
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push ${remote_name} ${url})
 	else()#default case => same push and fetch address for remote
@@ -1347,6 +1471,29 @@ function(reconnect_Repository_Remote package url public_url remote_name)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push ${remote_name} ${url})
 	endif()
 endfunction(reconnect_Repository_Remote)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |disconnect_Repository_Remote| replace:: ``disconnect_Repository_Remote``
+#  .. _disconnect_Repository_Remote:
+#
+#  disconnect_Repository_Remote
+#  ---------------------------
+#
+#   .. command:: disconnect_Repository_Remote(package remote_name)
+#
+#     Disconnect an package's repository from one of its remote.
+#
+#     :package: the name of the package
+#
+#     :remote_name: the name of the package's remote (official or origin)
+#
+function(disconnect_Repository_Remote package remote_name)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote remove ${remote_name})
+endfunction(disconnect_Repository_Remote)
 
 #.rst:
 #
@@ -1424,32 +1571,38 @@ endfunction(get_Repository_Name)
 #
 #     :git_url: the url of the package's official repository.
 #
-function(check_For_Remote_Respositories package git_url)
-if(git_url STREQUAL "") #no official repository => do nothing
-	return()
-endif()
-is_Package_Connected(CONNECTED ${package} official)
-if(CONNECTED) #the package has an official remote
-	#here check that official address conforms
-	get_Remotes_Address(${package} RES_OFFICIAL RES_ORIGIN)
-	if(NOT ${RES_OFFICIAL} STREQUAL ${git_url})#problem address do not match
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote set-url official ${git_url} OUTPUT_QUIET ERROR_QUIET)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official OUTPUT_QUIET ERROR_QUIET)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official --tags OUTPUT_QUIET ERROR_QUIET)
-	#else() nothing to do
-	endif()
-else()
-	# not connected to an official remote while it should => problem => corrective action
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add official ${git_url} OUTPUT_QUIET ERROR_QUIET)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official OUTPUT_QUIET ERROR_QUIET)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official --tags OUTPUT_QUIET ERROR_QUIET)
-endif()
-#now checking that there is an origin remote
-is_Package_Connected(CONNECTED ${package} origin)
-if(NOT CONNECTED) #the package has no origin remote => create it and set it to the same address as official
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add origin ${git_url} OUTPUT_QUIET ERROR_QUIET)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch origin OUTPUT_QUIET ERROR_QUIET)
-#else we cannot conclude if origin is OK or not as the user may have forked the official project (and so may want to keep another address than official)
+function(check_For_Remote_Respositories verbose)
+adjust_Official_Remote_Address(OFFICIAL_REMOTE_CONNECTED ${PROJECT_NAME} "${verbose}")
+if(NOT OFFICIAL_REMOTE_CONNECTED)
+  if(verbose)
+    message("[PID] INFO: no official remote defined for ${package}.")
+  endif()
+  return()
+else()#there is a connected remote after adjustment
+  get_Remotes_Address(${PROJECT_NAME} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN)#get the adress of the official and origin git remotes
+  if(NOT ${PROJECT_NAME}_PUBLIC_ADDRESS)#no public address defined (only adress is used for fetch and push)
+    if(NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_OFFICIAL_PUSH
+      OR NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_OFFICIAL_FETCH)
+      message("[PID] WARNING: the address used in package description (${${PROJECT_NAME}_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (fetch=${RES_OFFICIAL_FETCH} push=${RES_OFFICIAL_PUSH}). Using the current remote by default. You should change the address in package description.")
+    endif()
+  else()
+    if(NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_OFFICIAL_PUSH)
+      message("[PID] WARNING: the address used in package description (${${PROJECT_NAME}_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_OFFICIAL_PUSH}). Using the current remote by default. You should change the address in package description.")
+    endif()
+    if(NOT ${PROJECT_NAME}_PUBLIC_ADDRESS STREQUAL RES_OFFICIAL_FETCH)
+      message("[PID] WARNING: the public address used in package description (${${PROJECT_NAME}_PUBLIC_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_OFFICIAL_FETCH}). Using the current remote by default. You should change the address in package description.")
+    endif()
+  endif()
+  #updating local repository from remote one
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official OUTPUT_QUIET ERROR_QUIET)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch official --tags OUTPUT_QUIET ERROR_QUIET)
+  # #now checking that there is an origin remote
+  is_Package_Connected(CONNECTED ${PROJECT_NAME} origin)
+  if(NOT CONNECTED) #the package has no origin remote => create it and set it to the same address as official
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add origin ${git_url} OUTPUT_QUIET ERROR_QUIET)
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch origin OUTPUT_QUIET ERROR_QUIET)
+  #else we cannot conclude if origin is OK or not as the user may have forked the official project (and so may want to keep another address than official)
+  endif()
 endif()
 endfunction(check_For_Remote_Respositories)
 
@@ -1497,29 +1650,37 @@ endfunction(get_Remotes_To_Update)
 #  get_Remotes_Address
 #  --------------------
 #
-#   .. command:: get_Remotes_Address(package RES_OFFICIAL RES_ORIGIN)
+#   .. command:: get_Remotes_Address(package RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN)
 #
 #     Get the package's origin and official remotes addresses.
 #
 #     :package: the name of the package.
 #
-#     :RES_OFFICIAL: the output variable containg the address of package's official remote.
+#     :RES_OFFICIAL_FETCH: the output variable containg the address of package's official remote for fetching.
+#
+#     :RES_OFFICIAL_PUSH: the output variable containg the address of package's official remote for pushing.
 #
 #     :RES_ORIGIN: the output variable containg the address of package's origin remote.
 #
-function(get_Remotes_Address package RES_OFFICIAL RES_ORIGIN)
-set(${RES_OFFICIAL} PARENT_SCOPE)
+function(get_Remotes_Address package RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN)
+set(${RES_OFFICIAL_FETCH} PARENT_SCOPE)
+set(${RES_OFFICIAL_PUSH} PARENT_SCOPE)
 set(${RES_ORIGIN} PARENT_SCOPE)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote -v OUTPUT_VARIABLE RESULTING_REMOTES)
 if(RESULTING_REMOTES)
 	string(REPLACE "\n" ";" LINES ${RESULTING_REMOTES})
 	string(REGEX REPLACE ";$" "" LINES "${LINES}")
 	foreach(remote IN LISTS LINES)
-		string(REGEX REPLACE "^([^ \t]+)[ \t]+([^ \t]+)[ \t]+.*$" "\\1;\\2" REMOTES_INFO ${remote})
-		list(GET REMOTES_INFO 1 ADDR_REMOTE)
+		string(REGEX REPLACE "^([^ \t]+)[ \t]+([^ \t]+)[ \t]+\\((fetch|push)\\).*$" "\\1;\\2;\\3" REMOTES_INFO ${remote})
+    list(GET REMOTES_INFO 1 ADDR_REMOTE)
 		list(GET REMOTES_INFO 0 NAME_REMOTE)
 		if(NAME_REMOTE STREQUAL "official")
-			set(${RES_OFFICIAL} ${ADDR_REMOTE} PARENT_SCOPE)
+      list(GET REMOTES_INFO 2 FETCH_OR_PUSH)
+      if(FETCH_OR_PUSH STREQUAL "fetch")
+        set(${RES_OFFICIAL_FETCH} ${ADDR_REMOTE} PARENT_SCOPE)
+      elseif(FETCH_OR_PUSH STREQUAL "push")
+        set(${RES_OFFICIAL_PUSH} ${ADDR_REMOTE} PARENT_SCOPE)
+      endif()
 		elseif(NAME_REMOTE STREQUAL "origin")
 			set(${RES_ORIGIN} ${ADDR_REMOTE} PARENT_SCOPE)
 		endif()

@@ -50,6 +50,7 @@ endif()
 if(NOT TARGET_BUILD_MODE OR (NOT TARGET_BUILD_MODE STREQUAL "Debug" AND NOT TARGET_BUILD_MODE STREQUAL "debug"))
   set(CMAKE_BUILD_TYPE Release)
 else()
+  message("[PID] INFO: building ${TARGET_EXTERNAL_PACKAGE} in Debug mode...")
   set(CMAKE_BUILD_TYPE Debug)
 endif()
 

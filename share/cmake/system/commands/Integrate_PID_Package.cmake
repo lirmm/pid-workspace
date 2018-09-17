@@ -53,7 +53,7 @@ endif() # from here we can navigate between branches freely
 # from here => ready to integrate
 
 #updating graph from remotes
-update_Remotes(${TARGET_PACKAGE})
+update_Package_Repository_From_Remotes(${TARGET_PACKAGE})
 
 #merging origin/integration
 integrate_Branch(${TARGET_PACKAGE} origin/integration)
@@ -74,7 +74,7 @@ if(WITH_OFFICIAL STREQUAL "true")
 		get_Remotes_To_Update(REMOTES ${TARGET_PACKAGE})
 		if(REMOTES)
 			publish_Repository_Integration(${TARGET_PACKAGE})
-			update_Remotes(${TARGET_PACKAGE})
+			update_Package_Repository_From_Remotes(${TARGET_PACKAGE})
 			message("[PID] INFO : integration process is finished.")
 		else()
 			message("[PID] INFO : integration process is finished, nothing to push to origin.")
@@ -86,7 +86,7 @@ else()
 	get_Remotes_To_Update(REMOTES ${TARGET_PACKAGE})
 	if(REMOTES)
 		publish_Repository_Integration(${TARGET_PACKAGE})
-		update_Remotes(${TARGET_PACKAGE})
+		update_Package_Repository_From_Remotes(${TARGET_PACKAGE})
 		message("[PID] INFO : integration process is finished.")
 	else()
 		message("[PID] INFO : integration process is finished, nothing to push to origin.")

@@ -2098,7 +2098,7 @@ set_Version_Number_To_Package(${package} ${major} ${minor} ${patch}) #change the
 register_Repository_Version(${package} "${major}.${minor}.${patch}") # commit new modified version
 publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand
 set(${RESULT} ${STRING_NUMBER} PARENT_SCOPE)
-update_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory)
+update_Package_Repository_From_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory)
 endfunction(release_PID_Package)
 
 ##########################################
