@@ -159,7 +159,6 @@ elseif(DIR_NAME STREQUAL "build")
 						-DWITH_OFFICIAL=\${official}
 						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Integrate_PID_Package.cmake
 		COMMENT "[PID] Integrating modifications ..."
-		VERBATIM
 	)
 
 	# updating version of PID
@@ -168,6 +167,7 @@ elseif(DIR_NAME STREQUAL "build")
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Synchronize_PID_Package_Version.cmake
 		COMMENT "[PID] Synchronizing the package version with workspace current version..."
+		VERBATIM
 	)
 
 	# checking that the build takes place on integration
@@ -188,6 +188,7 @@ elseif(DIR_NAME STREQUAL "build")
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Check_PID_Package_Official_Repository.cmake
 		COMMENT "[PID] Checking official repository consistency..."
+		VERBATIM
 	)
 	endif()
 
@@ -963,10 +964,9 @@ add_custom_target(list_dependencies
 					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
 					-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
-					-DFLAT_PRESENTATION="\${flat}"
-					-DWRITE_TO_FILE="\${write_file}"
+					-DFLAT_PRESENTATION=\${flat}
+					-DWRITE_TO_FILE=\${write_file}
 					-P ${WORKSPACE_DIR}/share/cmake/system/commands/Listing_PID_Package_Dependencies.cmake
-	VERBATIM
 )
 
 ###############################################################################

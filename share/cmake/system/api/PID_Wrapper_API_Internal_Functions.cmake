@@ -259,7 +259,6 @@ if(DIR_NAME STREQUAL "build")
            -DDO_NOT_EXECUTE_SCRIPT=\${skip_script}
 					 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Wrapper.cmake
     COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
-    VERBATIM
   )
 
 	# adding an uninstall command (uninstall the whole installed version currently built)
@@ -270,7 +269,6 @@ if(DIR_NAME STREQUAL "build")
 					 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Uninstall_PID_Wrapper.cmake
 		COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
 		COMMENT "[PID] Uninstalling external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} ..."
-    VERBATIM
 	)
 
 	# reference file generation target
@@ -279,7 +277,6 @@ if(DIR_NAME STREQUAL "build")
   	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/find
   	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "[PID] installing references to the wrapped external package into the workspace..."
-  	VERBATIM
   )
 
   #################################################
