@@ -887,7 +887,6 @@ endif()
 set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(update_Repository_Versions)
 
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -900,7 +899,7 @@ endfunction(update_Repository_Versions)
 #
 #   .. command:: adjust_Official_Remote_Address(OFFICIAL_REMOTE_CONNECTED package verbose)
 #
-#     Check, and eventually perform corrective actions, that package's repository origin and official remotes are defined.
+#     Check connection to remote VS official remote address specified in package description. If they differ, performs corrective actions.
 #
 #     :package: the name of the package.
 #
@@ -964,7 +963,7 @@ if(NOT CONNECTED)#no official remote (due to old package style or due to a misus
 	endif()
 elseif(URL) # official package is connected and has an official repository declared
 	get_Remotes_Address(${package} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN)#get the adress of the official and origin git remotes
-	if((NOT RES_OFFICIAL_FETCH STREQUAL URL)
+  if((NOT RES_OFFICIAL_FETCH STREQUAL URL)
       AND (NOT RES_OFFICIAL_FETCH STREQUAL PUBLIC_URL))
       # the address of official is not the same as the one specified in the package description
       # this can be due to a migration of the repository since last release
@@ -1585,12 +1584,19 @@ else()#there is a connected remote after adjustment
       OR NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_OFFICIAL_FETCH)
       message("[PID] WARNING: the address used in package description (${${PROJECT_NAME}_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (fetch=${RES_OFFICIAL_FETCH} push=${RES_OFFICIAL_PUSH}). Using the current remote by default. You should change the address in package description.")
     endif()
-  else()
+  else()#a public address is defined !
+    set(ADDR_OK TRUE)
     if(NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_OFFICIAL_PUSH)
       message("[PID] WARNING: the address used in package description (${${PROJECT_NAME}_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_OFFICIAL_PUSH}). Using the current remote by default. You should change the address in package description.")
+      set(ADDR_OK FALSE)#means that we keep official "as is"
     endif()
     if(NOT ${PROJECT_NAME}_PUBLIC_ADDRESS STREQUAL RES_OFFICIAL_FETCH)
-      message("[PID] WARNING: the public address used in package description (${${PROJECT_NAME}_PUBLIC_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_OFFICIAL_FETCH}). Using the current remote by default. You should change the address in package description.")
+      if(ADDR_OK)
+        #we know that the address is correct so we simply need to reconnect the public address
+        reconnect_Repository_Remote(${PROJECT_NAME} ${${PROJECT_NAME}_ADDRESS} ${${PROJECT_NAME}_PUBLIC_ADDRESS} official)
+      else()
+        message("[PID] WARNING: the public address used in package description (${${PROJECT_NAME}_PUBLIC_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_OFFICIAL_FETCH}). Using the current remote by default. You should change the address in package description.")
+      endif()
     endif()
   endif()
   #updating local repository from remote one
@@ -1599,7 +1605,7 @@ else()#there is a connected remote after adjustment
   # #now checking that there is an origin remote
   is_Package_Connected(CONNECTED ${PROJECT_NAME} origin)
   if(NOT CONNECTED) #the package has no origin remote => create it and set it to the same address as official
-  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add origin ${git_url} OUTPUT_QUIET ERROR_QUIET)
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add origin ${${PROJECT_NAME}_ADDRESS} OUTPUT_QUIET ERROR_QUIET)
   	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch origin OUTPUT_QUIET ERROR_QUIET)
   #else we cannot conclude if origin is OK or not as the user may have forked the official project (and so may want to keep another address than official)
   endif()
