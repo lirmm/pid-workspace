@@ -309,10 +309,15 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
   foreach(dep IN LISTS list_of_conflicting_dependencies)
     if(${dep}_REQUIRED_VERSION_EXACT)
       set(OUTPUT_STR "exact version already required is ${${dep}_REQUIRED_VERSION_EXACT}")
-    elseif(${dep}_REQUIRED_VERSION_EXACT)
-      set(OUTPUT_STR "required versions are : ${${dep}_ALL_REQUIRED_VERSIONS}")
+    elseif(${dep}_ALL_REQUIRED_VERSIONS)
+      set(OUTPUT_STR "already required versions are : ${${dep}_ALL_REQUIRED_VERSIONS}")
     endif()
-    message("  - dependent package ${dep} is required with version ${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}: ${OUTPUT_STR}.")
+    get_Package_Type(${package} PACK_TYPE)
+    if(PACK_TYPE STREQUAL "EXTERNAL")
+      message("  - dependent package ${dep} is required with version ${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}: ${OUTPUT_STR}.")
+    else()
+      message("  - dependent package ${dep} is required with version ${${package}_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}: ${OUTPUT_STR}.")
+    endif()
   endforeach()
   if(NOT first_time)# we are currently trying to reinstall the same package !!
     finish_Progress(GLOBAL_PROGRESS_VAR)
@@ -634,7 +639,8 @@ if(reinstall)#the same version must be reinstalled from sources
   # package does not belong to packages to install then it means that its version is not adequate and it must be reinstalled from sources
 	set(USE_SOURCE TRUE)# we need to build this package from sources, if any available
   set(NO_VERSION FALSE)# we need to specify a version !
-  get_Compatible_Version_To_Reinstall(${package} VERSION_MIN IS_EXACT)
+  set(IS_EXACT TRUE)
+  set(VERSION_MIN ${${package}_VERSION_STRING})#the version to reinstall is the currenlty used one
 elseif(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
   # 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
 	set(POSSIBLE FALSE)
@@ -2239,7 +2245,8 @@ endif()
 if(reinstall AND from_sources)#if the package does not belong to packages to install then it means that its version is not adequate and it must be reinstalled
   set(USE_SOURCE TRUE) # by definition reinstall from sources
   set(NO_VERSION FALSE)# we need to specify a version !
-  get_Compatible_Version_To_Reinstall(${package} SELECTED IS_EXACT)
+  set(IS_EXACT TRUE)
+  set(SELECTED ${${package}_VERSION_STRING})#the version to reinstall is the currenlty used one
   set(FORCE_REBUILD TRUE)
 elseif(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	resolve_Required_External_Package_Version(VERSION_POSSIBLE SELECTED IS_EXACT ${package})

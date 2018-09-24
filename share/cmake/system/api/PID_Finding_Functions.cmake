@@ -852,7 +852,7 @@ if(${package}_REQUIRED_VERSION_EXACT)
 	return()#no need to set the version to find
 endif()
 get_Version_String_Numbers("${version}.0" new_major new_minor new_patch)
-if(NOT new_major)#not a valid version string
+if(NOT new_major AND NOT new_major EQUAL 0)#not a valid version string
   return()
 endif()
 set(curr_major ${new_major})
@@ -1137,18 +1137,6 @@ if(NOT ${package}_ALL_REQUIRED_VERSIONS #no version already required !! => we ca
 	set(${NEED_FINDING} TRUE PARENT_SCOPE) #need to find the new exact version
 endif()
 endfunction(is_Exact_External_Version_Compatible_With_Previous_Constraints)
-
-function(get_Compatible_Version_To_Reinstall package VERSION IS_EXACT)
-  if(${package}_REQUIRED_VERSION_EXACT)
-    set(${VERSION} ${${package}_REQUIRED_VERSION_EXACT} PARENT_SCOPE)
-    set(${IS_EXACT} TRUE PARENT_SCOPE)
-  else()
-    get_Greater_Version(GREATER_ONE ${${package}_ALL_REQUIRED_VERSIONS})
-    set(${VERSION} ${GREATER_ONE} PARENT_SCOPE)
-    set(${IS_EXACT} FALSE PARENT_SCOPE)
-  endif()
-endfunction(get_Compatible_Version_To_Reinstall)
-
 
 #.rst:
 #
@@ -1561,8 +1549,6 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 					return() # nothing to do more, the current used version is compatible with everything
 				endif()
 			else()
-        # finish_Progress(GLOBAL_PROGRESS_VAR)
-				# message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last version required is ${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}.")
         set(${COMPATIBLE} FALSE PARENT_SCOPE)
         return()
 			endif()
