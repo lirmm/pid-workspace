@@ -32,7 +32,7 @@ endif()
 
 if(TARGET_PACKAGE)
 	if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
-		release_PID_Package(RESULT_VERSION ${TARGET_PACKAGE} "${NEXT_VERSION}" ${manage_dependencies})
+		release_PID_Package(RESULT_VERSION ${TARGET_PACKAGE} "${NEXT_VERSION}" "${FROM_BRANCH}" ${manage_dependencies})
 		if(NOT RESULT_VERSION)
 			message("[PID] ERROR : release of package ${TARGET_PACKAGE} failed !")
 		else()

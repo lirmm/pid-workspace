@@ -507,19 +507,21 @@ endfunction(restore_Workspace_Repository_Context)
 #  merge_Into_Master
 #  -----------------
 #
-#   .. command:: merge_Into_Master(RESULT package version_string)
+#   .. command:: merge_Into_Master(RESULT package branch version_string)
 #
 #     Merge the integration branch of a package into its master branch, then tag the current commit on master with a new version.
 #
 #     :package: the name of target package
 #
+#     :branch: the name of the branch merged
+#
 #     :version_string: the new version to tag
 #
 #     :RESULT: the ouuput variable that is set to TRUE if merge succeeded, FALSE otherwise
 #
-function(merge_Into_Master RESULT package version_string)
+function(merge_Into_Master RESULT package branch version_string)
 go_To_Master(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge --ff-only integration RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git merge --ff-only ${branch} RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)
 if(NOT res EQUAL 0)
 	set(${RESULT} FALSE PARENT_SCOPE)
 	return()
@@ -779,27 +781,77 @@ endfunction(publish_Repository_Integration)
 #
 # .. ifmode:: internal
 #
-#  .. |publish_Repository_Version| replace:: ``publish_Repository_Version``
-#  .. _publish_Repository_Version:
+#  .. |publish_Package_Temporary_Branch| replace:: ``publish_Package_Temporary_Branch``
+#  .. _publish_Package_Temporary_Branch:
 #
-#  publish_Repository_Version
-#  --------------------------
+#  publish_Package_Temporary_Branch
+#  --------------------------------
 #
-#   .. command:: publish_Repository_Version(package version_string RESULT)
+#   .. command:: publish_Package_Temporary_Branch(PUBLISH_OK package branch)
 #
-#     Publish a new version on a package official repository.
+#     Push a temporary branch of a package.
 #
 #     :package: the name of target package
 #
-#     :version_string: the version to push
+#     :branch: the name of branch to push to official repository
 #
-#     :RESULT: the output variable that is TRUE if official remote has been update with new version, FALSE otherwise
+#     :PUBLISH_OK: the output variable that is TRUE is push succeeded, FALSE otherwise
 #
-function(publish_Repository_Version package version_string RESULT)
+function(publish_Package_Temporary_Branch PUBLISH_OK package branch)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push --porcelain official ${branch} OUTPUT_VARIABLE out ERROR_QUIET)#try pushing on branch
+if(out MATCHES "^.*rejected.*$")
+	set(${PUBLISH_OK} FALSE PARENT_SCOPE)
+	return()
+endif()
+set(${PUBLISH_OK} TRUE PARENT_SCOPE)
+endfunction(publish_Package_Temporary_Branch)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |delete_Package_Temporary_Branch| replace:: ``delete_Package_Temporary_Branch``
+#  .. _delete_Package_Temporary_Branch:
+#
+#  delete_Package_Temporary_Branch
+#  -------------------------------
+#
+#   .. command:: delete_Package_Temporary_Branch(package branch)
+#
+#     Delete a temporary branch of a package official remote.
+#
+#     :package: the name of target package
+#
+#     :branch: the name of branch to delete from official repository
+#
+function(delete_Package_Temporary_Branch package branch)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push --delete official ${branch} OUTPUT_QUIET ERROR_QUIET)#try pushing on branch
+endfunction(delete_Package_Temporary_Branch)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Repository_Master| replace:: ``publish_Repository_Master``
+#  .. _publish_Repository_Master:
+#
+#  publish_Repository_Master
+#  -------------------------
+#
+#   .. command:: publish_Repository_Master(RESULT_OK package)
+#
+#     Publish an update to the master branch of a package official remote.
+#
+#     :package: the name of target package
+#
+#     :RESULT_OK: the output variable that is TRUE if official remote master branch has been updated, FALSE otherwise
+#
+function(publish_Repository_Master RESULT_OK package)
+set(${RESULT_OK} FALSE PARENT_SCOPE)
 go_To_Master(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push --porcelain official master OUTPUT_VARIABLE out ERROR_QUIET)#releasing on master branch of official
 if(out MATCHES "^.*rejected.*$")
-	set(${RESULT} FALSE PARENT_SCOPE)
 	return()
 endif()
 
@@ -809,17 +861,40 @@ if (NOT "${res}" STREQUAL "")
 	string(FIND "${res}" "master" INDEX_LOCAL)
 	string(FIND "${res}" "official/master" INDEX_REMOTE)
 	if(INDEX_LOCAL GREATER 0 AND INDEX_REMOTE GREATER 0)# both found => the last commit on master branch is tracked by local and remote master branch
-		set(OFFICIAL_SYNCHRO TRUE)
-	else()
-		set(OFFICIAL_SYNCHRO FALSE)
+		set(${RESULT_OK} TRUE PARENT_SCOPE)
 	endif()
 endif()
-if(OFFICIAL_SYNCHRO)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push official v${version_string} OUTPUT_QUIET ERROR_QUIET)#releasing version tag
-	set(${RESULT} TRUE PARENT_SCOPE)
-else()
-	set(${RESULT} FALSE PARENT_SCOPE)
+
+endfunction(publish_Repository_Master)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Repository_Version| replace:: ``publish_Repository_Version``
+#  .. _publish_Repository_Version:
+#
+#  publish_Repository_Version
+#  --------------------------
+#
+#   .. command:: publish_Repository_Version(RESULT package version_string)
+#
+#     Publish a new version on a package official repository.
+#
+#     :package: the name of target package
+#
+#     :version_string: the version to push
+#
+#     :RESULT: the output variable that is TRUE if official remote has been update with new version tag, FALSE otherwise
+#
+function(publish_Repository_Version RESULT package version_string)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push --porcelain official v${version_string} OUTPUT_VARIABLE out ERROR_QUIET)#releasing on master branch of official
+if(out MATCHES "^.*rejected.*$")
+  set(${RESULT} FALSE PARENT_SCOPE)
+	return()
 endif()
+set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(publish_Repository_Version)
 
 #.rst:
@@ -1126,7 +1201,6 @@ endfunction(has_Modifications)
 #     :RESULT: the output variable that is TRUE if package has commit that may be part of a release, FALSE otherwise
 #
 function(check_For_New_Commits_To_Release RESULT package)
-go_To_Integration(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git log --oneline --decorate --max-count=2 OUTPUT_VARIABLE res ERROR_QUIET)
 if (NOT "${res}" STREQUAL "")
 	string(REPLACE " " "%" GIT_LOGS ${res})
@@ -1137,8 +1211,8 @@ if (NOT "${res}" STREQUAL "")
 	if(SIZE GREATER 1)
 		list(GET GIT_LOGS 1 LINE2)
 		string(FIND "${LINE2}" "%master" INDEX_MAS)
-		if(INDEX_MAS EQUAL -1)# master not found in two last lines starting from integration
-			set(${RESULT} TRUE PARENT_SCOPE) #master is more than 1 commit away from integration
+		if(INDEX_MAS EQUAL -1)# master not found in two last lines starting from branch
+			set(${RESULT} TRUE PARENT_SCOPE) #master is more than 1 commit away from branch
 			return()
 		endif()
 	endif()

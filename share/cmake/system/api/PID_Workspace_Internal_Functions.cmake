@@ -1950,13 +1950,28 @@ endfunction(register_PID_Framework)
 #
 #      :RESULT: the output variable that is TRUE if package has been released, FALSE otherwise.
 #
-function(release_PID_Package RESULT package next manage_deps)
+function(release_PID_Package RESULT package next branch manage_deps)
 set(${RESULT} FALSE PARENT_SCOPE)
 # check that current branc of package is integration
 get_Repository_Current_Branch(CURRENT_BRANCH ${WORKSPACE_DIR}/packages/${package})
-if(NOT CURRENT_BRANCH STREQUAL "integration")
-	message("[PID] ERROR : impossible to release package ${TARGET_PACKAGE} because it is not currently on integration branch.")
+if(NOT CURRENT_BRANCH)
+	message("[PID] ERROR : The repository package ${TARGET_PACKAGE} is currenlty detached from a branch. Release aborted.")
 	return()
+endif()
+if(branch)
+		if(branch STREQUAL "master" OR branch STREQUAL "integration")
+			message("[PID] ERROR : the branch argument is used to specify a non standard branch. Do not use for branch ${branch}.")
+			return()
+		endif()
+		if(NOT CURRENT_BRANCH STREQUAL branch)
+			message("[PID] ERROR : impossible to release package ${TARGET_PACKAGE} because it is not currently on branch ${branch}.")
+			return()
+		endif()
+else()#no branch specified used integration
+	if(NOT CURRENT_BRANCH STREQUAL "integration")
+		message("[PID] ERROR : impossible to release package ${TARGET_PACKAGE} because it is not currently on integration branch.")
+		return()
+	endif()
 endif()
 
 # check for modifications
@@ -1970,12 +1985,13 @@ endif() # from here we can navigate between branches freely
 update_Repository_Versions(UPDATE_OK ${package})
 if(NOT UPDATE_OK)
 	message("[PID] ERROR : impossible to release package ${TARGET_PACKAGE} because its master branch cannot be updated from official one. Maybe you have no clone rights from official or local master branch of package ${package} is not synchronizable with official master branch.")
-	go_To_Integration(${package}) #always go back to integration branch
+	go_To_Commit(${package} ${CURRENT_BRANCH})#always go back to original branch
 	return()
 endif() #from here graph of commits and version tags are OK
 
+go_To_Commit(${package} ${CURRENT_BRANCH}) #always release from the development branch (integration by default)
+
 # registering current version
-go_To_Integration(${package}) #always release from integration branch
 get_Version_Number_And_Repo_From_Package(${package} NUMBER STRING_NUMBER ADDRESS)
 # performing basic checks
 if(NOT NUMBER)#version number is not well defined
@@ -2000,11 +2016,13 @@ foreach(version IN LISTS VERSION_NUMBERS)
 	endif()
 endforeach()
 
-# check that there are things to commit to master
-check_For_New_Commits_To_Release(COMMITS_AVAILABLE ${package})
-if(NOT COMMITS_AVAILABLE)
-	message("[PID] WARNING : cannot release package ${package} because integration branch has no commits to contribute to new version.")
-	return()
+if(NOT branch)# if the target branch branch is not integration then check that there are new commits to release (avoid unnecessary commits)
+	# check that there are things to commit to master
+	check_For_New_Commits_To_Release(COMMITS_AVAILABLE ${package})
+	if(NOT COMMITS_AVAILABLE)
+		message("[PID] WARNING : cannot release package ${package} because integration branch has no commits to contribute to new version.")
+		return()
+	endif()
 endif()
 
 # check that version of dependencies exist
@@ -2048,57 +2066,78 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 endif()
 
 # build one time to be sure it builds and tests are passing
-build_And_Install_Source(IS_BUILT ${package} "" "integration" TRUE)
+build_And_Install_Source(IS_BUILT ${package} "" "${CURRENT_BRANCH}" TRUE)
 if(NOT IS_BUILT)
-	message("[PID] ERROR : cannot release package ${package}, because its integration branch doesnot build.")
+	message("[PID] ERROR : cannot release package ${package}, because its branch ${CURRENT_BRANCH} does not build.")
 	return()
 endif()
 
-# check that integration is a fast forward of master
-merge_Into_Master(MERGE_OK ${package} ${STRING_NUMBER})
-if(NOT MERGE_OK)
-	message("[PID] ERROR : cannot release package ${package}, because there are potential merge conflicts between master and integration branches. Please update ${package} integration branch first then launch again the release process.")
-	go_To_Integration(${package}) #always go back to integration branch
-	return()
-endif()
-tag_Version(${package} ${STRING_NUMBER} TRUE)#create the version tag
-publish_Repository_Version(${package} ${STRING_NUMBER} RESULT_OK)
-if(NOT RESULT_OK) #the user has no sufficient push rights
-	tag_Version(${package} ${STRING_NUMBER} FALSE)#remove local tag
-	message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push to its master branch !")
-	go_To_Integration(${package}) #always go back to integration branch
-	return()
-endif()
-#remove the installed version built from integration branch
-file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${STRING_NUMBER})
-#rebuild package from master branch to get a clean installed version (getting clean use file)
-build_And_Install_Source(IS_BUILT ${package} ${STRING_NUMBER} "" FALSE)
-#merge back master into integration
-merge_Into_Integration(${package})
+if(branch)#if we use a specific branch for patching then do not merge into master but push this branch in official
+	publish_Package_Temporary_Branch(PUBLISH_OK ${package} ${CURRENT_BRANCH})
+	if(NOT PUBLISH_OK)
+		message("[PID] ERROR : cannot release package ${package}, because you are probably not allowed to push new branches to official package repository.")
+		return()
+	endif()
+	tag_Version(${package} ${STRING_NUMBER} TRUE)#create the version tag
+	publish_Repository_Version(RESULT_OK ${package} ${STRING_NUMBER})
+	delete_Package_Temporary_Branch(${package} ${CURRENT_BRANCH})#always delete the temporary branch whether the push succeeded or failed
+	if(NOT RESULT_OK)#the user has no sufficient push rights
+		tag_Version(${package} ${STRING_NUMBER} FALSE)#remove local tag
+		message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push version to its official remote !")
+		return()
+	endif()
 
-### now starting a new version
-list(GET NUMBER 0 major)
-list(GET NUMBER 1 minor)
-list(GET NUMBER 2 patch)
-if("${next}" STREQUAL "MAJOR")
-	math(EXPR major "${major}+1")
-	set(minor 0)
-	set(patch 0)
-elseif("${next}" STREQUAL "MINOR")
-	math(EXPR minor "${minor}+1")
-	set(patch 0)
-elseif("${next}" STREQUAL "PATCH")
-	math(EXPR patch "${patch}+1")
-else()#default behavior
-	math(EXPR minor "${minor}+1")
-	set(patch 0)
+else()# check that integration branch is a fast forward of master
+	merge_Into_Master(MERGE_OK ${package} "integration" ${STRING_NUMBER})
+	if(NOT MERGE_OK)
+		message("[PID] ERROR : cannot release package ${package}, because there are potential merge conflicts between master and integration branches. Please update ${CURRENT_BRANCH} branch of package ${package} first, then launch again the release process.")
+		go_To_Integration(${package})#always go back to original branch (here integration by construction)
+		return()
+	endif()
+	tag_Version(${package} ${STRING_NUMBER} TRUE)#create the version tag
+	publish_Repository_Master(RESULT_OK ${package})
+	if(RESULT_OK)
+		publish_Repository_Version(RESULT_OK ${package} ${STRING_NUMBER})
+	endif()
+	if(NOT RESULT_OK)#the user has no sufficient push rights
+		tag_Version(${package} ${STRING_NUMBER} FALSE)#remove local tag
+		message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push to its master branch !")
+		go_To_Integration(${package})#always go back to original branch
+		return()
+	endif()
+	#remove the installed version built from integration branch
+	file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${STRING_NUMBER})
+	#rebuild package from master branch to get a clean installed version (getting clean use file)
+	build_And_Install_Source(IS_BUILT ${package} ${STRING_NUMBER} "" FALSE)
+	#merge back master into integration
+	merge_Into_Integration(${package})
+
+	### now starting a new version
+	list(GET NUMBER 0 major)
+	list(GET NUMBER 1 minor)
+	list(GET NUMBER 2 patch)
+	if("${next}" STREQUAL "MAJOR")
+		math(EXPR major "${major}+1")
+		set(minor 0)
+		set(patch 0)
+	elseif("${next}" STREQUAL "MINOR")
+		math(EXPR minor "${minor}+1")
+		set(patch 0)
+	elseif("${next}" STREQUAL "PATCH")
+		math(EXPR patch "${patch}+1")
+	else()#default behavior
+		math(EXPR minor "${minor}+1")
+		set(patch 0)
+	endif()
+	# still on integration branch
+	set_Version_Number_To_Package(${package} ${major} ${minor} ${patch}) #change the package description with new version
+	register_Repository_Version(${package} "${major}.${minor}.${patch}") # commit new modified version
+	publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand
 endif()
-# still on integration branch
-set_Version_Number_To_Package(${package} ${major} ${minor} ${patch}) #change the package description with new version
-register_Repository_Version(${package} "${major}.${minor}.${patch}") # commit new modified version
-publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand
+
 set(${RESULT} ${STRING_NUMBER} PARENT_SCOPE)
 update_Package_Repository_From_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory)
+
 endfunction(release_PID_Package)
 
 ##########################################
