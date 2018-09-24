@@ -2035,7 +2035,7 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 			list(GET RES_LIST 0 DEP_PACKAGE)
 			list(GET RES_LIST 1 DEP_VERSION)
 			message("[PID] releasing dependency ${DEP_PACKAGE} of ${package}...")
-			release_PID_Package(DEP_RESULT ${dep} ${next} TRUE)
+			release_PID_Package(DEP_RESULT ${dep} ${next} "" TRUE)#do not use a specific branch as we do not know it (integration is used)
 			if(NOT DEP_RESULT)
 				list(APPEND unreleased_dependencies ${dep})
 			endif()
