@@ -298,7 +298,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	get_Package_Site_Address(ADDRESS ${PROJECT_NAME})
 	if(NOT ADDRESS)#no site description has been provided nor framework reference
 		# intro
-		set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site use the short one
+    generate_Formatted_String("${${PROJECT_NAME}_DESCRIPTION}" RES_INTRO)
+		set(README_OVERVIEW "${RES_INTRO}") #if no detailed description provided by site use the short one
 		# no reference to site page
 		set(PACKAGE_SITE_REF_IN_README "")
 
@@ -307,10 +308,11 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	else()
 		# intro
 		generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
-		if(RES_INTRO STREQUAL "")
-			set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site description use the short one
+		if(RES_INTRO)
+      set(README_OVERVIEW "${RES_INTRO}") #otherwise use detailed one specific for site
 		else()
-			set(README_OVERVIEW "${RES_INTRO}") #otherwise use detailed one specific for site
+      generate_Formatted_String("${${PROJECT_NAME}_DESCRIPTION}" RES_INTRO)
+  		set(README_OVERVIEW "${RES_INTRO}") #if no detailed description provided by site description use the short one
 		endif()
 
 		# install procedure
