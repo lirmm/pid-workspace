@@ -1156,11 +1156,43 @@ endif()
 set(${GET_USER_OPTION_INFO_RESULT} ${${TARGET_EXTERNAL_PACKAGE}_USER_OPTION_${GET_USER_OPTION_INFO_OPTION}_VALUE} PARENT_SCOPE)
 endfunction(get_User_Option_Info)
 
-### getting all options and flags (compiler in use, basic flags for each type of component, and so on) defined by the current environment, to be able to access them in the deploy script
+###
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |get_Environment_Info| replace:: ``get_Environment_Info``
+#  .. _get_Environment_Info:
+#
+#  get_Environment_Info
+#  --------------------
+#
+#   .. command:: get_Environment_Info(COMPONENT ... [OPTIONS])
+#
+#     Getting all options and flags (compiler in use, basic flags for each type of component, and so on) defined by the current environment, to be able to access them in the deploy script.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  This function has no side effect but simply allow the wrapper build process to get some information about the package it is trying to build.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        get_Environment_Info(MAKE make_tool JOBS jobs-flag CXX COMPILER compiler_used CFLAGS compile_flags SHARED LDFLAGS linker_flags)
+#
+#
 function(get_Environment_Info)
   set(options MODULE SHARED STATIC EXE DEBUG RELEASE C CXX ASM) #used to define the context
   set(oneValueArgs COMPILER AR LINKER MAKE RANLIB JOBS) #returned values conditionned by options
-  set(multiValueArgs CFLAGS LDFLAGS INCLUDES) #returned values conditionned by options
+  set(multiValueArgs CFLAGS LDFLAGS) #returned values conditionned by options
   cmake_parse_arguments(GET_ENVIRONMENT_INFO "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   #returning flag to use with make tool
@@ -1225,7 +1257,7 @@ function(get_Environment_Info)
         list(APPEND list_of_flags ${CMAKE_C_FLAGS_DEBUG})
       endif()
     endif()
-    fill_List_Into_String("${list_of_flags}" cflags_string)
+    fill_String_From_List("${list_of_flags}" cflags_string)
     set(${GET_ENVIRONMENT_INFO_CFLAGS} "${cflags_string}" PARENT_SCOPE)
   endif() #end for c flags
 
@@ -1238,22 +1270,22 @@ function(get_Environment_Info)
     if(GET_ENVIRONMENT_INFO_MODULE)
       set(ldflags_list ${CMAKE_MODULE_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_MODULE_LINKER_FLAGS${suffix}})
-      fill_List_Into_String("${ldflags_list}" ldflags_string)
+      fill_String_From_List("${ldflags_list}" ldflags_string)
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     elseif(GET_ENVIRONMENT_INFO_SHARED)
       set(ldflags_list ${CMAKE_SHARED_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_SHARED_LINKER_FLAGS${suffix}})
-      fill_List_Into_String("${ldflags_list}" ldflags_string)
+      fill_String_From_List("${ldflags_list}" ldflags_string)
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     elseif(GET_ENVIRONMENT_INFO_STATIC)
       set(ldflags_list ${CMAKE_STATIC_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_STATIC_LINKER_FLAGS${suffix}})
-      fill_List_Into_String("${ldflags_list}" ldflags_string)
+      fill_String_From_List("${ldflags_list}" ldflags_string)
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     elseif(GET_ENVIRONMENT_INFO_EXE)
       set(ldflags_list ${CMAKE_EXE_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_EXE_LINKER_FLAGS${suffix}})
-      fill_List_Into_String("${ldflags_list}" ldflags_string)
+      fill_String_From_List("${ldflags_list}" ldflags_string)
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     else()
       message(FATAL_ERROR "[PID] CRITICAL ERROR : When trying to get LDFLAGS in use you must specify the kind of component you try to build (MODULE, SHARED, STATIC or EXE).")
