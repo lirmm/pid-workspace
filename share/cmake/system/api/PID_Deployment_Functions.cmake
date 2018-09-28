@@ -312,7 +312,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
     elseif(${dep}_ALL_REQUIRED_VERSIONS)
       set(OUTPUT_STR "already required versions are : ${${dep}_ALL_REQUIRED_VERSIONS}")
     endif()
-    get_Package_Type(${package} PACK_TYPE)
+    get_Package_Type(${dep} PACK_TYPE)
     if(PACK_TYPE STREQUAL "EXTERNAL")
       message("  - dependent package ${dep} is required with version ${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}: ${OUTPUT_STR}.")
     else()
