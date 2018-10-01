@@ -985,9 +985,10 @@ set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE)
 is_Package_Connected(CONNECTED ${package} official) #check if the package has a repository URL defined (fetch)
 get_Package_Repository_Address(${package} URL PUBLIC_URL) #get addresses of official remote from package description
 if(NOT CONNECTED)#no official remote (due to old package style or due to a misuse of git command within a package)
-	if(URL)#the package has an official repository declared
-    reconnect_Repository_Remote(${package} ${URL} "${PUBLIC_URL}" official)
+  if(URL)#the package has an official repository declared
+    connect_Repository_Remote(${package} ${URL} "${PUBLIC_URL}" official)
     test_Remote_Connection(CONNECTED ${package} official) #test again connection
+
     if(NOT CONNECTED)#remote currently in use is a bad one (migration took place and for any reason the official remote has been deleted)
       include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake OPTIONAL RESULT_VARIABLE res)
 			if(res STREQUAL NOTFOUND) #reference not found, may mean the package has been removed
@@ -1474,8 +1475,8 @@ endfunction(init_Repository)
 #     :url: the url of the package's remote
 #
 function(connect_Repository package url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add origin ${url})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add official ${url})
+connect_Repository_Remote(${package} ${url} "" origin)
+connect_Repository_Remote(${package} ${url} "" official)
 
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration  OUTPUT_QUIET ERROR_QUIET)
 
@@ -1512,6 +1513,38 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${pa
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official --tags  OUTPUT_QUIET ERROR_QUIET)
 go_To_Integration(${package})
 endfunction(reconnect_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |connect_Repository_Remote| replace:: ``connect_Repository_Remote``
+#  .. _connect_Repository_Remote:
+#
+#  connect_Repository_Remote
+#  ---------------------------
+#
+#   .. command:: connect_Repository_Remote(package url public_url remote_name)
+#
+#     Add the target remote to a package repository.
+#
+#     :package: the name of the package
+#
+#     :url: the new private url of the package's remote
+#
+#     :public_url: the public counterpart url of the package's remote
+#
+#     :remote_name: the name of the package's remote (official or origin)
+#
+function(connect_Repository_Remote package url public_url remote_name)
+	if(public_url) #if there is a public URL the package is clonable from a public address
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add ${remote_name} ${public_url})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote set-url --push ${remote_name} ${url})
+	else()#default case => same push and fetch address for remote
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote add ${remote_name} ${url})
+	endif()
+endfunction(connect_Repository_Remote)
+
 
 #.rst:
 #
@@ -1648,7 +1681,7 @@ function(check_For_Remote_Respositories verbose)
 adjust_Official_Remote_Address(OFFICIAL_REMOTE_CONNECTED ${PROJECT_NAME} "${verbose}")
 if(NOT OFFICIAL_REMOTE_CONNECTED)
   if(verbose)
-    message("[PID] INFO: no official remote defined for ${package}.")
+    message("[PID] WARNING: no official remote defined for ${PROJECT_NAME}.")
   endif()
   return()
 else()#there is a connected remote after adjustment
