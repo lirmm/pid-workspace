@@ -1077,7 +1077,9 @@ function(try_In_Development_Version DEPLOYED_VERSION package version_to_check is
   build_And_Install_Package(ALL_IS_OK ${package} "integration" "${run_tests}")
   if(ALL_IS_OK)
     list_Version_Subdirectories(installed_after_build ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
-    list(REMOVE_ITEM installed_after_build ${already_installed})
+    if(already_installed)
+      list(REMOVE_ITEM installed_after_build ${already_installed})
+    endif()
     if(installed_after_build)#a new version has been installed
       get_Version_String_Numbers("${version_to_check}.0" major minor patch)
       if(is_exact)#version constraint is exact
@@ -1125,6 +1127,7 @@ function(deploy_Source_Native_Package_Version DEPLOYED package min_version is_ex
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of min_version : if exact taking min_version, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
+message("after save_Repository_Context package=${package} CURRENT_COMMIT=${CURRENT_COMMIT} SAVED_CONTENT=${SAVED_CONTENT}")
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
 if(NOT UPDATE_OK)
 	message("[PID] WARNING : source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand.")
@@ -1146,6 +1149,7 @@ if(is_exact)
 else()
 	select_Best_Native_Version(RES_VERSION ${min_version} "${VERSION_NUMBERS}")
 endif()
+message("AFTER VERSION selection RES_VERSION=${RES_VERSION}")
 if(NOT RES_VERSION)#no adequate version found, this may be due to the use of a non release version
   try_In_Development_Version(RES_VERSION ${package} ${min_version} ${is_exact} "${run_tests}")#mainly usefull in CI process to build unreleased dependencies
   if(RES_VERSION)
@@ -1196,7 +1200,7 @@ else()#selected version excluded from current process
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 endif()
-
+message("before restore_Repository_Context package=${package} CURRENT_COMMIT=${CURRENT_COMMIT} SAVED_CONTENT=${SAVED_CONTENT}")
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Native_Package_Version)
 
