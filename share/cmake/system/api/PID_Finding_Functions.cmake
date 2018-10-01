@@ -184,6 +184,7 @@ get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
 if(NOT DEFINED MAJOR)#not a valid version string
   set(${RES_VERSION} PARENT_SCOPE)
 endif()
+set(curr_major -1)
 if(DEFINED PATCH)
 	set(curr_max_patch_number ${PATCH})
 else()
@@ -195,18 +196,20 @@ foreach(version IN LISTS available_versions)
 	if(COMPARE_MAJOR EQUAL MAJOR)
 		if(	COMPARE_MINOR EQUAL curr_max_minor_number
 			AND COMPARE_PATCH GREATER curr_max_patch_number)
-			set(curr_max_patch_number ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
+      set(curr_major ${COMPARE_MAJOR})
+      set(curr_max_patch_number ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
 		elseif(COMPARE_MINOR GREATER ${curr_max_minor_number})
-			set(curr_max_patch_number ${COMPARE_PATCH})# taking the patch version of this major.minor
+      set(curr_major ${COMPARE_MAJOR})
+      set(curr_max_patch_number ${COMPARE_PATCH})# taking the patch version of this major.minor
 			set(curr_max_minor_number ${COMPARE_MINOR})# taking the last minor version available for this major
 		endif()
 
 	endif()
 endforeach()
-if(curr_max_patch_number EQUAL -1)#i.e. nothing found
+if(curr_max_patch_number EQUAL -1 OR curr_major EQUAL -1)#i.e. nothing found
 	set(${RES_VERSION} PARENT_SCOPE)
 else()
-	set(${RES_VERSION} "${MAJOR}.${curr_max_minor_number}.${curr_max_patch_number}" PARENT_SCOPE)
+	set(${RES_VERSION} "${curr_major}.${curr_max_minor_number}.${curr_max_patch_number}" PARENT_SCOPE)
 endif()
 endfunction(select_Best_Native_Version)
 
