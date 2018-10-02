@@ -1016,7 +1016,7 @@ endfunction(deploy_Source_Native_Package)
 #  .. _deploy_Source_Native_Package_From_Branch:
 #
 #  deploy_Source_Native_Package_From_Branch
-#  ----------------------------
+#  ----------------------------------------
 #
 #   .. command:: deploy_Source_Native_Package_From_Branch(DEPLOYED package branch run_tests)
 #

@@ -1120,9 +1120,9 @@ endfunction(install_External_Use_File_For_Version)
 #  .. _install_External_Find_File_For_Version:
 #
 #  install_External_Find_File_For_Version
-#  -------------------------------------
+#  --------------------------------------
 #
-#   .. command:: install_External_Find_File_For_Version(package version platform)
+#   .. command:: install_External_Find_File_For_Version(package)
 #
 #    Copy the find file of a given version of an external package into install tree of the workspace.
 #

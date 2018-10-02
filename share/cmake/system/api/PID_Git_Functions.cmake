@@ -1587,7 +1587,7 @@ endfunction(reconnect_Repository_Remote)
 #  .. _disconnect_Repository_Remote:
 #
 #  disconnect_Repository_Remote
-#  ---------------------------
+#  ----------------------------
 #
 #   .. command:: disconnect_Repository_Remote(package remote_name)
 #
