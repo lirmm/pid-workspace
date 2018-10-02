@@ -1955,21 +1955,21 @@ set(${RESULT} FALSE PARENT_SCOPE)
 # check that current branc of package is integration
 get_Repository_Current_Branch(CURRENT_BRANCH ${WORKSPACE_DIR}/packages/${package})
 if(NOT CURRENT_BRANCH)
-	message("[PID] ERROR : The repository package ${TARGET_PACKAGE} is currenlty detached from a branch. Release aborted.")
+	message("[PID] ERROR : The repository package ${package} is currenlty detached from a branch. Release aborted.")
 	return()
 endif()
 if(branch)
 		if(branch STREQUAL "master" OR branch STREQUAL "integration")
-			message("[PID] ERROR : the branch argument is used to specify a non standard branch. Do not use for branch ${branch}.")
+			message("[PID] ERROR : the branch argument is used to specify a non standard branch. Do not use it for branch ${branch}.")
 			return()
 		endif()
 		if(NOT CURRENT_BRANCH STREQUAL branch)
-			message("[PID] ERROR : impossible to release package ${TARGET_PACKAGE} because it is not currently on branch ${branch}.")
+			message("[PID] ERROR : impossible to release package ${package} because it is not currently on branch ${branch}.")
 			return()
 		endif()
-else()#no branch specified used integration
+else()#no branch specified => using integration
 	if(NOT CURRENT_BRANCH STREQUAL "integration")
-		message("[PID] ERROR : impossible to release package ${TARGET_PACKAGE} because it is not currently on integration branch.")
+		message("[PID] ERROR : impossible to release package ${package} because it is not currently on integration branch.")
 		return()
 	endif()
 endif()
@@ -1977,14 +1977,14 @@ endif()
 # check for modifications
 has_Modifications(HAS_MODIFS ${package})
 if(HAS_MODIFS)
-	message("[PID] ERROR : impossible to release package ${TARGET_PACKAGE} because there are modifications to commit or stash.")
+	message("[PID] ERROR : impossible to release package ${package} because there are modifications to commit or stash.")
 	return()
 endif() # from here we can navigate between branches freely
 
 # udpate the master branch from official remote repository
 update_Repository_Versions(UPDATE_OK ${package})
 if(NOT UPDATE_OK)
-	message("[PID] ERROR : impossible to release package ${TARGET_PACKAGE} because its master branch cannot be updated from official one. Maybe you have no clone rights from official or local master branch of package ${package} is not synchronizable with official master branch.")
+	message("[PID] ERROR : impossible to release package ${package} because its master branch cannot be updated from official one. Maybe you have no clone rights from official or local master branch of package ${package} is not synchronizable with official master branch.")
 	go_To_Commit(${package} ${CURRENT_BRANCH})#always go back to original branch
 	return()
 endif() #from here graph of commits and version tags are OK
@@ -2035,7 +2035,7 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 			list(GET RES_LIST 0 DEP_PACKAGE)
 			list(GET RES_LIST 1 DEP_VERSION)
 			message("[PID] releasing dependency ${DEP_PACKAGE} of ${package}...")
-			release_PID_Package(DEP_RESULT ${dep} ${next} "" TRUE)#do not use a specific branch as we do not know it (integration is used)
+			release_PID_Package(DEP_RESULT ${DEP_PACKAGE} "${next}" "" TRUE)#do not use a specific branch as we do not know it (integration is used)
 			if(NOT DEP_RESULT)
 				list(APPEND unreleased_dependencies ${dep})
 			endif()

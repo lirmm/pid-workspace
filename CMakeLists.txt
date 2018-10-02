@@ -216,6 +216,7 @@ add_custom_target(release
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DNEXT_VERSION=\${nextversion}
 					-DFROM_BRANCH=\${branch}
+					-DAUTOMATIC_RELEASE=\${recursive}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Release_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
