@@ -1992,9 +1992,9 @@ endif() #from here graph of commits and version tags are OK
 go_To_Commit(${package} ${CURRENT_BRANCH}) #always release from the development branch (integration by default)
 
 # registering current version
-get_Version_Number_And_Repo_From_Package(${package} NUMBER STRING_NUMBER ADDRESS)
+get_Version_Number_And_Repo_From_Package(${package} DIGITS STRING FORMAT METHOD ADDRESS)
 # performing basic checks
-if(NOT NUMBER)#version number is not well defined
+if(NOT DIGITS)#version number is not well defined
 	message("[PID] ERROR : problem releasing package ${package}, bad version format in its root CMakeLists.txt.")
 	return()
 elseif(NOT ADDRESS)#there is no connected repository ?
@@ -2010,8 +2010,8 @@ if(NOT VERSION_NUMBERS)
 	return()
 endif()
 foreach(version IN LISTS VERSION_NUMBERS)
-	if(version STREQUAL STRING_NUMBER)
-		message("[PID] ERROR : cannot release version ${STRING_NUMBER} for package ${package}, because this version already exists.")
+	if(version STREQUAL STRING)
+		message("[PID] ERROR : cannot release version ${STRING} for package ${package}, because this version already exists.")
 		return()
 	endif()
 endforeach()
@@ -2078,44 +2078,44 @@ if(branch)#if we use a specific branch for patching then do not merge into maste
 		message("[PID] ERROR : cannot release package ${package}, because you are probably not allowed to push new branches to official package repository.")
 		return()
 	endif()
-	tag_Version(${package} ${STRING_NUMBER} TRUE)#create the version tag
-	publish_Repository_Version(RESULT_OK ${package} ${STRING_NUMBER})
+	tag_Version(${package} ${STRING} TRUE)#create the version tag
+	publish_Repository_Version(RESULT_OK ${package} ${STRING})
 	delete_Package_Temporary_Branch(${package} ${CURRENT_BRANCH})#always delete the temporary branch whether the push succeeded or failed
 	if(NOT RESULT_OK)#the user has no sufficient push rights
-		tag_Version(${package} ${STRING_NUMBER} FALSE)#remove local tag
+		tag_Version(${package} ${STRING} FALSE)#remove local tag
 		message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push version to its official remote !")
 		return()
 	endif()
 
 else()# check that integration branch is a fast forward of master
-	merge_Into_Master(MERGE_OK ${package} "integration" ${STRING_NUMBER})
+	merge_Into_Master(MERGE_OK ${package} "integration" ${STRING})
 	if(NOT MERGE_OK)
 		message("[PID] ERROR : cannot release package ${package}, because there are potential merge conflicts between master and integration branches. Please update ${CURRENT_BRANCH} branch of package ${package} first, then launch again the release process.")
 		go_To_Integration(${package})#always go back to original branch (here integration by construction)
 		return()
 	endif()
-	tag_Version(${package} ${STRING_NUMBER} TRUE)#create the version tag
+	tag_Version(${package} ${STRING} TRUE)#create the version tag
 	publish_Repository_Master(RESULT_OK ${package})
 	if(RESULT_OK)
-		publish_Repository_Version(RESULT_OK ${package} ${STRING_NUMBER})
+		publish_Repository_Version(RESULT_OK ${package} ${STRING})
 	endif()
 	if(NOT RESULT_OK)#the user has no sufficient push rights
-		tag_Version(${package} ${STRING_NUMBER} FALSE)#remove local tag
+		tag_Version(${package} ${STRING} FALSE)#remove local tag
 		message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push to its master branch !")
 		go_To_Integration(${package})#always go back to original branch
 		return()
 	endif()
 	#remove the installed version built from integration branch
-	file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${STRING_NUMBER})
+	file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${STRING})
 	#rebuild package from master branch to get a clean installed version (getting clean use file)
-	build_And_Install_Source(IS_BUILT ${package} ${STRING_NUMBER} "" FALSE)
+	build_And_Install_Source(IS_BUILT ${package} ${STRING} "" FALSE)
 	#merge back master into integration
 	merge_Into_Integration(${package})
 
 	### now starting a new version
-	list(GET NUMBER 0 major)
-	list(GET NUMBER 1 minor)
-	list(GET NUMBER 2 patch)
+	list(GET DIGITS 0 major)
+	list(GET DIGITS 1 minor)
+	list(GET DIGITS 2 patch)
 	if("${next}" STREQUAL "MAJOR")
 		math(EXPR major "${major}+1")
 		set(minor 0)
@@ -2130,12 +2130,12 @@ else()# check that integration branch is a fast forward of master
 		set(patch 0)
 	endif()
 	# still on integration branch
-	set_Version_Number_To_Package(${package} ${major} ${minor} ${patch}) #change the package description with new version
+	set_Version_Number_To_Package(${package} ${FORMAT} ${METHOD} ${major} ${minor} ${patch}) #change the package description with new version
 	register_Repository_Version(${package} "${major}.${minor}.${patch}") # commit new modified version
 	publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand
 endif()
 
-set(${RESULT} ${STRING_NUMBER} PARENT_SCOPE)
+set(${RESULT} ${STRING} PARENT_SCOPE)
 update_Package_Repository_From_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory)
 
 endfunction(release_PID_Package)

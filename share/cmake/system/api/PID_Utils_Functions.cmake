@@ -174,6 +174,39 @@ endfunction(extract_Info_From_Platform)
 #
 # .. ifmode:: internal
 #
+#  .. |extract_Component_And_Package_From_Dependency_String| replace:: ``extract_Component_And_Package_From_Dependency_String``
+#  .. _extract_Component_And_Package_From_Dependency_String:
+#
+#  extract_Component_And_Package_From_Dependency_String
+#  ----------------------------------------------------
+#
+#   .. command:: extract_Component_And_Package_From_Dependency_String(RES_COMP RES_PACK dependency_string)
+#
+#    Get the name of component and package from a dependency string. Dependencies strinsg follow the poattern: [<package_name>/]<component_name>
+#
+#     :dependency_string: the dependency string to parse.
+#
+#     :RES_COMP: the output variable that contains the name of the component.
+#
+#     :RES_PACK: the output variable that contains the name of the package, if any specified, or that is empty otherwise.
+#
+function(extract_Component_And_Package_From_Dependency_String RES_COMP RES_PACK dependency_string)
+string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" RESULT_LIST ${dependency_string})
+if(NOT RESULT_LIST STREQUAL dependency_string) #it matches => this is a dependency string with package expression using / symbol
+  list(GET RESULT_LIST 0 package)
+  list(GET RESULT_LIST 1 component)
+  set(${RES_COMP} ${component} PARENT_SCOPE)
+  set(${RES_PACK} ${package} PARENT_SCOPE)
+else()#this is a dependency that only specifies the name of the component
+  set(${RES_PACK} PARENT_SCOPE)
+  set(${RES_COMP} ${dependency_string} PARENT_SCOPE)
+endif()
+endfunction(extract_Component_And_Package_From_Dependency_String)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |extract_All_Words| replace:: ``extract_All_Words``
 #  .. _extract_All_Words:
 #
@@ -599,6 +632,43 @@ endfunction(check_Required_Directories_Exist)
 #############################################################
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |parse_Version_Argument| replace:: ``parse_Version_Argument``
+#  .. _parse_Version_Argument:
+#
+#  parse_Version_Argument
+#  ----------------------
+#
+#   .. command:: parse_Version_Argument(string_to_parse VERSION FORMAT)
+#
+#    Parse a string that is a version argument passed to PID. This string can be a sequence of digits or a dotted notation formatted string.
+#
+#     :string_to_parse: the version string to parse that has been written by an end user.
+#
+#     :VERSION: the output variable containing the list of version digits.
+#
+#     :FORMAT: the output variable that is set to DIGITS if string_to_parse was given by a sequence of digits, set to DOTTED_STRING if string_to_parse was written with dotted notation or empty otherwise (bad version argument given).
+#
+function(parse_Version_Argument string_to_parse VERSION FORMAT)
+  string(REGEX REPLACE "^[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]*([0-9]*)[ \t]*$" "\\1;\\2;\\3" A_VERSION ${string_to_parse})
+  if(NOT string_to_parse STREQUAL A_VERSION)#the replacement took place so the version is defined with 2 ou 3 digits
+    set(${VERSION} ${A_VERSION} PARENT_SCOPE)#only taking the last instruction since it shadows previous ones
+    set(${FORMAT} "DIGITS" PARENT_SCOPE)#also specify it is under digits format
+    return()
+  endif()
+  #OK so maybe it is under dotted notation
+  string(REGEX REPLACE "^[ \t]*([0-9]+).([0-9]+).([0-9]+)[ \t]*$" "\\1;\\2;\\3" A_VERSION ${string_to_parse})
+  if(NOT string_to_parse STREQUAL A_VERSION)#the replacement took place so the version is defined with a 3 digits dotted notation
+    set(${VERSION} ${A_VERSION} PARENT_SCOPE)
+    set(${FORMAT} "DOTTED_STRING" PARENT_SCOPE)#also specify it has been found under dotted notation format
+    return()
+  endif()
+  set(${VERSION} PARENT_SCOPE)
+  set(${FORMAT} PARENT_SCOPE)
+endfunction(parse_Version_Argument)
 
 #.rst:
 #
@@ -1873,13 +1943,35 @@ endfunction(is_Application_Type)
 #
 function(get_Package_Type package PACK_TYPE)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
-if(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${package})
-	set(${TYPE} EXTERNAL PARENT_SCOPE)
-elseif(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package})
-	set(${PACK_TYPE} NATIVE PARENT_SCOPE)
-else()
-  set(${PACK_TYPE} UNKNOWN PARENT_SCOPE)
+#try to simply find it in install tree
+if(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${package}
+  AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${package})
+	set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
+  return()
+elseif(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}
+  AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package})
+	set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
+  return()
 endif()
+#try to find it in source tree
+if(EXISTS ${WORKSPACE_DIR}/wrappers/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package})
+	set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
+  return()
+elseif(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+	set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
+  return()
+endif()
+# From here they are unknown in the local filesystem, finaly try to find references of this package
+if(EXISTS ${WORKSPACE_DIR}/share/cmake/find/Find${package}.cmake)
+  if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${package}.cmake)
+    set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
+    return()
+  elseif(EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
+    set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
+    return()
+  endif()
+endif()
+set(${PACK_TYPE} UNKNOWN PARENT_SCOPE)
 endfunction(get_Package_Type)
 
 #.rst:
@@ -2293,6 +2385,7 @@ if(NOT NEED_UPDATE STREQUAL "")
 endif()
 endfunction(test_Modified_Components)
 
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -2303,50 +2396,90 @@ endfunction(test_Modified_Components)
 #  get_Version_Number_And_Repo_From_Package
 #  ----------------------------------------
 #
-#   .. command:: get_Version_Number_And_Repo_From_Package(package NUMBER STRING_NUMBER ADDRESS)
+#   .. command:: get_Version_Number_And_Repo_From_Package(package DIGITS STRING_NUMBER ADDRESS)
 #
 #    Get information from the description of a source package (e.g. data extracted from its CMakeLists.txt).
 #
 #     :package: the name of the target package.
 #
-#     :NUMBER: the output variable that list of numbers bound to the version (major;minor[;patch]).
+#     :DIGITS: the output variable that list of numbers bound to the version (major;minor[;patch]).
 #
-#     :STRING_NUMBER: the output variable that contains the PID normalized string number of teh package.
+#     :STRING: the output variable that contains the PID normalized string of package version number.
+#
+#     :FORMAT: the output variable that contains the format of the specified version (DOTTED_STRING or DIGITS).
+#
+#     :METHOD: the output variable that contains the method used to specify the version (FUNCTION or ARG).
 #
 #     :ADDRESS: the output variable that contains the address of the repository.
 #
-function(get_Version_Number_And_Repo_From_Package package NUMBER STRING_NUMBER ADDRESS)
+#
+function(get_Version_Number_And_Repo_From_Package package DIGITS STRING FORMAT METHOD ADDRESS)
 set(${ADDRESS} PARENT_SCOPE)
 file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
+#parsing the file to find where version is given (in package declaration VERSION argument or in set_PID_Package_Version call)
+set(WITH_ARG FALSE)
+set(WITH_FUNCTION FALSE)
+set(IN_DECLARE FALSE)
+set(ADDR_OK FALSE)
+
 foreach(line IN LISTS PACKAGE_METADATA)
-	if(NOT ${line} STREQUAL "")
-		string(REGEX REPLACE "^.*set_PID_Package_Version\\(([0-9]+)(\\ +)([0-9]+)(\\ *)([0-9]*)(\\ *)\\).*$" "\\1;\\3;\\5" A_VERSION ${line})
-		if(NOT "${line}" STREQUAL "${A_VERSION}")
-			set(VERSION_COMMAND ${A_VERSION})#only taking the last instruction since it shadows previous ones
-		endif()
-		string(REGEX REPLACE "^.*ADDRESS[\\ \\\t]+([^\\ \\\t]+\\.git).*$" "\\1" AN_ADDRESS ${line})
-		if(NOT "${line}" STREQUAL "${AN_ADDRESS}")
-			set(${ADDRESS} ${AN_ADDRESS} PARENT_SCOPE)#an address had been found
-		endif()
+	if(line)
+    if(line MATCHES "^[^#]*declare_PID_Package[ \t]*\\(.*$")
+      set(IN_DECLARE TRUE)
+      string(REGEX REPLACE "^[^#]*declare_PID_Package[ \t]*\\((.*)$" "\\1" DECLARE_ARGS ${line})
+      if(DECLARE_ARGS MATCHES "^[^#]*VERSION[ \t]+([0-9\\. \t]+).*$")#check if version not on first line
+        string(REGEX REPLACE "^[^#]*VERSION([0-9\\. \t]+).*$" "\\1" VERSION_ARGS ${line})#extract the argument for version (either digits or version string)
+        parse_Version_Argument(${VERSION_ARGS} VERSION_DIGITS VERSION_FORMAT)
+        set(WITH_ARG TRUE)
+      endif()
+    elseif(IN_DECLARE AND (NOT WITH_ARG) AND (line MATCHES "^.*set_PID_Package_Version[ \t]*\\([^)]+\\).*$"))#this is a call to set_PID_Package_Version function
+      set(IN_DECLARE FALSE)
+      string(REGEX REPLACE "^[^#]*set_PID_Package_Version[ \t]*\\(([^)]+)\\).*$" "\\1" VERSION_ARGS ${line})#extract the argument for version (either digits or version string)
+      parse_Version_Argument(${VERSION_ARGS} VERSION_DIGITS VERSION_FORMAT)
+      set(WITH_FUNCTION TRUE)
+    elseif(IN_DECLARE AND (line MATCHES "^[^#]*ADDRESS[ \t]+([^ \t]+\\.git).*"))
+      string(REGEX REPLACE "^[^#]*ADDRESS[ \t]+([^ \t]+\\.git).*$" "\\1" AN_ADDRESS ${line})
+      if(NOT line STREQUAL AN_ADDRESS)#the line simply match !!
+        set(${ADDRESS} ${AN_ADDRESS} PARENT_SCOPE)#an address had been found
+        set(ADDR_OK TRUE)
+      endif()
+    elseif(IN_DECLARE AND (NOT WITH_ARG) AND (line MATCHES "^[^#]*VERSION[ \t]+([0-9][0-9\\. \t]+).*$"))
+      string(REGEX REPLACE "^[^#]*VERSION[ \t]+([0-9][0-9\\. \t]+).*$" "\\1" VERSION_ARGS ${line})#extract the argument for version (either digits or version string)
+      parse_Version_Argument(${VERSION_ARGS} VERSION_DIGITS VERSION_FORMAT)
+      set(WITH_ARG TRUE)
+    endif()
 	endif()
+  if((WITH_ARG OR WITH_FUNCTION) AND ADDR_OK)#just to avoid parsing the whole file !
+    break()
+  endif()
 endforeach()
-if(VERSION_COMMAND)
+
+set(${DIGITS} ${VERSION_DIGITS} PARENT_SCOPE)
+
+if(VERSION_DIGITS)
 	#from here we are sure there is at least 2 digits
-	list(GET VERSION_COMMAND 0 MAJOR)
-	list(GET VERSION_COMMAND 1 MINOR)
-	list(LENGTH VERSION_COMMAND size_of_version)
+	list(GET VERSION_DIGITS 0 MAJOR)
+	list(GET VERSION_DIGITS 1 MINOR)
+	list(LENGTH VERSION_DIGITS size_of_version)
 	if(NOT size_of_version GREATER 2)
 		set(PATCH 0)
-		list(APPEND VERSION_COMMAND 0)
+		list(APPEND VERSION_DIGITS 0)
 	else()
-		list(GET VERSION_COMMAND 2 PATCH)
+		list(GET VERSION_DIGITS 2 PATCH)
 	endif()
-	set(${STRING_NUMBER} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
+	set(${STRING} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
+  set(${FORMAT} ${VERSION_FORMAT} PARENT_SCOPE)
+  if(WITH_FUNCTION)
+    set(${METHOD} "FUNCTION" PARENT_SCOPE)
+  else()
+    set(${METHOD} "ARG" PARENT_SCOPE)
+  endif()
 else()
-	set(${STRING_NUMBER} "" PARENT_SCOPE)
+	set(${STRING} PARENT_SCOPE)
+  set(${FORMAT} PARENT_SCOPE)
+  set(${METHOD} PARENT_SCOPE)
 endif()
 
-set(${NUMBER} ${VERSION_COMMAND} PARENT_SCOPE)
 endfunction(get_Version_Number_And_Repo_From_Package)
 
 #.rst:
@@ -2359,11 +2492,15 @@ endfunction(get_Version_Number_And_Repo_From_Package)
 #  set_Version_Number_To_Package
 #  ----------------------------------------
 #
-#   .. command:: set_Version_Number_To_Package(package major minor patch)
+#   .. command:: set_Version_Number_To_Package(package format major minor patch)
 #
 #    Set the version in package description (e.g. CMakeLists.txt).
 #
 #     :package: the name of the target package.
+#
+#     :format: the format used to write the version (dotted string notation -DOTTED_STRING- or list of digits -DIGITS).
+#
+#     :method: the method used to specify the version (with dedicated function -FUNCTION- or as argument of package declaration -ARG).
 #
 #     :major: major number of the package version.
 #
@@ -2371,15 +2508,71 @@ endfunction(get_Version_Number_And_Repo_From_Package)
 #
 #     :patch: patch number of the package version.
 #
-function(set_Version_Number_To_Package package major minor patch)
-file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
-string(REGEX REPLACE "^(.*)set_PID_Package_Version\\(([0-9]+)(\\ +)([0-9]+)(\\ *)([0-9]*)(\\ *)\\)(.*)$" "\\1;\\8" PACKAGE_METADATA_WITHOUT_VERSION ${PACKAGE_METADATA})
+function(set_Version_Number_To_Package package format method major minor patch)
+file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
 
-list(GET PACKAGE_METADATA_WITHOUT_VERSION 0 BEGIN)
-list(GET PACKAGE_METADATA_WITHOUT_VERSION 1 END)
+set(BEGIN "")
+set(END "")
+set(SIGNATURE_FOUND FALSE)
 
-set(TO_WRITE "${BEGIN}set_PID_Package_Version(${major} ${minor} ${patch})${END}")
-file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${TO_WRITE}) #getting global info on the package
+if(method STREQUAL "FUNCTION")#using function set_PID_Package_Version
+  foreach(line IN LISTS PACKAGE_METADATA)
+  	if(line MATCHES "^[^#]*set_PID_Package_Version[ \t]*\\([^\\)]+\\).*$")#this is a call to set_PID_Package_Version function
+        string(REGEX REPLACE "^([^#]*set_PID_Package_Version[ \t]*\\()[^\\)]+(\\).*)$" "\\1;\\2" BEGIN_END ${line})#extract the argument for version (either digits or version string)
+        set(SIGNATURE_FOUND TRUE)
+        list(GET BEGIN_END 0 before_version)
+        list(GET BEGIN_END 1 after_version)
+        set(BEGIN "${BEGIN}${before_version}")
+        set(END "${after_version}\n")
+    else()
+      if(NOT SIGNATURE_FOUND)
+        set(BEGIN "${BEGIN}${line}\n")
+      else()
+        set(END "${END}${line}\n")
+      endif()
+    endif()
+  endforeach()
+else()# VERSION argument of package
+  set(IN_DECLARE FALSE)
+  foreach(line IN LISTS PACKAGE_METADATA)
+    if(line MATCHES "^[^#]*declare_PID_Package[ \t]*\\(.*$")
+      set(IN_DECLARE TRUE)
+      if(line MATCHES "^[^#]*declare_PID_Package[ \t]*\\([^#]*VERSION[ \t]+[0-9][0-9\\. \t]+.*$")#check if version not on first line
+        string(REGEX REPLACE "^([^#]*declare_PID_Package[ \t]*\\([^#]*VERSION[ \t]+)[0-9][0-9\\. \t]+(.*)$" "\\1;\\2" BEGIN_END ${line})#extract the argument for version (either digits or version string)
+        set(SIGNATURE_FOUND TRUE)
+        list(GET BEGIN_END 0 before_version)
+        list(GET BEGIN_END 1 after_version)
+        set(BEGIN "${BEGIN}${before_version}")
+        set(END "${after_version}\n")
+      else()#VERSION argument not found on that line
+        #simply copy the whole line
+        set(BEGIN "${BEGIN}${line}\n")
+      endif()
+    elseif(IN_DECLARE AND (NOT SIGNATURE_FOUND)
+          AND (line MATCHES "^[^#]*VERSION[ \t]+[0-9][0-9\\. \t]+.*$"))
+      string(REGEX REPLACE "^([^#]*VERSION[ \t]+)[0-9][0-9\\. \t]+(.*)$" "\\1;\\2" BEGIN_END ${line})#extract the argument for version (either digits or version string)
+      set(SIGNATURE_FOUND TRUE)
+      list(GET BEGIN_END 0 before_version)
+      list(GET BEGIN_END 1 after_version)
+      set(BEGIN "${BEGIN}${before_version}")
+      set(END "${after_version}\n")
+    else() #other lines
+      if(NOT SIGNATURE_FOUND)
+        set(BEGIN "${BEGIN}${line}\n")
+      else()
+        set(END "${END}${line}\n")
+      endif()
+    endif()
+  endforeach()
+endif()
+
+#OK simply write new version string at good place
+if(format STREQUAL DIGITS)#version formatted as a list of digits
+  set(TO_WRITE "${BEGIN}${major} ${minor} ${patch}${END}")
+else()#version formatted with dotted notation
+  set(TO_WRITE "${BEGIN}${major}.${minor}.${patch}${END}")
+endif()
+file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${TO_WRITE})
 endfunction(set_Version_Number_To_Package)
 
 #.rst:

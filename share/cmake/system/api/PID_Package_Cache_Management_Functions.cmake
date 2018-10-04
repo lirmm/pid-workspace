@@ -1563,6 +1563,61 @@ foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 endforeach()
 endfunction(is_Component_Exporting_Other_Components)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_Packages_Containing_Component| replace:: ``find_Packages_Containing_Component``
+#  .. _find_Packages_Containing_Component:
+#
+#  find_Packages_Containing_Component
+#  ----------------------------------
+#
+#   .. command:: find_Packages_Containing_Component(CONTAINER_PACKAGES package component)
+#
+#   Find the list of packages that define a given component.
+#
+#     :package: the name of the package from where starting the search.
+#
+#     :is_external: if package is an external package then it is TRUE, FALSE if it is native.
+#
+#     :component: the name of the component.
+#
+#     :CONTAINER_PACKAGES: the output variable that contains the list of packages that define a component with same name.
+#
+function(find_Packages_Containing_Component CONTAINER_PACKAGES package is_external component)
+set(result)
+#searching into component of the current package
+if(is_external)#external components may have variations among their DEBUG VS RELEASE VERSION
+  list(FIND ${package}_COMPONENTS${USE_MODE_SUFFIX} ${component} INDEX)
+else()
+  list(FIND ${package}_COMPONENTS ${component} INDEX)
+endif()
+if(NOT INDEX EQUAL -1)#the same component name has been found
+  list(APPEND result ${package})
+endif()
+#searching into direct external dependencies
+foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+  find_Packages_Containing_Component(CONTAINER ${ext_dep} TRUE ${component})
+  if(CONTAINER)
+    list(APPEND result ${CONTAINER})
+  endif()
+endforeach()
+if(NOT is_external)
+  #searching into direct native dependencies
+  set(CONTAINER)
+  foreach(nat_dep IN LISTS ${package}_DEPENDENCIES${USE_MODE_SUFFIX})
+    find_Packages_Containing_Component(CONTAINER ${nat_dep} FALSE ${component})
+    if(CONTAINER)
+      list(APPEND result ${CONTAINER})
+    endif()
+  endforeach()
+endif()
+if(result)
+  list(REMOVE_DUPLICATES result)
+endif()
+set(${CONTAINER_PACKAGES} ${result} PARENT_SCOPE)
+endfunction(find_Packages_Containing_Component)
 
 ##################################################################################
 ############################## install the dependancies ##########################
