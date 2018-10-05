@@ -513,7 +513,7 @@ macro(declare_PID_External_Component_Dependency)
 		#in that case a component is not mandatory defined we can just target the libraries inside the depdendency packages
 	else() #if not an external component it means it is an internal one
 		#in that case the component must be defined
-		set(TARGET_PACKAGE)#internal means the local is the dependency
+		set(TARGET_PACKAGE)#internal means the dependency is tlocal 
 	endif()
 
 	#configuring target component

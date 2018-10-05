@@ -209,7 +209,7 @@ endmacro(define_PID_Wrapper_Original_Project_Info)
 #
 #     .. rubric:: Required parameters
 #
-#     :AUTHOR <string>: Name of the author
+#     :[AUTHOR] <string>: Name of the author. The keyword AUTHOR can be avoided if the name is given as first argument.
 #
 #     .. rubric:: Optional parameters
 #
@@ -235,10 +235,15 @@ macro(add_PID_Wrapper_Author)
 set(multiValueArgs AUTHOR INSTITUTION)
 cmake_parse_arguments(ADD_PID_WRAPPER_AUTHOR "" "" "${multiValueArgs}" ${ARGN} )
 if(NOT ADD_PID_WRAPPER_AUTHOR_AUTHOR)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an author name must be given using AUTHOR keyword.")
+  if("${ARGV0}" STREQUAL "" OR "${ARGV0}" STREQUAL "INSTITUTION")
+    finish_Progress(GLOBAL_PROGRESS_VAR)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an author name must be given using AUTHOR keyword.")
+  else()#of the first argument is directly the name of the author
+    add_Author("${ARGV0}" "${ADD_PID_WRAPPER_AUTHOR_INSTITUTION}")
+  endif()
+else()
+  add_Author("${ADD_PID_WRAPPER_AUTHOR_AUTHOR}" "${ADD_PID_WRAPPER_AUTHOR_INSTITUTION}")
 endif()
-add_Author("${ADD_PID_WRAPPER_AUTHOR_AUTHOR}" "${ADD_PID_WRAPPER_AUTHOR_INSTITUTION}")
 endmacro(add_PID_Wrapper_Author)
 
 #.rst:
@@ -299,12 +304,13 @@ endmacro(add_PID_Wrapper_Category)
 #
 #     .. rubric:: Required parameters
 #
-#     :OPTION <name>:  string defining the name of the user option. This name can then be used in deployment scripts.
-#     :TYPE <type of the cmake option>:  ype of the option, to be chosen between: FILEPATH (File chooser dialog), PATH (Directory chooser dialog), STRING (Arbitrary string), BOOL.
+#     :[OPTION] <name>:  string defining the name of the user option. This name can then be used in deployment scripts. The option keyword can be omitted is name is given as first argument.
+#     :TYPE <type of the cmake option>:  type of the option, to be chosen between: FILEPATH (File chooser dialog), PATH (Directory chooser dialog), STRING (Arbitrary string), BOOL.
+#     :DEFAULT ...:  Default value for the option.
 #
 #     .. rubric:: Optional parameters
 #
-#     :DESCRIPTION <string>: string describing what this option is acting on.
+#     :DESCRIPTION <string>: a string describing what this option is acting on.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -331,18 +337,24 @@ set(oneValueArgs OPTION TYPE DESCRIPTION)
 set(multiValueArgs DEFAULT)
 cmake_parse_arguments(DEFINE_PID_WRAPPER_USER_OPTION "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DEFINE_PID_WRAPPER_USER_OPTION_OPTION)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an option name must be given using OPTION keyword.")
+  if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^TYPE|DESCRIPTION|DEFAULT$")
+    finish_Progress(GLOBAL_PROGRESS_VAR)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an option name must be given using OPTION keyword.")
+  endif()
+  set(option_name "${ARGV0}")
+else()
+  set(option_name "${DEFINE_PID_WRAPPER_USER_OPTION_OPTION}")
 endif()
+
 if(NOT DEFINE_PID_WRAPPER_USER_OPTION_TYPE)
   finish_Progress(GLOBAL_PROGRESS_VAR)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the type of the option must be given using TYPE keyword. Choose amon followiung value: FILEPATH (File chooser dialog), PATH (Directory chooser dialog), STRING (Arbitrary string), BOOL.")
 endif()
-if(NOT DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT AND DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT STREQUAL "")#no argument passed (arguments may be boolean)
+if(NOT DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT)#no argument passed (arguments may be boolean)
   finish_Progress(GLOBAL_PROGRESS_VAR)
   message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, default value of the option must be given using DEFAULT keyword (may be a list of values).")
 endif()
-set_Wrapper_Option("${DEFINE_PID_WRAPPER_USER_OPTION_OPTION}" "${DEFINE_PID_WRAPPER_USER_OPTION_TYPE}" "${DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT}" "${DEFINE_PID_WRAPPER_USER_OPTION_DESCRIPTION}")
+set_Wrapper_Option("${option_name}" "${DEFINE_PID_WRAPPER_USER_OPTION_TYPE}" "${DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT}" "${DEFINE_PID_WRAPPER_USER_OPTION_DESCRIPTION}")
 endmacro(define_PID_Wrapper_User_Option)
 
 #.rst:
@@ -526,7 +538,7 @@ endmacro(build_PID_Wrapper)
 #
 #     .. rubric:: Required parameters
 #
-#     :VERSION <number>: tells which version of the external package is being wrapped. The version number must exactly match the name of the folder containing the CMakeLists.txt that does this call.
+#     :[VERSION] <version string>: tells which version of the external package is being wrapped. The version number must exactly match the name of the folder containing the CMakeLists.txt that does this call. The keyword version may be omitted is version is the first argument.
 #     :DEPLOY <path to deploy script>: This is the path, relative to the current folder, to the deploy script used to build and install the external package version. Script must be a cmake module file.
 #
 #     .. rubric:: Optional parameters
@@ -560,8 +572,13 @@ set(oneValueArgs VERSION DEPLOY COMPATIBILITY SONAME POSTINSTALL)
 set(multiValueArgs)
 cmake_parse_arguments(ADD_PID_WRAPPER_KNOWN_VERSION "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT ADD_PID_WRAPPER_KNOWN_VERSION_VERSION)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the version number using the VERSION keyword.")
+  if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^DEPLOY|COMPATIBILITY|SONAME|POSTINSTALL$")
+    finish_Progress(GLOBAL_PROGRESS_VAR)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the version number using the VERSION keyword.")
+  endif()
+  set(version ${ARGV0})
+else()
+  set(version ${ADD_PID_WRAPPER_KNOWN_VERSION_VERSION})
 endif()
 if(NOT ADD_PID_WRAPPER_KNOWN_VERSION_DEPLOY)
   finish_Progress(GLOBAL_PROGRESS_VAR)
@@ -569,7 +586,6 @@ if(NOT ADD_PID_WRAPPER_KNOWN_VERSION_DEPLOY)
 endif()
 
 #verify the version information
-set(version ${ADD_PID_WRAPPER_KNOWN_VERSION_VERSION})
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
   finish_Progress(GLOBAL_PROGRESS_VAR)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
@@ -685,13 +701,15 @@ endmacro(declare_PID_Wrapper_Platform_Configuration)
 #  declare_PID_Wrapper_External_Dependency
 #  ---------------------------------------
 #
-#   .. command:: declare_PID_Wrapper_External_Dependency(CONFIGURATION ... [PLATFORM ...])
+#   .. command:: declare_PID_Wrapper_External_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)
+#
+#   .. command:: declare_PID_Wrapper_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)
 #
 #     Declare a dependency between the currently described version of the external package and another external package.
 #
 #     .. rubric:: Required parameters
 #
-#     :PACKAGE <string>: defines the unique identifier of the required package.
+#     :[PACKAGE] <string>: defines the unique identifier of the required package. The keyword PACKAGE may be omitted if name is the first argument.
 #
 #     .. rubric:: Optional parameters
 #
@@ -715,25 +733,37 @@ endmacro(declare_PID_Wrapper_Platform_Configuration)
 #
 #        declare_PID_Wrapper_External_Dependency (PACKAGE boost EXACT VERSION 1.55.0 EXACT VERSION 1.63.0 EXACT VERSION 1.64.0)
 #
+macro(declare_PID_Wrapper_Dependency)
+  declare_PID_Wrapper_External_Dependency(${ARGN})
+endmacro(declare_PID_Wrapper_Dependency)
+
 macro(declare_PID_Wrapper_External_Dependency)
 set(options )
 set(oneValueArgs PACKAGE)
 set(multiValueArgs) #known versions of the external package that can be used to build/run it
 cmake_parse_arguments(DECLARE_PID_WRAPPER_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_External_Dependency requires to define the name of the dependency by using PACKAGE keyword.")
-	return()
+  if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^EXACT|VERSION$")
+    finish_Progress(GLOBAL_PROGRESS_VAR)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_External_Dependency requires to define the name of the dependency by using PACKAGE keyword.")
+  	return()
+  endif()
+  set(package_name ${ARGV0})
+  if(DECLARE_PID_WRAPPER_DEPENDENCY_UNPARSED_ARGUMENTS)
+    list(REMOVE_ITEM DECLARE_PID_WRAPPER_DEPENDENCY_UNPARSED_ARGUMENTS "${package_name}")
+  endif()
+else()
+  set(package_name ${DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE})
 endif()
-if(DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)
+if(package_name STREQUAL PROJECT_NAME)
   finish_Progress(GLOBAL_PROGRESS_VAR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, package ${DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE} cannot require itself !")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, package ${package_name} cannot require itself !")
 	return()
 endif()
 set(list_of_versions)
 set(exact_versions)
 if(DECLARE_PID_WRAPPER_DEPENDENCY_UNPARSED_ARGUMENTS)#there are still arguments to parse
-	set(TO_PARSE "${DECLARE_PID_WRAPPER_DEPENDENCY_UNPARSED_ARGUMENTS}")
+  set(TO_PARSE "${DECLARE_PID_WRAPPER_DEPENDENCY_UNPARSED_ARGUMENTS}")
 	set(RES_VERSION TRUE)
 	while(TO_PARSE AND RES_VERSION)
 		parse_Package_Dependency_Version_Arguments("${TO_PARSE}" RES_VERSION RES_EXACT TO_PARSE)
@@ -744,7 +774,7 @@ if(DECLARE_PID_WRAPPER_DEPENDENCY_UNPARSED_ARGUMENTS)#there are still arguments 
 			endif()
 		elseif(RES_EXACT)
       finish_Progress(GLOBAL_PROGRESS_VAR)
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to external package ${DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE}, you must use the EXACT keyword together with the VERSION keyword.")
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to external package ${package_name}, you must use the EXACT keyword together with the VERSION keyword.")
 			return()
 		endif()
 	endwhile()
@@ -759,17 +789,17 @@ if(TO_PARSE) #there are still expression to parse
 		list(LENGTH DECLARE_PID_WRAPPER_DEPENDENCY_COMPONENTS SIZE)
 		if(SIZE LESS 1)
       finish_Progress(GLOBAL_PROGRESS_VAR)
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to external package ${DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE}, at least one component dependency must be defined when using the COMPONENTS keyword.")
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to external package ${package_name}, at least one component dependency must be defined when using the COMPONENTS keyword.")
 			return()
 		endif()
 		set(list_of_components ${DECLARE_PID_WRAPPER_DEPENDENCY_MORE_COMPONENTS})
 	else()
     finish_Progress(GLOBAL_PROGRESS_VAR)
-		message(FATAL_ERROR "[PID] WARNING : when declaring dependency to external package ${DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE}, unknown arguments used ${DECLARE_PID_WRAPPER_DEPENDENCY_MORE_UNPARSED_ARGUMENTS}.")
+		message(FATAL_ERROR "[PID] WARNING : when declaring dependency to external package ${package_name}, unknown arguments used ${DECLARE_PID_WRAPPER_DEPENDENCY_MORE_UNPARSED_ARGUMENTS}.")
 	endif()
 endif()
 
-declare_Wrapped_External_Dependency("${DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
+declare_Wrapped_External_Dependency("${package_name}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 endmacro(declare_PID_Wrapper_External_Dependency)
 
 #.rst:
@@ -788,7 +818,7 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #
 #     .. rubric:: Required parameters
 #
-#     :COMPONENT <string w/o withespaces>: defines the unique identifier of the component.
+#     :[COMPONENT] <string w/o withespaces>: defines the unique identifier of the component. The COMPONENT keyword may be omnitted if name if the first argument.
 #
 #     .. rubric:: Optional parameters
 #
@@ -800,6 +830,8 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #     :STATIC_LINKS <links>: These are static link flags. Path are interpreted relative to the installed external package version root folder.
 #     :OPTIONS <compile options>: These are compiler options to be used whenever a third party code use this component. This should be used only for options bound to compiler usage, not definitions or include directories.
 #     :RUNTIME_RESOURCES <list of path>: This argument is followed by a list of path relative to the installed external package version root folder.
+#     :EXPORT ...: list of components that are exported by the declared component. Each element has the pattern [<package name>/]<component_name>.
+#     :DEPENDS ...: list of components that the declared component depends on. Each element has the pattern [<package name>/]<component_name>.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -819,15 +851,20 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #
 macro(declare_PID_Wrapper_Component)
 set(oneValueArgs COMPONENT C_STANDARD CXX_STANDARD SONAME)
-set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES) #known versions of the external package that can be used to build/run it
+set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPENDS) #known versions of the external package that can be used to build/run it
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_COMPONENT)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component requires to define the name of the component by using COMPONENT keyword.")
-	return()
+  if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^CXX_STANDARD|C_STANDARD|SONAME|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|RUNTIME_RESOURCES$")
+    finish_Progress(GLOBAL_PROGRESS_VAR)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component requires to define the name of the component by using COMPONENT keyword.")
+  	return()
+  endif()
+  set(component_name ${ARGV0})
+else()
+  set(component_name ${DECLARE_PID_WRAPPER_COMPONENT_COMPONENT})
 endif()
 
-declare_Wrapped_Component(${DECLARE_PID_WRAPPER_COMPONENT_COMPONENT}
+declare_Wrapped_Component(${component_name}
   "${DECLARE_PID_WRAPPER_COMPONENT_SHARED_LINKS}"
   "${DECLARE_PID_WRAPPER_COMPONENT_SONAME}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_STATIC_LINKS}"
@@ -837,6 +874,33 @@ declare_Wrapped_Component(${DECLARE_PID_WRAPPER_COMPONENT_COMPONENT}
 	"${DECLARE_PID_WRAPPER_COMPONENT_C_STANDARD}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_CXX_STANDARD}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_RUNTIME_RESOURCES}")
+
+
+#dealing with dependencies
+if(DECLARE_PID_WRAPPER_COMPONENT_EXPORT)#exported dependencies
+  foreach(dep IN LISTS DECLARE_PID_WRAPPER_COMPONENT_EXPORT)
+    extract_Component_And_Package_From_Dependency_String(RES_COMP RES_PACK ${dep})
+    if(RES_PACK)
+      set(COMP_ARGS "${RES_COMP};PACKAGE;${RES_PACK}")
+    else()
+      set(COMP_ARGS ${RES_COMP})
+    endif()
+    declare_PID_Wrapper_Component_Dependency(COMPONENT ${component_name} EXPORT EXTERNAL ${COMP_ARGS})
+  endforeach()
+endif()
+
+if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDS)#non exported dependencies
+  foreach(dep IN LISTS DECLARE_PID_WRAPPER_COMPONENT_DEPENDS)
+    extract_Component_And_Package_From_Dependency_String(RES_COMP RES_PACK ${dep})
+    if(RES_PACK)
+      set(COMP_ARGS "${RES_COMP};PACKAGE;${RES_PACK}")
+    else()
+      set(COMP_ARGS ${RES_COMP})
+    endif()
+    declare_PID_Wrapper_Component_Dependency(COMPONENT ${component_name} DEPENDS EXTERNAL ${COMP_ARGS})
+    endforeach()
+endif()
+
 endmacro(declare_PID_Wrapper_Component)
 
 #.rst:
@@ -849,19 +913,21 @@ endmacro(declare_PID_Wrapper_Component)
 #  declare_PID_Wrapper_Component_Dependency
 #  ----------------------------------------
 #
-#   .. command:: declare_PID_Wrapper_Component_Dependency(COMPONENT ... [OPTIONS])
+#   .. command:: declare_PID_Wrapper_Component_Dependency([COMPONENT] ... [OPTIONS])
 #
 #     Declare a dependency for a component defined in the current version of the current external package.
 #
 #     .. rubric:: Required parameters
 #
-#     :COMPONENT <string w/o withespaces>: defines the unique identifier of the component for which a dependency is described.
+#     :[COMPONENT] <string w/o withespaces>: defines the unique identifier of the component for which a dependency is described. The keyword COMPONENT may be omitted if name is given as first argument.
 #
 #     .. rubric:: Optional parameters
 #
 #     :EXPORT: Tells whether the component exports the required dependency. Exporting means that the reference to the dependency is contained in its interface (header files). This can be only the case for libraries, not for applications.
 #
-#     :EXTERNAL <dependency>: This is the name of the component whose component <name> depends on.
+#     :DEPENDS: Tells whether the component depends on but do not export the required dependency. Exporting means that the reference to the dependency is contained in its interface (header files).
+#
+#     :[EXTERNAL] <dependency>: This is the name of the component whose component <name> depends on. EXTERNAL keyword may be omitted if EXPORT or DEPENDS keyword are used.
 #
 #     :PACKAGE <name>: This is the name of the external package the dependency belongs to. This package must have been defined has a package dependency before this call. If this argument is not used, the dependency belongs to the current package (i.e. internal dependency).
 #
@@ -884,14 +950,29 @@ endmacro(declare_PID_Wrapper_Component)
 #        declare_PID_Wrapper_Component_Dependency(COMPONENT libyaml EXPORT EXTERNAL boost-headers PACKAGE boost)
 #
 macro(declare_PID_Wrapper_Component_Dependency)
-set(options EXPORT)
+set(options EXPORT DEPENDS)
 set(oneValueArgs COMPONENT EXTERNAL PACKAGE)
 set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT)
+  if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^EXPORT|DEPENDS|EXTERNAL|PACKAGE|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS$")
+    finish_Progress(GLOBAL_PROGRESS_VAR)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component_Dependency requires to define the name of the declared component using the COMPONENT keyword or by giving the name as first argument.")
+    return()
+  endif()
+  set(component_name ${ARGV0})
+  message("")
+  if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
+    list(REMOVE_ITEM DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS ${ARGV0})
+  endif()
+else()
+  set(component_name ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT})
+endif()
+
+if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT AND DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPENDS)
   finish_Progress(GLOBAL_PROGRESS_VAR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component_Dependency requires to define the name of the component to chich a dependency applies by using the COMPONENT keyword.")
-	return()
+  message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling declare_PID_Wrapper_Component_Dependency, EXPORT and DEPENDS keywords cannot be used in same time.")
+  return()
 endif()
 
 if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT)
@@ -900,38 +981,61 @@ else()
 	set(exported FALSE)
 endif()
 
+message("package=${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} external=${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL}")
 if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE) #this is a dependency to another external package
 	list(FIND ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCIES ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} INDEX)
 	if(INDEX EQUAL -1)
     finish_Progress(GLOBAL_PROGRESS_VAR)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling declare_PID_Wrapper_Component_Dependency, the external package ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} the component ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT} depends on external package ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} that is not defined as a dependency of the current project.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling declare_PID_Wrapper_Component_Dependency, the component ${component_name} depends on external package ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} that is not defined as a dependency of the current project.")
 		return()
 	endif()
 	if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL)
-		declare_Wrapped_Component_Dependency_To_Explicit_Component(${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT}
+
+		declare_Wrapped_Component_Dependency_To_Explicit_Component(${component_name}
 			${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE}
 			${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL}
 			${exported}
 			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
 		)
-	else()
-		declare_Wrapped_Component_Dependency_To_Implicit_Components(${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT}
-			${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} #everything exported by default
-			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_INCLUDES}"
-			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_SHARED_LINKS}"
-			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_STATIC_LINKS}"
-			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
-			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_OPTIONS}"
-		)
+	else()#EXTERNAL keyword not used but it is optional
+    if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS
+      AND (DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT OR DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPENDS))
+
+      list(GET DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS 0 target_component)
+      declare_Wrapped_Component_Dependency_To_Explicit_Component(${component_name}
+  			${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE}
+  			${target_component}
+  			${exported}
+  			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
+  		)
+    else()
+      declare_Wrapped_Component_Dependency_To_Implicit_Components(${component_name}
+        ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} #everything exported by default
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_INCLUDES}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_SHARED_LINKS}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_STATIC_LINKS}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_OPTIONS}"
+      )
+    endif()
 	endif()
 else()#this is a dependency to another component defined in the same external package
-	if(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling declare_PID_Wrapper_Component_Dependency, need to define the component used by ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT}, by using the keyword EXTERNAL.")
-		return()
+	if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL)
+    set(target_component ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL})
+  else()
+    if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS
+      AND (DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT OR DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPENDS))
+
+      list(GET DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS 0 target_component)
+    else()
+      finish_Progress(GLOBAL_PROGRESS_VAR)
+  		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling declare_PID_Wrapper_Component_Dependency, need to define the component used by ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT}, by using the keyword EXTERNAL.")
+  		return()
+    endif()
 	endif()
-	declare_Wrapped_Component_Internal_Dependency(${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT}
-		${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL}
+  message("component name = ${component_name} target_component=${target_component}")
+	declare_Wrapped_Component_Internal_Dependency(${component_name}
+		${target_component}
 		${exported}
 		"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
 	)
