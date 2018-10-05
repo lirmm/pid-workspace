@@ -955,7 +955,7 @@ set(oneValueArgs COMPONENT EXTERNAL PACKAGE)
 set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT)
-  if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^EXPORT|DEPENDS|EXTERNAL|PACKAGE|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS$")
+  if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPENDS|EXTERNAL|PACKAGE|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS$")
     finish_Progress(GLOBAL_PROGRESS_VAR)
     message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component_Dependency requires to define the name of the declared component using the COMPONENT keyword or by giving the name as first argument.")
     return()
@@ -981,7 +981,6 @@ else()
 	set(exported FALSE)
 endif()
 
-message("package=${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} external=${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL}")
 if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE) #this is a dependency to another external package
 	list(FIND ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCIES ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} INDEX)
 	if(INDEX EQUAL -1)
@@ -1033,7 +1032,6 @@ else()#this is a dependency to another component defined in the same external pa
   		return()
     endif()
 	endif()
-  message("component name = ${component_name} target_component=${target_component}")
 	declare_Wrapped_Component_Internal_Dependency(${component_name}
 		${target_component}
 		${exported}
@@ -1203,7 +1201,7 @@ endfunction(get_External_Dependencies_Info)
 #  get_User_Option_Info
 #  --------------------
 #
-#   .. command:: get_User_Option_Info(COMPONENT ... [OPTIONS])
+#   .. command:: get_User_Option_Info(OPTION ... RESULT ...)
 #
 #     Allow to get info defined and set by user of the wrapper into deploy script when a wrapper version is built.
 #
@@ -1260,8 +1258,6 @@ endif()
 set(${GET_USER_OPTION_INFO_RESULT} ${${TARGET_EXTERNAL_PACKAGE}_USER_OPTION_${GET_USER_OPTION_INFO_OPTION}_VALUE} PARENT_SCOPE)
 endfunction(get_User_Option_Info)
 
-###
-
 #.rst:
 #
 # .. ifmode:: user
@@ -1272,9 +1268,27 @@ endfunction(get_User_Option_Info)
 #  get_Environment_Info
 #  --------------------
 #
-#   .. command:: get_Environment_Info(COMPONENT ... [OPTIONS])
+#   .. command:: get_Environment_Info([JOBS ...] [MAKE...])
+#
+#   .. command:: get_Environment_Info(C|CXX|ASM [RELEASE|DEBUG] [CFLAGS...] [COMPILER ...] [AR ...] [LINKER...] [RANLIB...])
+#
+#   .. command:: get_Environment_Info(MODULE|SHARED|STATIC|EXE LDFLAGS...)
 #
 #     Getting all options and flags (compiler in use, basic flags for each type of component, and so on) defined by the current environment, to be able to access them in the deploy script.
+#
+#     .. rubric:: Optional parameters
+#
+#     :C|CXX|ASM: Specifies the type of information to get.
+#     :MODULE|SHARED|STATIC|EXE: Specifies the type of binary to link.
+#     :RELEASE|DEBUG: Used to specify which kind of flags you want (RELEASE by default)
+#     :CFLAGS ...: the output variable that contains the list of compilation flags used for specified compilation (e.g. C and DEBUG)
+#     :LDFLAGS ...: the output variable that contains the list of linker flags used for specified compilation (e.g. SHARED)
+#     :COMPILER <path>: the output variable that contains the path to the compiler used for specified compilation (e.g. C++ compiler)
+#     :AR <path>: the output variable that contains the path to the ar tool.
+#     :LINKER <path>: the output variable that contains the path to the linker.
+#     :RANLIB <path>: the output variable that contains the path to the ranlib tool.
+#     :JOBS flag: the output variable that contains the flag used for parallel build.
+#     :MAKE <path>: the output variable that contains the path to the make tool.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -1290,7 +1304,9 @@ endfunction(get_User_Option_Info)
 #
 #     .. code-block:: cmake
 #
-#        get_Environment_Info(MAKE make_tool JOBS jobs-flag CXX COMPILER compiler_used CFLAGS compile_flags SHARED LDFLAGS linker_flags)
+#        get_Environment_Info(MAKE make_tool JOBS jobs-flag
+#                            CXX COMPILER compiler_used CFLAGS compile_flags
+#                            SHARED LDFLAGS linker_flags)
 #
 #
 function(get_Environment_Info)
@@ -1397,3 +1413,110 @@ function(get_Environment_Info)
     endif()
   endif()
 endfunction(get_Environment_Info)
+
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |install_External_Project| replace:: ``install_External_Project``
+#  .. _install_External_Project:
+#
+#  install_External_Project
+#  ------------------------
+#
+#   .. command:: install_External_Project(URL ... ARCHIVE ... FOLDER ... PATH ... [OPTIONS])
+#
+#     Download and install the given archive and returns the path to the installed project.
+#
+#     .. rubric:: Required parameters
+#
+#     :URL <url>: The URL from where to download the archive.
+#     :ARCHIVE <string>: The name of the archive downloaded.
+#     :FOLDER <string>: The folder resulting from archive extraction.
+#     :PATH <path>: the output variable that contains the path to the installed project, empty if project cannot be installed
+#
+#     .. rubric:: Optional parameters
+#
+#     :PROJECT <string>: the name of the project if you want to generate nice outputs about external package install process
+#     :VERSION <version string>: the version of the external project that is installed, only usefull together with PROJECT keyword.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  This function is used to download and install the archive of an external project.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        get_Environment_Info(MAKE make_tool JOBS jobs-flag CXX COMPILER compiler_used CFLAGS compile_flags SHARED LDFLAGS linker_flags)
+#
+#
+function(install_External_Project)
+  set(options) #used to define the context
+  set(oneValueArgs PROJECT VERSION URL ARCHIVE FOLDER PATH)
+  set(multiValueArgs)
+  cmake_parse_arguments(INSTALL_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  if(NOT INSTALL_EXTERNAL_PROJECT_PATH OR NOT INSTALL_EXTERNAL_PROJECT_URL OR NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE OR NOT INSTALL_EXTERNAL_PROJECT_FOLDER)
+    set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : PATH, URL, ARCHIVE and FOLDER arguments must be provided to install_External_Project.")
+    return()
+  endif()
+  if(INSTALL_EXTERNAL_PROJECT_VERSION)
+    set(version_str " version ${INSTALL_EXTERNAL_PROJECT_VERSION}")
+  else()
+    set(version_str)
+  endif()
+  #check that the build dir has not been deleted
+  if(NOT EXISTS ${TARGET_BUILD_DIR})
+    execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+  endif()
+
+  if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
+    if(INSTALL_EXTERNAL_PROJECT_PROJECT)
+      message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT} ...")
+    endif()
+    file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE} SHOW_PROGRESS)
+  endif()
+
+  if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
+    if(INSTALL_EXTERNAL_PROJECT_PROJECT)
+      message("[PID] ERROR : during deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot download the archive.")
+    endif()
+    set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
+    return()
+  endif()
+
+  #cleaning the already extracted folder
+  if(EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
+    file(REMOVE_RECURSE ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
+  endif()
+
+  if(INSTALL_EXTERNAL_PROJECT_PROJECT)
+    message("[PID] INFO : Extracting ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
+  endif()
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E tar xf ${INSTALL_EXTERNAL_PROJECT_ARCHIVE}
+    WORKING_DIRECTORY ${TARGET_BUILD_DIR}
+  )
+
+  #check that the extract went well
+  if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER}
+      OR NOT IS_DIRECTORY ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
+    if(INSTALL_EXTERNAL_PROJECT_PROJECT)
+      message("[PID] ERROR : during deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot extract the archive.")
+    endif()
+    set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
+    return()
+  endif()
+
+  #simply resturn true at the end if required by the user
+  set(${INSTALL_EXTERNAL_PROJECT_PATH} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER} PARENT_SCOPE)
+
+endfunction(install_External_Project)
