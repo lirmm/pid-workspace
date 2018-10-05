@@ -1457,6 +1457,9 @@ if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT)
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for a component, a name must be given to the component that declare the dependency using COMPONENT keyword or simply by using first argument.")
   else()
     set(component_name ${ARGV0})
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
+      list(REMOVE_ITEM DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS ${component_name})#in case of the component has been described without using the COMPONENT keyword it also belongs to unparsed arguments
+    endif()
   endif()
 else()
   set(component_name ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT})
@@ -1568,10 +1571,12 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
 else()#NO keyword used to specify the kind of component => we do not know if package is native or external
   #either EXPORT or DEPENDS must be used
   if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_DEPENDS)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, you must use either EXPORT or DEPENDS keyword to define the dependency if you do not use either NATIVE or EXTERNAL explicit declarations.")
-  else()
-    list(REMOVE_ITEM DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS ${component_name})#in case of the component has been described without using the COMPONENT keyword it also belongs to unparsed arguments
+    #no component specified
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS) #there is a target component specified => ERROR
+      finish_Progress(GLOBAL_PROGRESS_VAR)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, you must use either EXPORT or DEPENDS keyword to define the dependency if you do not use either NATIVE or EXTERNAL explicit declarations.")
+    endif()
+  else()#one of those there are used so we need unparsed argument
     if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
       finish_Progress(GLOBAL_PROGRESS_VAR)
       message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, you must set the name of the dependency after EXPORT or DEPENDS keywords.")
