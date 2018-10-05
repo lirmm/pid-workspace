@@ -909,16 +909,23 @@ endfunction(publish_Repository_Version)
 #
 #   .. command:: test_Remote_Connection(CONNECTED package remote)
 #
-#     Publish a new version on a package official repository.
+#     Test if a package (native or external wrapper) is trully connected to a given remote.
 #
 #     :package: the name of target package
 #
-#     :remote: the name of teh target remote (origin or official)
+#     :remote: the name of the target remote (origin or official)
 #
 #     :CONNECTED: the output variable that is TRUE if package connected to the target remote, FALSE otherwise
 #
 function(test_Remote_Connection CONNECTED package remote)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote show ${remote} OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE res)
+get_Package_Type(${package} PACK_TYPE)
+if(PACK_TYPE STREQUAL "NATIVE")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote show ${remote} OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE res)
+elseif(PACK_TYPE STREQUAL "EXTERNAL")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git remote show ${remote} OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE res)
+else()
+  set(res 0)
+endif()
 if(res EQUAL 0)
 	set(${CONNECTED} TRUE PARENT_SCOPE)
 else()
@@ -1038,7 +1045,7 @@ if(NOT CONNECTED)#no official remote (due to old package style or due to a misus
 		return()
 	endif()
 elseif(URL) # official package is connected and has an official repository declared
-	get_Remotes_Address(${package} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN)#get the adress of the official and origin git remotes
+	get_Remotes_Address(${package} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)#get the adress of the official and origin git remotes
   if((NOT RES_OFFICIAL_FETCH STREQUAL URL)
       AND (NOT RES_OFFICIAL_FETCH STREQUAL PUBLIC_URL))
       # the address of official is not the same as the one specified in the package description
@@ -1233,7 +1240,7 @@ endfunction(check_For_New_Commits_To_Release)
 #
 #   .. command:: is_Package_Connected(CONNECTED package remote)
 #
-#     Tell wether a package's repository is connected with a given remote (only fetch address is tested).
+#     Tell wether a package's repository (native or external) is connected with a given remote (only fetch address is tested).
 #
 #     :package: the name of target package
 #
@@ -1242,9 +1249,17 @@ endfunction(check_For_New_Commits_To_Release)
 #     :CONNECTED: the output variable that is TRUE if package is connected to the remote, FALSE otherwise (including if teh remote does not exist)
 #
 function(is_Package_Connected CONNECTED package remote)
-	git_Provides_GETURL(RESULT)
-	if(RESULT)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote get-url ${remote} OUTPUT_VARIABLE out RESULT_VARIABLE res)
+	git_Provides_GETURL(RESULT)#depending on the version of git we can use the get-url command or not
+  get_Package_Type(${package} PACK_TYPE)
+
+  if(RESULT)#the get-url approach is the best one
+    if(PACK_TYPE STREQUAL "NATIVE")
+      execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote get-url ${remote} OUTPUT_VARIABLE out RESULT_VARIABLE res)
+    elseif(PACK_TYPE STREQUAL "EXTERNAL")
+      execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git remote get-url ${remote} OUTPUT_VARIABLE out RESULT_VARIABLE res)
+    else()
+      set(res -1)
+    endif()
 		if(NOT res AND NOT out STREQUAL "")
 			set(${CONNECTED} TRUE PARENT_SCOPE)
 		else()
@@ -1252,7 +1267,13 @@ function(is_Package_Connected CONNECTED package remote)
 		endif()
 		return()
 	else()
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote -v OUTPUT_VARIABLE out RESULT_VARIABLE res)
+    if(PACK_TYPE STREQUAL "NATIVE")
+      execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote -v OUTPUT_VARIABLE out RESULT_VARIABLE res)
+    elseif(PACK_TYPE STREQUAL "EXTERNAL")
+      execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git remote -v OUTPUT_VARIABLE out RESULT_VARIABLE res)
+    else()
+      set(res -1)
+    endif()
 		if(NOT res AND NOT out STREQUAL "")
 			string(REPLACE "${remote}" "found" IS_FOUND ${out})
 			if(NOT IS_FOUND STREQUAL ${out})
@@ -1669,13 +1690,11 @@ endfunction(get_Repository_Name)
 #  check_For_Remote_Respositories
 #  ------------------------------
 #
-#   .. command:: check_For_Remote_Respositories(git_url)
+#   .. command:: check_For_Remote_Respositories(verbose)
 #
 #     Check, and eventually perform corrective actions, that package's repository origin and official remotes are defined.
 #
-#     :package: the name of the package.
-#
-#     :git_url: the url of the package's official repository.
+#     :verbose: if TRUE the function will echo more messages.
 #
 function(check_For_Remote_Respositories verbose)
 adjust_Official_Remote_Address(OFFICIAL_REMOTE_CONNECTED ${PROJECT_NAME} "${verbose}")
@@ -1685,7 +1704,7 @@ if(NOT OFFICIAL_REMOTE_CONNECTED)
   endif()
   return()
 else()#there is a connected remote after adjustment
-  get_Remotes_Address(${PROJECT_NAME} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN)#get the adress of the official and origin git remotes
+  get_Remotes_Address(${PROJECT_NAME} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)#get the adress of the official and origin git remotes
   if(NOT ${PROJECT_NAME}_PUBLIC_ADDRESS)#no public address defined (only adress is used for fetch and push)
     if(NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_OFFICIAL_PUSH
       OR NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_OFFICIAL_FETCH)
@@ -1718,6 +1737,49 @@ else()#there is a connected remote after adjustment
   endif()
 endif()
 endfunction(check_For_Remote_Respositories)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_For_Wrapper_Remote_Respositories| replace:: ``check_For_Wrapper_Remote_Respositories``
+#  .. _check_For_Wrapper_Remote_Respositories:
+#
+#  check_For_Wrapper_Remote_Respositories
+#  --------------------------------------
+#
+#   .. command:: check_For_Wrapper_Remote_Respositories()
+#
+#     Check, and eventually perform corrective actions, so that wrapper's repository origin remote is defined.
+#
+function(check_For_Wrapper_Remote_Respositories)
+  is_Package_Connected(CONNECTED ${PROJECT_NAME} origin)
+  if(NOT CONNECTED) #the package has no origin remote => create it and set it to the same address as official
+      if(${PROJECT_NAME}_PUBLIC_ADDRESS)
+        execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add origin ${${PROJECT_NAME}_PUBLIC_ADDRESS} OUTPUT_QUIET ERROR_QUIET)
+        if(${PROJECT_NAME}_ADDRESS)
+          execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote set-url --push origin ${${PROJECT_NAME}_ADDRESS} OUTPUT_QUIET ERROR_QUIET)
+        endif()
+      elseif(${PROJECT_NAME}_ADDRESS)
+        execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add origin ${${PROJECT_NAME}_ADDRESS} OUTPUT_QUIET ERROR_QUIET)
+      else()#no need to check more the package is not connected and this is normal
+        return()
+      endif()
+      execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git fetch origin OUTPUT_QUIET ERROR_QUIET)
+  else()#already connected
+    get_Remotes_Address(${PROJECT_NAME} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)#get the adress of the official and origin git remotes
+    if(NOT ${PROJECT_NAME}_PUBLIC_ADDRESS)#no public address defined (only adress is used for fetch and push)
+      if(NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_ORIGIN_FETCH)
+        message("[PID] WARNING: the address used in package description (${${PROJECT_NAME}_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_ORIGIN_FETCH}). Using the current remote by default. You should change the address in package description.")
+      endif()
+    else()#a public address is defined !
+      if(NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_ORIGIN_PUSH
+        AND NOT ${PROJECT_NAME}_PUBLIC_ADDRESS STREQUAL RES_ORIGIN_FETCH)
+        message("[PID] WARNING: none of the addresses used in package description (${${PROJECT_NAME}_ADDRESS} and ${${PROJECT_NAME}_PUBLIC_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_ORIGIN_FETCH}). Using the current remote by default. You should change the address in package description.")
+      endif()
+    endif()
+  endif()
+endfunction(check_For_Wrapper_Remote_Respositories)
 
 #.rst:
 #
@@ -1763,7 +1825,7 @@ endfunction(get_Remotes_To_Update)
 #  get_Remotes_Address
 #  --------------------
 #
-#   .. command:: get_Remotes_Address(package RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN)
+#   .. command:: get_Remotes_Address(package RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH  RES_ORIGIN_FETCH RES_ORIGIN_PUSH)
 #
 #     Get the package's origin and official remotes addresses.
 #
@@ -1773,13 +1835,24 @@ endfunction(get_Remotes_To_Update)
 #
 #     :RES_OFFICIAL_PUSH: the output variable containg the address of package's official remote for pushing.
 #
-#     :RES_ORIGIN: the output variable containg the address of package's origin remote.
+#     :RES_ORIGIN_FETCH: the output variable containg the address of package's origin remote for fetching..
 #
-function(get_Remotes_Address package RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN)
+#     :RES_ORIGIN_PUSH: the output variable containg the address of package's origin remote for pushing.
+#
+function(get_Remotes_Address package RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)
 set(${RES_OFFICIAL_FETCH} PARENT_SCOPE)
 set(${RES_OFFICIAL_PUSH} PARENT_SCOPE)
-set(${RES_ORIGIN} PARENT_SCOPE)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote -v OUTPUT_VARIABLE RESULTING_REMOTES)
+set(${RES_ORIGIN_FETCH} PARENT_SCOPE)
+set(${RES_ORIGIN_PUSH} PARENT_SCOPE)
+get_Package_Type(${package} PACK_TYPE)
+if(PACK_TYPE STREQUAL "NATIVE")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git remote -v OUTPUT_VARIABLE RESULTING_REMOTES)
+elseif(PACK_TYPE STREQUAL "EXTERNAL")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git remote -v OUTPUT_VARIABLE RESULTING_REMOTES)
+else()
+  return()
+endif()
+
 if(RESULTING_REMOTES)
 	string(REPLACE "\n" ";" LINES ${RESULTING_REMOTES})
 	string(REGEX REPLACE ";$" "" LINES "${LINES}")
@@ -1795,7 +1868,12 @@ if(RESULTING_REMOTES)
         set(${RES_OFFICIAL_PUSH} ${ADDR_REMOTE} PARENT_SCOPE)
       endif()
 		elseif(NAME_REMOTE STREQUAL "origin")
-			set(${RES_ORIGIN} ${ADDR_REMOTE} PARENT_SCOPE)
+      list(GET REMOTES_INFO 2 FETCH_OR_PUSH)
+      if(FETCH_OR_PUSH STREQUAL "fetch")
+        set(${RES_ORIGIN_FETCH} ${ADDR_REMOTE} PARENT_SCOPE)
+      elseif(FETCH_OR_PUSH STREQUAL "push")
+        set(${RES_ORIGIN_PUSH} ${ADDR_REMOTE} PARENT_SCOPE)
+      endif()
 		endif()
 	endforeach()
 endif()
@@ -1926,35 +2004,6 @@ function(reconnect_Wrapper_Repository wrapper url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git remote set-url origin ${url})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git pull origin master)#updating master
 endfunction(reconnect_Wrapper_Repository)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |is_Wrapper_Connected| replace:: ``is_Wrapper_Connected``
-#  .. is_Wrapper_Connected:
-#
-#  is_Wrapper_Connected
-#  --------------------
-#
-#   .. command:: is_Wrapper_Connected(CONNECTED wrapper remote)
-#
-#     Tell wether a wrapper's repository is connected with a given remote.
-#
-#     :wrapper: the name of target wrapper
-#
-#     :remote: the name of the remote
-#
-#     :CONNECTED: the output variable that is TRUE if wrapper is connected to the remote, FALSE otherwise (including if teh remote does not exist)
-#
-function(is_Wrapper_Connected CONNECTED wrapper remote)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git remote show ${remote} OUTPUT_QUIET ERROR_VARIABLE res)
-	if(NOT res OR res STREQUAL "")
-		set(${CONNECTED} TRUE PARENT_SCOPE)
-	else()
-		set(${CONNECTED} FALSE PARENT_SCOPE)
-	endif()
-endfunction(is_Wrapper_Connected)
 
 #.rst:
 #

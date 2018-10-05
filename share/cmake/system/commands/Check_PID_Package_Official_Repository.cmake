@@ -29,7 +29,7 @@ load_Current_Platform() #loading the current platform configuration
 is_Package_Connected(CONNECTED ${TARGET_PACKAGE} official)
 if(CONNECTED)
 	get_Package_Repository_Address(${TARGET_PACKAGE} OFFICIAL_URL OFFICIAL_PUBLIC_URL)
-	get_Remotes_Address(${TARGET_PACKAGE} ADDR_OFFICIAL_FETCH ADDR_OFFICIAL_PUSH ADDR_ORIGIN)
+	get_Remotes_Address(${TARGET_PACKAGE} ADDR_OFFICIAL_FETCH ADDR_OFFICIAL_PUSH ADDR_ORIGIN_FETCH ADDR_ORIGIN_PUSH)
 	if(NOT ADDR_OFFICIAL_PUSH STREQUAL OFFICIAL_URL
 		 AND NOT ADDR_OFFICIAL_FETCH STREQUAL OFFICIAL_PUBLIC_URL)# the remote address does not match address specified in the package
 		reconnect_Repository_Remote(${TARGET_PACKAGE} ${OFFICIAL_URL} "${OFFICIAL_PUBLIC_URL}" official)
@@ -38,7 +38,7 @@ if(CONNECTED)
 		else()
 			message("[PID] INFO : reconfiguing official repository address to ${OFFICIAL_URL}")
 		endif()
-		if(ADDR_OFFICIAL STREQUAL ADDR_ORIGIN)#origin was also affocial
+		if(ADDR_OFFICIAL STREQUAL ADDR_ORIGIN_FETCH)#origin was also official
 			reconnect_Repository_Remote(${TARGET_PACKAGE} ${OFFICIAL_URL} "${OFFICIAL_PUBLIC_URL}" origin)
 			if(OFFICIAL_PUBLIC_URL)
 				message("[PID] INFO : reconfiguing origin repository address to fetch=${OFFICIAL_URL} push=${OFFICIAL_PUBLIC_URL} (keep it same as official)")

@@ -60,7 +60,7 @@ if(TARGET_WRAPPER AND (NOT TARGET_WRAPPER STREQUAL ""))# a framework is connecte
 		return()
 	endif()
 	set(ALREADY_CONNECTED FALSE)
-	is_Wrapper_Connected(ALREADY_CONNECTED ${TARGET_WRAPPER} origin)
+	is_Package_Connected(ALREADY_CONNECTED ${TARGET_WRAPPER} origin)
 	if(ALREADY_CONNECTED )#the package must be connected to the official remote for this option to be valid
 		if(NOT (FORCED_RECONNECTION STREQUAL "true"))
 			message("[PID] ERROR : framework ${TARGET_WRAPPER} is already connected to a git repository. Use the force=true option to force the reconnection.")

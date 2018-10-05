@@ -288,6 +288,7 @@ if(DIR_NAME STREQUAL "build")
 	reset_Packages_Finding_Variables()
   init_PID_Version_Variable()
   init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
+	check_For_Wrapper_Remote_Respositories()
 	begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 else()
   message("[PID] ERROR : please run cmake in the build folder of the wrapper ${PROJECT_NAME}.")
