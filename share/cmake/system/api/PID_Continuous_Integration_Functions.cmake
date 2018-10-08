@@ -235,7 +235,7 @@ file(APPEND ${configfile} "cleanup_release_${platform}:\n  <<: *cleanup_release\
 endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform)
 
 #########################################################################################
-############################ CI for external packges wrappers ###########################
+############################ CI for external packages wrappers ##########################
 #########################################################################################
 
 #.rst:
@@ -290,13 +290,13 @@ function(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper configfile 
 extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
 file(APPEND ${configfile} "#pipeline generated for platform: ${platform}\n\n")
 file(APPEND ${configfile} "#jobs for platform ${platform}\n\n")
-file(APPEND ${configfile} "configure_wrapper_${platform}:\n  <<: *configure_wrapper\n  <<: *selection_platform_${platform}\n\n")
-file(APPEND ${configfile} "build_wrapper_${platform}:\n  <<: *build_wrapper\n  <<: *selection_platform_${platform}\n\n")
+file(APPEND ${configfile} "configure_wrapper_${platform}:\n <<: *configure_wrapper\n <<: *selection_platform_${platform}\n\n")
+file(APPEND ${configfile} "build_wrapper_${platform}:\n <<: *build_wrapper\n <<: *selection_platform_${platform}\n\n")
 if(RES_ARCH AND RES_BITS)#this is not a custom platform used for CI
   #CI custom platform do not have a deploy phase
-  file(APPEND ${configfile} "deploy_wrapper_${platform}:\n  <<: *deploy_wrapper\n  <<: *selection_platform_${platform}\n\n")
+  file(APPEND ${configfile} "deploy_wrapper_${platform}:\n <<: *deploy_wrapper\n <<: *selection_platform_${platform}\n\n")
 endif()
-file(APPEND ${configfile} "cleanup_wrapper_${platform}:\n  <<: *cleanup_wrapper\n  <<: *selection_platform_${platform}\n\n")
+file(APPEND ${configfile} "cleanup_wrapper_${platform}:\n <<: *cleanup_wrapper\n <<: *selection_platform_${platform}\n\n")
 endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper)
 
 #.rst:

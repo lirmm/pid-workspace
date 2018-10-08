@@ -7,7 +7,7 @@ variables:
   PACKAGE_DEV_INFO_PUBLISHED: "@PACKAGE_CI_PUBLISH_DEV_INFO@"
 
 cache:
-  key: "$CI_BUILD_REF-$CI_BUILD_REF_NAME"
+  key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
   paths:
    - binaries/
    - build/
@@ -23,20 +23,20 @@ stages:
 # Hidden key that defines an anchor for reusing artifacts def
 .artifacts_integration_:
     artifacts: &artifacts_integration
-        name: "artefacts_${CI_BUILD_REF_NAME}"
+        name: "artefacts_${CI_COMMIT_REF_NAME}"
         paths:
           - build/release/share/developper_info.tgz
 
 .artifacts_release_:
     artifacts: &artifacts_release
-        name: "artefacts_${CI_BUILD_REF_NAME}"
+        name: "artefacts_${CI_COMMIT_REF_NAME}"
         paths:
           - build/release/share/dependencies.txt
 
 # Hidden key that defines an anchor for reusing artifacts uploaded when a build fails
 .artifacts_when_failing_:
     artifacts: &artifacts_on_failure
-        name: "artefacts_${CI_BUILD_REF_NAME}"
+        name: "artefacts_${CI_COMMIT_REF_NAME}"
         paths:
           - build/release/share/dependencies.txt
         when: on_failure
@@ -49,7 +49,6 @@ stages:
 # Hidden key that defines an anchor for reusing code relative to released versions
 .selection_release_: &job_selection_release
     only:
-         - tags
          - /^v.*$/
 
 .build_any_: &build_job

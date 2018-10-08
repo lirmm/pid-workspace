@@ -1688,7 +1688,8 @@ set(README_CONFIG_FILE ${WORKSPACE_DIR}/share/patterns/wrappers/README.md.in)
 get_Wrapper_Site_Address(ADDRESS ${PROJECT_NAME})
 if(NOT ADDRESS)#no site description has been provided nor framework reference
 	# intro
-	set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site use the short one
+  generate_Formatted_String("${${PROJECT_NAME}_DESCRIPTION}" RES_INTRO)
+	set(README_OVERVIEW "${RES_INTRO}") #if no detailed description provided by site use the short one
 	# no reference to site page
 	set(WRAPPER_SITE_REF_IN_README "")
 
@@ -1696,8 +1697,12 @@ if(NOT ADDRESS)#no site description has been provided nor framework reference
 	set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} wrapper and for using its components is based on the [PID](http://pid.lirmm.net/pid-framework/pages/install.html) build and deployment system called PID. Just follow and read the links to understand how to install, use and call its API and/or applications.")
 else()
 	# intro
-	generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
-	set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by site description use the short one
+  if(${PROJECT_NAME}_SITE_INTRODUCTION)
+    generate_Formatted_String("${${PROJECT_NAME}_SITE_INTRODUCTION}" RES_INTRO)
+  else()
+    generate_Formatted_String("${${PROJECT_NAME}_DESCRIPTION}" RES_INTRO)
+  endif()
+  set(README_OVERVIEW "${RES_INTRO}") #if no detailed description provided by site description use the short one
 
 	# install procedure
 	set(INSTALL_USE_IN_README "The procedures for installing the ${PROJECT_NAME} wrapper and for using its components is available in this [site][package_site]. It is based on a CMake based build and deployment system called [PID](http://pid.lirmm.net/pid-framework/pages/install.html). Just follow and read the links to understand how to install, use and call its API and/or applications.")

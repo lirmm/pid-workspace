@@ -39,13 +39,18 @@ load_Current_Platform() #loading the current platform configuration before execu
 #######################################Build script #####################################
 #########################################################################################
 
-message("[PID] INFO : building wrapper for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
 #checking that user input is coherent
-if(NOT TARGET_EXTERNAL_VERSION OR TARGET_EXTERNAL_VERSION STREQUAL "")
+if(NOT TARGET_EXTERNAL_VERSION)
   finish_Progress(GLOBAL_PROGRESS_VAR)
   message(FATAL_ERROR "[PID] CRITICAL ERROR: you must define the version to build and deploy using version= argument to the build command")
   return()
+elseif(TARGET_EXTERNAL_VERSION MATCHES "^v.*$")
+  normalize_Version_Tags(version "${TARGET_EXTERNAL_VERSION}")
+else()
+  set(version ${TARGET_EXTERNAL_VERSION})
 endif()
+
+message("[PID] INFO : building wrapper for external package ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
 
 if(NOT TARGET_BUILD_MODE OR (NOT TARGET_BUILD_MODE STREQUAL "Debug" AND NOT TARGET_BUILD_MODE STREQUAL "debug"))
   set(CMAKE_BUILD_TYPE Release)
@@ -55,9 +60,9 @@ else()
 endif()
 
 set(package_dir ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE})
-set(package_version_src_dir ${package_dir}/src/${TARGET_EXTERNAL_VERSION})
-set(package_version_build_dir ${package_dir}/build/${TARGET_EXTERNAL_VERSION})
-set(package_version_install_dir ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${TARGET_EXTERNAL_VERSION})
+set(package_version_src_dir ${package_dir}/src/${version})
+set(package_version_build_dir ${package_dir}/build/${version})
+set(package_version_install_dir ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${version})
 
 if(NOT EXISTS ${package_version_build_dir})
   file(MAKE_DIRECTORY ${package_version_build_dir})
@@ -72,10 +77,10 @@ endif()
 include(${package_dir}/build/Build${TARGET_EXTERNAL_PACKAGE}.cmake)#load the content description
 
 if(${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS) #check that the target version exist
-  list(FIND ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS ${TARGET_EXTERNAL_VERSION} INDEX)
+  list(FIND ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS ${version} INDEX)
   if(INDEX EQUAL -1)
     finish_Progress(GLOBAL_PROGRESS_VAR)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : ${TARGET_EXTERNAL_PACKAGE} external package version ${TARGET_EXTERNAL_VERSION} is not defined by wrapper of ${TARGET_EXTERNAL_PACKAGE}")
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : ${TARGET_EXTERNAL_PACKAGE} external package version ${version} is not defined by wrapper of ${TARGET_EXTERNAL_PACKAGE}")
     return()
   endif()
 else()
@@ -89,52 +94,53 @@ if(EXISTS ${package_version_install_dir})#clean the install folder
 endif()
 
 # prepare script execution
-set(deploy_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_DEPLOY_SCRIPT})
-set(TARGET_BUILD_DIR ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_VERSION})
+set(deploy_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT})
+set(TARGET_BUILD_DIR ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${version})
 set(TARGET_INSTALL_DIR ${package_version_install_dir})
 set(TARGET_SOURCE_DIR ${package_version_src_dir})
 
-set(post_install_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_POST_INSTALL_SCRIPT})
+set(post_install_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT})
 
 if(NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true)
   #checking for configurations
-  resolve_Wrapper_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
+  resolve_Wrapper_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
   if(NOT IS_OK)
-    message("[PID] ERROR : Cannot satisfy target platform's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} !")
+    message("[PID] ERROR : Cannot satisfy target platform's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
     return()
   else()
-    message("[PID] INFO : all required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} are satisfied !")
+    message("[PID] INFO : all required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
   endif()
 
   # checking for dependencies
-  message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
-  resolve_Wrapper_Dependencies(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
+  message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
+  resolve_Wrapper_Dependencies(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
   if(NOT IS_OK)
-    message("[PID] ERROR : Cannot satisfy required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} !")
+    message("[PID] ERROR : Cannot satisfy required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
     return()
   else()
-    message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} are satisfied !")
+    message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
   endif()
 
   #prepare deployment script execution by caching build variable that may be used inside
-  configure_Wrapper_Build_Variables(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
+  configure_Wrapper_Build_Variables(${TARGET_EXTERNAL_PACKAGE} ${version})
 
   message("[PID] INFO : Executing deployment script ${package_version_src_dir}/${deploy_script_file}...")
   set(ERROR_IN_SCRIPT FALSE)
   include(${package_version_src_dir}/${deploy_script_file} NO_POLICY_SCOPE)#execute the script
   if(ERROR_IN_SCRIPT)
-    message("[PID] ERROR: Cannot deploy external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
+    message("[PID] ERROR: Cannot deploy external package ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
     return()
   endif()
 endif()
 
 # generate and install the use file
-generate_External_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION} ${CURRENT_PLATFORM})
-message("[PID] INFO : Installing external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION}...")
+generate_External_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
+
+message("[PID] INFO : Installing external package ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
 
 #create the output folder
 file(MAKE_DIRECTORY ${TARGET_INSTALL_DIR}/share)
-install_External_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION} ${CURRENT_PLATFORM})
+install_External_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
 install_External_Find_File_For_Version(${TARGET_EXTERNAL_PACKAGE})
 
 if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install_script_file})
@@ -145,15 +151,15 @@ endif()
 
 if(GENERATE_BINARY_ARCHIVE AND (GENERATE_BINARY_ARCHIVE STREQUAL "true" OR GENERATE_BINARY_ARCHIVE STREQUAL "TRUE"))
   #cleaning the build folder to start from a clean situation
-  set(path_to_installer_content ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM})
+  set(path_to_installer_content ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM})
   if(EXISTS ${path_to_installer_content} AND IS_DIRECTORY ${path_to_installer_content})
     file(REMOVE_RECURSE ${path_to_installer_content})
   endif()
 
   if(TARGET_BUILD_MODE STREQUAL "Debug")
-    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-dbg-${CURRENT_PLATFORM}.tar.gz)
+    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-dbg-${CURRENT_PLATFORM}.tar.gz)
   else()
-    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${TARGET_EXTERNAL_VERSION}-${CURRENT_PLATFORM}.tar.gz)
+    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM}.tar.gz)
   endif()
   file(REMOVE ${path_to_installer_archive})
 
@@ -169,7 +175,7 @@ if(GENERATE_BINARY_ARCHIVE AND (GENERATE_BINARY_ARCHIVE STREQUAL "true" OR GENER
   if(EXISTS ${path_to_installer_content} AND IS_DIRECTORY ${path_to_installer_content})
     file(REMOVE_RECURSE ${path_to_installer_content})
   endif()
-  message("[PID] INFO : binary archive for external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} has been generated.")
+  message("[PID] INFO : binary archive for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} has been generated.")
 endif()
 
-message("[PID] INFO : external package ${TARGET_EXTERNAL_PACKAGE} version ${TARGET_EXTERNAL_VERSION} built.")
+message("[PID] INFO : external package ${TARGET_EXTERNAL_PACKAGE} version ${version} built.")
