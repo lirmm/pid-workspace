@@ -247,37 +247,49 @@ set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be
 
 if(DIR_NAME STREQUAL "build")
 
-  #################################################
-  ######## create global targets ##################
-  #################################################
-	add_custom_target(build
-    ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-           -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
-           -DTARGET_EXTERNAL_VERSION=\${version}
-				 	 -DTARGET_BUILD_MODE=\${mode}
-				   -DGENERATE_BINARY_ARCHIVE=\${archive}
-           -DDO_NOT_EXECUTE_SCRIPT=\${skip_script}
-					 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Wrapper.cmake
-    COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
-  )
+	  #################################################
+	  ######## create global targets ##################
+	  #################################################
+		add_custom_target(build
+	    ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+	           -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
+	           -DTARGET_EXTERNAL_VERSION=\${version}
+					 	 -DTARGET_BUILD_MODE=\${mode}
+					   -DGENERATE_BINARY_ARCHIVE=\${archive}
+	           -DDO_NOT_EXECUTE_SCRIPT=\${skip_script}
+						 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Wrapper.cmake
+	    COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+	  )
 
-	# adding an uninstall command (uninstall the whole installed version currently built)
-	add_custom_target(uninstall
-		${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-           -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
-           -DTARGET_EXTERNAL_VERSION=\${version}
-					 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Uninstall_PID_Wrapper.cmake
-		COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
-		COMMENT "[PID] Uninstalling external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} ..."
-	)
+		# adding an uninstall command (uninstall the whole installed version currently built)
+		add_custom_target(uninstall
+			${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+	           -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
+	           -DTARGET_EXTERNAL_VERSION=\${version}
+						 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Uninstall_PID_Wrapper.cmake
+			COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
+			COMMENT "[PID] Uninstalling external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} ..."
+		)
 
-	# reference file generation target
-  add_custom_target(referencing
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferExternal${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
-  	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/find
-  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    COMMENT "[PID] installing references to the wrapped external package into the workspace..."
-  )
+		# reference file generation target
+	  add_custom_target(referencing
+	    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferExternal${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
+	  	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/find
+	  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	    COMMENT "[PID] installing references to the wrapped external package into the workspace..."
+	  )
+
+		# target used to create/replace version tags
+	  add_custom_target(memorizing
+			${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+			-DCMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+			-DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
+			-DTARGET_EXTERNAL_VERSION=\${version}
+			-DREMOTE_ADDR=${address}
+			-P ${WORKSPACE_DIR}/share/cmake/system/commands/Memorizing_PID_Wrapper_Version.cmake
+	  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	    COMMENT "[PID] memorizing new wrapper implementation ..."
+	  )
 
   #################################################
   ######## Initializing cache variables ###########

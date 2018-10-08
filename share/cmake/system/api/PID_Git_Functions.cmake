@@ -273,8 +273,14 @@ endfunction(go_To_Version)
 #
 function(get_Repository_Version_Tags AVAILABLE_VERSIONS package)
 set(${AVAILABLE_VERSIONS} PARENT_SCOPE)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -l v*
+get_Package_Type(${package} PACK_TYPE)
+if(PACK_TYPE STREQUAL "NATIVE")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -l v*
 		OUTPUT_VARIABLE res)
+elseif(PACK_TYPE STREQUAL "EXTERNAL")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git tag -l v*
+		OUTPUT_VARIABLE res)
+endif()
 
 if(NOT res) #no version available => BUG
 	return()
@@ -550,11 +556,22 @@ endfunction(merge_Into_Master)
 #     :add_it: if TRUE the tag is added, removed otherwise
 #
 function(tag_Version package version_string add_it)
-if(add_it)
-  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -a v${version_string} -m "releasing version ${version_string}")
-else()
-  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git tag -d v${version_string})
-endif()
+  get_Package_Type(${package} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "NATIVE")
+    set(path_element "packages")
+    set(tag_message "releasing version ${version_string}")
+  elseif(PACK_TYPE STREQUAL "EXTERNAL")
+    set(path_element "wrappers")
+    set(tag_message "memorizing version ${version_string}")
+  else()
+    return()
+  endif()
+
+  if(add_it)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/${path_element}/${package} git tag -a v${version_string} -m "${tag_message}")
+  else()
+    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/${path_element}/${package} git tag -d v${version_string})
+  endif()
 endfunction(tag_Version)
 
 #.rst:
@@ -1907,7 +1924,7 @@ function(clone_Wrapper_Repository IS_DEPLOYED wrapper url)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers git clone ${url} OUTPUT_QUIET ERROR_QUIET)
 if(EXISTS ${WORKSPACE_DIR}/wrappers/${wrapper} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper})
 	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git fetch origin --tags OUTPUT_QUIET ERROR_QUIET) #just in case of version were not updated
 else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : impossible to clone the repository of external package wrapper ${wrapper} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this wrapper.")
@@ -2047,6 +2064,46 @@ function(update_Wrapper_Repository wrapper)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git lfs pull origin master)#fetching master branch to get most up to date archives
 endfunction(update_Wrapper_Repository)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Wrapper_Repository_Version| replace:: ``publish_Wrapper_Repository_Version``
+#  .. _publish_Wrapper_Repository_Version:
+#
+#  publish_Wrapper_Repository_Version
+#  --------------------------
+#
+#   .. command:: publish_Wrapper_Repository_Version(RESULT package version_string add_it)
+#
+#     Push (or delete) a version tag on the remote wrapper repository.
+#
+#     :package: the name of target package
+#
+#     :version_string: the version tag to push
+#
+#     :add_it: if TRUE the tag is added, if FALSE it is removed
+#
+#     :RESULT: the output variable that is TRUE if operation succeeded, FALSE otherwise
+#
+function(publish_Wrapper_Repository_Version RESULT package version_string add_it)
+if(add_it)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git push --porcelain origin v${version_string} OUTPUT_VARIABLE out ERROR_QUIET)#pushing a version tag
+  if(out MATCHES "^.*rejected.*$")
+    set(${RESULT} FALSE PARENT_SCOPE)
+  	return()
+  endif()
+else()
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${package} git push --porcelain --delete origin v${version_string} OUTPUT_VARIABLE out ERROR_QUIET)#deletting a version tag
+  if(out MATCHES "^error.*$")
+    set(${RESULT} FALSE PARENT_SCOPE)
+    return()
+  endif()
+endif()
+set(${RESULT} TRUE PARENT_SCOPE)
+endfunction(publish_Wrapper_Repository_Version)
 
 ##############################################################################
 ############## frameworks repository related functions #######################
