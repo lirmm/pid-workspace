@@ -1,11 +1,9 @@
 
 # Introduction
 
-PID is a development methodology used to standardize and automate the development process of C/C++ projects on UNIX platforms. The present repository contains the base implementation of PID, based on CMake scripts.
+PID is a development methodology used to standardize and automate the development process of C/C++ projects. The present repository contains the base implementation of PID, based on CMake scripts.
 
-This project defines a **workspace** where users put their C/C++ projects and the workspace repository is used to share references on existing projects, in order to deploy them on users workstations.
-
-PID is also a framwork, made of various C/C++ packages, that are helpful for developping C/C++ code. For deeper understanding and learning of PID readers can refer to [this website](http://pid.lirmm.net/pid-framework)
+This project defines a **workspace** where users put their C/C++ projects and the workspace repository is used to share references on existing projects, in order to deploy them on users workstations. For deeper understanding and learning of PID, you can refer to [this website](http://pid.lirmm.net/pid-framework)
 
 # What is it useful for ?
 
@@ -31,20 +29,6 @@ People that can be interested in using PID are project managers that want to enf
 + Standardizing and Automating license management (applying liecnse information everywhere needed), as well as other meta information about the package (authors, contact, etc.).
 + Plugin mechanism to provide additionnal functionalities to manage external tools (typically IDE). For instance a plugin used to configure `atom-clang-complete` plugin in Atom IDE. 
 + Standardization and management of build environments and target platforms, to allow the management of many execution targets for the same code and easily change the build environment to use (for instance changing the compiler in use for all packages). These features can be used to manage crosscompilation. 
-
-# Known limitations
-
-+ The dependencies resolution algorithm is not capable to manage many binaries for the same version/same platform of a package. This is notably impacting the way we can deal with external dependencies. For instance boost versions are not compatible between each other if you consider binary libraries like the well known *filesystem* library, due to the fact that they include a restrictive **SO name**. If a package uses a given version of boost its resulting binaries will be bound to this version and you cannot change it (and maybe it would be risky to do this). This way, all other codes depending on your package will also depends on this specific version of boost. In source package, you can of course manage the build with different versions of dependencies but when compiled, this code is bound to a given version and if no compatible version exist all packages using this binary are then bound to this version of external package.
-+ considering CI, for now your can build the code for only one platform, not many in parallel. This problem is due to the fact that gitlab-ci for now manage only one pipeline and not many, and we hope this restriction will be relaxed in the future by gilab authors.
-+ management of build environments is not as smart as it could be yet. It would be nice for instance to share environments more or less the same way as packages (with also given platform configuration).
-
-
-# About the license
-
-pid-workspace and PID base packages are licensed with the CeCILL-C open source license. A copy of the license is available in the file license.txt. 
-
-CeCILL-C is an open source software license equivalent to and compatible with LGPL. The difference is that it is governed by French law and disagreements or disputes shall be referred to the Paris Courts having jurisdiction.
-
 
 # Install
 
@@ -149,7 +133,7 @@ Android is not specifically supported and I never test PID on such a system. Nev
 
 ----- 
 
-Mac OSX is a particular case of UNIX system and even if theorically supported, its support has many limits:
+MacOS and iOS are particular case of UNIX systems and even if theorically supported, their support has many limits:
 
 - there are not so many prebuild binaries of packages for this OS, which can become painful for installing some packages with dependencies to external binaries.
 - the scripts have been tested on linux only, so you may encounter some problem using Mac OSX even if core mechanisms of MAC OSX (notably the management of dynamic libraries model) are implemented.
@@ -158,13 +142,16 @@ Any contribution for this popular OS is welcome, being it patch for the PID syst
 
 ----- 
 
-iOS also suffers from the same disadvantage as OSX and the same answer applies here.
-
------ 
-
 Windows is not supported at all. This is due to the fact that Windows is not a UNIX system and lacks very basic mechanisms that are used by PID (for instance symbolic links). I just have no time to work on this and furthermore I never use Windows so do not expect any contribution from me.
 
 Anyway any contribution that would make PID work on Windows would be very appreciated. The only requirement I have regarding these contributions is that they do not break the functionning for UNIX system. 
+
+
+# About the license
+
+pid-workspace and PID base packages are licensed with the CeCILL-C open source license. A copy of the license is available in the file license.txt. 
+
+CeCILL-C is an open source software license equivalent to and compatible with GNU LGPL. The difference is that it is governed by French law and disagreements or disputes shall be referred to the Paris Courts having jurisdiction.
 
 # Considering contribution
 
@@ -186,6 +173,5 @@ If you want to contribute to the documentation of overall pid framework, or to c
 # Contact
 
 If you have any question, remark, proposal about PID, please contact me using the **issues** of the project.
-
 
 
