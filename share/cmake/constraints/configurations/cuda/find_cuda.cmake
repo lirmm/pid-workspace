@@ -29,8 +29,8 @@ find_package(CUDA)
 
 if(CUDA_FOUND)
 	set(cuda_FOUND TRUE CACHE INTERNAL "")
-	set(cuda_LIBRARIES ${CUDA_LIBRARIES})
-	set(cuda_INCS ${CUDA_INCLUDE_DIRS})
+	set(cuda_LIBRARIES -lcudart-static -lrt -lpthread -ldl)
+	set(cuda_INCS)#everything should be in standard system path so no need to specify include dirs
 	unset(CUDA_LIBRARIES CACHE)
 	unset(CUDA_INCLUDE_DIRS CACHE)
 endif()
