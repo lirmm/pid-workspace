@@ -1576,15 +1576,13 @@ else()#NO keyword used to specify the kind of component => we do not know if pac
       finish_Progress(GLOBAL_PROGRESS_VAR)
       message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, you must use either EXPORT or DEPENDS keyword to define the dependency if you do not use either NATIVE or EXTERNAL explicit declarations.")
     endif()
-  else()#one of those there are used so we need unparsed argument
-    if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, you must set the name of the dependency after EXPORT or DEPENDS keywords.")
-    endif()
   endif()
-  #unparsed arguments contains the name of the dependency
-  list(GET DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS 0 first_one)
-  set(target_component ${first_one})
+
+  if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
+    #unparsed arguments contains the name of the dependency
+    list(GET DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS 0 first_one)
+    set(target_component ${first_one})
+  endif()
   if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #a package name is explicitly given
     set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE})
   endif()
