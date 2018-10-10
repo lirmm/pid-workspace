@@ -22,26 +22,51 @@ if(UNIX)
 	#searching only in standard paths
 	if(APPLE)
 		find_path(opengl_INCLUDE_DIR OpenGL/gl.h)
+		find_path(opengl_glfw3_INCLUDE_DIR NAMES GLFW/glfw3.h)
+
 		find_library(opengl_gl_LIBRARY OpenGL)
-		find_library(opengl_glu_LIBRARY AGL)
-		set(LIBS_NAMES -lOpenGL -lAGL)
+		find_library(opengl_agl_LIBRARY AGL)
+		find_library(opengl_glfw3_LIBRARY glfw)
+		if(NOT opengl_INCLUDE_DIR MATCHES opengl_INCLUDE_DIR-NOTFOUND
+				AND NOT opengl_glfw3_INCLUDE_DIR MATCHES opengl_glfw3_INCLUDE_DIR-NOTFOUND
+				AND NOT opengl_gl_LIBRARY MATCHES opengl_gl_LIBRARY-NOTFOUND
+				AND NOT opengl_glfw3_LIBRARY MATCHES opengl_glfw3_LIBRARY-NOTFOUND)
+			set(opengl_LIBRARIES -lOpenGL -lAGL -lglfw)
+			unset(opengl_INCLUDE_DIR CACHE)
+			unset(opengl_glfw3_INCLUDE_DIR CACHE)
+			unset(opengl_gl_LIBRARY CACHE)
+			unset(opengl_agl_LIBRARY CACHE)
+			unset(opengl_glfw3_LIBRARY CACHE)
+			set(opengl_FOUND TRUE CACHE INTERNAL "")
+		endif()
 	else()
+		#search headers only in standard path
 		find_path(opengl_INCLUDE_DIR GL/gl.h)
 		find_path(opengl_glut_INCLUDE_DIR NAMES GL/glut.h GL/freeglut.h)
+		find_path(opengl_glfw3_INCLUDE_DIR NAMES GLFW/glfw3.h)
+
+		#search libraries only in standard path
 		find_library(opengl_gl_LIBRARY NAMES GL)
 		find_library(opengl_glu_LIBRARY NAMES GLU)
 		find_library(opengl_glut_LIBRARY NAMES glut)
-		set(LIBS_NAMES -lGL -lGLU -lglut)
+		find_library(opengl_glfw3_LIBRARY NAMES glfw)
+		if(NOT opengl_INCLUDE_DIR MATCHES opengl_INCLUDE_DIR-NOTFOUND
+				AND NOT opengl_glut_INCLUDE_DIR MATCHES opengl_glut_INCLUDE_DIR-NOTFOUND
+				AND NOT opengl_glfw3_INCLUDE_DIR MATCHES opengl_glfw3_INCLUDE_DIR-NOTFOUND
+				AND NOT opengl_gl_LIBRARY MATCHES opengl_gl_LIBRARY-NOTFOUND
+				AND NOT opengl_glu_LIBRARY MATCHES opengl_glu_LIBRARY-NOTFOUND
+				AND NOT opengl_glut_LIBRARY MATCHES opengl_glut_LIBRARY-NOTFOUND
+			AND NOT opengl_glfw3_LIBRARY MATCHES opengl_glfw3_LIBRARY-NOTFOUND)
+			set(opengl_LIBRARIES -lGL -lGLU -lglut -lglfw)
+			unset(opengl_INCLUDE_DIR CACHE)
+			unset(opengl_glut_INCLUDE_DIR CACHE)
+			unset(opengl_glfw3_INCLUDE_DIR CACHE)
+			unset(opengl_gl_LIBRARY CACHE)
+			unset(opengl_glu_LIBRARY CACHE)
+			unset(opengl_glut_LIBRARY CACHE)
+			unset(opengl_glfw3_LIBRARY CACHE)
+			set(opengl_FOUND TRUE CACHE INTERNAL "")
+		endif()
 	endif()
 
-	if(NOT opengl_INCLUDE_DIR MATCHES opengl_INCLUDE_DIR-NOTFOUND
-	AND NOT opengl_gl_LIBRARY MATCHES opengl_gl_LIBRARY-NOTFOUND
-	AND NOT opengl_glu_LIBRARY MATCHES opengl_glu_LIBRARY-NOTFOUND
-	AND NOT opengl_glut_LIBRARY MATCHES opengl_glut_LIBRARY-NOTFOUND
-	AND NOT opengl_glut_INCLUDE_DIR MATCHES opengl_glut_INCLUDE_DIR-NOTFOUND)
-		set(opengl_LIBRARIES ${LIBS_NAMES})
-		unset(opengl_INCLUDE_DIR CACHE)
-		unset(opengl_LIBRARY CACHE)
-		set(opengl_FOUND TRUE CACHE INTERNAL "")
-	endif()
 endif()

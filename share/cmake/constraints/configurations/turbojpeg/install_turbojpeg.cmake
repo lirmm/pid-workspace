@@ -17,29 +17,27 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/opengl/installable_opengl.cmake)
-if(opengl_INSTALLABLE)
-	message("[PID] INFO : trying to install opengl...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-<<<<<<< HEAD
-		execute_process(COMMAND sudo apt-get install freeglut3-dev mesa-utils)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S freeglut mesa --noconfirm)
-=======
-		execute_process(COMMAND sudo apt-get install -y freeglut3-dev mesa-utils libglfw3-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S freeglut mesa glfw-x11 --noconfirm)
->>>>>>> master
+include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/turbojpeg/installable_turbojpeg.cmake)
+if(turbojpeg_INSTALLABLE)
+	message("[PID] INFO : trying to install turbojpeg...")
+	if(CURRENT_DISTRIBUTION STREQUAL ubuntu)
+		if(CURRENT_DISTRIBUTION_VERSION VERSION_LESS 17.10)
+			execute_process(COMMAND sudo apt-get install libturbojpeg libjpeg-turbo8-dev)
+		else()
+			execute_process(COMMAND sudo apt-get install libturbojpeg0-dev)
+		endif()
+	elseif(CURRENT_DISTRIBUTION STREQUAL debian)
+		execute_process(COMMAND sudo apt-get install libturbojpeg0-dev)
 	endif()
-	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/opengl/find_opengl.cmake)
-	if(opengl_FOUND)
-		message("[PID] INFO : opengl installed !")
-		set(opengl_INSTALLED TRUE)
+
+	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/turbojpeg/find_turbojpeg.cmake)
+	if(turbojpeg_FOUND)
+		message("[PID] INFO : turbojpeg installed !")
+		set(turbojpeg_INSTALLED TRUE)
 	else()
-		set(opengl_INSTALLED FALSE)
-		message("[PID] INFO : install of opengl has failed !")
+		set(turbojpeg_INSTALLED FALSE)
+		message("[PID] INFO : install of turbojpeg has failed !")
 	endif()
 else()
-	set(opengl_INSTALLED FALSE)
+	set(turbojpeg_INSTALLED FALSE)
 endif()

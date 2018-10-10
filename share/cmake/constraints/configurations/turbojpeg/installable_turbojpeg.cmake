@@ -17,29 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/opengl/installable_opengl.cmake)
-if(opengl_INSTALLABLE)
-	message("[PID] INFO : trying to install opengl...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-<<<<<<< HEAD
-		execute_process(COMMAND sudo apt-get install freeglut3-dev mesa-utils)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S freeglut mesa --noconfirm)
-=======
-		execute_process(COMMAND sudo apt-get install -y freeglut3-dev mesa-utils libglfw3-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S freeglut mesa glfw-x11 --noconfirm)
->>>>>>> master
-	endif()
-	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/opengl/find_opengl.cmake)
-	if(opengl_FOUND)
-		message("[PID] INFO : opengl installed !")
-		set(opengl_INSTALLED TRUE)
-	else()
-		set(opengl_INSTALLED FALSE)
-		message("[PID] INFO : install of opengl has failed !")
-	endif()
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	set(turbojpeg_INSTALLABLE TRUE)
 else()
-	set(opengl_INSTALLED FALSE)
+	set(turbojpeg_INSTALLABLE FALSE)
 endif()

@@ -1,6 +1,6 @@
 #########################################################################################
 #       This file is part of the program PID                                            #
-#       Program description : build system supportting the PID methodology              #
+#       Program description : build system supporting the PID methodology              	#
 #       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
 #       et de Microelectronique de Montpellier). All Right reserved.                    #
 #                                                                                       #
@@ -17,29 +17,25 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/opengl/installable_opengl.cmake)
-if(opengl_INSTALLABLE)
-	message("[PID] INFO : trying to install opengl...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-<<<<<<< HEAD
-		execute_process(COMMAND sudo apt-get install freeglut3-dev mesa-utils)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S freeglut mesa --noconfirm)
-=======
-		execute_process(COMMAND sudo apt-get install -y freeglut3-dev mesa-utils libglfw3-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S freeglut mesa glfw-x11 --noconfirm)
->>>>>>> master
-	endif()
-	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/opengl/find_opengl.cmake)
-	if(opengl_FOUND)
-		message("[PID] INFO : opengl installed !")
-		set(opengl_INSTALLED TRUE)
+if(NOT turbojpeg_FOUND) #any linux or macosx is zlib ...
+	set(turbojpeg_COMPILE_OPTIONS CACHE INTERNAL "")
+	set(turbojpeg_INCLUDE_DIRS CACHE INTERNAL "")
+	set(turbojpeg_LINK_OPTIONS CACHE INTERNAL "")
+	set(turbojpeg_DEFINITIONS CACHE INTERNAL "")
+	set(turbojpeg_RPATH CACHE INTERNAL "")
+	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/turbojpeg/find_turbojpeg.cmake)
+	if(turbojpeg_FOUND)
+		set(turbojpeg_LINK_OPTIONS ${turbojpeg_LIBRARIES} CACHE INTERNAL "") #simply adding all turbojpeg standard libraries
+		set(CHECK_turbojpeg_RESULT TRUE)
 	else()
-		set(opengl_INSTALLED FALSE)
-		message("[PID] INFO : install of opengl has failed !")
+		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/turbojpeg/install_turbojpeg.cmake)
+		if(turbojpeg_INSTALLED)
+			set(turbojpeg_LINK_OPTIONS ${turbojpeg_LIBRARIES} CACHE INTERNAL "") #simply adding all turbojpeg standard libraries
+			set(CHECK_turbojpeg_RESULT TRUE)
+		else()
+			set(CHECK_turbojpeg_RESULT FALSE)
+		endif()
 	endif()
 else()
-	set(opengl_INSTALLED FALSE)
+	set(CHECK_turbojpeg_RESULT TRUE)
 endif()
