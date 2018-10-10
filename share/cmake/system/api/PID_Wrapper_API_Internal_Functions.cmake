@@ -800,22 +800,20 @@ endfunction(add_Known_Version)
 #
 #      :configurations: the list of configurations that must be validated by current platform.
 #
-function(declare_Wrapped_Configuration platform configurations)
+#      :options: the list of configurations that may be validated or not by current platform.
+#
+function(declare_Wrapped_Configuration platform configurations options)
 # update the list of required configurations
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${configurations}")
 
 if(platform AND NOT platform STREQUAL "")# if a platform constraint applies
 	foreach(config IN LISTS configurations)
-		if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config}) # another platform constraint already applies
-			if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} STREQUAL "all")#the configuration has no constraint
-				# simply add it
-				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config}} ${platform} CACHE INTERNAL "")
-			endif()
-		else() #simply set the variable
-			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} ${platform} CACHE INTERNAL "")
+		if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} # no other platform constraint already applies
+			OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} STREQUAL "all")#the configuration has no constraint
+				append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "${platform}")
 		endif()
 
-		if(platform STREQUAL "${CURRENT_PLATFORM}")
+		if(platform STREQUAL CURRENT_PLATFORM)
 			#check that the configuration applies to the current platform if the current platform is the target of this constraint
 			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
 				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
@@ -823,26 +821,70 @@ if(platform AND NOT platform STREQUAL "")# if a platform constraint applies
 					finish_Progress(GLOBAL_PROGRESS_VAR)
 					message(FATAL_ERROR "[PID] CRITICAL ERROR : the configuration ${config} cannot be find or installed on target platform !")
 				endif()
+				set(${config}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 			else()
 				finish_Progress(GLOBAL_PROGRESS_VAR)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown configuration ${config} !")
 			endif()
 		endif()
 	endforeach()
+
+	#now dealing with options
+	foreach(config IN LISTS options)
+
+		#now dealing with optional aspect
+		#the only goal here is to set some variables that will be used to check if configuration is available
+		set(${config}_AVAILABLE FALSE CACHE INTERNAL "")
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
+			if(CHECK_${config}_RESULT)# not found, trying to see if it can be installed
+				set(${config}_AVAILABLE TRUE CACHE INTERNAL "")
+			endif()
+		endif()
+
+		if(${config}_AVAILABLE) #if available then it is considered as used
+			append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${config}")
+			if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} # no other platform constraint already applies
+				OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} STREQUAL "all")#the configuration has no constraint
+					append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "${platform}")
+			endif()
+		endif()
+	endforeach()
+
 else()#no platform constraint applies => this platform configuration is adequate for all platforms
 	foreach(config IN LISTS configurations)
 		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "all" CACHE INTERNAL "")
-
 		#check that the configuration applies to the current platform anytime
 		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
 			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
 			if(NOT CHECK_${config}_RESULT)# not found, trying to see if it can be installed
-				message("[PID] ERROR : current platform does not satisfy configuration constraint ${config}.")
+				finish_Progress(GLOBAL_PROGRESS_VAR)
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : current platform does not satisfy configuration constraint ${config}.")
 			endif()
 		else()
-			message("[PID] ERROR : unknown configuration ${config} !")
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown configuration ${config} !")
 		endif()
 	endforeach()
+	#now dealing with options
+	#now dealing with options
+	foreach(config IN LISTS options)
+		set(${config}_AVAILABLE FALSE CACHE INTERNAL "")
+		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
+			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
+			if(CHECK_${config}_RESULT)# not found, trying to see if it can be installed
+				set(${config}_AVAILABLE TRUE CACHE INTERNAL "")
+			endif()
+		endif()
+		if(${config}_AVAILABLE) #if available then it is considered as used
+			append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${config}")
+			if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} # no other platform constraint already applies
+				OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} STREQUAL "all")#the configuration has no constraint
+
+				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "all" CACHE INTERNAL "")
+			endif()
+		endif()
+	endforeach()
+
 endif()
 endfunction(declare_Wrapped_Configuration)
 
@@ -1756,12 +1798,15 @@ function(resolve_Wrapper_Configuration RESULT_OK package version)
 			if(NOT CHECK_${config}_RESULT)# not found, trying to see if it can be installed
 				message("[PID] WARNING : the configuration ${config} cannot be find or installed on target platform !")
 				set(IS_CONFIGURED FALSE)
+			else()
+				set(${config}_AVAILABLE TRUE CACHE INTERNAL "")
 			endif()
 		else()
 			message("[PID] WARNING : unknown configuration ${config} !")
 			set(IS_CONFIGURED FALSE)
 		endif()
 	endforeach()
+
 	if(NOT RESULT_OK)
 		set(${RESULT_OK} FALSE PARENT_SCOPE)
 	else()
