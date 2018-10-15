@@ -205,7 +205,7 @@ file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the package
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using common find modules of the workspace
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/platforms) # using platform check modules
 
 #############################################################
 ############ Managing current platform ######################
@@ -803,88 +803,117 @@ endfunction(add_Known_Version)
 #      :options: the list of configurations that may be validated or not by current platform.
 #
 function(declare_Wrapped_Configuration platform configurations options)
-# update the list of required configurations
-append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${configurations}")
 
-if(platform AND NOT platform STREQUAL "")# if a platform constraint applies
+if(platform)# if a platform constraint applies
 	foreach(config IN LISTS configurations)
-		if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} # no other platform constraint already applies
+		string(REPLACE " " "" config ${config})#remove the space characters if any
+		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
+		if(NOT CONFIG_NAME)
+			finish_Progress(GLOBAL_PROGRESS_VAR)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
+			return()
+		elseif(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} # no other platform constraint already applies
 			OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} STREQUAL "all")#the configuration has no constraint
 				append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "${platform}")
 		endif()
+		append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${config}")# update the list of required configurations
 
 		if(platform STREQUAL CURRENT_PLATFORM)
+			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
 			#check that the configuration applies to the current platform if the current platform is the target of this constraint
-			if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-				include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
-				if(NOT CHECK_${config}_RESULT)# not found, trying to see if it can be installed
+			if(EXISTS ${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)
+				prepare_Config_Arguments(${CONFIG_NAME} CONFIG_ARGS)#setting variables that correspond to the arguments passed to the check script
+				include(${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)	# find the configuation
+				if(NOT CHECK_${CONFIG_NAME}_RESULT)# not satified
 					finish_Progress(GLOBAL_PROGRESS_VAR)
-					message(FATAL_ERROR "[PID] CRITICAL ERROR : the configuration ${config} cannot be find or installed on target platform !")
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : the configuration ${CONFIG_NAME} cannot be find or installed on target platform !")
 				endif()
-				set(${config}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
+				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 			else()
 				finish_Progress(GLOBAL_PROGRESS_VAR)
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown configuration ${config} !")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown configuration ${CONFIG_NAME} !")
 			endif()
 		endif()
 	endforeach()
 
 	#now dealing with options
 	foreach(config IN LISTS options)
-
-		#now dealing with optional aspect
-		#the only goal here is to set some variables that will be used to check if configuration is available
-		set(${config}_AVAILABLE FALSE CACHE INTERNAL "")
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
-			if(CHECK_${config}_RESULT)# not found, trying to see if it can be installed
-				set(${config}_AVAILABLE TRUE CACHE INTERNAL "")
-			endif()
+		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")#parse configuration arguments, if any
+		if(NOT CONFIG_NAME)
+			finish_Progress(GLOBAL_PROGRESS_VAR)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
+			return()
 		endif()
+		if(platform STREQUAL CURRENT_PLATFORM)
+			#the only goal here is to set some variables that will be used to check if configuration is available
+			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
+			if(EXISTS ${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)
+				prepare_Config_Arguments(${CONFIG_NAME} CONFIG_ARGS)#setting variables that correspond to the arguments passed to the check script
+				include(${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)	# find the configuation
+				if(CHECK_${CONFIG_NAME}_RESULT)# not found, trying to see if it can be installed
+					set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")
+				endif()
+			endif()
 
-		if(${config}_AVAILABLE) #if available then it is considered as used
-			append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${config}")
-			if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} # no other platform constraint already applies
-				OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} STREQUAL "all")#the configuration has no constraint
-					append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "${platform}")
+			if(${CONFIG_NAME}_AVAILABLE) #if available then it is considered as used
+				append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${config}")
+				if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} # no other platform constraint already applies
+					OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} STREQUAL "all")#the configuration has no constraint
+						append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "${platform}")
+				endif()
 			endif()
 		endif()
 	endforeach()
 
 else()#no platform constraint applies => this platform configuration is adequate for all platforms
 	foreach(config IN LISTS configurations)
+		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+		if(NOT CONFIG_NAME)
+			finish_Progress(GLOBAL_PROGRESS_VAR)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
+			return()
+		endif()
 		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "all" CACHE INTERNAL "")
 		#check that the configuration applies to the current platform anytime
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
-			if(NOT CHECK_${config}_RESULT)# not found, trying to see if it can be installed
+		append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${config}")# update the list of required configurations
+
+		if(EXISTS ${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)
+			prepare_Config_Arguments(${CONFIG_NAME} CONFIG_ARGS)#setting variables that correspond to the arguments passed to the check script
+			include(${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)	# find the configuation
+			if(NOT CHECK_${CONFIG_NAME}_RESULT)# not found, trying to see if it can be installed
 				finish_Progress(GLOBAL_PROGRESS_VAR)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : current platform does not satisfy configuration constraint ${config}.")
 			endif()
 		else()
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown configuration ${config} !")
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown configuration ${CONFIG_NAME} !")
 		endif()
+		set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")
 	endforeach()
-	#now dealing with options
+
 	#now dealing with options
 	foreach(config IN LISTS options)
-		set(${config}_AVAILABLE FALSE CACHE INTERNAL "")
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
-			if(CHECK_${config}_RESULT)# not found, trying to see if it can be installed
-				set(${config}_AVAILABLE TRUE CACHE INTERNAL "")
+		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+		if(NOT CONFIG_NAME)
+			finish_Progress(GLOBAL_PROGRESS_VAR)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
+			return()
+		endif()
+		set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
+		if(EXISTS ${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)
+			prepare_Config_Arguments(${CONFIG_NAME} CONFIG_ARGS)#setting variables that correspond to the arguments passed to the check script
+			include(${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)	# find the configuation
+			if(CHECK_${CONFIG_NAME}_RESULT)# not found, trying to see if it can be installed
+				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")
 			endif()
 		endif()
-		if(${config}_AVAILABLE) #if available then it is considered as used
+		if(${CONFIG_NAME}_AVAILABLE) #if available then it is considered as used
 			append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${config}")
 			if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} # no other platform constraint already applies
 				OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} STREQUAL "all")#the configuration has no constraint
-
 				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} "all" CACHE INTERNAL "")
 			endif()
 		endif()
 	endforeach()
-
 endif()
 endfunction(declare_Wrapped_Configuration)
 
@@ -1793,21 +1822,27 @@ endfunction(configure_Wrapper_Build_Variables)
 function(resolve_Wrapper_Configuration RESULT_OK package version)
 	set(IS_CONFIGURED TRUE)
 	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# find the configuation
-			if(NOT CHECK_${config}_RESULT)# not found, trying to see if it can be installed
-				message("[PID] WARNING : the configuration ${config} cannot be find or installed on target platform !")
+		set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")
+		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+		if(NOT CONFIG_NAME)
+			message("[PID] WARNING : ill formed configuration ${config} !")
+			set(IS_CONFIGURED FALSE)
+		elseif(EXISTS ${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)
+			prepare_Config_Arguments(${CONFIG_NAME} CONFIG_ARGS)#setting variables that correspond to the arguments passed to the check script
+			include(${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)	# find the configuation
+			if(NOT CHECK_${CONFIG_NAME}_RESULT)# not found, trying to see if it can be installed
+				message("[PID] WARNING : the configuration ${CONFIG_NAME} cannot be find or installed on target platform !")
 				set(IS_CONFIGURED FALSE)
 			else()
-				set(${config}_AVAILABLE TRUE CACHE INTERNAL "")
+				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")
 			endif()
 		else()
-			message("[PID] WARNING : unknown configuration ${config} !")
+			message("[PID] WARNING : unknown configuration ${CONFIG_NAME} !")
 			set(IS_CONFIGURED FALSE)
 		endif()
 	endforeach()
 
-	if(NOT RESULT_OK)
+	if(NOT IS_CONFIGURED)
 		set(${RESULT_OK} FALSE PARENT_SCOPE)
 	else()
 		set(${RESULT_OK} TRUE PARENT_SCOPE)

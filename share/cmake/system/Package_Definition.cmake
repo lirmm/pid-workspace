@@ -632,7 +632,6 @@ endmacro(declare_PID_Component_Documentation)
 #   .. admonition:: Effects
 #     :class: important
 #
-#     Add an author to the list of authors.
 #     First it checks if the current target platform of the workspace satisfies the specified constraints (TYPE, OS, ARCH and ABI). If all constraints are not respected then nothing is checked and the configuration of the package continues. Otherwise, the package configuration must be checked before continuing the configuration. Each configuration required is then checked individually. This can lead to the automatic install of some configuration, if this is possible (i.e. if there is a known way to install this configuration), which is typically the case for system software dependencies like libraries when:
 #
 #     1. No cross compilation takes place
@@ -655,7 +654,7 @@ endmacro(declare_PID_Component_Documentation)
 #      check_PID_Platform(openssl)
 #
 macro(check_PID_Platform)
-set(oneValueArgs NAME OS ARCH ABI TYPE)
+set(oneValueArgs NAME OS ARCH ABI TYPE CURRENT)
 set(multiValueArgs CONFIGURATION)
 cmake_parse_arguments(CHECK_PID_PLATFORM "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(CHECK_PID_PLATFORM_NAME)
@@ -680,7 +679,6 @@ else()
     finish_Progress(GLOBAL_PROGRESS_VAR)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must use the CONFIGURATION keyword to describe the set of configuration constraints that apply to the current platform.")
 	endif()
-
 	#checking the constraints
 	check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}")
 	if(NOT RESULT)

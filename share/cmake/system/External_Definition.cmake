@@ -88,8 +88,11 @@ macro(declare_PID_External_Package)
 	set(${package}_HAS_DESCRIPTION TRUE CACHE INTERNAL "")#variable to be used to test if the package is described with a wrapper (if this macro is used this is always TRUE)
 	if(NOT ${package}_DECLARED)
 		#reset all variables related to this external package
-		set(${package}_PLATFORM${VAR_SUFFIX}  CACHE INTERNAL "")
-		set(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}  CACHE INTERNAL "")
+		set(${package}_PLATFORM${VAR_SUFFIX} CACHE INTERNAL "")
+    foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
+      set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} CACHE INTERNAL "")
+    endforeach()
+		set(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} CACHE INTERNAL "")
 		foreach(dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 			set(${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
 			set(${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
@@ -171,8 +174,8 @@ if(CHECK_EXTERNAL_PID_PLATFORM_PACKAGE
 		return() #return will exit from current Use file included (because we are in a macro)
 	endif()
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-	set(${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_PLATFORM${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM}  CACHE INTERNAL "")
-	set(${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION}  CACHE INTERNAL "")
+	set(${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_PLATFORM${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM} CACHE INTERNAL "")
+	set(${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION} CACHE INTERNAL "")
 else()
 	message("[PID] WARNING: Bad usage of function check_PID_External_Package_Platform: PACKAGE (value: ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}), PLATFORM (value: ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM}) and CONFIGURATION (value: ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION}) keywords must be used !")
 	return() #return will exit from current Use file included (because we are in a macro)
@@ -513,7 +516,7 @@ macro(declare_PID_External_Component_Dependency)
 		#in that case a component is not mandatory defined we can just target the libraries inside the depdendency packages
 	else() #if not an external component it means it is an internal one
 		#in that case the component must be defined
-		set(TARGET_PACKAGE)#internal means the dependency is tlocal 
+		set(TARGET_PACKAGE)#internal means the dependency is tlocal
 	endif()
 
 	#configuring target component

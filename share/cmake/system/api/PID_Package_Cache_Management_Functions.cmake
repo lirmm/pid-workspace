@@ -621,27 +621,6 @@ function(add_Platform_Constraint_Set type arch os abi constraints)
 	set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} ${NEW_SET_SIZE} CACHE INTERNAL "")
 endfunction(add_Platform_Constraint_Set)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |add_Configuration_To_Platform| replace:: ``add_Configuration_To_Platform``
-#  .. _add_Configuration_To_Platform:
-#
-#  add_Configuration_To_Platform
-#  -----------------------------
-#
-#   .. command:: add_Configuration_To_Platform(constraints)
-#
-#   Add to internal cache a set of configuration constraints that are satisfied by the current platform.
-#
-#     :constraints: the list of platform configurations that are valid for the current platform.
-#
-function(add_Configuration_To_Platform constraints)
-	list(APPEND ${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} ${constraints})
-	list(REMOVE_DUPLICATES ${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX})
-	set(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX}} CACHE INTERNAL "") #to put the new value in cache
-endfunction(add_Configuration_To_Platform)
 
 #############################################################################################
 ############### API functions for setting components related cache variables ################
@@ -1699,7 +1678,11 @@ get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
 file(APPEND ${file} "#### declaration of platform dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 file(APPEND ${file} "set(${package}_PLATFORM${MODE_SUFFIX} ${CURRENT_PLATFORM_NAME} CACHE INTERNAL \"\")\n") # not really usefull since a use file is bound to a given platform, but may be usefull for debug
 file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-
+foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX})
+  if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX})
+    file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+  endif()
+endforeach()
 # 1) external package dependencies
 file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
@@ -1944,7 +1927,11 @@ file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${M
 
 #registering platform configuration info coming from the dependency
 file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-
+foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX})
+  if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX})#there are arguments to pass to that constraint
+    file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+  endif()
+endforeach()
 #call on external dependencies
 set(ALREADY_MANAGED ${PACKAGES_ALREADY_MANAGED} ${package})
 set(NEWLY_MANAGED ${package})
@@ -2032,7 +2019,11 @@ file(APPEND ${file} "set(TARGET_PLATFORM_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INT
 file(APPEND ${file} "set(TARGET_PLATFORM_OS ${CURRENT_PLATFORM_OS} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(TARGET_PLATFORM_ABI ${CURRENT_PLATFORM_ABI} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(TARGET_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-
+foreach(config IN LISTS ${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX})
+  if(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX})
+    file(APPEND ${file} "set(TARGET_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX} ${${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+  endif()
+endforeach()
 # 2) external packages
 file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 file(APPEND ${file} "set(TARGET_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")

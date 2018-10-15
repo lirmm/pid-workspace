@@ -1274,11 +1274,12 @@ endfunction(build_And_Install_Package)
 function(check_Package_Platform_Against_Current package platform CHECK_OK)
 set(${CHECK_OK} TRUE PARENT_SCOPE)
 get_System_Variables(PLATFORM_STRING PACKAGE_STRING)
-if(platform STREQUAL ${PLATFORM_STRING})
+if(platform STREQUAL PLATFORM_STRING)
 	# OK this binary version is theorically eligible, but need to check for its platform configuration to be sure it can be used
 	set(CONFIGS_TO_CHECK)
 	if(${package}_PLATFORM_CONFIGURATIONS)
 		set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})
+    list(REMOVE_DUPLICATES CONFIGS_TO_CHECK)
 	else() # this case may be true if the package binary has been release in old PID v1 style
 		PID_Package_Is_With_V2_Platform_Info_In_Use_Files(RES ${package})
 		if(NOT RES) #this is an old style platform description
@@ -1291,11 +1292,14 @@ if(platform STREQUAL ${PLATFORM_STRING})
 	endif()
 
 	foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)
-			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/find_${config}.cmake)	# find the configuation
+    if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/find_${config}.cmake)
+      if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS)
+        prepare_Config_Arguments(${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS)#setting variables that correspond to the arguments passed to the check script
+      endif()
+      include(${WORKSPACE_DIR}/configurations/${config}/find_${config}.cmake)	# find the configuation
 			if(NOT ${config}_FOUND)# not found, trying to see if it can be installed
-				if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)
-					include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/installable_${config}.cmake)
+				if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/installable_${config}.cmake)
+					include(${WORKSPACE_DIR}/configurations/${config}/installable_${config}.cmake)
 					if(NOT ${config}_INSTALLABLE)
 						set(${CHECK_OK} FALSE PARENT_SCOPE)
 						return()
@@ -2734,8 +2738,8 @@ unset(${package}_CURR_DIR)
 
 # 1) checking platforms constraints
 set(CONFIGS_TO_CHECK)
-if(${package}_PLATFORM_CONFIGURATIONS)
-	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})#there are configuration constraints in PID v2 style
+if(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
+	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}})#there are configuration constraints in PID v2 style
 elseif(${package}_PLATFORM${VAR_SUFFIX} STREQUAL ${platform}) # this case may be true if the package binary has been release in old PID v1 style
 	set(OLD_PLATFORM_CONFIG ${${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}})
 	if(OLD_PLATFORM_CONFIG) #there are required configurations in old style
@@ -2745,21 +2749,24 @@ endif()
 
 # 2) checking constraints on configuration
 foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this platform is supposed to be necessary
-	if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-		include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
-			if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
-        finish_Progress(GLOBAL_PROGRESS_VAR)
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
-				return()
-			else()
-				message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
-			endif()
-		else()
+  if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)
+    if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+      prepare_Config_Arguments(${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})#setting variables that correspond to the arguments passed to the check script
+    endif()
+		include(${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
+		if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
       finish_Progress(GLOBAL_PROGRESS_VAR)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${package}.")
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
 			return()
+		else()
+			message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
 		endif()
-	endforeach()
+	else()
+    finish_Progress(GLOBAL_PROGRESS_VAR)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${package}.")
+		return()
+	endif()
+endforeach()
 
 #TODO UNCOMMENT AND TEST DEPLOYMENT
 # Manage external package dependencies => need to deploy other external packages

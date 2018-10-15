@@ -79,7 +79,7 @@ set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the package
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using common find modules of the workspace
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/platforms) # using platform check modules
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/platforms) # using platform check modules
 
 configure_Git()
 set(${PROJECT_NAME}_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL "")#to keep compatibility with PID v1 released package versions
@@ -562,7 +562,7 @@ endfunction(set_Current_Version)
 #
 #     :RESULT: the output variable that is TRUE if constraints are satisfied or if no constraint appliesdu to filters, FALSE if any constraint cannot be satisfied.
 #
-#     :IS_CURRENT: the output variable that contains the current platform identifier if current platformmatches all filters.
+#     :IS_CURRENT: the output variable that contains the current platform identifier if current platform matches all filters.
 #
 function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints)
 set(SKIP FALSE)
@@ -604,19 +604,32 @@ endif()
 
 if(NOT SKIP AND constraints)
 	foreach(config IN LISTS constraints) ## all constraints must be satisfied
-		if(EXISTS ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)
-			include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config}/check_${config}.cmake)	# check the platform and install it if possible
-			if(NOT CHECK_${config}_RESULT)
-				message("[PID] ERROR : current platform does not satisfy configuration constraint ${config}.")
+		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+		if(NOT CONFIG_NAME)
+			message("[PID] ERROR : configuration check ${config} is ill formed.")
+			set(${RESULT} FALSE PARENT_SCOPE)
+		elseif(EXISTS ${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)
+			prepare_Config_Arguments(${CONFIG_NAME} CONFIG_ARGS)#setting variables that correspond to the arguments passed to the check script
+			include(${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)	# check the platform and install it if possible
+			if(NOT CHECK_${CONFIG_NAME}_RESULT)
+				message("[PID] ERROR : current platform does not satisfy configuration constraint ${CONFIG_NAME}.")
 				set(${RESULT} FALSE PARENT_SCOPE)
 			endif()
+			list(APPEND configurations_to_memorize ${CONFIG_NAME})
+			set(${CONFIG_NAME}_args_to_memorize ${CONFIG_ARGS})
 		else()
-			message("[PID] INFO : when checking constraints on current platform, configuration information for ${config} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${config}.cmake in ${WORKSPACE_DIR}/share/cmake/constraints/configurations/${config} to manage this configuration.")
+			message("[PID] INFO : when checking constraints on current platform, configuration information for ${CONFIG_NAME} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${CONFIG_NAME}.cmake in ${WORKSPACE_DIR}/configurations/${CONFIG_NAME} to manage this configuration.")
 			set(${RESULT} FALSE PARENT_SCOPE)
 		endif()
 	endforeach()
-	#from here OK all configuration constraints are satisfied
-	add_Configuration_To_Platform("${constraints}")
+
+	#registering all configurations wether they are satisfied or not
+	append_Unique_In_Cache(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} "${configurations_to_memorize}")
+	foreach(config IN LISTS configurations_to_memorize)
+		if(${config}_args_to_memorize)#there are arguments for that configuration
+			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} "${${config}_args_to_memorize}" CACHE INTERNAL "")
+		endif()
+	endforeach()
 endif()
 
 # whatever the result the constraint is registered

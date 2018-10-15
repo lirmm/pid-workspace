@@ -133,13 +133,13 @@ endfunction(is_A_System_Reference_Path)
 #
 #     :name: the name of the platform
 #
-#     :RES_ARCH: the output variable containg processor architecture name (e.g. x86)
+#     :RES_ARCH: the output variable containing processor architecture name (e.g. x86)
 #
-#     :RES_BITS: the output variable containg processor bits number (e.g. 32 or 64)
+#     :RES_BITS: the output variable containing processor bits number (e.g. 32 or 64)
 #
-#     :RES_OS: the output variable containg  kernel name (e.g. linux) or empty string if the target platform has no kernel (e.g. microcontroller)
+#     :RES_OS: the output variable containing  kernel name (e.g. linux) or empty string if the target platform has no kernel (e.g. microcontroller)
 #
-#     :RES_ABI: the output variable containg abi name (e.g. abi11 or abi98)
+#     :RES_ABI: the output variable containing abi name (e.g. abi11 or abi98)
 #
 function(extract_Info_From_Platform RES_ARCH RES_BITS RES_OS RES_ABI name)
 	string(REGEX REPLACE "^([^_]+)_([^_]+)_([^_]+)_([^_]+)$" "\\1;\\2;\\3;\\4" list_of_properties ${name})
@@ -165,6 +165,83 @@ function(extract_Info_From_Platform RES_ARCH RES_BITS RES_OS RES_ABI name)
 	set(${RES_OS} ${os} PARENT_SCOPE)
 	set(${RES_ABI} ${abi} PARENT_SCOPE)
 endfunction(extract_Info_From_Platform)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |parse_Configuration_Constraints| replace:: ``parse_Configuration_Constraints``
+#  .. _parse_Configuration_Constraints:
+#
+#  parse_Configuration_Constraints
+#  -------------------------------
+#
+#   .. command:: parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS configuration_constraint)
+#
+#     Extract the arguments passed to a configuration check.
+#
+#     :configuration_constraint: the string representing the configuration constraint check.
+#
+#     :CONFIG_NAME: the output variable containing the name of the configuration
+#
+#     :CONFIG_ARGS: the output variable containing the list of  arguments of the constraint check.
+#
+function(parse_Configuration_Constraints CONFIG_NAME CONFIG_ARGS configuration_constraint)
+string(REGEX REPLACE "^([^[]+)\\[([^]]+)\\]$" "\\1;\\2" NAME_ARGS "${configuration_constraint}")#argument list format : configuration[list_of_args]
+if(NOT NAME_ARGS STREQUAL configuration_constraint)#it matches !! => there are arguments passed to the configuration
+  list(GET NAME_ARGS 0 THE_NAME)
+  list(GET NAME_ARGS 1 THE_ARGS)
+  set(${CONFIG_ARGS} PARENT_SCOPE)
+  set(${CONFIG_NAME} PARENT_SCOPE)
+  if(NOT THE_ARGS)
+    return()
+  endif()
+  string(REPLACE ":" ";" ARGS_LIST "${THE_ARGS}")
+  foreach(arg IN LISTS ARGS_LIST)
+    string(REGEX REPLACE "^([^=]+)=(.+)$" "\\1;\"\\2\"" ARG_VAL "${arg}")#argument format :  arg_name=first,second,third OR arg_name=val
+    if(ARG_VAL STREQUAL arg)#no match => ill formed argument
+      return()
+    endif()
+    list(APPEND result ${ARG_VAL})
+  endforeach()
+    set(${CONFIG_ARGS} ${result} PARENT_SCOPE)
+    set(${CONFIG_NAME} ${THE_NAME} PARENT_SCOPE)
+else()#this is a configuration constraint without arguments
+  set(${CONFIG_ARGS} PARENT_SCOPE)
+  set(${CONFIG_NAME} ${configuration_constraint} PARENT_SCOPE)
+endif()
+endfunction(parse_Configuration_Constraints)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |prepare_Config_Arguments| replace:: ``prepare_Config_Arguments``
+#  .. _prepare_Config_Arguments:
+#
+#  prepare_Config_Arguments
+#  ------------------------
+#
+#   .. command:: prepare_Config_Arguments(configuration_arguments)
+#
+#     Set the variables corresponding to configuration arguments in the parent scope.
+#
+#     :config_name: the name of the configuration to be checked.
+#
+#     :configuration_arguments: the parent scope variable containing the list of arguments generated from parse_Configuration_Constraints.
+#
+function(prepare_Config_Arguments config_name configuration_arguments)
+  while(${configuration_arguments})
+    list(GET ${configuration_arguments} 0 name)
+    list(GET ${configuration_arguments} 1 value)
+    list(REMOVE_AT ${configuration_arguments} 0 1)#update the list of arguments in parent scope
+    string(REPLACE " " "" VAL_LIST "${value}")#remove the spaces in the string if any
+    string(REPLACE "," ";" VAL_LIST "${VAL_LIST}")#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
+    set(${config_name}_${name} ${VAL_LIST} PARENT_SCOPE)
+  endwhile()
+endfunction(prepare_Config_Arguments)
 
 #############################################################
 ################ string handling utilities ##################
