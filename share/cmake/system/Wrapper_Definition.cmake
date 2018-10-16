@@ -298,7 +298,7 @@ endmacro(add_PID_Wrapper_Category)
 #  define_PID_Wrapper_User_Option
 #  ------------------------------
 #
-#   .. command:: define_PID_Wrapper_User_Option(OPTION ... TYPE ...[DESCRIPTION ...])
+#   .. command:: define_PID_Wrapper_User_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])
 #
 #      Declare that the current wrapper generates external packages that belong to a given category.
 #
@@ -350,10 +350,7 @@ if(NOT DEFINE_PID_WRAPPER_USER_OPTION_TYPE)
   finish_Progress(GLOBAL_PROGRESS_VAR)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the type of the option must be given using TYPE keyword. Choose amon followiung value: FILEPATH (File chooser dialog), PATH (Directory chooser dialog), STRING (Arbitrary string), BOOL.")
 endif()
-if(NOT DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT)#no argument passed (arguments may be boolean)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
-  message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, default value of the option must be given using DEFAULT keyword (may be a list of values).")
-endif()
+
 set_Wrapper_Option("${option_name}" "${DEFINE_PID_WRAPPER_USER_OPTION_TYPE}" "${DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT}" "${DEFINE_PID_WRAPPER_USER_OPTION_DESCRIPTION}")
 endmacro(define_PID_Wrapper_User_Option)
 
@@ -1312,8 +1309,9 @@ endfunction(get_User_Option_Info)
 #
 function(get_Environment_Info)
   set(options MODULE SHARED STATIC EXE DEBUG RELEASE C CXX ASM) #used to define the context
-  set(oneValueArgs COMPILER AR LINKER MAKE RANLIB JOBS) #returned values conditionned by options
-  set(multiValueArgs CFLAGS LDFLAGS) #returned values conditionned by options
+  set(oneValueArgs COMPILER AR LINKER MAKE RANLIB JOBS OBJDUMP OBJCOPY NM) #returned values conditionned by options
+  set(multiValueArgs CFLAGS LDFLAGS INCLUDES) #returned values conditionned by options
+
   cmake_parse_arguments(GET_ENVIRONMENT_INFO "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   #returning flag to use with make tool
@@ -1353,6 +1351,15 @@ function(get_Environment_Info)
   if(GET_ENVIRONMENT_INFO_MAKE)
     set(${GET_ENVIRONMENT_INFO_MAKE} ${CMAKE_MAKE_PROGRAM} PARENT_SCOPE)
   endif()
+  if(GET_ENVIRONMENT_INFO_OBJDUMP)
+    set(${GET_ENVIRONMENT_INFO_RANLIB} ${CMAKE_OBJDUMP} PARENT_SCOPE)
+  endif()
+  if(GET_ENVIRONMENT_INFO_OBJCOPY)
+    set(${GET_ENVIRONMENT_INFO_MAKE} ${CMAKE_OBJCOPY} PARENT_SCOPE)
+  endif()
+  if(GET_ENVIRONMENT_INFO_NM)
+    set(${GET_ENVIRONMENT_INFO_MAKE} ${CMAKE_NM} PARENT_SCOPE)
+  endif()
 
   if(GET_ENVIRONMENT_INFO_CFLAGS)
     if(GET_ENVIRONMENT_INFO_C)
@@ -1383,7 +1390,7 @@ function(get_Environment_Info)
   endif() #end for c flags
 
   if(GET_ENVIRONMENT_INFO_LDFLAGS)#now flags for the linker
-    if(NOT GET_ENVIRONMENT_INFO_DEBUG OR GET_ENVIRONMENT_INFO_RELEASE)
+    if(GET_ENVIRONMENT_INFO_RELEASE OR NOT GET_ENVIRONMENT_INFO_DEBUG)
       set(suffix _RELEASE)
     else()
       set(suffix _DEBUG)
