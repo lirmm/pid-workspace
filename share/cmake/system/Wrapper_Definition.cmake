@@ -108,10 +108,7 @@ endif()
 add_Category("${ARGV0}")
 endmacro(add_PID_Wrapper_Category)
 
-<<<<<<< Updated upstream
 
-### API : add_PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
-=======
 #.rst:
 #
 # .. ifmode:: user
@@ -156,7 +153,6 @@ endmacro(add_PID_Wrapper_Category)
 #	          DEFAULT OFF
 #	          DESCRIPTION "set to ON to enable CUDA support during build")
 #
->>>>>>> Stashed changes
 macro(define_PID_Wrapper_User_Option)
 set(oneValueArgs OPTION TYPE DESCRIPTION)
 set(multiValueArgs DEFAULT)
@@ -167,14 +163,7 @@ endif()
 if(NOT DEFINE_PID_WRAPPER_USER_OPTION_TYPE)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the type of the option must be given using TYPE keyword. Choose amon followiung value: FILEPATH (File chooser dialog), PATH (Directory chooser dialog), STRING (Arbitrary string), BOOL.")
 endif()
-<<<<<<< Updated upstream
-if(NOT DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT AND DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT STREQUAL "")#no argument passed (arguments may be boolean)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, default value of the option must be given using DEFAULT keyword (may be a list of values).")
-endif()
-set_Wrapper_Option("${DEFINE_PID_WRAPPER_USER_OPTION_OPTION}" "${DEFINE_PID_WRAPPER_USER_OPTION_TYPE}" "${DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT}" "${DEFINE_PID_WRAPPER_USER_OPTION_DESCRIPTION}")
-=======
 set_Wrapper_Option("${option_name}" "${DEFINE_PID_WRAPPER_USER_OPTION_TYPE}" "${DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT}" "${DEFINE_PID_WRAPPER_USER_OPTION_DESCRIPTION}")
->>>>>>> Stashed changes
 endmacro(define_PID_Wrapper_User_Option)
 
 ### API : declare_PID_Wrapper_Publishing()
@@ -409,8 +398,8 @@ endmacro(declare_PID_Wrapper_Component)
 ### define a component
 macro(declare_PID_Wrapper_Component_Dependency)
 set(options EXPORT)
-set(oneValueArgs COMPONENT EXTERNAL PACKAGE)
-set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS)
+set(oneValueArgs COMPONENT EXTERNAL PACKAGE C_STANDARD CXX_STANDARD)
+set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component_Dependency requires to define the name of the component to chich a dependency applies by using the COMPONENT keyword.")
@@ -444,6 +433,9 @@ if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE) #this is a dependency to an
 			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_STATIC_LINKS}"
 			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
 			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_OPTIONS}"
+			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_STANDARD}"
+			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}"
 		)
 	endif()
 else()#this is a dependency to another component defined in the same external package

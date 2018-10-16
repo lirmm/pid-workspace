@@ -705,9 +705,15 @@ function(generate_External_Use_File_For_Version package version platform)
 
 	# manage generation of component description
 	file(APPEND ${file_for_version} "#description of external package ${package} version ${version} components\n")
+	# writing all components first in order to avoid that some component required other internal components that are not already defined
 	foreach(component IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENTS)
 		generate_Description_For_External_Component(${file_for_version} ${package} ${platform} ${version} ${component})
 	endforeach()
+	#then writing dependencies for all components => we are sure that all components are defined before defining dependencies
+	foreach(component IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENTS)
+		generate_Description_For_External_Component_Dependencies(${file_for_version} ${package} ${platform} ${version} ${component})
+	endforeach()
+
 endfunction(generate_External_Use_File_For_Version)
 
 ###
@@ -821,6 +827,25 @@ endif()
 endfunction(generate_Description_For_External_Component_Dependency)
 
 ###
+function(generate_Description_For_External_Component_Dependencies file_for_version package platform version component)
+	#management of component internal dependencies
+	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES)
+		file(APPEND ${file_for_version} "#declaring internal dependencies for component ${component}\n")
+		foreach(dep IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES)
+			generate_Description_For_External_Component_Internal_Dependency(${file_for_version} ${package} ${version} ${component} ${dep})
+		endforeach()
+	endif()
+
+	#management of component internal dependencies
+	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES)
+		file(APPEND ${file_for_version} "#declaring external dependencies for component ${component}\n")
+		foreach(dep_pack IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES)
+			generate_Description_For_External_Component_Dependency(${file_for_version} ${package} ${platform} ${version} ${component} ${dep_pack})
+		endforeach()
+	endif()
+endfunction(generate_Description_For_External_Component_Dependencies)
+
+###
 function(generate_Description_For_External_Component file_for_version package platform version component)
 	file(APPEND ${file_for_version} "#component ${component}\n")
 	set(options_str "")
@@ -874,21 +899,7 @@ function(generate_Description_For_External_Component file_for_version package pl
 	endif()
 	file(APPEND ${file_for_version} "declare_PID_External_Component(PACKAGE ${package} COMPONENT ${component}${options_str})\n")
 
-	#management of component internal dependencies
-	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES)
-		file(APPEND ${file_for_version} "#declaring internal dependencies for component ${component}\n")
-		foreach(dep IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCIES)
-			generate_Description_For_External_Component_Internal_Dependency(${file_for_version} ${package} ${version} ${component} ${dep})
-		endforeach()
-	endif()
 
-	#management of component internal dependencies
-	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES)
-		file(APPEND ${file_for_version} "#declaring external dependencies for component ${component}\n")
-		foreach(dep_pack IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCIES)
-			generate_Description_For_External_Component_Dependency(${file_for_version} ${package} ${platform} ${version} ${component} ${dep_pack})
-		endforeach()
-	endif()
 endfunction(generate_Description_For_External_Component)
 
 
