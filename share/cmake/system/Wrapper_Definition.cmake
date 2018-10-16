@@ -108,8 +108,55 @@ endif()
 add_Category("${ARGV0}")
 endmacro(add_PID_Wrapper_Category)
 
+<<<<<<< Updated upstream
 
 ### API : add_PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
+=======
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |define_PID_Wrapper_User_Option| replace:: ``define_PID_Wrapper_User_Option``
+#  .. _define_PID_Wrapper_User_Option:
+#
+#  define_PID_Wrapper_User_Option
+#  ------------------------------
+#
+#   .. command:: define_PID_Wrapper_User_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])
+#
+#      Declare that the current wrapper generates external packages that belong to a given category.
+#
+#     .. rubric:: Required parameters
+#
+#     :[OPTION] <name>:  string defining the name of the user option. This name can then be used in deployment scripts. The option keyword can be omitted is name is given as first argument.
+#     :TYPE <type of the cmake option>:  type of the option, to be chosen between: FILEPATH (File chooser dialog), PATH (Directory chooser dialog), STRING (Arbitrary string), BOOL.
+#     :DEFAULT ...:  Default value for the option.
+#
+#     .. rubric:: Optional parameters
+#
+#     :DESCRIPTION <string>: a string describing what this option is acting on.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the root CMakeLists.txt file of the wrapper, after declare_PID_Wrapper and before build_PID_Wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        Register a new user option into the wrapper. This user option will be used only in deployment scripts.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        define_PID_Wrapper_User_Option(
+#	          OPTION BUILD_WITH_CUDA_SUPPORT
+#	          TYPE BOOL
+#	          DEFAULT OFF
+#	          DESCRIPTION "set to ON to enable CUDA support during build")
+#
+>>>>>>> Stashed changes
 macro(define_PID_Wrapper_User_Option)
 set(oneValueArgs OPTION TYPE DESCRIPTION)
 set(multiValueArgs DEFAULT)
@@ -120,10 +167,14 @@ endif()
 if(NOT DEFINE_PID_WRAPPER_USER_OPTION_TYPE)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the type of the option must be given using TYPE keyword. Choose amon followiung value: FILEPATH (File chooser dialog), PATH (Directory chooser dialog), STRING (Arbitrary string), BOOL.")
 endif()
+<<<<<<< Updated upstream
 if(NOT DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT AND DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT STREQUAL "")#no argument passed (arguments may be boolean)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, default value of the option must be given using DEFAULT keyword (may be a list of values).")
 endif()
 set_Wrapper_Option("${DEFINE_PID_WRAPPER_USER_OPTION_OPTION}" "${DEFINE_PID_WRAPPER_USER_OPTION_TYPE}" "${DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT}" "${DEFINE_PID_WRAPPER_USER_OPTION_DESCRIPTION}")
+=======
+set_Wrapper_Option("${option_name}" "${DEFINE_PID_WRAPPER_USER_OPTION_TYPE}" "${DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT}" "${DEFINE_PID_WRAPPER_USER_OPTION_DESCRIPTION}")
+>>>>>>> Stashed changes
 endmacro(define_PID_Wrapper_User_Option)
 
 ### API : declare_PID_Wrapper_Publishing()
@@ -541,8 +592,13 @@ endfunction(get_User_Option_Info)
 ### getting all options and flags (compiler in use, basic flags for each type of component, and so on) defined by the current environment, to be able to access them in the deploy script
 function(get_Environment_Info)
   set(options MODULE SHARED STATIC EXE DEBUG RELEASE C CXX ASM) #used to define the context
+<<<<<<< Updated upstream
   set(oneValueArgs COMPILER AR LINKER MAKE RANLIB JOBS) #returned values conditionned by options
   set(multiValueArgs CFLAGS LDFLAGS INCLUDES) #returned values conditionned by options
+=======
+  set(oneValueArgs COMPILER AR LINKER MAKE RANLIB JOBS OBJDUMP OBJCOPY) #returned values conditionned by options
+  set(multiValueArgs CFLAGS LDFLAGS) #returned values conditionned by options
+>>>>>>> Stashed changes
   cmake_parse_arguments(GET_ENVIRONMENT_INFO "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   #returning flag to use with make tool
@@ -582,6 +638,15 @@ function(get_Environment_Info)
   if(GET_ENVIRONMENT_INFO_MAKE)
     set(${GET_ENVIRONMENT_INFO_MAKE} ${CMAKE_MAKE_PROGRAM} PARENT_SCOPE)
   endif()
+  if(GET_ENVIRONMENT_INFO_OBJDUMP)
+    set(${GET_ENVIRONMENT_INFO_RANLIB} ${CMAKE_OBJDUMP} PARENT_SCOPE)
+  endif()
+  if(GET_ENVIRONMENT_INFO_OBJCOPY)
+    set(${GET_ENVIRONMENT_INFO_MAKE} ${CMAKE_OBJCOPY} PARENT_SCOPE)
+  endif()
+  if(GET_ENVIRONMENT_INFO_NM)
+    set(${GET_ENVIRONMENT_INFO_MAKE} ${CMAKE_NM} PARENT_SCOPE)
+  endif()
 
   if(GET_ENVIRONMENT_INFO_CFLAGS)
     if(GET_ENVIRONMENT_INFO_C)
@@ -612,7 +677,7 @@ function(get_Environment_Info)
   endif() #end for c flags
 
   if(GET_ENVIRONMENT_INFO_LDFLAGS)#now flags for the linker
-    if(NOT GET_ENVIRONMENT_INFO_DEBUG OR GET_ENVIRONMENT_INFO_RELEASE)
+    if(GET_ENVIRONMENT_INFO_RELEASE OR NOT GET_ENVIRONMENT_INFO_DEBUG)
       set(suffix _RELEASE)
     else()
       set(suffix _DEBUG)
