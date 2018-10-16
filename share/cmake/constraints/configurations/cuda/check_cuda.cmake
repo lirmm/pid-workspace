@@ -21,14 +21,8 @@ if(NOT cuda_FOUND)
 	set(cuda_TOOLKIT_PATH CACHE INTERNAL "")
 	set(cuda_INCLUDE_DIRS CACHE INTERNAL "")
 	set(cuda_LINK_OPTIONS CACHE INTERNAL "")
-<<<<<<< Updated upstream:share/cmake/constraints/configurations/cuda/check_cuda.cmake
-	set(cuda_DEFINITIONS CACHE INTERNAL "")
-	set(cuda_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/cuda/find_cuda.cmake)
-=======
 	set(cuda_EXECUTABLE_PATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/cuda/find_cuda.cmake)
->>>>>>> Stashed changes:configurations/cuda/check_cuda.cmake
+	include(${WORKSPACE_DIR}/share/cmake/constraints/configurations/cuda/find_cuda.cmake)
 	if(cuda_FOUND)
 		set(cuda_LINK_OPTIONS ${cuda_LIBRARIES} CACHE INTERNAL "")
 		set(cuda_INCLUDE_DIRS ${cuda_INCS} CACHE INTERNAL "")

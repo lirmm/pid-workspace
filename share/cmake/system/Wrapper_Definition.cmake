@@ -592,13 +592,8 @@ endfunction(get_User_Option_Info)
 ### getting all options and flags (compiler in use, basic flags for each type of component, and so on) defined by the current environment, to be able to access them in the deploy script
 function(get_Environment_Info)
   set(options MODULE SHARED STATIC EXE DEBUG RELEASE C CXX ASM) #used to define the context
-<<<<<<< Updated upstream
-  set(oneValueArgs COMPILER AR LINKER MAKE RANLIB JOBS) #returned values conditionned by options
-  set(multiValueArgs CFLAGS LDFLAGS INCLUDES) #returned values conditionned by options
-=======
-  set(oneValueArgs COMPILER AR LINKER MAKE RANLIB JOBS OBJDUMP OBJCOPY) #returned values conditionned by options
+  set(oneValueArgs COMPILER AR LINKER MAKE RANLIB JOBS OBJDUMP OBJCOPY NM) #returned values conditionned by options
   set(multiValueArgs CFLAGS LDFLAGS) #returned values conditionned by options
->>>>>>> Stashed changes
   cmake_parse_arguments(GET_ENVIRONMENT_INFO "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   #returning flag to use with make tool
