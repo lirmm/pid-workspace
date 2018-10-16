@@ -716,7 +716,132 @@ else()
 endif()
 endfunction(is_Shared_Lib_With_Path)
 
-###
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Shared_Lib_Extension| replace:: ``create_Shared_Lib_Extension``
+#  .. create_Shared_Lib_Extension:
+#
+#  _create_Shared_Lib_Extension
+#  ----------------------------
+#
+#   .. command:: create_Shared_Lib_Extension(RES_EXT platform soname)
+#
+#    Get the extension string to use for shared libraries.
+#
+#     :platform: the identifier of target platform.
+#
+#     :soname: the soname to use for unix shared objects
+#
+#     :RES_EXT: the output variable containing the resulting extension to use for shared objects, depending on platform.
+#
+function(create_Shared_Lib_Extension RES_EXT platform soname)
+	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
+	if(RES_OS STREQUAL macosx)
+		set(${RES_EXT} ".dylib" PARENT_SCOPE)
+	elseif(RES_OS STREQUAL windows)
+		set(${RES_EXT} ".dll" PARENT_SCOPE)
+	else()# Linux or any other standard UNIX system
+		if(soname)
+			string(REGEX MATCH "^\\.[0-9].*$" MATCHED ${soname})
+			if(MATCHED)#MATCH: the expression start with a dot
+				set(${RES_EXT} ".so${MATCHED}" PARENT_SCOPE)
+			else()#the expression starts with a number, simply add the dot
+				set(${RES_EXT} ".so.${soname}" PARENT_SCOPE)
+			endif()
+		else()
+			set(${RES_EXT} ".so" PARENT_SCOPE)
+		endif()
+	endif()
+endfunction(create_Shared_Lib_Extension)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |shared_Library_Needs_Soname| replace:: ``shared_Library_Needs_Soname``
+#  .. _shared_Library_Needs_Soname:
+#
+#  shared_Library_Needs_Soname
+#  -----------------------------------
+#
+#   .. command:: shared_Library_Needs_Soname(NEEDS_SONAME library_path)
+#
+#    Check whether a shared library needs to have a soname extension appended to its name.
+#
+#     :library_path: the path to the library.
+#
+#     :platform: the target platform.
+#
+#     :NEEDS_SONAME: the output variable that is TRUE if the extension finish by a SONAME.
+#
+function(shared_Library_Needs_Soname NEEDS_SONAME library_path platform)
+  set(${NEEDS_SONAME} FALSE PARENT_SCOPE)
+	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
+	if(RES_OS STREQUAL macosx OR RES_OS STREQUAL windows)
+    return()
+  endif()
+  if(library_path MATCHES "^-l.*$")#OS dependency using standard library path
+    return()
+  endif()
+	get_filename_component(EXTENSION ${library_path} EXT)#get the longest extension of the file
+  if(EXTENSION MATCHES "^(\\.[^\\.]+)*\\.so(\\.[0-9]+)*$")#there is already a .so extension
+    # this check is here to ensure that a library name ending with a dot followed by any characters
+    # will not be considered as a library extension (e.g. example libusb-1.0)
+		return()
+	endif()
+  set(${NEEDS_SONAME} TRUE PARENT_SCOPE)
+endfunction(shared_Library_Needs_Soname)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |convert_Library_Path_To_Default_System_Library_Link| replace:: ``convert_Library_Path_To_Default_System_Library_Link``
+#  .. _convert_Library_Path_To_Default_System_Library_Link:
+#
+#  convert_Library_Path_To_Default_System_Library_Link
+#  ---------------------------------------------------
+#
+#   .. command:: convert_Library_Path_To_Default_System_Library_Link(RESULTING_LINK library_path)
+#
+#    Check whether a shared library needs to have a soname extension appended to its name.
+#
+#     :library_path: the path to the library.
+#
+#     :RESULTING_LINK: the output variable that contains the default system link option for the given library.
+#
+function(convert_Library_Path_To_Default_System_Library_Link RESULTING_LINK library_path)
+  if(library_path MATCHES "^-l.*$")#OS dependency using standard library path => no need for conversion
+    set(${RESULTING_LINK} ${library_path} PARENT_SCOPE)
+    return()
+  endif()
+  get_filename_component(LIB_NAME ${library_path} NAME)
+  string(REGEX REPLACE "^lib(.+)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+  string(REGEX REPLACE "^(.+)\\.so(\\.[0-9]+)*$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+
+  set(${RESULTING_LINK} "-l${LIB_NAME}" PARENT_SCOPE)
+endfunction(convert_Library_Path_To_Default_System_Library_Link)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Link_Type| replace:: ``get_Link_Type``
+#  .. _get_Link_Type:
+#
+#  get_Link_Type
+#  -------------
+#
+#   .. command:: get_Link_Type(RES_TYPE input_link)
+#
+#    Get the type of a link option based on the extension used (if any)
+#
+#     :input_link: the link option
+#
+#     :RES_TYPE: the output variable that contains the type of the target binary (SHARED, STATIC or OPTION if none of the two first) .
+#
 function(get_Link_Type RES_TYPE input_link)
 get_filename_component(LIB_TYPE ${input_link} EXT)
 if(LIB_TYPE)

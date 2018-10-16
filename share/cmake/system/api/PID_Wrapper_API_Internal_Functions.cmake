@@ -858,8 +858,8 @@ function(generate_Description_For_External_Component file_for_version package pl
 		create_Shared_Lib_Extension(RES_EXT ${platform} "${USE_SONAME}")#create the soname extension
 		set(final_list_of_shared)#add the adequate extension name depending on the platform
 		foreach(shared_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
-				get_filename_component(EXTENSION ${shared_lib_path} EXT)
-				if(NOT EXTENSION OR EXTENSION STREQUAL "")#OK no extension defined we can apply
+				shared_Library_Needs_Soname(RESULT_SONAME ${shared_lib_path} ${platform})
+				if(RESULT_SONAME)#OK no extension defined we can apply
 					list(APPEND final_list_of_shared "${shared_lib_path}${RES_EXT}")
 				else()
 					list(APPEND final_list_of_shared "${shared_lib_path}")
