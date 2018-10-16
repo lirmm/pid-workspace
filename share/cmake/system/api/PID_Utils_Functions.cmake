@@ -1817,34 +1817,69 @@ endfunction(create_Shared_Lib_Extension)
 #
 # .. ifmode:: internal
 #
-#  .. |shared_Library_Extension_Has_Soname| replace:: ``shared_Library_Extension_Has_Soname``
-#  .. _shared_Library_Extension_Has_Soname:
+#  .. |shared_Library_Needs_Soname| replace:: ``shared_Library_Needs_Soname``
+#  .. _shared_Library_Needs_Soname:
 #
-#  shared_Library_Extension_Has_Soname
+#  shared_Library_Needs_Soname
 #  -----------------------------------
 #
-#   .. command:: shared_Library_Extension_Has_Soname(HAS_SONAME library_path)
+#   .. command:: shared_Library_Needs_Soname(NEEDS_SONAME library_path)
 #
-#    Check whether a shared library has a soname appended to its extension.
+#    Check whether a shared library needs to have a soname extension appended to its name.
 #
 #     :library_path: the path to the library.
 #
-#     :HAS_SONAME: the output variable that is TRUE if the extension finish by a SONAME.
+#     :platform: the target platform.
 #
-function(shared_Library_Extension_Has_Soname HAS_SONAME library_path)
+#     :NEEDS_SONAME: the output variable that is TRUE if the extension finish by a SONAME.
+#
+function(shared_Library_Needs_Soname NEEDS_SONAME library_path platform)
+  set(${NEEDS_SONAME} FALSE PARENT_SCOPE)
 	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
-	if(NOT RES_OS STREQUAL macosx
-		AND NOT RES_OS STREQUAL windows)
-		get_filename_component(EXTENSION ${library_path} EXT)#get the longest extension of the file
-		if(EXTENSION MATCHES "^\\.so(\\.[0-9]+)*$")
-			# this check is here to ensure that a library name ending with a dot followed by any characters
-			# will not be considered as a library extension (e.g. example for which this check has been done : libusb-1.0)
-			set(${HAS_SONAME} TRUE PARENT_SCOPE)
-			return()
-		endif()
+	if(RES_OS STREQUAL macosx OR RES_OS STREQUAL windows)
+    return()
+  endif()
+  if(library_path MATCHES "^-l.*$")#OS dependency using standard library path
+    return()
+  endif()
+	get_filename_component(EXTENSION ${library_path} EXT)#get the longest extension of the file
+  if(EXTENSION MATCHES "^(\\.[^\\.]+)*\\.so(\\.[0-9]+)*$")#there is already a .so extension
+    # this check is here to ensure that a library name ending with a dot followed by any characters
+    # will not be considered as a library extension (e.g. example libusb-1.0)
+		return()
 	endif()
-	set(${HAS_SONAME} FALSE PARENT_SCOPE)
-endfunction(shared_Library_Extension_Has_Soname)
+  set(${NEEDS_SONAME} TRUE PARENT_SCOPE)
+endfunction(shared_Library_Needs_Soname)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |convert_Library_Path_To_Default_System_Library_Link| replace:: ``convert_Library_Path_To_Default_System_Library_Link``
+#  .. _convert_Library_Path_To_Default_System_Library_Link:
+#
+#  convert_Library_Path_To_Default_System_Library_Link
+#  ---------------------------------------------------
+#
+#   .. command:: convert_Library_Path_To_Default_System_Library_Link(RESULTING_LINK library_path)
+#
+#    Check whether a shared library needs to have a soname extension appended to its name.
+#
+#     :library_path: the path to the library.
+#
+#     :RESULTING_LINK: the output variable that contains the default system link option for the given library.
+#
+function(convert_Library_Path_To_Default_System_Library_Link RESULTING_LINK library_path)
+  if(library_path MATCHES "^-l.*$")#OS dependency using standard library path => no need for conversion
+    set(${RESULTING_LINK} ${library_path} PARENT_SCOPE)
+    return()
+  endif()
+  get_filename_component(LIB_NAME ${library_path} NAME)
+  string(REGEX REPLACE "^lib(.+)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+  string(REGEX REPLACE "^(.+)\\.so(\\.[0-9]+)*$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+
+  set(${RESULTING_LINK} "-l${LIB_NAME}" PARENT_SCOPE)
+endfunction(convert_Library_Path_To_Default_System_Library_Link)
 
 #.rst:
 #
