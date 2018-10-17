@@ -10,9 +10,8 @@ declare_PID_Package(
 			YEAR        @PACKAGE_YEARS@
 			LICENSE     @PACKAGE_LICENSE@
 			DESCRIPTION @PACKAGE_DESCRIPTION@
+			VERSION     0.0.0
 		)
-
-set_PID_Package_Version(0 0)
 
 #now finding packages
 

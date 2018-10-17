@@ -26,7 +26,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
-if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))# a framework is created
+if(TARGET_FRAMEWORK)# a framework is created
 	include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${TARGET_FRAMEWORK}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(NOT REQUIRED_STATUS STREQUAL NOTFOUND)
 		message("[PID] ERROR : A framework with the same name ${TARGET_FRAMEWORK} is already referenced in the workspace repository.")
@@ -69,8 +69,7 @@ if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))# a framework is crea
 		message("[PID] INFO : new framework ${TARGET_FRAMEWORK} has just been created locally.")
 	endif()
 
-elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
-
+elseif(TARGET_PACKAGE)
 	include(${WORKSPACE_DIR}/share/cmake/references/Refer${TARGET_PACKAGE}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(NOT REQUIRED_STATUS STREQUAL NOTFOUND)
 		message("[PID] ERROR : A package with the same name ${TARGET_PACKAGE} is already referenced in the workspace repository.")
@@ -89,7 +88,7 @@ elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
 	endif()
 	if(OPTIONNAL_GIT_URL)
 		get_Repository_Name(RES_NAME ${OPTIONNAL_GIT_URL})
-		if(NOT "${RES_NAME}" STREQUAL "${TARGET_PACKAGE}")
+		if(NOT RES_NAME STREQUAL TARGET_PACKAGE)
 			message("[PID] ERROR : the git url of the repository (${OPTIONNAL_GIT_URL}) does not define a repository with same name than package ${TARGET_PACKAGE}.")
 			return()
 		endif()
@@ -113,7 +112,7 @@ elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
 		message("[PID] INFO : new package ${TARGET_PACKAGE} has just been created locally.")
 	endif()
 
-elseif(TARGET_WRAPPER AND (NOT TARGET_WRAPPER STREQUAL ""))
+elseif(TARGET_WRAPPER)
 	include(${WORKSPACE_DIR}/share/cmake/references/ReferExternal${TARGET_WRAPPER}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(NOT REQUIRED_STATUS STREQUAL NOTFOUND)
 		message("[PID] ERROR : An external package with the same name ${TARGET_WRAPPER} is already referenced in the workspace repository.")

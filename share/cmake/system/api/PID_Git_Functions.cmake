@@ -657,7 +657,6 @@ endfunction(commit_Current_Repository_Branch)
 #     :package: the name of target package
 #
 function(register_Repository_Address package)
-go_To_Integration(${package})
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git add CMakeLists.txt) ### registering the address means registering the CMakelists.txt
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git commit -m "adding repository address to the root CMakeLists.txt file")
 endfunction(register_Repository_Address)
@@ -1498,13 +1497,13 @@ endfunction(init_Repository)
 #
 # .. ifmode:: internal
 #
-#  .. |connect_Repository| replace:: ``connect_Repository``
+#  .. |connect_Package_Repository| replace:: ``connect_Package_Repository``
 #  .. _connect_Repository:
 #
-#  connect_Repository
-#  ------------------
+#  connect_Package_Repository
+#  --------------------------
 #
-#   .. command:: connect_Repository(package url)
+#   .. command:: connect_Package_Repository(package url)
 #
 #     Connect a package's repository to a remote (this later become origin and official in the same time). Used first time the package is connected after its creation.
 #
@@ -1512,19 +1511,16 @@ endfunction(init_Repository)
 #
 #     :url: the url of the package's remote
 #
-function(connect_Repository package url)
+function(connect_Package_Repository package url)
 connect_Repository_Remote(${package} ${url} "" origin)
 connect_Repository_Remote(${package} ${url} "" official)
 
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master  OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin --tags OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin integration  OUTPUT_QUIET ERROR_QUIET)
 
-go_To_Master(${package})
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin master  OUTPUT_QUIET ERROR_QUIET)
-
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git push origin --tags OUTPUT_QUIET ERROR_QUIET)
-
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git fetch official)
-endfunction(connect_Repository)
+endfunction(connect_Package_Repository)
 
 #.rst:
 #

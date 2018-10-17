@@ -1308,7 +1308,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/shar
 
 #setting variables
 set(PACKAGE_NAME ${package})
-if(author AND NOT author STREQUAL "")
+if(author)
 	set(PACKAGE_AUTHOR_NAME "${author}")
 else()
 	if(WIN32)
@@ -1317,12 +1317,12 @@ else()
 		set(PACKAGE_AUTHOR_NAME "$ENV{USER}")
 	endif()
 endif()
-if(institution AND NOT institution STREQUAL "")
+if(institution)
 	set(PACKAGE_AUTHOR_INSTITUTION "INSTITUTION	${institution}")
 else()
 	set(PACKAGE_AUTHOR_INSTITUTION "")
 endif()
-if(license AND NOT license STREQUAL "")
+if(license)
 	set(PACKAGE_LICENSE "${license}")
 else()
 	message("[PID] WARNING: no license defined so using the default CeCILL license.")
@@ -1710,7 +1710,7 @@ if(first_time)#first time this package is connected because newly created
 	set_Package_Repository_Address(${package} ${git_url})
 	register_Repository_Address(${package})
 	# synchronizing with the "official" remote git repository
-	connect_Repository(${package} ${git_url})
+	connect_Package_Repository(${package} ${git_url})
 else() #forced reconnection
 	# updating the address of the official repository in the CMakeLists.txt of the package
 	reset_Package_Repository_Address(${package} ${git_url})
@@ -2109,6 +2109,12 @@ else()# check that integration branch is a fast forward of master
 	file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${STRING})
 	#rebuild package from master branch to get a clean installed version (getting clean use file)
 	build_And_Install_Source(IS_BUILT ${package} ${STRING} "" FALSE)
+	if(NOT IS_BUILT AND NOT STRING VERSION_LESS "1.0.0")#if the package is in a preliminary development state do not break the versionning if package does not build
+		message("[PID] ERROR : cannot release package ${package}, because its version ${STRING} does not build.")
+		tag_Version(${package} ${STRING} FALSE)#remove local tag
+		go_To_Integration(${package})#always go back to original branch
+		return()
+	endif()
 	#merge back master into integration
 	merge_Into_Integration(${package})
 
