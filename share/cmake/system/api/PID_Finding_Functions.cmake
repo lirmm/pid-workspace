@@ -195,15 +195,14 @@ foreach(version IN LISTS available_versions)
 	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
 	if(COMPARE_MAJOR EQUAL MAJOR)
 		if(	COMPARE_MINOR EQUAL curr_max_minor_number
-			AND COMPARE_PATCH GREATER curr_max_patch_number)
+      AND (NOT COMPARE_PATCH LESS curr_max_patch_number))#do not use GREATER as if a patch version is defined we can be in a situation where PATCH=PATCH and curr_major has never been set
       set(curr_major ${COMPARE_MAJOR})
       set(curr_max_patch_number ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
-		elseif(COMPARE_MINOR GREATER ${curr_max_minor_number})
+		elseif(COMPARE_MINOR GREATER curr_max_minor_number)
       set(curr_major ${COMPARE_MAJOR})
       set(curr_max_patch_number ${COMPARE_PATCH})# taking the patch version of this major.minor
 			set(curr_max_minor_number ${COMPARE_MINOR})# taking the last minor version available for this major
 		endif()
-
 	endif()
 endforeach()
 if(curr_max_patch_number EQUAL -1 OR curr_major EQUAL -1)#i.e. nothing found
@@ -328,10 +327,10 @@ if(version_dirs)#seaking for a good version only if there are versions installed
   endif()
 	foreach(patch_num IN LISTS version_dirs)
 		string(REGEX REPLACE "^${major}\\.${minor}\\.([0-9]+)$" "\\1" A_VERSION "${patch_num}")
-		if(	NOT (A_VERSION STREQUAL "${patch_num}") #there is a match
-			AND ${A_VERSION} GREATER ${curr_patch_version})#newer patch version
+		if((NOT A_VERSION STREQUAL patch_num) #there is a match
+			 AND (NOT A_VERSION LESS curr_patch_version)) #newer patch version
 			set(curr_patch_version ${A_VERSION})
-			set(result true)
+			set(result TRUE)
 		endif()
 	endforeach()
 
@@ -382,16 +381,18 @@ if(version_dirs)#seaking for a good version only if there are versions installed
   update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" false "${version_dirs}")#updating only if there are installed versions
 	foreach(version IN LISTS version_dirs)
 		string(REGEX REPLACE "^${major}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
-		if(NOT (A_VERSION STREQUAL "${version}"))#there is a match
+		if(NOT (A_VERSION STREQUAL version))#there is a match
 			list(GET A_VERSION 0 minor_num)
 			list(GET A_VERSION 1 patch_num)
-			if("${minor_num}" EQUAL "${curr_max_minor_version}"
-			AND ("${patch_num}" EQUAL "${curr_patch_version}" OR "${patch_num}" GREATER "${curr_patch_version}"))
-				set(result true)
+			if(minor_num EQUAL curr_max_minor_version
+  			AND (patch_num EQUAL curr_patch_version
+            OR patch_num GREATER curr_patch_version)#=minor >= patch
+        )
+				set(result TRUE)
 				#a more recent patch version found with same max minor version
 				set(curr_patch_version ${patch_num})
-			elseif("${minor_num}" GREATER "${curr_max_minor_version}")
-				set(result true)
+			elseif(minor_num GREATER curr_max_minor_version)#>=minor
+				set(result TRUE)
 				#a greater minor version found
 				set(curr_max_minor_version ${minor_num})
 				set(curr_patch_version ${patch_num})
@@ -433,7 +434,7 @@ if(local_versions)#seaking for a good version only if there are versions install
 	set(${VERSION_FOUND} TRUE PARENT_SCOPE)
 	set(version_string_curr "0.0.0")
 	foreach(local_version_dir IN LISTS local_versions)
-		if("${version_string_curr}" VERSION_LESS "${local_version_dir}")
+		if(version_string_curr VERSION_LESS local_version_dir)
 			set(version_string_curr ${local_version_dir})
 		endif()
 	endforeach()
@@ -1659,8 +1660,8 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
   			return()
   		endif()
 		endif()
-	else()
-		return()#by default the version is compatible (no constraints) so return
+	else()#no specific version constraint applies to dependency from the package
+		return()#by default the version is compatible (no constraints) so return (no need to change the version currently in use)
 	endif()
 else()#the dependency has not been already found
 	if(	${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX})

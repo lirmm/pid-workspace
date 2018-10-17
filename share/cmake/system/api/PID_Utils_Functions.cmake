@@ -2359,17 +2359,23 @@ endfunction(reset_Package_Repository_Address)
 #     :RES_PUBLIC_URL: the output variable that contains the public counterpart URL of package respotiry.
 #
 function(get_Package_Repository_Address package RES_URL RES_PUBLIC_URL)
-	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
+  if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt)
+	  set(${RES_URL} PARENT_SCOPE)
+    set(${RES_PUBLIC_URL} PARENT_SCOPE)
+    return()
+  endif()
+
+	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CMAKE_CONTENT)
 	#checking for restricted address
-	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
-	if(url STREQUAL "${CONTENT}")#no match
+	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CMAKE_CONTENT})
+	if(url STREQUAL CMAKE_CONTENT)#no match
 		set(${RES_URL} PARENT_SCOPE)
 	else()
 		set(${RES_URL} ${url} PARENT_SCOPE)
 	endif()
 	#checking for public (fetch only) address
-	string(REGEX REPLACE "^.+[ \t\n]PUBLIC_ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
-	if(url STREQUAL "${CONTENT}")#no match
+	string(REGEX REPLACE "^.+[ \t\n]PUBLIC_ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CMAKE_CONTENT})
+	if(url STREQUAL CMAKE_CONTENT)#no match
 		set(${RES_PUBLIC_URL} PARENT_SCOPE)
 	else()
 		set(${RES_PUBLIC_URL} ${url} PARENT_SCOPE)

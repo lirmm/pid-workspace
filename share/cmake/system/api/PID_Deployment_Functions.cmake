@@ -625,10 +625,12 @@ set(PATH_TO_SOURCE "")
 package_Source_Exists_In_Workspace(IS_EXISTING PATH_TO_SOURCE ${package})
 if(IS_EXISTING)
 	set(USE_SOURCES TRUE)
+  set(REPOSITORY_EXISTS TRUE)
 else()
+  set(REPOSITORY_EXISTS FALSE)
 	package_Reference_Exists_In_Workspace(IS_EXISTING ${package})
 	if(IS_EXISTING)
-		set(USE_SOURCES FALSE)
+		set(USE_SOURCES FALSE)#by default do not use sources if repository does not lie in workspace
 	else()
 		set(${INSTALL_OK} FALSE PARENT_SCOPE)
 		message("[PID] ERROR : unknown package ${package}, cannot find any source or reference of this package in the workspace.")
@@ -637,10 +639,20 @@ else()
 endif()
 if(reinstall)#the same version must be reinstalled from sources
   # package does not belong to packages to install then it means that its version is not adequate and it must be reinstalled from sources
-	set(USE_SOURCE TRUE)# we need to build this package from sources, if any available
+	set(USE_SOURCES TRUE)# we need to build this package from sources, if any available
   set(NO_VERSION FALSE)# we need to specify a version !
   set(IS_EXACT TRUE)
   set(VERSION_MIN ${${package}_VERSION_STRING})#the version to reinstall is the currenlty used one
+
+  if(NOT REPOSITORY_EXISTS)#avoiding problem when forcing a reinstall while the repository does not exists
+    set(DEPLOYED FALSE)
+    deploy_Package_Repository(DEPLOYED ${package})
+    if(NOT DEPLOYED) # doing the same as for the USE_SOURCES step
+      message("[PID] ERROR : When rebuilding package ${package} from source, impossible to clone its repository.")
+      set(${INSTALL_OK} FALSE PARENT_SCOPE)
+      return()
+    endif()
+  endif()
 elseif(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
   # 1) resolve finally required package version (if any specific version required) (major.minor only, patch is let undefined)
 	set(POSSIBLE FALSE)
@@ -664,7 +676,7 @@ else()
 endif()
 
 if(USE_SOURCES) #package sources reside in the workspace
-	if(NO_VERSION)
+  if(NO_VERSION)
     deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "" FALSE) # case when the sources exist but haven't been installed yet (should never happen)
 	else()
     deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "" FALSE)
@@ -701,24 +713,24 @@ else()#using references
 	if(PACKAGE_BINARY_DEPLOYED) # if there is ONE adequate reference, downloading and installing it
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 	else()# otherwise, trying to "git clone" the package source (if it can be accessed)
-		set(DEPLOYED FALSE)
-		deploy_Package_Repository(DEPLOYED ${package})
-		if(DEPLOYED) # doing the same as for the USE_SOURCES step
-			if(NOT NO_VERSION)
-				deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "" FALSE)
-			else()
-				deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "" FALSE)
-			endif()
-			if(NOT SOURCE_DEPLOYED)
-				set(${INSTALL_OK} FALSE PARENT_SCOPE)
-				message("[PID] ERROR : impossible to build the package ${package} (version ${VERSION_MIN}) from sources. Try \"by hand\".")
-				return()
-			endif()
-			set(${INSTALL_OK} TRUE PARENT_SCOPE)
-		else()
-			set(${INSTALL_OK} FALSE PARENT_SCOPE)
-			message("[PID] ERROR : impossible to locate source repository of package ${package} or to find a compatible binary version starting from ${VERSION_MIN}.")
-			return()
+  	set(DEPLOYED FALSE)
+  	deploy_Package_Repository(DEPLOYED ${package})
+  	if(DEPLOYED) # doing the same as for the USE_SOURCES step
+  		if(NOT NO_VERSION)
+  			deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "" FALSE)
+  		else()
+  			deploy_Source_Native_Package(SOURCE_DEPLOYED ${package} "" FALSE)
+  		endif()
+    	if(NOT SOURCE_DEPLOYED)
+    		set(${INSTALL_OK} FALSE PARENT_SCOPE)
+    		message("[PID] ERROR : impossible to build the package ${package} (version ${VERSION_MIN}) from sources. Try \"by hand\".")
+    		return()
+    	endif()
+    	set(${INSTALL_OK} TRUE PARENT_SCOPE)
+    else()
+    	set(${INSTALL_OK} FALSE PARENT_SCOPE)
+    	message("[PID] ERROR : impossible to locate source repository of package ${package} or to find a compatible binary version starting from ${VERSION_MIN}.")
+    	return()
 		endif()
 	endif()
 endif()
@@ -1153,7 +1165,6 @@ if(is_exact)
 else()
 	select_Best_Native_Version(RES_VERSION ${min_version} "${VERSION_NUMBERS}")
 endif()
-message("AFTER VERSION selection RES_VERSION=${RES_VERSION}")
 if(NOT RES_VERSION)#no adequate version found, this may be due to the use of a non release version
   try_In_Development_Version(RES_VERSION ${package} ${min_version} ${is_exact} "${run_tests}")#mainly usefull in CI process to build unreleased dependencies
   if(RES_VERSION)
@@ -2247,19 +2258,19 @@ endfunction(memorize_External_Binary_References)
 #
 function(install_External_Package INSTALL_OK package reinstall from_sources)
 
-set(USE_SOURCE FALSE)#by default try to install from binaries, if they are available
+set(USE_SOURCES FALSE)#by default try to install from binaries, if they are available
 set(SELECTED)
 set(IS_EXACT FALSE)
 
 # test if some binaries for this external package exists in the workspace
 memorize_External_Binary_References(RES ${package})
 if(NOT RES)# no binary reference found...
-	set(USE_SOURCE TRUE)#...means we need to build this package from sources, if any available
+	set(USE_SOURCES TRUE)#...means we need to build this package from sources, if any available
 endif()
 
 # resolve finally required package version by current project, if any specific version required
 if(reinstall AND from_sources)#if the package does not belong to packages to install then it means that its version is not adequate and it must be reinstalled
-  set(USE_SOURCE TRUE) # by definition reinstall from sources
+  set(USE_SOURCES TRUE) # by definition reinstall from sources
   set(NO_VERSION FALSE)# we need to specify a version !
   set(IS_EXACT TRUE)
   set(SELECTED ${${package}_VERSION_STRING})#the version to reinstall is the currenlty used one
@@ -2279,11 +2290,11 @@ else()
 endif()
 
 # Just check if there is any chance to get an adequate Binary Archive for that external package
-if(NOT USE_SOURCE) #no need to manage binairies if building from sources
+if(NOT USE_SOURCES) #no need to manage binairies if building from sources
 	#otherwise we need to be sure that there are binaries
 	get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 	if(NOT available_versions)
-		set(USE_SOURCE TRUE)# no solution with binaries since no version available for current platform => so use the sources
+		set(USE_SOURCES TRUE)# no solution with binaries since no version available for current platform => so use the sources
 	else()
 		if(NOT NO_VERSION)#there is a constraint on the version to use
 			set(RES FALSE)
@@ -2302,13 +2313,13 @@ if(NOT USE_SOURCE) #no need to manage binairies if building from sources
 				endif()
 			endforeach()
 			if(NOT RES)#no version found compatible with required one
-				set(USE_SOURCE TRUE)# no solution with binaries since no version available for current platform => so use the sources
+				set(USE_SOURCES TRUE)# no solution with binaries since no version available for current platform => so use the sources
 			endif()
 		endif()
 	endif()
 endif()
 
-if(NOT USE_SOURCE)# we can still try a binary archive deployment
+if(NOT USE_SOURCES)# we can still try a binary archive deployment
 	set(BINARY_DEPLOYED FALSE)
 	if(NO_VERSION)#there is no constraint on the version to use for package
 		deploy_Binary_External_Package(BINARY_DEPLOYED ${package} "")
