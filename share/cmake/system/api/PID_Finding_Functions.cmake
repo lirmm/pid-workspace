@@ -957,6 +957,9 @@ if(external)
       set(${RES_VERSION_TO_USE} ${version_to_test} PARENT_SCOPE)
     endif()
   else()#the version to test is NOT exact, so we can theorically change it in final build with version_in_use (or any compatible version)
+    set(DO_NOT_FIND_${package} TRUE)
+    find_package(${package})#just include the find file to get information about compatible versions, do not "find for real" in install tree
+    unset(DO_NOT_FIND_${package})
     if(version_in_use_is_exact) #the version currenlty in use is exact
       #the exact version in use must be compatible with (usable instead of) the tested one (since in final build version_in_use_will be used)
       is_Compatible_External_Version(IS_COMPATIBLE ${package} ${version_to_test} ${version_in_use})
@@ -1022,6 +1025,7 @@ else()#native package
   endif()
 endif()
 endfunction(get_Compatible_Version)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1034,7 +1038,7 @@ endfunction(get_Compatible_Version)
 #
 #   .. command:: find_Best_Compatible_Version(BEST_VERSION_IN_LIST external package version_in_use version_in_use_exact list_of_versions exact_versions)
 #
-#    From a version constraint of a given package already used in the build process, get the best compatible version from a listr of version constrainnts (if any).
+#    From a version constraint of a given package already used in the build process, get the best compatible version from a listr of version constraints (if any).
 #
 #     :BEST_VERSION_IN_LIST: the output variable that contains the new version constraint to use (may be same as previously).
 #
@@ -1869,6 +1873,9 @@ endmacro(finding_Package)
 #     :package: the name of the package.
 #
 macro(finding_External_Package package)
+if(DO_NOT_FIND_${package})#variable used to avoid finding package (if we only want to include the find file to get compatibility info between known versions)
+  return()
+endif()
 set(${package}_FOUND FALSE CACHE INTERNAL "")
 #workspace dir must be defined for each package build
 set(EXTERNAL_PACKAGE_${package}_SEARCH_PATH
