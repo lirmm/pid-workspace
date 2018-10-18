@@ -762,13 +762,13 @@ endfunction(belongs_To_Known_Versions)
 #
 function(add_Known_Version version deploy_file_name compatible_with_version so_name post_install_script)
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
-	finish_Progress(GLOBAL_PROGRESS_VAR)
+	finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
 	return()
 endif()
 list(FIND ${PROJECT_NAME}_KNOWN_VERSIONS ${version} INDEX)
 if(NOT INDEX EQUAL -1)
-	finish_Progress(GLOBAL_PROGRESS_VAR)
+	finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, version \"${version}\" is already registered !")
 	return()
 endif()
@@ -809,7 +809,7 @@ if(platform)# if a platform constraint applies
 		string(REPLACE " " "" config ${config})#remove the space characters if any
 		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
 		if(NOT CONFIG_NAME)
-			finish_Progress(GLOBAL_PROGRESS_VAR)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
 			return()
 		elseif(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${config} # no other platform constraint already applies
@@ -825,12 +825,12 @@ if(platform)# if a platform constraint applies
 				prepare_Config_Arguments(${CONFIG_NAME} CONFIG_ARGS)#setting variables that correspond to the arguments passed to the check script
 				include(${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)	# find the configuation
 				if(NOT CHECK_${CONFIG_NAME}_RESULT)# not satified
-					finish_Progress(GLOBAL_PROGRESS_VAR)
+					finish_Progress(${GLOBAL_PROGRESS_VAR})
 					message(FATAL_ERROR "[PID] CRITICAL ERROR : the configuration ${CONFIG_NAME} cannot be find or installed on target platform !")
 				endif()
 				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 			else()
-				finish_Progress(GLOBAL_PROGRESS_VAR)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown configuration ${CONFIG_NAME} !")
 			endif()
 		endif()
@@ -840,7 +840,7 @@ if(platform)# if a platform constraint applies
 	foreach(config IN LISTS options)
 		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")#parse configuration arguments, if any
 		if(NOT CONFIG_NAME)
-			finish_Progress(GLOBAL_PROGRESS_VAR)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
 			return()
 		endif()
@@ -869,7 +869,7 @@ else()#no platform constraint applies => this platform configuration is adequate
 	foreach(config IN LISTS configurations)
 		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
 		if(NOT CONFIG_NAME)
-			finish_Progress(GLOBAL_PROGRESS_VAR)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
 			return()
 		endif()
@@ -881,7 +881,7 @@ else()#no platform constraint applies => this platform configuration is adequate
 			prepare_Config_Arguments(${CONFIG_NAME} CONFIG_ARGS)#setting variables that correspond to the arguments passed to the check script
 			include(${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)	# find the configuation
 			if(NOT CHECK_${CONFIG_NAME}_RESULT)# not found, trying to see if it can be installed
-				finish_Progress(GLOBAL_PROGRESS_VAR)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : current platform does not satisfy configuration constraint ${config}.")
 			endif()
 		else()
@@ -894,7 +894,7 @@ else()#no platform constraint applies => this platform configuration is adequate
 	foreach(config IN LISTS options)
 		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
 		if(NOT CONFIG_NAME)
-			finish_Progress(GLOBAL_PROGRESS_VAR)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
 			return()
 		endif()
@@ -994,7 +994,7 @@ else()#there are version specified
 		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "Select the version of ${dep_package} to be used among versions : ${available_versions}")
 		#check if the user input is not faulty (version is in the list)
 		if(NOT ${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED)
-			finish_Progress(GLOBAL_PROGRESS_VAR)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : you did not define any version for dependency ${dep_package}.")
 			return()
 		endif()
@@ -1006,7 +1006,7 @@ else()#there are version specified
 		else()# a version has been specified
 			list(FIND list_of_versions ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 			if(INDEX EQUAL -1 )#no possible version found corresponding to user input
-				finish_Progress(GLOBAL_PROGRESS_VAR)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : you set a bad version value (${${dep_package}_${CURRENT_MANAGED_VERSION}_ALTERNATIVE_VERSION_USED}) for dependency ${dep_package}.")
 				return()
 			endif()
@@ -2010,7 +2010,7 @@ function(resolve_Wrapper_Dependencies RESULT_OK package version)
 			#perform a new refind to be sure that all direct dependencies are well configured
 			resolve_External_Package_Dependency(IS_COMPATIBLE ${package}_KNOWN_VERSION_${version} ${a_dep} Release)
 			if(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been reinstalled
-				finish_Progress(GLOBAL_PROGRESS_VAR)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${a_dep} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${a_dep}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${a_dep}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${a_dep}_VERSION${USE_MODE_SUFFIX}}.")
 				return()
 			else()

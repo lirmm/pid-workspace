@@ -222,18 +222,18 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 		endif()
 		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES NOT_INSTALLED_PACKAGES)
 		if(NOT_INSTALLED_PACKAGES)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external packages: ${NOT_INSTALLED_PACKAGES}. This is an internal bug maybe due to bad references on these packages.")
 			return()
 		endif()
 		foreach(installed IN LISTS INSTALLED_EXTERNAL_PACKAGES)#recursive call for newly installed packages
 			resolve_External_Package_Dependency(IS_COMPATIBLE ${package} ${installed} ${mode})
 			if(NOT ${installed}_FOUND)#this time the package must be found since installed => internak BUG in PID
-        finish_Progress(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${installed}. This is an internal bug maybe due to a bad find file.")
 				return()
       elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
-        finish_Progress(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${installed} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${installed}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${installed}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${installed}_VERSION${VAR_SUFFIX}}.")
         return()
       else()
@@ -244,7 +244,7 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
       endif()
 		endforeach()
 	else()
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR :  there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${VAR_SUFFIX}}. You may use the required packages automatic download option.")
 		return()
 	endif()
@@ -283,11 +283,11 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 		foreach(installed IN LISTS INSTALLED_PACKAGES)#recursive call for newly installed packages
 			resolve_Package_Dependency(IS_COMPATIBLE ${package} ${installed} ${mode})
 			if(NOT ${installed}_FOUND)
-        finish_Progress(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed package ${installed}")
         return()
       elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been reinstalled
-        finish_Progress(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${installed} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${installed}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${installed}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${installed}_VERSION${VAR_SUFFIX}}.")
         return()
       else()
@@ -298,7 +298,7 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
       endif()
 		endforeach()
 	else()
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${VAR_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
@@ -320,7 +320,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
     endif()
   endforeach()
   if(NOT first_time)# we are currently trying to reinstall the same package !!
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : Impossible to solve conflicting dependencies for package ${package}. Try to solve these problems by setting adequate versions to dependencies.")
     return()
   else()#OK first time package is resolved during the build process
@@ -336,7 +336,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
       find_package(${package} ${${package}_VERSION_STRING} REQUIRED)#find again the package
       resolve_Package_Dependencies(${package} ${mode} FALSE)#resolving again the dependencies
     else()# cannot do much more about that !!
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has conflicting dependencies. See below what are the dependencies !")
       return()
     endif()
@@ -464,7 +464,7 @@ function(resolve_Required_Native_Package_Version RESOLUTION_OK MINIMUM_VERSION I
 foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	get_Version_String_Numbers("${version}" compare_major compare_minor compared_patch)
   if(NOT DEFINED compare_major)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} corrupted version string ${version_string} for dependency to package ${package}.")
   endif()
 	if(NOT MAJOR_RESOLVED)#first time
@@ -1143,7 +1143,6 @@ function(deploy_Source_Native_Package_Version DEPLOYED package min_version is_ex
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of min_version : if exact taking min_version, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
-message("after save_Repository_Context package=${package} CURRENT_COMMIT=${CURRENT_COMMIT} SAVED_CONTENT=${SAVED_CONTENT}")
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
 if(NOT UPDATE_OK)
 	message("[PID] WARNING : source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand.")
@@ -1193,7 +1192,7 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 			message("[PID]  ERROR : automatic build and install of package ${package} (version ${RES_VERSION}) FAILED !!")
 			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" FALSE)
 		endif()
-	else()
+	else()#in other situations no need to register the package as managed as it is already
 		if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
 			set(${DEPLOYED} FALSE PARENT_SCOPE)
 		else() #SUCCESS because last correct version already built
@@ -1215,7 +1214,6 @@ else()#selected version excluded from current process
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 endif()
-message("before restore_Repository_Context package=${package} CURRENT_COMMIT=${CURRENT_COMMIT} SAVED_CONTENT=${SAVED_CONTENT}")
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Native_Package_Version)
 
@@ -2770,14 +2768,14 @@ foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this pla
     endif()
 		include(${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 		if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
 			return()
 		else()
 			message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
 		endif()
 	else()
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${package}.")
 		return()
 	endif()

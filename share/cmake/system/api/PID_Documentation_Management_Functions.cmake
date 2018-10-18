@@ -1157,7 +1157,7 @@ else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 	#find the framework in workspace
 	check_Framework_Exists(FRAMEWORK_OK ${${PROJECT_NAME}_FRAMEWORK})
 	if(NOT FRAMEWORK_OK)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] ERROR : the framework you specified (${${PROJECT_NAME}_FRAMEWORK}) is unknown in the workspace.")
 		return()
 	endif()
@@ -1844,7 +1844,7 @@ else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 	#find the framework in workspace
 	check_Framework_Exists(FRAMEWORK_OK ${${PROJECT_NAME}_FRAMEWORK})
 	if(NOT FRAMEWORK_OK)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] ERROR : the framework you specified (${${PROJECT_NAME}_FRAMEWORK}) is unknown in the workspace.")
 		return()
 	endif()

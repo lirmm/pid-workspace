@@ -29,7 +29,7 @@ if(EXISTS ${BINARY_DIR}/share/Find${REQUIRED_PACKAGE}.cmake)
   file( COPY ${BINARY_DIR}/share/Find${REQUIRED_PACKAGE}.cmake
         DESTINATION ${WORKSPACE_DIR}/share/cmake/find)
 else()
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
   message(FATAL_ERROR "[PID] BUG: NO find file found for package ${REQUIRED_PACKAGE}. This is a BUG in PID please contact PID developpers.")
 endif()
 

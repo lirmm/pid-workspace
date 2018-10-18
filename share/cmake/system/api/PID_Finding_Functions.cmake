@@ -1532,7 +1532,7 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 				return()
 			else() #not compatible
         set(${COMPATIBLE} FALSE PARENT_SCOPE)
-        # finish_Progress(GLOBAL_PROGRESS_VAR)
+        # finish_Progress(${GLOBAL_PROGRESS_VAR})
 				# message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}.")
 				return()
 			endif()

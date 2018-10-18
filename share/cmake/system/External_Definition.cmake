@@ -370,7 +370,7 @@ macro(declare_PID_External_Component)
 		AND NOT cxx_language_standard EQUAL 11
 		AND NOT cxx_language_standard EQUAL 14
 		AND NOT cxx_language_standard EQUAL 17 )
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] ERROR : bad CXX_STANDARD argument for component ${curr_ext_comp} from external package ${curr_ext_package}, the value used must be 98, 11, 14 or 17.")
 		endif()
 	else() #default language standard is first standard

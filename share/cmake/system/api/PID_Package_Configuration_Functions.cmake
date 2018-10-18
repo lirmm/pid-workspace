@@ -889,7 +889,7 @@ if(${package}_PREPARE_RUNTIME)#this is a guard to limit recursion -> the runtime
 endif()
 
 if(${package}_DURING_PREPARE_RUNTIME)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : cyclic dependencies between packages found : Package ${package} is undirectly requiring itself !")
 	return()
 endif()
