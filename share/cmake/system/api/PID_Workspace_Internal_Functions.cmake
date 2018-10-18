@@ -1406,7 +1406,7 @@ if(EXISTS ${WORKSPACE_DIR}/packages/${package})
 	set(REPOSITORY_IN_WORKSPACE TRUE)
 endif()
 
-if(version STREQUAL "")#no specific version required
+if(NOT version)#no specific version required
 	set(INSTALLED FALSE)
 	if(can_use_source)#this first step is only possible if sources can be used
 		if(NOT REPOSITORY_IN_WORKSPACE)
@@ -1420,12 +1420,13 @@ if(version STREQUAL "")#no specific version required
 		#now build the package
 		if(branch)#deploying a specific branch
 			deploy_Source_Native_Package_From_Branch(INSTALLED ${package} ${branch} "${run_tests}")
+			go_To_Commit(${package} ${branch})#finally checkout the repository state to the target branch
+			if(NOT INSTALLED)
+				message("[PID] ERROR : cannot build ${package} after cloning its repository. Abort deployment !")
+				return()
+			endif()
 		else()
 			deploy_Source_Native_Package(INSTALLED ${package} "" "${run_tests}")
-		endif()
-		if(NOT INSTALLED)
-			message("[PID] ERROR : cannot build ${package} after cloning its repository. Abort deployment !")
-			return()
 		endif()
 	endif()
 	if(NOT INSTALLED)# deployment from sources was not possible
