@@ -238,7 +238,7 @@ if(EXISTS ${thefile})
       if(DEFINED major)# valid version string
         list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}")
         list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
-        set(${package}_${major}.${minor}_STATE_IN_CURRENT_PROCESS ${state})
+        set(${package}_${version}_STATE_IN_CURRENT_PROCESS ${state})
       endif()
     endif()
 	endif()
@@ -327,12 +327,7 @@ if(EXISTS ${thefile})
 	include (${thefile})
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# native package is already managed
-		get_Version_String_Numbers(${version} major minor patch)
-    if(NOT DEFINED major)#not a valid version string
-      set(${RESULT} FALSE PARENT_SCOPE) #MANAGED !!
-			return()
-    endif()
-    list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${major}.${minor}" FOUND)
+		list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}" FOUND)
 		if(NOT FOUND EQUAL -1)# version of this package already managed
 			set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
 			return()
@@ -377,14 +372,9 @@ if(EXISTS ${thefile})
 	include (${thefile})
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# native package already managed
-		get_Version_String_Numbers(${version} major minor patch)
-    if(NOT DEFINED major)#not a valid version string
-      set(${RESULT} "UNKNOWN" PARENT_SCOPE) #MANAGED !!
-      return()
-    endif()
-    list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${major}.${minor}" FOUND)
+		list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}" FOUND)
 		if(NOT FOUND EQUAL -1)# version of this package already managed
-			set(${RESULT} ${${package}_${major}.${minor}_STATE_IN_CURRENT_PROCESS} PARENT_SCOPE) #not already managed or no file exists
+			set(${RESULT} ${${package}_${version}_STATE_IN_CURRENT_PROCESS} PARENT_SCOPE) #not already managed or no file exists
 			return()
 		endif()
 	else() #it may be an external package
@@ -485,7 +475,7 @@ if(EXISTS ${thefile})
 	else()
 		check_Progress_File_Last_Modification_Outdated(OUTDATED CONTEXT)
 		if(OUTDATED #file is too old
-			OR CONTEXT STREQUAL "${name}") #the launcher context is the current one... we can reset the file
+			OR CONTEXT STREQUAL name) #the launcher context is the current one... we can reset the file
 			set(RESET_FILE TRUE)
 		endif()
 	endif()
