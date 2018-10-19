@@ -25,7 +25,7 @@
 set(${PACKAGE_NAME}_BINDED_AND_INSTALLED FALSE)
 include(${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${PACKAGE_NAME}/${PACKAGE_VERSION}/share/Use${PACKAGE_NAME}-${PACKAGE_VERSION}.cmake OPTIONAL RESULT_VARIABLE res)
 #using the generated Use<package>-<version>.cmake file to get adequate version information about components
-if(	${res} STREQUAL NOTFOUND
+if(	res STREQUAL NOTFOUND
 	OR NOT DEFINED ${PACKAGE_NAME}_COMPONENTS) #if there is no component defined for the package there is an error
 	message("[PID] ERROR : The binary package ${PACKAGE_NAME} (version ${PACKAGE_VERSION}) whose runtime dependencies must be (re)bound cannot be found from the workspace path : ${WORKSPACE_DIR}")
 	return()
@@ -50,7 +50,6 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 ###############################################################
 ################## resolve platform constraints ###############
 ###############################################################
-
 # 1) checking constraints on platform configuration DEBUG mode
 foreach(config IN LISTS ${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS_DEBUG)#if empty no configuration for this platform is supposed to be necessary
 	if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)
@@ -146,7 +145,6 @@ if(NOT_DEFINED_EXT_DEPS OR NOT_DEFINED_EXT_DEPS_DEBUG)
 	write_Use_File(${theusefile} ${PACKAGE_NAME} Debug)
 	write_Use_File(${theusefile} ${PACKAGE_NAME} Release)
 endif()
-
 
 ##################################################################
 ############### resolving all runtime dependencies ###############

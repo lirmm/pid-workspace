@@ -688,7 +688,7 @@ if(USE_SOURCES) #package sources reside in the workspace
 	endif()
 else()#using references
 	include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
-	if(${refer_path} STREQUAL NOTFOUND)
+	if(refer_path STREQUAL NOTFOUND)
 		message("[PID] ERROR : the reference file for package ${package} cannot be found in the workspace ! Package update aborted.")
 		return()
 	endif()
@@ -700,7 +700,7 @@ else()#using references
 	endif()
 
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
-	if(NOT ${refer_path} STREQUAL NOTFOUND)
+	if(NOT refer_path STREQUAL NOTFOUND)
 		if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number
 			deploy_Binary_Native_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "")
 		else()# deploying the most up to date version
@@ -1450,13 +1450,21 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
     select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
     if(RES_PLATFORM)
   		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
-  		if(INSTALLED)
-  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
-  		else()
-  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE) #situation is problematic but we can still overcome it by using sources ... if possible
-  		endif()
-    else()
-      set(INSTALLED FALSE)
+      if(NOT INSTALLED)
+        add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE) #situation is problematic but we can still overcome it by using sources ... if possible
+        set(${DEPLOYED} FALSE PARENT_SCOPE)
+      	return()
+      endif()
+      #checking and resolving package dependencies and constraints
+      configure_Binary_Package(RESULT_DEBUG ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Debug)
+      configure_Binary_Package(RESULT_RELEASE  ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Release)
+
+      if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
+        add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
+        set(${DEPLOYED} FALSE PARENT_SCOPE)
+      	return()
+      endif()
+      add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
     endif()
   else()
 		if(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be installed during current process
@@ -1536,17 +1544,25 @@ set(INSTALLED FALSE)
 list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
-	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the current process
+	if(RES STREQUAL "UNKNOWN") # this package version has not been managed since beginning of the current process
 		select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
     if(RES_PLATFORM)
   		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
-  		if(INSTALLED)
-  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
-  		else()
-  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
-  		endif()
-    else()
-      set(INSTALLED FALSE)
+      if(NOT INSTALLED)
+        add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE) #situation is problematic but we can still overcome it by using sources ... if possible
+        set(${DEPLOYED} FALSE PARENT_SCOPE)
+      	return()
+      endif()
+      #checking and resolving package dependencies and constraints
+      configure_Binary_Package(RESULT_DEBUG ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Debug)
+      configure_Binary_Package(RESULT_RELEASE  ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Release)
+
+      if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
+        add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
+        set(${DEPLOYED} FALSE PARENT_SCOPE)
+      	return()
+      endif()
+      add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
     endif()
 	else()
 		if(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be installed during current process
@@ -1800,16 +1816,8 @@ if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/
 	endif()
 endif()
 
-############ post install configuration of the workspace ############
-set(PACKAGE_NAME ${package})
-set(PACKAGE_VERSION ${version})
-set(PLATFORM_NAME ${platform})
-include(${WORKSPACE_DIR}/share/cmake/system/commands/Bind_PID_Package.cmake NO_POLICY_SCOPE)
-if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
-	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] WARNING : cannot configure runtime dependencies for installed version ${version} of package ${package}.")
-	return()
-endif()
+
+
 set(${INSTALLED} TRUE PARENT_SCOPE)
 message("[PID] INFO : binary package ${package} (version ${version}) has been installed into the workspace.")
 endfunction(download_And_Install_Binary_Native_Package)
@@ -2465,17 +2473,24 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 		endif()
 
 		download_And_Install_Binary_External_Package(INSTALLED ${package} "${RES_VERSION}" "${TARGET_PLATFORM}")
-		if(INSTALLED)
-			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
-			#checking and resolving external package dependencies and constraints
-			configure_External_Package(${package} ${RES_VERSION} ${TARGET_PLATFORM} Debug)
-			configure_External_Package(${package} ${RES_VERSION} ${TARGET_PLATFORM} Release)
-		else()
-			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE) #for external binary packages the fail is automatic as they cannot be buit from sources
-			message("[PID] ERROR : cannot install version ${RES_VERSION} of external package ${package}.")
-			set(${DEPLOYED} FALSE PARENT_SCOPE)
-			return()
+		if(NOT INSTALLED)
+      add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" TRUE)
+      message("[PID] ERROR : cannot install version ${RES_VERSION} of external package ${package}.")
+      set(${DEPLOYED} FALSE PARENT_SCOPE)
+      return()
 		endif()
+    #checking and resolving external package dependencies and constraints
+    configure_Binary_Package(RESULT_DEBUG ${package} TRUE ${RES_VERSION} ${TARGET_PLATFORM} Debug)
+    configure_Binary_Package(RESULT_RELEASE  ${package} TRUE ${RES_VERSION} ${TARGET_PLATFORM} Release)
+
+    if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
+      add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
+      message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
+      set(${DEPLOYED} FALSE PARENT_SCOPE)
+    endif()
+
+    add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
+
 	else() #no need to do the job again if already successfull
 		if(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be installed during current process
 			set(INSTALLED FALSE)
@@ -2549,20 +2564,25 @@ else()
 endif()
 if(RES STREQUAL "UNKNOWN")
 	download_And_Install_Binary_External_Package(INSTALLED ${package} ${version} ${TARGET_PLATFORM})
-	if(INSTALLED)
-		add_Managed_Package_In_Current_Process(${package} ${version} "SUCCESS" TRUE)
-	else()
-		add_Managed_Package_In_Current_Process(${package} ${version} "FAIL" TRUE) #for external binary packages the fail is automatic as they cannot be buit from sources
-		message("[PID] ERROR : cannot install version ${version} of external package ${package}.")
-		set(${DEPLOYED} FALSE PARENT_SCOPE)
-		return()
+	if(NOT INSTALLED)
+    add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
+    message("[PID] ERROR : cannot install version ${version} of external package ${package}.")
+    set(${DEPLOYED} FALSE PARENT_SCOPE)
+    return()
 	endif()
 
-	#5) checking for platform constraints
-	configure_External_Package(${package} ${version} ${TARGET_PLATFORM} Debug)
-	configure_External_Package(${package} ${version} ${TARGET_PLATFORM} Release)
+  #5) checking for platform constraints
+  configure_Binary_Package(RESULT_DEBUG ${package} TRUE ${version} ${TARGET_PLATFORM} Debug)
+  configure_Binary_Package(RESULT_RELEASE ${package} TRUE ${version} ${TARGET_PLATFORM} Release)
 
-elseif(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be install during current process
+  if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
+    add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
+    message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
+    set(${DEPLOYED} FALSE PARENT_SCOPE)
+  endif()
+  add_Managed_Package_In_Current_Process(${package} ${version} "SUCCESS" TRUE)
+
+elseif(NOT RES STREQUAL "SUCCESS") # this package version has already FAILED TO be install during current process
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
@@ -2720,15 +2740,15 @@ endfunction(download_And_Install_Binary_External_Package)
 #
 # .. ifmode:: internal
 #
-#  .. |configure_External_Package| replace:: ``configure_External_Package``
-#  .. _configure_External_Package:
+#  .. |configure_Binary_Package| replace:: ``configure_Binary_Package``
+#  .. _configure_Binary_Package:
 #
-#  configure_External_Package
+#  configure_Binary_Package
 #  --------------------------
 #
-#   .. command:: configure_External_Package(package version platform mode)
+#   .. command:: configure_Binary_Package(package version platform mode)
 #
-#    Configure the external package after it has been installed in workspace. It can lead to the install of OS related packages depending of its system configuration.
+#    Configure the external package after it has been installed in workspace. It can lead to the install of OS packages depending of its system configuration.
 #
 #      :package: The name of the external package.
 #
@@ -2738,22 +2758,31 @@ endfunction(download_And_Install_Binary_External_Package)
 #
 #      :mode: the build mode of the content installed.
 #
-function(configure_External_Package package version platform mode)
+#      :RESULT: the output variable that is TRUE if the binary package has been configured, FALSE if its configuration failed for any reason.
+#
+function(configure_Binary_Package RESULT package external version platform mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share)
-include(${${package}_CURR_DIR}/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
-#using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
-if(res STREQUAL NOTFOUND)
-	# no usage file => nothing to do
-	return()
+set(${RESULT} TRUE PARENT_SCOPE)
+
+if(external)
+  include(${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+  #using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
+  if(res STREQUAL NOTFOUND)
+  	return()# no use file in external package ("raw external package") => nothing to do
+  endif()
+else()
+  include(${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+  if(res STREQUAL NOTFOUND)
+    set(${RESULT} FALSE PARENT_SCOPE)
+    return()# no use file in external package ("raw external package") => nothing to do
+  endif()
 endif()
-unset(${package}_CURR_DIR)
 
 # 1) checking platforms constraints
 set(CONFIGS_TO_CHECK)
 if(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
 	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}})#there are configuration constraints in PID v2 style
-elseif(${package}_PLATFORM${VAR_SUFFIX} STREQUAL ${platform}) # this case may be true if the package binary has been release in old PID v1 style
+elseif(${package}_PLATFORM${VAR_SUFFIX} STREQUAL platform) # this case may be true if the package binary has been release in old PID v1 style
 	set(OLD_PLATFORM_CONFIG ${${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}})
 	if(OLD_PLATFORM_CONFIG) #there are required configurations in old style
 		set(CONFIGS_TO_CHECK ${OLD_PLATFORM_CONFIG})#there are configuration constraints in PID v1 style
@@ -2768,27 +2797,52 @@ foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this pla
     endif()
 		include(${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 		if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
-      finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
+      set(${RESULT} FALSE PARENT_SCOPE)
+      message("[PID] ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically.")
 			return()
 		else()
 			message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
 		endif()
 	else()
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${package}.")
-		return()
+    set(${RESULT} FALSE PARENT_SCOPE)
+    message("[PID] ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically.")
+    return()
 	endif()
 endforeach()
 
-#TODO UNCOMMENT AND TEST DEPLOYMENT
-# Manage external package dependencies => need to deploy other external packages
-#if(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #the external package has external dependencies
-#	foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #recursive call for deployment of dependencies
-#		deploy_Binary_External_Package_Version(DEPLOYED ${dep_pack} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION})
-#	endforeach()
-#endif()
-endfunction(configure_External_Package)
+# Manage external package dependencies => need to check direct external dependencies
+foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
+  if(${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
+    get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT ${dep_pack})
+  	if(REQUIRED_VERSION)#if a version of the same package is already required then check their compatibility
+      get_Compatible_Version(IS_COMPATIBLE TRUE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}")
+      if(NOT IS_COMPATIBLE)
+        set(${RESULT} FALSE PARENT_SCOPE)
+        message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${version}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")
+        return()
+      endif()
+    endif()
+  endif()
+endforeach()
+
+if(NOT external)
+  # Manage native package dependencies => need to check direct native dependencies
+	foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
+    if(${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
+      get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT ${dep_pack})
+    	if(REQUIRED_VERSION)#if a version of the same native package is already required then check their compatibility
+        get_Compatible_Version(IS_COMPATIBLE FALSE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_DEPENDENCIY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}")
+        if(NOT IS_COMPATIBLE)
+          set(${RESULT} FALSE PARENT_SCOPE)
+          message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${version}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")
+          return()
+        endif()
+      endif()
+    endif()
+  endforeach()
+endif()
+
+endfunction(configure_Binary_Package)
 
 #############################################################################################
 ############################### functions for frameworks ####################################
