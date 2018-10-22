@@ -1681,9 +1681,7 @@ endif()
 ######## installing the package ##########
 # 1) creating the package root folder
 if(NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package})
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
-			WORKING_DIRECTORY ${WORKSPACE_DIR}/install/${platform}
-			ERROR_QUIET OUTPUT_QUIET)
+  file(MAKE_DIRECTORY ${WORKSPACE_DIR}/install/${platform}/${package})
 endif()
 
 # 2) extracting binary archive in a cross platform way
@@ -1691,58 +1689,67 @@ if(ADDITIONNAL_DEBUG_INFO)
 	message("[PID] INFO : decompressing the binary package ${package}, please wait ...")
 endif()
 set(error_res "")
+set(error_res_debug "")
 if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
 	if(MISSING_DEBUG_VERSION) #no debug archive to manage
 		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_VARIABLE error_res)
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              			ERROR_VARIABLE error_res)
 	else()
 		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-	          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_VARIABLE error_res)
-		endif()
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              			ERROR_VARIABLE error_res)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+                    ERROR_VARIABLE error_res_debug)
+	endif()
 else() #QUIET mode
 	if(MISSING_DEBUG_VERSION) #no debug archive to manage
 		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_VARIABLE error_res OUTPUT_QUIET)
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              			ERROR_VARIABLE error_res OUTPUT_QUIET)
 	else()
 		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-	          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_VARIABLE error_res OUTPUT_QUIET)
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              			ERROR_VARIABLE error_res OUTPUT_QUIET)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              			ERROR_VARIABLE error_res_debug OUTPUT_QUIET)
 	endif()
 endif()
 
 if (error_res)
 	#try again
 	if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
-		if(MISSING_DEBUG_VERSION)  #no debug archive to manage
 			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-				ERROR_VARIABLE error_res)
-		else()
-			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-		          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-				ERROR_VARIABLE error_res)
-		endif()
+              				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              				ERROR_VARIABLE error_res)
 	else() #QUIET mode
-		if(MISSING_DEBUG_VERSION) #no debug archive to manage
 			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-				ERROR_VARIABLE error_res OUTPUT_QUIET)
-		else()
-			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-		          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-				ERROR_VARIABLE error_res OUTPUT_QUIET)
-		endif()
+              				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              				ERROR_VARIABLE error_res OUTPUT_QUIET)
 	endif()
 	if (error_res)
 		set(${INSTALLED} FALSE PARENT_SCOPE)
-		message("[PID] WARNING : cannot extract binary archives ${FILE_BINARY} ${FILE_BINARY_DEBUG} when installing.")
+		message("[PID] WARNING : cannot extract binary archive ${FILE_BINARY} when installing.")
+		return()
+	endif()
+endif()
+
+if (error_res_debug)
+	#try again
+	if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
+			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+              				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              				ERROR_VARIABLE error_res_debug)
+	else() #QUIET mode
+			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+              				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              				ERROR_VARIABLE error_res_debug OUTPUT_QUIET)
+	endif()
+	if (error_res_debug)
+		set(${INSTALLED} FALSE PARENT_SCOPE)
+		message("[PID] WARNING : cannot extract binary archive ${FILE_BINARY_DEBUG} when installing.")
 		return()
 	endif()
 endif()
@@ -1756,13 +1763,15 @@ set(error_res "")
 if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
 	if(MISSING_DEBUG_VERSION)  #no debug archive to manage
 		execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-				)
+		    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+		)
 	else()
 		execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-	        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
-				)
+		    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+	  )
+    execute_process(
+		    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+		)
 	endif()
 else()#QUIET mode
 	if(MISSING_DEBUG_VERSION)  #no debug archive to manage
@@ -1773,7 +1782,9 @@ else()#QUIET mode
 	else()
 		execute_process(
 			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-	    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+	    ERROR_QUIET OUTPUT_QUIET)
+    execute_process(
+			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
 	 		ERROR_QUIET OUTPUT_QUIET)
 	endif()
 endif()
@@ -1788,9 +1799,11 @@ if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/
 					)
 		else()
 			execute_process(
-			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-		        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
-					)
+  			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+			)
+      execute_process(
+  			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+			)
 		endif()
 	else()#QUIET mode
 		if(MISSING_DEBUG_VERSION)  #no debug archive to manage
@@ -1801,7 +1814,9 @@ if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/
 		else()
 			execute_process(
 				COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-		    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+		    ERROR_QUIET OUTPUT_QUIET)
+      execute_process(
+				COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
 		 		ERROR_QUIET OUTPUT_QUIET)
 		endif()
 	endif()
@@ -1815,8 +1830,6 @@ if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/
 		return()
 	endif()
 endif()
-
-
 
 set(${INSTALLED} TRUE PARENT_SCOPE)
 message("[PID] INFO : binary package ${package} (version ${version}) has been installed into the workspace.")
@@ -2660,29 +2673,23 @@ endif()
 
 ######## installing the external package ##########
 # 1) creating the external package root folder and the version folder
-if(NOT EXISTS ${WORKSPACE_DIR}/external/${platform}/${package} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform}/${package})
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
-			WORKING_DIRECTORY ${WORKSPACE_DIR}/external/${platform}
-			ERROR_QUIET OUTPUT_QUIET)
-endif()
-if(NOT EXISTS ${WORKSPACE_DIR}/external/${platform}/${package}/${version} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${version}
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/external/${platform}/${package}
-		ERROR_QUIET OUTPUT_QUIET)
+if(NOT EXISTS ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
+  file(MAKE_DIRECTORY ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
 endif()
 
 # 2) extracting binary archive in cross platform way
 set(error_res "")
+set(error_res_debug "")
 if(ADDITIONNAL_DEBUG_INFO)
 	message("[PID] INFO : decompressing the external binary package ${package}, please wait ...")
 endif()
 if(EXISTS download_url_dbg)
 	execute_process(
           	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/debug
-		ERROR_VARIABLE error_res OUTPUT_QUIET)
+        		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/debug
+        		ERROR_VARIABLE error_res_debug OUTPUT_QUIET)
 
-	if (error_res)
+	if (error_res_debug)
 		set(${INSTALLED} FALSE PARENT_SCOPE)
 		message("[PID] ERROR : cannot extract binary archives ${FILE_BINARY_DEBUG}.")
 		return()
@@ -2705,18 +2712,19 @@ if(ADDITIONNAL_DEBUG_INFO)
 	message("[PID] INFO : installing the external binary package ${package} (version ${version}) into the workspace, please wait ...")
 endif()
 set(error_res "")
+set(error_res_debug "")
+
 if(EXISTS download_url_dbg)
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}
-          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}
-		ERROR_VARIABLE error_res OUTPUT_QUIET)
-else()
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/
-		ERROR_VARIABLE error_res OUTPUT_QUIET)
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}
+    ERROR_VARIABLE error_res_debug OUTPUT_QUIET)
 endif()
 
-if (error_res)
+execute_process(
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/
+	ERROR_VARIABLE error_res OUTPUT_QUIET)
+
+if (error_res OR error_res_debug)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : cannot extract folder from ${FOLDER_BINARY} ${FOLDER_BINARY_DEBUG} to get binary version ${version} of package ${package}.")
 	return()
@@ -2725,13 +2733,12 @@ endif()
 if(EXISTS download_url_dbg)
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/debug
-		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
-		ERROR_QUIET OUTPUT_QUIET)
-else()
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
 		ERROR_QUIET OUTPUT_QUIET)
 endif()
+
+execute_process(
+	COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
+	ERROR_QUIET OUTPUT_QUIET)
 
 set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_External_Package)
