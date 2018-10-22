@@ -1457,13 +1457,13 @@ endfunction(declare_Python_Component)
 #
 # .. ifmode:: internal
 #
-#  .. |declare_Package_Dependency| replace:: ``declare_Package_Dependency``
-#  .. _declare_Package_Dependency:
+#  .. |declare_Native_Package_Dependency| replace:: ``declare_Native_Package_Dependency``
+#  .. _declare_Native_Package_Dependency:
 #
-#  declare_Package_Dependency
+#  declare_Native_Package_Dependency
 #  --------------------------
 #
-#   .. command:: declare_Package_Dependency(dep_package optional list_of_versions exact_versions list_of_components)
+#   .. command:: declare_Native_Package_Dependency(dep_package optional list_of_versions exact_versions list_of_components)
 #
 #     Specify a dependency between the currently defined package and another native package.
 #
@@ -1477,7 +1477,7 @@ endfunction(declare_Python_Component)
 #
 #     :list_of_components: the list of required components that must belong to dependency.
 #
-function(declare_Package_Dependency dep_package optional list_of_versions exact_versions list_of_components)
+function(declare_Native_Package_Dependency dep_package optional list_of_versions exact_versions list_of_components)
 # ${PROJECT_NAME}_DEPENDENCIES				# packages required by current package
 # ${PROJECT_NAME}__DEPENDENCY_${dep_package}_VERSION		# version constraint for package ${dep_package}   required by ${PROJECT_NAME}
 # ${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT	# TRUE if exact version is required
@@ -1490,22 +1490,22 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 	# defining if there is either a specific version to use or not
 	if(NOT list_of_versions)
 		if(optional)
-			set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "Select if ${dep_package} is to be used by typing ANY or not using NONE.")
-			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
-				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#manage change of dependency in user description
-					set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be used by typing ANY or not using NONE." FORCE)
-				endif()
-			else()
+			set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "Select if ${dep_package} is to be used by entering either ANY or a given version number, or not used bu entering NONE.")
+			if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
 				set(unused TRUE)
 			endif()
 		else()
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING  "Select version of ${dep_package} to be used by entering either ANY or a given version number.")
 		endif()#else no message since nohting to say to the user
 		if(NOT unused)
 			if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
 				add_Package_Dependency_To_Cache(${dep_package} ${REQUIRED_VERSION} ${IS_EXACT} "${list_of_components}") #set the dependency
-			else()#no version required
-				add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
+			else()#no version required, for now we cannot say much more about version specified in use file until
+				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#if a version number is specified by the user
+					add_Package_Dependency_To_Cache(${dep_package} ${${dep_package}_ALTERNATIVE_VERSION_USED} FALSE "${list_of_components}") #set the dependency
+				else()# any version can be used so for now no contraint
+					add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
+				endif()
 			endif()
 		endif()
 	else()#there are version specified
@@ -1615,8 +1615,17 @@ function(declare_Package_Dependency dep_package optional list_of_versions exact_
 				add_Chosen_Package_Version_In_Current_Process(${dep_package})
 			endif()
 		endif()#otherwise nothing more to do
+		# here the version has been resolved, we need to manage the specific case where no version constraint was specified
+		# indeed, the use file should always contain a version constraint because the binary in itselt cannot adapt to different version
+		# it can only use the version used to build it (or any other compatible version)
+		if(NOT list_of_versions AND NOT REQUIRED_VERSION AND ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
+			#no choice for a given version has been made already, so now memorize this choice to write it later in use file
+			if(${dep_package}_VERSION_STRING)#simply use the version that has been found
+				add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION_STRING}" FALSE "${list_of_components}") #set the dependency
+			endif()
+		endif()
 	endif()
-endfunction(declare_Package_Dependency)
+endfunction(declare_Native_Package_Dependency)
 
 #.rst:
 #
@@ -1651,23 +1660,23 @@ get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT ${dep_package})
 if(NOT list_of_versions) # no version constraint specified
 	if(optional)
 		#set the cache option, NONE by default
-		set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "Select if ${dep_package} is to be used by typing ANY or not using NONE.")
-		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
-			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#manage change of dependency in user description
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select if ${dep_package} is to be used by typing ANY or not using NONE." FORCE)
-			endif()
-		else()#dependency is not used so no need to bother if already required in current process
+		set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "Select if ${dep_package} is to be used by entering either ANY or a version number, or not used by entering NONE.")
+		if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
 			set(unused TRUE)
 		endif()
 	else()#dependency is not optional so any version can be used
-		set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)#no message since nothing to say to the user
+		set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select version of ${dep_package} to be used, by entering either ANY or a version number.")#no message since nothing to say to the user
 	endif()
 	if(NOT unused)#if dependency is used (i.e. not optional or optional and set to ANY)
 		# now checking if a version is already required by current build process
 		if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
 			add_External_Package_Dependency_To_Cache(${dep_package} ${REQUIRED_VERSION} ${IS_EXACT} "${list_of_components}") #set the dependency
 		else()#no version required
-			add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}") #set the dependency
+			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#if a version number is specified by the user
+				add_Package_Dependency_To_Cache(${dep_package} ${${dep_package}_ALTERNATIVE_VERSION_USED} FALSE "${list_of_components}") #set the dependency
+			else()# any version can be used so for now no contraint
+				add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
+			endif()
 		endif()
 	endif()
 else()#there are version(s) specified
@@ -1776,7 +1785,15 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 			add_Chosen_Package_Version_In_Current_Process(${dep_package})
 		endif()
   endif()
-
+	# here the version has been resolved, we need to manage the specific case where no version constraint was specified
+	# indeed, the use file should always contain a version constraint because the binary in itselt cannot adapt to different version
+	# it can only use the version used to build it (or any other compatible version)
+	if(NOT list_of_versions AND NOT REQUIRED_VERSION AND ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
+		#no choice for a given version has been made already, so now memorize this choice to write it later in use file
+		if(${dep_package}_VERSION_STRING)#simply use the version that has been found
+			add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION_STRING}" FALSE "${list_of_components}") #set the dependency
+		endif()
+	endif()
 endif()
 endfunction(declare_External_Package_Dependency)
 

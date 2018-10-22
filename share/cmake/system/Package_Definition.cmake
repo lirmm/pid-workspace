@@ -1312,7 +1312,7 @@ endif()
 if(package_type STREQUAL "EXTERNAL")#it is an external package
 	declare_External_Package_Dependency(${name_of_dependency} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 else()#otherwise a native package
-	declare_Package_Dependency(${name_of_dependency} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
+	declare_Native_Package_Dependency(${name_of_dependency} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 endif()
 endmacro(declare_PID_Package_Dependency)
 
