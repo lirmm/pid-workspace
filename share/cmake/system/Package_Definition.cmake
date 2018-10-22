@@ -45,6 +45,8 @@ include(CMakeParseArguments)
 #
 #   .. command:: declare_PID_Package(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
 #
+#   .. command:: PID_Package(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
+#
 #     Declare the current CMake project as a PID package with specific meta-information passed as parameters.
 #
 #     .. rubric:: Required parameters
@@ -87,6 +89,11 @@ include(CMakeParseArguments)
 #                          DESCRIPTION "an example PID package"
 #        )
 #
+
+macro(PID_Package)
+  declare_PID_Package(${ARGN})
+endmacro(PID_Package)
+
 macro(declare_PID_Package)
 set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION VERSION)
@@ -197,6 +204,8 @@ endmacro(set_PID_Package_Version)
 #
 #  .. command:: add_PID_Package_Author(AUTHOR ... [INSTITUTION ...])
 #
+#  .. command:: PID_Author(AUTHOR ... [INSTITUTION ...])
+#
 #   Add an author to the list of authors.
 #
 #   .. rubric:: Required parameters
@@ -223,6 +232,11 @@ endmacro(set_PID_Package_Version)
 #
 #      add_PID_Package_Author(AUTHOR Benjamin Navarro INSTITUTION LIRMM)
 #
+
+macro(PID_Author)
+  add_PID_Package_Author(${ARGN})
+endmacro(PID_Author)
+
 macro(add_PID_Package_Author)
 set(multiValueArgs AUTHOR INSTITUTION)
 cmake_parse_arguments(ADD_PID_PACKAGE_AUTHOR "" "" "${multiValueArgs}" ${ARGN} )
@@ -247,6 +261,8 @@ endmacro(add_PID_Package_Author)
 #  -------------------------
 #
 #  .. command:: add_PID_Package_Reference(VERSION ... PLATFORM ... URL ...)
+#
+#  .. command:: PID_Reference(VERSION ... PLATFORM ... URL ...)
 #
 #   Declare a reference to a known binary version of the package. This is useful to register various released version of the package.
 #
@@ -281,6 +297,11 @@ endmacro(add_PID_Package_Author)
 #          https://gite.lirmm.fr/pid/pid-binaries/wikis/pid-rpath/1.0.0/linux64/pid-rpath-1.0.0-dbg-linux64.tar.gz
 #    )
 #
+
+macro(PID_Reference)
+  add_PID_Package_Reference(${ARGN})
+endmacro(PID_Reference)
+
 macro(add_PID_Package_Reference)
 set(oneValueArgs VERSION PLATFORM)
 set(multiValueArgs  URL)
@@ -337,6 +358,8 @@ endmacro(add_PID_Package_Reference)
 #
 #  .. command:: add_PID_Package_Category(CATEGORY)
 #
+#  .. command:: PID_Category(CATEGORY)
+#
 #   Declare that the current package belongs to a given category.
 #
 #   .. rubric:: Required parameters
@@ -359,6 +382,11 @@ endmacro(add_PID_Package_Reference)
 #
 #    add_PID_Package_Category(example/packaging)
 #
+
+macro(PID_Category)
+  add_PID_Package_Category(${ARGN})
+endmacro(PID_Category)
+
 macro(add_PID_Package_Category)
 if(NOT ${ARGC} EQUAL 1)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -381,6 +409,8 @@ endmacro(declare_PID_Documentation)
 #  -----------------------
 #
 #  .. command:: declare_PID_Publishing(AUTHOR ... [INSTITUTION ...])
+#
+#  .. command:: PID_Publishing(AUTHOR ... [INSTITUTION ...])
 #
 #   Declare a site where the package is published, i.e. an online website where documentation and binaries of the package ar stored and accessible. There are two alternative for this function: defining a lone static site or defining the publication of the package in a framework.
 #
@@ -448,6 +478,11 @@ endmacro(declare_PID_Documentation)
 #   			PUBLISH_BINARIES
 #         ALLOWED_PLATFORMS x86_64_linux_abi11)
 #
+
+macro(PID_Publishing)
+  declare_PID_Publishing(${ARGN})
+endmacro(PID_Publishing)
+
 macro(declare_PID_Publishing)
 set(optionArgs PUBLISH_BINARIES PUBLISH_DEVELOPMENT_INFO)
 set(oneValueArgs PROJECT FRAMEWORK GIT PAGE ADVANCED TUTORIAL LOGO)
@@ -563,6 +598,8 @@ endmacro(declare_PID_Publishing)
 #
 #  .. command:: declare_PID_Component_Documentation(COMPONENT ... FILE ...)
 #
+#  .. command:: PID_Documentation(COMPONENT ... FILE ...)
+#
 #   Add specific documentation for a component
 #
 #   .. rubric:: Required parameters
@@ -586,6 +623,11 @@ endmacro(declare_PID_Publishing)
 #
 #    declare_PID_Component_Documentation(COMPONENT my-lib FILE mylib_usage.md)
 #
+
+macro(PID_Documentation)
+  declare_PID_Component_Documentation(${ARGN})
+endmacro(PID_Documentation)
+
 macro(declare_PID_Component_Documentation)
 set(oneValueArgs COMPONENT FILE)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DOCUMENTATION "" "${oneValueArgs}" "" ${ARGN} )
@@ -837,6 +879,8 @@ endmacro(build_PID_Package)
 #
 #  .. command:: declare_PID_Component(<type> NAME ... DIRECTORY .. [OPTIONS])
 #
+#  .. command:: PID_Component(<type> NAME ... DIRECTORY .. [OPTIONS])
+#
 #   Declare a new component in the current package.
 #
 #   .. rubric:: Required parameters
@@ -894,6 +938,11 @@ endmacro(build_PID_Package)
 #                            EXPORT DEFINITIONS IMPORT_SYMBOLS
 #     )
 #
+
+macro(PID_Component)
+  declare_PID_Component(${ARGN})
+endmacro(PID_Component)
+
 macro(declare_PID_Component)
 set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION PYTHON_PACK)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
@@ -1128,7 +1177,7 @@ endmacro(declare_PID_Component)
 #
 #  .. command:: declare_PID_Package_Dependency([PACKAGE] ... [EXTERNAL|NATIVE] [OPTIONS])
 #
-#  .. command:: declare_PID_Dependency([PACKAGE] ... [EXTERNAL|NATIVE] [OPTIONS])
+#  .. command:: PID_Dependency([PACKAGE] ... [EXTERNAL|NATIVE] [OPTIONS])
 #
 #   Declare a dependency between the current package and another package.
 #
@@ -1180,14 +1229,14 @@ endmacro(declare_PID_Component)
 #
 #   .. code-block:: cmake
 #
-#      declare_PID_Dependency (boost EXACT VERSION 1.55.0
-#                                    EXACT VERSION 1.63.0
-#                                    EXACT VERSION 1.64.0
+#      PID_Dependency (boost EXACT VERSION 1.55.0
+#                            EXACT VERSION 1.63.0
+#                            EXACT VERSION 1.64.0
 #      )
 #
-macro(declare_PID_Dependency)
+macro(PID_Dependency)
   declare_PID_Package_Dependency(${ARGN})
-endmacro(declare_PID_Dependency)
+endmacro(PID_Dependency)
 
 macro(declare_PID_Package_Dependency)
 set(options EXTERNAL NATIVE OPTIONAL)
@@ -1289,6 +1338,7 @@ endmacro(declare_PID_Package_Dependency)
 #   :[PACKAGE] <name>: Name of the depoendency. The PACKAGE ketword may be omitted.
 #
 #   .. rubric:: Optional parameters
+#
 #   :USED var: var is the output variable that is TRUE if dependency is used, FALSE otherwise. This is used to test if an optional dependency is in use.
 #   :VERSION var: var is the output variable that contains the version of the dependency that is used for current build.
 #
@@ -1370,6 +1420,8 @@ endfunction(used_PID_Package_Dependency)
 #
 #  .. command:: declare_PID_Component_Dependency([COMPONENT] ... [EXPORT] [EXTERNAL ...] [OPTIONS])
 #
+#  .. command:: PID_Component_Dependency([COMPONENT] ... [EXPORT] [EXTERNAL ...] [OPTIONS])
+#
 #   Declare a dependency for a component of the current package.
 #   First signature is used to defince a dependency to an explicity component either native or external. Compared to the DEPENDS option of |declare_PID_Component|_ this function may define additional configuration for a given component dependency (typically setting definitions).
 #   Second signature is used to define a dependency between the component and either the content of an external package or to the operating system.
@@ -1443,6 +1495,10 @@ endfunction(used_PID_Package_Dependency)
 #      #it is exported since includes of rpathlib are in public includes of my-other-lib
 #
 #
+macro(PID_Component_Dependency)
+  declare_PID_Component_Dependency(${ARGN})
+endmacro(PID_Component_Dependency)
+
 macro(declare_PID_Component_Dependency)
 set(options EXPORT DEPENDS)
 set(oneValueArgs COMPONENT DEPEND NATIVE PACKAGE EXTERNAL C_STANDARD CXX_STANDARD)
@@ -1713,7 +1769,7 @@ endfunction(wrap_CTest_Call)
 #  .. _run_PID_Test:
 #
 #  run_PID_Test
-#  -----------------------
+#  ------------
 #
 #  .. command:: run_PID_Test(NAME ... [OPTIONS])
 #

@@ -53,6 +53,8 @@ include(CMakeParseArguments)
 #
 #   .. command:: declare_PID_Wrapper(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
 #
+#   .. command:: PID_Wrapper(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
+#
 #      Declare the current CMake project as a PID wrapper for a given external package with specific meta-information passed as parameter.
 #
 #     .. rubric:: Required parameters
@@ -101,6 +103,11 @@ include(CMakeParseArguments)
 # 		       DESCRIPTION "an example PID wrapper"
 #        )
 #
+
+macro(PID_Wrapper)
+  declare_PID_Wrapper(${ARGN})
+endmacro(PID_Wrapper)
+
 macro(declare_PID_Wrapper)
 set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
@@ -144,6 +151,8 @@ endmacro(declare_PID_Wrapper)
 #
 #   .. command:: define_PID_Wrapper_Original_Project_Info(AUTHORS ... LICENSE ... URL ...)
 #
+#   .. command::PID_Original_Project(AUTHORS ... LICENSE ... URL ...)
+#
 #      Set the meta information about original project being wrapped by current project.
 #
 #     .. rubric:: Required parameters
@@ -174,6 +183,11 @@ endmacro(declare_PID_Wrapper)
 #	           LICENSES "Boost license"
 #            URL http://www.boost.org)
 #
+
+macro(PID_Original_Project)
+  define_PID_Wrapper_Original_Project_Info(${ARGN})
+endmacro(PID_Original_Project)
+
 macro(define_PID_Wrapper_Original_Project_Info)
 	set(oneValueArgs URL)
 	set(multiValueArgs AUTHORS LICENSES)
@@ -205,6 +219,8 @@ endmacro(define_PID_Wrapper_Original_Project_Info)
 #
 #   .. command:: add_PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
 #
+#   .. command:: PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
+#
 #      Add an author to the list of authors of the wrapper.
 #
 #     .. rubric:: Required parameters
@@ -231,6 +247,11 @@ endmacro(define_PID_Wrapper_Original_Project_Info)
 #
 #        add_PID_Wrapper_Author(AUTHOR Another Writter INSTITUTION LIRMM)
 #
+
+macro(PID_Wrapper_Author)
+  add_PID_Wrapper_Author(${ARGN})
+endmacro(PID_Wrapper_Author)
+
 macro(add_PID_Wrapper_Author)
 set(multiValueArgs AUTHOR INSTITUTION)
 cmake_parse_arguments(ADD_PID_WRAPPER_AUTHOR "" "" "${multiValueArgs}" ${ARGN} )
@@ -258,6 +279,8 @@ endmacro(add_PID_Wrapper_Author)
 #
 #   .. command:: add_PID_Wrapper_Category(...)
 #
+#   .. command:: PID_Wrapper_Category(...)
+#
 #      Declare that the current wrapper generates external packages that belong to a given category.
 #
 #     .. rubric:: Required parameters
@@ -280,6 +303,11 @@ endmacro(add_PID_Wrapper_Author)
 #
 #        add_PID_Wrapper_Category(example/packaging)
 #
+
+macro(PID_Wrapper_Category)
+  add_PID_Wrapper_Category(${ARGN})
+endmacro(PID_Wrapper_Category)
+
 macro(add_PID_Wrapper_Category)
 if(NOT ${ARGC} EQUAL 1)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -299,6 +327,8 @@ endmacro(add_PID_Wrapper_Category)
 #  ------------------------------
 #
 #   .. command:: define_PID_Wrapper_User_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])
+#
+#   .. command:: PID_Wrapper_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])
 #
 #      Declare that the current wrapper generates external packages that belong to a given category.
 #
@@ -332,6 +362,11 @@ endmacro(add_PID_Wrapper_Category)
 #	          DEFAULT OFF
 #	          DESCRIPTION "set to ON to enable CUDA support during build")
 #
+
+macro(PID_Wrapper_Option)
+  define_PID_Wrapper_User_Option(${ARGN})
+endmacro(PID_Wrapper_Option)
+
 macro(define_PID_Wrapper_User_Option)
 set(oneValueArgs OPTION TYPE DESCRIPTION)
 set(multiValueArgs DEFAULT)
@@ -364,6 +399,8 @@ endmacro(define_PID_Wrapper_User_Option)
 #  ------------------------------
 #
 #   .. command:: declare_PID_Wrapper_Publishing(PROJECT ... GIT|FRAMEWORK ... [OPTIONS])
+#
+#   .. command:: PID_Wrapper_Publishing(PROJECT ... GIT|FRAMEWORK ... [OPTIONS])
 #
 #      Declare that the current wrapper generates external packages that belong to a given category.
 #
@@ -403,6 +440,11 @@ endmacro(define_PID_Wrapper_User_Option)
 #			         PUBLISH_BINARIES
 #			         ALLOWED_PLATFORMS x86_64_linux_abi11)
 #
+
+macro(PID_Wrapper_Publishing)
+  declare_PID_Wrapper_Publishing(${ARGN})
+endmacro(PID_Wrapper_Publishing)
+
 macro(declare_PID_Wrapper_Publishing)
 set(optionArgs PUBLISH_BINARIES)
 set(oneValueArgs PROJECT FRAMEWORK GIT PAGE)
@@ -483,7 +525,7 @@ endmacro(declare_PID_Wrapper_Publishing)
 #  .. _build_PID_Wrapper:
 #
 #  build_PID_Wrapper
-#  -------------------
+#  -----------------
 #
 #   .. command:: build_PID_Wrapper()
 #
@@ -530,6 +572,8 @@ endmacro(build_PID_Wrapper)
 #
 #   .. command:: add_PID_Wrapper_Known_Version(VERSION ... DEPLOY ... [OPTIONS])
 #
+#   .. command:: PID_Wrapper_Version(VERSION ... DEPLOY ... [OPTIONS])
+#
 #      Declare a new version of the original project wrapped into PID system.
 #
 #     .. rubric:: Required parameters
@@ -562,6 +606,11 @@ endmacro(build_PID_Wrapper)
 #        )
 #
 #
+
+macro(PID_Wrapper_Version)
+  add_PID_Wrapper_Known_Version(${ARGN})
+endmacro(PID_Wrapper_Version)
+
 macro(add_PID_Wrapper_Known_Version)
 set(optionArgs)
 set(oneValueArgs VERSION DEPLOY COMPATIBILITY SONAME POSTINSTALL)
@@ -649,6 +698,8 @@ endmacro(add_PID_Wrapper_Known_Version)
 #
 #   .. command:: declare_PID_Wrapper_Platform_Configuration(CONFIGURATION ... [PLATFORM ...])
 #
+#   .. command:: PID_Wrapper_Configuration(CONFIGURATION ... [PLATFORM ...])
+#
 #      Declare a platform configuration constraint for the current version of the external project being described.
 #
 #     .. rubric:: Required parameters
@@ -675,6 +726,11 @@ endmacro(add_PID_Wrapper_Known_Version)
 #
 #        declare_PID_Wrapper_Platform_Configuration(CONFIGURATION posix)
 #
+
+macro(PID_Wrapper_Configuration)
+  declare_PID_Wrapper_Platform_Configuration(${ARGN})
+endmacro(PID_Wrapper_Configuration)
+
 macro(declare_PID_Wrapper_Platform_Configuration)
 set(options)
 set(oneValueArgs PLATFORM)
@@ -700,7 +756,7 @@ endmacro(declare_PID_Wrapper_Platform_Configuration)
 #
 #   .. command:: declare_PID_Wrapper_External_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)
 #
-#   .. command:: declare_PID_Wrapper_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)
+#   .. command:: PID_Wrapper_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)
 #
 #     Declare a dependency between the currently described version of the external package and another external package.
 #
@@ -730,9 +786,9 @@ endmacro(declare_PID_Wrapper_Platform_Configuration)
 #
 #        declare_PID_Wrapper_External_Dependency (PACKAGE boost EXACT VERSION 1.55.0 EXACT VERSION 1.63.0 EXACT VERSION 1.64.0)
 #
-macro(declare_PID_Wrapper_Dependency)
+macro(PID_Wrapper_Dependency)
   declare_PID_Wrapper_External_Dependency(${ARGN})
-endmacro(declare_PID_Wrapper_Dependency)
+endmacro(PID_Wrapper_Dependency)
 
 macro(declare_PID_Wrapper_External_Dependency)
 set(options )
@@ -811,6 +867,8 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #
 #   .. command:: declare_PID_Wrapper_Component(COMPONENT ... [OPTIONS])
 #
+#   .. command:: PID_Wrapper_Component(COMPONENT ... [OPTIONS])
+#
 #     Declare a new component for the current version of the external package.
 #
 #     .. rubric:: Required parameters
@@ -846,6 +904,10 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #
 #        declare_PID_Wrapper_Component(COMPONENT libyaml INCLUDES include SHARED_LINKS ${posix_LINK_OPTIONS} lib/libyaml-cpp)
 #
+macro(PID_Wrapper_Component)
+  declare_PID_Wrapper_Component(${ARGN})
+endmacro(PID_Wrapper_Component)
+
 macro(declare_PID_Wrapper_Component)
 set(oneValueArgs COMPONENT C_STANDARD CXX_STANDARD SONAME)
 set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPENDS) #known versions of the external package that can be used to build/run it
@@ -912,6 +974,8 @@ endmacro(declare_PID_Wrapper_Component)
 #
 #   .. command:: declare_PID_Wrapper_Component_Dependency([COMPONENT] ... [OPTIONS])
 #
+#   .. command:: PID_Wrapper_Component_Dependency([COMPONENT] ... [OPTIONS])
+#
 #     Declare a dependency for a component defined in the current version of the current external package.
 #
 #     .. rubric:: Required parameters
@@ -946,6 +1010,10 @@ endmacro(declare_PID_Wrapper_Component)
 #
 #        declare_PID_Wrapper_Component_Dependency(COMPONENT libyaml EXPORT EXTERNAL boost-headers PACKAGE boost)
 #
+macro(PID_Wrapper_Component_Dependency)
+  declare_PID_Wrapper_Component_Dependency(${ARGN})
+endmacro(PID_Wrapper_Component_Dependency)
+
 macro(declare_PID_Wrapper_Component_Dependency)
 set(options EXPORT DEPENDS)
 set(oneValueArgs COMPONENT EXTERNAL PACKAGE C_STANDARD CXX_STANDARD)
