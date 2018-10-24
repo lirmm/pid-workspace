@@ -30,6 +30,7 @@ if(NOT gtk2_FOUND) #any linux or macosx is gtk2 ...
 			list(REMOVE_DUPLICATES gtk2_INCLUDE_PATH)
 		endif()
 		set(gtk2_INCLUDE_DIRS ${gtk2_INCLUDE_PATH} CACHE INTERNAL "")
+		set(all_links)
 		foreach(lib IN LISTS gtk2_LIBRARIES)
 			convert_Library_Path_To_Default_System_Library_Link(res_link ${lib})
 			list(APPEND all_links ${res_link})
