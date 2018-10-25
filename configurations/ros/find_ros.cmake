@@ -24,7 +24,7 @@ set(ROS_LIB_DIRS)
 set(ROS_LIBS)
 set(ROS_BOOST_COMP)
 
-set(ROS_PATH "/opt/ros/${ROS_DISTRO}")
+set(ROS_PATH "/opt/ros/${ros_distribution}")
 if(EXISTS "${ROS_PATH}/env.sh")
 	find_package(Boost)
 	if(NOT Boost_FOUND)
@@ -35,9 +35,9 @@ if(EXISTS "${ROS_PATH}/env.sh")
 	set(ros_DISTRO_FOUND TRUE CACHE INTERNAL "")
 
 	# find packages
-	list(APPEND ROS_PACKAGES roscpp)
-	list(REMOVE_DUPLICATES ROS_PACKAGES)
-	find_package(catkin REQUIRED COMPONENTS ${ROS_PACKAGES})
+	list(APPEND ros_packages roscpp)
+	list(REMOVE_DUPLICATES ros_packages)
+	find_package(catkin REQUIRED COMPONENTS ${ros_packages})
 
 	foreach(inc IN LISTS catkin_INCLUDE_DIRS)
 		string(REGEX REPLACE "^${ROS_PATH}(.*)$" "\\1" res_include ${inc})
