@@ -199,7 +199,7 @@ if(NOT NAME_ARGS STREQUAL configuration_constraint)#it matches !! => there are a
   endif()
   string(REPLACE ":" ";" ARGS_LIST "${THE_ARGS}")
   foreach(arg IN LISTS ARGS_LIST)
-    string(REGEX REPLACE "^([^=]+)=(.+)$" "\\1;\"\\2\"" ARG_VAL "${arg}")#argument format :  arg_name=first,second,third OR arg_name=val
+    string(REGEX REPLACE "^([^=]+)=(.+)$" "\\1;\\2" ARG_VAL "${arg}")#argument format :  arg_name=first,second,third OR arg_name=val
     if(ARG_VAL STREQUAL arg)#no match => ill formed argument
       return()
     endif()
