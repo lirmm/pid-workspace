@@ -32,7 +32,7 @@ if(CUDA_FOUND)
 	set(cuda_LIBRARIES ${CUDA_LIBRARIES})
 	set(cuda_EXE ${CUDA_NVCC_EXECUTABLE})
 	set(cuda_TOOLKIT ${CUDA_TOOLKIT_TARGET_DIR})
-	set(cuda_INCS ${CUDA_INCLUDE_DIRS})#everything should be in standard system path so no need to specify include dirs
+	set(cuda_INCS ${CUDA_INCLUDE_DIRS})#everything should be in standard system path so no need to specify include dirs, but who knows
 	unset(CUDA_LIBRARIES CACHE)
 	unset(CUDA_INCLUDE_DIRS CACHE)
 endif()
