@@ -25,14 +25,20 @@ set(cuda_FOUND FALSE CACHE INTERNAL "")
 
 #using a modified version of find cuda to make it usable into a script
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/constraints/configurations/cuda) # using generic scripts/modules of the workspace
+set(CUDA_USE_STATIC_CUDA_RUNTIME FALSE CACHE INTERNAL "" FORCE)
 find_package(CUDA)
 
 if(CUDA_FOUND)
 	set(cuda_FOUND TRUE CACHE INTERNAL "")
-	set(cuda_LIBRARIES -lcudart-static -lrt -lpthread -ldl)
+	set(all_links)
+	foreach(lib IN LISTS CUDA_LIBRARIES)
+		convert_Library_Path_To_Default_System_Library_Link(res_link ${lib})
+		list(APPEND all_links ${res_link})
+	endforeach()
+	set(cuda_LIBRARIES ${all_links})
 	set(cuda_EXE ${CUDA_NVCC_EXECUTABLE})
 	set(cuda_TOOLKIT ${CUDA_TOOLKIT_TARGET_DIR})
-	set(cuda_INCS ${CUDA_INCLUDE_DIRS})#everything should be in standard system path so no need to specify include dirs
+	set(cuda_INCS ${CUDA_INCLUDE_DIRS})#everything should be in standard system path so no need to specify include dirs, but who knows
 	unset(CUDA_LIBRARIES CACHE)
 	unset(CUDA_INCLUDE_DIRS CACHE)
 endif()
