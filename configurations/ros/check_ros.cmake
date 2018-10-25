@@ -33,17 +33,22 @@ function(add_ROS_Dependencies_To_Component component)
 	endforeach()
 endfunction()
 
-if(NOT ROS_DISTRO)
+if(NOT ros_distribution)
 	set(CHECK_ros_RESULT FALSE)
-	message("Please indicate what ROS distribution to use by setting the ROS_DISTRO variable")
+	message("[PID] ERROR : Please indicate what ROS distribution to use by passing the 'distribution' parameter to the configuration, e.g. check_PID_Platform(CONFIGURATION ros[distribution=kinetic])")
 	return()
 endif()
 
-# use variable ROS_DISTRO to target specific distributions
-# use variable ROS_PACKAGES to target additionnal packages
-if(NOT ROS_DISTRO STREQUAL USED_ROS_DISTRO OR NOT ros_FOUND OR NOT ROS_PACKAGES STREQUAL USED_ROS_PACKAGES)
-	set(USED_ROS_DISTRO ${ROS_DISTRO} CACHE INTERNAL "")
-	set(USED_ROS_PACKAGES ${ROS_PACKAGES} CACHE INTERNAL "")
+if(NOT ros_packages)
+	message("[PID] INFO : No packages defined for the ROS configuration. To add some, use the 'packages' parameter, e.g. check_PID_Platform(CONFIGURATION ros[distribution=kinetic:packages=sensor_msgs,control_msgs])")
+endif()
+
+# use variable ros_distribution to target specific distributions
+# use variable ros_packages to target additionnal packages
+if(NOT ros_distribution STREQUAL USED_ROS_DISTRO OR NOT ros_FOUND OR NOT ros_packages STREQUAL USED_ROS_PACKAGES)
+
+	set(USED_ROS_DISTRO ${ros_distribution} CACHE INTERNAL "")
+	set(USED_ROS_PACKAGES ${ros_packages} CACHE INTERNAL "")
 	set(ros_INCLUDE_DIRS CACHE INTERNAL "")
 	set(ros_LIBS CACHE INTERNAL "")
 	set(ros_RPATH CACHE INTERNAL "") # add the path to the lib folder of ros
