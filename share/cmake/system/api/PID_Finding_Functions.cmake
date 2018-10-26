@@ -108,6 +108,7 @@ get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
 if(NOT DEFINED MAJOR)#not a valid version string
   set(${RES_VERSION} PARENT_SCOPE)
 endif()
+set(version_found FALSE)
 if(DEFINED PATCH)
 	set(curr_max_patch_number ${PATCH})
 else()
@@ -120,9 +121,10 @@ foreach(version IN LISTS available_versions)
 		AND COMPARE_MINOR EQUAL MINOR
 		AND COMPARE_PATCH GREATER curr_max_patch_number)
 		set(curr_max_patch_number ${COMPARE_PATCH})# taking the last patch version available for this major.minor
-	endif()
+    set(version_found TRUE)
+  endif()
 endforeach()
-if(curr_max_patch_number EQUAL -1)#i.e. nothing found
+if(NOT version_found)
 	set(${RES_VERSION} PARENT_SCOPE)
 else()
 	set(${RES_VERSION} "${MAJOR}.${MINOR}.${curr_max_patch_number}" PARENT_SCOPE)
