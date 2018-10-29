@@ -45,9 +45,8 @@ if(TARGET_FRAMEWORK)# a framework is created
 	endif()
 	if(OPTIONNAL_GIT_URL)
 		get_Repository_Name(RES_NAME ${OPTIONNAL_GIT_URL})
-		if(	NOT "${RES_NAME}" STREQUAL "${TARGET_FRAMEWORK}"
-			AND NOT "${RES_NAME}" STREQUAL "${TARGET_FRAMEWORK}-framework")
-
+		if(	NOT RES_NAME STREQUAL TARGET_FRAMEWORK
+			AND NOT RES_NAME STREQUAL "${TARGET_FRAMEWORK}-framework")
 			message("[PID] ERROR : the git url of the repository (${OPTIONNAL_GIT_URL}) does not define a repository with same name than framework ${TARGET_FRAMEWORK}.")
 			return()
 		endif()
