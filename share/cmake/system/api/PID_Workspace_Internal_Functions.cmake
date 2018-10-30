@@ -2450,9 +2450,11 @@ if(CURRENT_ABI STREQUAL "CXX11")
 	#this line is needed to force the compiler to use libstdc++11 newer version of API whatever the version of the distribution is
 	#e.g. on ubuntu 14 with compiler gcc 5.4 the default value keeps
 	set(TEMP_FLAGS ${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=1)
-	list(REMOVE_DUPLICATES TEMP_FLAGS)#just to avoid repeating the same option again and again at each workspace configuration time
-	set(CMAKE_CXX_FLAGS ${TEMP_FLAGS} CACHE STRING "" FORCE)
+else()
+	set(TEMP_FLAGS ${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0)
 endif()
+list(REMOVE_DUPLICATES TEMP_FLAGS)#just to avoid repeating the same option again and again at each workspace configuration time
+set(CMAKE_CXX_FLAGS ${TEMP_FLAGS} CACHE STRING "" FORCE)
 
 file(APPEND ${file} "set(CMAKE_CXX_FLAGS \"${CMAKE_CXX_FLAGS}\" CACHE STRING \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_CXX_FLAGS_DEBUG \"${CMAKE_CXX_FLAGS_DEBUG}\" CACHE STRING \"\" FORCE)\n")
@@ -2533,6 +2535,8 @@ if(PID_CROSSCOMPILATION) #only write these information if we are trully cross co
 	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE \"${CMAKE_FIND_ROOT_PATH_MODE_INCLUDE}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE \"${CMAKE_FIND_ROOT_PATH_MODE_PACKAGE}\" CACHE INTERNAL \"\" FORCE)\n")
 endif()
+
+
 endfunction(write_Current_Configuration_Build_Related_Variables)
 
 #.rst:
@@ -2552,28 +2556,40 @@ endfunction(write_Current_Configuration_Build_Related_Variables)
 #      :file: the path to the file to write in.
 #
 function(write_Platform_Description file)
-file(WRITE ${file} "")#reset the file
+	file(WRITE ${file} "")#reset the file
 
-# defining properties of the current platform
-file(APPEND ${file} "set(CURRENT_PLATFORM ${CURRENT_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(CURRENT_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\" FORCE)\n")
+	# defining properties of the current platform
+	file(APPEND ${file} "set(CURRENT_PLATFORM ${CURRENT_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\" FORCE)\n")
 
-file(APPEND ${file} "set(CURRENT_PLATFORM_TYPE ${CURRENT_PLATFORM_TYPE} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(CURRENT_PLATFORM_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(CURRENT_PLATFORM_OS ${CURRENT_PLATFORM_OS} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(CURRENT_PLATFORM_ABI ${CURRENT_PLATFORM_ABI} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PLATFORM_TYPE ${CURRENT_PLATFORM_TYPE} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PLATFORM_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PLATFORM_OS ${CURRENT_PLATFORM_OS} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PLATFORM_ABI ${CURRENT_PLATFORM_ABI} CACHE INTERNAL \"\" FORCE)\n")
 
-#default install path used for that platform
-file(APPEND ${file} "set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${EXTERNAL_PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
-file(APPEND ${file} "set(PACKAGE_BINARY_INSTALL_DIR ${PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
+	#default install path used for that platform
+	file(APPEND ${file} "set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${EXTERNAL_PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(PACKAGE_BINARY_INSTALL_DIR ${PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
 
-if(CURRENT_ENVIRONMENT)
-	file(APPEND ${file} "set(CURRENT_ENVIRONMENT ${CURRENT_ENVIRONMENT} CACHE INTERNAL \"\" FORCE)\n")
-else()
-	file(APPEND ${file} "set(CURRENT_ENVIRONMENT host CACHE INTERNAL \"\" FORCE)\n")
-endif()
+	if(CURRENT_ENVIRONMENT)
+		file(APPEND ${file} "set(CURRENT_ENVIRONMENT ${CURRENT_ENVIRONMENT} CACHE INTERNAL \"\" FORCE)\n")
+	else()
+		file(APPEND ${file} "set(CURRENT_ENVIRONMENT host CACHE INTERNAL \"\" FORCE)\n")
+	endif()
+	# managing abi related variables, used to check for binary compatibility
+	file(APPEND ${file} "set(CURRENT_CXX_ABI ${CURRENT_ABI} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CMAKE_INTERNAL_PLATFORM_ABI ${CMAKE_INTERNAL_PLATFORM_ABI} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CXX_STANDARD_LIBRARIES ${CXX_STANDARD_LIBRARIES} CACHE INTERNAL \"\" FORCE)\n")
+	foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
+		file(APPEND ${file} "set(CXX_STD_LIB_${lib}_ABI_SOVERSION ${CXX_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\" FORCE)\n")
+	endforeach()
+	file(APPEND ${file} "set(CXX_STD_SYMBOLS ${CXX_STD_SYMBOLS} CACHE INTERNAL \"\" FORCE)\n")
+	foreach(symbol IN LISTS CXX_STD_SYMBOLS)
+		file(APPEND ${file} "set(CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\" FORCE)\n")
+	endforeach()
+
 	#managing python
 	file(APPEND ${file} "set(CURRENT_PYTHON ${CURRENT_PYTHON} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_PYTHON_EXECUTABLE ${CURRENT_PYTHON_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")

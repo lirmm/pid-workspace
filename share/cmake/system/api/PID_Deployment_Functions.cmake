@@ -2788,8 +2788,15 @@ else()
   include(${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
   if(res STREQUAL NOTFOUND)
     set(${RESULT} FALSE PARENT_SCOPE)
-    return()# no use file in external package ("raw external package") => nothing to do
+    return()# no use file in native package => problem !
   endif()
+endif()
+
+# 0) checking global ABI compatibility
+is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${package})
+if(NOT IS_ABI_COMPATIBLE)
+  set(${RESULT} FALSE PARENT_SCOPE)
+  return() #problem => the binary package has been built with an incompatible C++ ABI
 endif()
 
 # 1) checking platforms constraints

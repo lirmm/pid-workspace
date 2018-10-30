@@ -1239,8 +1239,21 @@ endfunction(install_External_Find_File_For_Version)
 #
 function(generate_External_Use_File_For_Version package version platform)
 	set(file_for_version ${WORKSPACE_DIR}/wrappers/${package}/build/Use${package}-${version}.cmake)
-	file(WRITE ${file_for_version} "#############################################\n")#reset file content (if any) or create file
-	file(APPEND ${file_for_version} "#description of ${package} content (version ${version})\n")
+	file(WRITE ${file_for_version} "############# description of ${package} build process ABi environment ##################\n")#reset file content (if any) or create file
+
+	# add constraints related to C++ ABI in use
+	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_ABI ${CURRENT_CXX_ABI} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI ${CMAKE_INTERNAL_PLATFORM_ABI} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_STD_LIBRARIES ${CXX_STANDARD_LIBRARIES} CACHE INTERNAL \"\")\n")
+	foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
+		file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION ${CXX_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\")\n")
+	endforeach()
+	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_STD_SYMBOLS ${CXX_STD_SYMBOLS} CACHE INTERNAL \"\")\n")
+	foreach(symbol IN LISTS CXX_STD_SYMBOLS)
+		file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
+	endforeach()
+
+	file(APPEND ${file_for_version} "############# description of ${package} content (version ${version}) #############\n")
 	file(APPEND ${file_for_version} "declare_PID_External_Package(PACKAGE ${package})\n")
 
 	#add checks for required platform configurations

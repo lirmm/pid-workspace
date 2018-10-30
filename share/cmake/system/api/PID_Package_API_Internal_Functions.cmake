@@ -1461,7 +1461,7 @@ endfunction(declare_Python_Component)
 #  .. _declare_Native_Package_Dependency:
 #
 #  declare_Native_Package_Dependency
-#  --------------------------
+#  ---------------------------------
 #
 #   .. command:: declare_Native_Package_Dependency(dep_package optional list_of_versions exact_versions list_of_components)
 #

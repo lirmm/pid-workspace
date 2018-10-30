@@ -1647,6 +1647,18 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 		file(APPEND ${file} "set(${package}_DEVELOPMENT_STATE development CACHE INTERNAL \"\")\n")
 	endif()
 
+	file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_ABI ${CURRENT_CXX_ABI} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI ${CMAKE_INTERNAL_PLATFORM_ABI} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_LIBRARIES ${CXX_STANDARD_LIBRARIES} CACHE INTERNAL \"\")\n")
+  foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
+    file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION ${CXX_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\")\n")
+  endforeach()
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_SYMBOLS ${CXX_STD_SYMBOLS} CACHE INTERNAL \"\")\n")
+  foreach(symbol IN LISTS CXX_STD_SYMBOLS)
+    file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
+  endforeach()
+
+  file(APPEND ${file} "######### declaration of package development info ########\n")
 
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")

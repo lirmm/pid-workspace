@@ -620,7 +620,7 @@ endfunction(install_Runtime_Symlink)
 #     :additional_install_folder: folder where to put symlinks (if a system folder need to use sudo when building).
 #
 function(install_Additional_Binary_Symlink component additional_install_folder)
-  get_Component_Binary_Elements(PREFIX EXTENSION ${PROJECT_NAME} ${component} ${CURRENT_PLATFORM})
+  get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM} "${${PROJECT_NAME}_${component}_TYPE}")
   set(component_install_name ${PREFIX}${component}${INSTALL_NAME_SUFFIX}${EXTENSION})
   set(component_install_path ${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_INSTALL_LIB_PATH}/${component_install_name})
   install(CODE "
@@ -1778,10 +1778,10 @@ endfunction(is_Shared_Lib_With_Path)
 # .. ifmode:: internal
 #
 #  .. |create_Shared_Lib_Extension| replace:: ``create_Shared_Lib_Extension``
-#  .. create_Shared_Lib_Extension:
+#  .. _create_Shared_Lib_Extension:
 #
-#  _create_Shared_Lib_Extension
-#  ----------------------------
+#  create_Shared_Lib_Extension
+#  ---------------------------
 #
 #   .. command:: create_Shared_Lib_Extension(RES_EXT platform soname)
 #
@@ -1836,7 +1836,7 @@ endfunction(create_Shared_Lib_Extension)
 function(shared_Library_Needs_Soname NEEDS_SONAME library_path platform)
   set(${NEEDS_SONAME} FALSE PARENT_SCOPE)
 	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
-	if(RES_OS STREQUAL macosx OR RES_OS STREQUAL windows)
+	if(RES_OS STREQUAL "macosx" OR RES_OS STREQUAL "windows")
     return()
   endif()
   if(library_path MATCHES "^-l.*$")#OS dependency using standard library path
@@ -1880,6 +1880,49 @@ function(convert_Library_Path_To_Default_System_Library_Link RESULTING_LINK libr
 
   set(${RESULTING_LINK} "-l${LIB_NAME}" PARENT_SCOPE)
 endfunction(convert_Library_Path_To_Default_System_Library_Link)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |extract_ELF_Symbol_Version| replace:: ``extract_ELF_Symbol_Version``
+#  .. _extract_ELF_Symbol_Version:
+#
+#  extract_ELF_Symbol_Version
+#  --------------------------
+#
+#   .. command:: extract_ELF_Symbol_Version(RES_VERSION symbol symbol_version)
+#
+#    Get the version from a (supposed to be) versionned symbol.
+#
+#     :symbol: the symbol that is supposed to have a version number. For instance symbol "GLIBCXX_" can be used for libstdc++.so (GNU standard C++ library).
+#
+#     :symbol_version: the input symbol, for instance "GLIBCXX_2.4".
+#
+#     :RES_VERSION: the output variable that contains the version of the target symbol always with major.minor.patch structure. For istance with previous arguùents it returns "2.4.0".
+#
+function(extract_ELF_Symbol_Version RES_VERSION symbol symbol_version)
+	set(parsed_version)
+	string(REGEX REPLACE "^${symbol}([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" parsed_version ${symbol_version})
+	if(parsed_version STREQUAL symbol_version)#NO match
+		string(REGEX REPLACE "^${symbol}([0-9]+)\\.([0-9]+)$" "\\1;\\2" parsed_version ${symbol_version})
+	endif()
+	list(LENGTH parsed_version SIZE)
+	if(SIZE EQUAL 2)
+		list(GET parsed_version 0 MAJOR)
+		list(GET parsed_version 1 MINOR)
+		set(PATCH "0")
+	elseif(SIZE EQUAL 3)
+		list(GET parsed_version 0 MAJOR)
+		list(GET parsed_version 1 MINOR)
+		list(GET parsed_version 2 PATCH)
+	else()
+		set(MAJOR "0")
+		set(MINOR "0")
+		set(PATCH "0")
+	endif()
+	set(${RES_VERSION} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
+endfunction(extract_ELF_Symbol_Version)
 
 #.rst:
 #
@@ -1956,56 +1999,53 @@ endfunction(is_Library_Type)
 #
 # .. ifmode:: internal
 #
-#  .. |get_Component_Binary_Elements| replace:: ``get_Component_Binary_Elements``
-#  .. _get_Component_Binary_Elements:
+#  .. |get_Platform_Related_Binary_Prefix_Suffix| replace:: ``get_Platform_Related_Binary_Prefix_Suffix``
+#  .. _get_Platform_Related_Binary_Prefix_Suffix:
 #
-#  get_Component_Binary_Elements
-#  -----------------------------
+#  get_Platform_Related_Binary_Prefix_Suffix
+#  -----------------------------------------
 #
-#   .. command:: get_Component_Binary_Elements(PREFIX EXTENSION package component platform)
+#   .. command:: get_Platform_Related_Binary_Prefix_Suffix(PREFIX SUFFIX platform type_of_binary)
 #
-#    Get elements of the name for a given component binary that depends on the platform and type of component.
-#
-#     :package: the package containing the component.
-#
-#     :component: the name of the component.
+#    Get prefix and suffix of the name for a given component binary that depends on the platform and type of component.
 #
 #     :platform: the target platform for the component binary.
 #
+#     :type_of_binary: the type of the component.
+#
 #     :PREFIX: the output variable that contains the prefix of the binary.
 #
-#     :EXTENSION: the output variable that contains the extension of the binary.
+#     :SUFFIX: the output variable that contains the extension of the binary.
 #
-function(get_Component_Binary_Elements PREFIX EXTENSION package component platform)
-  set(${EXTENSION} PARENT_SCOPE)
+function(get_Platform_Related_Binary_Prefix_Suffix PREFIX SUFFIX platform type_of_binary)
   set(${PREFIX} PARENT_SCOPE)
+  set(${SUFFIX} PARENT_SCOPE)
   extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
-  if(${package}_${component}_TYPE STREQUAL "STATIC")
+  if(type_of_binary STREQUAL "STATIC")
     if(RES_OS STREQUAL "windows")
-      set(${EXTENSION} .lib PARENT_SCOPE)
+      set(${SUFFIX} .lib PARENT_SCOPE)
     else()
-      set(${EXTENSION} .a PARENT_SCOPE)
+      set(${SUFFIX} .a PARENT_SCOPE)
       set(${PREFIX} lib PARENT_SCOPE)
     endif()
-  elseif(${package}_${component}_TYPE STREQUAL "SHARED"
-  OR ${package}_${component}_TYPE STREQUAL "MODULE")
+  elseif(type_of_binary STREQUAL "SHARED" OR type_of_binary STREQUAL "MODULE")
     if(RES_OS STREQUAL "windows")
-      set(${EXTENSION} .dll PARENT_SCOPE)
+      set(${SUFFIX} .dll PARENT_SCOPE)
     elseif(RES_OS STREQUAL "macosx")
-      set(${EXTENSION} .dylib PARENT_SCOPE)
+      set(${SUFFIX} .dylib PARENT_SCOPE)
       set(${PREFIX} lib PARENT_SCOPE)
     else()
-      set(${EXTENSION} .so PARENT_SCOPE)
+      set(${SUFFIX} .so PARENT_SCOPE)
       set(${PREFIX} lib PARENT_SCOPE)
     endif()
-  elseif(${package}_${component}_TYPE STREQUAL "APPLICATION")
+  elseif(type_of_binary STREQUAL "APPLICATION" OR type_of_binary STREQUAL "EXAMPLE")
     if(RES_OS STREQUAL "windows")
-      set(${EXTENSION} .exe PARENT_SCOPE)
+      set(${SUFFIX} .exe PARENT_SCOPE)
     else()
-      set(${EXTENSION} PARENT_SCOPE)
+      set(${SUFFIX} PARENT_SCOPE)
     endif()
   endif()
-endfunction(get_Component_Binary_Elements)
+endfunction(get_Platform_Related_Binary_Prefix_Suffix)
 
 #.rst:
 #
