@@ -22,29 +22,54 @@ include(${WORKSPACE_DIR}/configurations/ros/installable_ros.cmake)
 if(ros_INSTALLABLE)
 	message("[PID] INFO : trying to install ROS ${ros_distribution}...")
 	if(CURRENT_DISTRIBUTION STREQUAL ubuntu)
-		execute_process(COMMAND sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list')
-		execute_process(COMMAND sudo apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116)
-		execute_process(COMMAND sudo apt-get update)
-		execute_process(COMMAND sudo apt-get -y install ros-${ros_distribution}-ros-base)
+
+		set(ROS_PATH "/opt/ros/${ros_distribution}")
+		if(NOT EXISTS ${ROS_PATH})#the given distribution does not exist on the filesystem
+			#updating apt to know where to find ROS packages
+			execute_process(COMMAND lsb_release -sc OUTPUT_VARIABLE DISTRO_NICK ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID
+			string(REGEX REPLACE "^[ \n\t]*([^ \t\n]+)[ \n\t]*" "\\1" DISTRO_NICK ${DISTRO_NICK})#getting distro nick name
+			execute_process(COMMAND ${CMAKE_COMMAND} -E echo "deb http://packages.ros.org/ros/ubuntu ${DISTRO_NICK} main" OUTPUT_VARIABLE to_print)
+			set(apt_list_for_ros /etc/apt/sources.list.d/ros-latest.list)
+			if(EXISTS ${apt_list_for_ros})
+				file(READ ${apt_list_for_ros} ROS_APT_LIST)
+				set(to_print "${ROS_APT_LIST}\n${to_print}")
+			endif()
+			file(WRITE ${CMAKE_BINARY_DIR}/ros-latest.list "${to_print}")
+			execute_process(COMMAND sudo ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/ros-latest.list ${apt_list_for_ros})
+			file(REMOVE ${CMAKE_BINARY_DIR}/ros-latest.list)
+			execute_process(COMMAND sudo apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116)
+			execute_process(COMMAND sudo apt-get update)
+			execute_process(COMMAND sudo apt-get -y install ros-${ros_distribution}-ros-base)
+
+			#updating environment variables in order to use ROS
+			if(CURRENT_SHELL STREQUAL ZSH)#shell is zsh
+				set(shell_id "z" )
+			else()#default shell is bash
+				set(shell_id "ba" )
+			endif()
+			set(path_to_session_script $ENV{HOME}/.${shell_id}shrc)
+			file(APPEND ${path_to_session_script} "\nsource /opt/ros/${ros_distribution}/setup.${shell_id}sh\n")
+			message("[PID] WARNING : Please run 'source ~/.bashrc' or 'source ~/.zshrc' depending on your shell ! ")
+		endif()
+
+		#installing additional packages
 		if(ros_packages)
 			foreach(package IN LISTS ros_packages)
 				string(REPLACE "_" "-" package_name ${package})
 				execute_process(COMMAND sudo apt-get -y install ros-${ros_distribution}-${package_name})
-			endif()
+			endforeach()
 		endif()
 
-		execute_process(COMMAND ${CMAKE_COMMAND} -E echo "source /opt/ros/${ros_distribution}/setup.bash" >> ~/.bashrc)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E echo "source /opt/ros/${ros_distribution}/setup.zsh" >> ~/.zshrc)
-		message("Please run 'source ~/.bashrc' or 'source ~/.zshrc' depending on your shell")
 	endif()
-	include(${WORKSPACE_DIR}/configurations/ros/find_ros.cmake)
-	if(ros_FOUND)
-		message("[PID] INFO : ROS ${ros_distribution} installed !")
-		set(ros_INSTALLED TRUE)
-	else()
-		set(ros_INSTALLED FALSE)
-		message("[PID] INFO : install of ROS ${ros_distribution} has failed !")
-	endif()
+	return()
+endif()
+
+#whatever the distribution try to find ROS distro
+include(${WORKSPACE_DIR}/configurations/ros/find_ros.cmake)
+if(ros_FOUND)
+	set(ros_INSTALLED TRUE)
+	message("[PID] INFO : ROS ${ros_distribution} installed !")
 else()
 	set(ros_INSTALLED FALSE)
+	message("[PID] INFO : install of ROS ${ros_distribution} has failed !")
 endif()

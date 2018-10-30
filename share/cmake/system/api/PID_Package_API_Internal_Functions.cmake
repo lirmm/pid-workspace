@@ -1697,9 +1697,9 @@ else()#there are version(s) specified
 		set(message_for_variable "${message_for_variable} Or use NONE to avoid using this dependency.")
 	endif()
 	if(version) #the package may be already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
-		if(SIZE EQUAL 1)
+		if(SIZE EQUAL 1)#no alternative a given version constraint must be satisfied
 			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
-		else()
+		else() #we can choose among many versions
 			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "${message_for_variable}")
 		endif()
 	else()#no version variable defined, only possible if in a dependent build process

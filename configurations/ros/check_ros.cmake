@@ -66,7 +66,7 @@ if(NOT ros_distribution STREQUAL USED_ROS_DISTRO OR NOT ros_FOUND OR NOT ros_pac
 		set(CHECK_ros_RESULT TRUE)
 	else() # if either the distribution or any package not found
 		include(${WORKSPACE_DIR}/configurations/ros/install_ros.cmake)
-		set(CHECK_ros_RESULT ros_INSTALLED)
+		set(CHECK_ros_RESULT ${ros_INSTALLED})
 	endif()
 else()
 	set(CHECK_ros_RESULT TRUE)
