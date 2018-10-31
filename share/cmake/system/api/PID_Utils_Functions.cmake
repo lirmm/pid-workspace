@@ -620,7 +620,7 @@ endfunction(install_Runtime_Symlink)
 #     :additional_install_folder: folder where to put symlinks (if a system folder need to use sudo when building).
 #
 function(install_Additional_Binary_Symlink component additional_install_folder)
-  get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM} "${${PROJECT_NAME}_${component}_TYPE}")
+  get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM_OS} "${${PROJECT_NAME}_${component}_TYPE}")
   set(component_install_name ${PREFIX}${component}${INSTALL_NAME_SUFFIX}${EXTENSION})
   set(component_install_path ${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_INSTALL_LIB_PATH}/${component_install_name})
   install(CODE "
@@ -1428,6 +1428,12 @@ foreach(source_file IN LISTS list_of_files)
 					enable_language(ASM)#use assembler
 					list(APPEND USED_LANGUAGES ASM)
 				endif()
+    elseif(EXTENSION STREQUAL ".cu")#we have an assembler file
+				list(FIND USED_LANGUAGES CUDA INDEX)
+				if(INDEX EQUAL -1)#assembler is not in use already
+					enable_language(CUDA)#use assembler
+					list(APPEND USED_LANGUAGES CUDA)
+				endif()
 		endif()
 endforeach()
 endmacro(activate_Adequate_Languages)
@@ -2009,7 +2015,7 @@ endfunction(is_Library_Type)
 #
 #    Get prefix and suffix of the name for a given component binary that depends on the platform and type of component.
 #
-#     :platform: the target platform for the component binary.
+#     :platform_os: the target operating system of the target platform
 #
 #     :type_of_binary: the type of the component.
 #
@@ -2017,21 +2023,20 @@ endfunction(is_Library_Type)
 #
 #     :SUFFIX: the output variable that contains the extension of the binary.
 #
-function(get_Platform_Related_Binary_Prefix_Suffix PREFIX SUFFIX platform type_of_binary)
+function(get_Platform_Related_Binary_Prefix_Suffix PREFIX SUFFIX platform_os type_of_binary)
   set(${PREFIX} PARENT_SCOPE)
   set(${SUFFIX} PARENT_SCOPE)
-  extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
   if(type_of_binary STREQUAL "STATIC")
-    if(RES_OS STREQUAL "windows")
+    if(platform_os STREQUAL "windows")
       set(${SUFFIX} .lib PARENT_SCOPE)
     else()
       set(${SUFFIX} .a PARENT_SCOPE)
       set(${PREFIX} lib PARENT_SCOPE)
     endif()
   elseif(type_of_binary STREQUAL "SHARED" OR type_of_binary STREQUAL "MODULE")
-    if(RES_OS STREQUAL "windows")
+    if(platform_os STREQUAL "windows")
       set(${SUFFIX} .dll PARENT_SCOPE)
-    elseif(RES_OS STREQUAL "macosx")
+    elseif(platform_os STREQUAL "macosx")
       set(${SUFFIX} .dylib PARENT_SCOPE)
       set(${PREFIX} lib PARENT_SCOPE)
     else()
@@ -2039,7 +2044,7 @@ function(get_Platform_Related_Binary_Prefix_Suffix PREFIX SUFFIX platform type_o
       set(${PREFIX} lib PARENT_SCOPE)
     endif()
   elseif(type_of_binary STREQUAL "APPLICATION" OR type_of_binary STREQUAL "EXAMPLE")
-    if(RES_OS STREQUAL "windows")
+    if(platform_os STREQUAL "windows")
       set(${SUFFIX} .exe PARENT_SCOPE)
     else()
       set(${SUFFIX} PARENT_SCOPE)

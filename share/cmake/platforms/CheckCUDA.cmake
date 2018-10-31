@@ -1,0 +1,23 @@
+set(CUDA_Language_AVAILABLE FALSE CACHE INTERNAL "")
+
+if(CMAKE_MAJOR_VERSION GREATER 3
+OR (CMAKE_MAJOR_VERSION EQUAL 3 AND CMAKE_MINOR_VERSION GREATER 7))
+  set(OLD_CUDA_SUPPORT FALSE)
+else()
+  set(OLD_CUDA_SUPPORT TRUE)
+endif()
+
+find_package(CUDA)
+if(CUDA_FOUND)#simply stop the configuration
+  set(CUDA_Language_AVAILABLE TRUE CACHE INTERNAL "")
+  #memorizing build variables
+  set(CUDA_LIBRARIES ${CUDA_LIBRARIES} CACHE INTERNAL "")
+  set(CUDA_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS} CACHE INTERNAL "")
+  if(OLD_CUDA_SUPPORT)
+    set(CUDA_CMAKE_SUPPORT "OLD" CACHE INTERNAL "")
+  else()
+    set(CUDA_CMAKE_SUPPORT "NEW" CACHE INTERNAL "")
+    set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE FILEPATH "")
+    enable_language(CUDA) #enable FORTRAN language will generate appropriate variables
+  endif()
+endif()

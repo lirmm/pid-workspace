@@ -94,12 +94,12 @@ set(CXX_STANDARD_LIBRARIES CACHE INTERNAL "")
 # detect current C++ library ABI in use
 foreach(lib IN LISTS CMAKE_CXX_IMPLICIT_LINK_LIBRARIES)
 	#lib is the short name of the library
-	get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM} "SHARED")
+	get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_OS} "SHARED")
   set(libname ${PREFIX}${lib}${EXTENSION})
 	foreach(dir IN LISTS CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES)#searching for library name in same order as specified by the path to ensure same resolution as the linker
 		if(EXISTS ${dir}/${libname})#there is a standard library or symlink with that name
 			#getting symbols versions from the implicit library
-			get_Standard_Library_Symbol_Version(RES_SYMBOL_VERSIONS ${CURRENT_PLATFORM_OS} ${lib} ${dir}/${libname})
+			get_Standard_Library_Symbol_Version(RES_SYMBOL_VERSIONS ${CURRENT_OS} ${lib} ${dir}/${libname})
 			while(RES_SYMBOL_VERSIONS)
 				list(GET RES_SYMBOL_VERSIONS 0 symbol)
 				list(GET RES_SYMBOL_VERSIONS 1 version)

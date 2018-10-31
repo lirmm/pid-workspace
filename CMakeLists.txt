@@ -28,7 +28,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake/platforms)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/configurations)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-PROJECT(pid-workspace)
+PROJECT(pid-workspace C CXX ASM)
 
 manage_Platforms(${CMAKE_SOURCE_DIR}) # define the current platform in use and provide to the user some options to control finally targetted platform
 

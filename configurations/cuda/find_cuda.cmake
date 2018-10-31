@@ -23,16 +23,15 @@ set(cuda_FOUND FALSE CACHE INTERNAL "")
 #  cuda_FOUND        - True if cuda is available
 #  cuda_LIBRARIES    - link against these to use cuda library
 
-#using a modified version of find cuda to make it usable into a script
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/cuda) # using generic scripts/modules of the workspace
 set(CUDA_USE_STATIC_CUDA_RUNTIME FALSE CACHE INTERNAL "" FORCE)
-find_package(CUDA)
-if(CUDA_FOUND)
-	set(cuda_FOUND TRUE CACHE INTERNAL "")
-	set(cuda_LIBRARIES ${CUDA_LIBRARIES})
-	set(cuda_EXE ${CUDA_NVCC_EXECUTABLE})
-	set(cuda_TOOLKIT ${CUDA_TOOLKIT_TARGET_DIR})
-	set(cuda_INCS ${CUDA_INCLUDE_DIRS})#everything should be in standard system path so no need to specify include dirs, but who knows
-	unset(CUDA_LIBRARIES CACHE)
-	unset(CUDA_INCLUDE_DIRS CACHE)
+if(CUDA_VERSION)#if the CUDA version is known (means that a nvcc compiler has been defined)
+	if(NOT cuda_architecture) #no architecture defined => take the default one
+		set(cuda_FOUND TRUE CACHE INTERNAL "")
+		set(USED_cuda_architecture ${DEFAULT_CUDA_ARCH} CACHE INTERNAL "")
+		#TODO detect current architecture
+	else() #there is a target architecture defined
+		#need check to check if architecture is compatible with nvcc compiler
+		set(USED_cuda_architecture ${cuda_architecture} CACHE INTERNAL "")
+		#TODO detect possible architecture for nvcc then compare
+	endif()
 endif()

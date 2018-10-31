@@ -569,26 +569,26 @@ set(SKIP FALSE)
 #The check of compatibility between the target platform and the constraints is immediate using platform configuration information (platform files) + additionnal global information (distribution for instance) coming from the workspace
 
 #1) checking the conditions to know if the configuration concerns the platform currently in use
-if(type AND NOT type STREQUAL "") # a processor type is specified, so it applies like a filter on current platform
-	if(NOT CURRENT_PLATFORM_TYPE STREQUAL ${type})
+if(type) # a processor type is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_TYPE STREQUAL type)
 		set(SKIP TRUE)
 	endif()
 endif()
 
-if(NOT SKIP AND arch AND NOT arch STREQUAL "") # a processor architecture is specified, so it applies like a filter on current platform
-	if(NOT CURRENT_PLATFORM_ARCH STREQUAL ${arch})
+if(NOT SKIP AND arch) # a processor architecture is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_ARCH STREQUAL arch)
 		set(SKIP TRUE)
 	endif()
 endif()
 
-if(NOT SKIP AND os AND NOT os STREQUAL "") # an operating system is specified, so it applies like a filter on current platform
-	if(NOT CURRENT_PLATFORM_OS STREQUAL ${os})
+if(NOT SKIP AND os) # an operating system is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_OS STREQUAL os)
 		set(SKIP TRUE)
 	endif()
 endif()
 
-if(NOT SKIP AND abi AND NOT abi STREQUAL "") # an operating system is specified, so it applies like a filter on current platform
-	if(NOT CURRENT_PLATFORM_ABI STREQUAL ${abi})
+if(NOT SKIP AND abi) # an operating system is specified, so it applies like a filter on current platform
+	if(NOT CURRENT_PLATFORM_ABI STREQUAL abi)
 		set(SKIP TRUE)
 	endif()
 endif()
