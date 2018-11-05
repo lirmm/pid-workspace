@@ -615,8 +615,8 @@ if(NOT SKIP AND constraints)
 				message("[PID] ERROR : current platform does not satisfy configuration constraint ${CONFIG_NAME}.")
 				set(${RESULT} FALSE PARENT_SCOPE)
 			endif()
-			list(APPEND configurations_to_memorize ${CONFIG_NAME})
-			set(${CONFIG_NAME}_args_to_memorize ${CONFIG_ARGS})
+			list(APPEND configurations_to_memorize ${CONFIG_NAME})#memorize name of the configuration
+			set(${CONFIG_NAME}_constraints_to_memorize ${CONFIG_ARGS} ${${CONFIG_NAME}_BINARY_CONSTRAINTS})#then memorize all constraints that apply to the configuration
 		else()
 			message("[PID] INFO : when checking constraints on current platform, configuration information for ${CONFIG_NAME} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${CONFIG_NAME}.cmake in ${WORKSPACE_DIR}/configurations/${CONFIG_NAME} to manage this configuration.")
 			set(${RESULT} FALSE PARENT_SCOPE)
@@ -625,9 +625,11 @@ if(NOT SKIP AND constraints)
 
 	#registering all configurations wether they are satisfied or not
 	append_Unique_In_Cache(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} "${configurations_to_memorize}")
+
 	foreach(config IN LISTS configurations_to_memorize)
-		if(${config}_args_to_memorize)#there are arguments for that configuration
-			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} "${${config}_args_to_memorize}" CACHE INTERNAL "")
+		if(${config}_constraints_to_memorize)#there are arguments for that configuration
+			list(REMOVE_DUPLICATES ${config}_constraints_to_memorize)
+			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} "${${config}_constraints_to_memorize}" CACHE INTERNAL "")
 		endif()
 	endforeach()
 endif()
