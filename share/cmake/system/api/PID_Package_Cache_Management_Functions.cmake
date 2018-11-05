@@ -1647,6 +1647,15 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 		file(APPEND ${file} "set(${package}_DEVELOPMENT_STATE development CACHE INTERNAL \"\")\n")
 	endif()
 
+  #writing info about compiler used to build the binary
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_C_COMPILER ${CMAKE_C_COMPILER} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_COMPILER_IS_GNUCXX \"${CMAKE_COMPILER_IS_GNUCXX}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_COMPILER_ID \"${CMAKE_CXX_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_COMPILER_VERSION \"${CMAKE_CXX_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_C_COMPILER_ID \"${CMAKE_C_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_C_COMPILER_VERSION \"${CMAKE_C_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
+
 	file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_ABI ${CURRENT_CXX_ABI} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI ${CMAKE_INTERNAL_PLATFORM_ABI} CACHE INTERNAL \"\")\n")
   list(REMOVE_DUPLICATES CXX_STANDARD_LIBRARIES)
@@ -1658,6 +1667,7 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
   foreach(symbol IN LISTS CXX_STD_SYMBOLS)
     file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
   endforeach()
+
 
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")

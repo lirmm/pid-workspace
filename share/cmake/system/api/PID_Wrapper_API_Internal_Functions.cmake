@@ -1241,6 +1241,15 @@ function(generate_External_Use_File_For_Version package version platform)
 	set(file_for_version ${WORKSPACE_DIR}/wrappers/${package}/build/Use${package}-${version}.cmake)
 	file(WRITE ${file_for_version} "############# description of ${package} build process ABi environment ##################\n")#reset file content (if any) or create file
 
+	#writing info about compiler used to build the binary
+  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_C_COMPILER ${CMAKE_C_COMPILER} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_COMPILER_IS_GNUCXX \"${CMAKE_COMPILER_IS_GNUCXX}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_COMPILER_ID \"${CMAKE_CXX_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_COMPILER_VERSION \"${CMAKE_CXX_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_C_COMPILER_ID \"${CMAKE_C_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_C_COMPILER_VERSION \"${CMAKE_C_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
+
 	# add constraints related to C++ ABI in use
 	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_ABI ${CURRENT_CXX_ABI} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI ${CMAKE_INTERNAL_PLATFORM_ABI} CACHE INTERNAL \"\")\n")
