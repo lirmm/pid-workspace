@@ -726,7 +726,7 @@ if(INSTALL_REQUIRED)
 		endif()
 		# now need to find each package version and verify compatibility of versions required (this is resolving dependency)
 		foreach(a_dep IN LISTS INSTALLED_PACKAGES)
-			resolve_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${a_dep} ${CMAKE_BUILD_TYPE})
+			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${a_dep} ${CMAKE_BUILD_TYPE})
 			if(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been reinstalled
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${a_dep} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${a_dep}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${a_dep}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_dep}_VERSION${USE_MODE_SUFFIX}}.")
@@ -1606,7 +1606,7 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 	if(NOT unused) #if the dependency is really used (guard the case when it were optional and unselected by user)
 		# 3) try to find the adequate package version => it is necessarily required
 		if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
-			resolve_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
+			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
 			if(NOT IS_COMPATIBLE)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_package}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_package}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")

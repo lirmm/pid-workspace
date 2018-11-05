@@ -258,10 +258,10 @@ set(TO_INSTALL_DEPS)
 if(${package}_DEPENDENCIES${VAR_SUFFIX})#the package has native dependencies
 	foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
 		# 1) resolving direct dependencies
-		resolve_Package_Dependency(IS_COMPATIBLE ${package} ${dep_pack} ${mode})
+		resolve_Native_Package_Dependency(IS_COMPATIBLE ${package} ${dep_pack} ${mode})
 		if(NOT ${dep_pack}_FOUND)# package is not found => need to install it
       list(APPEND TO_INSTALL_DEPS ${dep_pack})
-    elseif(NOT IS_COMPATIBLE)
+    elseif(NOT IS_COMPATIBLE)#package binary found in install tree but is not compatible !
       list(APPEND list_of_conflicting_dependencies ${dep_pack})
 		else()# resolution took place and is OK
       add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
@@ -281,7 +281,7 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 		endif()
 		install_Required_Native_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES NOT_INSTALLED)
 		foreach(installed IN LISTS INSTALLED_PACKAGES)#recursive call for newly installed packages
-			resolve_Package_Dependency(IS_COMPATIBLE ${package} ${installed} ${mode})
+			resolve_Native_Package_Dependency(IS_COMPATIBLE ${package} ${installed} ${mode})
 			if(NOT ${installed}_FOUND)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed package ${installed}")

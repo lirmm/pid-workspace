@@ -202,6 +202,7 @@ endfunction(reset_Package_Platforms_Variables)
 #     :COMPATIBLE: the output variable that is TRUE if package's stdlib usage is compatible with current platform ABI, FALSE otherwise.
 #
 function(is_Compatible_With_Current_ABI COMPATIBLE package)
+
   if((${package}_BUILT_WITH_CXX_ABI AND NOT ${package}_BUILT_WITH_CXX_ABI STREQUAL CURRENT_CXX_ABI)
     OR (${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI AND NOT ${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI STREQUAL CMAKE_INTERNAL_PLATFORM_ABI))
     set(${COMPATIBLE} FALSE PARENT_SCOPE)
@@ -229,7 +230,7 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package)
     endforeach()
 
     #test symbols versions
-    foreach(symbol IN LISTS ${package}_BUILT_WITH_CXX_STD_SYMBOLS)
+    foreach(symbol IN LISTS ${package}_BUILT_WITH_CXX_STD_SYMBOLS)#for each symbol used by the binary
       if(NOT CXX_STD_SYMBOL_${symbol}_VERSION)#corresponding symbol do not exist in current environment => it is an uncompatible binary
         set(${COMPATIBLE} FALSE PARENT_SCOPE)
         return()
@@ -239,18 +240,6 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package)
       if(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION VERSION_GREATER CXX_STD_SYMBOL_${symbol}_VERSION)
         set(${COMPATIBLE} FALSE PARENT_SCOPE)
         return()
-      endif()
-    endforeach()
-
-    foreach(symbol IN LISTS CXX_STD_SYMBOLS)
-      if(NOT ${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION)#corresponding symbol do not exist in provided binary => it is an uncompatible binary (maybe another compiler used)
-        set(${COMPATIBLE} FALSE PARENT_SCOPE)
-        return()
-      endif()
-
-      if(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION VERSION_GREATER CXX_STD_SYMBOL_${symbol}_VERSION)
-          set(${COMPATIBLE} FALSE PARENT_SCOPE)
-          return()
       endif()
     endforeach()
   endif()

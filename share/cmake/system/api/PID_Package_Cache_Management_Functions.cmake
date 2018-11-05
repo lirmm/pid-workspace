@@ -1649,6 +1649,7 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 
 	file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_ABI ${CURRENT_CXX_ABI} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI ${CMAKE_INTERNAL_PLATFORM_ABI} CACHE INTERNAL \"\")\n")
+  list(REMOVE_DUPLICATES CXX_STANDARD_LIBRARIES)
   file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_LIBRARIES ${CXX_STANDARD_LIBRARIES} CACHE INTERNAL \"\")\n")
   foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
     file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION ${CXX_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\")\n")

@@ -1490,13 +1490,13 @@ endfunction(reset_Packages_Finding_Variables)
 #
 # .. ifmode:: internal
 #
-#  .. |resolve_Package_Dependency| replace:: ``resolve_Package_Dependency``
-#  .. _resolve_Package_Dependency:
+#  .. |resolve_Native_Package_Dependency| replace:: ``resolve_Native_Package_Dependency``
+#  .. _resolve_Native_Package_Dependency:
 #
-#  resolve_Package_Dependency
+#  resolve_Native_Package_Dependency
 #  --------------------------
 #
-#   .. command:: resolve_Package_Dependency(COMPATIBLE package dependency mode)
+#   .. command:: resolve_Native_Package_Dependency(COMPATIBLE package dependency mode)
 #
 #    Find the best version of a dependency for a given package (i.e. another package). It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).
 #    each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
@@ -1514,7 +1514,7 @@ endfunction(reset_Packages_Finding_Variables)
 #
 #     :COMPATIBLE: the output variable that is TRUE if the dependency has a compatible version with those already defined in current build process, false otherwise.
 #
-function(resolve_Package_Dependency COMPATIBLE package dependency mode)
+function(resolve_Native_Package_Dependency COMPATIBLE package dependency mode)
 set(${COMPATIBLE} TRUE PARENT_SCOPE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
@@ -1597,7 +1597,16 @@ else()#the dependency has not been already found
 		)
 	endif()
 endif()
-endfunction(resolve_Package_Dependency)
+#last step : check STD C++ ABI compatibility
+if(${dependency}_FOUND)
+  is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${dependency})
+  if(NOT IS_ABI_COMPATIBLE)
+    set(${COMPATIBLE} FALSE PARENT_SCOPE)
+    return() #problem => the binary package has been built with an incompatible C++ ABI
+  endif()
+endif()
+
+endfunction(resolve_Native_Package_Dependency)
 
 #.rst:
 #
@@ -1630,7 +1639,7 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
       is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
 			if(IS_COMPATIBLE)
 				if(NEED_REFIND)
-					# OK installing the exact version instead
+					# OK need to find the exact version instead
 					find_package(
 						${external_dependency}
 						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
@@ -1699,6 +1708,14 @@ else()#the dependency has not been already found
 			${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${VAR_SUFFIX}}
 		)
 	endif()
+endif()
+#last step : check STD C++ ABI compatibility
+if(${external_dependency}_FOUND)
+  is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${external_dependency})
+  if(NOT IS_ABI_COMPATIBLE)
+    set(${COMPATIBLE} FALSE PARENT_SCOPE)
+    return() #problem => the binary package has been built with an incompatible C++ ABI
+  endif()
 endif()
 endfunction(resolve_External_Package_Dependency)
 
