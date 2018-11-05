@@ -41,6 +41,7 @@ set(PID_SET_POLICIES_INCLUDED TRUE)
 ########################################################################
 ##################### definition of CMake policies #####################
 ########################################################################
+cmake_policy(VERSION 3.0.2)
 
 #not guarded policies (they exist since version 3.0 which is the minimum for PID)
 set(CMAKE_WARN_DEPRECATED FALSE CACHE INTERNAL "" FORCE)

@@ -23,11 +23,11 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 set(begin_string "")
 set(index ${nb_tabs})
 set(index_plus)
-math (EXPR index_plus '${index}+1')
+math (EXPR index_plus "${index}+1")
 
 while(index GREATER 0)#add as many tabulations as needed to indent correctly
 	set(begin_string "${begin_string}	")
-	math(EXPR index '${index}-1')
+	math(EXPR index "${index}-1")
 endwhile()
 
 #native dependencies

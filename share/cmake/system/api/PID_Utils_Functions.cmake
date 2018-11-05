@@ -1901,7 +1901,7 @@ endfunction(convert_Library_Path_To_Default_System_Library_Link)
 #
 #    Get the version from a (supposed to be) versionned symbol.
 #
-#     :symbol: the symbol that is supposed to have a version number. For instance symbol "GLIBCXX_" can be used for libstdc++.so (GNU standard C++ library).
+#     :symbol: the symbol that is supposed to have a version number. For instance symbol GLIBCXX can be used for libstdc++.so (GNU standard C++ library).
 #
 #     :symbol_version: the input symbol, for instance "GLIBCXX_2.4".
 #

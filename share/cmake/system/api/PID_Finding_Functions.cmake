@@ -1494,7 +1494,7 @@ endfunction(reset_Packages_Finding_Variables)
 #  .. _resolve_Native_Package_Dependency:
 #
 #  resolve_Native_Package_Dependency
-#  --------------------------
+#  ---------------------------------
 #
 #   .. command:: resolve_Native_Package_Dependency(COMPATIBLE package dependency mode)
 #
