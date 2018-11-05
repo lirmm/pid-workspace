@@ -32,7 +32,7 @@ function(remove_Installed_Component component package install_version platform w
 			file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME})#removing header dir
 			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0 PARENT_SCOPE)
 		else()
-			math(EXPR NB_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)
+			math(EXPR NB_USAGES "${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1")
 			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NB_USAGES} PARENT_SCOPE)
 		endif()
 	elseif( ${INSTALLED_${component}_TYPE} STREQUAL "STATIC")
@@ -40,7 +40,7 @@ function(remove_Installed_Component component package install_version platform w
 			file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME})#removing header dir
 			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0 PARENT_SCOPE)
 		else()
-			math(EXPR NB_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)
+			math(EXPR NB_USAGES "${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1")
 			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NB_USAGES} PARENT_SCOPE)
 		endif()
 		file(REMOVE ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME} ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME_DEBUG})#removing binaries
@@ -49,7 +49,7 @@ function(remove_Installed_Component component package install_version platform w
 			file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME})#removing header dir
 			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE 0 PARENT_SCOPE)
 		else()
-			math(EXPR NB_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)
+			math(EXPR NB_USAGES "${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}-1")
 			set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NB_USAGES} PARENT_SCOPE)
 		endif()
 		file(REMOVE ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME} ${PATH_TO_INSTALL_DIR}/lib/${INSTALLED_${component}_BINARY_NAME_DEBUG})#removing binaries
@@ -88,7 +88,7 @@ foreach(component IN LISTS all_components_to_check) #for each remaining existing
 				file(REMOVE_RECURSE ${PATH_TO_INSTALL_DIR}/include/${INSTALLED_${component}_HEADER_DIR_NAME})#removing old header include folder since no component use it anymore
 				math(EXPR ${INSTALLED_${component}_HEADER_DIR_NAME}_NB_USAGE 0)
 			else()
-				math(EXPR ${INSTALLED_${component}_HEADER_DIR_NAME}_NB_USAGE ${${INSTALLED_${component}_HEADER_DIR_NAME}_NB_USAGE}-1)#decrease the number of this folder users
+				math(EXPR ${INSTALLED_${component}_HEADER_DIR_NAME}_NB_USAGE "${${INSTALLED_${component}_HEADER_DIR_NAME}_NB_USAGE}-1")#decrease the number of this folder users
 			endif()
 		endif()
 	endif()
@@ -126,7 +126,7 @@ foreach(component IN LISTS INSTALLED_COMPONENTS)
 		set(INSTALLED_${component}_TYPE HEADER)
 
 		set(INSTALLED_${component}_HEADER_DIR_NAME ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
-		math(EXPR NUMBER_OF_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}+1)
+		math(EXPR NUMBER_OF_USAGES "${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}+1")
 		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NUMBER_OF_USAGES})
 
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})
@@ -134,7 +134,7 @@ foreach(component IN LISTS INSTALLED_COMPONENTS)
 		set(INSTALLED_${component}_TYPE STATIC)
 
 		set(INSTALLED_${component}_HEADER_DIR_NAME ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
-		math(EXPR NUMBER_OF_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}+1)
+		math(EXPR NUMBER_OF_USAGES "${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}+1")
 		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NUMBER_OF_USAGES})
 
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})
@@ -145,7 +145,7 @@ foreach(component IN LISTS INSTALLED_COMPONENTS)
 		set(INSTALLED_${component}_TYPE SHARED)
 
 		set(INSTALLED_${component}_HEADER_DIR_NAME ${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
-		math(EXPR NUMBER_OF_USAGES ${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}+1)
+		math(EXPR NUMBER_OF_USAGES "${${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE}+1")
 		set(${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME}_NB_USAGE ${NUMBER_OF_USAGES})
 
 		set(INSTALLED_${component}_HEADERS ${${PACKAGE_NAME}_${component}_HEADERS})

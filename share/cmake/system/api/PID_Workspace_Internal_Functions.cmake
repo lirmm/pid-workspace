@@ -710,7 +710,7 @@ function(print_Category root_category category number_of_tabs)
 	set(index ${number_of_tabs})
 	while(index GREATER 0)
 		set(RESULT_STRING "${RESULT_STRING}	")
-		math(EXPR index '${index}-1')
+		math(EXPR index "${index}-1")
 	endwhile()
 
 	get_Category_Names("${root_category}" ${category} short_name long_name)
@@ -726,7 +726,7 @@ function(print_Category root_category category number_of_tabs)
 		message("${PRINTED_VALUE}")
 	endif()
 	if(CAT_${category}_CATEGORIES)
-		math(EXPR sub_cat_nb_tabs '${number_of_tabs}+1')
+		math(EXPR sub_cat_nb_tabs "${number_of_tabs}+1")
 		foreach(sub_cat IN LISTS CAT_${category}_CATEGORIES)
 			print_Category("${long_name}" "${category}/${sub_cat}" ${sub_cat_nb_tabs})
 		endforeach()
@@ -761,7 +761,7 @@ function(print_Framework_Category framework root_category category number_of_tab
 	set(index ${number_of_tabs})
 	while(index GREATER 0)
 		set(RESULT_STRING "${RESULT_STRING}	")
-		math(EXPR index '${index}-1')
+		math(EXPR index "${index}-1")
 	endwhile()
 
 	get_Category_Names("${root_category}" ${category} short_name long_name)
@@ -776,7 +776,7 @@ function(print_Framework_Category framework root_category category number_of_tab
 		set(PRINTED_VALUE "${RESULT_STRING}${short_name}")
 		message("${PRINTED_VALUE}")
 	endif()
-	math(EXPR sub_cat_nb_tabs '${number_of_tabs}+1')
+	math(EXPR sub_cat_nb_tabs "${number_of_tabs}+1")
 	foreach(sub_cat IN LISTS FRAMEWORK_${framework}_CAT_${category}_CATEGORIES)
 		print_Framework_Category(${framework} "${long_name}" "${category}/${sub_cat}" ${sub_cat_nb_tabs})
 	endforeach()
@@ -2627,6 +2627,7 @@ if(PID_CROSSCOMPILATION) #only write these information if we are trully cross co
 	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE \"${CMAKE_FIND_ROOT_PATH_MODE_INCLUDE}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE \"${CMAKE_FIND_ROOT_PATH_MODE_PACKAGE}\" CACHE INTERNAL \"\" FORCE)\n")
 endif()
+
 
 endfunction(write_Current_Configuration_Build_Related_Variables)
 

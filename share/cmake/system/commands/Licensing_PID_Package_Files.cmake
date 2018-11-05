@@ -54,7 +54,7 @@ foreach(a_file IN LISTS all_files)
 		string(FIND "${beginning_of_file}" "\n" INDEX)
 		string(SUBSTRING "${beginning_of_file}" 0 ${INDEX} first_line_of_file)
 		string(LENGTH "${first_line_of_file}" first_header_line_size)
-		math(EXPR first_header_line_size "${first_header_line_size} + 1")
+		math(EXPR first_header_line_size "${first_header_line_size}+1")
 
 		string(REPLACE "." "\\." MATCHABLE_FILENAME "${PROJECT_FILENAME}")#create the regex pattern from file name
 		set(COMPARISON_PATTERN "/*File:${PROJECT_FILENAME}") # creating the formatted string used for coparison of headers

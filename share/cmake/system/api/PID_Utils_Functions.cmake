@@ -3631,7 +3631,7 @@ endfunction(remove_Duplicates_From_List)
 function(define_Parallel_Jobs_Flag PARALLEL_JOBS_FLAG)
   include(ProcessorCount)
   ProcessorCount(NUMBER_OF_JOBS)
-  math(EXPR NUMBER_OF_JOBS ${NUMBER_OF_JOBS}+1)#according to
+  math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")#according to
   if(NUMBER_OF_JOBS GREATER 1)#TODO manage variants between generators
   	set(${PARALLEL_JOBS_FLAG} "-j${NUMBER_OF_JOBS}" PARENT_SCOPE)
   else()
