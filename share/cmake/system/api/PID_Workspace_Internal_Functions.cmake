@@ -2549,6 +2549,8 @@ if(CUDA_Language_AVAILABLE)
 	file(APPEND ${file} "set(CUDA_nppi_LIBRARY \"${CUDA_nppi_LIBRARY}\" CACHE FILEPATH \"\" FORCE)\n")
 	file(APPEND ${file} "set(CUDA_npps_LIBRARY \"${CUDA_npps_LIBRARY}\" CACHE FILEPATH \"\" FORCE)\n")
 	file(APPEND ${file} "set(CUDA_rt_LIBRARY \"${CUDA_rt_LIBRARY}\" CACHE FILEPATH \"\" FORCE)\n")
+	file(APPEND ${file} "set(DEFAULT_CUDA_ARCH \"${DEFAULT_CUDA_ARCH}\" CACHE STRING \"\" FORCE)\n")
+	file(APPEND ${file} "set(AVAILABLE_CUDA_ARCHS \"${AVAILABLE_CUDA_ARCHS}\" CACHE STRING \"\" FORCE)\n")
 endif()
 
 # all tools used in the toolchain

@@ -81,5 +81,6 @@ if(CUDA_VERSION)#if the CUDA version is known (means that a nvcc compiler has be
 		# These vars will be processed in other scripts
 		set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} ${NVCC_FLAGS_EXTRA} CACHE INTERNAL "" FORCE)
 		set(CMAKE_CUDA_FLAGS ${CUDA_NVCC_FLAGS} CACHE INTERNAL "" FORCE)
+		get_filename_component(CUDA_RPATH ${CUDA_CUDART_LIBRARY} DIRECTORY)
 	endif()
 endif()#if NVCC not found no need to continue

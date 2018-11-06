@@ -7,6 +7,9 @@ else()
   set(OLD_CUDA_SUPPORT TRUE)
 endif()
 
+set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE INTERNAL "" FORCE)
+set(CUDA_LIBRARIES CACHE INTERNAL "")
+set(CUDA_INCLUDE_DIRS CACHE INTERNAL "")
 find_package(CUDA)
 if(CUDA_FOUND)#simply stop the configuration
   #setting general variables
