@@ -52,6 +52,10 @@ cmake_policy(SET CMP0045 NEW) #allow to test if a target exist without a warning
 cmake_policy(SET CMP0007 NEW) #do not allow a list to have empty elements without warning
 
 # guarded policies (they exist in further version of CMake)
+if(POLICY CMP0053)
+	cmake_policy(SET CMP0053 NEW) #iSimplify variable reference and escape sequence evaluation
+endif()
+
 if(POLICY CMP0054)
 	cmake_policy(SET CMP0054 NEW) #only KEYWORDS (without "") are considered as KEYWORDS
 endif()
