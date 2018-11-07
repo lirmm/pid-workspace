@@ -885,13 +885,13 @@ endmacro(build_PID_Package)
 #
 #   .. rubric:: Required parameters
 #
-#   :<type>: - ``STATIC_LIB``: static library
-#            - ``SHARED_LIB``: shared library
-#            - ``MODULE_LIB``: shared library without header
-#            - ``HEADER_LIB``: header-only library
-#            - ``APPLICATION``: standard application
-#            - ``EXAMPLE_APPLICATION``: example code
-#            - ``TEST_APPLICATION``: unit test
+#   :<type>: - ``STATIC_LIB|STATIC``: static library
+#            - ``SHARED_LIB|SHARED``: shared library
+#            - ``MODULE_LIB|MODULE``: shared library without header
+#            - ``HEADER_LIB|HEADER``: header-only library
+#            - ``APPLICATION|APP``: standard application
+#            - ``EXAMPLE_APPLICATION|EXAMPLE``: example code
+#            - ``TEST_APPLICATION|TEST``: unit test
 #   :NAME <name>: Unique identifier of the component. ``name`` cannot contain whitespaces.
 #   :DIRECTORY <dir>: Sub-folder where to find the component sources. This is relative to the current `CMakeLists.txt` folder.
 #
@@ -944,7 +944,7 @@ macro(PID_Component)
 endmacro(PID_Component)
 
 macro(declare_PID_Component)
-set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION PYTHON_PACK)
+set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES INSTALL_SYMLINKS DEPENDS EXPORT)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -999,41 +999,41 @@ else() #default language standard is first standard
 endif()
 
 set(nb_options 0)
-if(DECLARE_PID_COMPONENT_STATIC_LIB)
+if(DECLARE_PID_COMPONENT_STATIC_LIB OR DECLARE_PID_COMPONENT_STATIC)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "STATIC")
 endif()
-if(DECLARE_PID_COMPONENT_SHARED_LIB)
+if(DECLARE_PID_COMPONENT_SHARED_LIB OR DECLARE_PID_COMPONENT_SHARED)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "SHARED")
 endif()
-if(DECLARE_PID_COMPONENT_MODULE_LIB)
+if(DECLARE_PID_COMPONENT_MODULE_LIB OR DECLARE_PID_COMPONENT_MODULE)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "MODULE")
 endif()
-if(DECLARE_PID_COMPONENT_HEADER_LIB)
+if(DECLARE_PID_COMPONENT_HEADER_LIB OR DECLARE_PID_COMPONENT_HEADER)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "HEADER")
 endif()
-if(DECLARE_PID_COMPONENT_APPLICATION)
+if(DECLARE_PID_COMPONENT_APPLICATION OR DECLARE_PID_COMPONENT_APP)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "APP")
 endif()
-if(DECLARE_PID_COMPONENT_EXAMPLE_APPLICATION)
+if(DECLARE_PID_COMPONENT_EXAMPLE_APPLICATION OR DECLARE_PID_COMPONENT_EXAMPLE)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "EXAMPLE")
 endif()
-if(DECLARE_PID_COMPONENT_TEST_APPLICATION)
+if(DECLARE_PID_COMPONENT_TEST_APPLICATION OR DECLARE_PID_COMPONENT_TEST)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "TEST")
 endif()
-if(DECLARE_PID_COMPONENT_PYTHON_PACK)
+if(DECLARE_PID_COMPONENT_PYTHON_PACK OR DECLARE_PID_COMPONENT_PYTHON)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "PYTHON")
 endif()
 if(NOT nb_options EQUAL 1)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION or TEST_APPLICATION) must be given for the component.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB|STATIC, SHARED_LIB|SHARED, MODULE_LIB|MODULE, HEADER_LIB|HEADER, APPLICATION|APP, EXAMPLE_APPLICATION|EXAMPLE or TEST_APPLICATION|TEST) must be given for the component.")
 endif()
 #checking that the required directories exist
 if(DECLARE_PID_COMPONENT_DIRECTORY)
