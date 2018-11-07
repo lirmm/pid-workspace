@@ -1511,7 +1511,7 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 			endif()
 		endif()
 	else()#there are version specified
-		fill_String_From_List("${list_of_versions}" available_versions) #get available version as a string (used to print them)
+		fill_String_From_List(list_of_versions available_versions) #get available version as a string (used to print them)
 		#check if required version (if any) is compatible with current target version
 		list(LENGTH list_of_versions SIZE)
 		list(GET list_of_versions 0 default_version) #by defaut this is the first element in the list that is taken
@@ -1682,7 +1682,7 @@ if(NOT list_of_versions) # no version constraint specified
 		endif()
 	endif()
 else()#there are version(s) specified
-	fill_String_From_List("${list_of_versions}" available_versions) #get available version as a string (used to print them)
+	fill_String_From_List(list_of_versions available_versions) #get available version as a string (used to print them)
 	#check if required version (if any) is compatible with current target version
 	list(LENGTH list_of_versions SIZE)
 	list(GET list_of_versions 0 default_version) #by defaut this is the first element in the list that is taken

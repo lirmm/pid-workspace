@@ -1970,7 +1970,7 @@ function(produce_Wrapper_Static_Site_Content package framework versions platform
   endif()
   set(POST_UPDATE_STRING "")
   if(NEW_POST_CONTENT_BINARY_VERSIONS)
-    fill_String_From_List("${NEW_POST_CONTENT_BINARY_VERSIONS}" ALL_VERSIONS_STR)
+    fill_String_From_List(NEW_POST_CONTENT_BINARY_VERSIONS ALL_VERSIONS_STR)
     set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### Binary versions of the external package targetting ${platform} platform have been added/updated : ${ALL_VERSIONS_STR}\n\n")
   endif()
   if(NEW_POST_CONTENT_PAGES)
