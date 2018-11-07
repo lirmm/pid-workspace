@@ -31,6 +31,11 @@ include(Wrapper_Definition NO_POLICY_SCOPE) # to be able to interpret descriptio
 
 load_Current_Platform() #loading the current platform configuration before executing the deploy script
 
+#manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
+if(NOT TARGET_EXTERNAL_VERSION AND ENV{version})
+	set(TARGET_EXTERNAL_VERSION $ENV{version} CACHE INTERNAL "")
+endif()
+
 #########################################################################################
 #######################################Build script #####################################
 #########################################################################################

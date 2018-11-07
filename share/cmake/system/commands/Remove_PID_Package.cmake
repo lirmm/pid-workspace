@@ -23,21 +23,30 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
-if(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
+#first check that commmand parameters are not passed as environment variables
+
+if(NOT TARGET_FRAMEWORK AND ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+endif()
+if(NOT TARGET_PACKAGE AND ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+
+# perform actions of the command
+if(TARGET_PACKAGE OR ENV{package})
 	if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE}
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
 		remove_PID_Package(${TARGET_PACKAGE})
 	else()
 		message("[PID] ERROR : the package to be removed, named ${TARGET_PACKAGE}, does not lies in the workspace.")
 	endif()
-elseif(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
+elseif(TARGET_FRAMEWORK)
 	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK}
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
 		remove_PID_Framework(${TARGET_FRAMEWORK})
 	else()
 		message("[PID] ERROR : the framework to be removed, named ${TARGET_FRAMEWORK}, does not lies in the workspace.")
 	endif()
-
 else()
 	message("[PID] ERROR : you must specify the name of the package to remove using package=<name of package> argument, or the name of the framework to remove by using framework=<name of framework> argument.")
 endif()

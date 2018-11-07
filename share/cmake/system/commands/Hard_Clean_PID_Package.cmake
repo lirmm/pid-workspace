@@ -24,7 +24,12 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
-if(TARGET_PACKAGE AND NOT TARGET_PACKAGE STREQUAL "")
+#manage usage of environment variables 
+if(NOT TARGET_PACKAGE AND ENV{package})
+  set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+
+if(TARGET_PACKAGE)
   if(TARGET_PACKAGE STREQUAL all)
     list_All_Source_Packages_In_Workspace(ALL_SOURCE_PACKAGES)
     if(ALL_SOURCE_PACKAGES)

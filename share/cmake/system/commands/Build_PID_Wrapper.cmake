@@ -38,6 +38,23 @@ load_Current_Platform() #loading the current platform configuration before execu
 #######################################Build script #####################################
 #########################################################################################
 
+#manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
+if(NOT TARGET_EXTERNAL_VERSION AND ENV{version})
+	set(TARGET_EXTERNAL_VERSION $ENV{version} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_BUILD_MODE AND ENV{mode})#to manage the call for non UNIX makefile generators
+	set(TARGET_BUILD_MODE $ENV{mode} CACHE INTERNAL "")
+endif()
+
+if(NOT GENERATE_BINARY_ARCHIVE AND ENV{archive})#to manage the call for non UNIX makefile generators
+	set(GENERATE_BINARY_ARCHIVE $ENV{archive} CACHE INTERNAL "")
+endif()
+
+if(NOT DO_NOT_EXECUTE_SCRIPT AND ENV{skip_script})#to manage the call for non UNIX makefile generators
+	set(DO_NOT_EXECUTE_SCRIPT $ENV{skip_script} CACHE INTERNAL "")
+endif()
+
 #checking that user input is coherent
 if(NOT TARGET_EXTERNAL_VERSION)
   message(FATAL_ERROR "[PID] CRITICAL ERROR: you must define the version to build and deploy using version= argument to the build command")

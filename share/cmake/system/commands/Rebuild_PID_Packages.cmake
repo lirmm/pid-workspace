@@ -30,6 +30,10 @@ begin_Progress(workspace NEED_REMOVE)
 
 set(LIST_OF_TARGETS)
 
+if(NOT TARGET_PACKAGES AND ENV{package})
+	set(TARGET_PACKAGES $ENV{package} CACHE INTERNAL "")
+endif()
+
 if(TARGET_PACKAGES AND NOT TARGET_PACKAGES STREQUAL "all")
 	#clean them first
 	foreach(package IN LISTS TARGET_PACKAGES)

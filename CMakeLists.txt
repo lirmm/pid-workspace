@@ -97,7 +97,7 @@ add_custom_target(man ALL
 
 ## getting info on the workspace, packages, frameworks or licenses
 add_custom_target(info
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE="\${package}"
+	COMMAND ${CMAKE_COMMAND} -DTARGET_PACKAGE="\${package}"
 					-DTARGET_FRAMEWORK=\${framework}
 					-DTARGET_LICENSE=\${license}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}

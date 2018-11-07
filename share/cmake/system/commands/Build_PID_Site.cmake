@@ -25,6 +25,16 @@ include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 
+
+#manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
+if(NOT SYNCHRO AND ENV{synchro})
+	set(SYNCHRO $ENV{synchro} CACHE INTERNAL "")
+endif()
+
+if(NOT FORCED_UPDATE AND ENV{force})#to manage the call for non UNIX makefile generators
+	set(FORCED_UPDATE $ENV{force} CACHE INTERNAL "")
+endif()
+
 # managing script arguments
 if(NOT TARGET_PACKAGE)
 	message("[PID] ERROR : the target package for which the static website is built is not defined !")
@@ -37,13 +47,13 @@ elseif(EXISTS ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE})
 	set(is_native FALSE)
 endif()
 
-if(DEFINED SYNCHRO AND SYNCHRO STREQUAL "false")
+if(DEFINED SYNCHRO AND (SYNCHRO STREQUAL "false" OR SYNCHRO STREQUAL "FALSE" OR SYNCHRO STREQUAL "OFF"))
 	set(push_site FALSE)
 else()
 	set(push_site TRUE) #push by default
 endif()
 
-if(DEFINED FORCED_UPDATE AND FORCED_UPDATE STREQUAL "true")
+if(FORCED_UPDATE STREQUAL "true" OR FORCED_UPDATE STREQUAL "TRUE" OR FORCED_UPDATE STREQUAL "ON")
 	set(forced_update TRUE)
 else()
 	set(forced_update FALSE)

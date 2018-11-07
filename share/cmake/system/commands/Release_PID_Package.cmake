@@ -24,7 +24,25 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 message("[PID] INFO : launching release of package ${TARGET_PACKAGE} ...")
 
-if(AUTOMATIC_RELEASE STREQUAL "true" OR AUTOMATIC_RELEASE STREQUAL "TRUE")
+#first check that commmand parameters are not passed as environment variables
+
+if(NOT AUTOMATIC_RELEASE AND ENV{recursive})
+	set(AUTOMATIC_RELEASE $ENV{recursive} CACHE INTERNAL "")
+endif()
+if(NOT TARGET_PACKAGE AND ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+if(NOT NEXT_VERSION AND ENV{nextversion})
+	set(NEXT_VERSION $ENV{nextversion} CACHE INTERNAL "")
+endif()
+if(NOT FROM_BRANCH AND ENV{branch})
+	set(FROM_BRANCH $ENV{branch} CACHE INTERNAL "")
+endif()
+
+#do the check of argument values
+if(	AUTOMATIC_RELEASE STREQUAL "true"
+		OR AUTOMATIC_RELEASE STREQUAL "TRUE"
+		OR AUTOMATIC_RELEASE STREQUAL "ON")
 	set(manage_dependencies TRUE)
 else()
 	set(manage_dependencies FALSE)

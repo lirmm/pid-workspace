@@ -28,7 +28,22 @@ load_Current_Platform() #loading the current platform configuration
 
 include(${WORKSPACE_DIR}/pid/CategoriesInfo.cmake NO_POLICY_SCOPE)
 
-if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
+#manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
+if(NOT TARGET_FRAMEWORK AND ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_PACKAGE AND ENV{package})#to manage the call for non UNIX makefile generators
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_LICENSE AND ENV{license})#to manage the call for non UNIX makefile generators
+	set(TARGET_LICENSE $ENV{license} CACHE INTERNAL "")
+endif()
+
+#perfom the command
+if(TARGET_FRAMEWORK)
+
 	if(TARGET_FRAMEWORK STREQUAL "all")#listing all frameworks
 		if(FRAMEWORKS_CATEGORIES)
 			message("FRAMEWORKS: ")
@@ -47,7 +62,7 @@ if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
 			print_Framework_Categories(${TARGET_FRAMEWORK}) #getting info about a framework
 		endif()
 	endif()
-elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
+elseif(TARGET_PACKAGE)
 	if(TARGET_PACKAGE STREQUAL "all")#listing all packages ordered by category
 		message("CATEGORIES:") # printing the structure of categories and packages they belong to
 		foreach(root_cat IN LISTS ROOT_CATEGORIES)
@@ -73,7 +88,8 @@ elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
 		find_In_Categories(${TARGET_PACKAGE}) # printing the categories the package belongs to
 	endif()
 
-elseif(TARGET_LICENSE AND (NOT TARGET_LICENSE STREQUAL ""))
+elseif(TARGET_LICENSE)
+
 	if(TARGET_LICENSE STREQUAL "all")#listing all packages ordered by category
 		print_Available_Licenses()
 	else()

@@ -29,6 +29,12 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
+
+#manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
+if(NOT WITH_OFFICIAL AND ENV{official})
+	set(WITH_OFFICIAL $ENV{official} CACHE INTERNAL "")
+endif()
+
 # check that current branch of package is integration
 get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
 if(NOT BRANCH_NAME STREQUAL "integration")
@@ -65,7 +71,7 @@ if(HAS_MODIFS)
 endif()
 
 #merging official/integration
-if(WITH_OFFICIAL STREQUAL "true")
+if(WITH_OFFICIAL STREQUAL "true" OR WITH_OFFICIAL STREQUAL "TRUE" OR WITH_OFFICIAL STREQUAL "ON")
 	integrate_Branch(${TARGET_PACKAGE} official/integration)
 	has_Modifications(HAS_MODIFS ${TARGET_PACKAGE})
 	if(HAS_MODIFS)

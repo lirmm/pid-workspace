@@ -17,8 +17,12 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+if(NOT TARGET_EXTERNAL_VERSION AND ENV{version})#to manage the call for non UNIX makefile generators
+  set(TARGET_EXTERNAL_VERSION $ENV{version} CACHE INTERNAL "")
+endif()
+
 if(NOT TARGET_EXTERNAL_VERSION)
-  message("[PID] CRITICAL ERROR : cannot uninstall a version since no version given")
+  message("[PID] CRITICAL ERROR : cannot uninstall a version since no version given. Use version argument to set it !")
   return()
 endif()
 
@@ -28,6 +32,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
+
 
 if(NOT EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE})
   message("[PID] ERROR : no external package wrapper ${TARGET_EXTERNAL_PACKAGE} installed in worskspace for platform ${CURRENT_PLATFORM}.")

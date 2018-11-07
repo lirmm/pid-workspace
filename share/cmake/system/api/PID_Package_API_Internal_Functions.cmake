@@ -175,7 +175,7 @@ elseif(DIR_NAME STREQUAL "build")
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DGIT_REPOSITORY=${CMAKE_SOURCE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-					-DFORCE_RELEASE_BUILD=\${force}
+						-DFORCE_RELEASE_BUILD=\${force}
 						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Check_PID_Package_Branch.cmake
 		COMMENT "[PID] Checking branch..."
 	)
@@ -247,7 +247,7 @@ elseif(DIR_NAME STREQUAL "build")
 	add_dependencies(build sync-version)#checking if PID version synchronizing needed before build
 	add_dependencies(build check-branch)#checking if not built on master branch or released tag
 	if(${PROJECT_NAME}_ADDRESS)
-	add_dependencies(build check-repository) #checking if remote addrr needs to be changed
+		add_dependencies(build check-repository) #checking if remote addrr needs to be changed
 	endif()
 
 	if(BUILD_RELEASE_ONLY)
@@ -266,7 +266,7 @@ elseif(DIR_NAME STREQUAL "build")
 	endif()
 
 	# redefinition of clean target (cleaning the build tree)
-	add_custom_target(cleaning
+	add_custom_target(clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
 		COMMENT "[PID] Cleaning package (Debug and Release modes) ..."
@@ -281,7 +281,7 @@ elseif(DIR_NAME STREQUAL "build")
 	)
 
 	# redefinition of install target
-	add_custom_target(installing
+	add_custom_target(install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Debug artefacts
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
@@ -308,14 +308,14 @@ elseif(DIR_NAME STREQUAL "build")
 	if(BUILD_AND_RUN_TESTS AND NOT PID_CROSSCOMPILATION)
 		# test target (launch test units, redefinition of tests)
 		if(BUILD_TESTS_IN_DEBUG)
-			add_custom_target(testing
+			add_custom_target(test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests ..."
 				VERBATIM
 			)
 		else()
-			add_custom_target(testing
+			add_custom_target(test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests ..."
 				VERBATIM
@@ -364,13 +364,16 @@ elseif(DIR_NAME STREQUAL "build")
 		add_dependencies(site package)
 	endif()
 
-	if(NOT "${license}" STREQUAL "")
+	if(license)
 		# target to add licensing information to all source files
 		add_custom_target(licensing
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} licensing
 			COMMENT "[PID] Applying license to sources ..."
 			VERBATIM
 		)
+
+		add_dependencies(license licensing)
+
 	endif()
 	if(ADDITIONNAL_DEBUG_INFO)
 		add_custom_target(list_dependencies

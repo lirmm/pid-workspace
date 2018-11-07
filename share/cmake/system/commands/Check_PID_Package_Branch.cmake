@@ -25,7 +25,15 @@ include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 
 load_Current_Platform() #loading the current platform configuration
 
-if(NOT FORCE_RELEASE_BUILD OR NOT FORCE_RELEASE_BUILD STREQUAL "true")
+
+#manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
+if(NOT FORCE_RELEASE_BUILD AND ENV{force})
+	set(FORCE_RELEASE_BUILD $ENV{force} CACHE INTERNAL "")
+endif()
+
+if(	NOT FORCE_RELEASE_BUILD OR
+		(NOT FORCE_RELEASE_BUILD STREQUAL "true" AND NOT FORCE_RELEASE_BUILD STREQUAL "TRUE" AND NOT FORCE_RELEASE_BUILD STREQUAL "ON")
+	)
 	get_Repository_Current_Branch(BRANCH_NAME ${GIT_REPOSITORY})
 	if(NOT BRANCH_NAME OR BRANCH_NAME STREQUAL "master")
 		message(FATAL_ERROR "[PID] ERROR : ${TARGET_PACKAGE} must be built on a development branch (integration or feature specific branch).")

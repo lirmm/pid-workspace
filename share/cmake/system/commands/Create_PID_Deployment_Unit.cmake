@@ -26,6 +26,41 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
+#first check that commmand parameters are not passed as environment variables
+if(NOT OPTIONAL_LICENSE AND ENV{license})
+	set(OPTIONAL_LICENSE $ENV{license} CACHE INTERNAL "")
+endif()
+
+if(NOT OPTIONNAL_GIT_URL AND ENV{url})
+	set(OPTIONNAL_GIT_URL $ENV{url} CACHE INTERNAL "")
+endif()
+
+if(NOT OPTIONAL_AUTHOR AND ENV{author})
+	set(OPTIONAL_AUTHOR $ENV{author} CACHE INTERNAL "")
+endif()
+
+if(NOT OPTIONAL_INSTITUTION AND ENV{affiliation})
+	set(OPTIONAL_INSTITUTION $ENV{affiliation} CACHE INTERNAL "")
+endif()
+
+if(NOT OPTIONNAL_SITE AND ENV{site})
+	set(OPTIONNAL_SITE $ENV{site} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_FRAMEWORK AND ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_PACKAGE AND ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_WRAPPER AND ENV{wrapper})
+	set(TARGET_WRAPPER $ENV{wrapper} CACHE INTERNAL "")
+endif()
+
+#now verify that arguments are consistent and perform adequate actions
+
 if(TARGET_FRAMEWORK)# a framework is created
 	include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${TARGET_FRAMEWORK}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(NOT REQUIRED_STATUS STREQUAL NOTFOUND)

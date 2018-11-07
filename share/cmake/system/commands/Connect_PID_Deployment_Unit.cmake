@@ -26,6 +26,31 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
+#first check that commmand parameters are not passed as environment variables
+if(NOT OFFICIAL_GIT_URL AND ENV{official})
+	set(OFFICIAL_GIT_URL $ENV{official} CACHE INTERNAL "")
+endif()
+
+if(NOT ORIGIN_GIT_URL AND ENV{origin})
+	set(ORIGIN_GIT_URL $ENV{origin} CACHE INTERNAL "")
+endif()
+
+if(NOT FORCED_RECONNECTION AND ENV{force})
+	set(FORCED_RECONNECTION $ENV{force} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_PACKAGE AND ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_FRAMEWORK AND ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_WRAPPER AND ENV{wrapper})
+	set(TARGET_WRAPPER $ENV{wrapper} CACHE INTERNAL "")
+endif()
+
 #early common check
 if(NOT OFFICIAL_GIT_URL AND NOT ORIGIN_GIT_URL)
 	message("[PID] ERROR : you must enter a git url using official=<git url> argument. This will set the address of the official remote from where you will update released modifications. You can in addition set the address of the origin remote by using origin=<git url>. This will set the address where you will push your modifications. If you do not set origin then it will take the value of official.")
