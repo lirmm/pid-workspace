@@ -292,7 +292,7 @@ endmacro(declare_PID_External_Package_Dependency)
 #     :COMPILER_OPTIONS <list of options>: list of compiler options to use when building a component that uses this external component. Should contain only real compiler options and not either definition or includes directives.
 #     :SHARED_LINKS <list of shared links>: list of path to shared library binaries, relative to external package version folder.
 #     :STATIC_LINKS <list of static links>: list of path to static library binaries, relative to external package version folder.
-#     :RUNTIME_RESOURCES <list of path>: list of path to runtime resources (i.e. files) that are used by the external component. These resources will be referenced by the rpath of native components that is this external component.
+#     :RUNTIME_RESOURCES <list of path>: list of path to runtime resources (i.e. files) that are used by the external component. These resources will be referenced by the rpath of native components that use this external component.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -336,9 +336,9 @@ macro(declare_PID_External_Component)
 	#manage include folders
 	set(incs)
 	foreach(an_include IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_INCLUDES)
-		if(an_include MATCHES "^(<${curr_ext_package}>|/).*")
+		if(an_include MATCHES "^(<${curr_ext_package}>|/|/).*")
 			list(APPEND incs ${an_include})
-		else()#if the string DOES NOT start with a / (absolute path), a <package> (relative path from package root) then we add the header <package> to the path
+		else()#if the string DOES NOT start with a / (absolute path), or a <package> tag (relative path from package root) then we add the header <package> to the path
 			list(APPEND incs "<${curr_ext_package}>/${an_include}")# prepend the external package name
 		endif()
 	endforeach()
@@ -383,11 +383,12 @@ macro(declare_PID_External_Component)
 	set(links)
 	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_STATIC_LINKS)
 		#if the string DOES NOT start with a / (absolute path), a <package> (relative path from package root) or - (link option specification) then we add the header <package>
-		if(a_link MATCHES  "^(<${curr_ext_package}>|/|-).*")
+		if(a_link MATCHES  "^(<${curr_ext_package}>|/|-|/).*")
 			list(APPEND links ${a_link})
 		else()
 			list(APPEND links "<${curr_ext_package}>/${a_link}")# prepend the external package name
 		endif()
+    message("links=${links}")
 	endforeach()
 	if(links)
 		list(REMOVE_DUPLICATES links)
@@ -397,8 +398,9 @@ macro(declare_PID_External_Component)
 	#manage shared links
 	set(links)
 	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_SHARED_LINKS)
-		#if the string DOES NOT start with a / (absolute path), a <package> (relative path from package root) or - (link option specification) then we add the header <package>
-		if(a_link MATCHES  "^(<${curr_ext_package}>|/|-).*")
+		#if the string DOES NOT start with a / (absolute path) or by a <package> tag (relative path from package root)
+    # or - (link option specification) then we add the header <package>
+		if(a_link MATCHES  "^(<${curr_ext_package}>|/|-|/).*")
 			list(APPEND links ${a_link})
 		else()
 			list(APPEND links "<${curr_ext_package}>/${a_link}")# prepend the external package name
@@ -413,7 +415,8 @@ macro(declare_PID_External_Component)
 	#manage runtime resources
 	set(resources)
 	foreach(a_resource IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_RUNTIME_RESOURCES)
-		if(a_resource MATCHES "^<${curr_ext_package}>")
+    #if the string DOES NOT start with a / (absolute path) or by a <package> tag (relative path from package root), then then we add the <package> tag at the begginning of the target path.
+		if(a_resource MATCHES "^(<${curr_ext_package}>|/).*$")
 			list(APPEND resources ${a_resource})
 		else()
 			list(APPEND resources "<${curr_ext_package}>/${a_resource}")# prepend the external package name
@@ -570,7 +573,7 @@ macro(declare_PID_External_Component_Dependency)
 if(TARGET_PACKAGE AND NOT TARGET_COMPONENT) #if a target package is specified but not a component
 	set(incs ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX}})
 	foreach(an_include IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES)
-		if(an_include MATCHES "^(<${TARGET_PACKAGE}>|/).*")
+		if(an_include MATCHES "^(<${TARGET_PACKAGE}>/|/).*$")#either an absolute path or an already well defined relative path.
 			list(APPEND incs ${an_include})
 		else()
 			list(APPEND incs "<${TARGET_PACKAGE}>/${an_include}")# prepend the external package name
@@ -596,7 +599,7 @@ if(TARGET_PACKAGE AND NOT TARGET_COMPONENT) #if a target package is specified bu
 	#manage links
 	set(links ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX}})
 	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_STATIC_LINKS)
-		if(a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-).*")
+		if(a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-|/).*$")
 			list(APPEND links ${a_link})
 		else()
 			list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
@@ -610,7 +613,7 @@ if(TARGET_PACKAGE AND NOT TARGET_COMPONENT) #if a target package is specified bu
 	#manage shared links
 	set(links ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_SHARED_LINKS${VAR_SUFFIX}})
 	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_SHARED_LINKS)
-		if(a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-).*")
+		if(a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-|/).*$")
 			list(APPEND links ${a_link})
 		else()
 			list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
@@ -624,7 +627,7 @@ if(TARGET_PACKAGE AND NOT TARGET_COMPONENT) #if a target package is specified bu
 	#manage runtime resources
 	set(resources ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX}})
 	foreach(a_resource IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES)
-		if(a_resource MATCHES "^<${TARGET_PACKAGE}>")
+		if(a_resource MATCHES "^(<${TARGET_PACKAGE}>/|/).*$")
 			list(APPEND resources ${a_resource})
 		else()
 			list(APPEND resources "<${TARGET_PACKAGE}>/${a_resource}")# prepend the external package name
