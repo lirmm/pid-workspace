@@ -388,7 +388,6 @@ macro(declare_PID_External_Component)
 		else()
 			list(APPEND links "<${curr_ext_package}>/${a_link}")# prepend the external package name
 		endif()
-    message("links=${links}")
 	endforeach()
 	if(links)
 		list(REMOVE_DUPLICATES links)
