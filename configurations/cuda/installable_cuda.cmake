@@ -18,4 +18,4 @@
 #########################################################################################
 
 #too difficult to automatically install CUDA so let it not installable
-set(cuda_INSTALLABLE FALSE)
+installable_PID_Configuration(cuda FALSE)

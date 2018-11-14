@@ -31,6 +31,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 
 include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
+include(Configuration_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
 include(CMakeParseArguments)
 
 #.rst:

@@ -17,10 +17,12 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+include(Configuration_Definition NO_POLICY_SCOPE)
+
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian
 	OR CURRENT_DISTRIBUTION STREQUAL arch)
-	set(opengl_INSTALLABLE TRUE)
+	installable_PID_Configuration(opengl TRUE)
 else()
-	set(opengl_INSTALLABLE FALSE)
+	installable_PID_Configuration(opengl FALSE)
 endif()

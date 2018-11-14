@@ -16,24 +16,9 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
-include(${WORKSPACE_DIR}/configurations/libusb/installable_libusb.cmake)
-if(libusb_INSTALLABLE)
-	message("[PID] INFO : trying to install libusb...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get install libusb-1.0-0-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S libusb --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/configurations/libusb/find_libusb.cmake)
-	if(libusb_FOUND)
-		message("[PID] INFO : libusb installed !")
-		set(libusb_INSTALLED TRUE)
-	else()
-		set(libusb_INSTALLED FALSE)
-		message("[PID] INFO : install of libusb has failed !")
-	endif()
-else()
-	set(libusb_INSTALLED FALSE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_process(COMMAND sudo apt-get install -y libusb-1.0-0-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_process(COMMAND sudo pacman -S libusb --noconfirm)
 endif()

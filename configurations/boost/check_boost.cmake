@@ -17,29 +17,12 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT boost_FOUND)
+include(Configuration_Definition NO_POLICY_SCOPE)
 
-	set(boost_VERSION CACHE INTERNAL "")
-	set(boost_INCLUDE_DIRS  CACHE INTERNAL "")
-	set(boost_LIBRARY_DIRS  CACHE INTERNAL "")
-	set(boost_RPATH CACHE INTERNAL "")
+# returned variables
+PID_Configuration_Variables(boost
+			VARIABLES VERSION 			LIBRARY_DIRS 				INCLUDE_DIRS 				RPATH						LINK_OPTIONS
+			VALUES 		BOOST_VERSION Boost_LIBRARY_DIRS 	Boost_INCLUDE_DIRS 	Boost_LIBRARIES	Boost_LINKS)
 
-	include(${WORKSPACE_DIR}/configurations/boost/find_boost.cmake)
-	if(boost_FOUND)
-		set(boost_VERSION ${BOOST_VERSION} CACHE INTERNAL "")
-		set(CHECK_boost_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/boost/install_boost.cmake)
-		if(boost_INSTALLED)
-			set(boost_VERSION ${BOOST_VERSION} CACHE INTERNAL "")
-			set(boost_LIBRARY_DIRS ${Boost_LIBRARY_DIRS}  CACHE INTERNAL "")
-			set(boost_INCLUDE_DIRS ${Boost_INCLUDE_DIRS}  CACHE INTERNAL "")
-			set(boost_RPATH ${Boost_LIBRARY_DIRS}  CACHE INTERNAL "")#RPATH to find libraries is the same as the library dirs
-			set(CHECK_boost_RESULT TRUE)
-		else()
-			set(CHECK_boost_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_boost_RESULT TRUE)
-endif()
+# constraints
+PID_Configuration_Constraints(boost IN_BINARY libraries VALUE Boost_COMPONENTS)

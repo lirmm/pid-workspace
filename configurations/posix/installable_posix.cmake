@@ -17,4 +17,6 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(posix_INSTALLABLE FALSE)
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+installable_PID_Configuration(posix FALSE)

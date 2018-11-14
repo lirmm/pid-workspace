@@ -62,7 +62,10 @@ FUNCTION(FIND_IMAGEMAGICK_EXE component)
 ENDFUNCTION(FIND_IMAGEMAGICK_EXE)
 
 
-set(imagemagic_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(imagemagic FALSE)
+
 # - Find imagemagic installation
 # Try to find ImageMagic on UNIX systems. The following values are defined
 #  imagemagic_FOUND        - True if X11 is available
@@ -117,7 +120,9 @@ if (UNIX)
 	IF(NOT LIBX264_FOUND)
 		SET(IS_FOUND FALSE)
 	ENDIF()
-  	set(imagemagic_FOUND ${IS_FOUND} CACHE INTERNAL "")
-	set(imagemagic_INCLUDE_DIRS ${ImageMagick_INCLUDE_DIRS} ${LIBX264_INCLUDE_DIRS} CACHE INTERNAL "")
-	set(imagemagic_LINK_OPTIONS ${ImageMagick_LIBRARIES} ${LIBX264_LDFLAGS} CACHE INTERNAL "")
+  if(IS_FOUND)
+    set(ImageMagick_LIBRARIES ${ImageMagick_LIBRARIES} ${LIBX264_LDFLAGS})
+    set(ImageMagick_INCLUDE_DIRS ${ImageMagick_INCLUDE_DIRS} ${LIBX264_INCLUDE_DIRS})
+    found_PID_Configuration(imagemagic TRUE)
+  endif()
 endif ()

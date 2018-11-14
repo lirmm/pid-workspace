@@ -17,6 +17,8 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+include(Configuration_Definition NO_POLICY_SCOPE)
+
 #=============================================================
 # gtk2_Find_Include_Dir
 # Internal function to find the GTK include directories
@@ -116,25 +118,15 @@ endif()
 find_library(${_var}_LIBRARY_RELEASE NAMES ${_lib_list}) #nothing else than standard path
 
 set(${_var}_LIBRARY ${${_var}_LIBRARY_RELEASE} PARENT_SCOPE)
-set(gtk2_LIBRARIES ${gtk2_LIBRARIES} ${${_var}_LIBRARY_RELEASE})
-set(gtk2_LIBRARIES ${gtk2_LIBRARIES} PARENT_SCOPE)
-
+set(gtk2_LIBS ${gtk2_LIBS} ${${_var}_LIBRARY_RELEASE})
+set(gtk2_LIBS ${gtk2_LIBS} PARENT_SCOPE)
 endfunction(gtk2_Find_Library)
 
-set(gtk2_FOUND FALSE CACHE INTERNAL "")
-# - Find gtk2 installation
-# Try to find libraries for gtk2 on UNIX systems. The following values are defined
-#  gtk2_FOUND        - True if gtk2 is available
-#  gtk2_LIBRARIES    - link against these to use gtk2 system
-if (UNIX)
-
-	# gtk2 is never a framework and some header files may be
-	# found in tcl on the mac
+#macro used to find gtk2
+macro(find_GTK2 FOUND)
+	set(${FOUND} TRUE)
 	set(CMAKE_FIND_FRAMEWORK_SAVE ${CMAKE_FIND_FRAMEWORK})
 	set(CMAKE_FIND_FRAMEWORK NEVER)
-	set(IS_FOUND TRUE)
-	set(gtk2_LIBRARIES) # start with empty list
-	set(gtk2_INCLUDE_PATH) # start with empty list of path
 	#starting the check
 	gtk2_Find_Include_Dir(gtk2_GTK gtk/gtk.h)
 	gtk2_Find_Include_Dir(gtk2_GDK gdk/gdk.h)
@@ -160,8 +152,7 @@ if (UNIX)
 		OR NOT gtk2_ATK_INCLUDE_DIR
 		OR NOT gtk2_GOBJECT_INCLUDE_DIR
 		)
-		message("[PID] ERROR : when finding gtk2 framework, cannot find all gtk headers.")
-		set(IS_FOUND FALSE)
+		set(${FOUND} FALSE)
 	else()
 		gtk2_Find_Library(gtk2_GTK gtk-x11 true)
 		gtk2_Find_Library(gtk2_GDK gdk-x11 true)
@@ -192,15 +183,115 @@ if (UNIX)
 			OR NOT gtk2_GOBJECT_LIBRARY
 			OR NOT gtk2_GLIB_LIBRARY
 		)
-			message("[PID] ERROR : when finding gtk2 framework, cannot find all gtk libraries.")
+			set(${FOUND} FALSE)
+		endif()
+	endif()
+	set(CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK_SAVE})
+endmacro(find_GTK2)
+
+#macro used to find gtk3
+macro(find_GTK3 FOUND)
+	set(${FOUND} TRUE)
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(GTK3 gtk+-3.0)
+	pkg_check_modules(GTKMM gtkmm-3.0)
+
+	if(GTK3_FOUND AND GTKMM_FOUND)
+		set(gtk3_INCLUDE_PATH ${GTKMM_INCLUDE_DIRS})
+		set(gtk3_LIBS ${GTKMM_LIBRARIES})
+	else()
+		set(${FOUND} FALSE)
+	endif()
+endmacro(find_GTK3)
+
+
+#starting find script
+found_PID_Configuration(gtk FALSE)
+
+if (UNIX)#GTK not available on a non UNIX system
+	set(IS_FOUND TRUE)
+	set(GTK_LIBS) # start with empty list of libraries
+	set(GTK_INCLUDE_PATH) # start with empty list of path
+	set(GTK_LINKS) # start with empty list of links
+	set(GTK_VERSION)
+
+	if(gtk_version)#a specific version is desired
+		if(gtk_version EQUAL 2)
+			find_GTK2(found_gtk2)
+			if(found_gtk2)
+				set(GTK_LIBS ${gtk2_LIBS})
+				set(GTK_INCLUDE_PATH ${gtk2_INCLUDE_PATH})
+				set(GTK_VERSION 2)
+			else()
+				set(IS_FOUND FALSE)
+			endif()
+		elseif(gtk_version EQUAL 3)
+			find_GTK3(found_gtk3)
+			if(found_gtk3)
+				set(GTK_LIBS ${gtk3_LIBS})
+				set(GTK_INCLUDE_PATH ${gtk3_INCLUDE_PATH})
+				set(GTK_VERSION 3)
+			else()
+				set(IS_FOUND FALSE)
+			endif()
+		else()
+				set(IS_FOUND FALSE)
+		endif()
+	elseif(gtk_preferred)# an ordered list of versions is given
+
+		foreach(version IN LISTS gtk_preferred)
+			if(version EQUAL 2)
+				find_GTK2(found_gtk2)
+				if(found_gtk2)
+					set(GTK_LIBS ${gtk2_LIBS})
+					set(GTK_INCLUDE_PATH ${gtk2_INCLUDE_PATH})
+					set(GTK_VERSION 2)
+					break()#stop searching once something found
+				endif()
+			elseif(gtk_version EQUAL 3)
+				find_GTK3(found_gtk3)
+				if(found_gtk3)
+					set(GTK_LIBS ${gtk3_LIBS})
+					set(GTK_INCLUDE_PATH ${gtk3_INCLUDE_PATH})
+					set(GTK_VERSION 3)
+					break()#stop searching once something found
+				endif()
+			endif()
+		endforeach()
+
+		if(NOT GTK_VERSION)
 			set(IS_FOUND FALSE)
+		endif()
+	else()#no preference on version given, finding gtk2 first then gtk3, taking the first found
+		find_GTK2(found_gtk2)
+		if(found_gtk2)
+			set(GTK_LIBS ${gtk2_LIBS})
+			set(GTK_INCLUDE_PATH ${gtk2_INCLUDE_PATH})
+			set(GTK_VERSION 2)
+		else()
+			find_GTK3(found_gtk3)
+			if(found_gtk3)
+				set(GTK_LIBS ${gtk3_LIBS})
+				set(GTK_INCLUDE_PATH ${gtk3_INCLUDE_PATH})
+				set(GTK_VERSION 3)
+			else()
+				set(IS_FOUND FALSE)
+			endif()
 		endif()
 	endif()
 
 	if(IS_FOUND)
-		set(gtk2_FOUND TRUE CACHE INTERNAL "")
+		list(REMOVE_DUPLICATES GTK_INCLUDE_PATH)
+		list(REMOVE_DUPLICATES GTK_LIBS)
+		set(GTK_LIBRARY_DIRS)
+		foreach(lib IN LISTS GTK_LIBS)
+			get_filename_component(FOLDER ${lib} DIRECTORY)
+			list(APPEND GTK_LIBRARY_DIRS ${FOLDER})
+		endforeach()
+		list(REMOVE_DUPLICATES GTK_LIBRARY_DIRS)
+		convert_PID_Libraries_Into_System_Links(GTK_LIBS GTK_LINKS)#getting good system links (with -l)
+		found_PID_Configuration(gtk TRUE)
 	endif ()
 
 	unset(IS_FOUND)
-	set(CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK_SAVE})
 endif ()

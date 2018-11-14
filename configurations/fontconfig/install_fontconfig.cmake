@@ -17,23 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/configurations/fontconfig/installable_fontconfig.cmake)
-if(fontconfig_INSTALLABLE)
-	message("[PID] INFO : trying to install fontconfig...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get install libfontconfig-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S fontconfig --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/configurations/fontconfig/find_fontconfig.cmake)
-	if(fontconfig_FOUND)
-		message("[PID] INFO : fontconfig installed !")
-		set(fontconfig_INSTALLED TRUE)
-	else()
-		set(fontconfig_INSTALLED FALSE)
-		message("[PID] INFO : install of fontconfig has failed !")
-	endif()
-else()
-	set(fontconfig_INSTALLED FALSE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_process(COMMAND sudo apt-get install -y libfontconfig-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_process(COMMAND sudo pacman -S fontconfig --noconfirm)
 endif()

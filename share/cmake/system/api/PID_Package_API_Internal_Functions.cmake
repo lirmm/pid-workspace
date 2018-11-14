@@ -606,31 +606,20 @@ else()
 endif()
 
 if(NOT SKIP AND constraints)
-	foreach(config IN LISTS constraints) ## all constraints must be satisfied
-		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
-		if(NOT CONFIG_NAME)
-			message("[PID] ERROR : configuration check ${config} is ill formed.")
-			set(${RESULT} FALSE PARENT_SCOPE)
-		elseif(EXISTS ${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)
-			prepare_Config_Arguments(${CONFIG_NAME} CONFIG_ARGS)#setting variables that correspond to the arguments passed to the check script
-			include(${WORKSPACE_DIR}/configurations/${CONFIG_NAME}/check_${CONFIG_NAME}.cmake)	# check the platform and install it if possible
-			if(NOT CHECK_${CONFIG_NAME}_RESULT)
-				message("[PID] ERROR : current platform does not satisfy configuration constraint ${CONFIG_NAME}.")
-				set(${RESULT} FALSE PARENT_SCOPE)
-			endif()
-			list(APPEND configurations_to_memorize ${CONFIG_NAME})#memorize name of the configuration
-			set(${CONFIG_NAME}_constraints_to_memorize ${CONFIG_ARGS} ${${CONFIG_NAME}_BINARY_CONSTRAINTS})#then memorize all constraints that apply to the configuration
-		else()
-			message("[PID] INFO : when checking constraints on current platform, configuration information for ${CONFIG_NAME} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${CONFIG_NAME}.cmake in ${WORKSPACE_DIR}/configurations/${CONFIG_NAME} to manage this configuration.")
+	foreach(config IN LISTS constraints) ## all configuration constraints must be satisfied
+		check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${config}")
+		if(NOT RESULT_OK)
 			set(${RESULT} FALSE PARENT_SCOPE)
 		endif()
+		list(APPEND configurations_to_memorize ${CONFIG_NAME})#memorize name of the configuration
+		set(${CONFIG_NAME}_constraints_to_memorize ${CONFIG_CONSTRAINTS})#then memorize all constraints that apply to the configuration
 	endforeach()
 
 	#registering all configurations wether they are satisfied or not
 	append_Unique_In_Cache(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} "${configurations_to_memorize}")
 
 	foreach(config IN LISTS configurations_to_memorize)
-		if(${config}_constraints_to_memorize)#there are arguments for that configuration
+		if(${config}_constraints_to_memorize)#there are paremeters for that configuration, they need to be registered
 			list(REMOVE_DUPLICATES ${config}_constraints_to_memorize)
 			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} "${${config}_constraints_to_memorize}" CACHE INTERNAL "")
 		endif()
@@ -1435,7 +1424,24 @@ append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS_APPS ${c_name})
 mark_As_Declared(${c_name})
 endfunction(declare_Application_Component)
 
-
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Python_Component| replace:: ``declare_Python_Component``
+#  .. _declare_Python_Component:
+#
+#  declare_Python_Component
+#  ------------------------
+#
+#   .. command:: declare_Python_Component(c_name dirname)
+#
+#     Declare a python package.
+#
+#     :c_name: the name of the python package.
+#
+#     :dirname: the name of the folder that contains script of the python package.
+#
 function(declare_Python_Component	c_name dirname)
 set(${PROJECT_NAME}_${c_name}_TYPE "PYTHON" CACHE INTERNAL "")
 #registering source code for the component

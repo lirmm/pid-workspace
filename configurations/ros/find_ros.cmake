@@ -17,24 +17,23 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(ros_DISTRO_FOUND FALSE CACHE INTERNAL "")
-set(ros_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(ros FALSE)
+
 set(ROS_INCS)
 set(ROS_LIB_DIRS)
 set(ROS_LIBS)
-set(ROS_BOOST_COMP)
+set(ROS_LINKS)
+set(ROS_BOOST_PID_COMP)
 
 set(ROS_PATH "/opt/ros/${ros_distribution}")
 if(EXISTS "${ROS_PATH}/env.sh")
-	find_package(Boost)
-	if(NOT Boost_FOUND)
-		return()
-	endif()
-	set(ROS_BOOST_VER ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION})
-
-	set(ros_DISTRO_FOUND TRUE CACHE INTERNAL "")
 
 	# find packages
+	list(REMOVE_DUPLICATES ros_packages)
+	set(ROS_PACKAGES ${ros_packages})
+
 	list(APPEND ros_packages roscpp)
 	list(REMOVE_DUPLICATES ros_packages)
 	find_package(catkin REQUIRED COMPONENTS ${ros_packages})
@@ -52,11 +51,15 @@ if(EXISTS "${ROS_PATH}/env.sh")
 		convert_Library_Path_To_Default_System_Library_Link(res_lib ${lib})
 		string(REGEX REPLACE "^-lboost_(.*)$" "\\1" boost_lib ${res_lib})
 		if(NOT res_lib STREQUAL boost_lib) # it matches
-			list(APPEND ROS_BOOST_COMP "boost-${boost_lib}")
+			list(APPEND ROS_BOOST_PID_COMP "boost-${boost_lib}")
+			list(APPEND ROS_BOOST_LIBS "${boost_lib}") #get the boost libraries to use when checking configuration
 		else()
-			list(APPEND ROS_LIBS ${res_lib})
+			list(APPEND ROS_LIBS ${lib})
 		endif()
 	endforeach()
 
-	set(ros_FOUND TRUE CACHE INTERNAL "")
+	if(ROS_LIB)
+		convert_PID_Libraries_Into_System_Links(ROS_LIBS ROS_LINKS)#getting good system links (with -l)
+	endif()
+	found_PID_Configuration(ros TRUE)
 endif()

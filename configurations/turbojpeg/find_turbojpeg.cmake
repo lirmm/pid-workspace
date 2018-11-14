@@ -17,7 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(turbojpeg_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(turbojpeg FALSE)
 # - Find turbojpeg installation
 # Try to find libraries for turbojpeg on UNIX systems. The following values are defined
 #  turbojpeg_FOUND        - True if turbojpeg is available
@@ -30,8 +32,8 @@ find_library(TurboJPEG_LIBRARIES NAMES libturbojpeg.so.1 libturbojpeg.so.0) #eit
 if(TurboJPEG_INCLUDE_DIRS AND NOT TurboJPEG_INCLUDE_DIRS MATCHES TurboJPEG_INCLUDE_DIRS-NOTFOUND
 	AND TurboJPEG_LIBRARIES AND NOT TurboJPEG_LIBRARIES MATCHES TurboJPEG_LIBRARIES-NOTFOUND)
 	set(turbojpeg_LIBRARIES -lturbojpeg) # start with empty list
-	set(turbojpeg_FOUND TRUE CACHE INTERNAL "")
-
+	found_PID_Configuration(turbojpeg TRUE)
+	
 	unset(TurboJPEG_INCLUDE_DIRS CACHE)
 	unset(TurboJPEG_LIBRARIES CACHE)
 endif()

@@ -17,23 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/configurations/pcre3/installable_pcre3.cmake)
-if(pcre3_INSTALLABLE)
-	message("[PID] INFO : trying to install pcre3...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get install libpcre3-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S pcre --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/configurations/pcre3/find_pcre3.cmake)
-	if(pcre3_FOUND)
-		message("[PID] INFO : pcre3 installed !")
-		set(pcre3_INSTALLED TRUE)
-	else()
-		set(pcre3_INSTALLED FALSE)
-		message("[PID] INFO : install of pcre3 has failed !")
-	endif()
-else()
-	set(pcre3_INSTALLED FALSE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_process(COMMAND sudo apt-get install -y libpcre3-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_process(COMMAND sudo pacman -S pcre --noconfirm)
 endif()

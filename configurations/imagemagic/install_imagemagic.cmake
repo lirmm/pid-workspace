@@ -17,23 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/configurations/imagemagic/installable_imagemagic.cmake)
-if(imagemagic_INSTALLABLE)
-	message("[PID] INFO : trying to install imagemagic and some of its related packages...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get install imagemagick libmagick++-dev libx264-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S imagemagick libx264 --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/configurations/imagemagic/find_imagemagic.cmake)
-	if(imagemagic_FOUND)
-		message("[PID] INFO : imagemagic installed !")
-		set(imagemagic_INSTALLED TRUE)
-	else()
-		set(imagemagic_INSTALLED FALSE)
-		message("[PID] INFO : install of imagemagic has failed !")
-	endif()
-else()
-	set(imagemagic_INSTALLED FALSE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_process(COMMAND sudo apt-get install -y imagemagick libmagick++-dev libx264-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_process(COMMAND sudo pacman -S imagemagick libx264 --noconfirm)
 endif()

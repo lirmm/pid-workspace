@@ -17,57 +17,53 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-function(add_ROS_Dependencies_To_Component component)
-	declare_PID_Component_Dependency(
-	    COMPONENT ${component}
-	    LINKS SHARED ${ros_LIBS} STATIC -L${ros_RPATH}
-	    INCLUDE_DIRS ${ros_INCLUDE_DIRS}
-	)
+function(add_ROS_Dependencies_To_Component component exported)
+	if(exported)
 
-	foreach(boost_component IN LISTS ros_BOOST_COMPONENTS)
-	    declare_PID_Component_Dependency(
-	        COMPONENT ${component}
-	        EXTERNAL ${boost_component}
-	        PACKAGE boost
-	    )
-	endforeach()
-endfunction()
+			declare_PID_Component_Dependency(
+					COMPONENT ${component}
+					EXPORT LINKS SHARED ${ros_LINKS}
+								       STATIC -L${ros_RPATH}
+								 INCLUDE_DIRS ${ros_INCLUDE_DIRS}
+					RUNTIME_RESOURCES ${ros_RPATH}
+			)
 
-if(NOT ros_distribution)
-	set(CHECK_ros_RESULT FALSE)
-	message("[PID] ERROR : Please indicate what ROS distribution to use by passing the 'distribution' parameter to the configuration, e.g. check_PID_Platform(CONFIGURATION ros[distribution=kinetic])")
-	return()
-endif()
+			foreach(boost_component IN LISTS ros_BOOST_COMPONENTS)
+					declare_PID_Component_Dependency(
+							COMPONENT ${component}
+							EXPORT EXTERNAL ${boost_component}
+							PACKAGE boost
+					)
+			endforeach()
+	else()
+		declare_PID_Component_Dependency(
+		    COMPONENT ${component}
+				EXPORT LINKS SHARED ${ros_LINKS}
+										 STATIC -L${ros_RPATH}
+							 INCLUDE_DIRS ${ros_INCLUDE_DIRS}
+				RUNTIME_RESOURCES ${ros_RPATH}
+		)
 
-if(NOT ros_packages)
-	message("[PID] INFO : No packages defined for the ROS configuration. To add some, use the 'packages' parameter, e.g. check_PID_Platform(CONFIGURATION ros[distribution=kinetic:packages=sensor_msgs,control_msgs])")
-endif()
-
-# use variable ros_distribution to target specific distributions
-# use variable ros_packages to target additionnal packages
-if(NOT ros_distribution STREQUAL USED_ROS_DISTRO OR NOT ros_FOUND OR NOT ros_packages STREQUAL USED_ROS_PACKAGES)
-
-	set(USED_ROS_DISTRO ${ros_distribution} CACHE INTERNAL "")
-	set(USED_ROS_PACKAGES ${ros_packages} CACHE INTERNAL "")
-	set(ros_INCLUDE_DIRS CACHE INTERNAL "")
-	set(ros_LIBS CACHE INTERNAL "")
-	set(ros_RPATH CACHE INTERNAL "") # add the path to the lib folder of ros
-	set(ros_BOOST_VERSION CACHE INTERNAL "")
-	set(ros_BOOST_COMPONENTS CACHE INTERNAL "")
-
-	# trying to find ros
-	include(${WORKSPACE_DIR}/configurations/ros/find_ros.cmake)
-	if(ros_FOUND) # if ROS distrubution and all packages have been found
-		set(ros_BOOST_VERSION ${ROS_BOOST_VER} CACHE INTERNAL "")
-		set(ros_BOOST_COMPONENTS ${ROS_BOOST_COMP} CACHE INTERNAL "")
-		set(ros_INCLUDE_DIRS ${ROS_INCS} CACHE INTERNAL "")
-		set(ros_LIBS ${ROS_LIBS} CACHE INTERNAL "")
-		set(ros_RPATH ${ROS_LIB_DIRS} CACHE INTERNAL "")
-		set(CHECK_ros_RESULT TRUE)
-	else() # if either the distribution or any package not found
-		include(${WORKSPACE_DIR}/configurations/ros/install_ros.cmake)
-		set(CHECK_ros_RESULT ${ros_INSTALLED})
+		foreach(boost_component IN LISTS ros_BOOST_COMPONENTS)
+		    declare_PID_Component_Dependency(
+		        COMPONENT ${component}
+		        EXTERNAL ${boost_component}
+		        PACKAGE boost
+		    )
+		endforeach()
 	endif()
-else()
-	set(CHECK_ros_RESULT TRUE)
-endif()
+endfunction(add_ROS_Dependencies_To_Component)
+
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(ros
+			VARIABLES INCLUDE_DIRS 	RPATH  		LIBRARY_DIRS  LINK_OPTIONS  BOOST_COMPONENTS
+			VALUES 		ROS_INCS			ROS_LIBS	ROS_LIB_DIRS	ROS_LINKS			ROS_BOOST_PID_COMP)
+
+
+# constraints
+PID_Configuration_Constraints(ros REQUIRED distribution IN_BINARY packages VALUE ROS_PACKAGES)
+
+# dependencies
+PID_Configuration_Dependencies(ros DEPENDS boost[libraries=ROS_BOOST_LIBS])

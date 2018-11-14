@@ -16,19 +16,10 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-if(NOT posix_FOUND) #any linux or macosx is posix ...
-	set(posix_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(posix_INCLUDE_DIRS CACHE INTERNAL "")
-	set(posix_DEFINITIONS CACHE INTERNAL "")
-	set(posix_LINK_OPTIONS CACHE INTERNAL "")
-	set(posix_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/posix/find_posix.cmake)
-	if(posix_FOUND)
-		set(posix_LINK_OPTIONS ${posix_LIBRARIES} CACHE INTERNAL "") #simply adding all posix standard libraries
-		set(CHECK_posix_RESULT TRUE)
-	else()
-		set(CHECK_posix_RESULT FALSE)
-	endif()
-else()
-	set(CHECK_posix_RESULT TRUE)
-endif()
+
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(posix
+				VARIABLES LINK_OPTIONS
+				VALUES 		posix_LIBRARIES)

@@ -17,4 +17,14 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(crypt_INSTALLED FALSE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian
+	OR CURRENT_DISTRIBUTION STREQUAL arch)
+	if(gtk_version EQUAL 2 OR gtk_version EQUAL 3)
+		installable_PID_Configuration(gtk TRUE)
+	else()
+		installable_PID_Configuration(gtk FALSE)
+	endif()
+else()
+	installable_PID_Configuration(gtk FALSE)
+endif()

@@ -17,7 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(x11_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(x11 FALSE)
 # - Find x11 installation
 # Try to find X11 on UNIX systems. The following values are defined
 #  x11_FOUND        - True if X11 is available
@@ -75,7 +77,7 @@ if (UNIX)
 	endif ()
 
 	if(IS_FOUND)
-		set(x11_FOUND TRUE CACHE INTERNAL "")
+		found_PID_Configuration(x11 TRUE)
 	endif ()
 
 	### now searching extension libraries they may be present or not ###

@@ -17,25 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT openssl_FOUND)
-	set(openssl_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(openssl_INCLUDE_DIRS CACHE INTERNAL "")
-	set(openssl_DEFINITIONS CACHE INTERNAL "")
-	set(openssl_LINK_OPTIONS CACHE INTERNAL "")
-	set(openssl_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/openssl/find_openssl.cmake)
-	if(openssl_FOUND)
-		set(openssl_LINK_OPTIONS ${openssl_LIBRARIES} CACHE INTERNAL "")
-		set(CHECK_openssl_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/openssl/install_openssl.cmake)
-		if(openssl_INSTALLED)
-			set(openssl_LINK_OPTIONS ${openssl_LIBRARIES} CACHE INTERNAL "")
-			set(CHECK_openssl_RESULT TRUE)
-		else()
-			set(CHECK_openssl_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_openssl_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(openssl
+				VARIABLES LINK_OPTIONS
+				VALUES 		openssl_LIBRARIES)

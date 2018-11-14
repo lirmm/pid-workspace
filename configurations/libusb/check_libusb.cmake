@@ -17,25 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT libusb_FOUND) #any linux or macosx is zlib ...
-	set(libusb_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(libusb_INCLUDE_DIRS CACHE INTERNAL "")
-	set(libusb_LINK_OPTIONS CACHE INTERNAL "")
-	set(libusb_DEFINITIONS CACHE INTERNAL "")
-	set(libusb_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/libusb/find_libusb.cmake)
-	if(libusb_FOUND)
-		set(libusb_LINK_OPTIONS ${libusb_LIBRARIES} CACHE INTERNAL "") #simply adding all libusb standard libraries
-		set(CHECK_libusb_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/libusb/install_libusb.cmake)
-		if(libusb_INSTALLED)
-			set(libusb_LINK_OPTIONS ${libusb_LIBRARIES} CACHE INTERNAL "") #simply adding all libusb standard libraries
-			set(CHECK_libusb_RESULT TRUE)
-		else()
-			set(CHECK_libusb_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_libusb_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(libusb
+				VARIABLES LINK_OPTIONS
+				VALUES 		libusb_LIBRARIES)

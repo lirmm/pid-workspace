@@ -17,7 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(posix_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(posix FALSE)
 # - Find posix installation
 # Try to find libraries for posix on UNIX systems. The following values are defined
 #  posix_FOUND        - True if posix is available
@@ -72,7 +74,7 @@ if (UNIX)
 	endif()
 
 	if(IS_FOUND)
-		set(posix_FOUND TRUE CACHE INTERNAL "")
+		found_PID_Configuration(posix TRUE)
 	endif ()
 
 	unset(IS_FOUND)

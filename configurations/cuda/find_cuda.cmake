@@ -17,19 +17,11 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(cuda_FOUND FALSE CACHE INTERNAL "")
-# - Find cuda installation
-# Try to find libraries for cuda on UNIX systems. The following values are defined
-#  cuda_FOUND        - True if cuda is available
-#  cuda_LIBRARIES    - link against these to use cuda library
+include(Configuration_Definition NO_POLICY_SCOPE)
 
-set(CUDA_USE_STATIC_CUDA_RUNTIME FALSE CACHE INTERNAL "" FORCE)
-set(cuda_BINARY_CONSTRAINTS)
+found_PID_Configuration(cuda FALSE)
+
 if(CUDA_VERSION)#if the CUDA version is known (means that a nvcc compiler has been defined)
-	if(NOT cuda_architecture) #no target architecture defined => take the default one
-		list(APPEND cuda_BINARY_CONSTRAINTS "architecture=${DEFAULT_CUDA_ARCH}") #architecture is the only argument that must be constrained in the resulting binary
-	endif()#otherwise the constraint on architecture will exists beore calling the configuration
-
 	if(	NOT cuda_version														#no contraint on version
 			OR cuda_version VERSION_EQUAL CUDA_VERSION) #required VS provided CUDA version match !
 		set(adequate_version_found TRUE)
@@ -37,50 +29,40 @@ if(CUDA_VERSION)#if the CUDA version is known (means that a nvcc compiler has be
 		set(adequate_version_found FALSE)
 	endif()
 
-	if( NOT cuda_architecture                            #no contraint on architecture
-			OR cuda_architecture STREQUAL DEFAULT_CUDA_ARCH  #required VS provided CUDA architecture match !
-		)
+	if(NOT cuda_architecture)                            #no contraint on architecture
 		set(arch_to_use ${DEFAULT_CUDA_ARCH})
-	else()#there is a target architecture defined but not the default one
-		list(FIND AVAILABLE_CUDA_ARCHS ${cuda_architecture} INDEX)
-		if(NOT INDEX EQUAL -1)#check if the target arch is a possible arch for NVCC compiler
-			list(GET AVAILABLE_CUDA_ARCHS ${INDEX} RES_ARCH) #TODO detect possible architecture for nvcc then compare
-			set(arch_to_use ${RES_ARCH})
-		else()
-			set(arch_to_use)
-		endif()
+	else()#there is one or more target architecture(s) defined
+		foreach(arch IN LISTS cuda_architecture)
+			list(FIND AVAILABLE_CUDA_ARCHS ${cuda_architecture} INDEX)
+			if(NOT INDEX EQUAL -1)#check if the target arch is a possible arch for NVCC compiler
+				list(GET AVAILABLE_CUDA_ARCHS ${INDEX} RES_ARCH)
+				list(APPEND arch_to_use ${RES_ARCH})
+			else()#problem => cannot build for all architectures so exit
+				set(arch_to_use)
+				break()
+			endif()
+		endforeach()
 	endif()
 
 	if(arch_to_use AND adequate_version_found)
-		set(cuda_FOUND TRUE CACHE INTERNAL "")
-		set(cuda_ARCHITECTURE ${arch_to_use} CACHE INTERNAL "")
+		found_PID_Configuration(cuda TRUE)
+		set(CUDA_ARCH ${arch_to_use})
 
-		# NVCC flags to be set
-		set(NVCC_FLAGS_EXTRA "")
-		set(CUDA_ARCH_BIN "")
-		set(CUDA_ARCH_FEATURES "")
 
-		string(REGEX REPLACE "\\." "" ARCH_BIN_NO_POINTS "${arch_to_use}")
-		string(REGEX MATCHALL "[0-9()]+" ARCH_LIST "${ARCH_BIN_NO_POINTS}")
+		set(NVCC_FLAGS_EXTRA "")# NVCC flags to be set
+		set(CUDA_ARCH_REAL "")# CUDA sm architecture
+		set(CUDA_ARCH_FEATURES "")# CUDA compute architecture
 
+		string(REGEX REPLACE "\\." "" ARCH_LIST "${CUDA_ARCH}")
 		# Tell NVCC to add binaries for the specified GPUs
 		foreach(arch IN LISTS ARCH_LIST)
-		  if(arch MATCHES "([0-9]+)\\(([0-9]+)\\)")
-		    # User explicitly specified PTX for the concrete BIN
-		    set(NVCC_FLAGS_EXTRA ${NVCC_FLAGS_EXTRA} -gencode arch=compute_${CMAKE_MATCH_2},code=sm_${CMAKE_MATCH_1})
-		    set(CUDA_ARCH_BIN "${CUDA_ARCH_BIN} ${CMAKE_MATCH_1}"  CACHE INTERNAL "")
-		    set(CUDA_ARCH_FEATURES "${CUDA_ARCH_FEATURES} ${CMAKE_MATCH_2}"  CACHE INTERNAL "")
-		  else()
-		    # User didn't explicitly specify PTX for the concrete BIN, we assume PTX=BIN
-		    set(NVCC_FLAGS_EXTRA ${NVCC_FLAGS_EXTRA} -gencode arch=compute_${ARCH},code=sm_${ARCH})
-		    set(CUDA_ARCH_BIN "${CUDA_ARCH_BIN} ${ARCH}"  CACHE INTERNAL "")
-		    set(CUDA_ARCH_FEATURES "${CUDA_ARCH_FEATURES} ${ARCH}"  CACHE INTERNAL "")
-		  endif()
+		  set(NVCC_FLAGS_EXTRA ${NVCC_FLAGS_EXTRA} -gencode arch=compute_${arch},code=sm_${arch})
+	    set(CUDA_ARCH_REAL "${CUDA_ARCH_REAL} ${arch}"  CACHE INTERNAL "")
+	    set(CUDA_ARCH_FEATURES "${CUDA_ARCH_FEATURES} ${arch}"  CACHE INTERNAL "")
 		endforeach()
 		set(NVCC_FLAGS_EXTRA ${NVCC_FLAGS_EXTRA} -D_FORCE_INLINES)
-		# These vars will be processed in other scripts
-		set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} ${NVCC_FLAGS_EXTRA} CACHE INTERNAL "" FORCE)
-		set(CMAKE_CUDA_FLAGS ${CUDA_NVCC_FLAGS} CACHE INTERNAL "" FORCE)
-		get_filename_component(CUDA_RPATH ${CUDA_CUDART_LIBRARY} DIRECTORY)
+		get_filename_component(CUDA_LIBRARY_DIR ${CUDA_CUDART_LIBRARY} DIRECTORY)
+		convert_PID_Libraries_Into_System_Links(CUDA_LIBRARIES CUDA_LINKS)#getting good system links (with -l)
 	endif()
+
 endif()#if NVCC not found no need to continue

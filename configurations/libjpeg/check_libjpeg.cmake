@@ -17,25 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT libjpeg_FOUND)
-	set(libjpeg_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(libjpeg_INCLUDE_DIRS CACHE INTERNAL "")
-	set(libjpeg_LINK_OPTIONS CACHE INTERNAL "")
-	set(libjpeg_DEFINITIONS CACHE INTERNAL "")
-	set(libjpeg_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/libjpeg/find_libjpeg.cmake)
-	if(libjpeg_FOUND)
-		set(libjpeg_LINK_OPTIONS ${libjpeg_LIBRARIES} CACHE INTERNAL "")
-		set(CHECK_libjpeg_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/libjpeg/install_libjpeg.cmake)
-		if(libjpeg_INSTALLED)
-			set(libjpeg_LINK_OPTIONS ${libjpeg_LIBRARIES} CACHE INTERNAL "")
-			set(CHECK_libjpeg_RESULT TRUE)
-		else()
-			set(CHECK_libjpeg_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_libjpeg_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(libjpeg
+				VARIABLES LINK_OPTIONS
+				VALUES 		libjpeg_LIBRARIES)

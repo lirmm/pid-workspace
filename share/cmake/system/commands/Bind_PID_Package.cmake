@@ -52,40 +52,20 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 ###############################################################
 # 1) checking constraints on platform configuration DEBUG mode
 foreach(config IN LISTS ${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS_DEBUG)#if empty no configuration for this platform is supposed to be necessary
-	if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)
-		if(${PACKAGE_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS_DEBUG)
-			prepare_Config_Arguments(${config} ${PACKAGE_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS_DEBUG)#setting variables that correspond to the arguments passed to the check script
-		endif()
-		include(${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
-		if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${PACKAGE_NAME}.")
-			return()
-		else()
-			message("[PID] INFO : platform configuration ${config} for package ${PACKAGE_NAME} is satisfied.")
-		endif()
-	else()
+	check_System_Configuration_With_Arguments(RESULT_OK BINARY_ARGS ${config} ${PACKAGE_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS_DEBUG)
+	if(NOT RESULT_OK)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this configuration is unknown within PID. Please contact the administrator of package ${PACKAGE_NAME}.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : Cannot satisfy platform configuration constraint ${config}. Please contact the administrator of package ${PACKAGE_NAME}.")
 		return()
 	endif()
 endforeach()
 
 # 2) checking constraints on platform configuration RELEASE mode
 foreach(config IN LISTS ${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS)#if empty no configuration for this platform is supposed to be necessary
-	if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)
-		if(${PACKAGE_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS)
-			prepare_Config_Arguments(${config} ${PACKAGE_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS)#setting variables that correspond to the arguments passed to the check script
-		endif()
-		include(${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
-		if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${PACKAGE_NAME}.")
-			return()
-		endif()
-	else()
+	check_System_Configuration_With_Arguments(RESULT_OK BINARY_ARGS ${config} ${PACKAGE_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS)
+	if(NOT RESULT_OK)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this configuration is unknown within PID. Please contact the administrator of package ${PACKAGE_NAME}.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : Cannot satisfy platform configuration constraint ${config}. Please contact the administrator of package ${PACKAGE_NAME}.")
 		return()
 	endif()
 endforeach()

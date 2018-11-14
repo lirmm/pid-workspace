@@ -17,7 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(crypt_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(crypt FALSE)
+
 # - Find crypt installation
 # Try to find libraries for crypt on UNIX systems. The following values are defined
 #  crypt_FOUND        - True if posix is available
@@ -49,7 +52,7 @@ if (UNIX)
 	endif()
 
 	if(IS_FOUND)
-		set(crypt_FOUND TRUE CACHE INTERNAL "")
+		found_PID_Configuration(boost TRUE)
 	endif ()
 
 	unset(IS_FOUND)

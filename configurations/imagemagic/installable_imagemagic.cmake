@@ -17,10 +17,12 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+include(Configuration_Definition NO_POLICY_SCOPE)
+
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian
 	OR CURRENT_DISTRIBUTION STREQUAL arch)
-	set(imagemagic_INSTALLABLE TRUE)
+	installable_PID_Configuration(imagemagic TRUE)
 else()
-	set(imagemagic_INSTALLABLE FALSE)
+	installable_PID_Configuration(imagemagic FALSE)
 endif()

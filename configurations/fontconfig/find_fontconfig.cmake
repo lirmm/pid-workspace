@@ -17,7 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(fontconfig_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(fontconfig FALSE)
+
 # - Find fontconfig installation
 # Try to find libraries for fontconfig on UNIX systems. The following values are defined
 #  fontconfig_FOUND        - True if fontconfig is available
@@ -37,7 +40,7 @@ if (UNIX)
 	endif()
 
 	if(IS_FOUND)
-		set(fontconfig_FOUND TRUE CACHE INTERNAL "")
+		found_PID_Configuration(fontconfig TRUE)
 	endif ()
 
 	unset(IS_FOUND)

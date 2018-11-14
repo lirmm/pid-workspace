@@ -17,23 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/configurations/libjpeg/installable_libjpeg.cmake)
-if(libjpeg_INSTALLABLE)
-	message("[PID] INFO : trying to install libjpeg...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get install libjpeg-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S libjpeg-turbo --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/configurations/libjpeg/find_libjpeg.cmake)
-	if(libjpeg_FOUND)
-		message("[PID] INFO : libjpeg installed !")
-		set(libjpeg_INSTALLED TRUE)
-	else()
-		set(libjpeg_INSTALLED FALSE)
-		message("[PID] INFO : install of libjpeg has failed !")
-	endif()
-else()
-	set(libjpeg_INSTALLED FALSE)
+	execute_process(COMMAND sudo apt-get install -y libjpeg-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_process(COMMAND sudo pacman -S libjpeg-turbo --noconfirm)
 endif()

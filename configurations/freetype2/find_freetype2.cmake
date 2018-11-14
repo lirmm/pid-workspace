@@ -17,7 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(freetype2_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(freetype2 FALSE)
+
 # - Find freetype2 installation
 # Try to find libraries for freetype2 on UNIX systems. The following values are defined
 #  freetype2_FOUND        - True if freetype2 is available
@@ -37,7 +40,7 @@ if (UNIX)
 	endif()
 
 	if(IS_FOUND)
-		set(freetype2_FOUND TRUE CACHE INTERNAL "")
+		found_PID_Configuration(freetype2 TRUE)
 	endif ()
 
 	unset(IS_FOUND)

@@ -17,25 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT libpng_FOUND)
-	set(libpng_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(libpng_INCLUDE_DIRS CACHE INTERNAL "")
-	set(libpng_LINK_OPTIONS CACHE INTERNAL "")
-	set(libpng_DEFINITIONS CACHE INTERNAL "")
-	set(libpng_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/libpng/find_libpng.cmake)
-	if(libpng_FOUND)
-		set(libpng_LINK_OPTIONS ${libpng_LIBRARIES} CACHE INTERNAL "")
-		set(CHECK_libpng_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/libpng/install_libpng.cmake)
-		if(libpng_INSTALLED)
-			set(libpng_LINK_OPTIONS ${libpng_LIBRARIES} CACHE INTERNAL "")
-			set(CHECK_libpng_RESULT TRUE)
-		else()
-			set(CHECK_libpng_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_libpng_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(libpng
+				VARIABLES LINK_OPTIONS
+				VALUES 		libpng_LIBRARIES)

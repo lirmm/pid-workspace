@@ -17,30 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT x11_FOUND)
-	set(x11_INCLUDE_DIRS CACHE INTERNAL "")
-	set(x11_EXTENSIONS_LINK_OPTIONS CACHE INTERNAL "")
-	set(x11_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(x11_DEFINITIONS CACHE INTERNAL "")
-	set(x11_LINK_OPTIONS CACHE INTERNAL "")
-	set(x11_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/x11/find_x11.cmake)
-	if(x11_FOUND)
-		set(x11_LINK_OPTIONS ${x11_LIBRARIES} CACHE INTERNAL "")
-		set(x11_EXTENSIONS_LINK_OPTIONS ${x11_EXTENSI0NS_LIBS} CACHE INTERNAL "")
-		set(x11_INCLUDE_DIRS ${x11_PATH} CACHE INTERNAL "")
-		set(CHECK_x11_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/x11/install_x11.cmake)
-		if(x11_INSTALLED)
-			set(x11_LINK_OPTIONS ${x11_LIBRARIES} CACHE INTERNAL "")
-			set(x11_EXTENSIONS_LINK_OPTIONS ${x11_EXTENSI0NS_LIBS} CACHE INTERNAL "")
-			set(x11_INCLUDE_DIRS ${x11_PATH} CACHE INTERNAL "")
-			set(CHECK_x11_RESULT TRUE)
-		else()
-			set(CHECK_x11_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_x11_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(x11
+				VARIABLES LINK_OPTIONS	EXTENSIONS_LINK_OPTIONS	INCLUDE_DIRS
+				VALUES 		x11_LIBRARIES	x11_EXTENSI0NS_LIBS			x11_PATH)

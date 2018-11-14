@@ -17,7 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(openssl_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(openssl FALSE)
+
 if(UNIX)
 	find_path(openssl_INCLUDE_DIR openssl/ssl.h) #searching only in standard paths
 	find_library(openssl_SSL_LIBRARY NAMES ssl ssleay32 ssleay32MD)
@@ -29,6 +32,6 @@ if(UNIX)
 		unset(openssl_INCLUDE_DIR CACHE)
 		unset(openssl_SSL_LIBRARY CACHE)
 		unset(openssl_CRYPTO_LIBRARY CACHE)
-		set(openssl_FOUND TRUE CACHE INTERNAL "")
+		found_PID_Configuration(openssl TRUE)
 	endif()
 endif()

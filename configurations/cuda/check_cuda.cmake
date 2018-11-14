@@ -17,32 +17,14 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT cuda_FOUND)
-	set(cuda_TOOLKIT_PATH CACHE INTERNAL "")
-	set(cuda_INCLUDE_DIRS CACHE INTERNAL "")
-	set(cuda_LINK_OPTIONS CACHE INTERNAL "")
-	set(cuda_EXECUTABLE_PATH CACHE INTERNAL "")
-	set(cuda_LIBRARY_PATH CACHE INTERNAL "")
-	set(cuda_RUNTIME_LINKS CACHE INTERNAL "")
-	set(cuda_VERSION CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/cuda/find_cuda.cmake)
-	if(cuda_FOUND)
-		set(all_links)
-		foreach(lib IN LISTS CUDA_LIBRARIES)
-			convert_Library_Path_To_Default_System_Library_Link(res_link ${lib})
-			list(APPEND all_links ${res_link})
-		endforeach()
-		set(cuda_LINK_OPTIONS ${all_links} CACHE INTERNAL "")
-		set(cuda_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS} CACHE INTERNAL "")
-		set(cuda_EXECUTABLE_PATH ${CUDA_NVCC_EXECUTABLE} CACHE INTERNAL "")
-		set(cuda_LIBRARY_PATH ${CUDA_RPATH} CACHE INTERNAL "")
-		set(cuda_RUNTIME_LINKS ${CUDA_LIBRARIES} CACHE INTERNAL "")
-		set(cuda_TOOLKIT_PATH ${CUDA_TOOLKIT_TARGET_DIR} CACHE INTERNAL "")
-		set(cuda_VERSION ${CUDA_VERSION} CACHE INTERNAL "")
-		set(CHECK_cuda_RESULT TRUE)
-	else()
-		set(CHECK_cuda_RESULT FALSE)
-	endif()
-else()
-	set(CHECK_cuda_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+
+# returned variables
+PID_Configuration_Variables(cuda
+				VARIABLES VERSION				LINK_OPTIONS 	INCLUDE_DIRS 			LIBRARY_DIRS  		COMPILER_OPTIONS	RPATH 					REAL_ARCHITECTURE 	VIRTUAL_ARCHITECTURE	TOOLKIT_PATH
+				VALUES 		CUDA_VERSION	CUDA_LINKS 		CUDA_INCLUDE_DIRS CUDA_LIBRARY_DIR	NVCC_FLAGS_EXTRA  CUDA_LIBRARIES	CUDA_ARCH_REAL 			CUDA_ARCH_PTX					CUDA_TOOLKIT_TARGET_DIR)
+
+# constraints (no required constraints)
+PID_Configuration_Constraints(cuda OPTIONAL version
+																	IN_BINARY architecture VALUE CUDA_ARCH)

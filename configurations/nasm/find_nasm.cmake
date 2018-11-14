@@ -17,10 +17,12 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(nasm_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(nasm FALSE)
 
 find_program(NASM_EXE nasm)
 
 if(NOT NASM_EXE STREQUAL "NASM_EXE-NOTFOUND")
-	set(nasm_FOUND TRUE CACHE INTERNAL "")
+	found_PID_Configuration(nasm TRUE)
 endif()

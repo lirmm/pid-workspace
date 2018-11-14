@@ -17,7 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(libpng_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(libpng FALSE)
+
 # - Find libpng installation
 # Try to find libraries for libpng on UNIX systems. The following values are defined
 #  libpng_FOUND        - True if libpng is available
@@ -37,7 +40,7 @@ if (UNIX)
 	endif()
 
 	if(IS_FOUND)
-		set(libpng_FOUND TRUE CACHE INTERNAL "")
+		found_PID_Configuration(libpng TRUE)
 	endif ()
 
 	unset(IS_FOUND)
