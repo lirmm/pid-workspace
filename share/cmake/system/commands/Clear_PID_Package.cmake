@@ -23,6 +23,14 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
+if(NOT TARGET_PACKAGE AND ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_VERSION AND ENV{version})
+	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "")
+endif()
+
 if(TARGET_PACKAGE AND TARGET_VERSION)
 	if(	EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE})

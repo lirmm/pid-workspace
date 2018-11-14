@@ -108,6 +108,7 @@ get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
 if(NOT DEFINED MAJOR)#not a valid version string
   set(${RES_VERSION} PARENT_SCOPE)
 endif()
+set(version_found FALSE)
 if(DEFINED PATCH)
 	set(curr_max_patch_number ${PATCH})
 else()
@@ -120,9 +121,10 @@ foreach(version IN LISTS available_versions)
 		AND COMPARE_MINOR EQUAL MINOR
 		AND COMPARE_PATCH GREATER curr_max_patch_number)
 		set(curr_max_patch_number ${COMPARE_PATCH})# taking the last patch version available for this major.minor
-	endif()
+    set(version_found TRUE)
+  endif()
 endforeach()
-if(curr_max_patch_number EQUAL -1)#i.e. nothing found
+if(NOT version_found)
 	set(${RES_VERSION} PARENT_SCOPE)
 else()
 	set(${RES_VERSION} "${MAJOR}.${MINOR}.${curr_max_patch_number}" PARENT_SCOPE)
@@ -957,6 +959,9 @@ if(external)
       set(${RES_VERSION_TO_USE} ${version_to_test} PARENT_SCOPE)
     endif()
   else()#the version to test is NOT exact, so we can theorically change it in final build with version_in_use (or any compatible version)
+    set(DO_NOT_FIND_${package} TRUE)
+    find_package(${package})#just include the find file to get information about compatible versions, do not "find for real" in install tree
+    unset(DO_NOT_FIND_${package})
     if(version_in_use_is_exact) #the version currenlty in use is exact
       #the exact version in use must be compatible with (usable instead of) the tested one (since in final build version_in_use_will be used)
       is_Compatible_External_Version(IS_COMPATIBLE ${package} ${version_to_test} ${version_in_use})
@@ -1022,6 +1027,7 @@ else()#native package
   endif()
 endif()
 endfunction(get_Compatible_Version)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1034,7 +1040,7 @@ endfunction(get_Compatible_Version)
 #
 #   .. command:: find_Best_Compatible_Version(BEST_VERSION_IN_LIST external package version_in_use version_in_use_exact list_of_versions exact_versions)
 #
-#    From a version constraint of a given package already used in the build process, get the best compatible version from a listr of version constrainnts (if any).
+#    From a version constraint of a given package already used in the build process, get the best compatible version from a listr of version constraints (if any).
 #
 #     :BEST_VERSION_IN_LIST: the output variable that contains the new version constraint to use (may be same as previously).
 #
@@ -1484,13 +1490,13 @@ endfunction(reset_Packages_Finding_Variables)
 #
 # .. ifmode:: internal
 #
-#  .. |resolve_Package_Dependency| replace:: ``resolve_Package_Dependency``
-#  .. _resolve_Package_Dependency:
+#  .. |resolve_Native_Package_Dependency| replace:: ``resolve_Native_Package_Dependency``
+#  .. _resolve_Native_Package_Dependency:
 #
-#  resolve_Package_Dependency
-#  --------------------------
+#  resolve_Native_Package_Dependency
+#  ---------------------------------
 #
-#   .. command:: resolve_Package_Dependency(COMPATIBLE package dependency mode)
+#   .. command:: resolve_Native_Package_Dependency(COMPATIBLE package dependency mode)
 #
 #    Find the best version of a dependency for a given package (i.e. another package). It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).
 #    each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
@@ -1508,7 +1514,7 @@ endfunction(reset_Packages_Finding_Variables)
 #
 #     :COMPATIBLE: the output variable that is TRUE if the dependency has a compatible version with those already defined in current build process, false otherwise.
 #
-function(resolve_Package_Dependency COMPATIBLE package dependency mode)
+function(resolve_Native_Package_Dependency COMPATIBLE package dependency mode)
 set(${COMPATIBLE} TRUE PARENT_SCOPE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
@@ -1532,7 +1538,7 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 				return()
 			else() #not compatible
         set(${COMPATIBLE} FALSE PARENT_SCOPE)
-        # finish_Progress(GLOBAL_PROGRESS_VAR)
+        # finish_Progress(${GLOBAL_PROGRESS_VAR})
 				# message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dependency} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dependency}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dependency}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}.")
 				return()
 			endif()
@@ -1591,7 +1597,16 @@ else()#the dependency has not been already found
 		)
 	endif()
 endif()
-endfunction(resolve_Package_Dependency)
+#last step : check STD C++ ABI compatibility
+if(${dependency}_FOUND)
+  is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${dependency})
+  if(NOT IS_ABI_COMPATIBLE)
+    set(${COMPATIBLE} FALSE PARENT_SCOPE)
+    return() #problem => the binary package has been built with an incompatible C++ ABI
+  endif()
+endif()
+
+endfunction(resolve_Native_Package_Dependency)
 
 #.rst:
 #
@@ -1624,7 +1639,7 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
       is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
 			if(IS_COMPATIBLE)
 				if(NEED_REFIND)
-					# OK installing the exact version instead
+					# OK need to find the exact version instead
 					find_package(
 						${external_dependency}
 						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
@@ -1693,6 +1708,14 @@ else()#the dependency has not been already found
 			${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${VAR_SUFFIX}}
 		)
 	endif()
+endif()
+#last step : check STD C++ ABI compatibility
+if(${external_dependency}_FOUND)
+  is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${external_dependency})
+  if(NOT IS_ABI_COMPATIBLE)
+    set(${COMPATIBLE} FALSE PARENT_SCOPE)
+    return() #problem => the binary package has been built with an incompatible C++ ABI
+  endif()
 endif()
 endfunction(resolve_External_Package_Dependency)
 
@@ -1869,6 +1892,9 @@ endmacro(finding_Package)
 #     :package: the name of the package.
 #
 macro(finding_External_Package package)
+if(DO_NOT_FIND_${package})#variable used to avoid finding package (if we only want to include the find file to get compatibility info between known versions)
+  return()
+endif()
 set(${package}_FOUND FALSE CACHE INTERNAL "")
 #workspace dir must be defined for each package build
 set(EXTERNAL_PACKAGE_${package}_SEARCH_PATH

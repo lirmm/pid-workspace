@@ -35,12 +35,28 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 remove_Progress_File() #reset the build progress information (sanity action)
 begin_Progress(workspace NEED_REMOVE)
 
-if(UPDATE_ALL_PACKAGES STREQUAL ON)
+#first check that commmand parameters are not passed as environment variables
+
+if(NOT TARGET_OFFICIAL AND ENV{official})
+	set(TARGET_OFFICIAL $ENV{official} CACHE INTERNAL "")
+endif()
+
+if(NOT UPDATE_ALL_PACKAGES AND ENV{update})
+	set(UPDATE_ALL_PACKAGES $ENV{update} CACHE INTERNAL "")
+endif()
+
+if(	UPDATE_ALL_PACKAGES
+		AND (NOT UPDATE_ALL_PACKAGES STREQUAL "false")
+		AND (NOT UPDATE_ALL_PACKAGES STREQUAL "FALSE")
+		AND (NOT UPDATE_ALL_PACKAGES STREQUAL "OFF"))
 	set(UPDATE_PACKS TRUE)
 else()
 	set(UPDATE_PACKS FALSE)
 endif()
-if(TARGET_OFFICIAL STREQUAL OFF)
+
+if(TARGET_OFFICIAL STREQUAL "false"
+	OR TARGET_OFFICIAL STREQUAL "FALSE"
+	OR TARGET_OFFICIAL STREQUAL "OFF")
 	set(TARGET_REMOTE origin)
 else()	#by default using official remote (where all official references are from)
 	set(TARGET_REMOTE official)

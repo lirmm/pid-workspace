@@ -31,6 +31,11 @@ include(Wrapper_Definition NO_POLICY_SCOPE) # to be able to interpret descriptio
 
 load_Current_Platform() #loading the current platform configuration before executing the deploy script
 
+#manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
+if(NOT TARGET_EXTERNAL_VERSION AND ENV{version})
+	set(TARGET_EXTERNAL_VERSION $ENV{version} CACHE INTERNAL "")
+endif()
+
 #########################################################################################
 #######################################Build script #####################################
 #########################################################################################
@@ -45,7 +50,7 @@ endif()
 set(package_dir ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE})
 
 if(NOT EXISTS ${package_dir}/build/Build${TARGET_EXTERNAL_PACKAGE}.cmake)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
   message(FATAL_ERROR "[PID] CRITICAL ERROR : build configuration file has not been generated for ${TARGET_EXTERNAL_PACKAGE}, please rerun wrapper configruation...")
   return()
 endif()
@@ -55,12 +60,12 @@ include(${package_dir}/build/Build${TARGET_EXTERNAL_PACKAGE}.cmake)#load the con
 if(${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS) #check that the target version exist
   list(FIND ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS ${TARGET_EXTERNAL_VERSION} INDEX)
   if(INDEX EQUAL -1)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : ${TARGET_EXTERNAL_PACKAGE} external package version ${TARGET_EXTERNAL_VERSION} is not defined by wrapper of ${TARGET_EXTERNAL_PACKAGE}")
     return()
   endif()
 else()
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
   message(FATAL_ERROR "[PID] CRITICAL ERROR : wrapper of ${TARGET_EXTERNAL_PACKAGE} does not define any version !!! Build aborted ...")
   return()
 endif()

@@ -26,6 +26,31 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
+#first check that commmand parameters are not passed as environment variables
+if(NOT OFFICIAL_GIT_URL AND ENV{official})
+	set(OFFICIAL_GIT_URL $ENV{official} CACHE INTERNAL "")
+endif()
+
+if(NOT ORIGIN_GIT_URL AND ENV{origin})
+	set(ORIGIN_GIT_URL $ENV{origin} CACHE INTERNAL "")
+endif()
+
+if(NOT FORCED_RECONNECTION AND ENV{force})
+	set(FORCED_RECONNECTION $ENV{force} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_PACKAGE AND ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_FRAMEWORK AND ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_WRAPPER AND ENV{wrapper})
+	set(TARGET_WRAPPER $ENV{wrapper} CACHE INTERNAL "")
+endif()
+
 #early common check
 if(NOT OFFICIAL_GIT_URL AND NOT ORIGIN_GIT_URL)
 	message("[PID] ERROR : you must enter a git url using official=<git url> argument. This will set the address of the official remote from where you will update released modifications. You can in addition set the address of the origin remote by using origin=<git url>. This will set the address where you will push your modifications. If you do not set origin then it will take the value of official.")
@@ -33,7 +58,7 @@ if(NOT OFFICIAL_GIT_URL AND NOT ORIGIN_GIT_URL)
 endif()
 
 # managing framework and packages in different ways
-if(TARGET_WRAPPER AND (NOT TARGET_WRAPPER STREQUAL ""))# a framework is connected
+if(TARGET_WRAPPER)# a framework is connected
 	if(NOT EXISTS ${WORKSPACE_DIR}/wrappers/${TARGET_WRAPPER} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${TARGET_WRAPPER})
 		message("[PID] ERROR : Wrapper ${TARGET_WRAPPER} to connect is not contained in the workspace.")
 		return()
@@ -73,19 +98,13 @@ if(TARGET_WRAPPER AND (NOT TARGET_WRAPPER STREQUAL ""))# a framework is connecte
 		connect_PID_Wrapper(${TARGET_WRAPPER} ${URL} TRUE)
 	endif()
 
-elseif(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))# a framework is connected
+elseif(TARGET_FRAMEWORK)# a framework is connected
 	if(NOT EXISTS ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
 		message("[PID] ERROR : Framework ${TARGET_FRAMEWORK} to connect is not contained in the workspace.")
 		return()
 	endif()
-	if(OFFICIAL_GIT_URL AND NOT OFFICIAL_GIT_URL STREQUAL ""
-		AND ORIGIN_GIT_URL AND NOT ORIGIN_GIT_URL STREQUAL "") #framework has no official remote compared to package
+	if(OFFICIAL_GIT_URL AND ORIGIN_GIT_URL) #framework has no official remote compared to package
 		message("[PID] ERROR : Cannot use two different git remotes (origin and official) for Framework ${TARGET_FRAMEWORK}  .")
-		return()
-	endif()
-	if((NOT OFFICIAL_GIT_URL OR OFFICIAL_GIT_URL STREQUAL "")
-		AND (NOT ORIGIN_GIT_URL AND ORIGIN_GIT_URL STREQUAL "")) #framework has no official remote compared to package
-		message("[PID] ERROR : no address given for connecting framework ${TARGET_FRAMEWORK}  .")
 		return()
 	endif()
 	set(URL)
@@ -95,8 +114,8 @@ elseif(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))# a framework is 
 		set(URL ${ORIGIN_GIT_URL})
 	endif()
 	get_Repository_Name(RES_NAME ${URL})
-	if(NOT "${RES_NAME}" STREQUAL "${TARGET_FRAMEWORK}")
-		message("[PID] ERROR : the git url of the origin remote repository (${URL}) does not define a repository with same name than package ${TARGET_FRAMEWORK}.")
+	if(NOT RES_NAME STREQUAL TARGET_FRAMEWORK AND NOT RES_NAME STREQUAL "${TARGET_FRAMEWORK}-framework")#the adress can have the -framework extension
+		message("[PID] ERROR : the git url of the origin remote repository (${URL}) does not define a repository with same name than framework ${TARGET_FRAMEWORK}.")
 		return()
 	endif()
 	set(ALREADY_CONNECTED FALSE)
@@ -113,7 +132,7 @@ elseif(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))# a framework is 
 		connect_PID_Framework(${TARGET_FRAMEWORK} ${URL} TRUE)
 	endif()
 
-elseif(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
+elseif(TARGET_PACKAGE)
 	if(NOT EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
 		message("[PID] ERROR : Package ${TARGET_PACKAGE} to connect is not contained in the workspace.")
 		return()

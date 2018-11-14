@@ -53,6 +53,8 @@ include(CMakeParseArguments)
 #
 #   .. command:: declare_PID_Wrapper(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
 #
+#   .. command:: PID_Wrapper(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
+#
 #      Declare the current CMake project as a PID wrapper for a given external package with specific meta-information passed as parameter.
 #
 #     .. rubric:: Required parameters
@@ -101,6 +103,11 @@ include(CMakeParseArguments)
 # 		       DESCRIPTION "an example PID wrapper"
 #        )
 #
+
+macro(PID_Wrapper)
+  declare_PID_Wrapper(${ARGN})
+endmacro(PID_Wrapper)
+
 macro(declare_PID_Wrapper)
 set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
@@ -144,6 +151,8 @@ endmacro(declare_PID_Wrapper)
 #
 #   .. command:: define_PID_Wrapper_Original_Project_Info(AUTHORS ... LICENSE ... URL ...)
 #
+#   .. command::PID_Original_Project(AUTHORS ... LICENSE ... URL ...)
+#
 #      Set the meta information about original project being wrapped by current project.
 #
 #     .. rubric:: Required parameters
@@ -174,20 +183,25 @@ endmacro(declare_PID_Wrapper)
 #	           LICENSES "Boost license"
 #            URL http://www.boost.org)
 #
+
+macro(PID_Original_Project)
+  define_PID_Wrapper_Original_Project_Info(${ARGN})
+endmacro(PID_Original_Project)
+
 macro(define_PID_Wrapper_Original_Project_Info)
 	set(oneValueArgs URL)
 	set(multiValueArgs AUTHORS LICENSES)
 	cmake_parse_arguments(DEFINE_WRAPPED_PROJECT "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 	if(NOT DEFINE_WRAPPED_PROJECT_AUTHORS)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, authors references must be given using AUTHOR keyword.")
 	endif()
 	if(NOT DEFINE_WRAPPED_PROJECT_LICENSES)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a license description must be given using LICENSE keyword.")
 	endif()
 	if(NOT DEFINE_WRAPPED_PROJECT_URL)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, The URL of the original project must be given using URL keyword.")
 	endif()
 	define_Wrapped_Project("${DEFINE_WRAPPED_PROJECT_AUTHORS}" "${DEFINE_WRAPPED_PROJECT_LICENSES}"  "${DEFINE_WRAPPED_PROJECT_URL}")
@@ -204,6 +218,8 @@ endmacro(define_PID_Wrapper_Original_Project_Info)
 #  ----------------------
 #
 #   .. command:: add_PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
+#
+#   .. command:: PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
 #
 #      Add an author to the list of authors of the wrapper.
 #
@@ -231,12 +247,17 @@ endmacro(define_PID_Wrapper_Original_Project_Info)
 #
 #        add_PID_Wrapper_Author(AUTHOR Another Writter INSTITUTION LIRMM)
 #
+
+macro(PID_Wrapper_Author)
+  add_PID_Wrapper_Author(${ARGN})
+endmacro(PID_Wrapper_Author)
+
 macro(add_PID_Wrapper_Author)
 set(multiValueArgs AUTHOR INSTITUTION)
 cmake_parse_arguments(ADD_PID_WRAPPER_AUTHOR "" "" "${multiValueArgs}" ${ARGN} )
 if(NOT ADD_PID_WRAPPER_AUTHOR_AUTHOR)
   if("${ARGV0}" STREQUAL "" OR "${ARGV0}" STREQUAL "INSTITUTION")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an author name must be given using AUTHOR keyword.")
   else()#of the first argument is directly the name of the author
     add_Author("${ARGV0}" "${ADD_PID_WRAPPER_AUTHOR_INSTITUTION}")
@@ -257,6 +278,8 @@ endmacro(add_PID_Wrapper_Author)
 #  ------------------------
 #
 #   .. command:: add_PID_Wrapper_Category(...)
+#
+#   .. command:: PID_Wrapper_Category(...)
 #
 #      Declare that the current wrapper generates external packages that belong to a given category.
 #
@@ -280,9 +303,14 @@ endmacro(add_PID_Wrapper_Author)
 #
 #        add_PID_Wrapper_Category(example/packaging)
 #
+
+macro(PID_Wrapper_Category)
+  add_PID_Wrapper_Category(${ARGN})
+endmacro(PID_Wrapper_Category)
+
 macro(add_PID_Wrapper_Category)
 if(NOT ${ARGC} EQUAL 1)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the add_PID_Wrapper_Category command requires one string argument of the form <category>[/subcategory]*.")
 endif()
 add_Category("${ARGV0}")
@@ -299,6 +327,8 @@ endmacro(add_PID_Wrapper_Category)
 #  ------------------------------
 #
 #   .. command:: define_PID_Wrapper_User_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])
+#
+#   .. command:: PID_Wrapper_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])
 #
 #      Declare that the current wrapper generates external packages that belong to a given category.
 #
@@ -332,13 +362,18 @@ endmacro(add_PID_Wrapper_Category)
 #	          DEFAULT OFF
 #	          DESCRIPTION "set to ON to enable CUDA support during build")
 #
+
+macro(PID_Wrapper_Option)
+  define_PID_Wrapper_User_Option(${ARGN})
+endmacro(PID_Wrapper_Option)
+
 macro(define_PID_Wrapper_User_Option)
 set(oneValueArgs OPTION TYPE DESCRIPTION)
 set(multiValueArgs DEFAULT)
 cmake_parse_arguments(DEFINE_PID_WRAPPER_USER_OPTION "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DEFINE_PID_WRAPPER_USER_OPTION_OPTION)
   if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^TYPE|DESCRIPTION|DEFAULT$")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an option name must be given using OPTION keyword.")
   endif()
   set(option_name "${ARGV0}")
@@ -347,7 +382,7 @@ else()
 endif()
 
 if(NOT DEFINE_PID_WRAPPER_USER_OPTION_TYPE)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the type of the option must be given using TYPE keyword. Choose amon followiung value: FILEPATH (File chooser dialog), PATH (Directory chooser dialog), STRING (Arbitrary string), BOOL.")
 endif()
 set_Wrapper_Option("${option_name}" "${DEFINE_PID_WRAPPER_USER_OPTION_TYPE}" "${DEFINE_PID_WRAPPER_USER_OPTION_DEFAULT}" "${DEFINE_PID_WRAPPER_USER_OPTION_DESCRIPTION}")
@@ -364,6 +399,8 @@ endmacro(define_PID_Wrapper_User_Option)
 #  ------------------------------
 #
 #   .. command:: declare_PID_Wrapper_Publishing(PROJECT ... GIT|FRAMEWORK ... [OPTIONS])
+#
+#   .. command:: PID_Wrapper_Publishing(PROJECT ... GIT|FRAMEWORK ... [OPTIONS])
 #
 #      Declare that the current wrapper generates external packages that belong to a given category.
 #
@@ -403,6 +440,11 @@ endmacro(define_PID_Wrapper_User_Option)
 #			         PUBLISH_BINARIES
 #			         ALLOWED_PLATFORMS x86_64_linux_abi11)
 #
+
+macro(PID_Wrapper_Publishing)
+  declare_PID_Wrapper_Publishing(${ARGN})
+endmacro(PID_Wrapper_Publishing)
+
 macro(declare_PID_Wrapper_Publishing)
 set(optionArgs PUBLISH_BINARIES)
 set(oneValueArgs PROJECT FRAMEWORK GIT PAGE)
@@ -421,15 +463,15 @@ endif()
 
 if(DECLARE_PID_WRAPPER_PUBLISHING_FRAMEWORK)
 	if(NOT DECLARE_PID_WRAPPER_PUBLISHING_PROJECT)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the project page of the official package repository using PROJECT keyword.")
 	endif()
 	if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
 		return()
 	elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a framework !")
 		return()
 	endif()
@@ -437,19 +479,19 @@ if(DECLARE_PID_WRAPPER_PUBLISHING_FRAMEWORK)
 	set(PUBLISH_DOC TRUE)
 elseif(DECLARE_PID_WRAPPER_PUBLISHING_GIT)
 	if(NOT DECLARE_PID_WRAPPER_PUBLISHING_PROJECT)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the project page of the official package repository using PROJECT keyword.")
 	endif()
 	if(NOT DECLARE_PID_WRAPPER_PUBLISHING_PAGE)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the index page for the static site of the package (using PAGE keyword).")
 	endif()
 	if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a static site !")
 		return()
 	elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a new one !")
 		return()
 	endif()
@@ -462,11 +504,11 @@ endif()#otherwise there is no site contribution
 #manage publication of binaries
 if(DECLARE_PID_WRAPPER_PUBLISHING_PUBLISH_BINARIES)
 	if(NOT PUBLISH_DOC)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you cannot publish binaries of the project (using PUBLISH_BINARIES) if you do not publish package ${PROJECT_NAME} using a static site (either use FRAMEWORK or SITE keywords).")
 	endif()
 	if(NOT DO_CI)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you cannot publish binaries of the project (using PUBLISH_BINARIES) if you do not allow any CI process for package ${PROJECT_NAME} (use ALLOWED_PLATFORMS to defines which platforms will be used in CI process).")
 	endif()
 	publish_Binaries(TRUE)
@@ -483,7 +525,7 @@ endmacro(declare_PID_Wrapper_Publishing)
 #  .. _build_PID_Wrapper:
 #
 #  build_PID_Wrapper
-#  -------------------
+#  -----------------
 #
 #   .. command:: build_PID_Wrapper()
 #
@@ -507,7 +549,7 @@ endmacro(declare_PID_Wrapper_Publishing)
 #
 macro(build_PID_Wrapper)
 if(${ARGC} GREATER 0)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Wrapper command requires no arguments.")
 	return()
 endif()
@@ -529,6 +571,8 @@ endmacro(build_PID_Wrapper)
 #  -----------------------------
 #
 #   .. command:: add_PID_Wrapper_Known_Version(VERSION ... DEPLOY ... [OPTIONS])
+#
+#   .. command:: PID_Wrapper_Version(VERSION ... DEPLOY ... [OPTIONS])
 #
 #      Declare a new version of the original project wrapped into PID system.
 #
@@ -562,6 +606,11 @@ endmacro(build_PID_Wrapper)
 #        )
 #
 #
+
+macro(PID_Wrapper_Version)
+  add_PID_Wrapper_Known_Version(${ARGN})
+endmacro(PID_Wrapper_Version)
+
 macro(add_PID_Wrapper_Known_Version)
 set(optionArgs)
 set(oneValueArgs VERSION DEPLOY COMPATIBILITY SONAME POSTINSTALL)
@@ -569,7 +618,7 @@ set(multiValueArgs)
 cmake_parse_arguments(ADD_PID_WRAPPER_KNOWN_VERSION "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT ADD_PID_WRAPPER_KNOWN_VERSION_VERSION)
   if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^DEPLOY|COMPATIBILITY|SONAME|POSTINSTALL$")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the version number using the VERSION keyword.")
   endif()
   set(version ${ARGV0})
@@ -577,19 +626,19 @@ else()
   set(version ${ADD_PID_WRAPPER_KNOWN_VERSION_VERSION})
 endif()
 if(NOT ADD_PID_WRAPPER_KNOWN_VERSION_DEPLOY)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the build script to use using the DEPLOY keyword.")
 endif()
 
 #verify the version information
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
 	return()
 endif()
 list(FIND ${PROJECT_NAME}_KNOWN_VERSIONS ${version} INDEX)
 if(NOT INDEX EQUAL -1)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, version \"${version}\" is already registered !")
 	return()
 endif()
@@ -597,13 +646,13 @@ endif()
 set(script_file ${ADD_PID_WRAPPER_KNOWN_VERSION_DEPLOY})
 get_filename_component(RES_EXTENSION ${script_file} EXT)
 if(NOT RES_EXTENSION MATCHES ".*\\.cmake$")
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, type of script file ${script_file} cannot be deduced from its extension only .cmake extensions supported")
 	return()
 endif()
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version}/${script_file})
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot find script file ${script_file} in folder src/${version}/.")
 	return()
 endif()
@@ -614,12 +663,12 @@ if(ADD_PID_WRAPPER_KNOWN_VERSION_POSTINSTALL)
 	set(post_install_script ${ADD_PID_WRAPPER_KNOWN_VERSION_POSTINSTALL})
 	get_filename_component(RES_EXTENSION ${post_install_script} EXT)
 	if(NOT RES_EXTENSION MATCHES ".*\\.cmake$")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, type of script file ${script_file} cannot be deduced from its extension only .cmake extensions supported")
 		return()
 	endif()
 	if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version}/${post_install_script})
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot find post install script file ${post_install_script} in folder src/${version}/.")
 		return()
 	endif()
@@ -628,7 +677,7 @@ endif()
 if(ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY)
 	belongs_To_Known_Versions(PREVIOUS_VERSION_EXISTS ${ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY})
 	if(NOT PREVIOUS_VERSION_EXISTS)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : compatibility with previous version ${ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY} is impossible since this version is not wrapped.")
 		return()
 	endif()
@@ -648,6 +697,8 @@ endmacro(add_PID_Wrapper_Known_Version)
 #  ------------------------------------------
 #
 #   .. command:: declare_PID_Wrapper_Platform_Configuration(CONFIGURATION ... [PLATFORM ...])
+#
+#   .. command:: PID_Wrapper_Configuration(CONFIGURATION ... [PLATFORM ...])
 #
 #      Declare a platform configuration constraint for the current version of the external project being described.
 #
@@ -675,13 +726,18 @@ endmacro(add_PID_Wrapper_Known_Version)
 #
 #        declare_PID_Wrapper_Platform_Configuration(CONFIGURATION posix)
 #
+
+macro(PID_Wrapper_Configuration)
+  declare_PID_Wrapper_Platform_Configuration(${ARGN})
+endmacro(PID_Wrapper_Configuration)
+
 macro(declare_PID_Wrapper_Platform_Configuration)
 set(options)
 set(oneValueArgs PLATFORM)
 set(multiValueArgs CONFIGURATION OPTIONAL)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_PLATFORM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION AND NOT DECLARE_PID_WRAPPER_PLATFORM_OPTIONAL)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Platform requires at least to define a required configuration using CONFIGURATION keyword or an optional configuration using OPTIONAL keyword.")
 	return()
 endif()
@@ -700,7 +756,7 @@ endmacro(declare_PID_Wrapper_Platform_Configuration)
 #
 #   .. command:: declare_PID_Wrapper_External_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)
 #
-#   .. command:: declare_PID_Wrapper_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)
+#   .. command:: PID_Wrapper_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)
 #
 #     Declare a dependency between the currently described version of the external package and another external package.
 #
@@ -730,9 +786,9 @@ endmacro(declare_PID_Wrapper_Platform_Configuration)
 #
 #        declare_PID_Wrapper_External_Dependency (PACKAGE boost EXACT VERSION 1.55.0 EXACT VERSION 1.63.0 EXACT VERSION 1.64.0)
 #
-macro(declare_PID_Wrapper_Dependency)
+macro(PID_Wrapper_Dependency)
   declare_PID_Wrapper_External_Dependency(${ARGN})
-endmacro(declare_PID_Wrapper_Dependency)
+endmacro(PID_Wrapper_Dependency)
 
 macro(declare_PID_Wrapper_External_Dependency)
 set(options )
@@ -741,7 +797,7 @@ set(multiValueArgs) #known versions of the external package that can be used to 
 cmake_parse_arguments(DECLARE_PID_WRAPPER_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE)
   if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^EXACT|VERSION$")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_External_Dependency requires to define the name of the dependency by using PACKAGE keyword.")
   	return()
   endif()
@@ -753,7 +809,7 @@ else()
   set(package_name ${DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE})
 endif()
 if(package_name STREQUAL PROJECT_NAME)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, package ${package_name} cannot require itself !")
 	return()
 endif()
@@ -770,7 +826,7 @@ if(DECLARE_PID_WRAPPER_DEPENDENCY_UNPARSED_ARGUMENTS)#there are still arguments 
 				list(APPEND exact_versions ${RES_VERSION})
 			endif()
 		elseif(RES_EXACT)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to external package ${package_name}, you must use the EXACT keyword together with the VERSION keyword.")
 			return()
 		endif()
@@ -785,13 +841,13 @@ if(TO_PARSE) #there are still expression to parse
 	if(DECLARE_PID_WRAPPER_DEPENDENCY_MORE_COMPONENTS)
 		list(LENGTH DECLARE_PID_WRAPPER_DEPENDENCY_COMPONENTS SIZE)
 		if(SIZE LESS 1)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to external package ${package_name}, at least one component dependency must be defined when using the COMPONENTS keyword.")
 			return()
 		endif()
 		set(list_of_components ${DECLARE_PID_WRAPPER_DEPENDENCY_MORE_COMPONENTS})
 	else()
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] WARNING : when declaring dependency to external package ${package_name}, unknown arguments used ${DECLARE_PID_WRAPPER_DEPENDENCY_MORE_UNPARSED_ARGUMENTS}.")
 	endif()
 endif()
@@ -810,6 +866,8 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #  -----------------------------
 #
 #   .. command:: declare_PID_Wrapper_Component(COMPONENT ... [OPTIONS])
+#
+#   .. command:: PID_Wrapper_Component(COMPONENT ... [OPTIONS])
 #
 #     Declare a new component for the current version of the external package.
 #
@@ -846,13 +904,17 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #
 #        declare_PID_Wrapper_Component(COMPONENT libyaml INCLUDES include SHARED_LINKS ${posix_LINK_OPTIONS} lib/libyaml-cpp)
 #
+macro(PID_Wrapper_Component)
+  declare_PID_Wrapper_Component(${ARGN})
+endmacro(PID_Wrapper_Component)
+
 macro(declare_PID_Wrapper_Component)
 set(oneValueArgs COMPONENT C_STANDARD CXX_STANDARD SONAME)
 set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPENDS) #known versions of the external package that can be used to build/run it
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_COMPONENT)
   if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^CXX_STANDARD|C_STANDARD|SONAME|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|RUNTIME_RESOURCES$")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component requires to define the name of the component by using COMPONENT keyword.")
   	return()
   endif()
@@ -912,6 +974,8 @@ endmacro(declare_PID_Wrapper_Component)
 #
 #   .. command:: declare_PID_Wrapper_Component_Dependency([COMPONENT] ... [OPTIONS])
 #
+#   .. command:: PID_Wrapper_Component_Dependency([COMPONENT] ... [OPTIONS])
+#
 #     Declare a dependency for a component defined in the current version of the current external package.
 #
 #     .. rubric:: Required parameters
@@ -946,6 +1010,10 @@ endmacro(declare_PID_Wrapper_Component)
 #
 #        declare_PID_Wrapper_Component_Dependency(COMPONENT libyaml EXPORT EXTERNAL boost-headers PACKAGE boost)
 #
+macro(PID_Wrapper_Component_Dependency)
+  declare_PID_Wrapper_Component_Dependency(${ARGN})
+endmacro(PID_Wrapper_Component_Dependency)
+
 macro(declare_PID_Wrapper_Component_Dependency)
 set(options EXPORT DEPENDS)
 set(oneValueArgs COMPONENT EXTERNAL PACKAGE C_STANDARD CXX_STANDARD)
@@ -953,7 +1021,7 @@ set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIM
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT)
   if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPENDS|EXTERNAL|PACKAGE|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|C_STANDARD|CXX_STANDARD|RUNTIME_RESOURCES$")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component_Dependency requires to define the name of the declared component using the COMPONENT keyword or by giving the name as first argument.")
     return()
   endif()
@@ -967,7 +1035,7 @@ else()
 endif()
 
 if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT AND DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPENDS)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
   message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling declare_PID_Wrapper_Component_Dependency, EXPORT and DEPENDS keywords cannot be used in same time.")
   return()
 endif()
@@ -981,7 +1049,7 @@ endif()
 if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE) #this is a dependency to another external package
 	list(FIND ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCIES ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} INDEX)
 	if(INDEX EQUAL -1)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling declare_PID_Wrapper_Component_Dependency, the component ${component_name} depends on external package ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} that is not defined as a dependency of the current project.")
 		return()
 	endif()
@@ -1027,7 +1095,7 @@ else()#this is a dependency to another component defined in the same external pa
 
       list(GET DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS 0 target_component)
     else()
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
   		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling declare_PID_Wrapper_Component_Dependency, need to define the component used by ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT}, by using the keyword EXTERNAL.")
   		return()
     endif()
@@ -1051,7 +1119,7 @@ set(oneValueArgs C_STANDARD CXX_STANDARD FLAGS)
 set(multiValueArgs INCLUDES DEFINITIONS)
 cmake_parse_arguments(TRANSLATE_INTO_OPTION "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT TRANSLATE_INTO_OPTION_FLAGS)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling translate_Into_Options, need to define the variable where to return flags by using the FLAGS keyword.")
 	return()
 endif()
@@ -1136,7 +1204,7 @@ set(prefix ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION})
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_ROOT)
 	if(NOT GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_External_Dependency_Info, need to define the external package by using the keyword PACKAGE.")
 		return()
 	endif()
@@ -1235,23 +1303,23 @@ function(get_User_Option_Info)
 set(oneValueArgs OPTION RESULT)
 cmake_parse_arguments(GET_USER_OPTION_INFO "" "${oneValueArgs}" "" ${ARGN} )
 if(NOT GET_USER_OPTION_INFO_OPTION)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_User_Option_Info, need to define the name of the option by using the keyword OPTION.")
 	return()
 endif()
 if(NOT GET_USER_OPTION_INFO_RESULT)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_User_Option_Info, need to define the variable that will receive the value of the option by using the keyword RESULT.")
 	return()
 endif()
 if(NOT ${TARGET_EXTERNAL_PACKAGE}_USER_OPTIONS)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_User_Option_Info, no user option is defined in the wrapper ${TARGET_EXTERNAL_PACKAGE}.")
 	return()
 endif()
 list(FIND ${TARGET_EXTERNAL_PACKAGE}_USER_OPTIONS ${GET_USER_OPTION_INFO_OPTION} INDEX)
 if(INDEX EQUAL -1)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_User_Option_Info, no user option with name ${GET_USER_OPTION_INFO_OPTION} is defined in the wrapper ${TARGET_EXTERNAL_PACKAGE}.")
 	return()
 endif()
@@ -1319,7 +1387,7 @@ function(get_Environment_Info)
   if(GET_ENVIRONMENT_INFO_JOBS)
     include(ProcessorCount)
     ProcessorCount(NUMBER_OF_JOBS)
-    math(EXPR NUMBER_OF_JOBS ${NUMBER_OF_JOBS}+1)
+    math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")
     if(${NUMBER_OF_JOBS} GREATER 1)
     	set(${GET_ENVIRONMENT_INFO_JOBS} "-j${NUMBER_OF_JOBS}" PARENT_SCOPE)
     else()
@@ -1386,7 +1454,7 @@ function(get_Environment_Info)
         list(APPEND list_of_flags ${CMAKE_C_FLAGS_DEBUG})
       endif()
     endif()
-    fill_String_From_List("${list_of_flags}" cflags_string)
+    fill_String_From_List(list_of_flags cflags_string)
     set(${GET_ENVIRONMENT_INFO_CFLAGS} "${cflags_string}" PARENT_SCOPE)
   endif() #end for c flags
 
@@ -1399,22 +1467,22 @@ function(get_Environment_Info)
     if(GET_ENVIRONMENT_INFO_MODULE)
       set(ldflags_list ${CMAKE_MODULE_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_MODULE_LINKER_FLAGS${suffix}})
-      fill_String_From_List("${ldflags_list}" ldflags_string)
+      fill_String_From_List(ldflags_list ldflags_string)
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     elseif(GET_ENVIRONMENT_INFO_SHARED)
       set(ldflags_list ${CMAKE_SHARED_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_SHARED_LINKER_FLAGS${suffix}})
-      fill_String_From_List("${ldflags_list}" ldflags_string)
+      fill_String_From_List(ldflags_list ldflags_string)
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     elseif(GET_ENVIRONMENT_INFO_STATIC)
       set(ldflags_list ${CMAKE_STATIC_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_STATIC_LINKER_FLAGS${suffix}})
-      fill_String_From_List("${ldflags_list}" ldflags_string)
+      fill_String_From_List(ldflags_list ldflags_string)
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     elseif(GET_ENVIRONMENT_INFO_EXE)
       set(ldflags_list ${CMAKE_EXE_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_EXE_LINKER_FLAGS${suffix}})
-      fill_String_From_List("${ldflags_list}" ldflags_string)
+      fill_String_From_List(ldflags_list ldflags_string)
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     else()
       message(FATAL_ERROR "[PID] CRITICAL ERROR : When trying to get LDFLAGS in use you must specify the kind of component you try to build (MODULE, SHARED, STATIC or EXE).")

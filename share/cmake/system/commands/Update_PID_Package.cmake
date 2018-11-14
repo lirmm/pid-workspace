@@ -42,7 +42,15 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 remove_Progress_File() #reset the build progress information (sanity action)
 begin_Progress(workspace NEED_REMOVE)
 
-if(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
+#first check that commmand parameters are not passed as environment variables
+
+if(NOT TARGET_PACKAGE AND ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+
+#perform actions of the commands
+
+if(TARGET_PACKAGE)
 	if(TARGET_PACKAGE STREQUAL "all")
 		update_PID_All_Packages()
 	else()

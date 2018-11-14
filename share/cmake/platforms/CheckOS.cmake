@@ -24,7 +24,7 @@ set(CURRENT_OS CACHE INTERNAL "")
 #test of the os is based on the compiler used  (APPLE and UNIX variables) AND on system variables affected by crosscompilation (CMAKE_SYSTEM_NAME)
 #So it adapts to the current development environment in use
 
-if(UNIX AND APPLE AND ${CMAKE_SYSTEM_NAME} STREQUAL Darwin) #darwin = kernel name for macosx systems
+if(UNIX AND APPLE AND CMAKE_SYSTEM_NAME STREQUAL Darwin) #darwin = kernel name for macosx systems
 	set(CURRENT_OS macosx  CACHE INTERNAL "")
 	set(CURRENT_PACKAGE_STRING "Darwin" CACHE INTERNAL "")
 	if(NOT PID_CROSSCOMPILATION)
@@ -34,10 +34,10 @@ if(UNIX AND APPLE AND ${CMAKE_SYSTEM_NAME} STREQUAL Darwin) #darwin = kernel nam
 	endif()
 
 elseif(UNIX)
-	if(${CMAKE_SYSTEM_NAME} STREQUAL Xenomai)# linux kernel patched with xenomai
+	if(CMAKE_SYSTEM_NAME STREQUAL Xenomai)# linux kernel patched with xenomai
 		set(CURRENT_PACKAGE_STRING "Xenomai")
 		set(CURRENT_OS "xenomai" CACHE INTERNAL "")
-	elseif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)# linux kernel = the reference !!
+	elseif(CMAKE_SYSTEM_NAME STREQUAL Linux)# linux kernel = the reference !!
 		set(CURRENT_PACKAGE_STRING "Linux")
 		set(CURRENT_OS "linux" CACHE INTERNAL "")
 	endif()
@@ -80,5 +80,6 @@ elseif(WIN32)
 	else()
 		set(CURRENT_DISTRIBUTION "" CACHE INTERNAL "")
 	endif()
+	set(CURRENT_DISTRIBUTION_VERSION "" CACHE INTERNAL "")
 endif()
 #other OS are not known (add new elseif statement to check for other OS and set adequate variables)

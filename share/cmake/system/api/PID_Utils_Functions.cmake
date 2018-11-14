@@ -199,7 +199,7 @@ if(NOT NAME_ARGS STREQUAL configuration_constraint)#it matches !! => there are a
   endif()
   string(REPLACE ":" ";" ARGS_LIST "${THE_ARGS}")
   foreach(arg IN LISTS ARGS_LIST)
-    string(REGEX REPLACE "^([^=]+)=(.+)$" "\\1;\"\\2\"" ARG_VAL "${arg}")#argument format :  arg_name=first,second,third OR arg_name=val
+    string(REGEX REPLACE "^([^=]+)=(.+)$" "\\1;\\2" ARG_VAL "${arg}")#argument format :  arg_name=first,second,third OR arg_name=val
     if(ARG_VAL STREQUAL arg)#no match => ill formed argument
       return()
     endif()
@@ -344,13 +344,13 @@ endfunction(extract_All_Words_From_Path)
 #
 #    Create a string with space separators from a list.
 #
-#     :input_list: the list of words.
+#     :input_list: the variable containing the list of words.
 #
 #     :RES_STRING: the output variable containg the resulting string
 #
 function(fill_String_From_List input_list RES_STRING)
 set(res "")
-foreach(element IN LISTS input_list)
+foreach(element IN LISTS ${input_list})
 	set(res "${res} ${element}")
 endforeach()
 string(STRIP "${res}" res_finished)
@@ -620,7 +620,7 @@ endfunction(install_Runtime_Symlink)
 #     :additional_install_folder: folder where to put symlinks (if a system folder need to use sudo when building).
 #
 function(install_Additional_Binary_Symlink component additional_install_folder)
-  get_Component_Binary_Elements(PREFIX EXTENSION ${PROJECT_NAME} ${component} ${CURRENT_PLATFORM})
+  get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM_OS} "${${PROJECT_NAME}_${component}_TYPE}")
   set(component_install_name ${PREFIX}${component}${INSTALL_NAME_SUFFIX}${EXTENSION})
   set(component_install_path ${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_INSTALL_LIB_PATH}/${component_install_name})
   install(CODE "
@@ -1143,8 +1143,8 @@ else()
 endif()
 extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
 extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
-fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_String_From_List("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
 	set(${RES_STRING} "${AUTHOR_STRING} (${INSTITUTION_STRING})" PARENT_SCOPE)
 else()
@@ -1174,7 +1174,7 @@ endfunction(generate_Full_Author_String)
 #
 function(generate_Contact_String author mail RES_STRING)
 extract_All_Words("${author}" "_" AUTHOR_ALL_WORDS)
-fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
 if(mail AND NOT mail STREQUAL "")
 	set(${RES_STRING} "${AUTHOR_STRING} (${mail})" PARENT_SCOPE)
 else()
@@ -1203,8 +1203,8 @@ endfunction()
 function(get_Formatted_Framework_Contact_String framework RES_STRING)
 extract_All_Words("${${framework}_FRAMEWORK_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
 extract_All_Words("${${framework}_FRAMEWORK_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
-fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_String_From_List("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
 	if(${framework}_FRAMEWORK_CONTACT_MAIL)
 		set(${RES_STRING} "${AUTHOR_STRING} (${${framework}_FRAMEWORK_CONTACT_MAIL}) - ${INSTITUTION_STRING}" PARENT_SCOPE)
@@ -1240,7 +1240,7 @@ endfunction(get_Formatted_Framework_Contact_String)
 #
 function(generate_Formatted_String input RES_STRING)
 extract_All_Words("${input}" "_" INPUT_ALL_WORDS)
-fill_String_From_List("${INPUT_ALL_WORDS}" INPUT_STRING)
+fill_String_From_List(INPUT_ALL_WORDS INPUT_STRING)
 set(${RES_STRING} "${INPUT_STRING}" PARENT_SCOPE)
 endfunction(generate_Formatted_String)
 
@@ -1270,12 +1270,12 @@ list(GET author_institution 0 AUTHOR_NAME)
 list(GET author_institution 1 INSTITUTION_NAME)
 extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
 extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
-fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_String_From_List("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
 elseif(${SIZE} EQUAL 1)
 list(GET author_institution 0 AUTHOR_NAME)
 extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
-fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
+fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
 set(INSTITUTION_STRING "")
 endif()
 if(NOT INSTITUTION_STRING STREQUAL "")
@@ -1306,8 +1306,8 @@ endfunction(get_Formatted_Author_String)
 function(get_Formatted_Package_Contact_String package RES_STRING)
 extract_All_Words("${${package}_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
 extract_All_Words("${${package}_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
-fill_String_From_List("${AUTHOR_ALL_WORDS}" AUTHOR_STRING)
-fill_String_From_List("${INSTITUTION_ALL_WORDS}" INSTITUTION_STRING)
+fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
 if(NOT INSTITUTION_STRING STREQUAL "")
 	if(${package}_CONTACT_MAIL)
 		set(${RES_STRING} "${AUTHOR_STRING} (${${package}_CONTACT_MAIL}) - ${INSTITUTION_STRING}" PARENT_SCOPE)
@@ -1427,6 +1427,12 @@ foreach(source_file IN LISTS list_of_files)
 				if(INDEX EQUAL -1)#assembler is not in use already
 					enable_language(ASM)#use assembler
 					list(APPEND USED_LANGUAGES ASM)
+				endif()
+    elseif(EXTENSION STREQUAL ".cu")#we have an assembler file
+				list(FIND USED_LANGUAGES CUDA INDEX)
+				if(INDEX EQUAL -1)#assembler is not in use already
+					enable_language(CUDA)#use assembler
+					list(APPEND USED_LANGUAGES CUDA)
 				endif()
 		endif()
 endforeach()
@@ -1778,10 +1784,10 @@ endfunction(is_Shared_Lib_With_Path)
 # .. ifmode:: internal
 #
 #  .. |create_Shared_Lib_Extension| replace:: ``create_Shared_Lib_Extension``
-#  .. create_Shared_Lib_Extension:
+#  .. _create_Shared_Lib_Extension:
 #
-#  _create_Shared_Lib_Extension
-#  ----------------------------
+#  create_Shared_Lib_Extension
+#  ---------------------------
 #
 #   .. command:: create_Shared_Lib_Extension(RES_EXT platform soname)
 #
@@ -1836,7 +1842,7 @@ endfunction(create_Shared_Lib_Extension)
 function(shared_Library_Needs_Soname NEEDS_SONAME library_path platform)
   set(${NEEDS_SONAME} FALSE PARENT_SCOPE)
 	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
-	if(RES_OS STREQUAL macosx OR RES_OS STREQUAL windows)
+	if(RES_OS STREQUAL "macosx" OR RES_OS STREQUAL "windows")
     return()
   endif()
   if(library_path MATCHES "^-l.*$")#OS dependency using standard library path
@@ -1880,6 +1886,49 @@ function(convert_Library_Path_To_Default_System_Library_Link RESULTING_LINK libr
 
   set(${RESULTING_LINK} "-l${LIB_NAME}" PARENT_SCOPE)
 endfunction(convert_Library_Path_To_Default_System_Library_Link)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |extract_ELF_Symbol_Version| replace:: ``extract_ELF_Symbol_Version``
+#  .. _extract_ELF_Symbol_Version:
+#
+#  extract_ELF_Symbol_Version
+#  --------------------------
+#
+#   .. command:: extract_ELF_Symbol_Version(RES_VERSION symbol symbol_version)
+#
+#    Get the version from a (supposed to be) versionned symbol.
+#
+#     :symbol: the symbol that is supposed to have a version number. For instance symbol GLIBCXX can be used for libstdc++.so (GNU standard C++ library).
+#
+#     :symbol_version: the input symbol, for instance "GLIBCXX_2.4".
+#
+#     :RES_VERSION: the output variable that contains the version of the target symbol always with major.minor.patch structure. For istance with previous arguùents it returns "2.4.0".
+#
+function(extract_ELF_Symbol_Version RES_VERSION symbol symbol_version)
+	set(parsed_version)
+	string(REGEX REPLACE "^${symbol}([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" parsed_version ${symbol_version})
+	if(parsed_version STREQUAL symbol_version)#NO match
+		string(REGEX REPLACE "^${symbol}([0-9]+)\\.([0-9]+)$" "\\1;\\2" parsed_version ${symbol_version})
+	endif()
+	list(LENGTH parsed_version SIZE)
+	if(SIZE EQUAL 2)
+		list(GET parsed_version 0 MAJOR)
+		list(GET parsed_version 1 MINOR)
+		set(PATCH "0")
+	elseif(SIZE EQUAL 3)
+		list(GET parsed_version 0 MAJOR)
+		list(GET parsed_version 1 MINOR)
+		list(GET parsed_version 2 PATCH)
+	else()
+		set(MAJOR "0")
+		set(MINOR "0")
+		set(PATCH "0")
+	endif()
+	set(${RES_VERSION} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
+endfunction(extract_ELF_Symbol_Version)
 
 #.rst:
 #
@@ -1956,56 +2005,52 @@ endfunction(is_Library_Type)
 #
 # .. ifmode:: internal
 #
-#  .. |get_Component_Binary_Elements| replace:: ``get_Component_Binary_Elements``
-#  .. _get_Component_Binary_Elements:
+#  .. |get_Platform_Related_Binary_Prefix_Suffix| replace:: ``get_Platform_Related_Binary_Prefix_Suffix``
+#  .. _get_Platform_Related_Binary_Prefix_Suffix:
 #
-#  get_Component_Binary_Elements
-#  -----------------------------
+#  get_Platform_Related_Binary_Prefix_Suffix
+#  -----------------------------------------
 #
-#   .. command:: get_Component_Binary_Elements(PREFIX EXTENSION package component platform)
+#   .. command:: get_Platform_Related_Binary_Prefix_Suffix(PREFIX SUFFIX platform type_of_binary)
 #
-#    Get elements of the name for a given component binary that depends on the platform and type of component.
+#    Get prefix and suffix of the name for a given component binary that depends on the platform and type of component.
 #
-#     :package: the package containing the component.
+#     :platform_os: the target operating system of the target platform
 #
-#     :component: the name of the component.
-#
-#     :platform: the target platform for the component binary.
+#     :type_of_binary: the type of the component.
 #
 #     :PREFIX: the output variable that contains the prefix of the binary.
 #
-#     :EXTENSION: the output variable that contains the extension of the binary.
+#     :SUFFIX: the output variable that contains the extension of the binary.
 #
-function(get_Component_Binary_Elements PREFIX EXTENSION package component platform)
-  set(${EXTENSION} PARENT_SCOPE)
+function(get_Platform_Related_Binary_Prefix_Suffix PREFIX SUFFIX platform_os type_of_binary)
   set(${PREFIX} PARENT_SCOPE)
-  extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
-  if(${package}_${component}_TYPE STREQUAL "STATIC")
-    if(RES_OS STREQUAL "windows")
-      set(${EXTENSION} .lib PARENT_SCOPE)
+  set(${SUFFIX} PARENT_SCOPE)
+  if(type_of_binary STREQUAL "STATIC")
+    if(platform_os STREQUAL "windows")
+      set(${SUFFIX} .lib PARENT_SCOPE)
     else()
-      set(${EXTENSION} .a PARENT_SCOPE)
+      set(${SUFFIX} .a PARENT_SCOPE)
       set(${PREFIX} lib PARENT_SCOPE)
     endif()
-  elseif(${package}_${component}_TYPE STREQUAL "SHARED"
-  OR ${package}_${component}_TYPE STREQUAL "MODULE")
-    if(RES_OS STREQUAL "windows")
-      set(${EXTENSION} .dll PARENT_SCOPE)
-    elseif(RES_OS STREQUAL "macosx")
-      set(${EXTENSION} .dylib PARENT_SCOPE)
+  elseif(type_of_binary STREQUAL "SHARED" OR type_of_binary STREQUAL "MODULE")
+    if(platform_os STREQUAL "windows")
+      set(${SUFFIX} .dll PARENT_SCOPE)
+    elseif(platform_os STREQUAL "macosx")
+      set(${SUFFIX} .dylib PARENT_SCOPE)
       set(${PREFIX} lib PARENT_SCOPE)
     else()
-      set(${EXTENSION} .so PARENT_SCOPE)
+      set(${SUFFIX} .so PARENT_SCOPE)
       set(${PREFIX} lib PARENT_SCOPE)
     endif()
-  elseif(${package}_${component}_TYPE STREQUAL "APPLICATION")
-    if(RES_OS STREQUAL "windows")
-      set(${EXTENSION} .exe PARENT_SCOPE)
+  elseif(type_of_binary STREQUAL "APPLICATION" OR type_of_binary STREQUAL "EXAMPLE")
+    if(platform_os STREQUAL "windows")
+      set(${SUFFIX} .exe PARENT_SCOPE)
     else()
-      set(${EXTENSION} PARENT_SCOPE)
+      set(${SUFFIX} PARENT_SCOPE)
     endif()
   endif()
-endfunction(get_Component_Binary_Elements)
+endfunction(get_Platform_Related_Binary_Prefix_Suffix)
 
 #.rst:
 #
@@ -2144,7 +2189,7 @@ foreach(link IN LISTS ext_links)
 		list(GET RES 1 relative_path)
 		is_External_Package_Defined(${ext_package_name} PATHTO)
 		if(PATHTO STREQUAL NOTFOUND)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
 		else()
 			set(fullpath ${PATHTO}${relative_path})
@@ -2157,7 +2202,7 @@ foreach(link IN LISTS ext_links)
 			list(GET RES_WITH_PREFIX 1 ext_package_name)
 			is_External_Package_Defined(${ext_package_name} PATHTO)
 			if(PATHTO STREQUAL NOTFOUND)
-        finish_Progress(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!!")
 				return()
 			endif()
@@ -2205,7 +2250,7 @@ foreach(include_dir IN LISTS ext_inc_dirs)
 		list(GET RES 0 ext_package_name)
 		is_External_Package_Defined(${ext_package_name} PATHTO)
 		if(PATHTO STREQUAL NOTFOUND)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 		endif()
 		liST(LENGTH RES SIZE)
@@ -2223,7 +2268,7 @@ foreach(include_dir IN LISTS ext_inc_dirs)
 			list(GET RES_WITH_PREFIX 0 ext_package_name)
 			is_External_Package_Defined(${ext_package_name} PATHTO)
 			if(PATHTO STREQUAL NOTFOUND)
-        finish_Progress(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 			endif()
 			set(fullpath ${PATHTO}${relative_path})
@@ -2271,7 +2316,7 @@ foreach(resource IN LISTS ext_resources)
 		list(GET RES 1 relative_path)
 		is_External_Package_Defined(${ext_package_name} PATHTO)
 		if(PATHTO STREQUAL NOTFOUND)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for resource ${resource}!! Please set the path to this external package.")
 		else()
 			set(fullpath ${PATHTO}${relative_path})
@@ -3586,7 +3631,7 @@ endfunction(remove_Duplicates_From_List)
 function(define_Parallel_Jobs_Flag PARALLEL_JOBS_FLAG)
   include(ProcessorCount)
   ProcessorCount(NUMBER_OF_JOBS)
-  math(EXPR NUMBER_OF_JOBS ${NUMBER_OF_JOBS}+1)#according to
+  math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")#according to
   if(NUMBER_OF_JOBS GREATER 1)#TODO manage variants between generators
   	set(${PARALLEL_JOBS_FLAG} "-j${NUMBER_OF_JOBS}" PARENT_SCOPE)
   else()

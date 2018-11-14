@@ -24,14 +24,24 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
-if(TARGET_PACKAGE AND (NOT TARGET_PACKAGE STREQUAL ""))
+#manage arguments if they have been passed as environment variables
+if(NOT TARGET_PACKAGE AND ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_FRAMEWORK AND ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+endif()
+
+#perform the actions of the command
+if(TARGET_PACKAGE)
 	if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE}
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
 		register_PID_Package(${TARGET_PACKAGE})
 	else()
 		message("[PID] ERROR : the package ${TARGET_PACKAGE} cannot be found in the workspace (a folder with same name should be in ${WORKSPACE_DIR}/packages folder).")
 	endif()
-elseif(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))
+elseif(TARGET_FRAMEWORK)
 	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK}
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
 		register_PID_Framework(${TARGET_FRAMEWORK})

@@ -34,6 +34,16 @@ SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_PREFIXES)
 SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_SUFFIXES)
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 
+#first check that commmand parameters are not passed as environment variables
+
+if(NOT TARGET_VERSION AND ENV{version})
+	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "")
+endif()
+if(NOT TARGET_PACKAGE AND ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+
+
 if(TARGET_PACKAGE AND TARGET_VERSION)
 	if(	NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}
 		OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}
@@ -43,14 +53,14 @@ if(TARGET_PACKAGE AND TARGET_VERSION)
 		message("[PID] ERROR : binary package version ${TARGET_VERSION} is not installed on the system.")
 		return()
 	endif()
-	set(PACKAGE_NAME ${package})
-	set(PROJECT_NAME ${package})
-	set(PACKAGE_VERSION ${version})
+	set(PACKAGE_NAME ${TARGET_PACKAGE})
+	set(PROJECT_NAME ${TARGET_PACKAGE})
+	set(PACKAGE_VERSION ${TARGET_VERSION})
 	set(PLATFORM_NAME ${CURRENT_PLATFORM})
 	set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)
 	include(${WORKSPACE_DIR}/share/cmake/system/commands/Bind_PID_Package.cmake)
 	if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
-		message("[PID] ERROR : cannot configure runtime dependencies for installed version ${version} of package ${package}.")
+		message("[PID] ERROR : cannot configure runtime dependencies for installed version ${TARGET_VERSION} of package ${TARGET_PACKAGE}.")
 	endif()
 else()
 	message("[PID] ERROR : you must specify (1) a package using argument name=<name of package>, (2) a package version using argument version=<version number>.")

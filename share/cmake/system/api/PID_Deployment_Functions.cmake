@@ -222,18 +222,18 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
 		endif()
 		install_Required_External_Packages("${TO_INSTALL_EXTERNAL_DEPS}" INSTALLED_EXTERNAL_PACKAGES NOT_INSTALLED_PACKAGES)
 		if(NOT_INSTALLED_PACKAGES)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external packages: ${NOT_INSTALLED_PACKAGES}. This is an internal bug maybe due to bad references on these packages.")
 			return()
 		endif()
 		foreach(installed IN LISTS INSTALLED_EXTERNAL_PACKAGES)#recursive call for newly installed packages
 			resolve_External_Package_Dependency(IS_COMPATIBLE ${package} ${installed} ${mode})
 			if(NOT ${installed}_FOUND)#this time the package must be found since installed => internak BUG in PID
-        finish_Progress(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${installed}. This is an internal bug maybe due to a bad find file.")
 				return()
       elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
-        finish_Progress(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${installed} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${installed}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${installed}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${installed}_VERSION${VAR_SUFFIX}}.")
         return()
       else()
@@ -244,7 +244,7 @@ if(TO_INSTALL_EXTERNAL_DEPS) #there are dependencies to install
       endif()
 		endforeach()
 	else()
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR :  there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${VAR_SUFFIX}}. You may use the required packages automatic download option.")
 		return()
 	endif()
@@ -258,10 +258,10 @@ set(TO_INSTALL_DEPS)
 if(${package}_DEPENDENCIES${VAR_SUFFIX})#the package has native dependencies
 	foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
 		# 1) resolving direct dependencies
-		resolve_Package_Dependency(IS_COMPATIBLE ${package} ${dep_pack} ${mode})
+		resolve_Native_Package_Dependency(IS_COMPATIBLE ${package} ${dep_pack} ${mode})
 		if(NOT ${dep_pack}_FOUND)# package is not found => need to install it
       list(APPEND TO_INSTALL_DEPS ${dep_pack})
-    elseif(NOT IS_COMPATIBLE)
+    elseif(NOT IS_COMPATIBLE)#package binary found in install tree but is not compatible !
       list(APPEND list_of_conflicting_dependencies ${dep_pack})
 		else()# resolution took place and is OK
       add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
@@ -281,13 +281,13 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
 		endif()
 		install_Required_Native_Packages("${TO_INSTALL_DEPS}" INSTALLED_PACKAGES NOT_INSTALLED)
 		foreach(installed IN LISTS INSTALLED_PACKAGES)#recursive call for newly installed packages
-			resolve_Package_Dependency(IS_COMPATIBLE ${package} ${installed} ${mode})
+			resolve_Native_Package_Dependency(IS_COMPATIBLE ${package} ${installed} ${mode})
 			if(NOT ${installed}_FOUND)
-        finish_Progress(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed package ${installed}")
         return()
       elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been reinstalled
-        finish_Progress(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${installed} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${installed}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${installed}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${installed}_VERSION${VAR_SUFFIX}}.")
         return()
       else()
@@ -298,7 +298,7 @@ if(TO_INSTALL_DEPS) #there are dependencies to install
       endif()
 		endforeach()
 	else()
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${VAR_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option")
 		return()
 	endif()
@@ -320,7 +320,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
     endif()
   endforeach()
   if(NOT first_time)# we are currently trying to reinstall the same package !!
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : Impossible to solve conflicting dependencies for package ${package}. Try to solve these problems by setting adequate versions to dependencies.")
     return()
   else()#OK first time package is resolved during the build process
@@ -336,7 +336,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
       find_package(${package} ${${package}_VERSION_STRING} REQUIRED)#find again the package
       resolve_Package_Dependencies(${package} ${mode} FALSE)#resolving again the dependencies
     else()# cannot do much more about that !!
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has conflicting dependencies. See below what are the dependencies !")
       return()
     endif()
@@ -464,7 +464,7 @@ function(resolve_Required_Native_Package_Version RESOLUTION_OK MINIMUM_VERSION I
 foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	get_Version_String_Numbers("${version}" compare_major compare_minor compared_patch)
   if(NOT DEFINED compare_major)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} corrupted version string ${version_string} for dependency to package ${package}.")
   endif()
 	if(NOT MAJOR_RESOLVED)#first time
@@ -688,7 +688,7 @@ if(USE_SOURCES) #package sources reside in the workspace
 	endif()
 else()#using references
 	include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
-	if(${refer_path} STREQUAL NOTFOUND)
+	if(refer_path STREQUAL NOTFOUND)
 		message("[PID] ERROR : the reference file for package ${package} cannot be found in the workspace ! Package update aborted.")
 		return()
 	endif()
@@ -700,7 +700,7 @@ else()#using references
 	endif()
 
 	set(PACKAGE_BINARY_DEPLOYED FALSE)
-	if(NOT ${refer_path} STREQUAL NOTFOUND)
+	if(NOT refer_path STREQUAL NOTFOUND)
 		if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number
 			deploy_Binary_Native_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "")
 		else()# deploying the most up to date version
@@ -1088,8 +1088,15 @@ endfunction(deploy_Source_Native_Package_From_Branch)
 #      :DEPLOYED_VERSION: the output variable that contains the deployed version, empty if deployment failed.
 #
 function(try_In_Development_Version DEPLOYED_VERSION package version_to_check is_exact run_tests)
-  list_Version_Subdirectories(already_installed ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
   set(${DEPLOYED_VERSION} PARENT_SCOPE)
+  list_Version_Subdirectories(already_installed ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
+  if(already_installed)
+    list(FIND already_installed ${version_to_check} INDEX)
+    if(NOT INDEX EQUAL -1)#the version to install from development branch is already in the install tree
+      list(REMOVE_ITEM already_installed ${version_to_check})
+      file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version_to_check})#removing this version to check from install tree so we can detect if it has been generated by the build
+    endif()
+  endif()
   build_And_Install_Package(ALL_IS_OK ${package} "integration" "${run_tests}")
   if(ALL_IS_OK)
     list_Version_Subdirectories(installed_after_build ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
@@ -1106,7 +1113,7 @@ function(try_In_Development_Version DEPLOYED_VERSION package version_to_check is
       if(IS_COMPATIBLE) #the installed version (from integration branch) is compatible with the constraint
         set(${DEPLOYED_VERSION} ${installed_after_build} PARENT_SCOPE)
       else()#not a compatible version, simply clean the install folder
-        file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${installed_after_build})
+        file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${installed_after_build})#removing this version to check from install tree so we can detect if it has been generated by the build
       endif()
     endif()#if no new version installed simply exit
   endif()
@@ -1143,7 +1150,6 @@ function(deploy_Source_Native_Package_Version DEPLOYED package min_version is_ex
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of min_version : if exact taking min_version, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
-message("after save_Repository_Context package=${package} CURRENT_COMMIT=${CURRENT_COMMIT} SAVED_CONTENT=${SAVED_CONTENT}")
 update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
 if(NOT UPDATE_OK)
 	message("[PID] WARNING : source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand.")
@@ -1193,7 +1199,7 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 			message("[PID]  ERROR : automatic build and install of package ${package} (version ${RES_VERSION}) FAILED !!")
 			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" FALSE)
 		endif()
-	else()
+	else()#in other situations no need to register the package as managed as it is already
 		if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
 			set(${DEPLOYED} FALSE PARENT_SCOPE)
 		else() #SUCCESS because last correct version already built
@@ -1215,7 +1221,6 @@ else()#selected version excluded from current process
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 endif()
-message("before restore_Repository_Context package=${package} CURRENT_COMMIT=${CURRENT_COMMIT} SAVED_CONTENT=${SAVED_CONTENT}")
 restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Native_Package_Version)
 
@@ -1452,13 +1457,21 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
     select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
     if(RES_PLATFORM)
   		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
-  		if(INSTALLED)
-  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
-  		else()
-  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE) #situation is problematic but we can still overcome it by using sources ... if possible
-  		endif()
-    else()
-      set(INSTALLED FALSE)
+      if(NOT INSTALLED)
+        add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE) #situation is problematic but we can still overcome it by using sources ... if possible
+        set(${DEPLOYED} FALSE PARENT_SCOPE)
+      	return()
+      endif()
+      #checking and resolving package dependencies and constraints
+      configure_Binary_Package(RESULT_DEBUG ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Debug)
+      configure_Binary_Package(RESULT_RELEASE  ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Release)
+
+      if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
+        add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
+        set(${DEPLOYED} FALSE PARENT_SCOPE)
+      	return()
+      endif()
+      add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
     endif()
   else()
 		if(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be installed during current process
@@ -1538,17 +1551,25 @@ set(INSTALLED FALSE)
 list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version not found in versions to exclude
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
-	if(RES STREQUAL "UNKNOWN") # this package version has not been build since beginning of the current process
+	if(RES STREQUAL "UNKNOWN") # this package version has not been managed since beginning of the current process
 		select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" RES_PLATFORM)
     if(RES_PLATFORM)
   		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
-  		if(INSTALLED)
-  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
-  		else()
-  			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
-  		endif()
-    else()
-      set(INSTALLED FALSE)
+      if(NOT INSTALLED)
+        add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE) #situation is problematic but we can still overcome it by using sources ... if possible
+        set(${DEPLOYED} FALSE PARENT_SCOPE)
+      	return()
+      endif()
+      #checking and resolving package dependencies and constraints
+      configure_Binary_Package(RESULT_DEBUG ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Debug)
+      configure_Binary_Package(RESULT_RELEASE  ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Release)
+
+      if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
+        add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
+        set(${DEPLOYED} FALSE PARENT_SCOPE)
+      	return()
+      endif()
+      add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
     endif()
 	else()
 		if(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be installed during current process
@@ -1667,9 +1688,7 @@ endif()
 ######## installing the package ##########
 # 1) creating the package root folder
 if(NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package})
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
-			WORKING_DIRECTORY ${WORKSPACE_DIR}/install/${platform}
-			ERROR_QUIET OUTPUT_QUIET)
+  file(MAKE_DIRECTORY ${WORKSPACE_DIR}/install/${platform}/${package})
 endif()
 
 # 2) extracting binary archive in a cross platform way
@@ -1677,58 +1696,67 @@ if(ADDITIONNAL_DEBUG_INFO)
 	message("[PID] INFO : decompressing the binary package ${package}, please wait ...")
 endif()
 set(error_res "")
+set(error_res_debug "")
 if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
 	if(MISSING_DEBUG_VERSION) #no debug archive to manage
 		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_VARIABLE error_res)
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              			ERROR_VARIABLE error_res)
 	else()
 		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-	          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_VARIABLE error_res)
-		endif()
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              			ERROR_VARIABLE error_res)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+                    ERROR_VARIABLE error_res_debug)
+	endif()
 else() #QUIET mode
 	if(MISSING_DEBUG_VERSION) #no debug archive to manage
 		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_VARIABLE error_res OUTPUT_QUIET)
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              			ERROR_VARIABLE error_res OUTPUT_QUIET)
 	else()
 		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-	          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_VARIABLE error_res OUTPUT_QUIET)
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              			ERROR_VARIABLE error_res OUTPUT_QUIET)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+              			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              			ERROR_VARIABLE error_res_debug OUTPUT_QUIET)
 	endif()
 endif()
 
 if (error_res)
 	#try again
 	if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
-		if(MISSING_DEBUG_VERSION)  #no debug archive to manage
 			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-				ERROR_VARIABLE error_res)
-		else()
-			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-		          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-				ERROR_VARIABLE error_res)
-		endif()
+              				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              				ERROR_VARIABLE error_res)
 	else() #QUIET mode
-		if(MISSING_DEBUG_VERSION) #no debug archive to manage
 			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-				ERROR_VARIABLE error_res OUTPUT_QUIET)
-		else()
-			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
-		          	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
-				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-				ERROR_VARIABLE error_res OUTPUT_QUIET)
-		endif()
+              				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              				ERROR_VARIABLE error_res OUTPUT_QUIET)
 	endif()
 	if (error_res)
 		set(${INSTALLED} FALSE PARENT_SCOPE)
-		message("[PID] WARNING : cannot extract binary archives ${FILE_BINARY} ${FILE_BINARY_DEBUG} when installing.")
+		message("[PID] WARNING : cannot extract binary archive ${FILE_BINARY} when installing.")
+		return()
+	endif()
+endif()
+
+if (error_res_debug)
+	#try again
+	if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
+			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+              				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              				ERROR_VARIABLE error_res_debug)
+	else() #QUIET mode
+			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG}
+              				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
+              				ERROR_VARIABLE error_res_debug OUTPUT_QUIET)
+	endif()
+	if (error_res_debug)
+		set(${INSTALLED} FALSE PARENT_SCOPE)
+		message("[PID] WARNING : cannot extract binary archive ${FILE_BINARY_DEBUG} when installing.")
 		return()
 	endif()
 endif()
@@ -1742,13 +1770,15 @@ set(error_res "")
 if(ADDITIONNAL_DEBUG_INFO) #VERBOSE mode
 	if(MISSING_DEBUG_VERSION)  #no debug archive to manage
 		execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-				)
+		    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+		)
 	else()
 		execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-	        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
-				)
+		    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
+	  )
+    execute_process(
+		    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+		)
 	endif()
 else()#QUIET mode
 	if(MISSING_DEBUG_VERSION)  #no debug archive to manage
@@ -1759,7 +1789,9 @@ else()#QUIET mode
 	else()
 		execute_process(
 			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-	    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+	    ERROR_QUIET OUTPUT_QUIET)
+    execute_process(
+			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
 	 		ERROR_QUIET OUTPUT_QUIET)
 	endif()
 endif()
@@ -1774,9 +1806,11 @@ if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/
 					)
 		else()
 			execute_process(
-			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-		        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
-					)
+  			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+			)
+      execute_process(
+  			COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+			)
 		endif()
 	else()#QUIET mode
 		if(MISSING_DEBUG_VERSION)  #no debug archive to manage
@@ -1787,7 +1821,9 @@ if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/
 		else()
 			execute_process(
 				COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${WORKSPACE_DIR}/install/${platform}/${package}
-		    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
+		    ERROR_QUIET OUTPUT_QUIET)
+      execute_process(
+				COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/install/${platform}/${package}
 		 		ERROR_QUIET OUTPUT_QUIET)
 		endif()
 	endif()
@@ -1802,16 +1838,6 @@ if (NOT EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/
 	endif()
 endif()
 
-############ post install configuration of the workspace ############
-set(PACKAGE_NAME ${package})
-set(PACKAGE_VERSION ${version})
-set(PLATFORM_NAME ${platform})
-include(${WORKSPACE_DIR}/share/cmake/system/commands/Bind_PID_Package.cmake NO_POLICY_SCOPE)
-if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
-	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] WARNING : cannot configure runtime dependencies for installed version ${version} of package ${package}.")
-	return()
-endif()
 set(${INSTALLED} TRUE PARENT_SCOPE)
 message("[PID] INFO : binary package ${package} (version ${version}) has been installed into the workspace.")
 endfunction(download_And_Install_Binary_Native_Package)
@@ -2467,17 +2493,24 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 		endif()
 
 		download_And_Install_Binary_External_Package(INSTALLED ${package} "${RES_VERSION}" "${TARGET_PLATFORM}")
-		if(INSTALLED)
-			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
-			#checking and resolving external package dependencies and constraints
-			configure_External_Package(${package} ${RES_VERSION} ${TARGET_PLATFORM} Debug)
-			configure_External_Package(${package} ${RES_VERSION} ${TARGET_PLATFORM} Release)
-		else()
-			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE) #for external binary packages the fail is automatic as they cannot be buit from sources
-			message("[PID] ERROR : cannot install version ${RES_VERSION} of external package ${package}.")
-			set(${DEPLOYED} FALSE PARENT_SCOPE)
-			return()
+		if(NOT INSTALLED)
+      add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" TRUE)
+      message("[PID] ERROR : cannot install version ${RES_VERSION} of external package ${package}.")
+      set(${DEPLOYED} FALSE PARENT_SCOPE)
+      return()
 		endif()
+    #checking and resolving external package dependencies and constraints
+    configure_Binary_Package(RESULT_DEBUG ${package} TRUE ${RES_VERSION} ${TARGET_PLATFORM} Debug)
+    configure_Binary_Package(RESULT_RELEASE  ${package} TRUE ${RES_VERSION} ${TARGET_PLATFORM} Release)
+
+    if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
+      add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
+      message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
+      set(${DEPLOYED} FALSE PARENT_SCOPE)
+    endif()
+
+    add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
+
 	else() #no need to do the job again if already successfull
 		if(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be installed during current process
 			set(INSTALLED FALSE)
@@ -2551,20 +2584,25 @@ else()
 endif()
 if(RES STREQUAL "UNKNOWN")
 	download_And_Install_Binary_External_Package(INSTALLED ${package} ${version} ${TARGET_PLATFORM})
-	if(INSTALLED)
-		add_Managed_Package_In_Current_Process(${package} ${version} "SUCCESS" TRUE)
-	else()
-		add_Managed_Package_In_Current_Process(${package} ${version} "FAIL" TRUE) #for external binary packages the fail is automatic as they cannot be buit from sources
-		message("[PID] ERROR : cannot install version ${version} of external package ${package}.")
-		set(${DEPLOYED} FALSE PARENT_SCOPE)
-		return()
+	if(NOT INSTALLED)
+    add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
+    message("[PID] ERROR : cannot install version ${version} of external package ${package}.")
+    set(${DEPLOYED} FALSE PARENT_SCOPE)
+    return()
 	endif()
 
-	#5) checking for platform constraints
-	configure_External_Package(${package} ${version} ${TARGET_PLATFORM} Debug)
-	configure_External_Package(${package} ${version} ${TARGET_PLATFORM} Release)
+  #5) checking for platform constraints
+  configure_Binary_Package(RESULT_DEBUG ${package} TRUE ${version} ${TARGET_PLATFORM} Debug)
+  configure_Binary_Package(RESULT_RELEASE ${package} TRUE ${version} ${TARGET_PLATFORM} Release)
 
-elseif(NOT RES STREQUAL "SUCCESS") # this package version has FAILED TO be install during current process
+  if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
+    add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
+    message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
+    set(${DEPLOYED} FALSE PARENT_SCOPE)
+  endif()
+  add_Managed_Package_In_Current_Process(${package} ${version} "SUCCESS" TRUE)
+
+elseif(NOT RES STREQUAL "SUCCESS") # this package version has already FAILED TO be install during current process
 	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
@@ -2642,29 +2680,23 @@ endif()
 
 ######## installing the external package ##########
 # 1) creating the external package root folder and the version folder
-if(NOT EXISTS ${WORKSPACE_DIR}/external/${platform}/${package} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform}/${package})
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${package}
-			WORKING_DIRECTORY ${WORKSPACE_DIR}/external/${platform}
-			ERROR_QUIET OUTPUT_QUIET)
-endif()
-if(NOT EXISTS ${WORKSPACE_DIR}/external/${platform}/${package}/${version} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${version}
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/external/${platform}/${package}
-		ERROR_QUIET OUTPUT_QUIET)
+if(NOT EXISTS ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
+  file(MAKE_DIRECTORY ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
 endif()
 
 # 2) extracting binary archive in cross platform way
 set(error_res "")
+set(error_res_debug "")
 if(ADDITIONNAL_DEBUG_INFO)
 	message("[PID] INFO : decompressing the external binary package ${package}, please wait ...")
 endif()
 if(EXISTS download_url_dbg)
 	execute_process(
           	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/debug
-		ERROR_VARIABLE error_res OUTPUT_QUIET)
+        		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/debug
+        		ERROR_VARIABLE error_res_debug OUTPUT_QUIET)
 
-	if (error_res)
+	if (error_res_debug)
 		set(${INSTALLED} FALSE PARENT_SCOPE)
 		message("[PID] ERROR : cannot extract binary archives ${FILE_BINARY_DEBUG}.")
 		return()
@@ -2687,18 +2719,19 @@ if(ADDITIONNAL_DEBUG_INFO)
 	message("[PID] INFO : installing the external binary package ${package} (version ${version}) into the workspace, please wait ...")
 endif()
 set(error_res "")
+set(error_res_debug "")
+
 if(EXISTS download_url_dbg)
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}
-          	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}
-		ERROR_VARIABLE error_res OUTPUT_QUIET)
-else()
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/
-		ERROR_VARIABLE error_res OUTPUT_QUIET)
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}
+    ERROR_VARIABLE error_res_debug OUTPUT_QUIET)
 endif()
 
-if (error_res)
+execute_process(
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/
+	ERROR_VARIABLE error_res OUTPUT_QUIET)
+
+if (error_res OR error_res_debug)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : cannot extract folder from ${FOLDER_BINARY} ${FOLDER_BINARY_DEBUG} to get binary version ${version} of package ${package}.")
 	return()
@@ -2707,13 +2740,12 @@ endif()
 if(EXISTS download_url_dbg)
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/debug
-		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
-		ERROR_QUIET OUTPUT_QUIET)
-else()
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
 		ERROR_QUIET OUTPUT_QUIET)
 endif()
+
+execute_process(
+	COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
+	ERROR_QUIET OUTPUT_QUIET)
 
 set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_External_Package)
@@ -2722,15 +2754,15 @@ endfunction(download_And_Install_Binary_External_Package)
 #
 # .. ifmode:: internal
 #
-#  .. |configure_External_Package| replace:: ``configure_External_Package``
-#  .. _configure_External_Package:
+#  .. |configure_Binary_Package| replace:: ``configure_Binary_Package``
+#  .. _configure_Binary_Package:
 #
-#  configure_External_Package
+#  configure_Binary_Package
 #  --------------------------
 #
-#   .. command:: configure_External_Package(package version platform mode)
+#   .. command:: configure_Binary_Package(package version platform mode)
 #
-#    Configure the external package after it has been installed in workspace. It can lead to the install of OS related packages depending of its system configuration.
+#    Configure the external package after it has been installed in workspace. It can lead to the install of OS packages depending of its system configuration.
 #
 #      :package: The name of the external package.
 #
@@ -2740,22 +2772,38 @@ endfunction(download_And_Install_Binary_External_Package)
 #
 #      :mode: the build mode of the content installed.
 #
-function(configure_External_Package package version platform mode)
+#      :RESULT: the output variable that is TRUE if the binary package has been configured, FALSE if its configuration failed for any reason.
+#
+function(configure_Binary_Package RESULT package external version platform mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(${package}_CURR_DIR ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share)
-include(${${package}_CURR_DIR}/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
-#using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
-if(res STREQUAL NOTFOUND)
-	# no usage file => nothing to do
-	return()
+set(${RESULT} TRUE PARENT_SCOPE)
+
+if(external)
+  include(${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+  #using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
+  if(res STREQUAL NOTFOUND)
+  	return()# no use file in external package ("raw external package") => nothing to do
+  endif()
+else()
+  include(${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+  if(res STREQUAL NOTFOUND)
+    set(${RESULT} FALSE PARENT_SCOPE)
+    return()# no use file in native package => problem !
+  endif()
 endif()
-unset(${package}_CURR_DIR)
+
+# 0) checking global ABI compatibility
+is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${package})
+if(NOT IS_ABI_COMPATIBLE)
+  set(${RESULT} FALSE PARENT_SCOPE)
+  return() #problem => the binary package has been built with an incompatible C++ ABI
+endif()
 
 # 1) checking platforms constraints
 set(CONFIGS_TO_CHECK)
 if(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
 	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}})#there are configuration constraints in PID v2 style
-elseif(${package}_PLATFORM${VAR_SUFFIX} STREQUAL ${platform}) # this case may be true if the package binary has been release in old PID v1 style
+elseif(${package}_PLATFORM${VAR_SUFFIX} STREQUAL platform) # this case may be true if the package binary has been release in old PID v1 style
 	set(OLD_PLATFORM_CONFIG ${${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}})
 	if(OLD_PLATFORM_CONFIG) #there are required configurations in old style
 		set(CONFIGS_TO_CHECK ${OLD_PLATFORM_CONFIG})#there are configuration constraints in PID v1 style
@@ -2770,27 +2818,52 @@ foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this pla
     endif()
 		include(${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
 		if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
-      finish_Progress(GLOBAL_PROGRESS_VAR)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically. Please contact the administrator of package ${package}.")
+      set(${RESULT} FALSE PARENT_SCOPE)
+      message("[PID] ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically.")
 			return()
 		else()
 			message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
 		endif()
 	else()
-    finish_Progress(GLOBAL_PROGRESS_VAR)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : when checking platform configuration constraint ${config}, information for ${config} does not exists that means this constraint is unknown within PID. Please contact the administrator of package ${package}.")
-		return()
+    set(${RESULT} FALSE PARENT_SCOPE)
+    message("[PID] ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically.")
+    return()
 	endif()
 endforeach()
 
-#TODO UNCOMMENT AND TEST DEPLOYMENT
-# Manage external package dependencies => need to deploy other external packages
-#if(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #the external package has external dependencies
-#	foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #recursive call for deployment of dependencies
-#		deploy_Binary_External_Package_Version(DEPLOYED ${dep_pack} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION})
-#	endforeach()
-#endif()
-endfunction(configure_External_Package)
+# Manage external package dependencies => need to check direct external dependencies
+foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
+  if(${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
+    get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT ${dep_pack})
+  	if(REQUIRED_VERSION)#if a version of the same package is already required then check their compatibility
+      get_Compatible_Version(IS_COMPATIBLE TRUE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}")
+      if(NOT IS_COMPATIBLE)
+        set(${RESULT} FALSE PARENT_SCOPE)
+        message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${version}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")
+        return()
+      endif()
+    endif()
+  endif()
+endforeach()
+
+if(NOT external)
+  # Manage native package dependencies => need to check direct native dependencies
+	foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
+    if(${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
+      get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT ${dep_pack})
+    	if(REQUIRED_VERSION)#if a version of the same native package is already required then check their compatibility
+        get_Compatible_Version(IS_COMPATIBLE FALSE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_DEPENDENCIY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}")
+        if(NOT IS_COMPATIBLE)
+          set(${RESULT} FALSE PARENT_SCOPE)
+          message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${version}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")
+          return()
+        endif()
+      endif()
+    endif()
+  endforeach()
+endif()
+
+endfunction(configure_Binary_Package)
 
 #############################################################################################
 ############################### functions for frameworks ####################################

@@ -49,7 +49,7 @@ set(PID_PLATFORM_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 #
 macro(manage_Current_Platform build_folder)
 	if(build_folder STREQUAL build)
-		if(CURRENT_PLATFORM AND NOT CURRENT_PLATFORM STREQUAL "")# a current platform is already defined
+		if(CURRENT_PLATFORM)# a current platform is already defined
 			#if any of the following variable changed, the cache of the CMake project needs to be regenerated from scratch
 			set(TEMP_PLATFORM ${CURRENT_PLATFORM})
 			set(TEMP_C_COMPILER ${CMAKE_C_COMPILER})
@@ -58,6 +58,14 @@ macro(manage_Current_Platform build_folder)
 			set(TEMP_CMAKE_RANLIB ${CMAKE_RANLIB})
 			set(TEMP_CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID})
 			set(TEMP_CMAKE_CXX_COMPILER_VERSION ${CMAKE_CXX_COMPILER_VERSION})
+      set(TEMP_CXX_STANDARD_LIBRARIES ${CXX_STANDARD_LIBRARIES})
+      foreach(lib IN LISTS TEMP_CXX_STANDARD_LIBRARIES)
+        set(TEMP_CXX_STD_LIB_${lib}_ABI_SOVERSION ${CXX_STD_LIB_${lib}_ABI_SOVERSION})
+      endforeach()
+      set(TEMP_CXX_STD_SYMBOLS ${CXX_STD_SYMBOLS})
+      foreach(symbol IN LISTS TEMP_CXX_STD_SYMBOLS)
+        set(TEMP_CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION})
+      endforeach()
 		endif()
 	endif()
   load_Current_Platform()
@@ -71,6 +79,42 @@ macro(manage_Current_Platform build_folder)
 					OR (NOT TEMP_CMAKE_CXX_COMPILER_ID STREQUAL CMAKE_CXX_COMPILER_ID)
 					OR (NOT TEMP_CMAKE_CXX_COMPILER_VERSION STREQUAL CMAKE_CXX_COMPILER_VERSION)
 				)
+        set(DO_CLEAN TRUE)
+      else()
+        set(DO_CLEAN FALSE)
+        foreach(lib IN LISTS TEMP_CXX_STANDARD_LIBRARIES)
+          if(NOT TEMP_CXX_STD_LIB_${lib}_ABI_SOVERSION VERSION_EQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION)
+            set(DO_CLEAN TRUE)
+            break()
+          endif()
+        endforeach()
+        if(NOT DO_CLEAN)#must check that previous and current lists of standard libraries perfectly match
+          foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
+            if(NOT TEMP_CXX_STD_LIB_${lib}_ABI_SOVERSION VERSION_EQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION)
+              set(DO_CLEAN TRUE)
+              break()
+            endif()
+          endforeach()
+        endif()
+        if(NOT DO_CLEAN)
+          foreach(symbol IN LISTS TEMP_CXX_STD_SYMBOLS)
+            if(NOT TEMP_CXX_STD_SYMBOL_${symbol}_VERSION VERSION_EQUAL CXX_STD_SYMBOL_${symbol}_VERSION)
+              set(DO_CLEAN TRUE)
+              break()
+            endif()
+          endforeach()
+        endif()
+        if(NOT DO_CLEAN)#must check that previous and current lists of ABI symbols perfectly match
+          foreach(symbol IN LISTS CXX_STD_SYMBOLS)
+            if(NOT CXX_STD_SYMBOL_${symbol}_VERSION VERSION_EQUAL TEMP_CXX_STD_SYMBOL_${symbol}_VERSION)
+              set(DO_CLEAN TRUE)
+              break()
+            endif()
+          endforeach()
+        endif()
+
+      endif()
+      if(DO_CLEAN)
 				message("[PID] INFO : cleaning the build folder after major environment change")
 				hard_Clean_Package_Debug(${PROJECT_NAME})
 				hard_Clean_Package_Release(${PROJECT_NAME})
@@ -137,3 +181,67 @@ function(reset_Package_Platforms_Variables)
 	endif()
 	set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} 0 CACHE INTERNAL "")
 endfunction(reset_Package_Platforms_Variables)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Compatible_With_Current_ABI| replace:: ``is_Compatible_With_Current_ABI``
+#  .. _is_Compatible_With_Current_ABI:
+#
+#  is_Compatible_With_Current_ABI
+#  ------------------------------
+#
+#   .. command:: is_Compatible_With_Current_ABI(COMPATIBLE package)
+#
+#    Chech whether the given package binary in use use a compatible ABI for standard library.
+#
+#     :package: the name of binary package to check.
+#
+#     :COMPATIBLE: the output variable that is TRUE if package's stdlib usage is compatible with current platform ABI, FALSE otherwise.
+#
+function(is_Compatible_With_Current_ABI COMPATIBLE package)
+
+  if((${package}_BUILT_WITH_CXX_ABI AND NOT ${package}_BUILT_WITH_CXX_ABI STREQUAL CURRENT_CXX_ABI)
+    OR (${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI AND NOT ${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI STREQUAL CMAKE_INTERNAL_PLATFORM_ABI))
+    set(${COMPATIBLE} FALSE PARENT_SCOPE)
+    #remark: by default we are not restructive if teh binary file does not contain sur information
+    return()
+  else()
+    #test for standard libraries versions
+    foreach(lib IN LISTS ${package}_BUILT_WITH_CXX_STD_LIBRARIES)
+      if(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION
+          AND CXX_STD_LIB_${lib}_ABI_SOVERSION
+          AND (NOT ${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION STREQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION))
+          #soversion number must be defined for the given lib in order to be compared (if no sonumber => no restriction)
+          set(${COMPATIBLE} FALSE PARENT_SCOPE)
+          return()
+      endif()
+    endforeach()
+    foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
+      if(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION
+          AND CXX_STD_LIB_${lib}_ABI_SOVERSION
+          AND (NOT ${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION STREQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION))
+          #soversion number must be defined for the given lib in order to be compared (if no sonumber => no restriction)
+          set(${COMPATIBLE} FALSE PARENT_SCOPE)
+          return()
+      endif()
+    endforeach()
+
+    #test symbols versions
+    foreach(symbol IN LISTS ${package}_BUILT_WITH_CXX_STD_SYMBOLS)#for each symbol used by the binary
+      if(NOT CXX_STD_SYMBOL_${symbol}_VERSION)#corresponding symbol do not exist in current environment => it is an uncompatible binary
+        set(${COMPATIBLE} FALSE PARENT_SCOPE)
+        return()
+      endif()
+
+      #the binary has been built and linked against a newer version of standard libraries => NOT compatible
+      if(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION VERSION_GREATER CXX_STD_SYMBOL_${symbol}_VERSION)
+        set(${COMPATIBLE} FALSE PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  endif()
+  set(${COMPATIBLE} TRUE PARENT_SCOPE)
+endfunction(is_Compatible_With_Current_ABI)

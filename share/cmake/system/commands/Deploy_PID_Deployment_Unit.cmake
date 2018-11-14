@@ -36,8 +36,45 @@ SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_PREFIXES)
 SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_SUFFIXES)
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 
+#first check that commmand parameters are not passed as environment variables
+if(NOT TARGET_PACKAGE AND ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_FRAMEWORK AND ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+endif()
+
+if(NOT TARGET_VERSION AND ENV{version})
+	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "")
+endif()
+
+if(NOT VERBOSE_MODE AND ENV{verbose})
+	set(VERBOSE_MODE $ENV{verbose} CACHE INTERNAL "")
+endif()
+
+if(NOT FORCE_REDEPLOY AND ENV{force})
+	set(FORCE_REDEPLOY $ENV{force} CACHE INTERNAL "")
+endif()
+
+if(NOT NO_SOURCE AND ENV{no_source})
+	set(NO_SOURCE $ENV{no_source} CACHE INTERNAL "")
+endif()
+
+if(NOT FORCE_REDEPLOY AND ENV{force})
+	set(FORCE_REDEPLOY $ENV{force} CACHE INTERNAL "")
+endif()
+
+if(NOT USE_BRANCH AND ENV{branch})
+	set(USE_BRANCH $ENV{branch} CACHE INTERNAL "")
+endif()
+
+if(NOT RUN_TESTS AND ENV{test})
+	set(RUN_TESTS $ENV{test} CACHE INTERNAL "")
+endif()
+
 #including the adequate reference file
-if(TARGET_FRAMEWORK AND (NOT TARGET_FRAMEWORK STREQUAL ""))# a framework is deployed
+if(TARGET_FRAMEWORK)# a framework is deployed
 	# checks of the arguments
 	include(ReferFramework${TARGET_FRAMEWORK} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(REQUIRED_STATUS STREQUAL NOTFOUND)

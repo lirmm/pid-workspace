@@ -30,9 +30,22 @@ if(ALL_FILES)
 endif()
 endfunction(clean_Build_Tree)
 
+
+
 ### script used to configure the environment to another one
 
-if(NOT TARGET_ENVIRONMENT STREQUAL "") # checking if the target environment has to change
+#first check that commmand parameters are not passed as environment variables
+
+if(NOT TARGET_ENVIRONMENT AND ENV{environment})
+	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "")
+endif()
+if(NOT TARGET_VERSION AND ENV{version})
+	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "")
+endif()
+
+#second: do the job
+
+if(TARGET_ENVIRONMENT) # checking if the target environment has to change
 	if(TARGET_ENVIRONMENT STREQUAL "python")
 			# reconfigure the pid workspace
 			if(TARGET_VERSION)

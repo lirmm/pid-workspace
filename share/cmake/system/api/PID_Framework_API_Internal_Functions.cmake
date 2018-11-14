@@ -556,9 +556,9 @@ foreach(cat IN LISTS ${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 		foreach(name IN LISTS LIST_OF_NAMES)
 			extract_All_Words(${name} "_" NEW_NAMES)# replace underscores with spaces
 
-			fill_String_From_List("${NEW_NAMES}" RES_STRING)
+			fill_String_From_List(NEW_NAMES RES_STRING)
 			set(FINAL_NAME "${FINAL_NAME} ${RES_STRING}")
-			math(EXPR SIZE '${SIZE}-1')
+			math(EXPR SIZE "${SIZE}-1")
 			if(SIZE GREATER 0) #there is more than on categrization level remaining
 				set(FINAL_NAME "${FINAL_NAME}/ ")
 			endif()
@@ -567,7 +567,7 @@ foreach(cat IN LISTS ${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
 		file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
 	else()
 		extract_All_Words(${cat} "_" NEW_NAMES)# replace underscores with spaces
-		fill_String_From_List("${NEW_NAMES}" RES_STRING)
+		fill_String_From_List(NEW_NAMES RES_STRING)
 		set(FINAL_NAME "${RES_STRING}")
 		file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
 	endif()
@@ -719,11 +719,11 @@ else()
 
 	set(EXTERNAL_PACKAGE_NAME ${package})
 
-	fill_String_From_List("${${package}_DESCRIPTION}" DESCRIPTION_STRING)
+	fill_String_From_List(${package}_DESCRIPTION DESCRIPTION_STRING)
 	set(EXTERNAL_PACKAGE_DESCRIPTION ${DESCRIPTION_STRING})
 
-	fill_String_From_List("${${package}_AUTHORS}" EXTERNAL_PACKAGE_AUTHORS)
-	fill_String_From_List("${${package}_LICENSES}" EXTERNAL_PACKAGE_LICENSE)
+	fill_String_From_List(${package}_AUTHORS EXTERNAL_PACKAGE_AUTHORS)
+	fill_String_From_List(${package}_LICENSES EXTERNAL_PACKAGE_LICENSE)
 
 	# managing categories
 	if(NOT ${package}_CATEGORIES)
@@ -737,7 +737,7 @@ else()
 			set(idx 0)
 			foreach(cat IN LISTS ${package}_CATEGORIES)
 				set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES}${cat}")
-				math(EXPR idx '${idx}+1')
+				math(EXPR idx "${idx}+1")
 				if(NOT idx EQUAL SIZE)
 					set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES},")
 				endif()

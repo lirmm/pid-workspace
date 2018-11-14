@@ -86,7 +86,7 @@ macro(manage_Parrallel_Build_Option)
 if(ENABLE_PARALLEL_BUILD)
 	include(ProcessorCount)
 	ProcessorCount(NUMBER_OF_JOBS)
-	math(EXPR NUMBER_OF_JOBS ${NUMBER_OF_JOBS}+1)
+	math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")
 	if(${NUMBER_OF_JOBS} GREATER 1)
 		set(PARALLEL_JOBS_FLAG "-j${NUMBER_OF_JOBS}" CACHE INTERNAL "")
 	endif()
@@ -749,63 +749,39 @@ endfunction(is_Python_Module)
 function (configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links c_standard cxx_standard runtime_resources)
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
-	if(	NOT dep_defs STREQUAL ""
-		OR NOT exported_defs  STREQUAL "")
-		set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}}
-			${exported_defs} ${dep_defs}
-			CACHE INTERNAL "")
+	if(dep_defs OR exported_defs)
+    append_Unique_In_Cache(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} "${exported_defs}")
+    append_Unique_In_Cache(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} "${dep_defs}")
 	endif()
-	if(NOT include_dirs STREQUAL "")
-		set(	${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX}}
-			${include_dirs}
-			CACHE INTERNAL "")
+	if(include_dirs)
+    append_Unique_In_Cache(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} "${include_dirs}")
 	endif()
-	if(NOT exported_options STREQUAL "")
-		set(	${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX}}
-			${exported_options}
-			CACHE INTERNAL "")
+	if(exported_options)
+    append_Unique_In_Cache(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} "${exported_options}")
 	endif()
 
 	# links are exported since we will need to resolve symbols in the third party components that will the use the component
-	if(NOT shared_links STREQUAL "")
-		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
-			${shared_links}
-			CACHE INTERNAL "")
+	if(shared_links)
+    append_Unique_In_Cache(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${shared_links}")
 	endif()
-	if(NOT static_links STREQUAL "")
-		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
-			${static_links}
-			CACHE INTERNAL "")
+	if(static_links)
+    append_Unique_In_Cache(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${static_links}")
 	endif()
 
 else() # otherwise no need to register them since no more useful
-	if(NOT exported_defs STREQUAL "")
+	if(exported_defs)
 		#just add the exported defs of the component not those of the dependency
-		set(	${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX}}
-			${exported_defs}
-			CACHE INTERNAL "")
+    append_Unique_In_Cache(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} "${exported_defs}")
 	endif()
-	if(NOT static_links STREQUAL "") #static links are exported if component is not a shared or module lib (otherwise they simply disappear)
+	if(static_links) #static links are exported if component is not a shared or module lib (otherwise they simply disappear)
 		if (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER"
 			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
 		)
-		set(	${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX}}
-			${static_links}
-			CACHE INTERNAL "")
+      append_Unique_In_Cache(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${static_links}")
 		endif()
 	endif()
-	if(NOT shared_links STREQUAL "")#private links are shared "non exported" libraries -> these links are used to process executables linking
-		set(	${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}
-			${${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX}}
-			${shared_links}
-			CACHE INTERNAL "")
+	if(shared_links)#private links are shared "non exported" libraries -> these links are used to process executables linking
+    append_Unique_In_Cache(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} "${shared_links}")
 	endif()
 endif()
 
@@ -819,11 +795,8 @@ if(IS_LESS)
 	set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} ${cxx_standard} CACHE INTERNAL "")
 endif()
 
-if(NOT runtime_resources STREQUAL "")#runtime resources are exported in any case
-	set(	${PROJECT_NAME}_${component}_RUNTIME_RESOURCES
-		${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES}
-		${runtime_resources}
-		CACHE INTERNAL "")
+if(runtime_resources)#runtime resources are exported in any case
+  append_Unique_In_Cache(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES "${runtime_resources}")
 endif()
 endfunction(configure_Install_Variables)
 
@@ -1344,7 +1317,7 @@ endfunction(is_Built_Component)
 #     :RESULT: the output variable that is TRUE if component will be built by current build process, FALSE otherwise.
 #
 function(will_be_Built RESULT component)
-if((${PROJECT_NAME}_${component}_TYPE STREQUAL "SCRIPT") #python scripts are never built
+if((${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON") #python scripts are never built
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
 	set(${RESULT} FALSE PARENT_SCOPE)
@@ -1646,6 +1619,27 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 	else()
 		file(APPEND ${file} "set(${package}_DEVELOPMENT_STATE development CACHE INTERNAL \"\")\n")
 	endif()
+
+  #writing info about compiler used to build the binary
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_C_COMPILER ${CMAKE_C_COMPILER} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_COMPILER_IS_GNUCXX \"${CMAKE_COMPILER_IS_GNUCXX}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_COMPILER_ID \"${CMAKE_CXX_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_COMPILER_VERSION \"${CMAKE_CXX_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_C_COMPILER_ID \"${CMAKE_C_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_C_COMPILER_VERSION \"${CMAKE_C_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
+
+	file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_ABI ${CURRENT_CXX_ABI} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI ${CMAKE_INTERNAL_PLATFORM_ABI} CACHE INTERNAL \"\")\n")
+  list(REMOVE_DUPLICATES CXX_STANDARD_LIBRARIES)
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_LIBRARIES ${CXX_STANDARD_LIBRARIES} CACHE INTERNAL \"\")\n")
+  foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
+    file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION ${CXX_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\")\n")
+  endforeach()
+  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_SYMBOLS ${CXX_STD_SYMBOLS} CACHE INTERNAL \"\")\n")
+  foreach(symbol IN LISTS CXX_STD_SYMBOLS)
+    file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
+  endforeach()
 
 
 	file(APPEND ${file} "######### declaration of package components ########\n")

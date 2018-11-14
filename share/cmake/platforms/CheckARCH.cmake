@@ -21,10 +21,10 @@ set(CURRENT_ARCH CACHE INTERNAL "")
 
 #test of processor architecture is based on the compiler used
 #So it adapts to the current development environment in use
-if(${CMAKE_SIZEOF_VOID_P} EQUAL 2)
+if(CMAKE_SIZEOF_VOID_P EQUAL 2)
 	set(CURRENT_ARCH 16 CACHE INTERNAL "")
-elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
 	set(CURRENT_ARCH 32 CACHE INTERNAL "")
-elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(CURRENT_ARCH 64 CACHE INTERNAL "")
 endif()

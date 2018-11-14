@@ -45,6 +45,8 @@ include(CMakeParseArguments)
 #
 #   .. command:: declare_PID_Framework(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... ADDRESS ... SITE ... [OPTIONS])
 #
+#   .. command:: PID_Framework(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... ADDRESS ... SITE ... [OPTIONS])
+#
 #      Declare the current CMake project as a PID framework.
 #
 #     .. rubric:: Required parameters
@@ -93,6 +95,10 @@ include(CMakeParseArguments)
 #       		BANNER       img/cooperationmechanisms.jpg
 #       	)
 #
+macro(PID_Framework)
+  declare_PID_Framework(${ARGN})
+endmacro(PID_Framework)
+
 macro(declare_PID_Framework)
 set(oneValueArgs GIT_ADDRESS ADDRESS MAIL SITE PROJECT LICENSE LOGO BANNER)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
@@ -148,6 +154,8 @@ endmacro(declare_PID_Framework)
 #
 #   .. command:: add_PID_Framework_Author(AUHTOR ...[INSTITUTION ...])
 #
+#   .. command:: PID_Framework_Author(AUHTOR ...[INSTITUTION ...])
+#
 #      Add an author to the list of authors of the framework.
 #
 #     .. rubric:: Required parameters
@@ -174,6 +182,10 @@ endmacro(declare_PID_Framework)
 #
 #        add_PID_Framework_Author(AUTHOR Another Writter INSTITUTION LIRMM)
 #
+macro(PID_Framework_Author)
+  add_PID_Framework_Author(${ARGN})
+endmacro(PID_Framework_Author)
+
 macro(add_PID_Framework_Author)
 set(multiValueArgs AUTHOR INSTITUTION)
 cmake_parse_arguments(ADD_PID_FRAMEWORK_AUTHOR "" "" "${multiValueArgs}" ${ARGN} )
@@ -194,6 +206,8 @@ endmacro(add_PID_Framework_Author)
 #  --------------------------
 #
 #   .. command:: add_PID_Framework_Category(...)
+#
+#   .. command:: PID_Framework_Category(...)
 #
 #      Define a new category for classifying packages of the current framework.
 #
@@ -217,6 +231,10 @@ endmacro(add_PID_Framework_Author)
 #
 #        add_PID_Framework_Category(programming/filesystem)
 #
+macro(PID_Framework_Category)
+  add_PID_Framework_Category(${ARGN})
+endmacro(PID_Framework_Category)
+
 macro(add_PID_Framework_Category)
 if(NOT ${ARGC} EQUAL 1)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the add_PID_Framework_Category command requires one string argument of the form <category>[/subcategory]*.")

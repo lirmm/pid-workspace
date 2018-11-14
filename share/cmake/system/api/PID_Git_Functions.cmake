@@ -2070,7 +2070,7 @@ endfunction(update_Wrapper_Repository)
 #  .. _publish_Wrapper_Repository_Version:
 #
 #  publish_Wrapper_Repository_Version
-#  --------------------------
+#  ----------------------------------
 #
 #   .. command:: publish_Wrapper_Repository_Version(RESULT package version_string add_it)
 #

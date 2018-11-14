@@ -45,6 +45,8 @@ include(CMakeParseArguments)
 #
 #   .. command:: declare_PID_Package(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
 #
+#   .. command:: PID_Package(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
+#
 #     Declare the current CMake project as a PID package with specific meta-information passed as parameters.
 #
 #     .. rubric:: Required parameters
@@ -87,6 +89,11 @@ include(CMakeParseArguments)
 #                          DESCRIPTION "an example PID package"
 #        )
 #
+
+macro(PID_Package)
+  declare_PID_Package(${ARGN})
+endmacro(PID_Package)
+
 macro(declare_PID_Package)
 set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION VERSION)
@@ -172,7 +179,7 @@ elseif(${ARGC} EQUAL 2)
 elseif(${ARGC} EQUAL 1)
   get_Version_String_Numbers("${ARGV0}" major minor patch)
   if(NOT DEFINED major)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to input a version number with at least a major and a minor number, optionnaly you can set a patch version (considered as 0 if not set). The version string \"${ARGV0}\" is given.")
   endif()
   if(patch)
@@ -181,7 +188,7 @@ elseif(${ARGC} EQUAL 1)
     set_Current_Version(${major} ${minor} 0)
   endif()
 else()
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to input a major and a minor number, optionnaly you can set a patch version (considered as 0 if not set).")
 endif()
 endmacro(set_PID_Package_Version)
@@ -196,6 +203,8 @@ endmacro(set_PID_Package_Version)
 #  -----------------------
 #
 #  .. command:: add_PID_Package_Author(AUTHOR ... [INSTITUTION ...])
+#
+#  .. command:: PID_Author(AUTHOR ... [INSTITUTION ...])
 #
 #   Add an author to the list of authors.
 #
@@ -223,16 +232,21 @@ endmacro(set_PID_Package_Version)
 #
 #      add_PID_Package_Author(AUTHOR Benjamin Navarro INSTITUTION LIRMM)
 #
+
+macro(PID_Author)
+  add_PID_Package_Author(${ARGN})
+endmacro(PID_Author)
+
 macro(add_PID_Package_Author)
 set(multiValueArgs AUTHOR INSTITUTION)
 cmake_parse_arguments(ADD_PID_PACKAGE_AUTHOR "" "" "${multiValueArgs}" ${ARGN} )
 if(NOT ADD_PID_PACKAGE_AUTHOR_AUTHOR)
   if(${ARGC} LESS 1 OR ${ARGV0} STREQUAL "INSTITUTION")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an author name must be given using AUTHOR keyword (or simply by giving the name as first argument).")
   else()#the first argument is not the INSTITUTION keyword => it is the name of the author
     add_Author("${ARGV0}" "")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an author name must be given using AUTHOR keyword (or simply by giving the name as first argument).")
   endif()
 else()
@@ -247,6 +261,8 @@ endmacro(add_PID_Package_Author)
 #  -------------------------
 #
 #  .. command:: add_PID_Package_Reference(VERSION ... PLATFORM ... URL ...)
+#
+#  .. command:: PID_Reference(VERSION ... PLATFORM ... URL ...)
 #
 #   Declare a reference to a known binary version of the package. This is useful to register various released version of the package.
 #
@@ -281,18 +297,23 @@ endmacro(add_PID_Package_Author)
 #          https://gite.lirmm.fr/pid/pid-binaries/wikis/pid-rpath/1.0.0/linux64/pid-rpath-1.0.0-dbg-linux64.tar.gz
 #    )
 #
+
+macro(PID_Reference)
+  add_PID_Package_Reference(${ARGN})
+endmacro(PID_Reference)
+
 macro(add_PID_Package_Reference)
 set(oneValueArgs VERSION PLATFORM)
 set(multiValueArgs  URL)
 cmake_parse_arguments(ADD_PID_PACKAGE_REFERENCE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
 if(NOT ADD_PID_PACKAGE_REFERENCE_URL)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the urls where to find binary packages for release and debug modes, using URL <release addr> <debug addr>.")
 else()
 	list(LENGTH ADD_PID_PACKAGE_REFERENCE_URL SIZE)
 	if(NOT SIZE EQUAL 2)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the urls where to find binary packages for release and debug modes using URL <release addr> <debug addr>.")
 	endif()
 endif()
@@ -300,17 +321,17 @@ list(GET ADD_PID_PACKAGE_REFERENCE_URL 0 URL_REL)
 list(GET ADD_PID_PACKAGE_REFERENCE_URL 1 URL_DBG)
 
 if(NOT ADD_PID_PACKAGE_REFERENCE_PLATFORM)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to set the target platform name using PLATFORM keyword.")
 endif()
 
 if(NOT ADD_PID_PACKAGE_REFERENCE_VERSION)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you need to input a target version number (with major and minor values, optionnaly you can also set a patch value which is considered as 0 if not set) using VERSION keyword.")
 else()
 	get_Version_String_Numbers(${ADD_PID_PACKAGE_REFERENCE_VERSION} MAJOR MINOR PATCH)
   if(NOT DEFINED MAJOR)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the version number is corrupted (should follow the pattern major.minor[.patch]).")
   endif()
   #manage PID v1 API way of doing
@@ -337,6 +358,8 @@ endmacro(add_PID_Package_Reference)
 #
 #  .. command:: add_PID_Package_Category(CATEGORY)
 #
+#  .. command:: PID_Category(CATEGORY)
+#
 #   Declare that the current package belongs to a given category.
 #
 #   .. rubric:: Required parameters
@@ -359,9 +382,14 @@ endmacro(add_PID_Package_Reference)
 #
 #    add_PID_Package_Category(example/packaging)
 #
+
+macro(PID_Category)
+  add_PID_Package_Category(${ARGN})
+endmacro(PID_Category)
+
 macro(add_PID_Package_Category)
 if(NOT ${ARGC} EQUAL 1)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the add_PID_Package_Category command requires one string argument of the form <category>[/subcategory]*.")
 endif()
 add_Category("${ARGV0}")
@@ -381,6 +409,8 @@ endmacro(declare_PID_Documentation)
 #  -----------------------
 #
 #  .. command:: declare_PID_Publishing(AUTHOR ... [INSTITUTION ...])
+#
+#  .. command:: PID_Publishing(AUTHOR ... [INSTITUTION ...])
 #
 #   Declare a site where the package is published, i.e. an online website where documentation and binaries of the package ar stored and accessible. There are two alternative for this function: defining a lone static site or defining the publication of the package in a framework.
 #
@@ -448,6 +478,11 @@ endmacro(declare_PID_Documentation)
 #   			PUBLISH_BINARIES
 #         ALLOWED_PLATFORMS x86_64_linux_abi11)
 #
+
+macro(PID_Publishing)
+  declare_PID_Publishing(${ARGN})
+endmacro(PID_Publishing)
+
 macro(declare_PID_Publishing)
 set(optionArgs PUBLISH_BINARIES PUBLISH_DEVELOPMENT_INFO)
 set(oneValueArgs PROJECT FRAMEWORK GIT PAGE ADVANCED TUTORIAL LOGO)
@@ -466,15 +501,15 @@ endif()
 
 if(DECLARE_PID_PUBLISHING_FRAMEWORK)
 	if(NOT DECLARE_PID_PUBLISHING_PROJECT)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the project page of the official package repository using PROJECT keyword.")
 	endif()
 	if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
 		return()
 	elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a framework !")
 		return()
 	endif()
@@ -482,19 +517,19 @@ if(DECLARE_PID_PUBLISHING_FRAMEWORK)
 	set(PUBLISH_DOC TRUE)
 elseif(DECLARE_PID_PUBLISHING_GIT)
 	if(NOT DECLARE_PID_PUBLISHING_PROJECT)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the project page of the official package repository using PROJECT keyword.")
 	endif()
 	if(NOT DECLARE_PID_PUBLISHING_PAGE)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the index page for the static site of the package (using PAGE keyword).")
 	endif()
 	if(${PROJECT_NAME}_FRAMEWORK AND (NOT ${PROJECT_NAME}_FRAMEWORK STREQUAL ""))
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a static site !")
 		return()
 	elseif(${PROJECT_NAME}_SITE_GIT_ADDRESS AND (NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS STREQUAL ""))
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a new one !")
 		return()
 	endif()
@@ -507,11 +542,11 @@ endif()#otherwise there is no site contribution
 #manage publication of binaries
 if(DECLARE_PID_PUBLISHING_PUBLISH_BINARIES)
 	if(NOT PUBLISH_DOC)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you cannot publish binaries of the project (using PUBLISH_BINARIES) if you do not publish package ${PROJECT_NAME} using a static site (either use FRAMEWORK or SITE keywords).")
 	endif()
 	if(NOT DO_CI)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you cannot publish binaries of the project (using PUBLISH_BINARIES) if you do not allow any CI process for package ${PROJECT_NAME} (use ALLOWED_PLATFORMS to defines which platforms will be used in CI process).")
 	endif()
 	publish_Binaries(TRUE)
@@ -522,11 +557,11 @@ endif()
 #manage publication of information for developpers
 if(DECLARE_PID_PUBLISHING_PUBLISH_DEVELOPMENT_INFO)
 	if(NOT PUBLISH_DOC)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you cannot publish development info of the project (using PUBLISH_DEVELOPMENT_INFO) if you do not publish package ${PROJECT_NAME} using a static site (either use FRAMEWORK or SITE keywords).")
 	endif()
 	if(NOT DO_CI)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you cannot publish development info of the project (using PUBLISH_DEVELOPMENT_INFO) if you do not allow any CI process for package ${PROJECT_NAME} (use ALLOWED_PLATFORMS to defines which platforms will be used in CI process).")
 	endif()
 	publish_Development_Info(TRUE)
@@ -563,6 +598,8 @@ endmacro(declare_PID_Publishing)
 #
 #  .. command:: declare_PID_Component_Documentation(COMPONENT ... FILE ...)
 #
+#  .. command:: PID_Documentation(COMPONENT ... FILE ...)
+#
 #   Add specific documentation for a component
 #
 #   .. rubric:: Required parameters
@@ -586,15 +623,20 @@ endmacro(declare_PID_Publishing)
 #
 #    declare_PID_Component_Documentation(COMPONENT my-lib FILE mylib_usage.md)
 #
+
+macro(PID_Documentation)
+  declare_PID_Component_Documentation(${ARGN})
+endmacro(PID_Documentation)
+
 macro(declare_PID_Component_Documentation)
 set(oneValueArgs COMPONENT FILE)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DOCUMENTATION "" "${oneValueArgs}" "" ${ARGN} )
 if(NOT DECLARE_PID_COMPONENT_DOCUMENTATION_FILE)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define the file or folder that contains specific documentation content for the project using FILE keyword.")
 endif()
 if(NOT DECLARE_PID_COMPONENT_DOCUMENTATION_COMPONENT)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must define a component name for this content using COMPONENT keyword.")
 endif()
 #user defined doc for a given component
@@ -660,29 +702,29 @@ cmake_parse_arguments(CHECK_PID_PLATFORM "" "${oneValueArgs}" "${multiValueArgs}
 if(CHECK_PID_PLATFORM_NAME)
 	message("[PID] WARNING : NAME is a deprecated argument. Platforms are now defined at workspace level and this macro now check if the current platform satisfies configuration constraints according to the optionnal conditions specified by TYPE, ARCH, OS and ABI. The only constraints that will be checked are those for which the current platform satisfies the conditions.")
 	if(NOT CHECK_PID_PLATFORM_OS)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must define at least an OS when using the deprecated NAME keyword")
 	endif()
 	if(NOT CHECK_PID_PLATFORM_ARCH)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must define at least an ARCH when using the deprecated NAME keyword")
 	endif()
 	check_Platform_Constraints(RESULT IS_CURRENT "" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}") #no type as it was not managed with PID v1
 	set(${CHECK_PID_PLATFORM_NAME} ${IS_CURRENT})
 	if(IS_CURRENT AND NOT RESULT)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint cannot be satisfied !")
 	endif()
 
 else()
 	if(NOT CHECK_PID_PLATFORM_CONFIGURATION)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must use the CONFIGURATION keyword to describe the set of configuration constraints that apply to the current platform.")
 	endif()
 	#checking the constraints
 	check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}")
 	if(NOT RESULT)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint cannot be satisfied !")
 	endif()
 endif()
@@ -783,7 +825,7 @@ cmake_parse_arguments(CHECK_PID_PLATFORM "" "" "${multiValueArgs}" ${ARGN} )
 if(CHECK_PID_PLATFORM_CONFIGURATION)
 	check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${CHECK_PID_PLATFORM_CONFIGURATION}")
 	if(NOT RESULT)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling check_All_PID_Default_Platforms, the current platform dos not satisfy configuration constraints.")
 	endif()
 endif()
@@ -820,7 +862,7 @@ endmacro(check_All_PID_Default_Platforms)
 #
 macro(build_PID_Package)
 if(${ARGC} GREATER 0)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Package command requires no arguments.")
 endif()
 build_Package()
@@ -837,17 +879,19 @@ endmacro(build_PID_Package)
 #
 #  .. command:: declare_PID_Component(<type> NAME ... DIRECTORY .. [OPTIONS])
 #
+#  .. command:: PID_Component(<type> NAME ... DIRECTORY .. [OPTIONS])
+#
 #   Declare a new component in the current package.
 #
 #   .. rubric:: Required parameters
 #
-#   :<type>: - ``STATIC_LIB``: static library
-#            - ``SHARED_LIB``: shared library
-#            - ``MODULE_LIB``: shared library without header
-#            - ``HEADER_LIB``: header-only library
-#            - ``APPLICATION``: standard application
-#            - ``EXAMPLE_APPLICATION``: example code
-#            - ``TEST_APPLICATION``: unit test
+#   :<type>: - ``STATIC_LIB|STATIC``: static library
+#            - ``SHARED_LIB|SHARED``: shared library
+#            - ``MODULE_LIB|MODULE``: shared library without header
+#            - ``HEADER_LIB|HEADER``: header-only library
+#            - ``APPLICATION|APP``: standard application
+#            - ``EXAMPLE_APPLICATION|EXAMPLE``: example code
+#            - ``TEST_APPLICATION|TEST``: unit test
 #   :NAME <name>: Unique identifier of the component. ``name`` cannot contain whitespaces.
 #   :DIRECTORY <dir>: Sub-folder where to find the component sources. This is relative to the current `CMakeLists.txt` folder.
 #
@@ -894,19 +938,24 @@ endmacro(build_PID_Package)
 #                            EXPORT DEFINITIONS IMPORT_SYMBOLS
 #     )
 #
+
+macro(PID_Component)
+  declare_PID_Component(${ARGN})
+endmacro(PID_Component)
+
 macro(declare_PID_Component)
-set(options STATIC_LIB SHARED_LIB MODULE_LIB HEADER_LIB APPLICATION EXAMPLE_APPLICATION TEST_APPLICATION PYTHON_PACK)
+set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES INSTALL_SYMLINKS DEPENDS EXPORT)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}.")
 endif()
 
 #check for the name argument
 if(NOT DECLARE_PID_COMPONENT_NAME)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the component using NAME keyword.")
 endif()
 
@@ -914,7 +963,7 @@ endif()
 set(DECLARED FALSE)
 is_Declared(${DECLARE_PID_COMPONENT_NAME} DECLARED)
 if(DECLARED)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : a component with the same name than ${DECLARE_PID_COMPONENT_NAME} is already defined.")
 	return()
 endif()
@@ -922,7 +971,7 @@ unset(DECLARED)
 
 #check for directory argument
 if(NOT DECLARE_PID_COMPONENT_DIRECTORY AND NOT DECLARE_PID_COMPONENT_HEADER_LIB)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword (except for pure header library).")
 endif()
 
@@ -931,7 +980,7 @@ if(DECLARE_PID_COMPONENT_C_STANDARD)
 	if(	NOT c_language_standard EQUAL 90
 	AND NOT c_language_standard EQUAL 99
 	AND NOT c_language_standard EQUAL 11)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad C_STANDARD argument, the value used must be 90, 99 or 11.")
 	endif()
 endif()
@@ -942,7 +991,7 @@ if(DECLARE_PID_COMPONENT_CXX_STANDARD)
     	AND NOT cxx_language_standard EQUAL 11
     	AND NOT cxx_language_standard EQUAL 14
     	AND NOT cxx_language_standard EQUAL 17 )
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad CXX_STANDARD argument, the value used must be 98, 11, 14 or 17.")
 	endif()
 else() #default language standard is first standard
@@ -950,47 +999,47 @@ else() #default language standard is first standard
 endif()
 
 set(nb_options 0)
-if(DECLARE_PID_COMPONENT_STATIC_LIB)
+if(DECLARE_PID_COMPONENT_STATIC_LIB OR DECLARE_PID_COMPONENT_STATIC)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "STATIC")
 endif()
-if(DECLARE_PID_COMPONENT_SHARED_LIB)
+if(DECLARE_PID_COMPONENT_SHARED_LIB OR DECLARE_PID_COMPONENT_SHARED)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "SHARED")
 endif()
-if(DECLARE_PID_COMPONENT_MODULE_LIB)
+if(DECLARE_PID_COMPONENT_MODULE_LIB OR DECLARE_PID_COMPONENT_MODULE)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "MODULE")
 endif()
-if(DECLARE_PID_COMPONENT_HEADER_LIB)
+if(DECLARE_PID_COMPONENT_HEADER_LIB OR DECLARE_PID_COMPONENT_HEADER)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "HEADER")
 endif()
-if(DECLARE_PID_COMPONENT_APPLICATION)
+if(DECLARE_PID_COMPONENT_APPLICATION OR DECLARE_PID_COMPONENT_APP)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "APP")
 endif()
-if(DECLARE_PID_COMPONENT_EXAMPLE_APPLICATION)
+if(DECLARE_PID_COMPONENT_EXAMPLE_APPLICATION OR DECLARE_PID_COMPONENT_EXAMPLE)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "EXAMPLE")
 endif()
-if(DECLARE_PID_COMPONENT_TEST_APPLICATION)
+if(DECLARE_PID_COMPONENT_TEST_APPLICATION OR DECLARE_PID_COMPONENT_TEST)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "TEST")
 endif()
-if(DECLARE_PID_COMPONENT_PYTHON_PACK)
+if(DECLARE_PID_COMPONENT_PYTHON_PACK OR DECLARE_PID_COMPONENT_PYTHON)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "PYTHON")
 endif()
 if(NOT nb_options EQUAL 1)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB, SHARED_LIB, MODULE_LIB, HEADER_LIB, APPLICATION, EXAMPLE_APPLICATION or TEST_APPLICATION) must be given for the component.")
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB|STATIC, SHARED_LIB|SHARED, MODULE_LIB|MODULE, HEADER_LIB|HEADER, APPLICATION|APP, EXAMPLE_APPLICATION|EXAMPLE or TEST_APPLICATION|TEST) must be given for the component.")
 endif()
 #checking that the required directories exist
 if(DECLARE_PID_COMPONENT_DIRECTORY)
   check_Required_Directories_Exist(PROBLEM ${type} ${DECLARE_PID_COMPONENT_DIRECTORY})
   if(PROBLEM)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring ${DECLARE_PID_COMPONENT_NAME}, the source directory ${DECLARE_PID_COMPONENT_DIRECTORY} cannot be found in ${CMAKE_CURRENT_SOURCE_DIR} (${PROBLEM}).")
   endif()
 endif()
@@ -1000,7 +1049,7 @@ set(internal_inc_dirs "")
 set(internal_link_flags "")
 if(DECLARE_PID_COMPONENT_INTERNAL)
 	if(DECLARE_PID_COMPONENT_INTERNAL STREQUAL "")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, INTERNAL keyword must be followed by by at least one DEFINITION OR INCLUDE_DIR OR LINK keyword and related arguments.")
 	endif()
 	set(internal_multiValueArgs DEFINITIONS INCLUDE_DIRS LINKS COMPILER_OPTIONS)
@@ -1016,7 +1065,7 @@ if(DECLARE_PID_COMPONENT_INTERNAL)
 	endif()
 	if(DECLARE_PID_COMPONENT_INTERNAL_LINKS)
 		if(type MATCHES HEADER OR type MATCHES STATIC)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, ${type} libraries cannot define internal linker flags.")
 		endif()
 		set(internal_link_flags ${DECLARE_PID_COMPONENT_INTERNAL_LINKS})
@@ -1026,14 +1075,14 @@ endif()
 set(exported_defs "")
 if(DECLARE_PID_COMPONENT_EXPORTED)
 	if(type MATCHES APP OR type MATCHES EXAMPLE OR type MATCHES TEST)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, applications cannot export anything (invalid use of the EXPORT keyword).")
 	elseif(type MATCHES MODULE)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, module librairies cannot export anything (invalid use of the EXPORT keyword).")
 	endif()
 	if(DECLARE_PID_COMPONENT_EXPORTED STREQUAL "")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, EXPORTED keyword must be followed by at least one DEFINITIONS OR LINKS keyword and related arguments.")
 	endif()
 	set(exported_multiValueArgs DEFINITIONS LINKS COMPILER_OPTIONS)
@@ -1128,7 +1177,7 @@ endmacro(declare_PID_Component)
 #
 #  .. command:: declare_PID_Package_Dependency([PACKAGE] ... [EXTERNAL|NATIVE] [OPTIONS])
 #
-#  .. command:: declare_PID_Dependency([PACKAGE] ... [EXTERNAL|NATIVE] [OPTIONS])
+#  .. command:: PID_Dependency([PACKAGE] ... [EXTERNAL|NATIVE] [OPTIONS])
 #
 #   Declare a dependency between the current package and another package.
 #
@@ -1180,14 +1229,14 @@ endmacro(declare_PID_Component)
 #
 #   .. code-block:: cmake
 #
-#      declare_PID_Dependency (boost EXACT VERSION 1.55.0
-#                                    EXACT VERSION 1.63.0
-#                                    EXACT VERSION 1.64.0
+#      PID_Dependency (boost EXACT VERSION 1.55.0
+#                            EXACT VERSION 1.63.0
+#                            EXACT VERSION 1.64.0
 #      )
 #
-macro(declare_PID_Dependency)
+macro(PID_Dependency)
   declare_PID_Package_Dependency(${ARGN})
-endmacro(declare_PID_Dependency)
+endmacro(PID_Dependency)
 
 macro(declare_PID_Package_Dependency)
 set(options EXTERNAL NATIVE OPTIONAL)
@@ -1197,23 +1246,23 @@ if(DECLARE_PID_DEPENDENCY_PACKAGE)
   set(name_of_dependency ${DECLARE_PID_DEPENDENCY_PACKAGE})
 elseif(${ARGC} LESS 1
     OR ("${ARGV0}" MATCHES "^EXTERNAL|NATIVE|OPTIONAL$"))
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the required package using PACKAGE keywork (or by simply giving the name as first argument).")
 else()
   set(name_of_dependency ${ARGV0})
   list(REMOVE_ITEM DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS ${name_of_dependency})#indeed we need to do that to manage remaining unparsed arguments because ARGV0 in this case belongs to unparsed args
 endif()
 if(name_of_dependency STREQUAL PROJECT_NAME)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, package ${name_of_dependency} cannot require itself !")
 endif()
 if(DECLARE_PID_DEPENDENCY_EXTERNAL AND DECLARE_PID_DEPENDENCY_NATIVE)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${name_of_dependency}, the type of the required package must be EXTERNAL or NATIVE, not both.")
 elseif(NOT DECLARE_PID_DEPENDENCY_EXTERNAL AND NOT DECLARE_PID_DEPENDENCY_NATIVE)
   get_Package_Type(${name_of_dependency} PACK_TYPE)
   if(PACK_TYPE STREQUAL "UNKNOWN")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${name_of_dependency}, the type of the required package cannot deduced as EXTERNAL or NATIVE (use one of these KEYWORDS).")
   else()
     set(package_type ${PACK_TYPE})
@@ -1237,7 +1286,7 @@ if(DECLARE_PID_DEPENDENCY_UNPARSED_ARGUMENTS)
 				list(APPEND exact_versions ${RES_VERSION})
 			endif()
 		elseif(RES_EXACT)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${name_of_dependency}, you must use the EXACT keyword together with the VERSION keyword.")
 		endif()
 	endwhile()
@@ -1251,19 +1300,19 @@ if(TO_PARSE) #there are still components to parse
 	if(DECLARE_PID_DEPENDENCY_MORE_COMPONENTS)
 		list(LENGTH DECLARE_PID_DEPENDENCY_MORE_COMPONENTS SIZE)
 		if(SIZE LESS 1)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency to package ${DECLARE_PID_DEPENDENCY_PACKAGE}, at least one component dependency must be defined when using the COMPONENTS keyword.")
 		endif()
 		set(list_of_components ${DECLARE_PID_DEPENDENCY_MORE_COMPONENTS})
 	else()
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] WARNING : when declaring dependency to package ${name_of_dependency}, unknown arguments used ${DECLARE_PID_DEPENDENCY_MORE_UNPARSED_ARGUMENTS}.")
 	endif()
 endif()
 if(package_type STREQUAL "EXTERNAL")#it is an external package
 	declare_External_Package_Dependency(${name_of_dependency} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 else()#otherwise a native package
-	declare_Package_Dependency(${name_of_dependency} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
+	declare_Native_Package_Dependency(${name_of_dependency} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 endif()
 endmacro(declare_PID_Package_Dependency)
 
@@ -1289,6 +1338,7 @@ endmacro(declare_PID_Package_Dependency)
 #   :[PACKAGE] <name>: Name of the depoendency. The PACKAGE ketword may be omitted.
 #
 #   .. rubric:: Optional parameters
+#
 #   :USED var: var is the output variable that is TRUE if dependency is used, FALSE otherwise. This is used to test if an optional dependency is in use.
 #   :VERSION var: var is the output variable that contains the version of the dependency that is used for current build.
 #
@@ -1318,7 +1368,7 @@ set(oneValueArgs USED VERSION PACKAGE)
 cmake_parse_arguments(USED_PACKAGE_DEPENDENCY "" "${oneValueArgs}" "" ${ARGN} )
 
 if(NOT USED_PACKAGE_DEPENDENCY_PACKAGE)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling used_Package_Dependency you specified no dependency name using PACKAGE keyword")
 	return()
 endif()
@@ -1369,6 +1419,8 @@ endfunction(used_PID_Package_Dependency)
 #  .. command:: declare_PID_Component_Dependency([COMPONENT] ... [EXPORT|DEPENDS] [NATIVE|EXTERNAL] ... [PACKAGE ...] [defintions...])
 #
 #  .. command:: declare_PID_Component_Dependency([COMPONENT] ... [EXPORT] [EXTERNAL ...] [OPTIONS])
+#
+#  .. command:: PID_Component_Dependency([COMPONENT] ... [EXPORT] [EXTERNAL ...] [OPTIONS])
 #
 #   Declare a dependency for a component of the current package.
 #   First signature is used to defince a dependency to an explicity component either native or external. Compared to the DEPENDS option of |declare_PID_Component|_ this function may define additional configuration for a given component dependency (typically setting definitions).
@@ -1443,6 +1495,10 @@ endfunction(used_PID_Package_Dependency)
 #      #it is exported since includes of rpathlib are in public includes of my-other-lib
 #
 #
+macro(PID_Component_Dependency)
+  declare_PID_Component_Dependency(${ARGN})
+endmacro(PID_Component_Dependency)
+
 macro(declare_PID_Component_Dependency)
 set(options EXPORT DEPENDS)
 set(oneValueArgs COMPONENT DEPEND NATIVE PACKAGE EXTERNAL C_STANDARD CXX_STANDARD)
@@ -1451,7 +1507,7 @@ cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY "${options}" "${oneValueA
 
 if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT)
   if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPENDS|DEPEND|NATIVE|PACKAGE|EXTERNAL|C_STANDARD|CXX_STANDARD|INCLUDE_DIRS LINKS|COMPILER_OPTIONS|INTERNAL_DEFINITIONS|IMPORTED_DEFINITIONS|EXPORTED_DEFINITIONS|RUNTIME_RESOURCES$")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for a component, a name must be given to the component that declare the dependency using COMPONENT keyword or simply by using first argument.")
   else()
     set(component_name ${ARGV0})
@@ -1484,7 +1540,7 @@ if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS)
 	set(multiValueArgs STATIC SHARED)
 	cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS "" "" "${multiValueArgs}" ${DECLARE_PID_COMPONENT_DEPENDENCY_LINKS} )
 	if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_UNPARSED_ARGUMENTS)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${component_name}, the LINKS option argument must be followed only by static and/or shared links.")
 	endif()
 
@@ -1505,7 +1561,7 @@ endif()
 
 #the dependency is exported
 if(DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT AND DECLARE_PID_COMPONENT_DEPENDENCY_DEPENDS)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
   message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${component_name}, keywords EXPORT and DEPENDS cannot be used simultaneously.")
 elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT)
 	set(export TRUE)
@@ -1519,13 +1575,13 @@ set(target_package)
 
 if((DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE OR DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
   AND DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
   message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${component_name}, keywords EXTERNAL (requiring an external package) and NATIVE (requiring a native component) cannot be used simultaneously.")
 elseif(DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE OR DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
 
   #when the explicit NATIVE signature is used there should be no unparsed argument
   if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${component_name}, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
   endif()
 
@@ -1542,7 +1598,7 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
 
   #when the explicit EXTERNAL signature is used there should be no unparsed argument
   if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${component_name}, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
   endif()
 
@@ -1550,7 +1606,7 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
 
   if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #an external package name is given => external package is supposed to be provided with a description file
     if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${component_name}, the external package cannot be current project !")
     endif()
 
@@ -1571,7 +1627,7 @@ else()#NO keyword used to specify the kind of component => we do not know if pac
   if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_DEPENDS)
     #no component specified
     if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS) #there is a target component specified => ERROR
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, you must use either EXPORT or DEPENDS keyword to define the dependency if you do not use either NATIVE or EXTERNAL explicit declarations.")
     endif()
   endif()
@@ -1591,10 +1647,10 @@ if(NOT target_package AND target_component)
   find_Packages_Containing_Component(CONTAINERS ${PROJECT_NAME} FALSE ${target_component})
   list(LENGTH CONTAINERS SIZE)
   if(SIZE EQUAL 0)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, component ${target_component} cannot be found in ${PROJECT_NAME} or its dependencies.")
   elseif(SIZE GREATER 1)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, cannot deduce the package containing component ${target_component} because many packages contain a component with same name: ${CONTAINERS}.")
   else()
     set(target_package ${CONTAINERS})
@@ -1629,7 +1685,7 @@ endif()
 if(target_package)#a package name where to find the component is known
   if(target_package STREQUAL PROJECT_NAME)#internal dependency, by definition
     if(target_component STREQUAL component_name)
-      finish_Progress(GLOBAL_PROGRESS_VAR)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${component_name}, the component cannot depend on itself !")
 		endif()
 		declare_Internal_Component_Dependency(
@@ -1677,7 +1733,7 @@ if(target_package)#a package name where to find the component is known
   endif()
 else()#no target package => 2 cases OS dependency OR ERROR
   if(target_component) #a PID component is given so it cannot be a system dependency
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, the package containing component ${target_component} cannot be deduced !")
   else()#this is a system dependency
     declare_System_Component_Dependency(
@@ -1713,7 +1769,7 @@ endfunction(wrap_CTest_Call)
 #  .. _run_PID_Test:
 #
 #  run_PID_Test
-#  -----------------------
+#  ------------
 #
 #  .. command:: run_PID_Test(NAME ... [OPTIONS])
 #
@@ -1768,11 +1824,11 @@ set(oneValueArgs NAME EXE COMPONENT PACKAGE)
 set(multiValueArgs ARGUMENTS)
 cmake_parse_arguments(RUN_PID_TEST "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(RUN_PID_TEST_UNPARSED_ARGUMENTS)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
 endif()
 if(NOT RUN_PID_TEST_NAME)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, a name must be given to the test (using NAME <name> syntax) !")
 else()
 	if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do call if(TEST) before this version, the default behavior (without using NAME and COMMAND will overwrite the rprevious test with same name)
@@ -1784,14 +1840,14 @@ else()
 endif()
 
 if(NOT RUN_PID_TEST_EXE AND NOT RUN_PID_TEST_COMPONENT AND NOT RUN_PID_TEST_PYTHON)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, an executable must be defined. Using EXE you can use an executable present on your system. By using COMPONENT you can specify a component built by the project. In this later case you must specify a PID executable component. If the PACKAGE keyword is used then this component will be found in another package than the current one. Finaly you can otherwise use the PYTHON keyword and pass the target python script file lying in your test folder as argument (path is relative to the test folder).")
 endif()
 
 if((RUN_PID_TEST_EXE AND RUN_PID_TEST_COMPONENT)
 		OR (RUN_PID_TEST_EXE AND RUN_PID_TEST_PYTHON)
 		OR (RUN_PID_TEST_COMPONENT AND RUN_PID_TEST_PYTHON))
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, you must use either a system executable (using EXE keyword) OR a PID application component (using COMPONENT keyword) OR the python executable (using PYTHON keyword).")
 endif()
 
@@ -1800,7 +1856,7 @@ if(RUN_PID_TEST_PYTHON)
 		return()
 	endif()
 	if(NOT RUN_PID_TEST_ARGUMENTS)
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, you must define a path to a target python file using ARGUMENTS keyword.")
 	endif()
 	list(LENGTH  RUN_PID_TEST_ARGUMENTS SIZE)
@@ -1809,7 +1865,7 @@ if(RUN_PID_TEST_PYTHON)
 	endif()
 	list(GET RUN_PID_TEST_ARGUMENTS 0 target_py_file)
 	if (NOT target_py_file MATCHES "^.*\\.py$")
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, ${target_py_file} is not a python file.")
 	endif()
 	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target_py_file})#first check that the file exists in test folder
@@ -1817,7 +1873,7 @@ if(RUN_PID_TEST_PYTHON)
 	elseif(EXISTS ${CMAKE_SOURCE_DIR}/share/script/${target_py_file})
 		set(PATH_TO_PYTHON_FILE ${CMAKE_SOURCE_DIR}/share/script/${target_py_file})
 	else()
-    finish_Progress(GLOBAL_PROGRESS_VAR)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, ${target_py_file} cannot be found in either test or script folders.")
 	endif()
 endif()
@@ -1892,7 +1948,7 @@ function(external_PID_Package_Path)
 set(oneValueArgs NAME PATH)
 cmake_parse_arguments(EXT_PACKAGE_PATH "" "${oneValueArgs}" "" ${ARGN} )
 if(NOT EXT_PACKAGE_PATH_NAME OR NOT EXT_PACKAGE_PATH_PATH)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name of an external package must be provided with name and a variable containing the resulting path must be set with PATH keyword.")
 endif()
 is_External_Package_Defined("${EXT_PACKAGE_PATH_NAME}" PATHTO)
@@ -1944,7 +2000,7 @@ macro(create_PID_Install_Symlink)
 set(oneValueArgs NAME PATH TARGET)
 cmake_parse_arguments(CREATE_INSTALL_SYMLINK "" "${oneValueArgs}" "" ${ARGN} )
 if(NOT CREATE_INSTALL_SYMLINK_NAME OR NOT CREATE_INSTALL_SYMLINK_PATH OR NOT CREATE_INSTALL_SYMLINK_TARGET)
-  finish_Progress(GLOBAL_PROGRESS_VAR)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name for the new symlink created must be provided with NAME keyword, the path relative to its install location must be provided with PATH keyword and the target of the symlink must be provided with TARGET keyword.")
 endif()
 set(FULL_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_DEPLOY_PATH}/${CREATE_INSTALL_SYMLINK_PATH})

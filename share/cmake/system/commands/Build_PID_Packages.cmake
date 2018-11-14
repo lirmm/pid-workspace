@@ -28,6 +28,13 @@ SEPARATE_ARGUMENTS(TARGET_PACKAGES)
 remove_Progress_File() #reset the build progress information (sanity action)
 begin_Progress(workspace NEED_REMOVE)
 
+#first check that commmand parameters are not passed as environment variables
+
+if(NOT TARGET_PACKAGES AND ENV{package})
+	set(TARGET_PACKAGES $ENV{package} CACHE INTERNAL "")
+endif()
+
+#do the job 
 if(TARGET_PACKAGES AND NOT TARGET_PACKAGES STREQUAL "all")
 	#clean them first
 	foreach(package IN LISTS TARGET_PACKAGES)

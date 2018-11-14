@@ -41,16 +41,21 @@ set(PID_SET_POLICIES_INCLUDED TRUE)
 ########################################################################
 ##################### definition of CMake policies #####################
 ########################################################################
+cmake_policy(VERSION 3.0.2)
 
 #not guarded policies (they exist since version 3.0 which is the minimum for PID)
 set(CMAKE_WARN_DEPRECATED FALSE CACHE INTERNAL "" FORCE)
 cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
-cmake_policy(SET CMP0037 NEW) #do not allow to redefine standard target such as clean or install
+cmake_policy(SET CMP0037 OLD) #do not allow to redefine standard target such as clean or install
 cmake_policy(SET CMP0026 NEW) #avoid using the LOCATION property
 cmake_policy(SET CMP0045 NEW) #allow to test if a target exist without a warning on a get_target_property
 cmake_policy(SET CMP0007 NEW) #do not allow a list to have empty elements without warning
 
 # guarded policies (they exist in further version of CMake)
+if(POLICY CMP0053)
+	cmake_policy(SET CMP0053 NEW) #iSimplify variable reference and escape sequence evaluation
+endif()
+
 if(POLICY CMP0054)
 	cmake_policy(SET CMP0054 NEW) #only KEYWORDS (without "") are considered as KEYWORDS
 endif()
