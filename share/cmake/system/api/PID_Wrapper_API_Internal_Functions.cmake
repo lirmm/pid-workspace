@@ -50,8 +50,8 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 #
 #     Reconfigure the currently built wrapper (i.e. launch cmake configuration).
 #
-function(reconfigure_Wrapper_Build)
-set(TARGET_BUILD_FOLDER ${${PROJECT_NAME}_ROOT_DIR}/build)
+function(reconfigure_Wrapper_Build package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
 endfunction(reconfigure_Wrapper_Build)
 
@@ -225,7 +225,7 @@ endif()
 load_Current_Platform() #loading the current platform configuration
 
 if(TEMP_PLATFORM) #check if any change occurred
-  if( (NOT TEMP_PLATFORM STREQUAL CURRENT_PLATFORM) #the current platform has changed to we need to regenerate
+  if( (NOT TEMP_PLATFORM STREQUAL CURRENT_PLATFORM) #the current platform has changed so we need to regenerate
       OR (NOT TEMP_C_COMPILER STREQUAL CMAKE_C_COMPILER)
       OR (NOT TEMP_CXX_COMPILER STREQUAL CMAKE_CXX_COMPILER)
       OR (NOT TEMP_CMAKE_LINKER STREQUAL CMAKE_LINKER)
@@ -235,7 +235,7 @@ if(TEMP_PLATFORM) #check if any change occurred
     )
     message("[PID] INFO : cleaning the build folder after major environment change")
     hard_Clean_Wrapper(${PROJECT_NAME})
-		reconfigure_Wrapper_Build()
+		reconfigure_Wrapper_Build(${PROJECT_NAME})
   endif()
 endif()
 

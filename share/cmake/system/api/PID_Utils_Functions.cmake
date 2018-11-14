@@ -2781,6 +2781,35 @@ endfunction(is_Binary_Package_Version_In_Development)
 #
 # .. ifmode:: internal
 #
+#  .. |hard_Clean_Build_Folder| replace:: ``hard_Clean_Build_Folder``
+#  .. _hard_Clean_Build_Folder:
+#
+#  hard_Clean_Build_Folder
+#  -----------------------
+#
+#   .. command:: hard_Clean_Build_Folder(path_to_folder)
+#
+#    Clean a build folder in an aggressive and definitive way.
+#
+#     :path_to_folder: the path to the build folder to reset.
+#
+function(hard_Clean_Build_Folder path_to_folder)
+  file(GLOB thefiles RELATIVE ${path_to_folder} ${path_to_folder}/*)
+  foreach(a_file IN LISTS thefiles)
+  if(NOT a_file STREQUAL ".gitignore")
+  	if(IS_DIRECTORY ${path_to_folder}/${a_file})
+  		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${path_to_folder}/${a_file})
+  	else()#it is a regular file or symlink
+  		execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${path_to_folder}/${a_file})
+  	endif()
+  endif()
+  endforeach()
+endfunction(hard_Clean_Build_Folder)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |hard_Clean_Package| replace:: ``hard_Clean_Package``
 #  .. _hard_Clean_Package:
 #
@@ -2794,17 +2823,13 @@ endfunction(is_Binary_Package_Version_In_Development)
 #     :package: the name of the target package.
 #
 function(hard_Clean_Package package)
-set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
-file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
-foreach(a_file IN LISTS thefiles)
-	if(NOT a_file STREQUAL ".gitignore")
-		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
-		else()#it is a regular file or symlink
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
-		endif()
-	endif()
-endforeach()
+  get_Package_Type(${package} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "EXTERNAL")
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
+  else()
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
+  endif()
+  hard_Clean_Build_Folder(${TARGET_BUILD_FOLDER})
 endfunction(hard_Clean_Package)
 
 #.rst:
@@ -2824,17 +2849,13 @@ endfunction(hard_Clean_Package)
 #     :package: the name of the target package.
 #
 function(hard_Clean_Package_Debug package)
-set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
-file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
-foreach(a_file IN LISTS thefiles)
-	if(NOT a_file STREQUAL ".gitignore")
-		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
-		else()#it is a regular file or symlink
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
-		endif()
-	endif()
-endforeach()
+  get_Package_Type(${package} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "EXTERNAL")
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
+  else()
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
+  endif()
+  hard_Clean_Build_Folder(${TARGET_BUILD_FOLDER})
 endfunction(hard_Clean_Package_Debug)
 
 #.rst:
@@ -2854,17 +2875,13 @@ endfunction(hard_Clean_Package_Debug)
 #     :package: the name of the target package.
 #
 function(hard_Clean_Package_Release package)
-set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
-file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
-foreach(a_file IN LISTS thefiles)
-	if(NOT a_file STREQUAL ".gitignore")
-		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
-		else()#it is a regular file or symlink
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
-		endif()
-	endif()
-endforeach()
+  get_Package_Type(${package} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "EXTERNAL")
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
+  else()
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
+  endif()
+  hard_Clean_Build_Folder(${TARGET_BUILD_FOLDER})
 endfunction(hard_Clean_Package_Release)
 
 #.rst:
