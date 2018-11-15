@@ -2376,6 +2376,33 @@ endforeach()
 set(${PACKAGES} ${result} PARENT_SCOPE)
 endfunction(list_All_Source_Packages_In_Workspace)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_All_Wrappers_In_Workspace| replace:: ``list_All_Wrappers_In_Workspace``
+#  .. _list_All_Wrappers_In_Workspace:
+#
+#  list_All_Wrappers_In_Workspace
+#  ------------------------------
+#
+#   .. command:: list_All_Wrappers_In_Workspace(WRAPPERS)
+#
+#    Getting all external packages wrappers that currently exist in local workspace.
+#
+#     :WRAPPERS: the output variable that contains the list of wrappers of the workspace.
+#
+function(list_All_Wrappers_In_Workspace WRAPPERS)
+  file(GLOB source_wrappers RELATIVE ${WORKSPACE_DIR}/wrappers ${WORKSPACE_DIR}/wrappers/*)
+  foreach(a_file IN LISTS source_wrappers)
+  	if(EXISTS ${WORKSPACE_DIR}/wrappers/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${a_file})
+  		list(APPEND result ${a_file})
+  	endif()
+  endforeach()
+  set(${WRAPPERS} ${result} PARENT_SCOPE)
+endfunction(list_All_Wrappers_In_Workspace)
+
 #.rst:
 #
 # .. ifmode:: internal
