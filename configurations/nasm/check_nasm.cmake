@@ -17,20 +17,4 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT nasm_FOUND)
-	set(nasm_INCLUDE_DIRS CACHE INTERNAL "")
-	set(nasm_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(nasm_DEFINITIONS CACHE INTERNAL "")
-	set(nasm_LINK_OPTIONS CACHE INTERNAL "")
-	set(nasm_RPATH CACHE INTERNAL "")
-	# trying to find nasm
-	include(${WORKSPACE_DIR}/configurations/nasm/find_nasm.cmake)
-	if(nasm_FOUND)
-		set(CHECK_nasm_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/nasm/install_nasm.cmake)
-		set(CHECK_nasm_RESULT nasm_INSTALLED)
-	endif()
-else()
-	set(CHECK_nasm_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)

@@ -17,7 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(libusb_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(libusb FALSE)
+
 # - Find libusb installation
 # Try to find libraries for libusb on UNIX systems. The following values are defined
 #  libusb_FOUND        - True if libusb is available
@@ -37,7 +40,7 @@ if (UNIX)
 	endif()
 
 	if(IS_FOUND)
-		set(libusb_FOUND TRUE CACHE INTERNAL "")
+		found_PID_Configuration(libusb TRUE)
 	endif ()
 
 	unset(IS_FOUND)

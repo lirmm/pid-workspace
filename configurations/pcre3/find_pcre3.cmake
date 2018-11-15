@@ -17,7 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(pcre3_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(pcre3 FALSE)
+
 # - Find pcre3 installation
 # Try to find libraries for pcre3 on UNIX systems. The following values are defined
 #  pcre3_FOUND        - True if pcre3 is available
@@ -36,7 +39,7 @@ if (UNIX)
 	endif()
 
 	if(IS_FOUND)
-		set(pcre3_FOUND TRUE CACHE INTERNAL "")
+		found_PID_Configuration(pcre3 TRUE)
 	endif ()
 
 	unset(IS_FOUND)

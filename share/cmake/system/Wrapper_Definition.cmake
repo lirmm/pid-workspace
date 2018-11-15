@@ -33,6 +33,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 
 include(PID_Wrapper_API_Internal_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
+include(Configuration_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
 include(Package_Definition NO_POLICY_SCOPE) #to enable the use of get_PID_Platform_Info in find files
 
 include(CMakeParseArguments)
@@ -1511,10 +1512,10 @@ endfunction(get_Environment_Info)
 #     :URL <url>: The URL from where to download the archive.
 #     :ARCHIVE <string>: The name of the archive downloaded.
 #     :FOLDER <string>: The folder resulting from archive extraction.
-#     :PATH <path>: the output variable that contains the path to the installed project, empty if project cannot be installed
 #
 #     .. rubric:: Optional parameters
 #
+#     :PATH <path>: the output variable that contains the path to the installed project, empty if project cannot be installed
 #     :PROJECT <string>: the name of the project if you want to generate nice outputs about external package install process
 #     :VERSION <version string>: the version of the external project that is installed, only usefull together with PROJECT keyword.
 #
@@ -1532,7 +1533,11 @@ endfunction(get_Environment_Info)
 #
 #     .. code-block:: cmake
 #
-#        get_Environment_Info(MAKE make_tool JOBS jobs-flag CXX COMPILER compiler_used CFLAGS compile_flags SHARED LDFLAGS linker_flags)
+#        install_External_Project( PROJECT yaml-cpp
+#                          VERSION 0.6.2
+#                          URL https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-0.6.2.tar.gz
+#                          ARCHIVE yaml-cpp-0.6.2.tar.gz
+#                          FOLDER yaml-cpp-yaml-cpp-0.6.2)
 #
 #
 function(install_External_Project)
@@ -1540,8 +1545,11 @@ function(install_External_Project)
   set(oneValueArgs PROJECT VERSION URL ARCHIVE FOLDER PATH)
   set(multiValueArgs)
   cmake_parse_arguments(INSTALL_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-  if(NOT INSTALL_EXTERNAL_PROJECT_PATH OR NOT INSTALL_EXTERNAL_PROJECT_URL OR NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE OR NOT INSTALL_EXTERNAL_PROJECT_FOLDER)
-    set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
+  if(NOT INSTALL_EXTERNAL_PROJECT_URL OR NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE OR NOT INSTALL_EXTERNAL_PROJECT_FOLDER)
+    if(INSTALL_EXTERNAL_PROJECT_PATH)
+      set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
+      set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+      endif()
     message(FATAL_ERROR "[PID] CRITICAL ERROR : PATH, URL, ARCHIVE and FOLDER arguments must be provided to install_External_Project.")
     return()
   endif()
@@ -1557,7 +1565,7 @@ function(install_External_Project)
 
   if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
     if(INSTALL_EXTERNAL_PROJECT_PROJECT)
-      message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT} ...")
+      message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
     endif()
     file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE} SHOW_PROGRESS)
   endif()
@@ -1566,7 +1574,10 @@ function(install_External_Project)
     if(INSTALL_EXTERNAL_PROJECT_PROJECT)
       message("[PID] ERROR : during deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot download the archive.")
     endif()
-    set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
+    if(INSTALL_EXTERNAL_PROJECT_PATH)
+      set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
+      set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+      endif()
     return()
   endif()
 
@@ -1589,11 +1600,124 @@ function(install_External_Project)
     if(INSTALL_EXTERNAL_PROJECT_PROJECT)
       message("[PID] ERROR : during deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot extract the archive.")
     endif()
-    set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
+    if(INSTALL_EXTERNAL_PROJECT_PATH)
+      set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
+      set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+      endif()
     return()
   endif()
 
   #simply resturn true at the end if required by the user
+if(INSTALL_EXTERNAL_PROJECT_PATH)
   set(${INSTALL_EXTERNAL_PROJECT_PATH} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER} PARENT_SCOPE)
-
+endif()
 endfunction(install_External_Project)
+
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |build_CMake_External_Project| replace:: ``build_CMake_External_Project``
+#  .. _build_CMake_External_Project:
+#
+#  build_CMake_External_Project
+#  ----------------------------
+#
+#   .. command:: build_CMake_External_Project(URL ... ARCHIVE ... FOLDER ... PATH ... [OPTIONS])
+#
+#     Configure, build and install a Cmake external project.
+#
+#     .. rubric:: Required parameters
+#
+#     :PROJECT <string>: The name of the external project.
+#     :FOLDER <string>: The name of the folder containing the project.
+#     :Mode <Release|Debug>: The build mode.
+#
+#     .. rubric:: Optional parameters
+#
+#     :QUIET: if used then the output of this command will be silent.
+#     :COMMENT <string>: A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.
+#     :DEFINITIONS <list of definitions>: the CMake definitions you need to provide to the cmake build script.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  Build and install the external project into workspace install tree..
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        build_CMake_External_Project( PROJECT yaml-cpp FOLDER yaml-cpp-yaml-cpp-0.6.2 MODE Release
+#                              DEFINITIONS BUILD_GMOCK=OFF BUILD_GTEST=OFF BUILD_SHARED_LIBS=ON YAML_CPP_BUILD_TESTS=OFF YAML_CPP_BUILD_TESTS=OFF YAML_CPP_BUILD_TOOLS=OFF YAML_CPP_BUILD_CONTRIB=OFF gtest_force_shared_crt=OFF
+#                              COMMENT "shared libraries")
+#
+#
+function(build_CMake_External_Project)
+  set(options QUIET) #used to define the context
+  set(oneValueArgs PROJECT FOLDER MODE COMMENT)
+  set(multiValueArgs DEFINITIONS)
+  cmake_parse_arguments(BUILD_CMAKE_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  if(NOT BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_CMAKE_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_CMAKE_EXTERNAL_PROJECT_MODE)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : PROJECT, FOLDER and MODE arguments are mandatory when calling build_CMake_External_Project.")
+    return()
+  endif()
+
+  if(BUILD_CMAKE_EXTERNAL_PROJECT_QUIET)
+    set(OUTPUT_MODE OUTPUT_QUIET)
+  endif()
+
+  if(BUILD_CMAKE_EXTERNAL_PROJECT_MODE STREQUAL Debug)
+    set(TARGET_MODE Debug)
+  else()
+    set(TARGET_MODE Release)
+  endif()
+  #create the build folder inside the project folder
+  set(project_build_dir ${TARGET_BUILD_DIR}/${BUILD_CMAKE_EXTERNAL_PROJECT_FOLDER}/build)
+  if(NOT EXISTS ${project_build_dir})
+    file(MAKE_DIRECTORY ${project_build_dir})#create the build dir
+  else()#clean the build folder
+    hard_Clean_Build_Folder(${project_build_dir})
+  endif()
+
+  # pre-populate the cache with the cache file of the workspace containing build infos,
+  # then populate with additionnal information
+  set(calling_defs)
+  foreach(def IN LISTS BUILD_CMAKE_EXTERNAL_PROJECT_DEFINITIONS)
+    list(APPEND calling_defs -D${def})
+  endforeach()
+
+  if(BUILD_CMAKE_EXTERNAL_PROJECT_COMMENT)
+    set(use_comment "(${BUILD_CMAKE_EXTERNAL_PROJECT_COMMENT}) ")
+  endif()
+
+  message("[PID] INFO : Configuring ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}...")
+
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=${TARGET_MODE}
+                            -DCMAKE_INSTALL_PREFIX=${TARGET_INSTALL_DIR}
+                            -DCMAKE_SKIP_INSTALL_RPATH=OFF
+                            -DCMAKE_SKIP_RPATH=OFF
+                            ${calling_defs}
+                            -C ${WORKSPACE_DIR}/pid/Workspace_Build_Info.cmake
+                            ..
+    WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE})
+
+  #once configure, build it
+  get_Environment_Info(MAKE make_program JOBS jobs)
+  message("[PID] INFO : Building ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
+  execute_process(
+    COMMAND ${make_program} ${jobs} WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
+  )
+
+  message("[PID] INFO : Installing ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
+  execute_process(
+    COMMAND ${make_program} install WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
+  )
+endfunction(build_CMake_External_Project)

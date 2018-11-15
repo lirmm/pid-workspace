@@ -17,19 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT crypt_FOUND) #any linux or macosx is posix ...
-	set(crypt_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(crypt_INCLUDE_DIRS CACHE INTERNAL "")
-	set(crypt_DEFINITIONS CACHE INTERNAL "")
-	set(crypt_LINK_OPTIONS CACHE INTERNAL "")
-	set(crypt_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/crypt/find_crypt.cmake)
-	if(crypt_FOUND)
-		set(crypt_LINK_OPTIONS ${crypt_LIBRARIES} CACHE INTERNAL "") #simply adding crypt library
-		set(CHECK_crypt_RESULT TRUE)
-	else()
-		set(CHECK_crypt_RESULT FALSE)
-	endif()
-else()
-	set(CHECK_crypt_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(crypt
+				VARIABLES LINK_OPTIONS
+				VALUES crypt_LIBRARIES)

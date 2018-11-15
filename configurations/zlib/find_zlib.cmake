@@ -17,7 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(zlib_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(zlib FALSE)
+
 # - Find zlib installation
 # Try to find libraries for zlib on UNIX systems. The following values are defined
 #  zlib_FOUND        - True if zlib is available
@@ -37,7 +40,7 @@ if (UNIX)
 	endif()
 
 	if(IS_FOUND)
-		set(zlib_FOUND TRUE CACHE INTERNAL "")
+		found_PID_Configuration(zlib TRUE)
 	endif ()
 
 	unset(IS_FOUND)

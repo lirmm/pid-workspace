@@ -1312,27 +1312,11 @@ if(platform STREQUAL PLATFORM_STRING)
 	endif()
 
 	foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
-    if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/find_${config}.cmake)
-      if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS)
-        prepare_Config_Arguments(${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS)#setting variables that correspond to the arguments passed to the check script
-      endif()
-      include(${WORKSPACE_DIR}/configurations/${config}/find_${config}.cmake)	# find the configuation
-			if(NOT ${config}_FOUND)# not found, trying to see if it can be installed
-				if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/installable_${config}.cmake)
-					include(${WORKSPACE_DIR}/configurations/${config}/installable_${config}.cmake)
-					if(NOT ${config}_INSTALLABLE)
-						set(${CHECK_OK} FALSE PARENT_SCOPE)
-						return()
-					endif()
-				else()
-					set(${CHECK_OK} FALSE PARENT_SCOPE)
-					return()
-				endif()
-			endif()
-		else()
-			set(${CHECK_OK} FALSE PARENT_SCOPE)
-			return()
-		endif()
+    is_Allowed_System_Configuration(ALLOWED ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS)
+    if(NOT ALLOWED)
+      set(${CHECK_OK} FALSE PARENT_SCOPE)
+      return()
+    endif()
 	endforeach()
 else()#the binary is not eligible since does not match either familly, os, arch or ABI of the current system
 	set(${CHECK_OK} FALSE PARENT_SCOPE)
@@ -2812,23 +2796,13 @@ endif()
 
 # 2) checking constraints on configuration
 foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this platform is supposed to be necessary
-  if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)
-    if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
-      prepare_Config_Arguments(${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})#setting variables that correspond to the arguments passed to the check script
-    endif()
-		include(${WORKSPACE_DIR}/configurations/${config}/check_${config}.cmake)	# check the platform constraint and install it if possible
-		if(NOT CHECK_${config}_RESULT) #constraints must be satisfied otherwise error
-      set(${RESULT} FALSE PARENT_SCOPE)
-      message("[PID] ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically.")
-			return()
-		else()
-			message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
-		endif()
-	else()
+  check_System_Configuration_With_Arguments(RESULT_OK BINARY_CONSTRAINTS ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+  if(RESULT_OK)
+    message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
+  else()
     set(${RESULT} FALSE PARENT_SCOPE)
-    message("[PID] ERROR : platform configuration constraint ${config} is not satisfied and cannot be solved automatically.")
     return()
-	endif()
+  endif()
 endforeach()
 
 # Manage external package dependencies => need to check direct external dependencies

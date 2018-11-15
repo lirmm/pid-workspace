@@ -17,23 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/configurations/boost/installable_boost.cmake)
-if(boost_INSTALLABLE)
-	message("[PID] INFO : trying to install boost...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get -y install libboost-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S boost --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/configurations/boost/find_boost.cmake)
-	if(boost_FOUND)
-		message("[PID] INFO : boost installed !")
-		set(boost_INSTALLED TRUE)
-	else()
-		set(boost_INSTALLED FALSE)
-		message("[PID] INFO : install of boost has failed !")
-	endif()
-else()
-	set(boost_INSTALLED FALSE)
+#installation process for known distributions
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_process(COMMAND sudo apt-get install -y libboost-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_process(COMMAND sudo pacman -S boost --noconfirm)
 endif()

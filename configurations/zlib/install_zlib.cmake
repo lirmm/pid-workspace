@@ -17,23 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/configurations/zlib/installable_zlib.cmake)
-if(zlib_INSTALLABLE)
-	message("[PID] INFO : trying to install zlib...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get install zlib1g zlib1g-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S zlib --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/configurations/zlib/find_zlib.cmake)
-	if(zlib_FOUND)
-		message("[PID] INFO : zlib installed !")
-		set(zlib_INSTALLED TRUE)
-	else()
-		set(zlib_INSTALLED FALSE)
-		message("[PID] INFO : install of zlib has failed !")
-	endif()
-else()
-	set(zlib_INSTALLED FALSE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_process(COMMAND sudo apt-get install zlib1g zlib1g-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_process(COMMAND sudo pacman -S zlib --noconfirm)
 endif()

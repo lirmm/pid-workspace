@@ -17,23 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/configurations/opengl/installable_opengl.cmake)
-if(opengl_INSTALLABLE)
-	message("[PID] INFO : trying to install opengl...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get install -y freeglut3-dev mesa-utils libglfw3-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S freeglut mesa glfw-x11 --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/configurations/opengl/find_opengl.cmake)
-	if(opengl_FOUND)
-		message("[PID] INFO : opengl installed !")
-		set(opengl_INSTALLED TRUE)
-	else()
-		set(opengl_INSTALLED FALSE)
-		message("[PID] INFO : install of opengl has failed !")
-	endif()
-else()
-	set(opengl_INSTALLED FALSE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_process(COMMAND sudo apt-get install -y freeglut3-dev mesa-utils libglfw3-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_process(COMMAND sudo pacman -S freeglut mesa glfw-x11 --noconfirm)
 endif()

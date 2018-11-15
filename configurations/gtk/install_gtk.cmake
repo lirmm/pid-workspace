@@ -17,14 +17,18 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(gtk3_FOUND FALSE CACHE INTERNAL "")
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GTK3 gtk+-3.0)
-pkg_check_modules(GTKMM gtkmm-3.0)
-
-if(GTK3_FOUND AND GTKMM_FOUND)
-	set(gtk3_FOUND TRUE CACHE INTERNAL "")
-	set(gtk3_INCLUDE_PATH ${GTKMM_INCLUDE_DIRS})
-	set(gtk3_LIBRARIES ${GTKMM_LIBRARIES})
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	if(gtk_version EQUAL 2)
+		execute_process(COMMAND sudo apt-get install -y libgtk2.0-dev libgtkmm-2.4-dev)
+	elseif(gtk_version EQUAL 3)
+		execute_process(COMMAND sudo apt-get install -y libgtkmm-3.0-dev)
+	endif()
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	if(gtk_version EQUAL 2)
+		execute_process(COMMAND sudo pacman -S gtk2 gtkmm)
+	elseif(gtk_version EQUAL 3)
+		execute_process(COMMAND sudo pacman -S gtkmm3)
+	endif()
 endif()

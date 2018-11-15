@@ -17,10 +17,12 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-	OR CURRENT_DISTRIBUTION STREQUAL debian
-	OR CURRENT_DISTRIBUTION STREQUAL arch)
-	set(gtk3_INSTALLABLE TRUE)
-else()
-	set(gtk3_INSTALLABLE FALSE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(gtk
+				VARIABLES VERSION			INCLUDE_DIRS       LINK_OPTIONS	LIBRARIES	LIBRARY_DIRS
+				VALUES 		GTK_VERSION GTK_INCLUDE_PATH   GTK_LINKS		GTK_LIBS	GTK_LIBRARY_DIRS)
+
+# constraints
+PID_Configuration_Constraints(gtk OPTIONAL preferred IN_BINARY version VALUE GTK_VERSION)

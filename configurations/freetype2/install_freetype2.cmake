@@ -17,23 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/configurations/freetype2/installable_freetype2.cmake)
-if(freetype2_INSTALLABLE)
-	message("[PID] INFO : trying to install freetype2...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get install libfreetype6-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S freetype2 --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/configurations/freetype2/find_freetype2.cmake)
-	if(freetype2_FOUND)
-		message("[PID] INFO : freetype2 installed !")
-		set(freetype2_INSTALLED TRUE)
-	else()
-		set(freetype2_INSTALLED FALSE)
-		message("[PID] INFO : install of freetype2 has failed !")
-	endif()
-else()
-	set(freetype2_INSTALLED FALSE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_process(COMMAND sudo apt-get install -y libfreetype6-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_process(COMMAND sudo pacman -S freetype2 --noconfirm)
 endif()

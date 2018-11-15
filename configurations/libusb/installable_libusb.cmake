@@ -17,10 +17,12 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+include(Configuration_Definition NO_POLICY_SCOPE)
+
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian
 	OR CURRENT_DISTRIBUTION STREQUAL arch)
-	set(libusb_INSTALLABLE TRUE)
+	installable_PID_Configuration(libusb TRUE)
 else()
-	set(libusb_INSTALLABLE FALSE)
+	installable_PID_Configuration(libusb FALSE)
 endif()

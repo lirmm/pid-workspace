@@ -17,25 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT opengl_FOUND)
-	set(opengl_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(opengl_INCLUDE_DIRS CACHE INTERNAL "")
-	set(opengl_LINK_OPTIONS CACHE INTERNAL "")
-	set(opengl_DEFINITIONS CACHE INTERNAL "")
-	set(opengl_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/opengl/find_opengl.cmake)
-	if(opengl_FOUND)
-		set(opengl_LINK_OPTIONS ${opengl_LIBRARIES} CACHE INTERNAL "")
-		set(CHECK_opengl_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/opengl/install_opengl.cmake)
-		if(opengl_INSTALLED)
-			set(opengl_LINK_OPTIONS ${opengl_LIBRARIES} CACHE INTERNAL "")
-			set(CHECK_opengl_RESULT TRUE)
-		else()
-			set(CHECK_opengl_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_opengl_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(opengl
+				VARIABLES LINK_OPTIONS
+				VALUES 		opengl_LIBRARIES)

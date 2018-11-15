@@ -17,9 +17,11 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+include(Configuration_Definition NO_POLICY_SCOPE)
+
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian)
-	set(turbojpeg_INSTALLABLE TRUE)
+	installable_PID_Configuration(turbojpeg TRUE)
 else()
-	set(turbojpeg_INSTALLABLE FALSE)
+	installable_PID_Configuration(turbojpeg FALSE)
 endif()

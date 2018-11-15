@@ -17,25 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT turbojpeg_FOUND) #any linux or macosx is zlib ...
-	set(turbojpeg_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(turbojpeg_INCLUDE_DIRS CACHE INTERNAL "")
-	set(turbojpeg_LINK_OPTIONS CACHE INTERNAL "")
-	set(turbojpeg_DEFINITIONS CACHE INTERNAL "")
-	set(turbojpeg_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/turbojpeg/find_turbojpeg.cmake)
-	if(turbojpeg_FOUND)
-		set(turbojpeg_LINK_OPTIONS ${turbojpeg_LIBRARIES} CACHE INTERNAL "") #simply adding all turbojpeg standard libraries
-		set(CHECK_turbojpeg_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/turbojpeg/install_turbojpeg.cmake)
-		if(turbojpeg_INSTALLED)
-			set(turbojpeg_LINK_OPTIONS ${turbojpeg_LIBRARIES} CACHE INTERNAL "") #simply adding all turbojpeg standard libraries
-			set(CHECK_turbojpeg_RESULT TRUE)
-		else()
-			set(CHECK_turbojpeg_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_turbojpeg_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(turbojpeg
+				VARIABLES LINK_OPTIONS
+				VALUES 		turbojpeg_LIBRARIES)

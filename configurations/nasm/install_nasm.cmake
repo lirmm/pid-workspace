@@ -17,24 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-
-include(${WORKSPACE_DIR}/configurations/nasm/installable_nasm.cmake)
-if(nasm_INSTALLABLE)
-	message("[PID] INFO : trying to install nasm...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get install nasm)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S nasm --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/configurations/nasm/find_nasm.cmake)
-	if(nasm_FOUND)
-		message("[PID] INFO : nasm installed !")
-		set(nasm_INSTALLED TRUE)
-	else()
-		set(nasm_INSTALLED FALSE)
-		message("[PID] INFO : install of nasm has failed !")
-	endif()
-else()
-	set(nasm_INSTALLED FALSE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_process(COMMAND sudo apt-get install -y nasm)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_process(COMMAND sudo pacman -S nasm --noconfirm)
 endif()

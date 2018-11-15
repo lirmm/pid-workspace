@@ -31,6 +31,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 
 include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
+include(Configuration_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
 include(CMakeParseArguments)
 
 #.rst:
@@ -944,7 +945,7 @@ macro(PID_Component)
 endmacro(PID_Component)
 
 macro(declare_PID_Component)
-set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON)
+set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES INSTALL_SYMLINKS DEPENDS EXPORT)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )

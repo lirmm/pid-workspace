@@ -17,10 +17,12 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+include(Configuration_Definition NO_POLICY_SCOPE)
+
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian
 	OR CURRENT_DISTRIBUTION STREQUAL arch)
-	set(freetype2_INSTALLABLE TRUE)
+	installable_PID_Configuration(freetype2 TRUE)
 else()
-	set(freetype2_INSTALLABLE FALSE)
+	installable_PID_Configuration(freetype2 FALSE)
 endif()

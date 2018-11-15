@@ -17,23 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT imagemagic_FOUND)
-	set(imagemagic_INCLUDE_DIRS CACHE INTERNAL "")
-	set(imagemagic_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(imagemagic_DEFINITIONS CACHE INTERNAL "")
-	set(imagemagic_LINK_OPTIONS CACHE INTERNAL "")
-	set(imagemagic_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/imagemagic/find_imagemagic.cmake)
-	if(imagemagic_FOUND)
-		set(CHECK_imagemagic_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/imagemagic/install_imagemagic.cmake)
-		if(imagemagic_INSTALLED)
-			set(CHECK_imagemagic_RESULT TRUE)
-		else()
-			set(CHECK_imagemagic_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_imagemagic_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(imagemagic
+				VARIABLES LINK_OPTIONS					INCLUDE_DIRS
+				VALUES 		ImageMagick_LIBRARIES	ImageMagick_INCLUDE_DIRS)

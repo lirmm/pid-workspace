@@ -17,7 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(opengl_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(opengl FALSE)
+
 if(UNIX)
 	#searching only in standard paths
 	if(APPLE)
@@ -37,7 +40,7 @@ if(UNIX)
 			unset(opengl_gl_LIBRARY CACHE)
 			unset(opengl_agl_LIBRARY CACHE)
 			unset(opengl_glfw3_LIBRARY CACHE)
-			set(opengl_FOUND TRUE CACHE INTERNAL "")
+			found_PID_Configuration(opengl TRUE)
 		endif()
 	else()
 		#search headers only in standard path
@@ -65,7 +68,7 @@ if(UNIX)
 			unset(opengl_glu_LIBRARY CACHE)
 			unset(opengl_glut_LIBRARY CACHE)
 			unset(opengl_glfw3_LIBRARY CACHE)
-			set(opengl_FOUND TRUE CACHE INTERNAL "")
+			found_PID_Configuration(opengl TRUE)
 		endif()
 	endif()
 

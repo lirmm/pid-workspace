@@ -17,7 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(libjpeg_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+found_PID_Configuration(libjpeg FALSE)
+
 # - Find libjpeg installation
 # Try to find libraries for libjpeg on UNIX systems. The following values are defined
 #  libjpeg_FOUND        - True if libjpeg is available
@@ -37,7 +40,7 @@ if (UNIX)
 	endif()
 
 	if(IS_FOUND)
-		set(libjpeg_FOUND TRUE CACHE INTERNAL "")
+		found_PID_Configuration(libjpeg TRUE)
 	endif ()
 
 	unset(IS_FOUND)

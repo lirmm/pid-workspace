@@ -187,6 +187,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 ## clearing a package install directory
 add_custom_target(hard_clean
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
+					-DRECONFIGURE=\${configure}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Hard_Clean_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

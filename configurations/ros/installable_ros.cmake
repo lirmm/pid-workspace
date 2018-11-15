@@ -17,8 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+include(Configuration_Definition NO_POLICY_SCOPE)
+
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu)
-	set(ros_INSTALLABLE TRUE)
+	installable_PID_Configuration(ros TRUE)
 else()
-	set(ros_INSTALLABLE FALSE)
+	installable_PID_Configuration(ros FALSE)
 endif()

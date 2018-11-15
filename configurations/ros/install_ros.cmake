@@ -16,13 +16,7 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
-
-include(${WORKSPACE_DIR}/configurations/ros/installable_ros.cmake)
-if(ros_INSTALLABLE)
-	message("[PID] INFO : trying to install ROS ${ros_distribution}...")
 	if(CURRENT_DISTRIBUTION STREQUAL ubuntu)
-
 		set(ROS_PATH "/opt/ros/${ros_distribution}")
 		if(NOT EXISTS ${ROS_PATH})#the given distribution does not exist on the filesystem
 			#updating apt to know where to find ROS packages
@@ -61,15 +55,4 @@ if(ros_INSTALLABLE)
 		endif()
 
 	endif()
-	return()
-endif()
-
-#whatever the distribution try to find ROS distro
-include(${WORKSPACE_DIR}/configurations/ros/find_ros.cmake)
-if(ros_FOUND)
-	set(ros_INSTALLED TRUE)
-	message("[PID] INFO : ROS ${ros_distribution} installed !")
-else()
-	set(ros_INSTALLED FALSE)
-	message("[PID] INFO : install of ROS ${ros_distribution} has failed !")
 endif()

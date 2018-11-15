@@ -17,25 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT fontconfig_FOUND)
-	set(fontconfig_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(fontconfig_INCLUDE_DIRS CACHE INTERNAL "")
-	set(fontconfig_LINK_OPTIONS CACHE INTERNAL "")
-	set(fontconfig_DEFINITIONS CACHE INTERNAL "")
-	set(fontconfig_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/fontconfig/find_fontconfig.cmake)
-	if(fontconfig_FOUND)
-		set(fontconfig_LINK_OPTIONS ${fontconfig_LIBRARIES} CACHE INTERNAL "")
-		set(CHECK_fontconfig_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/fontconfig/install_fontconfig.cmake)
-		if(fontconfig_INSTALLED)
-			set(fontconfig_LINK_OPTIONS ${fontconfig_LIBRARIES} CACHE INTERNAL "")
-			set(CHECK_fontconfig_RESULT TRUE)
-		else()
-			set(CHECK_fontconfig_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_fontconfig_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(fontconfig
+				VARIABLES LINK_OPTIONS
+				VALUES 		fontconfig_LIBRARIES)

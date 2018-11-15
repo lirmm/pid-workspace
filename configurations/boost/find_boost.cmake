@@ -17,17 +17,22 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(boost_FOUND FALSE CACHE INTERNAL "")
+include(Configuration_Definition NO_POLICY_SCOPE)
 
-find_package(Boost)
+found_PID_Configuration(boost FALSE)
+if(boost_libraries)
+	find_package(Boost COMPONENTS ${boost_libraries})
+else()
+	find_package(Boost)
+endif()
 if(NOT Boost_FOUND)
 	unset(Boost_FOUND)
 	return()
 endif()
-
+if(Boost_LIBRARIES)
+	convert_PID_Libraries_Into_System_Links(Boost_LIBRARIES Boost_LINKS)#getting good system links (with -l)
+endif()
+set(Boost_COMPONENTS ${boost_libraries})
 set(BOOST_VERSION ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION})
-set(Boost_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
-set(Boost_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
-message("Boost_LIBRARIES=${Boost_LIBRARIES}")
-set(boost_FOUND TRUE CACHE INTERNAL "")
+found_PID_Configuration(boost TRUE)
 unset(Boost_FOUND)

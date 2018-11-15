@@ -17,23 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(${WORKSPACE_DIR}/configurations/libpng/installable_libpng.cmake)
-if(libpng_INSTALLABLE)
-	message("[PID] INFO : trying to install libpng...")
-	if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-		OR CURRENT_DISTRIBUTION STREQUAL debian)
-		execute_process(COMMAND sudo apt-get install libpng-dev)
-	elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-		execute_process(COMMAND sudo pacman -S libpng --noconfirm)
-	endif()
-	include(${WORKSPACE_DIR}/configurations/libpng/find_libpng.cmake)
-	if(libpng_FOUND)
-		message("[PID] INFO : libpng installed !")
-		set(libpng_INSTALLED TRUE)
-	else()
-		set(libpng_INSTALLED FALSE)
-		message("[PID] INFO : install of libpng has failed !")
-	endif()
-else()
-	set(libpng_INSTALLED FALSE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_process(COMMAND sudo apt-get install -y libpng-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_process(COMMAND sudo pacman -S libpng --noconfirm)
 endif()

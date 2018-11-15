@@ -17,25 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT freetype2_FOUND)
-	set(freetype2_COMPILE_OPTIONS CACHE INTERNAL "")
-	set(freetype2_INCLUDE_DIRS CACHE INTERNAL "")
-	set(freetype2_LINK_OPTIONS CACHE INTERNAL "")
-	set(freetype2_DEFINITIONS CACHE INTERNAL "")
-	set(freetype2_RPATH CACHE INTERNAL "")
-	include(${WORKSPACE_DIR}/configurations/freetype2/find_freetype2.cmake)
-	if(freetype2_FOUND)
-		set(freetype2_LINK_OPTIONS ${freetype2_LIBRARIES} CACHE INTERNAL "")
-		set(CHECK_freetype2_RESULT TRUE)
-	else()
-		include(${WORKSPACE_DIR}/configurations/freetype2/install_freetype2.cmake)
-		if(freetype2_INSTALLED)
-			set(freetype2_LINK_OPTIONS ${freetype2_LIBRARIES} CACHE INTERNAL "")
-			set(CHECK_freetype2_RESULT TRUE)
-		else()
-			set(CHECK_freetype2_RESULT FALSE)
-		endif()
-	endif()
-else()
-	set(CHECK_freetype2_RESULT TRUE)
-endif()
+include(Configuration_Definition NO_POLICY_SCOPE)
+
+# returned variables
+PID_Configuration_Variables(freetype2
+				VARIABLES LINK_OPTIONS
+				VALUES 		freetype2_LIBRARIES)
