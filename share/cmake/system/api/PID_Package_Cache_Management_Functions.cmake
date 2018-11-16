@@ -730,6 +730,8 @@ endfunction(is_Python_Module)
 #
 #     :include_dirs: the list of external include path known by the component.
 #
+#     :library_dirs: the list of path where to search libraries.
+#
 #     :dep_defs:  the list of preprocessor definitions defined by the component but used in the interface of its external dependencies.
 #
 #     :exported_defs:  the list of preprocessor definitions defined by the component and used in its own interface.
@@ -746,7 +748,7 @@ endfunction(is_Python_Module)
 #
 #     :runtime_resources: the list of path to runtime resources used by the component.
 #
-function (configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links c_standard cxx_standard runtime_resources)
+function (configure_Install_Variables component export include_dirs library_dirs dep_defs exported_defs exported_options static_links shared_links c_standard cxx_standard runtime_resources)
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(dep_defs OR exported_defs)
@@ -755,6 +757,9 @@ if(export) # if dependancy library is exported then we need to register its dep_
 	endif()
 	if(include_dirs)
     append_Unique_In_Cache(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} "${include_dirs}")
+	endif()
+	if(library_dirs)
+    append_Unique_In_Cache(${PROJECT_NAME}_${component}_LIB_DIRS${USE_MODE_SUFFIX} "${library_dirs}")
 	endif()
 	if(exported_options)
     append_Unique_In_Cache(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} "${exported_options}")
@@ -796,7 +801,7 @@ if(IS_LESS)
 endif()
 
 if(runtime_resources)#runtime resources are exported in any case
-  append_Unique_In_Cache(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES "${runtime_resources}")
+  append_Unique_In_Cache(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} "${runtime_resources}")
 endif()
 endfunction(configure_Install_Variables)
 
@@ -1717,6 +1722,7 @@ foreach(a_component IN LISTS ${package}_COMPONENTS)
 	endif()
 	if(NOT IS_HF_COMP)#it is a library but not a module library
 		file(APPEND ${file} "set(${package}_${a_component}_INC_DIRS${MODE_SUFFIX} ${${package}_${a_component}_INC_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${package}_${a_component}_LIB_DIRS${MODE_SUFFIX} ${${package}_${a_component}_LIB_DIRS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_OPTS${MODE_SUFFIX} ${${package}_${a_component}_OPTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} ${${package}_${a_component}_DEFS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
