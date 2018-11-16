@@ -393,7 +393,6 @@ if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported
 		endif()
 	endforeach()
 endif()
-message("DEBUG get_Bin_Component_Direct_Runtime_Resources_Dependencies package=${package} component=${component} result=${result}")
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_Resources_Dependencies)
 
