@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(opengl
-				VARIABLES LINK_OPTIONS
-				VALUES 		opengl_LIBRARIES)
+				VARIABLES LINK_OPTIONS	LIBRARY_DIRS 		RPATH   			INCLUDE_DIRS
+				VALUES 		OPENGL_LINKS	OPENGL_LIBDIRS	OPENGL_LIBS 	OPENGL_INCS)

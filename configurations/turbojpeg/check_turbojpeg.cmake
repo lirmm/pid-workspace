@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(turbojpeg
-				VARIABLES LINK_OPTIONS
-				VALUES 		turbojpeg_LIBRARIES)
+				VARIABLES LINK_OPTIONS		RPATH								INCLUDE_DIRS						LIBRARY_DIRS
+				VALUES 		TURBOJPEG_LINKS TURBOJPEG_LIBRARIES TurboJPEG_INCLUDE_DIRS	TURBOJPEG_LIBDIR)

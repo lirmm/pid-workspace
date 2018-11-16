@@ -28,10 +28,12 @@ if(UNIX)
 	if(NOT openssl_INCLUDE_DIR MATCHES openssl_INCLUDE_DIR-NOTFOUND
 	AND NOT openssl_SSL_LIBRARY MATCHES openssl_SSL_LIBRARY-NOTFOUND
 	AND NOT openssl_CRYPTO_LIBRARY MATCHES openssl_CRYPTO_LIBRARY-NOTFOUND)
-		set(openssl_LIBRARIES ${openssl_SSL_LIBRARY} ${openssl_CRYPTO_LIBRARY})
-		unset(openssl_INCLUDE_DIR CACHE)
-		unset(openssl_SSL_LIBRARY CACHE)
-		unset(openssl_CRYPTO_LIBRARY CACHE)
+		set(OPENSSL_LIBRARIES ${openssl_SSL_LIBRARY} ${openssl_CRYPTO_LIBRARY})
+		convert_PID_Libraries_Into_System_Links(OPENSSL_LIBRARIES OPENSSL_LINKS)#getting good system links (with -l)
+		convert_PID_Libraries_Into_Library_Directories(OPENSSL_LIBRARIES OPENSSL_LIBDIRS)
+
 		found_PID_Configuration(openssl TRUE)
 	endif()
+	unset(openssl_SSL_LIBRARY CACHE)
+	unset(openssl_CRYPTO_LIBRARY CACHE)
 endif()

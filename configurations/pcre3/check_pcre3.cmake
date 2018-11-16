@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(pcre3
-				VARIABLES LINK_OPTIONS
-				VALUES 		pcre3_LIBRARIES)
+				VARIABLES LINK_OPTIONS		LIBRARY_DIRS 		RPATH   		INCLUDE_DIRS
+				VALUES 		PCRE3_LINKS			PCRE3_LIBDIRS		pcre3_LIB 	pcre3_INCLUDE_PATH)

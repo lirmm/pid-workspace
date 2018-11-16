@@ -42,10 +42,10 @@ if (UNIX)
 		NAMES crypt
 		PATHS /usr/local/lib /usr/lib /lib )
 
-	set(crypt_LIBRARIES) # start with empty list
 	set(IS_FOUND TRUE)
 	if(crypt_INCLUDE_PATH AND crypt_LIB)
-		set(crypt_LIBRARIES ${crypt_LIBRARIES} -lcrypt)
+		convert_PID_Libraries_Into_System_Links(crypt_LIB CRYPT_LINKS)#getting good system links (with -l)
+		convert_PID_Libraries_Into_Library_Directories(crypt_LIB CRYPT_LIBDIR)
 	else()
 		message("[PID] ERROR : cannot find crypt library.")
 		set(IS_FOUND FALSE)
@@ -56,7 +56,5 @@ if (UNIX)
 	endif ()
 
 	unset(IS_FOUND)
-	unset(crypt_INCLUDE_PATH CACHE)
-	unset(crypt_LIB CACHE)
 	set(CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK_SAVE})
 endif ()

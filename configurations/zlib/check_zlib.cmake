@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(zlib
-				VARIABLES LINK_OPTIONS
-				VALUES 		zlib_LIBRARIES)
+				VARIABLES LINK_OPTIONS	LIBRARY_DIRS 	RPATH   	INCLUDE_DIRS
+				VALUES 		ZLIB_LINKS		ZLIB_LIBDIRS	zlib_LIB 	zlib_INCLUDE_PATH)

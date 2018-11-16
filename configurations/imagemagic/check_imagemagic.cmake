@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(imagemagic
-				VARIABLES LINK_OPTIONS					INCLUDE_DIRS
-				VALUES 		ImageMagick_LIBRARIES	ImageMagick_INCLUDE_DIRS)
+				VARIABLES LINK_OPTIONS					LIBRARY_DIRS 				RPATH   								INCLUDE_DIRS
+				VALUES 		ImageMagick_LINKS			ImageMagick_LIBDIR	ImageMagick_LIBRARIES 	ImageMagick_INCLUDE_DIRS)

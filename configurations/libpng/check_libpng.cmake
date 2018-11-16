@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(libpng
-				VARIABLES LINK_OPTIONS
-				VALUES 		libpng_LIBRARIES)
+				VARIABLES LINK_OPTIONS			LIBRARY_DIRS 		RPATH   			INCLUDE_DIRS
+				VALUES 		LIBJPNG_LINKS			LIBPNG_LIBDIR		libpng_LIB 		libpng_INCLUDE_PATH)

@@ -19,7 +19,8 @@
 
 include(Configuration_Definition NO_POLICY_SCOPE)
 
+
 # returned variables
 PID_Configuration_Variables(libjpeg
-				VARIABLES LINK_OPTIONS
-				VALUES 		libjpeg_LIBRARIES)
+				VARIABLES LINK_OPTIONS			LIBRARY_DIRS 		RPATH   			INCLUDE_DIRS
+				VALUES 		LIBJPEG_LINKS			LIBJPEG_LIBDIR	libjpeg_LIB 	libjpeg_INCLUDE_PATH)

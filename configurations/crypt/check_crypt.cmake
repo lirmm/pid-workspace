@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(crypt
-				VARIABLES LINK_OPTIONS
-				VALUES crypt_LIBRARIES)
+				VARIABLES LINK_OPTIONS	LIBRARY_DIRS	RPATH			INCLUDE_DIRS
+				VALUES 		CRYPT_LINKS		CRYPT_LIBDIR	crypt_LIB crypt_INCLUDE_PATH)

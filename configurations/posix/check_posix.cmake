@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(posix
-				VARIABLES LINK_OPTIONS
-				VALUES 		posix_LIBRARIES)
+				VARIABLES LINK_OPTIONS		LIBRARY_DIRS 		RPATH   		INCLUDE_DIRS
+				VALUES 		POSIX_LINKS			POSIX_LIBDIRS		POSIX_LIBS 	POSIX_INCS)

@@ -2094,7 +2094,7 @@ endfunction(is_External_Package_Defined)
 #
 #   .. command:: resolve_External_Libs_Path(COMPLETE_LINKS_PATH ext_links mode)
 #
-#    Resolve any kind of lik option, either static or relative, absolute or relative to provide an absolute path (most of time pointing to a library in the workspace).
+#    Resolve any kind of link option, either static or shared, absolute or relative to provide an absolute path (most of time pointing to a library in the workspace).
 #
 #     :ext_links: the link options to resolve.
 #
@@ -2229,11 +2229,11 @@ endfunction(resolve_External_Includes_Path)
 #
 #     :COMPLETE_RESOURCES_PATH: the output variable that contains the resolved paths.
 #
-function(resolve_External_Resources_Path COMPLETE_RESOURCES_PATH package ext_resources mode)
+function(resolve_External_Resources_Path COMPLETE_RESOURCES_PATH ext_resources mode)
 set(res_resources)
 foreach(resource IN LISTS ext_resources)
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${resource})
-	if(NOT RES STREQUAL ${resource})# a replacement has taken place => this is a relative path to an external package resource
+	if(NOT RES STREQUAL resource)# a replacement has taken place => this is a relative path to an external package resource
 		set(fullpath)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
@@ -2245,13 +2245,78 @@ foreach(resource IN LISTS ext_resources)
 			set(fullpath ${PATHTO}${relative_path})
 			list(APPEND res_resources ${fullpath})
 		endif()
-	else()
-		list(APPEND res_resources ${resource})	#for  relative path or system dependencies (absolute path) simply copying the path
+  elseif(DEFINED ${resource})#the resource is not a path but a variable => need to interpret it !
+    list(APPEND res_resources ${${resource}})	# evaluate the variable to get the system path
+  else()#this is a relative path (relative to a native package) or an absolute path
+		list(APPEND res_resources ${resource})	#for relative path or system dependencies (absolute path) simply copying the path
 	endif()
 endforeach()
 set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
 endfunction(resolve_External_Resources_Path)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |evaluate_Variables_In_List| replace:: ``evaluate_Variables_In_List``
+#  .. _evaluate_Variables_In_List:
+#
+#  evaluate_Variables_In_List
+#  --------------------------
+#
+#   .. command:: evaluate_Variables_In_List(variable)
+#
+#     Evaluate the variables contained in a list.
+#
+#     :variable: the parent scope variable to evaluate. Its content will potentially be modified after execution.
+#
+#     :out_list: the output variable that contain the resulting list.
+#
+function(evaluate_Variables_In_List out_list variable)
+  if(NOT variable OR NOT ${variable})#nothing inside parent scope variable
+    set(${out_list} PARENT_SCOPE)
+    return()
+  endif()
+  set(resulting_list)
+  foreach(element IN LISTS ${variable})#for each element contained in the variable
+    if(DEFINED ${element})#the element is a variable !!!
+      list(APPEND resulting_list ${${element}})#we put into result the evaluation of this variable
+    else()
+      list(APPEND resulting_list ${element})#we directly put the value into result
+    endif()
+  endforeach()
+  set(${out_list} ${resulting_list} PARENT_SCOPE)
+endfunction(evaluate_Variables_In_List)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |append_Prefix_In_List| replace:: ``append_Prefix_In_List``
+#  .. _append_Prefix_In_List:
+#
+#  append_Prefix_In_List
+#  ---------------------
+#
+#   .. command:: append_Prefix_In_List(prefix variable)
+#
+#     Append a prefix string at the beginning of each element of a list.
+#
+#     :prefix: the string to append as prefix.
+#
+#     :variable: the input parent scope variable. Its content is modified after execution.
+#
+function(append_Prefix_In_List prefix variable)
+  if(NOT variable OR NOT ${variable})#nothing inside parent scope variable
+    return()
+  endif()
+  set(resulting_list)
+  foreach(element IN LISTS ${variable})#for each element contained in the variable
+    list(APPEND resulting_list "${prefix}${element}")
+  endforeach()
+  set(${variable} ${resulting_list} PARENT_SCOPE)
+endfunction(append_Prefix_In_List)
 
 #############################################################
 ################ Package Life cycle management ##############
@@ -3493,34 +3558,51 @@ endfunction(is_CXX_Standard_Option)
 #
 # .. ifmode:: internal
 #
-#  .. |take_Greater_Standard_Version| replace:: ``take_Greater_Standard_Version``
-#  .. _take_Greater_Standard_Version:
+#  .. |take_Greater_C_Standard_Version| replace:: ``take_Greater_C_Standard_Version``
+#  .. _take_Greater_C_Standard_Version:
 #
-#  take_Greater_Standard_Version
-#  -----------------------------
+#  take_Greater_C_Standard_Version
+#  -------------------------------
 #
-#   .. command:: take_Greater_Standard_Version(greater_c_var to_compare_c_var greater_cxx_var to_compare_cxx_var)
+#   .. command:: take_Greater_C_Standard_Version(greater_c_var to_compare_c_var)
 #
-#    Set the greater C and C++ language to the greatest version passed as parameter.
+#    Set the greater C language to the greatest version passed as parameter.
 #
 #     :greater_c_var: the input/output variable that is called with any C language standard before call and is the greater C language standard after call.
 #
 #     :to_compare_c_var: the input variable that contains the C language standard to compare with.
 #
-#     :greater_cxx_var: the input/output variable that is called with any C++ language standard before call and is the greater C language standard after call.
-#
-#     :to_compare_cxx_var: the input variable that contains the C++ language standard to compare with.
-#
-function(take_Greater_Standard_Version greater_c_var to_compare_c_var greater_cxx_var to_compare_cxx_var)
+function(take_Greater_C_Standard_Version greater_c_var to_compare_c_var)
 	is_C_Version_Less(IS_LESS "${${greater_c_var}}" "${${to_compare_c_var}}")
 	if(IS_LESS)
 		set(${greater_c_var} ${${to_compare_c_var}} PARENT_SCOPE)
 	endif()
+endfunction(take_Greater_C_Standard_Version)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |take_Greater_CXX_Standard_Version| replace:: ``take_Greater_CXX_Standard_Version``
+#  .. _take_Greater_CXX_Standard_Version:
+#
+#  take_Greater_CXX_Standard_Version
+#  ---------------------------------
+#
+#   .. command:: take_Greater_CXX_Standard_Version(greater_cxx_var to_compare_cxx_var)
+#
+#    Set the greater C++ language to the greatest version passed as parameter.
+#
+#     :greater_cxx_var: the input/output variable that is called with any C++ language standard before call and is the greater C language standard after call.
+#
+#     :to_compare_cxx_var: the input variable that contains the C++ language standard to compare with.
+#
+function(take_Greater_CXX_Standard_Version greater_cxx_var to_compare_cxx_var)
 	is_CXX_Version_Less(IS_LESS "${${greater_cxx_var}}" "${${to_compare_cxx_var}}")
 	if(IS_LESS)
 		set(${greater_cxx_var} ${${to_compare_cxx_var}} PARENT_SCOPE)
 	endif()
-endfunction(take_Greater_Standard_Version)
+endfunction(take_Greater_CXX_Standard_Version)
 
 
 #################################################################################################

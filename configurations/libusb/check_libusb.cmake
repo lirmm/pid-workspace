@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(libusb
-				VARIABLES LINK_OPTIONS
-				VALUES 		libusb_LIBRARIES)
+				VARIABLES LINK_OPTIONS			LIBRARY_DIRS 		RPATH   			INCLUDE_DIRS
+				VALUES 		LIBUSB_LINKS			LIBUSB_LIBDIR		libusb_LIB 		libusb_INCLUDE_PATH)

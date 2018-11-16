@@ -439,9 +439,11 @@ endmacro(declare_PID_External_Component)
 #
 #   .. command:: declare_PID_External_Component_Dependency(PACKAGE ... COMPONENT ... [EXTERNAL ...] USE|EXPORT ... [OPTIONS])
 #
-#      Declare a dependency for an external component in an external package, that is then known in the context of the currently built PID package.. This dependency specifies that external either:
+#      Declare a dependency for an external component in an external package, that is then known in the context of the currently built PID package.
+#      This dependency specifies that external component either:
 #      + depends on another external component, either belonging to the same or another external package.
-#      + directly depends on the use of headers and libraries if no component description exist.
+#      + directly depends on the use of headers and libraries contained in the external package if no component description exist.
+#      + depends on system configuration, such as system libraries
 #
 #     .. rubric:: Required parameters
 #
@@ -454,6 +456,7 @@ endmacro(declare_PID_External_Component)
 #     :USE <name of the component used>: If the dependency is an external component described with this API, use USE keyword if the component is not exported (its interface is not exposed by the currently described external component). Cannot be used together with EXPORT keyword.
 #     :EXPORT <name of the component used>: If the dependency is an external component described with this API, use EXPORT keyword if the component is exported (its interface is exposed by the currently described external component). Cannot be used together with USE keyword.
 #     :ÌNCLUDES <list of folders>: list of include path, relative to external package version folder. These include directories contain the interface of the component. To be used when no component description is provided by the used external package.
+#     :LIBRARY_DIRS <list of path>: list of path to folder that may contain system libraries in use. These folders typically contain the libraries pointed by -l<name>.
 #     :DEFINITIONS <list of definitions>: list of preprocessor definitions to use when building a component that uses this external component. To be used when no component description is provided by the used external package.
 #     :COMPILER_OPTIONS <list of options>: list of compiler options to use when building a component that uses this external component. Should contain only real compiler options and not either definition or includes directives. To be used when no component description is provided by the used external package.
 #     :SHARED_LINKS <list of shared links>: list of path to shared library binaries, relative to external package version folder. To be used when no component description is provided by the used external package.
@@ -483,7 +486,7 @@ endmacro(declare_PID_External_Component)
 macro(declare_PID_External_Component_Dependency)
 	set(options)
 	set(oneValueArgs PACKAGE COMPONENT EXTERNAL EXPORT USE)
-	set(multiValueArgs INCLUDES STATIC_LINKS SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
+	set(multiValueArgs INCLUDES LIBRARY_DIRS STATIC_LINKS SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
 	cmake_parse_arguments(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 	if(NOT DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE OR NOT DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT)
 		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: you must define the PACKAGE (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}) and the name of the component using COMPONENT keyword (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT}).")
@@ -516,9 +519,8 @@ macro(declare_PID_External_Component_Dependency)
 		endif()
 		set(TARGET_PACKAGE ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXTERNAL})
 		#in that case a component is not mandatory defined we can just target the libraries inside the depdendency packages
-	else() #if not an external component it means it is an internal one
-		#in that case the component must be defined
-		set(TARGET_PACKAGE)#internal means the dependency is tlocal
+	else() #if not an external component, it means it is either an internal (local to the external package being defined) one or a dependency to system configuration
+		set(TARGET_PACKAGE)
 	endif()
 
 	#configuring target component
@@ -558,83 +560,85 @@ macro(declare_PID_External_Component_Dependency)
 			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_EXPORT_${TARGET_PACKAGE}_${TARGET_COMPONENT}${VAR_SUFFIX} ${EXPORT_TARGET} CACHE INTERNAL "")
 		endif()
 	else() #otherwise this is a direct reference to external package content
-		set(list_of_deps ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}} ${TARGET_PACKAGE})
-		list(REMOVE_DUPLICATES list_of_deps)
-		set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${list_of_deps} CACHE INTERNAL "")
-		#this previous line is used to tell the system that path inside this component's variables have to be resolved again that external package
-		if(NOT TARGET_PACKAGE) #check that we really target an external package
-			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: a target external package name must be defined when a component dependency is defined with no target component (use the EXTERNAL KEYWORD).")
-			return()
+    if(TARGET_PACKAGE) #check that we really target an external package
+      set(list_of_deps ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}} ${TARGET_PACKAGE})
+	    list(REMOVE_DUPLICATES list_of_deps)
+      set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${list_of_deps} CACHE INTERNAL "")
+		   #this previous line is used to tell the system that path inside this component's variables have to be resolved again that external package
 		endif()
 	endif()
 
-#manage include folders
-if(TARGET_PACKAGE AND NOT TARGET_COMPONENT) #if a target package is specified but not a component
-	set(incs ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX}})
+if(TARGET_PACKAGE AND NOT TARGET_COMPONENT) #if a target package is specified but not a component, this is an external dependency to implicit components
+	set(incs)
 	foreach(an_include IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES)
-		if(an_include MATCHES "^(<${TARGET_PACKAGE}>/|/).*$")#either an absolute path or an already well defined relative path.
+		if( an_include MATCHES "^(<${TARGET_PACKAGE}>/|/).*$" #either an absolute path or an already well defined relative path.
+        OR DEFINED ${an_include}) #or it is a variable
 			list(APPEND incs ${an_include})
-		else()
+		else()#otherwise it is considered as a relative path
 			list(APPEND incs "<${TARGET_PACKAGE}>/${an_include}")# prepend the external package name
 		endif()
 	endforeach()
-	if(incs)
-		list(REMOVE_DUPLICATES incs)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX} ${incs} CACHE INTERNAL "")
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX} "${incs}")
+
+  set(lib_dirs)
+  foreach(a_dir IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_LIBRARY_DIRS)
+    if( a_dir MATCHES "^(<${TARGET_PACKAGE}>/|/).*$" #either an absolute path or an already well defined relative path.
+        OR DEFINED ${a_dir}) #or it is a variable
+      list(APPEND lib_dirs ${a_dir})
+    else()#otherwise it is considered as a relative path
+      list(APPEND lib_dirs "<${TARGET_PACKAGE}>/${a_dir}")# prepend the external package name
+    endif()
+  endforeach()
+  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_LIB_DIRS${VAR_SUFFIX} "${lib_dirs}")
 
 	#manage compile options
-	set(opts ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX}} ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPILER_OPTIONS})
-	if(opts)
-		list(REMOVE_DUPLICATES opts)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX} ${opts} CACHE INTERNAL "")
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPILER_OPTIONS}")
 	#manage definitions
-	set(defs ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS${VAR_SUFFIX}} ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_DEFINITIONS})
-	if(defs)
-		list(REMOVE_DUPLICATES defs)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS${VAR_SUFFIX} ${defs} CACHE INTERNAL "")
-	#manage links
-	set(links ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX}})
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_DEFINITIONS}")
+
+  #manage links
+	set(links)
 	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_STATIC_LINKS)
-		if(a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-|/).*$")
+		if( a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|/|-).*$" #a link option OR an absolute path or a well defined relative path
+        OR DEFINED ${a_link})#OR a variable
 			list(APPEND links ${a_link})
-		else()
+		else()#otherwise need to generate adequate relative path
 			list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
 		endif()
 	endforeach()
-	if(links)
-		list(REMOVE_DUPLICATES links)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX} ${links} CACHE INTERNAL "")
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX} "${links}")
 
 	#manage shared links
-	set(links ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_SHARED_LINKS${VAR_SUFFIX}})
+	set(links)
 	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_SHARED_LINKS)
-		if(a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-|/).*$")
+		if( a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-|/).*$"#a link option OR an absolute path or a well defined relative path
+        OR DEFINED ${a_link})#OR a variable
 			list(APPEND links ${a_link})
-		else()
+		else()#otherwise need to generate adequate relative path
 			list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
 		endif()
 	endforeach()
-	if(links)
-		list(REMOVE_DUPLICATES links)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_SHARED_LINKS${VAR_SUFFIX} ${links} CACHE INTERNAL "")
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_SHARED_LINKS${VAR_SUFFIX} "${links}")
 
 	#manage runtime resources
-	set(resources ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX}})
+	set(resources)
 	foreach(a_resource IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES)
-		if(a_resource MATCHES "^(<${TARGET_PACKAGE}>/|/).*$")
+		if( a_resource MATCHES "^(<${TARGET_PACKAGE}>/|/).*$"#an absolute or well formed relative path
+        OR DEFINED ${a_resource})#OR a variable
 			list(APPEND resources ${a_resource})
-		else()
+		else()#otherwise need to generate adequate relative path
 			list(APPEND resources "<${TARGET_PACKAGE}>/${a_resource}")# prepend the external package name
 		endif()
 	endforeach()
-	if(resources)
-		list(REMOVE_DUPLICATES resources)
-	endif()
-	set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX} ${resources} CACHE INTERNAL "")
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX} "${resources}")
+
+elseif(NOT TARGET_PACKAGE AND NOT TARGET_COMPONENT)#this is a system dependency -> there is no relative path inside so no need to manage path specifically
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES}")
+  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPILER_OPTIONS}")
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_DEFINITIONS}")
+  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_STATIC_LINKS}")
+  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_SHARED_LINKS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_SHARED_LINKS}")
+  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_LIB_DIRS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_LIBRARY_DIRS}")
+  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
 endif()
 endmacro(declare_PID_External_Component_Dependency)

@@ -1018,16 +1018,15 @@ endmacro(PID_Wrapper_Component_Dependency)
 macro(declare_PID_Wrapper_Component_Dependency)
 set(options EXPORT DEPENDS)
 set(oneValueArgs COMPONENT EXTERNAL PACKAGE C_STANDARD CXX_STANDARD)
-set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES)
+set(multiValueArgs INCLUDES LIBRARY_DIRS SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT)
-  if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPENDS|EXTERNAL|PACKAGE|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|C_STANDARD|CXX_STANDARD|RUNTIME_RESOURCES$")
+  if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPENDS|EXTERNAL|PACKAGE|INCLUDES|LIBRARY_DIRS|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|C_STANDARD|CXX_STANDARD|RUNTIME_RESOURCES$")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component_Dependency requires to define the name of the declared component using the COMPONENT keyword or by giving the name as first argument.")
     return()
   endif()
   set(component_name ${ARGV0})
-  message("")
   if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
     list(REMOVE_ITEM DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS ${ARGV0})
   endif()
@@ -1087,25 +1086,40 @@ if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE) #this is a dependency to an
       )
     endif()
 	endif()
-else()#this is a dependency to another component defined in the same external package
-	if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL)
+else()#this is a dependency to another component defined in the same external package OR a dependency to system libraries
+	if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL) #if the signature contains
     set(target_component ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL})
   else()
     if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS
       AND (DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT OR DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPENDS))
 
       list(GET DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS 0 target_component)
-    else()
+    elseif(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT AND NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPENDS)
+      #OK export or depends on nothing and no other info can help decide what the user wants
       finish_Progress(${GLOBAL_PROGRESS_VAR})
   		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling declare_PID_Wrapper_Component_Dependency, need to define the component used by ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT}, by using the keyword EXTERNAL.")
   		return()
     endif()
 	endif()
-	declare_Wrapped_Component_Internal_Dependency(${component_name}
-		${target_component}
-		${exported}
-		"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
-	)
+  if(target_component)
+  	declare_Wrapped_Component_Internal_Dependency(${component_name}
+  		${target_component}
+  		${exported}
+  		"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
+  	)
+  else()#no target component defined => it is a system dependency
+    list(APPEND ALL_LINKS ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_SHARED_LINKS} ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_STATIC_LINKS})
+    declare_Wrapped_Component_System_Dependency(${component_name}
+      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_INCLUDES}"
+      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_LIBRARY_DIRS}"
+      "${ALL_LINKS}"
+      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
+      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_OPTIONS}"
+      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_STANDARD}"
+      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}"
+    )
+  endif()
 endif()
 endmacro(declare_PID_Wrapper_Component_Dependency)
 
@@ -1117,7 +1131,7 @@ endmacro(declare_PID_Wrapper_Component_Dependency)
 function(translate_Into_Options)
 set(options)
 set(oneValueArgs C_STANDARD CXX_STANDARD FLAGS)
-set(multiValueArgs INCLUDES DEFINITIONS)
+set(multiValueArgs INCLUDES DEFINITIONS LIBRARY_DIRS)
 cmake_parse_arguments(TRANSLATE_INTO_OPTION "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT TRANSLATE_INTO_OPTION_FLAGS)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1128,6 +1142,11 @@ set(result "")
 if(TRANSLATE_INTO_OPTION_INCLUDES)
 	foreach(an_include IN LISTS TRANSLATE_INTO_OPTION_INCLUDES)
 		set(result "${result} -I${an_include}")
+	endforeach()
+endif()
+if(TRANSLATE_INTO_OPTION_LIBRARY_DIRS)
+	foreach(a_dir IN LISTS TRANSLATE_INTO_OPTION_LIBRARY_DIRS)
+		set(result "${result} -L${a_dir}")
 	endforeach()
 endif()
 if(TRANSLATE_INTO_OPTION_DEFINITIONS)
@@ -1165,13 +1184,14 @@ endfunction(translate_Into_Options)
 #     .. rubric:: Optional parameters
 #
 #     :PACKAGE <ext_package>: Target external package that is a dependency of the currently built package, for which we want specific information. Used as a filter to limit information to those relative to the dependency.
-#     :ROOT <returned path>: The variable passed as argument will be filled with the path to the dependency external package version. Must be used together with PACKAGE.
-#     :OPTIONS <returned options>: The variable passed as argument will be filled with compiler options for the external package version being built.
-#     :INCLUDES <returned includes>: The variable passed as argument will be filled with include folders for the external package version being built.
-#     :DEFINITIONS <returned defs>: The variable passed as argument will be filled with all definitions for the external package version being built.
-#     :LINKS <returned links>: The variable passed as argument will be filled with all path to librairies and linker options for the external package version being built.
-#     :C_STANDARD <returned c_std>: The variable passed as argument will be filled with the C language standard to use for the external package version, if any specified.
-#     :CXX_STANDARD <returned cxx_std>: The variable passed as argument will be filled with the CXX language standard to use for the external package version, if any specified.
+#     :ROOT <variable>: The variable passed as argument will be filled with the path to the dependency external package version. Must be used together with PACKAGE.
+#     :OPTIONS <variable>: The variable passed as argument will be filled with compiler options for the external package version being built.
+#     :INCLUDES <variable>: The variable passed as argument will be filled with include folders for the external package version being built.
+#     :DEFINITIONS <variable>: The variable passed as argument will be filled with all definitions for the external package version being built.
+#     :LINKS <variable>: The variable passed as argument will be filled with all path to librairies and linker options for the external package version being built.
+#     :LIBRARY_DIRS <variable>
+#     :C_STANDARD <variable>: The variable passed as argument will be filled with the C language standard to use for the external package version, if any specified.
+#     :CXX_STANDARD <variable>: The variable passed as argument will be filled with the CXX language standard to use for the external package version, if any specified.
 #     :FLAGS: option to get result of all preceeding arguments directly as compiler flags instead of CMake variables.
 #
 #     .. admonition:: Constraints
@@ -1195,8 +1215,8 @@ endfunction(translate_Into_Options)
 #
 function(get_External_Dependencies_Info)
 set(options FLAGS)
-set(oneValueArgs PACKAGE ROOT C_STANDARD CXX_STANDARD)
-set(multiValueArgs OPTIONS INCLUDES DEFINITIONS LINKS)
+set(oneValueArgs PACKAGE ROOT C_STANDARD CXX_STANDARD OPTIONS INCLUDES DEFINITIONS LINKS LIBRARY_DIRS RESOURCES)
+set(multiValueArgs)
 cmake_parse_arguments(GET_EXTERNAL_DEPENDENCY_INFO "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
 #build the version prefix using variables automatically configured in Build_PID_Wrapper script
@@ -1223,17 +1243,26 @@ if(GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES)
 	endif()
 endif()
 
+if(GET_EXTERNAL_DEPENDENCY_INFO_LIBRARY_DIRS)
+	if(GET_EXTERNAL_DEPENDENCY_INFO_FLAGS)
+		translate_Into_Options(LIBRARY_DIRS ${${prefix}_BUILD_LIB_DIRS} FLAGS RES_LIB_DIRS)
+		set(${GET_EXTERNAL_DEPENDENCY_INFO_LIBRARY_DIRS} ${RES_LIB_DIRS} PARENT_SCOPE)
+	else()
+  	set(${GET_EXTERNAL_DEPENDENCY_INFO_LIBRARY_DIRS} ${${prefix}_BUILD_LIB_DIRS} PARENT_SCOPE)
+	endif()
+endif()
+
 if(GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS)
 	if(GET_EXTERNAL_DEPENDENCY_INFO_FLAGS)
 		translate_Into_Options(DEFINITIONS ${${prefix}_BUILD_DEFINITIONS} FLAGS RES_DEFS)
-		set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${RES_DEFS} PARENT_SCOPE)
+		set(${GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS} ${RES_DEFS} PARENT_SCOPE)
 	else()
-	  set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${${prefix}_BUILD_DEFINITIONS} PARENT_SCOPE)
+	  set(${GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS} ${${prefix}_BUILD_DEFINITIONS} PARENT_SCOPE)
 	endif()
 endif()
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_OPTIONS)
-  set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${${prefix}_BUILD_COMPILER_OPTIONS} PARENT_SCOPE)
+  set(${GET_EXTERNAL_DEPENDENCY_INFO_OPTIONS} ${${prefix}_BUILD_COMPILER_OPTIONS} PARENT_SCOPE)
 endif()
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_C_STANDARD)
@@ -1256,6 +1285,10 @@ endif()
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_LINKS)
   set(${GET_EXTERNAL_DEPENDENCY_INFO_LINKS} ${${prefix}_BUILD_LINKS} PARENT_SCOPE)
+endif()
+
+if(GET_EXTERNAL_DEPENDENCY_INFO_RESOURCES)
+  set(${GET_EXTERNAL_DEPENDENCY_INFO_RESOURCES} ${${prefix}_BUILD_RESOURCES} PARENT_SCOPE)
 endif()
 
 endfunction(get_External_Dependencies_Info)
@@ -1720,4 +1753,5 @@ function(build_CMake_External_Project)
   execute_process(
     COMMAND ${make_program} install WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
   )
+
 endfunction(build_CMake_External_Project)

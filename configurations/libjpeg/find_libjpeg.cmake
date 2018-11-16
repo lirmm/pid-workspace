@@ -24,16 +24,15 @@ found_PID_Configuration(libjpeg FALSE)
 # - Find libjpeg installation
 # Try to find libraries for libjpeg on UNIX systems. The following values are defined
 #  libjpeg_FOUND        - True if libjpeg is available
-#  libjpeg_LIBRARIES    - link against these to use libjpeg library
 if (UNIX)
 
 	find_path(libjpeg_INCLUDE_PATH jpeglib.h)
 	find_library(libjpeg_LIB jpeg)
 
-	set(libjpeg_LIBRARIES) # start with empty list
 	set(IS_FOUND TRUE)
 	if(libjpeg_INCLUDE_PATH AND libjpeg_LIB)
-		set(libjpeg_LIBRARIES -ljpeg)
+		convert_PID_Libraries_Into_System_Links(libjpeg_LIB LIBJPEG_LINKS)#getting good system links (with -l)
+    convert_PID_Libraries_Into_Library_Directories(libjpeg_LIB LIBJPEG_LIBDIR)
 	else()
 		message("[PID] ERROR : cannot find jpeg library.")
 		set(IS_FOUND FALSE)
@@ -44,6 +43,4 @@ if (UNIX)
 	endif ()
 
 	unset(IS_FOUND)
-	unset(libjpeg_INCLUDE_PATH CACHE)
-	unset(libjpeg_LIB CACHE)
 endif ()

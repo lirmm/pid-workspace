@@ -61,8 +61,8 @@ if(CUDA_VERSION)#if the CUDA version is known (means that a nvcc compiler has be
 	    set(CUDA_ARCH_FEATURES "${CUDA_ARCH_FEATURES} ${arch}"  CACHE INTERNAL "")
 		endforeach()
 		set(NVCC_FLAGS_EXTRA ${NVCC_FLAGS_EXTRA} -D_FORCE_INLINES)
-		get_filename_component(CUDA_LIBRARY_DIR ${CUDA_CUDART_LIBRARY} DIRECTORY)
 		convert_PID_Libraries_Into_System_Links(CUDA_LIBRARIES CUDA_LINKS)#getting good system links (with -l)
+		convert_PID_Libraries_Into_Library_Directories(CUDA_CUDART_LIBRARY CUDA_LIBRARY_DIR)
 	endif()
 
 endif()#if NVCC not found no need to continue

@@ -23,17 +23,18 @@ found_PID_Configuration(turbojpeg FALSE)
 # - Find turbojpeg installation
 # Try to find libraries for turbojpeg on UNIX systems. The following values are defined
 #  turbojpeg_FOUND        - True if turbojpeg is available
-#  turbojpeg_LIBRARIES    - link against these to use turbojpeg library
-set(turbojpeg_LIBRARIES) # start with empty list
+#  TURBOJPEG_LIBRARIES    - link against these to use turbojpeg library
+set(TURBOJPEG_LIBRARIES) # start with empty list
 
 find_path(TurboJPEG_INCLUDE_DIRS NAMES turbojpeg.h)
 find_library(TurboJPEG_LIBRARIES NAMES libturbojpeg.so.1 libturbojpeg.so.0) #either version 0 or 1 is used (depending on distro)
 
 if(TurboJPEG_INCLUDE_DIRS AND NOT TurboJPEG_INCLUDE_DIRS MATCHES TurboJPEG_INCLUDE_DIRS-NOTFOUND
 	AND TurboJPEG_LIBRARIES AND NOT TurboJPEG_LIBRARIES MATCHES TurboJPEG_LIBRARIES-NOTFOUND)
-	set(turbojpeg_LIBRARIES -lturbojpeg) # start with empty list
+
+	if(TURBOJPEG_LIBRARIES)
+		convert_PID_Libraries_Into_System_Links(TURBOJPEG_LIBRARIES TURBOJPEG_LINKS)#getting good system links (with -l)
+    convert_PID_Libraries_Into_Library_Directories(TURBOJPEG_LIBRARIES TURBOJPEG_LIBDIR)
+	endif()
 	found_PID_Configuration(turbojpeg TRUE)
-	
-	unset(TurboJPEG_INCLUDE_DIRS CACHE)
-	unset(TurboJPEG_LIBRARIES CACHE)
 endif()

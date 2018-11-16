@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(fontconfig
-				VARIABLES LINK_OPTIONS
-				VALUES 		fontconfig_LIBRARIES)
+				VARIABLES LINK_OPTIONS		LIBRARY_DIRS		RPATH						INCLUDE_DIRS
+				VALUES 		FONTCONF_LINKS	FONTCONF_LIBDIR	fontconfig_LIB 	fontconfig_INCLUDE_PATH)

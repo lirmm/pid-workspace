@@ -30,12 +30,11 @@ if (UNIX)
 	find_path(libpng_INCLUDE_PATH png.h)
 	find_library(libpng_LIB png)
 
-	set(libpng_LIBRARIES) # start with empty list
 	set(IS_FOUND TRUE)
 	if(libpng_INCLUDE_PATH AND libpng_LIB)
-		set(libpng_LIBRARIES -lpng)
+		convert_PID_Libraries_Into_System_Links(libpng_LIB LIBJPNG_LINKS)#getting good system links (with -l)
+    convert_PID_Libraries_Into_Library_Directories(libpng_LIB LIBPNG_LIBDIR)
 	else()
-		message("[PID] ERROR : cannot find png library.")
 		set(IS_FOUND FALSE)
 	endif()
 
@@ -44,6 +43,4 @@ if (UNIX)
 	endif ()
 
 	unset(IS_FOUND)
-	unset(libpng_INCLUDE_PATH CACHE)
-	unset(libpng_LIB CACHE)
 endif ()

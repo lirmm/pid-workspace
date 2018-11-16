@@ -912,9 +912,10 @@ endmacro(build_PID_Package)
 #   :EXPORT ...: Specify a list of components that the current component depends on and exports.
 #
 #   The following options are supported by the ``INTERNAL`` and ``EXPORTED`` commands:
-#   :DEFINITIONS <defs>: Preprocessor definitions.
-#   :LINKS <links>: Linker flags.
-#   :COMPILER_OPTIONS <options>: Compiler-specific options.
+#
+#   :DEFINITIONS <defs>: Preprocessor definitions. May be exported if these definitions are used in public headers of a library.
+#   :LINKS <links>: Linker flags. Should be reserved to specific linker option to use when linking a library or executable. May be exported if this option changes the ABI.
+#   :COMPILER_OPTIONS <options>: Compiler-specific options. May be exported if this option changes the ABI.
 #
 #   Furthermore, the ``INTERNAL`` option also support the following commands:
 #   :INCLUDE_DIRS <dirs>: Additional include directories.
@@ -1051,7 +1052,7 @@ set(internal_link_flags "")
 if(DECLARE_PID_COMPONENT_INTERNAL)
 	if(DECLARE_PID_COMPONENT_INTERNAL STREQUAL "")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, INTERNAL keyword must be followed by by at least one DEFINITION OR INCLUDE_DIR OR LINK keyword and related arguments.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, INTERNAL keyword must be followed by at least one DEFINITION OR INCLUDE_DIR OR LINK keyword and related arguments.")
 	endif()
 	set(internal_multiValueArgs DEFINITIONS INCLUDE_DIRS LINKS COMPILER_OPTIONS)
 	cmake_parse_arguments(DECLARE_PID_COMPONENT_INTERNAL "" "" "${internal_multiValueArgs}" ${DECLARE_PID_COMPONENT_INTERNAL} )
@@ -1311,7 +1312,7 @@ if(TO_PARSE) #there are still components to parse
 	endif()
 endif()
 if(package_type STREQUAL "EXTERNAL")#it is an external package
-	declare_External_Package_Dependency(${name_of_dependency} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
+  declare_External_Package_Dependency(${name_of_dependency} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 else()#otherwise a native package
 	declare_Native_Package_Dependency(${name_of_dependency} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 endif()
@@ -1503,7 +1504,7 @@ endmacro(PID_Component_Dependency)
 macro(declare_PID_Component_Dependency)
 set(options EXPORT DEPENDS)
 set(oneValueArgs COMPONENT DEPEND NATIVE PACKAGE EXTERNAL C_STANDARD CXX_STANDARD)
-set(multiValueArgs INCLUDE_DIRS LINKS COMPILER_OPTIONS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
+set(multiValueArgs INCLUDE_DIRS LIBRARY_DIRS LINKS COMPILER_OPTIONS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
 if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT)
@@ -1741,6 +1742,7 @@ else()#no target package => 2 cases OS dependency OR ERROR
   			${component_name}
   			${export}
   			"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
+  			"${DECLARE_PID_COMPONENT_DEPENDENCY_LIBRARY_DIRS}"
   			"${comp_defs}"
   			"${comp_exp_defs}"
   			"${dep_defs}"

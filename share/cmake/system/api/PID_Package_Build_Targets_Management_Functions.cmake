@@ -487,7 +487,7 @@ endfunction(manage_Python_Scripts)
 #
 #     :internal_compiler_options: list of private compiler options to use when building the library.
 #
-#     :internal_links: list of private links to use when building the library.
+#     :internal_links: list of private linker options to use when building the library.
 #
 function(create_Module_Lib_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} MODULE ${sources})
@@ -500,7 +500,7 @@ function(create_Module_Lib_Target c_name c_standard cxx_standard sources interna
 	elseif(UNIX)
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	endif()
-	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 endfunction(create_Module_Lib_Target)
 
 #.rst:
@@ -537,9 +537,9 @@ endfunction(create_Module_Lib_Target)
 #
 #     :internal_compiler_options: list of private compiler options to use when building the library.
 #
-#     :exported_links: list of links exported by the library.
+#     :exported_links: list of linker options exported by the library.
 #
-#     :internal_links: list of private links to use when building the library.
+#     :internal_links: list of private linker options to use when building the library.
 #
 function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
@@ -560,8 +560,8 @@ function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exporte
 	set(DEFS ${internal_defs} ${exported_defs})
 	set(LINKS ${exported_links} ${internal_links})
 	set(COMP_OPTS ${exported_compiler_options} ${internal_compiler_options})
-	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${INC_DIRS}" "${DEFS}" "${COMP_OPTS}" "${LINKS}")
-	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
+	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${INC_DIRS}" "" "${DEFS}" "${COMP_OPTS}" "${LINKS}")
+	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endfunction(create_Shared_Lib_Target)
 
 #.rst:
@@ -598,7 +598,7 @@ endfunction(create_Shared_Lib_Target)
 #
 #     :internal_compiler_options: list of private compiler options to use when building the library.
 #
-#     :exported_links: list of links exported by the library.
+#     :exported_links: list of linker options exported by the library.
 #
 function(create_Static_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${sources})
@@ -608,8 +608,8 @@ function(create_Static_Lib_Target c_name c_standard cxx_standard sources exporte
 	set(INC_DIRS ${internal_inc_dirs} ${exported_inc_dirs})
 	set(DEFS ${internal_defs} ${exported_defs})
 	set(COMP_OPTS ${exported_compiler_options} ${internal_compiler_options})
-	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${INC_DIRS}" "${DEFS}" "${COMP_OPTS}" "")#no linking with static libraries so do not manage internal_flags
-	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
+	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${INC_DIRS}" "" "${DEFS}" "${COMP_OPTS}" "")#no linking with static libraries so do not manage internal_flags
+	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endfunction(create_Static_Lib_Target)
 
 #.rst:
@@ -642,7 +642,7 @@ endfunction(create_Static_Lib_Target)
 #
 function(create_Header_Lib_Target c_name c_standard cxx_standard exported_inc_dirs exported_defs exported_compiler_options exported_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} INTERFACE)
-	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
+	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endfunction(create_Header_Lib_Target)
 
 #.rst:
@@ -677,7 +677,7 @@ endfunction(create_Header_Lib_Target)
 #
 function(create_Executable_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
-	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 	# adding the application to the list of installed components when make install is called (not for test applications)
 	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
 		RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
@@ -724,7 +724,7 @@ endfunction(create_Executable_Target)
 #
 function(create_TestUnit_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
-	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 endfunction(create_TestUnit_Target)
 
 #.rst:
@@ -747,13 +747,15 @@ endfunction(create_TestUnit_Target)
 #
 #     :inc_dirs: the list of includes to export.
 #
+#     :lib_dirs: the list of library search folders.
+#
 #     :defs: the list of preprocessor definitions to export.
 #
 #     :options: the list of compiler options to export.
 #
 #     :links: list of links to export.
 #
-function(manage_Additional_Component_Exported_Flags component_name mode_suffix inc_dirs defs options links)
+function(manage_Additional_Component_Exported_Flags component_name mode_suffix inc_dirs lib_dirs defs options links)
 #message("manage_Additional_Component_Exported_Flags comp=${component_name} include dirs=${inc_dirs} defs=${defs} links=${links}")
 # managing compile time flags (-I<path>)
 foreach(dir IN LISTS inc_dirs)
@@ -773,6 +775,10 @@ endforeach()
 foreach(link IN LISTS links)
 	target_link_libraries(${component_name}${mode_suffix} INTERFACE ${link})
 endforeach()
+
+foreach(dir IN LISTS lib_dirs)
+  target_link_libraries(${component_name}${mode_suffix} INTERFACE "-L${dir}")#generate -L linker flags for library dirs
+endforeach()
 endfunction(manage_Additional_Component_Exported_Flags)
 
 #.rst:
@@ -785,7 +791,7 @@ endfunction(manage_Additional_Component_Exported_Flags)
 #  manage_Additional_Component_Internal_Flags
 #  ------------------------------------------
 #
-#   .. command:: manage_Additional_Component_Internal_Flags(component_name mode_suffix inc_dirs defs options links)
+#   .. command:: manage_Additional_Component_Internal_Flags(component_name mode_suffix inc_dirs lib_dirs defs options links)
 #
 #     Configure a component target with internal flags (cflags and ldflags).
 #
@@ -799,13 +805,15 @@ endfunction(manage_Additional_Component_Exported_Flags)
 #
 #     :inc_dirs: the list of includes to use.
 #
+#     :lib_dirs: the list of library search folders.
+#
 #     :defs: the list of preprocessor definitions to use.
 #
 #     :options: the list of compiler options to use.
 #
 #     :links: list of links to use.
 #
-function(manage_Additional_Component_Internal_Flags component_name c_standard cxx_standard mode_suffix inc_dirs defs options links)
+function(manage_Additional_Component_Internal_Flags component_name c_standard cxx_standard mode_suffix inc_dirs lib_dirs defs options links)
 # managing compile time flags
 foreach(dir IN LISTS inc_dirs)
 	target_include_directories(${component_name}${mode_suffix} PRIVATE "${dir}")
@@ -823,6 +831,10 @@ endforeach()
 # managing link time flags
 foreach(link IN LISTS links)
 	target_link_libraries(${component_name}${mode_suffix} PRIVATE ${link})
+endforeach()
+
+foreach(dir IN LISTS lib_dirs)
+  target_link_libraries(${component_name}${mode_suffix} PRIVATE "-L${dir}")#generate -L linker flags for library dirs
 endforeach()
 
 #management of standards (setting minimum standard at beginning)
@@ -843,13 +855,13 @@ endfunction(manage_Additional_Component_Internal_Flags)
 #
 # .. ifmode:: internal
 #
-#  .. |manage_Additionnal_Component_Inherited_Flags| replace:: ``manage_Additionnal_Component_Inherited_Flags``
-#  .. _manage_Additionnal_Component_Inherited_Flags:
+#  .. |manage_Additional_Component_Inherited_Flags| replace:: ``manage_Additional_Component_Inherited_Flags``
+#  .. _manage_Additional_Component_Inherited_Flags:
 #
-#  manage_Additionnal_Component_Inherited_Flags
+#  manage_Additional_Component_Inherited_Flags
 #  --------------------------------------------
 #
-#   .. command:: manage_Additionnal_Component_Inherited_Flags(component dep_component mode_suffix export)
+#   .. command:: manage_Additional_Component_Inherited_Flags(component dep_component mode_suffix export)
 #
 #     Configure a component target with flags (cflags and ldflags) inherited from a dependency.
 #
@@ -861,7 +873,7 @@ endfunction(manage_Additional_Component_Internal_Flags)
 #
 #     :export: TRUE if component exports dep_component.
 #
-function(manage_Additionnal_Component_Inherited_Flags component dep_component mode_suffix export)
+function(manage_Additional_Component_Inherited_Flags component dep_component mode_suffix export)
 	if(export)
 		target_include_directories(	${component}${mode_suffix}
 						INTERFACE
@@ -871,7 +883,6 @@ function(manage_Additionnal_Component_Inherited_Flags component dep_component mo
 						INTERFACE
 						$<TARGET_PROPERTY:${dep_component}${mode_suffix},INTERFACE_COMPILE_DEFINITIONS>
 				)
-
 		target_compile_options(		${component}${INSTALL_NAME_SUFFIX}
 						INTERFACE
 						$<TARGET_PROPERTY:${dep_component}${mode_suffix},INTERFACE_COMPILE_OPTIONS>
@@ -892,7 +903,7 @@ function(manage_Additionnal_Component_Inherited_Flags component dep_component mo
 						$<TARGET_PROPERTY:${dep_component}${mode_suffix},INTERFACE_COMPILE_OPTIONS>
 		)
 	endif()
-endfunction(manage_Additionnal_Component_Inherited_Flags)
+endfunction(manage_Additional_Component_Inherited_Flags)
 
 #.rst:
 #
@@ -922,17 +933,17 @@ endfunction(manage_Additionnal_Component_Inherited_Flags)
 #
 function (fill_Component_Target_With_Internal_Dependency component dep_component export comp_defs comp_exp_defs dep_defs)
 is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_component})
-if(NOT DEP_IS_HF)#the required internal component is a library
+if(NOT DEP_IS_HF)#the required internal component is a library with an interface, so we may get information from it
 	if(export)
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_exp_defs} ${dep_defs})
-		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "${comp_defs}" "")
-		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${dep_component}${INSTALL_NAME_SUFFIX}")
-		manage_Additionnal_Component_Inherited_Flags(${component} ${dep_component} "${INSTALL_NAME_SUFFIX}" TRUE)
+		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "" "${comp_defs}" "")
+		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${dep_component}${INSTALL_NAME_SUFFIX}")
+		manage_Additional_Component_Inherited_Flags(${component} ${dep_component} "${INSTALL_NAME_SUFFIX}" TRUE)
 	else()
 		set(${PROJECT_NAME}_${component}_TEMP_DEFS ${comp_defs} ${dep_defs})
-		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${dep_component}${INSTALL_NAME_SUFFIX}")
-		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "")
-		manage_Additionnal_Component_Inherited_Flags(${component} ${dep_component} "${INSTALL_NAME_SUFFIX}" FALSE)
+		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "" "${${PROJECT_NAME}_${component}_TEMP_DEFS}" "${dep_component}${INSTALL_NAME_SUFFIX}")
+		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "" "${comp_exp_defs}" "")
+		manage_Additional_Component_Inherited_Flags(${component} ${dep_component} "${INSTALL_NAME_SUFFIX}" FALSE)
 	endif()
 endif()#else, it is an application or a module => runtime dependency declaration
 endfunction(fill_Component_Target_With_Internal_Dependency)
@@ -971,12 +982,12 @@ if(NOT DEP_IS_HF)#the required package component is a library
 
 	if(export)
 		set(EXPORTED_DEFS ${comp_exp_defs} ${dep_defs})
-		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "${comp_defs}" "")
-		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${EXPORTED_DEFS}" "")
+		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "" "${comp_defs}" "")
+		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "" "${EXPORTED_DEFS}" "")
 	else()
 		set(INTERNAL_DEFS ${comp_defs} ${dep_defs})
-		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "${INTERNAL_DEFS}" "")
-		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "")
+		manage_Additional_Component_Internal_Flags(${component} "" "" "${INSTALL_NAME_SUFFIX}" "" "" "${INTERNAL_DEFS}" "")
+		manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "" "${comp_exp_defs}" "")
 	endif()
 endif()	#else, it is an application or a module => runtime dependency declaration
 endfunction(fill_Component_Target_With_Package_Dependency)
@@ -1007,15 +1018,18 @@ endfunction(fill_Component_Target_With_Package_Dependency)
 #
 #     :ext_inc_dirs: list of include path, either absolute or relative to external packages.
 #
+#     :ext_lib_dirs: list of path, either absolute or relative to external packages, to folders that contain libraries to use at build time.
+#
 #     :ext_links: list of path to libraries, either absolute or relative to external packages, or linker options.
 #
 #     :c_standard: C language standard to use when using these dependencies.
 #
 #     :cxx_standard: C++ language standard to use when using these dependencies.
 #
-function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_links c_standard cxx_standard)
+function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_lib_dirs ext_links c_standard cxx_standard)
 if(ext_links)
-	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${ext_links}" ${CMAKE_BUILD_TYPE})
+  evaluate_Variables_In_List(EVAL_LNKS ext_links) #first evaluate element of the list => if they are variables they are evaluated
+	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${EVAL_LNKS}" ${CMAKE_BUILD_TYPE})
 	if(COMPLETE_LINKS_PATH)
 		foreach(link IN LISTS COMPLETE_LINKS_PATH)
 			create_External_Dependency_Target(EXT_TARGET_NAME ${link} ${CMAKE_BUILD_TYPE})
@@ -1029,22 +1043,36 @@ if(ext_links)
 	list(APPEND EXT_LINKS ${EXT_LINKS_TARGETS} ${EXT_LINKS_OPTIONS})
 endif()
 if(ext_inc_dirs)
-	resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${ext_inc_dirs}" ${CMAKE_BUILD_TYPE})
+  evaluate_Variables_In_List(EVAL_INCS ext_inc_dirs)#first evaluate element of the list => if they are variables they are evaluated
+	resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${EVAL_INCS}" ${CMAKE_BUILD_TYPE})
+endif()
+if(ext_lib_dirs)
+  evaluate_Variables_In_List(EVAL_LDIRS ext_lib_dirs)
+	resolve_External_Libs_Path(COMPLETE_LIB_DIRS_PATH "${EVAL_LDIRS}" ${CMAKE_BUILD_TYPE})
+endif()
+if(ext_defs)
+  evaluate_Variables_In_List(EVAL_DEFS ext_defs)#first evaluate element of the list => if they are variables they are evaluated
+endif()
+if(c_standard)
+  evaluate_Variables_In_List(EVAL_CSTD c_standard)
+endif()
+if(cxx_standard)
+  evaluate_Variables_In_List(EVAL_CXXSTD cxx_standard)
 endif()
 
 # setting compile/linkage definitions for the component target
 if(export)
 	if(NOT ${${PROJECT_NAME}_${component}_TYPE} STREQUAL "HEADER")#if component is a not header, everything is used to build
-		set(INTERNAL_DEFS ${comp_exp_defs} ${ext_defs} ${comp_defs})
-		manage_Additional_Component_Internal_Flags(${component} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${INTERNAL_DEFS}" "" "${EXT_LINKS}")
+		set(INTERNAL_DEFS ${comp_exp_defs} ${EVAL_DEFS} ${comp_defs})
+		manage_Additional_Component_Internal_Flags(${component} "${EVAL_CSTD}" "${EVAL_CXXSTD}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${INTERNAL_DEFS}" "" "${EXT_LINKS}")
 	endif()
-	set(EXPORTED_DEFS ${comp_exp_defs} ${ext_defs})#only definitions belonging to interfaces are exported (interface of current component + interface of exported component)
-	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${EXPORTED_DEFS}" "" "${EXT_LINKS}")
+	set(EXPORTED_DEFS ${comp_exp_defs} ${EVAL_DEFS})#only definitions belonging to interfaces are exported (interface of current component + interface of exported component) also all linker options are exported
+	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${EXPORTED_DEFS}" "" "${EXT_LINKS}")
 
 else()#otherwise only definitions for interface of the current component is exported
-	set(INTERNAL_DEFS ${comp_defs} ${ext_defs} ${comp_defs})#everything define for building current component
-	manage_Additional_Component_Internal_Flags(${component} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${INTERNAL_DEFS}" "" "${EXT_LINKS}")
-	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${comp_exp_defs}" "" "${EXT_LINKS}")
+	set(INTERNAL_DEFS ${comp_defs} ${EVAL_DEFS} ${comp_defs})#everything define for building current component
+	manage_Additional_Component_Internal_Flags(${component} "${EVAL_CSTD}" "${EVAL_CXXSTD}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${INTERNAL_DEFS}" "" "${EXT_LINKS}")
+	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${COMPLETE_LIB_DIRS_PATH}" "${comp_exp_defs}" "" "${EXT_LINKS}")#only linker options and exported definitions are in the public interface
 endif()
 endfunction(fill_Component_Target_With_External_Dependency)
 
@@ -1112,7 +1140,7 @@ endfunction(create_All_Imported_Dependency_Targets)
 function (create_External_Dependency_Target EXT_TARGET_NAME link mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 get_Link_Type(RES_TYPE ${link})
-if(RES_TYPE STREQUAL OPTION) #for options there is no need to define a target
+if(RES_TYPE STREQUAL OPTION) #for options there is no need to define a target (options also include -l options)
 	set(${EXT_TARGET_NAME} PARENT_SCOPE)
 elseif(RES_TYPE STREQUAL SHARED)
 	get_filename_component(LIB_NAME ${link} NAME)
@@ -1573,11 +1601,12 @@ is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
 if(COMP_IS_BUILT)
 	#use definitions and links for building the target
 	set(internal_defs ${comp_defs} ${comp_exp_defs} ${dep_defs})
-	manage_Additional_Component_Internal_Flags(${component} "" "" "${TARGET_SUFFIX}" "" "${internal_defs}" "" "")
+	manage_Additional_Component_Internal_Flags(${component} "" "" "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
 
 	if(NOT DEP_IS_HF)
 		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_package}-${dep_component}${TARGET_SUFFIX})
-		target_include_directories(${component}${TARGET_SUFFIX} PRIVATE
+
+    target_include_directories(${component}${TARGET_SUFFIX} PRIVATE
 			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
 
 		target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE
@@ -1595,9 +1624,9 @@ else()#for headers lib do not set the language standard build property (othewise
 endif()
 
 if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
-	if(export)
-		set(internal_defs ${comp_exp_defs} ${dep_defs})
-		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "${internal_defs}" "" "")
+	if(export)#the library export something
+		set(exp_defs ${comp_exp_defs} ${dep_defs})
+		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "" "${exp_defs}" "" "")
 
 		target_include_directories(${component}${TARGET_SUFFIX} INTERFACE
 			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
@@ -1609,8 +1638,9 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
 
 		target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_package}-${dep_component}${TARGET_SUFFIX})
-	else()
-		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "${comp_exp_defs}" "" "")
+
+	else()#the library do not export anything
+		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "" "${comp_exp_defs}" "" "")
 		if(NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED")#static OR header lib always export private links
 			target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE  ${dep_package}-${dep_component}${TARGET_SUFFIX})
 		endif()
@@ -1654,9 +1684,9 @@ is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_component})
 if(COMP_IS_BUILT)# interface library cannot receive PRIVATE PROPERTIES
 	#use definitions and links for building the target
 	set(internal_defs ${comp_defs} ${comp_exp_defs} ${dep_defs})
-	manage_Additional_Component_Internal_Flags(${component} "" "" "${TARGET_SUFFIX}" "" "${internal_defs}" "" "")
+	manage_Additional_Component_Internal_Flags(${component} "" "" "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
 
-	if(NOT DEP_IS_HF)#the dependency may export some things
+	if(NOT DEP_IS_HF)#the dependency may export some things, so we need to bind definitions
 		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_component}${TARGET_SUFFIX})
 
 		target_include_directories(${component}${TARGET_SUFFIX} PRIVATE
@@ -1680,7 +1710,7 @@ endif()
 if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
 	if(export)
 		set(internal_defs ${comp_exp_defs} ${dep_defs})
-		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "${internal_defs}" "" "")
+		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
 
 		target_include_directories(${component}${TARGET_SUFFIX} INTERFACE
 			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
@@ -1694,7 +1724,7 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 		target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_component}${TARGET_SUFFIX})
 
 	else()
-		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "${comp_exp_defs}" "" "")
+		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "" "${comp_exp_defs}" "" "")
 		if(NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED")#static OR header lib always export links
 			target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_component}${TARGET_SUFFIX})
 		endif()

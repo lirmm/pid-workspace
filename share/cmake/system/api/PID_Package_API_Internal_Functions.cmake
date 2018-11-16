@@ -1684,9 +1684,9 @@ if(NOT list_of_versions) # no version constraint specified
 			add_External_Package_Dependency_To_Cache(${dep_package} ${REQUIRED_VERSION} ${IS_EXACT} "${list_of_components}") #set the dependency
 		else()#no version required
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#if a version number is specified by the user
-				add_Package_Dependency_To_Cache(${dep_package} ${${dep_package}_ALTERNATIVE_VERSION_USED} FALSE "${list_of_components}") #set the dependency
+				add_External_Package_Dependency_To_Cache(${dep_package} ${${dep_package}_ALTERNATIVE_VERSION_USED} FALSE "${list_of_components}") #set the dependency
 			else()# any version can be used so for now no contraint
-				add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
+				add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
 			endif()
 		endif()
 	endif()
@@ -1862,7 +1862,7 @@ if (IS_HF_COMP)
 		endif()
 elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)
-		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${component} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 
@@ -1871,20 +1871,20 @@ elseif(IS_BUILT_COMP)
 		if(export)
 			set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		endif()
-		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${component} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 	endif()
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	if(IS_HF_DEP)
-		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${component} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
 	else()
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
-		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${component} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 		# setting compile definitions for configuring the "fake" target
 		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 
@@ -1954,12 +1954,12 @@ elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
-		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${component} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
 	else()	#the dependency has a build interface
 		if(export)#prepare the dependancy export
 			set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "")
 		endif()
-		configure_Install_Variables(${component} ${export} "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${component} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
@@ -1970,12 +1970,12 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
-		configure_Install_Variables(${component} FALSE "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${component} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
 	else()	#the dependency has a build interface
 
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
-		configure_Install_Variables(${component} TRUE "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${component} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 
 		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} TRUE "" "${comp_exp_defs}" "${dep_defs}")
@@ -2018,25 +2018,27 @@ endfunction(declare_Package_Component_Dependency)
 #
 #     :inc_dirs: path to include directories required by the component in order to build.
 #
+#     :lib_dirs: additionnal library dirs used to search system libraries (with -l) in.
+#
 #     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of system dependencies (may be an empty string). These definitions are not exported by component.
 #
 #     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of system dependencies (may be an empty string). These definitions are exported by component.
 #
 #     :dep_defs: preprocessor definitions used in the headers system dependencies, that are defined by component (may be an empty string). These definitions are exported if dep_component is exported by component.
 #
-#     :compiler_options: compiler options to use for this dependency (may be let empty).
+#     :compiler_options: compiler options to use for this dependency (may be left empty).
 #
-#     :static_links: list of path to static libraries (may be let empty).
+#     :static_links: list of path to static libraries (may be left empty).
 #
-#     :shared_links: list of path to shared libraries or linker options (may be let empty).
+#     :shared_links: list of path to shared libraries or linker options (may be left empty).
 #
-#     :c_standard: the C language standard to use because of the dependency (may be let empty).
+#     :c_standard: the C language standard to use because of the dependency (may be left empty).
 #
-#     :cxx_standard: the C++ language standard to use because of the dependency (may be let empty).
+#     :cxx_standard: the C++ language standard to use because of the dependency (may be left empty).
 #
-#     :runtime_resources: set of path to files or folder used at runtime (may be let empty).
+#     :runtime_resources: set of path to files or folder used at runtime (may be left empty).
 #
-function(declare_System_Component_Dependency component export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
+function(declare_System_Component_Dependency component export inc_dirs lib_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
 will_be_Built(COMP_WILL_BE_BUILT ${component})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
@@ -2054,22 +2056,22 @@ if (IS_HF_COMP) #no header to the component
 		create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
 	else()
 		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "" "" "${runtime_resources}")
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "" "" "" "${runtime_resources}")
 		endif()
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
 	endif()
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
-	configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
+	configure_Install_Variables(${component} ${export} "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
+	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
 
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 	#prepare the dependancy export
-	configure_Install_Variables(${component} TRUE "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
+	configure_Install_Variables(${component} TRUE "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
+	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
 else()
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()
@@ -2139,22 +2141,22 @@ else()
 			create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
 		else()
 			if(COMP_WILL_BE_INSTALLED)
-				configure_Install_Variables(${component} FALSE "" "" "" "" "" "${shared_links}" "" "" "${runtime_resources}")
+				configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${shared_links}" "" "" "${runtime_resources}")
 			endif()
 			# setting compile definitions for the target
-			fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
+			fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
 		endif()
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
-		configure_Install_Variables(${component} ${export} "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
+		configure_Install_Variables(${component} ${export} "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
+		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
 	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#prepare the dependancy export
-		configure_Install_Variables(${component} TRUE "${inc_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
+		configure_Install_Variables(${component} TRUE "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
 
 		# setting compile definitions for the "fake" target
-		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
+		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "" "${TARGET_LINKS}" "${c_standard}" "${cxx_standard}")
 	else()
 		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 	endif()
@@ -2196,8 +2198,9 @@ endfunction(declare_External_Package_Component_Dependency)
 #     :RES_RUNTIME: output variable containing the list of path to files or folder used at runtime by dep_component.
 #
 function(collect_Links_And_Flags_For_External_Component dep_package dep_component
-RES_INCS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_C_STANDARD RES_CXX_STANDARD RES_RUNTIME)
+RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_C_STANDARD RES_CXX_STANDARD RES_RUNTIME)
 set(INCS_RESULT)
+set(LIBDIRS_RESULT)
 set(DEFS_RESULT)
 set(OPTS_RESULT)
 set(STATIC_LINKS_RESULT)
@@ -2219,7 +2222,7 @@ endif()
 ## collecting internal dependencies (recursive call on internal dependencies first)
 if(${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
 	foreach(comp IN LISTS ${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-		collect_Links_And_Flags_For_External_Component(${dep_package} ${comp} INCS DEFS OPTS LINKS_ST LINKS_SH C_STD CXX_STD RUNTIME_RES)
+		collect_Links_And_Flags_For_External_Component(${dep_package} ${comp} INCS LDIRS DEFS OPTS LINKS_ST LINKS_SH C_STD CXX_STD RUNTIME_RES)
 		if(${dep_package}_${dep_component}_INTERNAL_EXPORT_${comp}${USE_MODE_SUFFIX})
 			if(INCS)
 				list (APPEND INCS_RESULT ${INCS})
@@ -2231,6 +2234,9 @@ if(${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
 
 		if(OPTS)
 			list (APPEND OPTS_RESULT ${OPTS})
+		endif()
+		if(LDIRS)
+			list (APPEND LIBDIRS_RESULT ${LDIRS})
 		endif()
 		if(LINKS_ST)
 			list (APPEND STATIC_LINKS_RESULT ${LINKS_ST})
@@ -2272,7 +2278,7 @@ if(${dep_package}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #if the external pack
 	## collecting external dependencies (recursive call on external dependencies - the corresponding external package must exist)
 	foreach(dep IN LISTS ${dep_package}_${dep_component}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
 		foreach(comp IN LISTS ${dep_package}_${dep_component}_EXTERNAL_DEPENDENCY_${dep}_COMPONENTS${USE_MODE_SUFFIX})#if no component defined this is not an errror !
-			collect_Links_And_Flags_For_External_Component(${dep} ${comp} INCS DEFS OPTS LINKS_ST LINKS_SH C_STD CXX_STD RUNTIME_RES)
+			collect_Links_And_Flags_For_External_Component(${dep} ${comp} INCS LDIRS DEFS OPTS LINKS_ST LINKS_SH C_STD CXX_STD RUNTIME_RES)
 			if(${dep_package}_${dep_component}_EXTERNAL_EXPORT_${dep}_${comp}${USE_MODE_SUFFIX})
 				if(INCS)
 					list (APPEND INCS_RESULT ${INCS})
@@ -2285,11 +2291,12 @@ if(${dep_package}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #if the external pack
 			if(OPTS)
 				list (APPEND OPTS_RESULT ${OPTS})
 			endif()
-
+			if(LDIRS)
+				list (APPEND LIBDIRS_RESULT ${LDIRS})
+			endif()
 			if(LINKS_ST)
 				list (APPEND STATIC_LINKS_RESULT ${LINKS_ST})
 			endif()
-
 			if(LINKS_SH)
 				list (APPEND SHARED_LINKS_RESULT ${LINKS_SH})
 			endif()
@@ -2317,6 +2324,9 @@ endif()
 if(${dep_package}_${dep_component}_DEFS${USE_MODE_SUFFIX})
 	list(APPEND DEFS_RESULT ${${dep_package}_${dep_component}_DEFS${USE_MODE_SUFFIX}})
 endif()
+if(${dep_package}_${dep_component}_LIB_DIRS${USE_MODE_SUFFIX})
+	list(APPEND LIBDIRS_RESULT ${${dep_package}_${dep_component}_LIB_DIRS${USE_MODE_SUFFIX}})
+endif()
 if(${dep_package}_${dep_component}_OPTS${USE_MODE_SUFFIX})
 	list(APPEND OPTS_RESULT ${${dep_package}_${dep_component}_OPTS${USE_MODE_SUFFIX}})
 endif()
@@ -2340,6 +2350,9 @@ endif()
 if(OPTS_RESULT)
 	list(REMOVE_DUPLICATES OPTS_RESULT)
 endif()
+if(LIBDIRS_RESULT)
+	list(REMOVE_DUPLICATES LIBDIRS_RESULT)
+endif()
 if(STATIC_LINKS_RESULT)
 	list(REMOVE_DUPLICATES STATIC_LINKS_RESULT)
 endif()
@@ -2352,6 +2365,7 @@ endif()
 
 #4. return the values
 set(${RES_INCS} ${INCS_RESULT} PARENT_SCOPE)
+set(${RES_LIB_DIRS} ${LIBDIRS_RESULT} PARENT_SCOPE)
 set(${RES_DEFS} ${DEFS_RESULT} PARENT_SCOPE)
 set(${RES_OPTS} ${OPTS_RESULT} PARENT_SCOPE)
 set(${RES_LINKS_STATIC} ${STATIC_LINKS_RESULT} PARENT_SCOPE)
@@ -2426,7 +2440,7 @@ is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 
 #I need first to collect (recursively) all links and flags using the adequate variables (same as for native or close).
 collect_Links_And_Flags_For_External_Component(${dep_package} ${dep_component}
-RES_INCS RES_DEFS RES_OPTS RES_LINKS_ST RES_LINKS_SH RES_STD_C RES_STD_CXX RES_RUNTIME)
+RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_ST RES_LINKS_SH RES_STD_C RES_STD_CXX RES_RUNTIME)
 set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
 set(ALL_LINKS ${RES_LINKS_ST} ${RES_LINKS_SH})
 if (IS_HF_COMP) #a component withour headers
@@ -2435,25 +2449,24 @@ if (IS_HF_COMP) #a component withour headers
 		create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
 	else()
 		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "${RES_LINKS_SH}" "" "" "${RES_RUNTIME}")
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${RES_LINKS_SH}" "" "" "${RES_RUNTIME}")
 		endif()
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}" "${RES_STD_C}" "${RES_STD_CXX}")
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LIB_DIRS}" "${ALL_LINKS}" "${RES_STD_C}" "${RES_STD_CXX}")
 	endif()
 elseif(IS_BUILT_COMP) #a component that is built by the build procedure
-	#configure_Install_Variables component export include_dirs dep_defs exported_defs exported_options static_links shared_links runtime_resources)
 	#prepare the dependancy export
 	set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
-	configure_Install_Variables(${component} ${export} "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${RES_STD_C}" "${RES_STD_CXX}" "${runtime_resources}")
+	configure_Install_Variables(${component} ${export} "${RES_INCS}" "${RES_LIB_DIRS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${RES_STD_C}" "${RES_STD_CXX}" "${RES_RUNTIME}")
 
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}" "${RES_STD_C}" "${RES_STD_CXX}")
+	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LIB_DIRS}" "${ALL_LINKS}" "${RES_STD_C}" "${RES_STD_CXX}")
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER") #a pure header component
 	#prepare the dependancy export
-	configure_Install_Variables(${component} TRUE "${RES_INCS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${RES_STD_C}" "${RES_STD_CXX}" "${runtime_resources}") #export is necessarily true for a pure header library
+	configure_Install_Variables(${component} TRUE "${RES_INCS}" "${RES_LIB_DIRS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${RES_STD_C}" "${RES_STD_CXX}" "${RES_RUNTIME}") #export is necessarily true for a pure header library
 
 	# setting compile definitions for the "fake" target
-	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${ALL_LINKS}" "${RES_STD_C}" "${RES_STD_CXX}")
+	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LIB_DIRS}" "${ALL_LINKS}" "${RES_STD_C}" "${RES_STD_CXX}")
 else()
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()

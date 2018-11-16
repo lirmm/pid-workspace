@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(freetype2
-				VARIABLES LINK_OPTIONS
-				VALUES 		freetype2_LIBRARIES)
+				VARIABLES LINK_OPTIONS				INCLUDE_DIRS  					LIBRARY_DIRS			RPATH
+				VALUES 		freetype2_LINKS			freetype2_INCLUDE_PATH	freetype2_LIBDIR	freetype2_LIB)

@@ -162,6 +162,55 @@ function(convert_PID_Libraries_Into_System_Links list_of_libraries_var OUT_VAR)
   set(${OUT_VAR} ${all_links} PARENT_SCOPE)
 endfunction(convert_PID_Libraries_Into_System_Links)
 
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |convert_PID_Libraries_Into_Library_Directories| replace:: ``convert_PID_Libraries_Into_Library_Directories``
+#  .. _convert_PID_Libraries_Into_Library_Directories:
+#
+#  convert_PID_Libraries_Into_Library_Directories
+#  ----------------------------------------------
+#
+#   .. command:: convert_PID_Libraries_Into_Library_Directories(list_of_libraries_var OUT_VAR)
+#
+#      Utility function to be used in configuration find script. Extract the library directories to use to find them from absolute path to libraries.
+#
+#     .. rubric:: Required parameters
+#
+#     :<list_of_libraries_var>: the name of the variable that contains the list of libraries to convert.
+#
+#     :<OUT_VAR>: the output variable that contains the list of path to libraries folders.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function can be called in the find file provided by a configuration.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        No side effect.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        convert_PID_Libraries_Into_Library_Directories(BOOST_LIBRARIES BOOST_LIB_DIRS)
+#
+function(convert_PID_Libraries_Into_Library_Directories list_of_libraries_var OUT_VAR)
+	set(all_links)
+  if(${list_of_libraries_var})#the variable containing the list trully contains a list
+  	foreach(lib IN LISTS ${list_of_libraries_var})
+  		get_filename_component(FOLDER ${lib} DIRECTORY)
+  		list(APPEND all_links ${FOLDER})
+  	endforeach()
+    list(REMOVE_DUPLICATES all_links)
+  endif()
+  set(${OUT_VAR} ${all_links} PARENT_SCOPE)
+endfunction(convert_PID_Libraries_Into_Library_Directories)
+
 #.rst:
 #
 # .. ifmode:: user

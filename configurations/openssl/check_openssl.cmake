@@ -21,5 +21,5 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(openssl
-				VARIABLES LINK_OPTIONS
-				VALUES 		openssl_LIBRARIES)
+				VARIABLES LINK_OPTIONS		LIBRARY_DIRS 		RPATH   						INCLUDE_DIRS
+				VALUES 		OPENSSL_LINKS		OPENSSL_LIBDIRS	OPENSSL_LIBRARIES 	openssl_INCLUDE_DIR)

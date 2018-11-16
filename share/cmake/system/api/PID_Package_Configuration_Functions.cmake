@@ -384,15 +384,16 @@ function(get_Bin_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCES p
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
-	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${package} "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
+	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
 	foreach(path IN LISTS COMPLETE_RESOURCES_PATH)
 		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
 			list(APPEND result ${${package}_ROOT_DIR}/share/resources/${path})#the path contained by the link
-		else() #external or absolute resource path coming from external dependencies
-			list(APPEND result ${path})#the direct path to the dependency (absolute or relative to the external package)
+		else() #absolute resource path coming from external or system dependencies
+			list(APPEND result ${path})#the direct path to the dependency (absolute)
 		endif()
 	endforeach()
 endif()
+message("DEBUG get_Bin_Component_Direct_Runtime_Resources_Dependencies package=${package} component=${component} result=${result}")
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_Resources_Dependencies)
 
@@ -1179,7 +1180,7 @@ function(get_Source_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCE
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 if(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
-	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ${PROJECT_NAME} "${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
+	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH "${${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
 	foreach(path IN LISTS COMPLETE_RESOURCES_PATH)
 		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
 			list(APPEND result ${CMAKE_SOURCE_DIR}/share/resources/${path})#the path contained by the link
