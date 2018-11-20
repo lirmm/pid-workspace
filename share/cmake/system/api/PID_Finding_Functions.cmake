@@ -1300,25 +1300,25 @@ endfunction(reset_To_Install_Packages)
 #
 # .. ifmode:: internal
 #
-#  .. |need_Install_Packages| replace:: ``need_Install_Packages``
-#  .. _need_Install_Packages:
+#  .. |need_Install_Native_Packages| replace:: ``need_Install_Native_Packages``
+#  .. _need_Install_Native_Packages:
 #
-#  need_Install_Packages
-#  ---------------------
+#  need_Install_Native_Packages
+#  ----------------------------
 #
-#   .. command:: need_Install_Packages(NEED)
+#   .. command:: need_Install_Native_Packages(NEED)
 #
 #    Tell whether there are packages that need to be installed.
 #
 #     :NEED: the output variable that is TRUE is at least one package version must be installed.
 #
-function(need_Install_Packages NEED)
+function(need_Install_Native_Packages NEED)
 if(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX})
 	set(${NEED} TRUE PARENT_SCOPE)
 else()
 	set(${NEED} FALSE PARENT_SCOPE)
 endif()
-endfunction(need_Install_Packages)
+endfunction(need_Install_Native_Packages)
 
 #.rst:
 #
