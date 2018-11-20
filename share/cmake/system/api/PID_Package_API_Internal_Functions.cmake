@@ -1627,7 +1627,7 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_package}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_package}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
 				return()
-			else()
+			elseif(${dep_package}_FOUND)
 				add_Chosen_Package_Version_In_Current_Process(${dep_package})
 			endif()
 		endif()#otherwise nothing more to do
@@ -1798,7 +1798,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_package}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_package}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
 			return()
-		else()
+		elseif(${dep_package}_FOUND)#dependency has been found in workspace
 			add_Chosen_Package_Version_In_Current_Process(${dep_package})
 		endif()
   endif()
