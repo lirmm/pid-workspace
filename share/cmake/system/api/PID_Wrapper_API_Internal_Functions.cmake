@@ -2192,36 +2192,35 @@ function(resolve_Wrapper_Dependencies RESULT_OK package version)
 		resolve_Wrapper_Dependency(${package} ${version} ${dep_package})
 	endforeach()
 
-	#2) from here only direct dependencies have been satisfied if they are present in the workspace
-	# other need to be installed
-	set(INSTALL_REQUIRED FALSE)
-	need_Install_External_Packages(INSTALL_REQUIRED)
-	if(INSTALL_REQUIRED)# if there are packages to install it means that there are some unresolved required dependencies
-		set(INSTALLED_PACKAGES)
-		set(NOT_INSTALLED)
-		install_Required_External_Packages("${${package}_TOINSTALL_EXTERNAL_PACKAGES}" INSTALLED_PACKAGES NOT_INSTALLED)
-		if(NOT_INSTALLED)
-			message("[PID] ERROR : when building ${package}, there are some unresolved required external package dependencies for version ${version}: ${NOT_INSTALLED}.")
-			set(${RESULT_OK} FALSE PARENT_SCOPE)
-			return()
-		endif()
-		foreach(a_dep IN LISTS INSTALLED_PACKAGES)#do the recursion on installed external packages
-			#perform a new refind to be sure that all direct dependencies are well configured
-			resolve_External_Package_Dependency(IS_COMPATIBLE ${package}_KNOWN_VERSION_${version} ${a_dep} Release)
-			if(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been reinstalled
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${a_dep} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${a_dep}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${a_dep}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${a_dep}_VERSION${USE_MODE_SUFFIX}}.")
-				return()
-			else()
-				add_Chosen_Package_Version_In_Current_Process(${a_dep})
-			endif()
-		endforeach()
-	endif()
-	#resolving external dependencies for project external dependencies
-	#need to do this here has
+	# from here only direct dependencies have been satisfied if they are present in the workspace, otherwise they need to be installed
 	# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN LISTS ${prefix}_EXTERNAL_DEPENDENCIES)
-		resolve_Package_Dependencies(${dep_pack} Release TRUE)
+		need_Install_External_Package(MUST_BE_INSTALLED ${dep_pack})
+		if(MUST_BE_INSTALLED)
+			install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE)
+			if(NOT INSTALL_OK)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace and try to fond ReferExternal${dep_pack}.cmake file in share/cmake/references folder.")
+				return()
+			endif()
+			resolve_External_Package_Dependency(IS_COMPATIBLE ${prefix} ${dep_pack} Release)#launch again the resolution
+			if(NOT ${dep_pack}_FOUND)#this time the package must be found since installed => internak BUG in PID
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
+				return()
+			elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
+				return()
+			else()#OK resolution took place !!
+				add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
+				if(${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
+					resolve_Package_Dependencies(${dep_pack} Release TRUE)#recursion : resolving dependencies for each external package dependency
+				endif()
+			endif()
+		else()
+			resolve_Package_Dependencies(${dep_pack} Release TRUE)
+		endif()
 	endforeach()
 endfunction(resolve_Wrapper_Dependencies)

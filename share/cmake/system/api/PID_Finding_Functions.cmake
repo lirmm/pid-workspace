@@ -1324,6 +1324,33 @@ endfunction(need_Install_Native_Packages)
 #
 # .. ifmode:: internal
 #
+#  .. |need_Install_Native_Package| replace:: ``need_Install_Native_Package``
+#  .. _need_Install_Native_Package:
+#
+#  need_Install_Native_Package
+#  ---------------------------
+#
+#   .. command:: need_Install_Native_Package(NEED package)
+#
+#    Tell whether a native package must be installed in current process.
+#
+#     :package: the name of the given native package.
+#
+#     :NEED: the output variable that is TRUE if given native package must be installed.
+#
+function(need_Install_Native_Package NEED package)
+  list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
+  if(INDEX EQUAL -1)#package not found in list of packages to install
+  	set(${NEED} FALSE PARENT_SCOPE)
+  else()
+  	set(${NEED} TRUE PARENT_SCOPE)
+  endif()
+endfunction(need_Install_Native_Package)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |add_To_Install_External_Package_Specification| replace:: ``add_To_Install_External_Package_Specification``
 #  .. _add_To_Install_External_Package_Specification:
 #
@@ -1459,6 +1486,34 @@ else()
 	set(${NEED} FALSE PARENT_SCOPE)
 endif()
 endfunction(need_Install_External_Packages)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |need_Install_External_Package| replace:: ``need_Install_External_Package``
+#  .. _need_Install_External_Package:
+#
+#  need_Install_External_Package
+#  -----------------------------
+#
+#   .. command:: need_Install_External_Package(NEED package)
+#
+#    Tell whether a package must be installed in current process.
+#
+#     :package: the name of the given external package.
+#
+#     :NEED: the output variable that is TRUE if given external package must be installed.
+#
+function(need_Install_External_Package NEED package)
+  list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
+  if(INDEX EQUAL -1)#package not found in list of packages to install
+  	set(${NEED} FALSE PARENT_SCOPE)
+  else()
+  	set(${NEED} TRUE PARENT_SCOPE)
+  endif()
+endfunction(need_Install_External_Package)
 
 #.rst:
 #

@@ -662,94 +662,98 @@ endif()
 #################################################################################
 ############ MANAGING the configuration of package dependencies #################
 #################################################################################
-# from here only direct dependencies have been satisfied
-# 0) if there are packages to install it means that there are some unresolved required dependencies
+# from here only direct dependencies existing in workspace have been satisfied
+# 0) check if there are packages to install in workspace => if packages must be installed and no automatic install then failure
 set(INSTALL_REQUIRED FALSE)
 need_Install_External_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#when automatic download engaged (default) then automatically install
 		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : ${PROJECT_NAME} try to resolve required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}.")
+			message("[PID] INFO : ${PROJECT_NAME} needs to install requires external packages : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}.")
 		endif()
-		set(INSTALLED_PACKAGES)
-		set(NOT_INSTALLED)
-		install_Required_External_Packages("${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES NOT_INSTALLED)
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : ${PROJECT_NAME} has automatically installed the following external packages : ${INSTALLED_PACKAGES}.")
-		endif()
-		if(NOT_INSTALLED)
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR when configuring ${PROJECT_NAME}, there are some unresolved required external package dependencies : ${NOT_INSTALLED}.")
-			return()
-		endif()
-		# now need to find each package version and verify compatibility of versions required (this is resolving dependency)
-		foreach(a_dep IN LISTS INSTALLED_PACKAGES)
-			resolve_External_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${a_dep} ${CMAKE_BUILD_TYPE})
-		  if(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been reinstalled
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${a_dep} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${a_dep}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${a_dep}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_dep}_VERSION${USE_MODE_SUFFIX}}.")
-				return()
-			else()
-				add_Chosen_Package_Version_In_Current_Process(${a_dep})
-			endif()
-		endforeach()
 	else()
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : there are some unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option to install them automatically.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} cannot install unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}. You may use the REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD option to install them automatically.")
 		return()
 	endif()
 endif()
-
 set(INSTALL_REQUIRED FALSE)
 need_Install_Native_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#when automatic download engaged (default) then automatically install
 		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : ${PROJECT_NAME} try to solve required native package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}")
+			message("[PID] INFO : ${PROJECT_NAME} needs to install requires native packages : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}.")
 		endif()
-		set(INSTALLED_PACKAGES)
-		set(NOT_INSTALLED)
-		install_Required_Native_Packages("${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}" INSTALLED_PACKAGES NOT_INSTALLED)
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : ${PROJECT_NAME} has automatically installed the following native packages : ${INSTALLED_PACKAGES}")
-		endif()
-		if(NOT_INSTALLED)
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${PROJECT_NAME}, there are some unresolved required package dependencies : ${NOT_INSTALLED}.")
-			return()
-		endif()
-		# now need to find each package version and verify compatibility of versions required (this is resolving dependency)
-		foreach(a_dep IN LISTS INSTALLED_PACKAGES)
-			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${a_dep} ${CMAKE_BUILD_TYPE})
-			if(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been reinstalled from scratch so it should have been built with current constraints
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${a_dep} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${a_dep}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${a_dep}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_dep}_VERSION${USE_MODE_SUFFIX}}.")
-				return()
-			else()
-				add_Chosen_Package_Version_In_Current_Process(${a_dep})
-			endif()
-		endforeach()
 	else()
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR  when building ${PROJECT_NAME} : there are some unresolved required package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}. You may download them \"by hand\" or use the required packages automatic download option to install them automatically.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} cannot install unresolved required native package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}. You may use the REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD option to install them automatically.")
 		return()
 	endif()
 endif()
 
 #resolving external dependencies for project external dependencies
-if(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-	# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
-	# we get the set of all packages undirectly required
-	foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
- 		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)
- 	endforeach()
-endif()
+
+# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
+# we get the set of all packages undirectly required
+foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+	need_Install_External_Package(MUST_BE_INSTALLED ${dep_pack})
+	if(MUST_BE_INSTALLED)
+		install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE)
+		if(NOT INSTALL_OK)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace and try to find ReferExternal${dep_pack}.cmake file in share/cmake/references folder.")
+			return()
+		endif()
+		resolve_External_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
+		if(NOT ${dep_pack}_FOUND)#this time the package must be found since installed => internak BUG in PID
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
+			return()
+		elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
+			return()
+		else()#OK resolution took place !!
+			add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
+			if(${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
+				resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)#recursion : resolving dependencies for each external package dependency
+			endif()
+		endif()
+	else()
+		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)
+	endif()
+endforeach()
 
 if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 1) resolving dependencies of required native packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
- 		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)
+		need_Install_Native_Package(MUST_BE_INSTALLED ${dep_pack})
+		if(MUST_BE_INSTALLED)
+			install_Native_Package(INSTALL_OK ${dep_pack} FALSE)
+			if(NOT INSTALL_OK)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install native package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace and try to find Refer${dep_pack}.cmake file in share/cmake/references folder.")
+				return()
+			endif()
+			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
+			if(NOT ${dep_pack}_FOUND)#this time the package must be found since installed => internak BUG in PID
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_pack}.")
+				return()
+			elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
+				return()
+			else()#OK resolution took place !!
+				add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
+				if(${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
+					resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)#recursion : resolving dependencies for each external package dependency
+				endif()
+			endif()
+		else()#no need to install so directly resolve
+			resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)
+		endif()
  	endforeach()
 
 	#here every package dependency should have been resolved OR ERROR
