@@ -206,7 +206,7 @@ elseif(DIR_NAME STREQUAL "build")
 		add_custom_target(build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Building package (Release mode only) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMENT "[PID] Building package ${PROJECT_NAME} (Release mode only) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 	else()
@@ -214,13 +214,13 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Building package (Debug and Release modes) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMENT "[PID] Building package ${PROJECT_NAME} (Debug and Release modes) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		#mode specific build commands
 		add_custom_target(build_release
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
-			COMMENT "[PID] Release build for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMENT "[PID] Release build of package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_dependencies(build_release reconfigure) #checking if reconfiguration is necessary before build
@@ -231,7 +231,7 @@ elseif(DIR_NAME STREQUAL "build")
 		endif()
 		add_custom_target(build_debug
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
-			COMMENT "[PID] Debug build for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMENT "[PID] Debug build of package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_dependencies(build_debug reconfigure) #checking if reconfiguration is necessary before build
@@ -260,7 +260,7 @@ elseif(DIR_NAME STREQUAL "build")
 		add_custom_target(global_main ALL
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-			COMMENT "[PID] Compiling and linking package (Debug and Release modes) ..."
+			COMMENT "[PID] Compiling and linking package ${PROJECT_NAME} (Debug and Release modes) ..."
 			VERBATIM
 		)
 	endif()
@@ -269,14 +269,14 @@ elseif(DIR_NAME STREQUAL "build")
 	add_custom_target(clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
-		COMMENT "[PID] Cleaning package (Debug and Release modes) ..."
+		COMMENT "[PID] Cleaning package ${PROJECT_NAME} (Debug and Release modes) ..."
 		VERBATIM
 	)
 
 	# reference file generation target
 	add_custom_target(referencing
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} referencing
-		COMMENT "[PID] Generating and installing reference to the package ..."
+		COMMENT "[PID] Generating and installing reference to the package ${PROJECT_NAME} ..."
 		VERBATIM
 	)
 
@@ -286,14 +286,14 @@ elseif(DIR_NAME STREQUAL "build")
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} install
-		COMMENT "[PID] Installing the package ..."
+		COMMENT "[PID] Installing the package ${PROJECT_NAME} ..."
 		VERBATIM
 	)
 
 	# uninstall target (cleaning the install tree)
 	add_custom_target(uninstall
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} uninstall
-		COMMENT "[PID] Uninstalling the package ..."
+		COMMENT "[PID] Uninstalling the package ${PROJECT_NAME} ..."
 		VERBATIM
 	)
 
@@ -301,7 +301,7 @@ elseif(DIR_NAME STREQUAL "build")
 	# site target (generation of a static site documenting the project)
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} site
-		COMMENT "[PID] Creating/Updating web pages of the project ..."
+		COMMENT "[PID] Creating/Updating web pages of the project ${PROJECT_NAME} ..."
 		VERBATIM
 	)
 
@@ -311,20 +311,20 @@ elseif(DIR_NAME STREQUAL "build")
 			add_custom_target(test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
-				COMMENT "[PID] Launching tests ..."
+				COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
 				VERBATIM
 			)
 		else()
 			add_custom_target(test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
-				COMMENT "[PID] Launching tests ..."
+				COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
 				VERBATIM
 			)
 		endif()
 		if(BUILD_COVERAGE_REPORT)
 			add_custom_target(coverage
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES}${CMAKE_MAKE_PROGRAM} coverage
-				COMMENT "[PID] Generating coverage report for tests ..."
+				COMMENT "[PID] Generating coverage report for tests of ${PROJECT_NAME} ..."
 				VERBATIM
 			)
 			add_dependencies(site coverage)
@@ -358,7 +358,7 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package_install
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package_install
-			COMMENT "[PID] Generating and installing system binary package ..."
+			COMMENT "[PID] Generating and installing system binary package for ${PROJECT_NAME} ..."
 			VERBATIM
 		)
 		add_dependencies(site package)
@@ -368,7 +368,7 @@ elseif(DIR_NAME STREQUAL "build")
 		# target to add licensing information to all source files
 		add_custom_target(licensing
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} licensing
-			COMMENT "[PID] Applying license to sources ..."
+			COMMENT "[PID] Applying license to sources of package ${PROJECT_NAME} ..."
 			VERBATIM
 		)
 
@@ -379,13 +379,13 @@ elseif(DIR_NAME STREQUAL "build")
 		add_custom_target(list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} list_dependencies
-			COMMENT "[PID] listing dependencies of the package ..."
+			COMMENT "[PID] listing dependencies of the package ${PROJECT_NAME} ..."
 			VERBATIM
 		)
 	else()
 		add_custom_target(list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
-			COMMENT "[PID] listing dependencies of the package ..."
+			COMMENT "[PID] listing dependencies of the package ${PROJECT_NAME} ..."
 			VERBATIM
 		)
 	endif()
@@ -721,7 +721,7 @@ if(INSTALL_REQUIRED)
 		# now need to find each package version and verify compatibility of versions required (this is resolving dependency)
 		foreach(a_dep IN LISTS INSTALLED_PACKAGES)
 			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${a_dep} ${CMAKE_BUILD_TYPE})
-			if(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been reinstalled
+			if(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been reinstalled from scratch so it should have been built with current constraints
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${a_dep} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${a_dep}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${a_dep}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${a_dep}_VERSION${USE_MODE_SUFFIX}}.")
 				return()
@@ -1514,7 +1514,7 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 			else()#no version required, for now we cannot say much more about version specified in use file until
 				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#if a version number is specified by the user
 					add_Package_Dependency_To_Cache(${dep_package} ${${dep_package}_ALTERNATIVE_VERSION_USED} FALSE "${list_of_components}") #set the dependency
-				else()# any version can be used so for now no contraint
+				else()# any version can be used so for now no constraint
 					add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
 				endif()
 			endif()
@@ -1617,6 +1617,7 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 	if(NOT unused) #if the dependency is really used (guard the case when it were optional and unselected by user)
 		# 3) try to find the adequate package version => it is necessarily required
 		if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
+			#package has never been found by a direct call to find_package in root CMakeLists.txt
 			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
 			if(NOT IS_COMPATIBLE)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1787,6 +1788,7 @@ endif()#version specified
 if(NOT unused) #if the dependency is really used (in case it were optional and unselected by user)
 	# 3) try to find the adequate package version => it is necessarily required
 	if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
+		#package has never been found by a direct call to find_package in root CMakeLists.txt
 		resolve_External_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
 		if(NOT IS_COMPATIBLE)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
