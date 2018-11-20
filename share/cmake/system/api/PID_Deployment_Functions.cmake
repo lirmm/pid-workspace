@@ -312,7 +312,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
       install_Native_Package(INSTALL_OK ${package} TRUE)
     endif()
     if(INSTALL_OK)
-      find_package(${package} ${${package}_VERSION_STRING} REQUIRED)#find again the package but this time we impose as constraint the specific version
+      find_package(${package} ${${package}_VERSION_STRING} EXACT REQUIRED)#find again the package but this time we impose as constraint the specific version searched
       resolve_Package_Dependencies(${package} ${mode} FALSE)#resolving again the dependencies on same package
     else()# cannot do much more about that !!
       finish_Progress(${GLOBAL_PROGRESS_VAR})
