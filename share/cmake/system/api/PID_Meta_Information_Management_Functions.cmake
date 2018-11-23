@@ -186,12 +186,20 @@ foreach(string_el IN LISTS institution)
 	set(res_string_instit "${res_string_instit}_${string_el}")
 endforeach()
 
+if( CMAKE_MAJOR_VERSION VERSION_GREATER 3
+    OR (CMAKE_MAJOR_VERSION VERSION_EQUAL 3 AND CMAKE_MINOR_VERSION VERSION_GREATER 12))
+    #starting from version 3.13 project command generates the ${PROJECT_NAME}_DESCRIPTION variable
+  if(DEFINED ${PROJECT_NAME}_DESCRIPTION)
+  	unset(${PROJECT_NAME}_DESCRIPTION PARENT_SCOPE)#unset this normal variable
+  endif()
+endif()
+
 set(REGENERATE_LICENSE FALSE CACHE INTERNAL "")
-if(	NOT ${PROJECT_NAME}_LICENSE STREQUAL "${license}" OR
-		NOT ${PROJECT_NAME}_YEARS STREQUAL "${year}" OR
-		NOT ${PROJECT_NAME}_DESCRIPTION STREQUAL "${description}" OR
-		NOT ${PROJECT_NAME}_MAIN_AUTHOR STREQUAL "${res_string_auth}" OR
-		NOT ${PROJECT_NAME}_MAIN_INSTITUTION STREQUAL "${res_string_instit}"
+if(	NOT ${PROJECT_NAME}_LICENSE STREQUAL license OR
+		NOT ${PROJECT_NAME}_YEARS STREQUAL year OR
+		NOT ${PROJECT_NAME}_DESCRIPTION STREQUAL description OR
+		NOT ${PROJECT_NAME}_MAIN_AUTHOR STREQUAL res_string_auth OR
+		NOT ${PROJECT_NAME}_MAIN_INSTITUTION STREQUAL res_string_instit
 	)
 	set(REGENERATE_LICENSE TRUE CACHE INTERNAL "")
 endif()

@@ -433,7 +433,6 @@ set(${VERSION_FOUND} FALSE PARENT_SCOPE)
 list_Version_Subdirectories(local_versions ${install_dir})
 if(local_versions)#seaking for a good version only if there are versions installed
 	update_Package_Installed_Version(${package} "" "" "" false "${local_versions}")#updating only if there are installed versions
-	set(${VERSION_FOUND} TRUE PARENT_SCOPE)
 	set(version_string_curr "0.0.0")
 	foreach(local_version_dir IN LISTS local_versions)
 		if(version_string_curr VERSION_LESS local_version_dir)
@@ -444,6 +443,7 @@ if(local_versions)#seaking for a good version only if there are versions install
   if(NOT major)#not a valid version string
     return()
   endif()
+  set(${VERSION_FOUND} TRUE PARENT_SCOPE)
   set_Version_Strings(${package} ${major} ${minor} ${patch})
 endif()
 endfunction(check_Last_Version)
