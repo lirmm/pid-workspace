@@ -58,7 +58,7 @@ if(EXISTS "${ROS_PATH}/env.sh")
 		endif()
 	endforeach()
 
-	if(ROS_LIB)
+	if(ROS_LIBS)
 		convert_PID_Libraries_Into_System_Links(ROS_LIBS ROS_LINKS)#getting good system links (with -l)
 	endif()
 	found_PID_Configuration(ros TRUE)
