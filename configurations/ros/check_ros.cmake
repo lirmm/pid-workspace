@@ -22,10 +22,10 @@ function(add_ROS_Dependencies_To_Component component exported)
 
 			declare_PID_Component_Dependency(
 					COMPONENT ${component}
-					EXPORT LINKS SHARED ${ros_LINKS}
-								       STATIC -L${ros_RPATH}
-								 INCLUDE_DIRS ${ros_INCLUDE_DIRS}
-					RUNTIME_RESOURCES ${ros_RPATH}
+					EXPORT LINKS SHARED ${ros_LINK_OPTIONS}
+								 LIBRARY_DIRS ros_LIBRARY_DIRS
+								 INCLUDE_DIRS ros_INCLUDE_DIRS
+								 RUNTIME_RESOURCES ros_RPATH
 			)
 
 			foreach(boost_component IN LISTS ros_BOOST_COMPONENTS)
@@ -36,13 +36,14 @@ function(add_ROS_Dependencies_To_Component component exported)
 					)
 			endforeach()
 	else()
-		declare_PID_Component_Dependency(
-		    COMPONENT ${component}
-				EXPORT LINKS SHARED ${ros_LINKS}
-										 STATIC -L${ros_RPATH}
-							 INCLUDE_DIRS ${ros_INCLUDE_DIRS}
-				RUNTIME_RESOURCES ${ros_RPATH}
-		)
+
+				declare_PID_Component_Dependency(
+						COMPONENT ${component}
+									 LINKS SHARED ${ros_LINK_OPTIONS}
+									 LIBRARY_DIRS ros_LIBRARY_DIRS
+									 INCLUDE_DIRS ros_INCLUDE_DIRS
+									 RUNTIME_RESOURCES ros_RPATH
+				)
 
 		foreach(boost_component IN LISTS ros_BOOST_COMPONENTS)
 		    declare_PID_Component_Dependency(
