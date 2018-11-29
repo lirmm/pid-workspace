@@ -440,9 +440,6 @@ if(local_versions)#seaking for a good version only if there are versions install
 		endif()
 	endforeach()
 	get_Version_String_Numbers(${version_string_curr} major minor patch)
-  if(NOT major)#not a valid version string
-    return()
-  endif()
   set(${VERSION_FOUND} TRUE PARENT_SCOPE)
   set_Version_Strings(${package} ${major} ${minor} ${patch})
 endif()
