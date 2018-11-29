@@ -208,7 +208,7 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   			return()
   		endif()
       resolve_External_Package_Dependency(IS_COMPATIBLE ${package} ${dep_ext_pack} ${mode})#launch again the resolution
-      if(NOT ${dep_ext_pack}_FOUND)#this time the package must be found since installed => internak BUG in PID
+      if(NOT ${dep_ext_pack}_FOUND)#this time the package must be found since installed => internal BUG in PID
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_ext_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
         return()
@@ -255,11 +255,11 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
       resolve_Native_Package_Dependency(IS_COMPATIBLE ${package} ${dep_pack} ${mode})#launch again the resolution
       if(NOT ${dep_pack}_FOUND)#this time the package must be found since installed => internak BUG in PID
         finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_pack}.")
+        message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed native package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_pack}.")
         return()
       elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent native package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
         return()
       else()#OK resolution took place !!
         add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
@@ -269,7 +269,7 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
       endif()
     else()
       finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR :  external package dependency to ${dep_pack} cannot be resolved since the automatic download of packages is not activated in ${PROJECT_NAME}. You may set the REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD option to ON.")
+      message(FATAL_ERROR "[PID] CRITICAL ERROR :  native package dependency to ${dep_pack} cannot be resolved since the automatic download of packages is not activated in ${PROJECT_NAME}. You may set the REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD option to ON.")
       return()
     endif()
   elseif(NOT IS_COMPATIBLE)#package binary found in install tree but is not compatible !
