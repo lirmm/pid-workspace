@@ -21,8 +21,12 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(boost
-			VARIABLES VERSION 				LIBRARY_DIRS 				INCLUDE_DIRS 				RPATH						LINK_OPTIONS
-			VALUES 		BOOST_VERSION 	BOOST_LIBRARY_DIRS 	Boost_INCLUDE_DIRS 	Boost_LIBRARIES	BOOST_LINKS)
+			VARIABLES VERSION 			LIBRARY_DIRS 				INCLUDE_DIRS 				RPATH						LINK_OPTIONS	COMPONENTS
+		VALUES 		BOOST_VERSION 	BOOST_LIBRARY_DIRS 	Boost_INCLUDE_DIRS 	Boost_LIBRARIES	BOOST_LINKS		BOOST_COMPONENTS)
 
 # constraints
-PID_Configuration_Constraints(boost IN_BINARY libraries VALUE Boost_COMPONENTS)
+PID_Configuration_Constraints(boost IN_BINARY libraries					version
+																		VALUE 		BOOST_COMPONENTS	BOOST_VERSION)
+
+
+PID_Configuration_Dependencies(boost DEPENDS posix)
