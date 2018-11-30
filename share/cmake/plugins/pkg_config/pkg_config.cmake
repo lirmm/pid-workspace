@@ -39,6 +39,35 @@ elseif(UNIX)
   endif()
 endif()
 
+
+# clean_Pkg_Config_Files
+# ----------------------------------
+#
+# clean the .pc files corresponding to the library defined in the current project
+#
+function(clean_Pkg_Config_Files path_to_build_folder package platform version library_name mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode}) #getting mode info that will be used for generating adequate names
+  if(EXISTS ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pc)#remove file if existing
+    file(REMOVE ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pc)
+  endif()
+  if(EXISTS ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pre.pc)#remove intermediary files
+    file(REMOVE ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pre.pc)
+  endif()
+  clean_Pkg_Config_Files_For_Dependencies(${path_to_build_folder} ${package} ${platform} ${version} ${library_name} ${mode})
+endfunction(clean_Pkg_Config_Files)
+
+
+###
+function(clean_Pkg_Config_Files_For_Dependencies path_to_build_folder package platform version library_name mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode}) #getting mode info that will be used for generating adequate names
+  foreach(dep_package IN LISTS ${package}_${library_name}_DEPENDENCIES${VAR_SUFFIX})
+    foreach(dep_component IN LISTS ${package}_${library_name}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+      clean_Pkg_Config_Files(${path_to_build_folder} ${dep_package} ${platform} ${${dep_package}_VERSION_STRING} ${dep_component} ${mode})
+    endforeach()
+  endforeach()
+endfunction(clean_Pkg_Config_Files_For_Dependencies)
+
+
 # generate_Pkg_Config_Files
 # ----------------------------------
 #
@@ -57,7 +86,7 @@ function(generate_Pkg_Config_Files_For_Dependencies path_to_build_folder package
   foreach(dep_package IN LISTS ${package}_${library_name}_DEPENDENCIES${VAR_SUFFIX})
     foreach(dep_component IN LISTS ${package}_${library_name}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
       # if(NOT EXISTS ${WORKSPACE_DIR}/pid/share/pkgconfig/${dep_package}_${${dep_package}_VERSION_STRING}_${dep_component}${TARGET_SUFFIX}.pc)
-        #generate the pkg-config file to be sure the adeqaute version used locally is existing
+        #generate the pkg-config file to be sure the adequate version used locally is existing
         generate_Pkg_Config_Files(${path_to_build_folder} ${dep_package} ${platform} ${${dep_package}_VERSION_STRING} ${dep_component} ${mode})
       # endif()
     endforeach()
@@ -77,21 +106,20 @@ endfunction(setup_And_Install_Library_Pkg_Config_File)
 ### generate and install pkg-config .pc files
 macro(install_Pkg_Config_File path_to_build_folder package platform version library_name mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode}) #getting mode info that will be used for generating adequate names
-  if(EXISTS ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pc)
-    file(REMOVE ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pc)
+  if(NOT EXISTS ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pre.pc)#if intermediary file do not exist it means that that generate/install rule has not been defined yet
+    #generate a temporary file with the adequate pkg-config format but whose content is not already generated from cmake
+    configure_file("${WORKSPACE_DIR}/share/cmake/plugins/pkg_config/pkg_config.pc.pre.in"
+    "${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pre.pc" @ONLY)
+    #the final generation is performed after evaluation of generator expression (this is the case for currently build package only, not for dependencies for which expression have already been resolved)
+    file(GENERATE OUTPUT ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pc
+                  INPUT ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pre.pc)
+  	#finally create the install target for the .pc file corresponding to the library
+  	set(PATH_TO_INSTALL_FOLDER ${WORKSPACE_DIR}/pid/share/pkgconfig) #put everythng in a global folder so that adding this folder to PKG_CONFIG_PATH will be a quite easy task
+    install(
+  		FILES ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pc
+  		DESTINATION ${PATH_TO_INSTALL_FOLDER} #put generated .pc files into a unique folder in install tree of the package
+  		PERMISSIONS OWNER_READ GROUP_READ WORLD_READ OWNER_WRITE)
   endif()
-  #generate a temporary file with the adequate pkg-config format but whose content is not already generated from cmake
-  configure_file("${WORKSPACE_DIR}/share/cmake/plugins/pkg_config/pkg_config.pc.pre.in"
-  "${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pre.pc" @ONLY)
-  #the final generation is performed after evaluation of generator expression (this is the case for currently build package only, not for dependencies for which expression have already been resolved)
-  file(GENERATE OUTPUT ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pc
-                INPUT ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pre.pc)
-	#finally create the install target for the .pc file corresponding to the library
-	set(PATH_TO_INSTALL_FOLDER ${WORKSPACE_DIR}/pid/share/pkgconfig) #put everythng in a global folder so that adding this folder to PKG_CONFIG_PATH will be a quite easy task
-  install(
-		FILES ${path_to_build_folder}/${package}_${library_name}${TARGET_SUFFIX}.pc
-		DESTINATION ${PATH_TO_INSTALL_FOLDER} #put generated .pc files into a unique folder in install tree of the package
-		PERMISSIONS OWNER_READ GROUP_READ WORLD_READ OWNER_WRITE)
 endmacro(install_Pkg_Config_File)
 
 # setup_Pkg_Config_Variables

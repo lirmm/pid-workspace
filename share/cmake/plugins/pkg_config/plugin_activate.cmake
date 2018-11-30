@@ -20,6 +20,12 @@
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(${WORKSPACE_DIR}/share/cmake/plugins/pkg_config/pkg_config.cmake)
 
+#first clean existing pc files
+foreach(library IN LISTS ${PROJECT_NAME}_COMPONENTS_LIBS)
+	clean_Pkg_Config_Files(${CMAKE_BINARY_DIR}/share ${PROJECT_NAME} ${CURRENT_PLATFORM} ${${PROJECT_NAME}_VERSION} ${library} ${CMAKE_BUILD_TYPE})
+endforeach()
+
+#second generate pc files
 foreach(library IN LISTS ${PROJECT_NAME}_COMPONENTS_LIBS)
 	if(NOT ${PROJECT_NAME}_${library}_TYPE STREQUAL "MODULE")#module libraries are not intended to be used at compile time
 		generate_Pkg_Config_Files(${CMAKE_BINARY_DIR}/share ${PROJECT_NAME} ${CURRENT_PLATFORM} ${${PROJECT_NAME}_VERSION} ${library} ${CMAKE_BUILD_TYPE})
