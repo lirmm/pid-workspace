@@ -312,7 +312,7 @@ endfunction(declare_PID_Configuration_Variables)
 #     .. rubric:: Optional parameters
 #
 #     :REQUIRED <list of variables>: The list of required constraints. Required means that the constraints must be specified at configuration check time. All required constraints always appear in final binaries description.
-#     :OPTIONAL <list of variables>: The list of optional constraints. Optional means that the constraints if its value can be ignore when considering binaries AND no paremeter can be given for those constraints at configarution check time.
+#     :OPTIONAL <list of variables>: The list of optional constraints. Optional means that the constraints value can be ignored when considering binaries AND no paremeter can be given for those constraints at configuration check time.
 #     :IN_BINARY <list of variables>: The list of optional constraints at source compilation time but that are required at binary usage time.
 #     :VALUE <list of variables>: The list variables used to set the value of the corresponding list of variables IN_BINARY. Used to initialize the value of constraints used only at binary usage time.
 #

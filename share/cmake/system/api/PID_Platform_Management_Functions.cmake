@@ -865,10 +865,14 @@ foreach(constraint IN LISTS ${config}_REQUIRED_CONSTRAINTS)
 endforeach()
 
 foreach(constraint IN LISTS ${config}_IN_BINARY_CONSTRAINTS)
-  set(VAL_LIST "${${${config}_${constraint}_BINARY_VALUE}}")
-  string(REPLACE " " "" VAL_LIST "${VAL_LIST}")#remove the spaces in the string if any
-  string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate a configuration argument list (with "," as delimiter) from an argument list (with "," delimiter)
-  list(APPEND all_constraints ${constraint} "${VAL_LIST}")#use guillemet to set exactly one element
+  set(VAL_LIST "${${${config}_${constraint}_BINARY_VALUE}}")#interpret the value of the adequate configuration generated internal variable
+  if(NOT VAL_LIST)#list is empty
+    list(APPEND all_constraints ${constraint} "\"\"")#specific case: dealing with an empty value
+  else()
+    string(REPLACE " " "" VAL_LIST "${VAL_LIST}")#remove the spaces in the string if any
+    string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate a configuration argument list (with "," as delimiter) from an argument list (with "," delimiter)
+    list(APPEND all_constraints ${constraint} "${VAL_LIST}")#use guillemet to set exactly one element
+  endif()
 endforeach()
 
 #optional constraints are never propagated to binaries description
