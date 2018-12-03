@@ -1189,7 +1189,7 @@ endfunction(translate_Into_Options)
 #     :INCLUDES <variable>: The variable passed as argument will be filled with include folders for the external package version being built.
 #     :DEFINITIONS <variable>: The variable passed as argument will be filled with all definitions for the external package version being built.
 #     :LINKS <variable>: The variable passed as argument will be filled with all path to librairies and linker options for the external package version being built.
-#     :LIBRARY_DIRS <variable>
+#     :LIBRARY_DIRS <variable>: The variable passed as argument will be filled with all path to folders containing libraries.
 #     :C_STANDARD <variable>: The variable passed as argument will be filled with the C language standard to use for the external package version, if any specified.
 #     :CXX_STANDARD <variable>: The variable passed as argument will be filled with the CXX language standard to use for the external package version, if any specified.
 #     :FLAGS: option to get result of all preceeding arguments directly as compiler flags instead of CMake variables.

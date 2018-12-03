@@ -55,11 +55,18 @@ if(NOT DO_NOT_EXECUTE_SCRIPT AND ENV{skip_script})#to manage the call for non UN
 	set(DO_NOT_EXECUTE_SCRIPT $ENV{skip_script} CACHE INTERNAL "")
 endif()
 
+if(NOT USE_SYSTEM_VARIANT AND ENV{os_variant})#to manage the call for non UNIX makefile generators
+	set(USE_SYSTEM_VARIANT $ENV{os_variant} CACHE INTERNAL "")
+endif()
+
+if(USE_SYSTEM_VARIANT AND (USE_SYSTEM_VARIANT STREQUAL "true" OR USE_SYSTEM_VARIANT STREQUAL "TRUE"  OR USE_SYSTEM_VARIANT STREQUAL "ON" ))
+	set(use_os_variant TRUE)
+endif()
 #checking that user input is coherent
 if(NOT TARGET_EXTERNAL_VERSION)
   message(FATAL_ERROR "[PID] CRITICAL ERROR: you must define the version to build and deploy using version= argument to the build command")
   return()
-elseif(TARGET_EXTERNAL_VERSION MATCHES "^v.*$")
+elseif(TARGET_EXTERNAL_VERSION MATCHES "^v.*$")#if version is given as a version folder name (i.e. "v<version string>")
   normalize_Version_Tags(version "${TARGET_EXTERNAL_VERSION}")
 else()
   set(version ${TARGET_EXTERNAL_VERSION})
@@ -67,9 +74,10 @@ endif()
 
 message("[PID] INFO : building wrapper for external package ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
 
+#define the build mode
 if(NOT TARGET_BUILD_MODE OR (NOT TARGET_BUILD_MODE STREQUAL "Debug" AND NOT TARGET_BUILD_MODE STREQUAL "debug"))
   set(CMAKE_BUILD_TYPE Release)
-else()
+else()#debug only if exlicitly asked for
   message("[PID] INFO: building ${TARGET_EXTERNAL_PACKAGE} in Debug mode...")
   set(CMAKE_BUILD_TYPE Debug)
 endif()
@@ -90,7 +98,7 @@ endif()
 
 include(${package_dir}/build/Build${TARGET_EXTERNAL_PACKAGE}.cmake)#load the content description
 
-if(${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS) #check that the target version exist
+if(${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS) #check that the target version exists
   list(FIND ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS ${version} INDEX)
   if(INDEX EQUAL -1)
     message(FATAL_ERROR "[PID] CRITICAL ERROR : ${TARGET_EXTERNAL_PACKAGE} external package version ${version} is not defined by wrapper of ${TARGET_EXTERNAL_PACKAGE}")
@@ -105,48 +113,65 @@ if(EXISTS ${package_version_install_dir})#clean the install folder
   file(REMOVE_RECURSE ${package_version_install_dir})
 endif()
 
-# prepare script execution
-set(deploy_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT})
-set(TARGET_BUILD_DIR ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${version})
 set(TARGET_INSTALL_DIR ${package_version_install_dir})
-set(TARGET_SOURCE_DIR ${package_version_src_dir})
 
-set(post_install_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT})
+if(use_os_variant)#instead of building the project using its variant coming from the current OS/distribution
+	#only thing to resolve: the external package equivalent configuration,
+	# that is used to check if external package is installed on system
+	#this resolution is based on the standard "version" argument of corresponding configuration
+	check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${TARGET_EXTERNAL_PACKAGE}[version=${version}]")
+	if(NOT RESULT_OK)
+		message("[PID] ERROR : Cannot deploy OS variant of ${TARGET_EXTERNAL_PACKAGE} with version ${version} because of platform configuration error !")
+		return()
+	endif()
+	#if system configuration is OK, this means that dependencies are also OK (also installed on system)
+	# but we need to be sure to have their CMake description (USE file), as this later will be used on current package description (mandatory for keeping consistency of description)
+	message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
+	resolve_Wrapper_Dependencies(${TARGET_EXTERNAL_PACKAGE} ${version})#TODO resolve with OS VARIANT constraint
+	message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
 
-if(NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true)
-  #checking for configurations
-  resolve_Wrapper_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
-  if(NOT IS_OK)
-    message("[PID] ERROR : Cannot satisfy target platform's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
-    return()
-  else()
-    message("[PID] INFO : all required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
-  endif()
+	# After external package own configuration check is OK, we have access to various configuration variables
+	# => produce symlinks to the adequate target OS artefacts with adequate names
+	generate_OS_Variant_Symlinks(${TARGET_EXTERNAL_PACKAGE} ${CURRENT_PLATFORM} ${version} ${TARGET_INSTALL_DIR})
 
-  # checking for dependencies
-  message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
-  resolve_Wrapper_Dependencies(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
-  if(NOT IS_OK)
-    message("[PID] ERROR : Cannot satisfy required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
-    return()
-  else()
-    message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
-  endif()
+else()#by default build the given package version using external project specific build process
+	# prepare script execution
+	set(deploy_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT})
+	set(TARGET_BUILD_DIR ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${version})
+	set(TARGET_SOURCE_DIR ${package_version_src_dir})
 
-  #prepare deployment script execution by caching build variable that may be used inside
-  configure_Wrapper_Build_Variables(${TARGET_EXTERNAL_PACKAGE} ${version})
+	set(post_install_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT})
 
-  message("[PID] INFO : Executing deployment script ${package_version_src_dir}/${deploy_script_file}...")
-  set(ERROR_IN_SCRIPT FALSE)
-  include(${package_version_src_dir}/${deploy_script_file} NO_POLICY_SCOPE)#execute the script
-  if(ERROR_IN_SCRIPT)
-    message("[PID] ERROR: Cannot deploy external package ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
-    return()
-  endif()
+	if(NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true)
+	  #checking for system configurations
+	  resolve_Wrapper_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
+	  if(NOT IS_OK)
+	    message("[PID] ERROR : Cannot satisfy target platform's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
+	    return()
+	  else()
+	    message("[PID] INFO : all required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
+	  endif()
+
+	  # checking for dependencies
+	  message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
+	  resolve_Wrapper_Dependencies(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
+		message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
+
+	  #prepare deployment script execution by caching build variable that may be used inside
+	  configure_Wrapper_Build_Variables(${TARGET_EXTERNAL_PACKAGE} ${version})
+
+	  message("[PID] INFO : Executing deployment script ${package_version_src_dir}/${deploy_script_file}...")
+	  set(ERROR_IN_SCRIPT FALSE)
+	  include(${package_version_src_dir}/${deploy_script_file} NO_POLICY_SCOPE)#execute the script
+	  if(ERROR_IN_SCRIPT)
+	    message("[PID] ERROR: Cannot deploy external package ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
+	    return()
+	  endif()
+	endif()
 endif()
 
-# generate and install the use file
-generate_External_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
+# generate and install the use file for binary installed version
+generate_External_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM} "${use_os_variant}")
 
 message("[PID] INFO : Installing external package ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
 
@@ -155,39 +180,43 @@ file(MAKE_DIRECTORY ${TARGET_INSTALL_DIR}/share)
 install_External_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
 install_External_Find_File_For_Version(${TARGET_EXTERNAL_PACKAGE})
 
-if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install_script_file})
-  file(COPY ${package_version_src_dir}/${post_install_script_file} DESTINATION  ${TARGET_INSTALL_DIR}/share)
-  message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/share/${post_install_script_file} ...")
-  include(${TARGET_INSTALL_DIR}/share/${post_install_script_file} NO_POLICY_SCOPE)#execute the script
+if(NOT use_os_variant)# perform specific operations at the end of the install process, if any specified and if external package is not the OS_variant
+	if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install_script_file})
+	  file(COPY ${package_version_src_dir}/${post_install_script_file} DESTINATION  ${TARGET_INSTALL_DIR}/share)
+	  message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/share/${post_install_script_file} ...")
+	  include(${TARGET_INSTALL_DIR}/share/${post_install_script_file} NO_POLICY_SCOPE)#execute the script
+	endif()
+
+	# create a relocatable binary archive, on demand.
+	if(GENERATE_BINARY_ARCHIVE AND (GENERATE_BINARY_ARCHIVE STREQUAL "true" OR GENERATE_BINARY_ARCHIVE STREQUAL "TRUE" OR GENERATE_BINARY_ARCHIVE STREQUAL "ON"))
+	  #cleaning the build folder to start from a clean situation
+	  set(path_to_installer_content ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM})
+	  if(EXISTS ${path_to_installer_content} AND IS_DIRECTORY ${path_to_installer_content})
+	    file(REMOVE_RECURSE ${path_to_installer_content})
+	  endif()
+
+	  if(TARGET_BUILD_MODE STREQUAL "Debug")
+	    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-dbg-${CURRENT_PLATFORM}.tar.gz)
+	  else()
+	    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM}.tar.gz)
+	  endif()
+	  file(REMOVE ${path_to_installer_archive})
+
+	  #need to create an archive from relocatable binary created in install tree (use the / at the end of the copied path to target content of the folder and not folder itself)
+	  file(COPY ${TARGET_INSTALL_DIR}/ DESTINATION ${path_to_installer_content})
+
+	  #generate archive
+	  execute_process(COMMAND ${CMAKE_COMMAND} -E tar cf ${path_to_installer_archive}
+	      ${path_to_installer_content}
+	    )
+
+	  # immediate cleaning to avoid keeping unecessary data in build tree
+	  if(EXISTS ${path_to_installer_content} AND IS_DIRECTORY ${path_to_installer_content})
+	    file(REMOVE_RECURSE ${path_to_installer_content})
+	  endif()
+	  message("[PID] INFO : binary archive for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} has been generated.")
+	endif()
+	message("[PID] INFO : external package ${TARGET_EXTERNAL_PACKAGE} version ${version} built.")
+else()
+	message("[PID] INFO : external package ${TARGET_EXTERNAL_PACKAGE} version ${version} configured from OS settings.")
 endif()
-
-if(GENERATE_BINARY_ARCHIVE AND (GENERATE_BINARY_ARCHIVE STREQUAL "true" OR GENERATE_BINARY_ARCHIVE STREQUAL "TRUE"))
-  #cleaning the build folder to start from a clean situation
-  set(path_to_installer_content ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM})
-  if(EXISTS ${path_to_installer_content} AND IS_DIRECTORY ${path_to_installer_content})
-    file(REMOVE_RECURSE ${path_to_installer_content})
-  endif()
-
-  if(TARGET_BUILD_MODE STREQUAL "Debug")
-    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-dbg-${CURRENT_PLATFORM}.tar.gz)
-  else()
-    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM}.tar.gz)
-  endif()
-  file(REMOVE ${path_to_installer_archive})
-
-  #need to create an archive from relocatable binary created in install tree (use the / at the end of the copied path to target content of the folder and not folder itself)
-  file(COPY ${TARGET_INSTALL_DIR}/ DESTINATION ${path_to_installer_content})
-
-  #generate archive
-  execute_process(COMMAND ${CMAKE_COMMAND} -E tar cf ${path_to_installer_archive}
-      ${path_to_installer_content}
-    )
-
-  # immediate cleaning to avoid keeping unecessary data in build tree
-  if(EXISTS ${path_to_installer_content} AND IS_DIRECTORY ${path_to_installer_content})
-    file(REMOVE_RECURSE ${path_to_installer_content})
-  endif()
-  message("[PID] INFO : binary archive for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} has been generated.")
-endif()
-
-message("[PID] INFO : external package ${TARGET_EXTERNAL_PACKAGE} version ${version} built.")

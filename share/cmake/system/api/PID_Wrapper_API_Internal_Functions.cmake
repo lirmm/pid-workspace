@@ -244,6 +244,7 @@ if(DIR_NAME STREQUAL "build")
 					 	 -DTARGET_BUILD_MODE=\${mode}
 					   -DGENERATE_BINARY_ARCHIVE=\${archive}
 	           -DDO_NOT_EXECUTE_SCRIPT=\${skip_script}
+					 	 -DUSE_SYSTEM_VARIANT=\${os_variant}
 						 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Wrapper.cmake
 	    COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 	  )
@@ -1274,13 +1275,16 @@ endfunction(install_External_Find_File_For_Version)
 #
 #      :platform: the identifier of the target platform for the installed version.
 #
-function(generate_External_Use_File_For_Version package version platform)
+#      :os_variant: if true means that the binary are those found on OS not built within PID.
+#
+function(generate_External_Use_File_For_Version package version platform os_variant)
 	set(file_for_version ${WORKSPACE_DIR}/wrappers/${package}/build/Use${package}-${version}.cmake)
 	file(WRITE ${file_for_version} "############# description of ${package} build process ABi environment ##################\n")#reset file content (if any) or create file
 
 	# writing info about what may be useful to check for binary compatibility
 	file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\")\n")
   file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file_for_version} "set(${package}_BUILT_OS_VARIANT ${os_variant} CACHE INTERNAL \"\")\n")
 
   file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_PYTHON_VERSION ${CURRENT_PYTHON} CACHE INTERNAL \"\")\n")
 
@@ -1678,6 +1682,8 @@ function(generate_Description_For_External_Component file_for_version package pl
 		set(options_str " SHARED_LINKS ${RES_SHARED}")
 	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS)
+		#TODO for Windows ? need to manage static lib name to adapt them to OS => for windows archive have .lib extension !!
+		#may be not usefull because Windows version will be very different ?
 		fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS RES_STR)
 		set(options_str "${options_str} STATIC_LINKS ${RES_STR}")
 	endif()
@@ -1708,6 +1714,98 @@ function(generate_Description_For_External_Component file_for_version package pl
 	file(APPEND ${file_for_version} "declare_PID_External_Component(PACKAGE ${package} COMPONENT ${component}${options_str})\n")
 
 endfunction(generate_Description_For_External_Component)
+
+### TODO api
+function(generate_OS_Variant_Symlinks package platform version install_dir)
+	# we can use cache variables defined by the external package equivalent configuration
+	# standard names that we can use: ${package}_RPATH (absolute path to runtime resources), ${package}_LIBRARY_DIRS (absolute path to folders containing the target libraries) ${package}_INCLUDE_DIRS (absolute path to folders containg the headers).
+
+	# what we need to do is to generate a symlink with adequate name to specific binaries lying in OS folders
+	foreach(component IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENTS)
+		#each symlink with good name if generated to ensure consistency
+		foreach(stat_link IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS)
+			if(NOT stat_link MATCHES "^-l.*$")#only generate symlinks for non OS libraries
+				generate_OS_Variant_Symlink_For_Path(${install_dir} ${stat_link} "${${package}_RPATH}")
+			endif()
+		endforeach()
+		if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
+			if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME)#the component SONAME has priority over package SONAME
+				set(USE_SONAME ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME})
+			else()
+				set(USE_SONAME ${${package}_KNOWN_VERSION_${version}_SONAME})
+			endif()
+			create_Shared_Lib_Extension(RES_EXT ${platform} "${USE_SONAME}")#create the soname extension
+			foreach(sha_link IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
+				shared_Library_Needs_Soname(NEEDS_SONAME ${sha_link} ${platform})
+				if(NEEDS_SONAME)#OK no extension defined we can apply
+					set(full_name "${sha_link}${RES_EXT}")
+				else()
+					set(full_name "${sha_link}")
+				endif()
+				if(NOT full_name MATCHES "^-l.*$")#only generate symlinks for non OS libraries
+					generate_OS_Variant_Symlink_For_Path(${install_dir} ${full_name} "${${package}_RPATH}")
+				endif()
+			endforeach()
+		endif()
+		foreach(rres IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES)
+			generate_OS_Variant_Symlink_For_Path(${install_dir} ${rres} "${${package}_RPATH}")
+		endforeach()
+	endforeach()
+
+	#for public headers a specific treatment is required as their names cannot be used (name can be completely different between OS and PID versions)
+	foreach(component IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENTS)
+		#agregate all includes for all components
+		list(APPEND all_includes ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES})
+	endforeach()
+	if(all_includes)#do something only if there are includes
+		list(REMOVE_DUPLICATES all_includes)
+		list(LENGTH all_includes NB_INCLUDES_DESCRIPTION)
+		if(NB_INCLUDES_DESCRIPTION GREATER 1)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for include folder as they are more than one include folder defined in PID description of ${package}.")
+			return()
+		endif()
+		if(${package}_INCLUDE_DIRS)
+			list(REMOVE_DUPLICATES ${package}_INCLUDE_DIRS)
+			list(LENGTH ${package}_INCLUDE_DIRS NB_INCLUDES_OS)
+			#checking that generating symlinks to OS include folders is feasible
+			if(NB_INCLUDES_OS GREATER NB_INCLUDES_DESCRIPTION)#no solution about that
+				list(GET ${package}_INCLUDE_DIRS 0 default_include)
+				foreach(inc IN LISTS ${package}_INCLUDE_DIRS)
+					list(FIND CMAKE_SYSTEM_INCLUDE_PATH ${inc} INDEX)
+					if(INDEX EQUAL -1)#not a system include path
+						list(APPEND os_includes_used ${inc})#no other choice than generating a symlink to it
+					endif()
+				endforeach()
+				list(LENGTH os_includes_used NB_INCLUDES_OS)
+				if(NB_INCLUDES_OS GREATER NB_INCLUDES_DESCRIPTION)#no solution about that I have no enough "slots" in description to target all system include folders
+					message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for include as they are too many include folders to target in operating system.")
+					return()
+				elseif(NB_INCLUDES_OS LESS 1)
+					set()
+				endif()
+				set(os_includes_used ${default_include})#if all includes are system include then generate a symlink for first found
+			else()
+				set(os_includes_used ${${package}_INCLUDE_DIRS})
+			endif()
+			create_Symlink(${os_includes_used} ${install_dir}/${all_includes})
+		else()
+			message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for ${package} OS system as the ${package} configuration provides no OS include folders !")
+			return()
+		endif()
+	endif()
+endfunction(generate_OS_Variant_Symlinks)
+
+### TODO API
+function(generate_OS_Variant_Symlink_For_Path path_to_install_dir relative_path list_of_possible_path)
+	get_filename_component(target_name ${relative_path} NAME_WE)#using NAME_WE to avoid using extension because find files of configuration may only return names without soname, not complete names
+	foreach(abs_path IN LISTS list_of_possible_path)
+		get_filename_component(source_name ${abs_path} NAME_WE)#using NAME_WE to avoid using extension because find files of configuration may only return names without soname, not complete names
+		if(source_name STREQUAL target_name)#same name for both binaries => create the symlink
+			create_Symlink(${abs_path} ${path_to_install_dir}/${relative_path})
+			break()# only only simlink per relative path !!
+		endif()
+	endforeach()
+endfunction(generate_OS_Variant_Symlink_For_Path)
 
 #.rst:
 #
@@ -2174,7 +2272,7 @@ endfunction(resolve_Wrapper_Dependency)
 #  resolve_Wrapper_Dependencies
 #  ----------------------------
 #
-#   .. command:: resolve_Wrapper_Dependencies(RESULT_OK package version)
+#   .. command:: resolve_Wrapper_Dependencies(package version)
 #
 #    Resolve all dependency of a given external project version. Will end up in deploying the dependencies that are not satisfied, if they exist.
 #
@@ -2182,9 +2280,7 @@ endfunction(resolve_Wrapper_Dependency)
 #
 #      :version: the given version.
 #
-#      :RESULT_OK: the output variable that is TRUE if all dependencies are satisfied.
-#
-function(resolve_Wrapper_Dependencies RESULT_OK package version)
+function(resolve_Wrapper_Dependencies package version)
 	set(PROJECT_NAME ${package}) #to be suer that all functions will work properly
 	set(prefix ${package}_KNOWN_VERSION_${version})
 	#1) try to find dependencies
@@ -2195,7 +2291,7 @@ function(resolve_Wrapper_Dependencies RESULT_OK package version)
 	# from here only direct dependencies have been satisfied if they are present in the workspace, otherwise they need to be installed
 	# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
-	foreach(dep_pack IN LISTS ${prefix}_EXTERNAL_DEPENDENCIES)
+	foreach(dep_pack IN LISTS ${prefix}_DEPENDENCIES)
 		need_Install_External_Package(MUST_BE_INSTALLED ${dep_pack})
 		if(MUST_BE_INSTALLED)
 			install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE)

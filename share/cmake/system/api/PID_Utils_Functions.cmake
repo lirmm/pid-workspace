@@ -433,6 +433,12 @@ function(create_Symlink path_to_old path_to_new)
         )
     endif()
 
+    #1) first create the folder containing symlinks if it does not exist
+    get_filename_component(containing_folder ${path_to_new} DIRECTORY)
+    if(NOT EXISTS ${containing_folder})
+      file(MAKE_DIRECTORY ${containing_folder})
+    endif()
+    #2) then generate symlinks in this folder
     if(WIN32)
         if(OPT_WORKING_DIR)
             execute_process(
