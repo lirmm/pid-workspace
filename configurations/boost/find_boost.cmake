@@ -29,9 +29,9 @@ set(CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/boost ${CMAKE_MODULE_PATH}
 # 	message("CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
 # endif()
 if(boost_version)
-	find_package(Boost ${boost_version} EXACT COMPONENTS ${components_to_search})
+	find_package(Boost ${boost_version} EXACT QUIET COMPONENTS ${components_to_search})
 else()
-	find_package(Boost COMPONENTS ${components_to_search})
+	find_package(Boost QUIET COMPONENTS ${components_to_search})
 endif()
 if(NOT Boost_FOUND OR NOT Boost_LIBRARIES OR NOT Boost_LIBRARY_DIRS)#check failed : due to missing searched component !!
 	unset(Boost_FOUND)
@@ -56,7 +56,7 @@ endforeach()
 list(REMOVE_DUPLICATES ALL_COMPS)
 set(BOOST_VERSION ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}) #version has been detected
 #Now relaunch the find script with the given components, to populate variables
-find_package(Boost ${BOOST_VERSION} EXACT COMPONENTS ${ALL_COMPS})
+find_package(Boost ${BOOST_VERSION} EXACT QUIET COMPONENTS ${ALL_COMPS})
 if(NOT Boost_FOUND OR NOT Boost_LIBRARIES OR NOT Boost_LIBRARY_DIRS)#check failed : due to missing searched component !!
 	unset(Boost_FOUND)
 	return()
