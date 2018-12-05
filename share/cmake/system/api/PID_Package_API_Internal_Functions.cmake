@@ -364,16 +364,15 @@ elseif(DIR_NAME STREQUAL "build")
 		add_dependencies(site package)
 	endif()
 
-	if(license)
+	if(NOT "${license}" STREQUAL "")
 		# target to add licensing information to all source files
 		add_custom_target(licensing
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} licensing
 			COMMENT "[PID] Applying license to sources of package ${PROJECT_NAME} ..."
 			VERBATIM
 		)
-
+		add_custom_target(license)
 		add_dependencies(license licensing)
-
 	endif()
 	if(ADDITIONNAL_DEBUG_INFO)
 		add_custom_target(list_dependencies
