@@ -2110,7 +2110,7 @@ else()# check that integration branch is a fast forward of master
 	file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${STRING})
 	#rebuild package from master branch to get a clean installed version (getting clean use file)
 	build_And_Install_Source(IS_BUILT ${package} ${STRING} "" FALSE)
-	if(NOT IS_BUILT AND NOT STRING VERSION_LESS "1.0.0")#if the package is in a preliminary development state do not break the versionning if package does not build
+	if(NOT IS_BUILT AND NOT STRING VERSION_LESS "1.0.0")#if the package is in a preliminary development state do not stop the versionning if package does not build
 		message("[PID] ERROR : cannot release package ${package}, because its version ${STRING} does not build.")
 		tag_Version(${package} ${STRING} FALSE)#remove local tag
 		go_To_Integration(${package})#always go back to original branch
@@ -2137,9 +2137,14 @@ else()# check that integration branch is a fast forward of master
 		set(patch 0)
 	endif()
 	# still on integration branch
-	set_Version_Number_To_Package(${package} ${FORMAT} ${METHOD} ${major} ${minor} ${patch}) #change the package description with new version
-	register_Repository_Version(${package} "${major}.${minor}.${patch}") # commit new modified version
-	publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand
+	set_Version_Number_To_Package(RESULT_OK ${package} ${FORMAT} ${METHOD} ${major} ${minor} ${patch}) #change the package description with new version
+	if(RESULT_OK)
+		register_Repository_Version(${package} "${major}.${minor}.${patch}") # commit new modified version
+		publish_Repository_Integration(${package})#if publication rejected => user has to handle merge by hand
+	else()
+		message("[PID] INTERNAL ERROR : during release of package ${package}, cannot write version in CMakeLists.")
+		set(${RESULT} FALSE PARENT_SCOPE)
+	endif()
 endif()
 
 set(${RESULT} ${STRING} PARENT_SCOPE)

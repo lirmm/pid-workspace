@@ -2612,15 +2612,15 @@ foreach(line IN LISTS PACKAGE_METADATA)
 	if(line)
     if(line MATCHES "^[^#]*${declare_function_regex_pattern}[ \t]*\\((.*)$")
       set(IN_DECLARE TRUE)
-      if(CMAKE_MATCH_2 MATCHES "^[^#]*VERSION[ \t]+([0-9\\. \t]+).*$")#check if version argument not on first line
+      if("${CMAKE_MATCH_2}" MATCHES "^[^#]*VERSION[ \t]+([0-9\\. \t]+).*$")#check if version argument not on first line
         # string(REGEX REPLACE "^[^#]*VERSION([0-9\\. \t]+).*$" "\\1" VERSION_ARGS ${line})#extract the argument for version (either digits or version string)
-        parse_Version_Argument(${CMAKE_MATCH_1} VERSION_DIGITS VERSION_FORMAT)#CMAKE_MATCH_1 changed because of last if .. MATCHES
+        parse_Version_Argument("${CMAKE_MATCH_1}" VERSION_DIGITS VERSION_FORMAT)#CMAKE_MATCH_1 changed because of last if .. MATCHES
         set(WITH_ARG TRUE)
       endif()
-    elseif(IN_DECLARE AND (NOT WITH_ARG)
-      AND (line MATCHES "^.*${version_function_regex_pattern}[ \t]*\\([^)]+\\).*$"))#this is a call to set_PID_Package_Version function
+    elseif(IN_DECLARE AND (NOT WITH_ARG) #still after declare call but not found any VERSION argument yet
+      AND (line MATCHES "^.*${version_function_regex_pattern}[ \t]*\\(([0-9][0-9\\. \t]+)\\).*$"))#this is a call to set_PID_Package_Version function
       set(IN_DECLARE FALSE)# call to set_pid_package means we are outside of the declare function
-      parse_Version_Argument(${CMAKE_MATCH_1} VERSION_DIGITS VERSION_FORMAT)
+      parse_Version_Argument("${CMAKE_MATCH_1}" VERSION_DIGITS VERSION_FORMAT)
       set(WITH_FUNCTION TRUE)
     elseif(IN_DECLARE AND
       (line MATCHES "^[^#]*ADDRESS[ \t]+([^ \t]+\\.git).*"))
@@ -2628,7 +2628,7 @@ foreach(line IN LISTS PACKAGE_METADATA)
       set(ADDR_OK TRUE)
     elseif(IN_DECLARE AND (NOT WITH_ARG)
       AND (line MATCHES "^[^#]*VERSION[ \t]+([0-9][0-9\\. \t]+).*$"))
-      parse_Version_Argument(${CMAKE_MATCH_1} VERSION_DIGITS VERSION_FORMAT)
+      parse_Version_Argument("${CMAKE_MATCH_1}" VERSION_DIGITS VERSION_FORMAT)
       set(WITH_ARG TRUE)
     endif()
 	endif()
@@ -2675,7 +2675,7 @@ endfunction(get_Version_Number_And_Repo_From_Package)
 #  set_Version_Number_To_Package
 #  ----------------------------------------
 #
-#   .. command:: set_Version_Number_To_Package(package format major minor patch)
+#   .. command:: set_Version_Number_To_Package(RESULT_OK package format major minor patch)
 #
 #    Set the version in package description (e.g. CMakeLists.txt).
 #
@@ -2691,22 +2691,24 @@ endfunction(get_Version_Number_And_Repo_From_Package)
 #
 #     :patch: patch number of the package version.
 #
-function(set_Version_Number_To_Package package format method major minor patch)
+#     :RESULT_OK: the output variable that is TRUE if
+#
+function(set_Version_Number_To_Package RESULT_OK package format method major minor patch)
 file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
-
+set(${RESULT_OK} TRUE PARENT_SCOPE)
 set(BEGIN "")
 set(END "")
 set(SIGNATURE_FOUND FALSE)
 
+set(declare_function_regex_pattern "([dD][eE][cC][lL][Aa][rR][eE]_)?([pP][iI][dD]_[pP][aA][cC][kK][aA][gG][eE])")
+set(version_function_regex_pattern "[sS][eE][tT]_[pP][iI][dD]_[pP][aA][cC][kK][aA][gG][eE]_[vV][eE][rR][sS][iI][oO][nN]")
+
 if(method STREQUAL "FUNCTION")#using function set_PID_Package_Version
   foreach(line IN LISTS PACKAGE_METADATA)
-  	if(line MATCHES "^[^#]*set_PID_Package_Version[ \t]*\\([^\\)]+\\).*$")#this is a call to set_PID_Package_Version function
-        string(REGEX REPLACE "^([^#]*set_PID_Package_Version[ \t]*\\()[^\\)]+(\\).*)$" "\\1;\\2" BEGIN_END ${line})#extract the argument for version (either digits or version string)
+  	if(line MATCHES "^([^#]*${version_function_regex_pattern}[ \t]*\\()[^\\)]+(\\).*)$")#this is a call to set_PID_Package_Version function
         set(SIGNATURE_FOUND TRUE)
-        list(GET BEGIN_END 0 before_version)
-        list(GET BEGIN_END 1 after_version)
-        set(BEGIN "${BEGIN}${before_version}")
-        set(END "${after_version}\n")
+        set(BEGIN "${BEGIN}${CMAKE_MATCH_1}")
+        set(END "${CMAKE_MATCH_2}\n")
     else()
       if(NOT SIGNATURE_FOUND)
         set(BEGIN "${BEGIN}${line}\n")
@@ -2718,27 +2720,22 @@ if(method STREQUAL "FUNCTION")#using function set_PID_Package_Version
 else()# VERSION argument of package
   set(IN_DECLARE FALSE)
   foreach(line IN LISTS PACKAGE_METADATA)
-    if(line MATCHES "^[^#]*declare_PID_Package[ \t]*\\(.*$")
+    if(NOT SIGNATURE_FOUND AND (line MATCHES "^[^#]*${declare_function_regex_pattern}[ \t]*\\(.*$"))#the pattern for declare function has been found
+      set(declare_function_signature ${CMAKE_MATCH_1}${CMAKE_MATCH_2})
       set(IN_DECLARE TRUE)
-      if(line MATCHES "^[^#]*declare_PID_Package[ \t]*\\([^#]*VERSION[ \t]+[0-9][0-9\\. \t]+.*$")#check if version not on first line
-        string(REGEX REPLACE "^([^#]*declare_PID_Package[ \t]*\\([^#]*VERSION[ \t]+)[0-9][0-9\\. \t]+(.*)$" "\\1;\\2" BEGIN_END ${line})#extract the argument for version (either digits or version string)
+      if(line MATCHES "^([^#]*${declare_function_signature}[ \t]*\\([^#]*VERSION[ \t]+)[0-9][0-9\\. \t]+(.*)$")#check if version not on first line
         set(SIGNATURE_FOUND TRUE)
-        list(GET BEGIN_END 0 before_version)
-        list(GET BEGIN_END 1 after_version)
-        set(BEGIN "${BEGIN}${before_version}")
-        set(END "${after_version}\n")
+        set(BEGIN "${BEGIN}${CMAKE_MATCH_1}")
+        set(END "${CMAKE_MATCH_2}\n")
       else()#VERSION argument not found on that line
         #simply copy the whole line
         set(BEGIN "${BEGIN}${line}\n")
       endif()
-    elseif(IN_DECLARE AND (NOT SIGNATURE_FOUND)
-          AND (line MATCHES "^[^#]*VERSION[ \t]+[0-9][0-9\\. \t]+.*$"))
-      string(REGEX REPLACE "^([^#]*VERSION[ \t]+)[0-9][0-9\\. \t]+(.*)$" "\\1;\\2" BEGIN_END ${line})#extract the argument for version (either digits or version string)
+    elseif(IN_DECLARE AND (NOT SIGNATURE_FOUND) #searching in declare function but not at first line
+          AND (line MATCHES "^([^#]*VERSION[ \t]+)[0-9][0-9\\. \t]+(.*)$"))
       set(SIGNATURE_FOUND TRUE)
-      list(GET BEGIN_END 0 before_version)
-      list(GET BEGIN_END 1 after_version)
-      set(BEGIN "${BEGIN}${before_version}")
-      set(END "${after_version}\n")
+      set(BEGIN "${BEGIN}${CMAKE_MATCH_1}")
+      set(END "${CMAKE_MATCH_2}\n")
     else() #other lines
       if(NOT SIGNATURE_FOUND)
         set(BEGIN "${BEGIN}${line}\n")
@@ -2748,7 +2745,10 @@ else()# VERSION argument of package
     endif()
   endforeach()
 endif()
-
+if(NOT SIGNATURE_FOUND)
+  set(${RESULT_OK} FALSE PARENT_SCOPE)
+  return()
+endif()
 #OK simply write new version string at good place
 if(format STREQUAL DIGITS)#version formatted as a list of digits
   set(TO_WRITE "${BEGIN}${major} ${minor} ${patch}${END}")
