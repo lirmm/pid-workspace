@@ -2605,31 +2605,30 @@ set(WITH_ARG FALSE)
 set(WITH_FUNCTION FALSE)
 set(IN_DECLARE FALSE)
 set(ADDR_OK FALSE)
+set(declare_function_regex_pattern "([dD][eE][cC][lL][Aa][rR][eE]_)?[pP][iI][dD]_[pP][aA][cC][kK][aA][gG][eE]")
+set(version_function_regex_pattern "[sS][eE][tT]_[pP][iI][dD]_[pP][aA][cC][kK][aA][gG][eE]_[vV][eE][rR][sS][iI][oO][nN]")
 
 foreach(line IN LISTS PACKAGE_METADATA)
 	if(line)
-    if(line MATCHES "^[^#]*declare_PID_Package[ \t]*\\(.*$")
+    if(line MATCHES "^[^#]*${declare_function_regex_pattern}[ \t]*\\((.*)$")
       set(IN_DECLARE TRUE)
-      string(REGEX REPLACE "^[^#]*declare_PID_Package[ \t]*\\((.*)$" "\\1" DECLARE_ARGS ${line})
-      if(DECLARE_ARGS MATCHES "^[^#]*VERSION[ \t]+([0-9\\. \t]+).*$")#check if version not on first line
-        string(REGEX REPLACE "^[^#]*VERSION([0-9\\. \t]+).*$" "\\1" VERSION_ARGS ${line})#extract the argument for version (either digits or version string)
-        parse_Version_Argument(${VERSION_ARGS} VERSION_DIGITS VERSION_FORMAT)
+      if(CMAKE_MATCH_2 MATCHES "^[^#]*VERSION[ \t]+([0-9\\. \t]+).*$")#check if version argument not on first line
+        # string(REGEX REPLACE "^[^#]*VERSION([0-9\\. \t]+).*$" "\\1" VERSION_ARGS ${line})#extract the argument for version (either digits or version string)
+        parse_Version_Argument(${CMAKE_MATCH_1} VERSION_DIGITS VERSION_FORMAT)#CMAKE_MATCH_1 changed because of last if .. MATCHES
         set(WITH_ARG TRUE)
       endif()
-    elseif(IN_DECLARE AND (NOT WITH_ARG) AND (line MATCHES "^.*set_PID_Package_Version[ \t]*\\([^)]+\\).*$"))#this is a call to set_PID_Package_Version function
-      set(IN_DECLARE FALSE)
-      string(REGEX REPLACE "^[^#]*set_PID_Package_Version[ \t]*\\(([^)]+)\\).*$" "\\1" VERSION_ARGS ${line})#extract the argument for version (either digits or version string)
-      parse_Version_Argument(${VERSION_ARGS} VERSION_DIGITS VERSION_FORMAT)
+    elseif(IN_DECLARE AND (NOT WITH_ARG)
+      AND (line MATCHES "^.*${version_function_regex_pattern}[ \t]*\\([^)]+\\).*$"))#this is a call to set_PID_Package_Version function
+      set(IN_DECLARE FALSE)# call to set_pid_package means we are outside of the declare function
+      parse_Version_Argument(${CMAKE_MATCH_1} VERSION_DIGITS VERSION_FORMAT)
       set(WITH_FUNCTION TRUE)
-    elseif(IN_DECLARE AND (line MATCHES "^[^#]*ADDRESS[ \t]+([^ \t]+\\.git).*"))
-      string(REGEX REPLACE "^[^#]*ADDRESS[ \t]+([^ \t]+\\.git).*$" "\\1" AN_ADDRESS ${line})
-      if(NOT line STREQUAL AN_ADDRESS)#the line simply match !!
-        set(${ADDRESS} ${AN_ADDRESS} PARENT_SCOPE)#an address had been found
-        set(ADDR_OK TRUE)
-      endif()
-    elseif(IN_DECLARE AND (NOT WITH_ARG) AND (line MATCHES "^[^#]*VERSION[ \t]+([0-9][0-9\\. \t]+).*$"))
-      string(REGEX REPLACE "^[^#]*VERSION[ \t]+([0-9][0-9\\. \t]+).*$" "\\1" VERSION_ARGS ${line})#extract the argument for version (either digits or version string)
-      parse_Version_Argument(${VERSION_ARGS} VERSION_DIGITS VERSION_FORMAT)
+    elseif(IN_DECLARE AND
+      (line MATCHES "^[^#]*ADDRESS[ \t]+([^ \t]+\\.git).*"))
+      set(${ADDRESS} ${CMAKE_MATCH_1} PARENT_SCOPE)#an address had been found
+      set(ADDR_OK TRUE)
+    elseif(IN_DECLARE AND (NOT WITH_ARG)
+      AND (line MATCHES "^[^#]*VERSION[ \t]+([0-9][0-9\\. \t]+).*$"))
+      parse_Version_Argument(${CMAKE_MATCH_1} VERSION_DIGITS VERSION_FORMAT)
       set(WITH_ARG TRUE)
     endif()
 	endif()
