@@ -908,7 +908,7 @@ endmacro(build_PID_Package)
 #   :SPECIAL_HEADERS: Specify specific files to export from the include folder of the component. Used for instance to export file without explicit header extension.
 #   :AUXILIARY_SOURCES: Specify auxiliary source folder or files ti use when building the component. Used for instance to share private code between component of the project.
 #   :INSTALL_SYMLINKS: Specify folders where to install symlinks pointing to the component binary.
-#   :DEPENDS ...: Specify a list of components that the current component depends on. These components are not exported.
+#   :DEPEND ...: Specify a list of components that the current component depends on. These components are not exported.
 #   :EXPORT ...: Specify a list of components that the current component depends on and exports.
 #
 #   The following options are supported by the ``INTERNAL`` and ``EXPORTED`` commands:
@@ -948,7 +948,7 @@ endmacro(PID_Component)
 macro(declare_PID_Component)
 set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
-set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES INSTALL_SYMLINKS DEPENDS EXPORT)
+set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES INSTALL_SYMLINKS DEPEND EXPORT)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1155,15 +1155,15 @@ if(DECLARE_PID_COMPONENT_EXPORT)#exported dependencies
   endforeach()
 endif()
 
-if(DECLARE_PID_COMPONENT_DEPENDS)#non exported dependencies
-  foreach(dep IN LISTS DECLARE_PID_COMPONENT_DEPENDS)
+if(DECLARE_PID_COMPONENT_DEPEND)#non exported dependencies
+  foreach(dep IN LISTS DECLARE_PID_COMPONENT_DEPEND)
     extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
     if(RES_PACK)
       set(PACKAGE_ARG "PACKAGE;${RES_PACK}")
     else()
       set(PACKAGE_ARG)
     endif()
-    declare_PID_Component_Dependency(COMPONENT ${DECLARE_PID_COMPONENT_NAME} DEPENDS ${COMPONENT_NAME} ${PACKAGE_ARG})
+    declare_PID_Component_Dependency(COMPONENT ${DECLARE_PID_COMPONENT_NAME} DEPEND ${COMPONENT_NAME} ${PACKAGE_ARG})
     endforeach()
 endif()
 endmacro(declare_PID_Component)
@@ -1418,14 +1418,14 @@ endfunction(used_PID_Package_Dependency)
 #  declare_PID_Component_Dependency
 #  --------------------------------
 #
-#  .. command:: declare_PID_Component_Dependency([COMPONENT] ... [EXPORT|DEPENDS] [NATIVE|EXTERNAL] ... [PACKAGE ...] [defintions...])
+#  .. command:: declare_PID_Component_Dependency([COMPONENT] ... [EXPORT|DEPEND] [NATIVE|EXTERNAL] ... [PACKAGE ...] [defintions...])
 #
 #  .. command:: declare_PID_Component_Dependency([COMPONENT] ... [EXPORT] [EXTERNAL ...] [OPTIONS])
 #
 #  .. command:: PID_Component_Dependency([COMPONENT] ... [EXPORT] [EXTERNAL ...] [OPTIONS])
 #
 #   Declare a dependency for a component of the current package.
-#   First signature is used to defince a dependency to an explicity component either native or external. Compared to the DEPENDS option of |declare_PID_Component|_ this function may define additional configuration for a given component dependency (typically setting definitions).
+#   First signature is used to defince a dependency to an explicity component either native or external. Compared to the DEPEND option of |declare_PID_Component|_ this function may define additional configuration for a given component dependency (typically setting definitions).
 #   Second signature is used to define a dependency between the component and either the content of an external package or to the operating system.
 #   As often as possible first signature must be preferred to second one. This later here is mainly to ensure legacy compatibility.
 #
@@ -1441,8 +1441,8 @@ endfunction(used_PID_Package_Dependency)
 #
 #   :[NATIVE] <component>: ``component`` is the native component that ``name`` depends upon. The keyword NATIVE is optional but may be useful to specify exactly the nature of the required component, for instance is there are naming conflicts between component of different packages. Cannot be used together with NATIVE keyword.
 #   :[EXTERNAL] <component>: ``component`` is the external component that ``name`` depends upon. The keyword EXTERNAL is optional but may be useful to specify exactly the nature of the required component, for instance is there are naming conflicts between component of different packages. Cannot be used together with NATIVE keyword.
-#   :[EXPORT]: If this flag is present, the dependency is exported. It means that symbols of this dependency appears in component public headers. Cannot be used together with DEPENDS keyword.
-#   :[DEPENDS]: If this flag is present, the dependency is NOT exported. It means that symbols of this dependency do not appear in component public headers. Cannot be used together with EXPORT keyword. If none of EXPORT or DEPENDS keyword are used, you must either use NATIVE or EXTERNAL keyword to specify the dependency.
+#   :[EXPORT]: If this flag is present, the dependency is exported. It means that symbols of this dependency appears in component public headers. Cannot be used together with DEPEND keyword.
+#   :[DEPEND]: If this flag is present, the dependency is NOT exported. It means that symbols of this dependency do not appear in component public headers. Cannot be used together with EXPORT keyword. If none of EXPORT or DEPEND keyword are used, you must either use NATIVE or EXTERNAL keyword to specify the dependency.
 #   :[PACKAGE <package>]: ``package`` is the native package that contains the component. If ``PACKAGE`` is not used, it means either ``component`` is part of the current package or it can be found in current package dependencies.
 #
 #   .. rubric:: Second signature
@@ -1476,7 +1476,7 @@ endfunction(used_PID_Package_Dependency)
 #
 #      #declare a dependency to an external component that is NOT exported
 #      declare_PID_Component_Dependency(my-static-lib
-#                                       DEPENDS EXTERNAL boost-headers PACKAGE boost
+#                                       DEPEND EXTERNAL boost-headers PACKAGE boost
 #      )
 #
 #      #declare a dependency to a native package of same project that is exported
@@ -1486,11 +1486,11 @@ endfunction(used_PID_Package_Dependency)
 #
 #      # suppose that package pid-rpath has been defined as a package dependency
 #      declare_PID_Component_Dependency(my-static-lib
-#                                       DEPENDS NATIVE rpathlib PACKAGE pid-rpath
+#                                       DEPEND NATIVE rpathlib PACKAGE pid-rpath
 #      )
 #
 #      # suppose that package pid-rpath has been defined as a package dependency
-#      declare_PID_Component_Dependency(my-static-lib DEPENDS rpathlib)
+#      declare_PID_Component_Dependency(my-static-lib DEPEND rpathlib)
 #
 #      # suppose that package pid-rpath has been defined as a package dependency
 #      declare_PID_Component_Dependency(my-other-lib EXPORT rpathlib)
@@ -1502,13 +1502,13 @@ macro(PID_Component_Dependency)
 endmacro(PID_Component_Dependency)
 
 macro(declare_PID_Component_Dependency)
-set(options EXPORT DEPENDS)
-set(oneValueArgs COMPONENT DEPEND NATIVE PACKAGE EXTERNAL C_STANDARD CXX_STANDARD)
+set(options EXPORT DEPEND)
+set(oneValueArgs COMPONENT NATIVE PACKAGE EXTERNAL C_STANDARD CXX_STANDARD)
 set(multiValueArgs INCLUDE_DIRS LIBRARY_DIRS LINKS COMPILER_OPTIONS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
 if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT)
-  if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPENDS|DEPEND|NATIVE|PACKAGE|EXTERNAL|C_STANDARD|CXX_STANDARD|INCLUDE_DIRS LINKS|COMPILER_OPTIONS|INTERNAL_DEFINITIONS|IMPORTED_DEFINITIONS|EXPORTED_DEFINITIONS|RUNTIME_RESOURCES$")
+  if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPEND|NATIVE|PACKAGE|EXTERNAL|C_STANDARD|CXX_STANDARD|INCLUDE_DIRS LINKS|COMPILER_OPTIONS|INTERNAL_DEFINITIONS|IMPORTED_DEFINITIONS|EXPORTED_DEFINITIONS|RUNTIME_RESOURCES$")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for a component, a name must be given to the component that declare the dependency using COMPONENT keyword or simply by using first argument.")
   else()
@@ -1562,10 +1562,7 @@ endif()
 #check that the signature follows one of the allowed signatures and memorize corresponding attributes
 
 #the dependency is exported
-if(DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT AND DECLARE_PID_COMPONENT_DEPENDENCY_DEPENDS)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-  message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${component_name}, keywords EXPORT and DEPENDS cannot be used simultaneously.")
-elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT)
+if(DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT) #EXPORT keyword has priority over DEPEND one, so if both are used the dependency is exported.
 	set(export TRUE)
 else()
   set(export FALSE)
@@ -1575,11 +1572,10 @@ set(package_type)
 set(target_component)
 set(target_package)
 
-if((DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE OR DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
-  AND DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
+if(DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE AND DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
   message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for component ${component_name}, keywords EXTERNAL (requiring an external package) and NATIVE (requiring a native component) cannot be used simultaneously.")
-elseif(DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE OR DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
+elseif(DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE)
 
   #when the explicit NATIVE signature is used there should be no unparsed argument
   if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
@@ -1588,11 +1584,7 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE OR DECLARE_PID_COMPONENT_DEPENDEN
   endif()
 
   set(package_type "NATIVE")#component defined in a native package
-	if(DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
-		set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND})
-	else()
-		set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE})
-	endif()
+  set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE})
   if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #another package is formally defined
     set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE})
   endif()
@@ -1625,12 +1617,12 @@ elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
     endif()
   endif()
 else()#NO keyword used to specify the kind of component => we do not know if package is native or external
-  #either EXPORT or DEPENDS must be used
-  if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_DEPENDS)
+  #either EXPORT or DEPEND must be used to specify if the dependency is exported or not
+  if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
     #no component specified
     if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS) #there is a target component specified => ERROR
       finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, you must use either EXPORT or DEPENDS keyword to define the dependency if you do not use either NATIVE or EXTERNAL explicit declarations.")
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, you must use either EXPORT or DEPEND keyword to define the dependency if you do not use either NATIVE or EXTERNAL explicit declarations.")
     endif()
   endif()
 
