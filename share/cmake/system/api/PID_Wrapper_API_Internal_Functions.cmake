@@ -968,7 +968,7 @@ add_External_Package_Dependency_To_Wrapper(${CURRENT_MANAGED_VERSION} ${dep_pack
 set(unused FALSE)
 # 1) the package may be required at that time
 # defining if there is either a specific version to use or not
-if(NOT list_of_versions OR list_of_versions STREQUAL "")#no specific version to use
+if(NOT list_of_versions)#no specific version to use => TODO all this part is a bullshit !!!
 	set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE INTERNAL "" FORCE)
 	set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD CACHE INTERNAL "")#no version means any version (no contraint)
 else()#there are version specified
@@ -1715,7 +1715,29 @@ function(generate_Description_For_External_Component file_for_version package pl
 
 endfunction(generate_Description_For_External_Component)
 
-### TODO api
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_OS_Variant_Symlinks| replace:: ``generate_OS_Variant_Symlinks``
+#  .. _generate_OS_Variant_Symlinks:
+#
+#  generate_OS_Variant_Symlinks
+#  ----------------------------
+#
+#   .. command:: generate_OS_Variant_Symlinks(package platform version install_dir)
+#
+#    Generate symlinks in an external binary pakage, that points to its OS equivalent content (includes, libraries).
+#
+#      :package: the name of target external package.
+#
+#      :platform: the identifier of target platform in workspace install tree.
+#
+#      :version: the target version of external package.
+#
+#      :install_dir: path to the external package install folder where to put symlinks.
+#
 function(generate_OS_Variant_Symlinks package platform version install_dir)
 	# we can use cache variables defined by the external package equivalent configuration
 	# standard names that we can use: ${package}_RPATH (absolute path to runtime resources), ${package}_LIBRARY_DIRS (absolute path to folders containing the target libraries) ${package}_INCLUDE_DIRS (absolute path to folders containg the headers).
@@ -1795,7 +1817,27 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 	endif()
 endfunction(generate_OS_Variant_Symlinks)
 
-### TODO API
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_OS_Variant_Symlink_For_Path| replace:: ``generate_OS_Variant_Symlink_For_Path``
+#  .. _generate_OS_Variant_Symlink_For_Path:
+#
+#  generate_OS_Variant_Symlink_For_Path
+#  ------------------------------------
+#
+#   .. command:: generate_OS_Variant_Symlink_For_Path(path_to_install_dir relative_path list_of_possible_path)
+#
+#    Create a symlink that points to an artefact (file, library) outside of the workspace (OS path) with same name.
+#
+#      :path_to_install_dir: the path to the folder containing the symlink.
+#
+#      :relative_path: the path that will be appended to path_to_install_dir that is used to define where to generate the symlink.
+#
+#      :list_of_possible_path: the list of all path in filesystem that may match the symlink to generate.
+#
 function(generate_OS_Variant_Symlink_For_Path path_to_install_dir relative_path list_of_possible_path)
 	get_filename_component(target_name ${relative_path} NAME_WE)#using NAME_WE to avoid using extension because find files of configuration may only return names without soname, not complete names
 	foreach(abs_path IN LISTS list_of_possible_path)
@@ -2192,7 +2234,7 @@ endfunction(resolve_Wrapper_Configuration)
 #  resolve_Wrapper_Dependency
 #  --------------------------
 #
-#   .. command:: resolve_Wrapper_Dependency(package version dep_package)
+#   .. command:: resolve_Wrapper_Dependency(package version dep_package os_variant)
 #
 #    Resolve dependency between a given external project version and another external package. Will end up in deploying the dependency if necessery and possible.
 #
@@ -2202,32 +2244,46 @@ endfunction(resolve_Wrapper_Configuration)
 #
 #      :dep_package: the name of the external package that is a depenency.
 #
-function(resolve_Wrapper_Dependency package version dep_package)
+#      :os_variant: if TRUE the os_variant of the dependency will be used.
+#
+function(resolve_Wrapper_Dependency package version dep_package os_variant)
 set(PROJECT_NAME ${package})
 set(prefix ${package}_KNOWN_VERSION_${version})
 # based on the version constraint, try to find an adequate package version in workspace
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)#by default downloading is the behavior of a wrapper so download is always automatic
-if(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD)
+set(${dep_package}_FIND_VERSION_SYSTEM FALSE)#not an OS variant that is searched by default
+if(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD)#deduce the version of the dependency to use when building based on memorized variable (may be modified by user)
 	set(version_used ${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD})
-
-	list(FIND ${prefix}_DEPENDENCY_${dep_package}_VERSIONS_EXACT ${version_used} EXACT_AT)
-	if(EXACT_AT GREATER -1)#exact version used
+	if(os_variant)#os_variant => exact !!
+		set(${dep_package}_FIND_VERSION_SYSTEM TRUE)
 		if(${prefix}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
-			find_package(${dep_package} ${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
+			find_package(${dep_package} ${version_used}
 				EXACT REQUIRED
 				COMPONENTS ${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS})
 		else()#do not check for components
-			find_package(${dep_package} ${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
+			find_package(${dep_package} ${version_used}
 				EXACT REQUIRED)
 		endif()
-	else()#any compatible version
-		if(${prefix}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
-			find_package(${dep_package} ${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
-				REQUIRED
-				COMPONENTS ${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS})
-		else()#do not check for components
-			find_package(${dep_package} ${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
-				REQUIRED)#this is the basic situation
+	else()#not an OS variant of the version
+		list(FIND ${prefix}_DEPENDENCY_${dep_package}_VERSIONS_EXACT ${version_used} EXACT_AT)
+		if(EXACT_AT GREATER -1)#exact version used
+			if(${prefix}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
+				find_package(${dep_package} ${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
+					EXACT REQUIRED
+					COMPONENTS ${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS})
+			else()#do not check for components
+				find_package(${dep_package} ${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
+					EXACT REQUIRED)
+			endif()
+		else()#any compatible version
+			if(${prefix}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
+				find_package(${dep_package} ${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
+					REQUIRED
+					COMPONENTS ${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS})
+			else()#do not check for components
+				find_package(${dep_package} ${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}
+					REQUIRED)#this is the basic situation
+			endif()
 		endif()
 	endif()
 else()#no version specified
@@ -2251,9 +2307,9 @@ if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or
 				else()
 					set(is_exact FALSE)
 				endif()
-				add_To_Install_External_Package_Specification(${dep_package} "${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}" ${is_exact})
+				add_To_Install_External_Package_Specification(${dep_package} "${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}" ${is_exact} ${is_system})
 			else()#no version simply install
-				add_To_Install_External_Package_Specification(${dep_package} "" FALSE)
+				add_To_Install_External_Package_Specification(${dep_package} "" FALSE FALSE)
 			endif()
 		endif()
 else()#if something found then it becomes the real version used in the end (may be different from version specified if it is compatible with it)
@@ -2272,7 +2328,7 @@ endfunction(resolve_Wrapper_Dependency)
 #  resolve_Wrapper_Dependencies
 #  ----------------------------
 #
-#   .. command:: resolve_Wrapper_Dependencies(package version)
+#   .. command:: resolve_Wrapper_Dependencies(package version os_variant)
 #
 #    Resolve all dependency of a given external project version. Will end up in deploying the dependencies that are not satisfied, if they exist.
 #
@@ -2280,12 +2336,14 @@ endfunction(resolve_Wrapper_Dependency)
 #
 #      :version: the given version.
 #
-function(resolve_Wrapper_Dependencies package version)
+#      :os_variant: if TRUE the OS variant of the dependency version will be resolved.
+#
+function(resolve_Wrapper_Dependencies package version os_variant)
 	set(PROJECT_NAME ${package}) #to be suer that all functions will work properly
 	set(prefix ${package}_KNOWN_VERSION_${version})
 	#1) try to find dependencies
 	foreach(dep_package IN LISTS ${prefix}_DEPENDENCIES)
-		resolve_Wrapper_Dependency(${package} ${version} ${dep_package})
+		resolve_Wrapper_Dependency(${package} ${version} ${dep_package} ${os_variant})
 	endforeach()
 
 	# from here only direct dependencies have been satisfied if they are present in the workspace, otherwise they need to be installed

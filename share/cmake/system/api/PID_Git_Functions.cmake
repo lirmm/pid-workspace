@@ -1360,7 +1360,9 @@ endfunction(clone_Repository)
 #     :branch: the name of the branch
 #
 function(track_Repository_Branch package remote branch)
-  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout --track -b ${branch} ${remote}/${branch})#updating reference on branch defined in  remote
+  #TODO check if it does no provoke any problems in currenlty developped package
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package} git checkout --track -b ${branch} ${remote}/${branch}
+                  OUTPUT_QUIET ERROR_QUIET)#updating reference on branch defined in remote
 endfunction(track_Repository_Branch)
 
 #.rst:

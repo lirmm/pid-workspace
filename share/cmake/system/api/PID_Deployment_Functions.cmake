@@ -286,14 +286,28 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
   message("[PID] WARNING : package ${package} has conflicting dependencies:")
   foreach(dep IN LISTS list_of_conflicting_dependencies)
     if(${dep}_REQUIRED_VERSION_EXACT)
-      set(OUTPUT_STR "exact version already required is ${${dep}_REQUIRED_VERSION_EXACT}")
+      if(${dep}_REQUIRED_VERSION_SYSTEM)
+        set(OUTPUT_STR "OS version already required is ${${dep}_REQUIRED_VERSION_EXACT}")
+      else()
+        set(OUTPUT_STR "exact version already required is ${${dep}_REQUIRED_VERSION_EXACT}")
+      endif()
     elseif(${dep}_ALL_REQUIRED_VERSIONS)
       set(OUTPUT_STR "already required versions are : ${${dep}_ALL_REQUIRED_VERSIONS}")
     endif()
     get_Package_Type(${dep} PACK_TYPE)
     if(PACK_TYPE STREQUAL "EXTERNAL")
-      message("  - dependent package ${dep} is required with version ${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}: ${OUTPUT_STR}.")
+      if(${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX})
+        set(str "with version ${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+      else()
+        set(str "without version constraint")
+      endif()
+      message("  - dependent package ${dep} is required ${str}: ${OUTPUT_STR}.")
     else()
+      if(${package}_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX})
+        set(str "with version ${${package}_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+      else()
+        set(str "without version constraint")
+      endif()
       message("  - dependent package ${dep} is required with version ${${package}_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}: ${OUTPUT_STR}.")
     endif()
   endforeach()
@@ -312,7 +326,16 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
       install_Native_Package(INSTALL_OK ${package} TRUE)
     endif()
     if(INSTALL_OK)
+      set(${package}_FIND_VERSION_SYSTEM ${${package}_REQUIRED_VERSION_SYSTEM})#using the memorized contraint on version to set adeqautely which variant (OS or PID) to use
       find_package(${package} ${${package}_VERSION_STRING} EXACT REQUIRED)#find again the package but this time we impose as constraint the specific version searched
+      if(NOT ${package}_FOUND)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+        if(${package}_REQUIRED_VERSION_SYSTEM)
+          set(os_str "OS ")
+        endif()
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} with ${os_str}version ${${package}_VERSION_STRING} cannot be found after its redeployment ! No known solution can automatically be found to this problem. Aborting.")
+        return()
+      endif()
       resolve_Package_Dependencies(${package} ${mode} FALSE)#resolving again the dependencies on same package
     else()# cannot do much more about that !!
       finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1173,7 +1196,7 @@ endfunction(deploy_Source_Native_Package_Version)
 #
 #   .. command:: build_And_Install_Package(DEPLOYED package version run_tests)
 #
-#    Build and install a given native package version from its sources. intermediate internal function that is used to put the source package in an adequate version (using git tags) and then build it. See: build_And_Install_Source.
+#    Build and install a given native package version from its sources. Intermediate internal function that is used to put the source package in an adequate version (using git tags) and then build it. See: build_And_Install_Source.
 #
 #      :package: The name of the package.
 #
@@ -1188,7 +1211,7 @@ function(build_And_Install_Package DEPLOYED package version_or_branch run_tests)
 get_Version_String_Numbers(${version_or_branch} MAJOR MINOR PATCH)
 # message("build_And_Install_Package ${package} version_or_branch=${version_or_branch} version = ${MAJOR} ${MINOR} ${PATCH}")
 
-if(NOT DEFINED MAJOR)#not a version string
+if(NOT DEFINED MAJOR)#not a version string => it is a branch
   track_Repository_Branch(${package} official ${version_or_branch})
   go_To_Commit(${package} ${version_or_branch})
   build_And_Install_Source(IS_BUILT ${package} "" ${version_or_branch} "${run_tests}") # 2) building sources from a branch
@@ -1848,7 +1871,7 @@ endfunction(get_Wrapper_Known_Versions RES_VERSIONS package)
 #  build_And_Install_External_Package_Version
 #  ------------------------------------------
 #
-#   .. command:: build_And_Install_External_Package_Version(INSTALLED package version)
+#   .. command:: build_And_Install_External_Package_Version(INSTALLED package version is_system)
 #
 #    Build and install a given external package version from its wrapper.
 #
@@ -1856,25 +1879,32 @@ endfunction(get_Wrapper_Known_Versions RES_VERSIONS package)
 #
 #      :version: The version to install.
 #
+#      :is_system: if TRUE the OS variant of teh given version will be "built" (i.e. symlinked from external package install tree).
+#
 #      :INSTALLED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
 #
-function(build_And_Install_External_Package_Version INSTALLED package version)
+function(build_And_Install_External_Package_Version INSTALLED package version is_system)
  if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : building version ${version} of external package ${package} ...")
  endif()
- execute_process(
-	COMMAND ${CMAKE_MAKE_PROGRAM} build "version=${version}"
-	WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
-	RESULT_VARIABLE BUILD_RES
-	)
-	get_System_Variables(platform package_string)
-	if(BUILD_RES EQUAL 0
-	AND EXISTS ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
-		set(${INSTALLED} TRUE PARENT_SCOPE)
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : external package ${package} version ${version} built !")
-		endif()
-		return()
+ set(args_to_use version=${version})
+ if(is_system)
+   set(args_to_use ${args_to_use} os_variant=true)
+ endif()
+
+ execute_process(#call the wrapper command used to build the version of the external package
+  	COMMAND ${CMAKE_MAKE_PROGRAM} build ${args_to_use}
+  	WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
+  	RESULT_VARIABLE BUILD_RES
+  )
+  get_System_Variables(platform package_string)
+  if(BUILD_RES EQUAL 0
+  AND EXISTS ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
+  	set(${INSTALLED} TRUE PARENT_SCOPE)
+  	if(ADDITIONNAL_DEBUG_INFO)
+  		message("[PID] INFO : external package ${package} version ${version} built !")
+  	endif()
+  	return()
 	else()
 		message("[PID] ERROR : building external package ${package} version ${version} FAILED !")
 	endif()
@@ -1964,7 +1994,7 @@ if(NOT RES_VERSION)
 endif()
 list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
-	build_And_Install_External_Package_Version(INSTALLED ${package} ${RES_VERSION})
+	build_And_Install_External_Package_Version(INSTALLED ${package} ${RES_VERSION} FALSE)
 	if(NOT INSTALLED) # this package version has FAILED TO be built during current process
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE)
@@ -2003,11 +2033,13 @@ endfunction(deploy_Source_External_Package)
 #
 #      :is_exact: if TRUE then version_min is an exact required version.
 #
+#      :is_system: if TRUE then version_min is the OS installed version.
+#
 #      :already_installed_versions: The list of versions of the external package that are already installed.
 #
 #      :DEPLOYED: the output variable that is TRUE if external package version is installed in workspace, FALSE otherwise.
 #
-function(deploy_Source_External_Package_Version DEPLOYED package min_version is_exact already_installed_versions)
+function(deploy_Source_External_Package_Version DEPLOYED package min_version is_exact is_system already_installed_versions)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of min_version : if exact taking min_version, otherwise taking the greatest version number
 
@@ -2028,10 +2060,9 @@ if(NOT RES_VERSION)
 	message("[PID] WARNING : no adequate version found for wrapper of external package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package).")
 	return()
 endif()
-
 list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
-	build_And_Install_External_Package_Version(INSTALLED ${package} ${RES_VERSION})
+	build_And_Install_External_Package_Version(INSTALLED ${package} ${RES_VERSION} ${is_system})
 	if(NOT INSTALLED) # this package version has FAILED TO be built during current process
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE)
@@ -2070,30 +2101,36 @@ endfunction(deploy_Source_External_Package_Version)
 #
 #      :IS_EXACT: the output variable that is TRUE if SELECTED_VERSION must be exact, false otherwise.
 #
-function(resolve_Required_External_Package_Version RESOLUTION_OK SELECTED_VERSION IS_EXACT package)
+#      :IS_SYSTEM: the output variable that is TRUE if SELECTED_VERSION must be an OS installed version, false otherwise.
+#
+function(resolve_Required_External_Package_Version RESOLUTION_OK SELECTED_VERSION IS_EXACT IS_SYSTEM package)
 	list(REMOVE_DUPLICATES ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	set(CURRENT_EXACT FALSE)
+  set(CURRENT_SYSTEM FALSE)
 	#1) first pass to eliminate everything impossible just when considering exactness
 	foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 		if(CURRENT_EXACT)#current version is an exact version
 			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX}) #impossible to find two different exact versions solution
 				set(${RESOLUTION_OK} FALSE PARENT_SCOPE)
 				return()
-			elseif(${version} VERSION_GREATER ${CURRENT_VERSION})#any not exact version that is greater than current exact one makes the solution impossible
+			elseif(version VERSION_GREATER CURRENT_VERSION)#any not exact version that is greater than current exact one makes the solution impossible
 				set(${RESOLUTION_OK} FALSE PARENT_SCOPE)
 				return()
 			endif()
 		else()#current version is not exact
 			#there is no current version (first run)
 			if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX})#the current version is exact
-				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})#no current version defined OR this version is less
+				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS version)#no current version defined OR this version is less
 					set(CURRENT_EXACT TRUE)
 					set(CURRENT_VERSION ${version})
+          # additional step => check if the OS variant is required
+          if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_SYSTEM${USE_MODE_SUFFIX})
+            set(CURRENT_SYSTEM TRUE)
+          endif()
 				else()# current version is greater than exact one currently required => impossible to find a solution
 					set(${RESOLUTION_OK} FALSE PARENT_SCOPE)
 					return()
 				endif()
-
 			else()#getting the greater minimal required version
 				if(NOT CURRENT_VERSION OR CURRENT_VERSION VERSION_LESS ${version})
 					set(CURRENT_VERSION ${version})
@@ -2104,9 +2141,9 @@ function(resolve_Required_External_Package_Version RESOLUTION_OK SELECTED_VERSIO
 
 	#2) testing if a solution exists as regard of "compatibility" of required versions
 	foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
-		if(NOT ${version} VERSION_EQUAL ${CURRENT_VERSION})
+		if(NOT version VERSION_EQUAL CURRENT_VERSION)
 			if(DEFINED ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO
-			AND NOT ${CURRENT_VERSION} VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
+			AND NOT CURRENT_VERSION VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
 				set(${RESOLUTION_OK} FALSE PARENT_SCOPE) #there is no solution
 				return()
 			endif()
@@ -2116,6 +2153,7 @@ function(resolve_Required_External_Package_Version RESOLUTION_OK SELECTED_VERSIO
 	set(${RESOLUTION_OK} TRUE PARENT_SCOPE)
 	set(${SELECTED_VERSION} "${CURRENT_VERSION}" PARENT_SCOPE)
 	set(${IS_EXACT} ${CURRENT_EXACT} PARENT_SCOPE)
+	set(${IS_SYSTEM} ${CURRENT_SYSTEM} PARENT_SCOPE)
 endfunction(resolve_Required_External_Package_Version)
 
 #.rst:
@@ -2199,7 +2237,7 @@ endfunction(memorize_External_Binary_References)
 #
 #      :reinstall: if TRUE force the reinstall of binary version.
 #
-#      :from_sources: if TRUE the external package will be reinstalled from sources if already installed.
+#      :from_sources: if TRUE the external package will be reinstalled from sources if already installed. if value "SYSTEM" is given the OS variant of the version will be installed
 #
 #      :INSTALL_OK: the output variable that is TRUE is external package is installed, FALSE otherwise.
 #
@@ -2217,13 +2255,14 @@ endif()
 
 # resolve finally required package version by current project, if any specific version required
 if(reinstall AND from_sources)#if the package does not belong to packages to install then it means that its version is not adequate and it must be reinstalled
-  set(USE_SOURCES TRUE) # by definition reinstall from sources
+  set(USE_SOURCES TRUE) # by definition reinstall from sources (otherwise no change possible while PID does not handle mutliple archive for same platform/version)
   set(NO_VERSION FALSE)# we need to specify a version !
-  set(IS_EXACT TRUE)
+  set(IS_EXACT TRUE)#this version must be exact !!
   set(SELECTED ${${package}_VERSION_STRING})#the version to reinstall is the currenlty used one
   set(FORCE_REBUILD TRUE)
 elseif(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
-	resolve_Required_External_Package_Version(VERSION_POSSIBLE SELECTED IS_EXACT ${package})
+  #based on missing dependency, deduce the version constraint that applies
+	resolve_Required_External_Package_Version(VERSION_POSSIBLE SELECTED IS_EXACT IS_SYSTEM ${package})
 	if(NOT VERSION_POSSIBLE)
 		message("[PID] ERROR : When deploying package ${package}, impossible to find an adequate version for package ${package}.")
 		set(${INSTALL_OK} FALSE PARENT_SCOPE)
@@ -2231,7 +2270,12 @@ elseif(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	else()
 		message("[PID] INFO : deploying package ${package}...")
 	endif()
-	set(NO_VERSION FALSE)
+  set(NO_VERSION FALSE)#a version must be used
+  if(IS_SYSTEM)
+    set(USE_SOURCES TRUE)#to get OS variant of a version we need to use sources (i.e. the wrapper project) !!
+    set(IS_EXACT TRUE)#OS variant constraints are always exact !!
+    set(FORCE_REBUILD TRUE)# always force the rebuild because the project can exist in filesystem but find script returned FALSE because this version is not the OS variant (furthermore generating symlinks to pre built binaries is a cheap operation so we can support removing existing symlinks)
+  endif()
 else()
 	set(NO_VERSION TRUE)#no code in project of its dependencies apply constraint to the target external package version
 endif()
@@ -2313,7 +2357,7 @@ endif()
 if(NO_VERSION)
 	deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "${list_of_installed_versions}")
 else()
-	deploy_Source_External_Package_Version(SOURCE_DEPLOYED ${package} ${SELECTED} ${IS_EXACT} "${list_of_installed_versions}")
+	deploy_Source_External_Package_Version(SOURCE_DEPLOYED ${package} ${SELECTED} ${IS_EXACT} ${IS_SYSTEM} "${list_of_installed_versions}")
 endif()
 
 if(SOURCE_DEPLOYED)
@@ -2704,15 +2748,15 @@ endforeach()
 # Manage external package dependencies => need to check direct external dependencies
 foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
   if(${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
-    get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT ${dep_pack})
+    get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_pack})
   	if(REQUIRED_VERSION)#if a version of the same package is already required then check their compatibility
-      get_Compatible_Version(IS_COMPATIBLE TRUE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}")
-      if(NOT IS_COMPATIBLE)
-        set(${RESULT} FALSE PARENT_SCOPE)
-        message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${version}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")
-        return()
+      get_Compatible_Version(IS_COMPATIBLE TRUE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${IS_SYSTEM} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_SYSTEM${VAR_SUFFIX}}")
+        if(NOT IS_COMPATIBLE)
+          set(${RESULT} FALSE PARENT_SCOPE)
+          message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${version}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")
+          return()
+        endif()
       endif()
-    endif()
   endif()
 endforeach()
 
@@ -2720,9 +2764,9 @@ if(NOT external)
   # Manage native package dependencies => need to check direct native dependencies
 	foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
     if(${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
-      get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT ${dep_pack})
+      get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_pack})
     	if(REQUIRED_VERSION)#if a version of the same native package is already required then check their compatibility
-        get_Compatible_Version(IS_COMPATIBLE FALSE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_DEPENDENCIY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}")
+        get_Compatible_Version(IS_COMPATIBLE FALSE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} FALSE ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_DEPENDENCIY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" FALSE)
         if(NOT IS_COMPATIBLE)
           set(${RESULT} FALSE PARENT_SCOPE)
           message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${version}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")

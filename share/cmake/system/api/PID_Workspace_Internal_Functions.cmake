@@ -1497,7 +1497,7 @@ endfunction(deploy_PID_Native_Package)
 #
 #      :package: the name of the external package to deploy.
 #
-#      :version: the version to deploy.
+#      :version: the version to deploy (if system is used then deploy the corresponding OS version)
 #
 #      :verbose: if TRUE the deployment will print more information to standard output.
 #
@@ -1578,16 +1578,18 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 	endif()
 
 else()#deploying a specific version of the external package
-	#first, try to download the archive if the binary archive for this version exists
-	exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
-	if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
-		deploy_Binary_External_Package_Version(DEPLOYED ${package} ${version} FALSE)#deploying the target binary relocatable archive
-		if(NOT DEPLOYED)
-			message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
-			return()
-		else()
-			message("[PID] INFO : deploying ${package} binary archive for version ${version} succeeded !")
-			return()
+	if(NOT version STREQUAL "SYSTEM")
+		#first, try to download the archive if the binary archive for this version exists
+		exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
+		if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
+			deploy_Binary_External_Package_Version(DEPLOYED ${package} ${version} FALSE)#deploying the target binary relocatable archive
+			if(NOT DEPLOYED)
+				message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
+				return()
+			else()
+				message("[PID] INFO : deploying ${package} binary archive for version ${version} succeeded !")
+				return()
+			endif()
 		endif()
 	endif()
 	#Not possible from binaries so try from sources
@@ -1599,7 +1601,19 @@ else()#deploying a specific version of the external package
 				return()
 			endif()
 		endif()
-		deploy_Source_External_Package_Version(DEPLOYED ${package} ${version} TRUE "")
+		if(version STREQUAL "SYSTEM")
+			#need to determine the OS installed version first
+			check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${package}")#use the configuration to determine if a version is installed on OS
+			if(NOT RESULT_OK)
+				message("[PID] ERROR : cannot deploy external package ${package} in its OS installed version since no OS version of ${package} can be found in system. Deployment aborted !")
+				return()
+			endif()
+			set(USE_SYSTEM TRUE)
+			set(version ${${package}_VERSION})#use the OS version detected (${package}_VERSION is a standardized variable for configuration) !!
+		else()
+			set(USE_SYSTEM FALSE)
+		endif()
+		deploy_Source_External_Package_Version(DEPLOYED ${package} ${version} TRUE ${USE_SYSTEM} "")
 		if(DEPLOYED)
 				message("[PID] INFO : external package ${package} has been deployed from its wrapper repository.")
 		else()

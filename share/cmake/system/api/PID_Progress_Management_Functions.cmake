@@ -194,6 +194,7 @@ file(APPEND ${thefile} "set(CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${CHOSEN_
 foreach(pack IN LISTS CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS)
   file(APPEND ${thefile} "set(${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS ${${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS})\n")
   file(APPEND ${thefile} "set(${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT ${${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT})\n")
+  file(APPEND ${thefile} "set(${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM ${${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM})\n")
 endforeach()
 endfunction(update_Progress_File)
 
@@ -279,6 +280,11 @@ if(EXISTS ${thefile})
   else()
     set(exact FALSE)
   endif()
+  if(${package}_BUILT_OS_VARIANT)#the binary package version is the OS installed version
+    set(system TRUE)
+  else()
+    set(system FALSE)
+  endif()
 	#updating variables
 	list(APPEND CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package})
 	list(REMOVE_DUPLICATES CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS)
@@ -286,12 +292,15 @@ if(EXISTS ${thefile})
     if(version VERSION_GREATER ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#update chosen version only if greater than current one
       set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
       set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
+      set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
     elseif(version VERSION_EQUAL ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS AND exact)#the new version constraint is exact so set it
       set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
+      set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
     endif()
-  else()
+  else()#not found already so simply set the variables without check
     set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
     set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
+    set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
   endif()
   update_Progress_File()
   return()
@@ -430,16 +439,40 @@ set(${RESULT} FALSE PARENT_SCOPE) #not already managed of no file exists
 endfunction(check_Package_Managed_In_Current_Process)
 
 
-function(get_Chosen_Version_In_Current_Process VERSION IS_EXACT package)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Chosen_Version_In_Current_Process| replace:: ``get_Chosen_Version_In_Current_Process``
+#  .. _get_Chosen_Version_In_Current_Process:
+#
+#  get_Chosen_Version_In_Current_Process
+#  -------------------------------------
+#
+#   .. command:: get_Chosen_Version_In_Current_Process(VERSION IS_EXACT package)
+#
+#    Get the version of the given package that has been previously selected during the build process.
+#
+#      :package: the name of the given package.
+#
+#      :VERSION: the output variable that contains the chosen version number.
+#
+#      :IS_EXACT: the output variable that is TRUE if the chosen version must be exact.
+#
+#      :IS_SYSTEM: the output variable that is TRUE if the chosen version is the OS installed version.
+#
+function(get_Chosen_Version_In_Current_Process VERSION IS_EXACT IS_SYSTEM package)
 set(${VERSION} PARENT_SCOPE)
 set(${IS_EXACT} FALSE PARENT_SCOPE)
+set(${IS_SYSTEM} FALSE PARENT_SCOPE)
 set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
   list(FIND CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# there is a chosen version for that package
     set(${VERSION} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS} PARENT_SCOPE)
-		set(${IS_EXACT} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT} PARENT_SCOPE) #MANAGED !!
+		set(${IS_EXACT} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT} PARENT_SCOPE)
+    set(${IS_SYSTEM} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM} PARENT_SCOPE)
 		return()
   else()
       return()

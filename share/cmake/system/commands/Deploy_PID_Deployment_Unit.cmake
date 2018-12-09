@@ -73,6 +73,14 @@ if(NOT RUN_TESTS AND ENV{test})
 	set(RUN_TESTS $ENV{test} CACHE INTERNAL "")
 endif()
 
+#checking TARGET_VERSION value
+if(TARGET_VERSION)
+	if(TARGET_VERSION STREQUAL "system" OR TARGET_VERSION STREQUAL "SYSTEM" OR TARGET_VERSION STREQUAL "System")
+		set(TARGET_VERSION "SYSTEM" CACHE INTERNAL "")#prepare value for call to deploy_PID_Package
+		set(NO_SOURCE FALSE CACHE INTERNAL "")#SYSTEM version can only be installed from external package wrapper
+	endif()
+endif()
+
 #including the adequate reference file
 if(TARGET_FRAMEWORK)# a framework is deployed
 	# checks of the arguments
@@ -97,7 +105,7 @@ else()# a package deployment is required
 	####################################################################
 
 	#check of arguments
-	if(NOT TARGET_PACKAGE OR TARGET_PACKAGE STREQUAL "")
+	if(NOT TARGET_PACKAGE)
 		message("[PID] ERROR : You must specify the project to deploy: either a native package or an external package using package=<name of package> or a framework using framework=<name of framework> argument.")
 		return()
 	endif()
@@ -113,6 +121,11 @@ else()# a package deployment is required
 		else()
 			set(is_external TRUE)
 		endif()
+	else()#this is a native package
+		if(TARGET_VERSION STREQUAL "SYSTEM")
+			message("[PID] ERROR : Native package (as ${TARGET_PACKAGE}) cannot be installed as OS variants, only external packages can.")
+			return()
+		endif()
 	endif()
 	#after this previous commands packages references are known
 	if(FORCE_REDEPLOY AND (FORCE_REDEPLOY STREQUAL "true" OR FORCE_REDEPLOY STREQUAL "TRUE"))
@@ -122,7 +135,7 @@ else()# a package deployment is required
 	endif()
 
 	# check if redeployment asked
-	if(TARGET_VERSION) # a specific version is targetted
+	if(TARGET_VERSION AND NOT TARGET_VERSION STREQUAL "SYSTEM") # a specific version is targetted
 		if(is_external AND EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION}
 			AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION})
 			if(NOT redeploy)
