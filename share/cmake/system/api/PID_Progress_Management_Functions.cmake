@@ -280,7 +280,7 @@ if(EXISTS ${thefile})
   else()
     set(exact FALSE)
   endif()
-  if(${package}_BUILT_OS_VARIANT)#the binary package version is the OS installed version
+  if(${package}_REQUIRED_VERSION_SYSTEM)#the binary package version is the OS installed version
     set(system TRUE)
   else()
     set(system FALSE)

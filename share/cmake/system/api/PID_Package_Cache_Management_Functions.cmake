@@ -1020,6 +1020,7 @@ function(reset_Build_Info_Cached_Variables_From_Use package)#common for external
   #this is only usefull  avoid having BUGS in package build process after target platform ABI has been changed in workspace
   set(${package}_BUILT_FOR_DISTRIBUTION CACHE INTERNAL "")
   set(${package}_BUILT_FOR_DISTRIBUTION_VERSION CACHE INTERNAL "")
+  set(${package}_BUILT_OS_VARIANT CACHE INTERNAL "")#only for external but no side effects on natives
   set(${package}_BUILT_WITH_CXX_COMPILER CACHE INTERNAL "")
   set(${package}_BUILT_WITH_C_COMPILER CACHE INTERNAL "")
   set(${package}_BUILT_WITH_CXX_COMPILER CACHE INTERNAL "")

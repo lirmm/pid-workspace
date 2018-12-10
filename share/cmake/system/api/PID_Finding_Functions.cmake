@@ -1153,7 +1153,7 @@ if(${package}_REQUIRED_VERSION_EXACT)
 		return()
 	endif()
   #check that both versions are related either to SYSTEM variant or to PID built variant
-  if(${package}_BUILT_OS_VARIANT)
+  if(${package}_REQUIRED_VERSION_SYSTEM)
     if(NOT is_system)
       return()
     endif()
@@ -1731,6 +1731,11 @@ if(${external_dependency}_FOUND) #the dependency has already been found (previou
       is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX}}") # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
 			if(IS_COMPATIBLE)
 				if(NEED_REFIND)
+          if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX})#the OS version is required
+            set(${external_dependency}_FIND_VERSION_SYSTEM TRUE)
+          else()
+            set(${external_dependency}_FIND_VERSION_SYSTEM FALSE)
+          endif()
 					# OK need to find the exact version instead
 					find_package(
 						${external_dependency}
@@ -2030,7 +2035,7 @@ check_Directory_Exists(EXIST ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH})
 if(EXIST)
   # at this stage the only thing to do is to check for versions
   if(${package}_FIND_VERSION)
-		if(${package}_FIND_VERSION_EXACT) #using a specific version
+		if(is_exact) #using a specific version
 			check_External_Exact_Version(VERSION_TO_USE ${package} ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}")
 		else() #using the best version as regard of version constraints
 			check_External_Minimum_Version(VERSION_TO_USE ${package} ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}")
