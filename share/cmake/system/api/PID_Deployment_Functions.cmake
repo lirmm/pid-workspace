@@ -327,7 +327,13 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
     endif()
     if(INSTALL_OK)
       set(${package}_FIND_VERSION_SYSTEM ${${package}_REQUIRED_VERSION_SYSTEM})#using the memorized contraint on version to set adeqautely which variant (OS or PID) to use
-      find_package(${package} ${${package}_VERSION_STRING} EXACT REQUIRED)#find again the package but this time we impose as constraint the specific version searched
+      if(${package}_REQUIRED_VERSION_EXACT)
+        set(exact_str "EXACT")
+      else()
+        set(exact_str "")
+      endif()
+      find_package(${package} ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
+      #TODO maybe use the ${package}_FIND_VERSION_EXACT variable instead of directly EXACT ?
       if(NOT ${package}_FOUND)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         if(${package}_REQUIRED_VERSION_SYSTEM)
@@ -339,8 +345,8 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
       resolve_Package_Dependencies(${package} ${mode} FALSE)#resolving again the dependencies on same package
     else()# cannot do much more about that !!
       finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has conflicting dependencies. See below what are the dependencies !")
-      return()
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has conflicting dependencies and the target version ${${package}_VERSION_STRING} cannot be rebuit !")
+    return()
     endif()
   endif()
 endif()
@@ -1134,7 +1140,7 @@ endif()
 if(NOT RES_VERSION)#no adequate version found, this may be due to the use of a non release version
   try_In_Development_Version(RES_VERSION ${package} ${min_version} ${is_exact} "${run_tests}")#mainly usefull in CI process to build unreleased dependencies
   if(RES_VERSION)
-    message("[PID] INFO : deployed version ${RES_VERSION} of source package ${package} is in development (found on integration branch.")
+    message("[PID] INFO : deployed version ${RES_VERSION} of source package ${package} is in development (found on integration branch).")
     set(${DEPLOYED} TRUE PARENT_SCOPE)
     add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
   else()

@@ -119,7 +119,7 @@ foreach(version IN LISTS available_versions)
 	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
   if(	COMPARE_MAJOR EQUAL MAJOR
 		AND COMPARE_MINOR EQUAL MINOR
-		AND COMPARE_PATCH GREATER curr_max_patch_number)
+    AND (NOT COMPARE_PATCH LESS curr_max_patch_number)) # COMPARE_PATCH >= current patch
 		set(curr_max_patch_number ${COMPARE_PATCH})# taking the last patch version available for this major.minor
     set(version_found TRUE)
   endif()
@@ -1077,8 +1077,8 @@ function(find_Best_Compatible_Version BEST_VERSION_IN_LIST external package vers
     if(NOT IS_COMPATIBLE)
       return()#no compatible version can be found if already required version is not strucly equal to OS installed version
     endif()
-    #OK all tests passed to simply returning SYSTEM to indicate that the OS version is in use
-    set(${BEST_VERSION_IN_LIST} "SYSTEM" PARENT_SCOPE)
+    #OK all tests passed to simply returning THE GIVEN VERSION to indicate that the OS version is in use
+    set(${BEST_VERSION_IN_LIST} ${list_of_versions} PARENT_SCOPE)
   else()
     #first step: build the list of compatible versions
     set(list_of_compatible_versions)
@@ -1474,6 +1474,7 @@ foreach(a_used_package IN LISTS ${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES)
 	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
 	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
 	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
+	set(${a_used_package}_REQUIRED_VERSION_SYSTEM CACHE INTERNAL "")
 endforeach()
 set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES CACHE INTERNAL "")
 endfunction(reset_Found_External_Packages)

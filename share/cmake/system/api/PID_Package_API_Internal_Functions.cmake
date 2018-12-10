@@ -710,7 +710,19 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX
 			return()
 		elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
+			if(${dep_pack}_ALL_REQUIRED_VERSIONS)
+				set(mess_str "All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}")
+			else()
+				set(mess_str "Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}")
+			endif()
+			if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})
+				if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX})
+					set(local_version "exact version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}")
+				else()
+					set(local_version "version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}")
+				endif()
+			endif()
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy ${local_version} coming from package ${PROJECT_NAME}. ${mess_str}.")
 			return()
 		else()#OK resolution took place !!
 			add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
@@ -1491,143 +1503,159 @@ endfunction(declare_Python_Component)
 #     :list_of_components: the list of required components that must belong to dependency.
 #
 function(declare_Native_Package_Dependency dep_package optional list_of_versions exact_versions list_of_components)
-# ${PROJECT_NAME}_DEPENDENCIES				# packages required by current package
-# ${PROJECT_NAME}__DEPENDENCY_${dep_package}_VERSION		# version constraint for package ${dep_package}   required by ${PROJECT_NAME}
-# ${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT	# TRUE if exact version is required
-# ${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS	# list of composants of ${dep_package} used by current package
 	set(unused FALSE)
-	# 0) check if a version of this dependency is required by another package
-	get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_package})
-
-	# 1) the package may be required at that time
-	# defining if there is either a specific version to use or not
-	if(NOT list_of_versions)
-		if(optional)
-			set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "Select if ${dep_package} is to be used by entering either ANY or a given version number, or not used bu entering NONE.")
-			if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
-				set(unused TRUE)
-			endif()
-		else()
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING  "Select version of ${dep_package} to be used by entering either ANY or a given version number.")
-		endif()#else no message since nohting to say to the user
-		if(NOT unused)
-			if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
-				add_Package_Dependency_To_Cache(${dep_package} ${REQUIRED_VERSION} ${IS_EXACT} "${list_of_components}") #set the dependency
-			else()#no version required, for now we cannot say much more about version specified in use file until
-				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#if a version number is specified by the user
-					add_Package_Dependency_To_Cache(${dep_package} ${${dep_package}_ALTERNATIVE_VERSION_USED} FALSE "${list_of_components}") #set the dependency
-				else()# any version can be used so for now no constraint
-					add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
-				endif()
-			endif()
-		endif()
-	else()#there are version specified
-		fill_String_From_List(list_of_versions available_versions) #get available version as a string (used to print them)
-		#check if required version (if any) is compatible with current target version
+	### 0) for native package we need to prepare the list of version to make it full of version numbers with exactly 3 digits
+	if(list_of_versions)
+		foreach(ver IN LISTS list_of_versions)
+			normalize_Version_String(${ver} NORM_STR)
+			list(APPEND temp_list ${NORM_STR})
+		endforeach()
+		set(list_of_versions ${temp_list})
+		foreach(ver IN LISTS exact_versions)
+			normalize_Version_String(${ver} NORM_STR)
+			list(APPEND temp_exact ${NORM_STR})
+		endforeach()
+		set(exact_versions ${temp_exact})
 		list(LENGTH list_of_versions SIZE)
 		list(GET list_of_versions 0 default_version) #by defaut this is the first element in the list that is taken
-		if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
-			#finding the best compatible version, if any
-			find_Best_Compatible_Version(version FALSE ${dep_package} ${REQUIRED_VERSION} "${IS_EXACT}" FALSE "${list_of_versions}" "${exact_versions}" FALSE)
-		else()
-			set(version ${default_version})
-		endif()
+	endif()
 
-		##### create the cache variables for user at first time #####
-		set(message_for_variable "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}.")
-		if(optional) #message for the optional dependency includes the possiiblity to input NONE
-			set(message_for_variable "${message_for_variable} Or use NONE to avoid using this dependency.")
+	### 1) setting user cache variable. The goal is to given users the control "by-hand" on the version used for a given dependency ###
+	#1.A) preparing message coming with this user cache variable
+	if(NOT list_of_versions) # no version constraint specified
+		set(message_str "Select version of dependency ${dep_package} to be used by entering either keyword ANY or a valid version number.")
+	else()#there are version specified
+		fill_String_From_List(list_of_versions available_versions) #get available version as a string (used to print them)
+		set(message_str "Select the version of dependency ${dep_package} to be used among versions: ${available_versions}.")
+	endif()
+	if(optional) #message for the optional dependency includes the possiiblity to input NONE
+		set(message_str "${message_str} Or use NONE to avoid using this dependency.")
+	endif()
+	#1.B) creating the user cache entries
+	if(NOT list_of_versions) # no version constraint specified
+		### setting default cache variable that user can directly manage "by-hand" ###
+		if(optional)
+			#set the cache option, NONE by default
+			set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}")
+		else()#dependency is not optional so any version can be used
+			set(${dep_package}_ALTERNATIVE_VERSION_USED "ANY" CACHE STRING "${message_str}")#no message since nothing to say to the user
 		endif()
-		if(version) #the package may be already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
-			if(SIZE EQUAL 1)
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
-			else()
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "${message_for_variable}")
-			endif()
-		else()#no version, only possible if in a dependent build process
-			if(optional)
-				# since dependency is optional, we simply just do not use it to avoid unresolvable configuration
-				set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_for_variable}.")#initial value set to unused
-			else() #version of a required dependency
-				#no version compatible => use default version as base value (will generate an error just after BUT will be usable if the user then run a non depednent build of dep_package later)
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_for_variable}")
-			endif()
-		endif()
-
-		##### set the cache variables adequately depending on the build context (dependent build or classical build) #####
-		if(REQUIRED_VERSION AND NOT version)#the build context is a dependent build and no compatible version has been found
-			if(optional)#hopefully the depndency is optional so we can deactivate it
-				set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}. Or use NONE set to avoid using this dependency." FORCE)
-				message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated as its version (${version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
-			else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${available_versions}.")
-				return()
+	else()#there are version(s) specified
+		#first do some checks
+		if(optional)
+			# since dependency is optional, we simply just do not use it by default to avoid unresolvable configuration
+			set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}.")#initial value set to unused
+		else() #version of a required dependency
+			if(SIZE EQUAL 1)#no alternative a given version constraint must be satisfied
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
+			else() #we can choose among many versions, use the first specified by default
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}")
 			endif()
 		endif()
+	endif()
 
-		##### check if the variable value is not faulty #####
-		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)#check if there is a value set by user
+	### 2) check and set the value of the user cache entry dependening on constraints coming from the build context (dependent build or classical build) #####
+	# check if a version of this dependency is required by another package used in the current build process and memorize this version
+	get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_package})
+	if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
+		if(list_of_versions) #list of possible versions is constrained
+			#finding the best compatible version, if any (otherwise returned "version" variable is empty)
+			find_Best_Compatible_Version(force_version FALSE ${dep_package} ${REQUIRED_VERSION} "${IS_EXACT}" FALSE "${list_of_versions}" "${exact_versions}" FALSE)
+			if(NOT force_version)#the build context is a dependent build and no compatible version has been found
+				if(optional)#hopefully the dependency is optional so we can deactivate it
+					set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)
+					message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
+				else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
+					finish_Progress(${GLOBAL_PROGRESS_VAR})
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${available_versions}.")
+					return()
+				endif()
+			endif()
+			if(SIZE EQUAL 1)#no alternative a given version constraint must be satisfied
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${force_version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
+			else() #we can choose among many versions, use the first specified by default
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${force_version} CACHE STRING "${message_str}" FORCE)#explicitlty set the dependency to the chosen version number
+			endif()
+		else()#no constraint on version => use the required one
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${REQUIRED_VERSION} CACHE STRING "${message_str}" FORCE)#explicitlty set the dependency to the chosen version number
+		endif()
+		set(USE_EXACT ${IS_EXACT})
+	else()#classical build
+		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)#SPECIAL CASE: no value set by user (i.e. error of the user)!!
 			if(optional)#hopefully the dependency is optional so we can force its deactivation
-				set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_for_variable}" FORCE)
-			else()
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} no version version is defined for dependency ${dep_package}.")
-				return()
-			endif()
-		else()#a version constraint was specified
-			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE" OR NOT optional)#it is not a deactivated optional dependency
-				if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#special case where any version was previously specified (due to a change in specification of the dependency)
-					if(NOT version)
-						set(version ${default_version})
+				set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)#explicitlty deactivate the optional dependency (corrective action)
+				message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated because no version was specified by the user.")
+			elseif(list_of_versions)
+					if(SIZE EQUAL 1)#only one possible version => do not provide it to to user
+						set(${dep_package}_ALTERNATIVE_VERSION_USED ${list_of_versions} CACHE INTERNAL "" FORCE)
+					else()
+						set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
 					endif()
-					set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "${message_for_variable}" FORCE)
-				else()#otherwise there is a version constraint specified
-					if(REQUIRED_VERSION)#we are currently in the context of a dependent build
-						#need to force the usage of the chosen alternative
-						set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "${message_for_variable}" FORCE)
-					else()#classic build: other compatible versions may be used with dependent builds so simply do not check that
-						list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-						if(INDEX EQUAL -1 )#no possible version found
-							finish_Progress(${GLOBAL_PROGRESS_VAR})
-							message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} a bad version (${${dep_package}_ALTERNATIVE_VERSION_USED}) was used for dependency ${dep_package}.")
-							return()
+			else()
+				set(${dep_package}_ALTERNATIVE_VERSION_USED "ANY" CACHE STRING "${message_str}" FORCE)
+			endif()
+		else()#there is a value for the ALTERNATIVE variable
+			if(list_of_versions)#there is a constraint on usable versions
+				if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#the value in cache was previously ANY but user added a list of versions in the meantime
+					if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
+						set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
+					else()#many possible versions now !!
+						set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
+					endif()
+				else()#a version has been given explicitly (either from dependent build or directly by the user)
+					list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+					if(INDEX EQUAL -1 )#no possible version found -> may be due to a change in cmake description of possible versions
+						#simply reset the description to first found
+						if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
+							set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
+						else()#many possible versions now !!
+							set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
 						endif()
 					endif()
 				endif()
-			endif()
-		endif()
-
-		##### determine whether the dependency is used and memorize its version #####
-		if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
-			set(unused TRUE)
-		else()#if a version is used, configure it
-			if(exact_versions)
-				list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-				if(INDEX EQUAL -1)#selected version not found in the list of exact versions
-					add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE "${list_of_components}") #set the dependency
-				else()#if the target version belong to the list of exact version then ... it is exact ^^
-					add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" TRUE "${list_of_components}") #set the dependency
+				if(exact_versions)
+					list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+					if(NOT INDEX EQUAL -1 )
+						set(USE_EXACT TRUE)
+					endif()
 				endif()
-			else()#by definition this is not an exact version selected
-				add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE "${list_of_components}") #set the dependency
 			endif()
 		endif()
-	endif()#version specified
+	endif()
+	### 3) setting internal cache variable used to generate the use file and to resolve find operations
+	# they are simply set from the value of the alternative and depending on
+	if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
+		set(unused TRUE)
+	elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")# any version can be used so for now no contraint
+		add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
+	else()#a version is specified by the user OR the dependent build process has automatically set it
+		if(USE_EXACT)
+			add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" TRUE "${list_of_components}") #set the dependency
+		else()#if the target version belong to the list of exact version then ... it is exact ^^
+			add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE "${list_of_components}") #set the dependency
+		endif()
+	endif()
 
-
-	if(NOT unused) #if the dependency is really used (guard the case when it were optional and unselected by user)
-		# 3) try to find the adequate package version => it is necessarily required
+	# 4) resolve the package dependency according to memorized internal variables
+	if(NOT unused) #if the dependency is really used (in case it were optional and unselected by user)
 		if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
 			#package has never been found by a direct call to find_package in root CMakeLists.txt
 			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
 			if(NOT IS_COMPATIBLE)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_package}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_package}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
+				set(message_versions "")
+				if(${dep_package}_ALL_REQUIRED_VERSIONS)
+					set(message_versions "All non exact required versions are : ${${dep_package}_ALL_REQUIRED_VERSIONS}")
+				elseif(${dep_package}_REQUIRED_VERSION_EXACT)#the exact required version is contained in ${dep_package}_REQUIRED_VERSION_EXACT variable.
+					set(message_versions "Exact version already required is ${${dep_package}_REQUIRED_VERSION_EXACT}")
+				endif()
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} coming from package ${PROJECT_NAME}. ${message_versions}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
 				return()
 			elseif(${dep_package}_FOUND)
 				add_Chosen_Package_Version_In_Current_Process(${dep_package})
 			endif()
+		else()#if was found prior to this call
+			add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
 		endif()#otherwise nothing more to do
 		# here the version has been resolved, we need to manage the specific case where no version constraint was specified
 		# indeed, the use file should always contain a version constraint because the binary in itselt cannot adapt to different version
@@ -1665,158 +1693,161 @@ endfunction(declare_Native_Package_Dependency)
 #
 #     :list_of_components: the list of required components that must belong to dependency.
 #
-function(declare_External_Package_Dependency dep_package optional list_of_versions exact_versions components_list)
+function(declare_External_Package_Dependency dep_package optional list_of_versions exact_versions list_of_components)
 set(unused FALSE)
-# 0) check if a version of this dependency is required by another package used in the current build process and memorize this version
-get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_package})
 
-# defining if there is either a specific version to use or not
+### 1) setting user cache variable. The goal is to given users the control "by-hand" on the version used for a given dependency ###
+#1.A) preparing message coming with this user cache variable
 if(NOT list_of_versions) # no version constraint specified
-	if(optional)
-		#set the cache option, NONE by default
-		set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "Select if ${dep_package} is to be used by entering either ANY or a version number, or not used by entering NONE.")
-		if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")#create the dependency except otherwise specified
-			set(unused TRUE)
-		endif()
-	else()#dependency is not optional so any version can be used
-		set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "Select version of ${dep_package} to be used, by entering either ANY or a version number.")#no message since nothing to say to the user
-	endif()
-	if(NOT unused)#if dependency is used (i.e. not optional or optional and set to ANY)
-		# now checking if a version is already required by current build process
-		if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
-			add_External_Package_Dependency_To_Cache(${dep_package} ${REQUIRED_VERSION} ${IS_EXACT} "${IS_SYSTEM}" "${list_of_components}") #set the dependency
-		else()#no version required
-			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#if a version number is specified by the user
-				add_External_Package_Dependency_To_Cache(${dep_package} ${${dep_package}_ALTERNATIVE_VERSION_USED} FALSE FALSE "${list_of_components}") #set the dependency
-			else()# any version can be used so for now no contraint
-				add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE FALSE "${list_of_components}")
-			endif()
-		endif()
-	endif()
-else()#there are version(s) specified
-	set(USE_SYSTEM FALSE)#by default do notuse OS version for the dependency
+	set(message_str "Select version of dependency ${dep_package} to be used by entering either keyword ANY or a valid version number.")
+else()#there are version specified
 	fill_String_From_List(list_of_versions available_versions) #get available version as a string (used to print them)
-	#check if required version (if any) is compatible with current target version
+	set(message_str "Select the version of dependency ${dep_package} to be used among versions: ${available_versions}.")
 	list(LENGTH list_of_versions SIZE)
 	list(GET list_of_versions 0 default_version) #by defaut this is the first element in the list that is taken
-	if(SIZE GREATER 1)#checking that if SYSTEM version is used this is the only usable version
-		list(FIND list_of_versions "SYSTEM" INDEX)
-		if(NOT INDEX EQUAL -1)
+endif()
+if(optional) #message for the optional dependency includes the possiiblity to input NONE
+	set(message_str "${message_str} Or use NONE to avoid using this dependency.")
+endif()
+#1.B) creating the user cache entries
+if(NOT list_of_versions) # no version constraint specified
+	### setting default cache variable that user can directly manage "by-hand" ###
+	if(optional)
+		#set the cache option, NONE by default
+		set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}")
+	else()#dependency is not optional so any version can be used
+		set(${dep_package}_ALTERNATIVE_VERSION_USED "ANY" CACHE STRING "${message_str}")#no message since nothing to say to the user
+	endif()
+else()#there are version(s) specified
+	if(optional)
+		# since dependency is optional, we simply just do not use it by default to avoid unresolvable configuration
+		set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}.")#initial value set to unused
+	else() #version of a required dependency
+		if(SIZE EQUAL 1)#no alternative a given version constraint must be satisfied
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
+		else() #we can choose among many versions, use the first specified by default
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}")
+		endif()
+	endif()
+endif()
+
+### 2) check and set the value of the user cache entry dependening on constraints coming from the build context (dependent build or classical build) #####
+#first do some checks
+#first perform some checks to see of arguments are consistent
+set(USE_SYSTEM FALSE)#by default do not use OS version for the dependency
+if(SIZE GREATER 1)#checking that if SYSTEM version is used this is the only usable version
+	list(FIND list_of_versions "SYSTEM" INDEX)
+	if(NOT INDEX EQUAL -1)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but other versions non system are specifiedn which is forbidden.")
+		return()
+	endif()
+else()#only one version specified
+	if(list_of_versions STREQUAL "SYSTEM")#this is a system version !! => need to perform specific actions
+		#need to check the equivalent OS configuration, => getting the OS version
+		check_PID_Platform(CONFIGURATION ${dep_package})
+		if(NOT ${dep_package}_VERSION)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but other versions non system are specifiedn which is forbidden.")
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
 			return()
 		endif()
-	else()#only one version specified
-		if(list_of_versions STREQUAL "SYSTEM")#this is a system version !! => need to perform specific actions
-			#need to check the equivalent OS configuration, => getting the OS version
-			check_PID_Platform(CONFIGURATION ${dep_package})
-			if(NOT ${dep_package}_VERSION)
+		set(list_of_versions ${${dep_package}_VERSION})# get the version installed on OS
+		set(exact_versions ${${dep_package}_VERSION})# mandatory: the OS installed version is EXACT
+		set(default_version ${${dep_package}_VERSION})
+		set(SIZE 1)
+		set(available_versions ${${dep_package}_VERSION})
+		set(USE_SYSTEM TRUE)
+		set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
+	endif()
+endif()
+# check if a version of this dependency is required by another package used in the current build process and memorize this version
+get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_package})
+if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
+	if(list_of_versions) #list of possible versions is constrained
+		#finding the best compatible version, if any (otherwise returned "version" variable is empty)
+		find_Best_Compatible_Version(force_version TRUE ${dep_package} ${REQUIRED_VERSION} "${IS_EXACT}" "${IS_SYSTEM}" "${list_of_versions}" "${exact_versions}" ${USE_SYSTEM})
+		if(NOT force_version)#the build context is a dependent build and no compatible version has been found
+			if(optional)#hopefully the dependency is optional so we can deactivate it
+				set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)
+				message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
+			else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${available_versions}.")
 				return()
 			endif()
-			set(list_of_versions ${${dep_package}_VERSION})# extract the version installed on OS
-			set(exact_versions ${${dep_package}_VERSION})# mandatory: the OS installed version is EXACT
-			set(USE_SYSTEM TRUE)
 		endif()
-	endif()
-	if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
-		#finding the best compatible version, if any (otherwise returned "version" variable is empty)
-		find_Best_Compatible_Version(version TRUE ${dep_package} ${REQUIRED_VERSION} "${IS_EXACT}" "${IS_SYSTEM}" "${list_of_versions}" "${exact_versions}" ${USE_SYSTEM})
-	else()
-		set(version ${default_version})#value is "SYSTEM" for OS version dependency
-	endif()
-
-	##### create the cache variables for user at first time #####
-	set(message_for_variable "Select the version of dependency ${dep_package} : ${available_versions}.")
-	if(optional) #message for the optional dependency includes the possiiblity to input NONE
-		set(message_for_variable "${message_for_variable} Or use NONE to avoid using this dependency.")
-	endif()
-	if(version) #the package may be already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
-		if(SIZE EQUAL 1)#no alternative a given version constraint must be satisfied
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
-		else() #we can choose among many versions
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "${message_for_variable}")
+		#simply reset the description to first found
+		if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${force_version} CACHE INTERNAL "" FORCE)
+		else()#many possible versions now !!
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${force_version} CACHE STRING "${message_str}" FORCE)
 		endif()
-	else()#no version variable defined, only possible if in a dependent build process
-		if(optional)
-			# since dependency is optional, we simply just do not use it to avoid unresolvable configuration
-			set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_for_variable}.")#initial value set to unused
-		else() #version of a required dependency
-			#no version compatible => use default version as base value (will generate an error just after BUT will be usable if the user then run a non depednent build of dep_package later)
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_for_variable}")
-		endif()
+	else()#no constraint on version => use the required one
+		set(${dep_package}_ALTERNATIVE_VERSION_USED ${REQUIRED_VERSION} CACHE STRING "${message_str}" FORCE)#explicitlty set the dependency to the chosen version number
 	endif()
-
-	##### set the cache variables adequately depending on the build context (dependent build or classical build) #####
-	if(REQUIRED_VERSION AND NOT version)#the build context is a dependent build and no compatible version has been found
-		if(optional)#hopefully the depndency is optional so we can deactivate it
-			set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "Select which version of dependency ${dep_package} is to be used among versions : ${available_versions}. Or use NONE set to avoid using this dependency." FORCE)
-			message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated as its version (${version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
-		else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${available_versions}.")
-			return()
-		endif()
-	endif()
-
-	##### check if the variable value is not faulty #####
-	if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)#check if there is a value set by user
+	set(USE_EXACT ${IS_EXACT})
+	set(USE_SYSTEM ${IS_SYSTEM})
+else()#classical build
+	if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)#SPECIAL CASE: no value set by user (i.e. error of the user)!!
 		if(optional)#hopefully the dependency is optional so we can force its deactivation
-			set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_for_variable}" FORCE)
-		else()
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} no version version is defined for dependency ${dep_package}.")
-			return()
+			set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)#explicitlty deactivate the optional dependency (corrective action)
+			message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated because no version was specified by the user.")
+		elseif(list_of_versions)#set if to default version
+			if(SIZE EQUAL 1)#only one possible version => do not provide it to to user
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
+			else()
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
+			endif()
+		else()#set if to ANY version
+			set(${dep_package}_ALTERNATIVE_VERSION_USED "ANY" CACHE STRING "${message_str}" FORCE)
 		endif()
-	else()#a version constraint was specified
-		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE" OR NOT optional)#it is not a deactivated optional dependency
-			if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#special case where any version was previously specified (due to a change in specification of the dependency)
-				if(NOT version)
-					set(version ${default_version})
+	else()
+		if(list_of_versions)#there is a constraint on usable versions
+			if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#the value in cache was previously ANY but user added a list of versions in the meantime
+				if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
+					set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
+				else()
+					set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
 				endif()
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "${message_for_variable}" FORCE)
-			else()#otherwise there is a version constraint specified
-				if(REQUIRED_VERSION)#we are currently in the context of a dependent build
-					#need to force the usage of the chosen alternative
-					set(${dep_package}_ALTERNATIVE_VERSION_USED ${version} CACHE STRING "${message_for_variable}" FORCE)
-				else()#classic build: other compatible versions may be used with dependent builds so simply do not check that
-					if(NOT USE_SYSTEM)
-						list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-						if(INDEX EQUAL -1 )#no possible version found
-							finish_Progress(${GLOBAL_PROGRESS_VAR})
-							message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} a bad version (${${dep_package}_ALTERNATIVE_VERSION_USED}) was used for dependency ${dep_package}.")
-							return()
-						endif()
+			else()#the value is a version
+				list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+				if(INDEX EQUAL -1 )#no possible version found -> bad input of the user
+					#simply reset the description to first found
+					if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
+						set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
+					else()#many possible versions now !!
+						set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
 					endif()
 				endif()
 			endif()
-		endif()
-	endif()
-
-	##### determine whether the dependency is used and memorize its version #####
-	if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
-		set(unused TRUE)
-	else()#if a version is used, configure it
-		if(USE_SYSTEM)#an OS installed version is required => need specific management
-			add_External_Package_Dependency_To_Cache(${dep_package} "${exact_versions}" TRUE TRUE "${list_of_components}") #set the dependency
-		else()
 			if(exact_versions)
 				list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-				if(INDEX EQUAL -1)#selected version not found in the list of exact versions
-					add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE FALSE "${list_of_components}") #set the dependency
-				else()#if the target version belong to the list of exact version then ... it is exact ^^
-					add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" TRUE FALSE "${list_of_components}") #set the dependency
+				if(NOT INDEX EQUAL -1 )
+					set(USE_EXACT TRUE)
 				endif()
-			else()#by definition this is not an exact version selected
-				add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE FALSE "${list_of_components}") #set the dependency
 			endif()
 		endif()
 	endif()
-endif()#version specified
+endif()
+### 3) setting internal cache variable used to generate the use file and to resolve find operations
+# they are simply set from the value of the alternative and depending on
+if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
+	set(unused TRUE)
+elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")# any version can be used so for now no contraint
+	add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE FALSE "${list_of_components}")
+else()#a version is specified by the user OR the dependent build process has automatically set it
+	if(USE_SYSTEM)#an OS installed version is required => need specific management
+		add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" TRUE TRUE "${list_of_components}") #set the dependency
+	elseif(USE_EXACT)
+		add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" TRUE FALSE "${list_of_components}") #set the dependency
+	else()#if the target version belong to the list of exact version then ... it is exact ^^
+		add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE FALSE "${list_of_components}") #set the dependency
+	endif()
+endif()
 
+# 4) resolve the package dependency according to memorized internal variables
 if(NOT unused) #if the dependency is really used (in case it were optional and unselected by user)
-	# 3) try to find the adequate package version => it is necessarily required
+	# try to find the adequate package version => it is necessarily required
 	if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
 		#package has never been found by a direct call to find_package in root CMakeLists.txt
 		resolve_External_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
@@ -1826,7 +1857,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 			if(${dep_package}_ALL_REQUIRED_VERSIONS)
 				set(message_versions "All non exact required versions are : ${${dep_package}_ALL_REQUIRED_VERSIONS}")
 			elseif(${dep_package}_REQUIRED_VERSION_EXACT)#the exact required version is contained in ${dep_package}_REQUIRED_VERSION_EXACT variable.
-				if(${dep_package}_REQUIRED_VERSION_SYSTEM)#${dep_package}_BUILT_OS_VARIANT is a variable that may lie in external binary package use file
+				if(${dep_package}_REQUIRED_VERSION_SYSTEM)
 					set(message_versions "OS installed version already required is ${${dep_package}_REQUIRED_VERSION_EXACT}")
 				else()
 					set(message_versions "Exact version already required is ${${dep_package}_REQUIRED_VERSION_EXACT}")
@@ -1837,7 +1868,10 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 		elseif(${dep_package}_FOUND)#dependency has been found in workspace after resolution
 			add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
 		endif()
-  endif()
+	else()#if was found prior to this call
+		add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
+	endif()
+
 	# here the version has been resolved, we need to manage the specific case where no version constraint was specified
 	# indeed, the use file should always contain a version constraint because the binary in itselt cannot adapt to different version
 	# it can only use the version used to build it (or any other compatible version)
