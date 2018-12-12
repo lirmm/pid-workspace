@@ -566,7 +566,7 @@ endfunction(set_Current_Version)
 #
 #     :IS_CURRENT: the output variable that contains the current platform identifier if current platform matches all filters.
 #
-function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints)
+function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints optional)
 set(SKIP FALSE)
 #The check of compatibility between the target platform and the constraints is immediate using platform configuration information (platform files) + additionnal global information (distribution for instance) coming from the workspace
 
@@ -610,11 +610,14 @@ if(NOT SKIP AND constraints)
 		if(NOT RESULT_OK)
 			set(${RESULT} FALSE PARENT_SCOPE)
 		endif()
-		list(APPEND configurations_to_memorize ${CONFIG_NAME})#memorize name of the configuration
-		set(${CONFIG_NAME}_constraints_to_memorize ${CONFIG_CONSTRAINTS})#then memorize all constraints that apply to the configuration
+		if(RESULT_OK OR NOT optional)#if the result if FALSE and the configuration was optional then skip it
+			list(APPEND configurations_to_memorize ${CONFIG_NAME})#memorize name of the configuration
+			set(${CONFIG_NAME}_constraints_to_memorize ${CONFIG_CONSTRAINTS})#then memorize all constraints that apply to the configuration
+			list(APPEND constraints_to_memorize ${config})
+		endif()
 	endforeach()
 
-	#registering all configurations wether they are satisfied or not
+	#registering all configurations wether they are satisfied or not, except non satisfied optional ones
 	append_Unique_In_Cache(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} "${configurations_to_memorize}")
 
 	foreach(config IN LISTS configurations_to_memorize)
@@ -623,10 +626,13 @@ if(NOT SKIP AND constraints)
 			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} "${${config}_constraints_to_memorize}" CACHE INTERNAL "")
 		endif()
 	endforeach()
+
+	add_Platform_Constraint_Set("${type}" "${arch}" "${os}" "${abi}" "${constraints_to_memorize}")
+else()
+	# whatever the result the constraint is registered
+	add_Platform_Constraint_Set("${type}" "${arch}" "${os}" "${abi}" "${constraints}")
 endif()
 
-# whatever the result the constraint is registered
-add_Platform_Constraint_Set("${type}" "${arch}" "${os}" "${abi}" "${constraints}")
 endfunction(check_Platform_Constraints)
 
 #.rst:
