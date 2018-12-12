@@ -23,11 +23,8 @@ found_PID_Configuration(boost FALSE)
 set(Boost_NO_BOOST_CMAKE ON)#avoid using CMake boost configuration file
 set(components_to_search system filesystem ${boost_libraries})#boost_libraries used to check that components that user wants trully exist
 list(REMOVE_DUPLICATES components_to_search)#using system and filesystem as these two libraries exist since early versions of boost
-# set(CMAKE_PREFIX_PATH ${WORKSPACE_DIR}/configurations/boost)
 set(CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/boost ${CMAKE_MODULE_PATH})
-# if(EXISTS ${CMAKE_PREFIX_PATH})
-# 	message("CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
-# endif()
+
 if(boost_version)
 	find_package(Boost ${boost_version} EXACT QUIET COMPONENTS ${components_to_search})
 else()

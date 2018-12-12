@@ -1,6 +1,6 @@
 #########################################################################################
 #       This file is part of the program PID                                            #
-#       Program description : build system supporting the PID methodology              	#
+#       Program description : build system supportting the PID methodology              #
 #       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
 #       et de Microelectronique de Montpellier). All Right reserved.                    #
 #                                                                                       #
@@ -20,13 +20,6 @@
 include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
-PID_Configuration_Variables(boost
-			VARIABLES VERSION 			LIBRARY_DIRS 				INCLUDE_DIRS 				RPATH						LINK_OPTIONS	COMPONENTS
-			VALUES 		BOOST_VERSION BOOST_LIBRARY_DIRS 	Boost_INCLUDE_DIRS 	Boost_LIBRARIES	BOOST_LINKS		BOOST_COMPONENTS)
-
-# constraints
-PID_Configuration_Constraints(boost IN_BINARY libraries					version
-																		VALUE 		BOOST_COMPONENTS	BOOST_VERSION)
-
-
-PID_Configuration_Dependencies(boost DEPENDS posix)
+PID_Configuration_Variables(openmp
+				VARIABLES VERSION  				COMPILER_OPTIONS	LIBRARY_DIRS		RPATH									LINK_OPTIONS
+				VALUES 		OpenMP_VERSION  OpenMP_CXX_FLAGS	OPENMP_LIBDIRS 	OpenMP_CXX_LIBRARIES 	OPENMP_LINKS)
