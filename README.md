@@ -20,15 +20,20 @@ People that can be interested in using PID are project managers that want to enf
 + Languages supported are: basically C/C++ are fully managed. Fortran and ASSEMBLER languages are also supported as well as CMake does, and their code can be merged with C/C++ code in a transparent way. Python is also supported, notably for the creation of python wrappers for C/C++ code.
 + Management of source and binary packages in a common way.
 + Management of external binary packages and OS dependencies.
-+ Formalization of packages dependencies and versions, automating deployment of dependencies (either binary or source). 
++ Formalization of packages dependencies and versions, automating deployment of dependencies (either binary or source).
 + Installation of packages is local (no modification of OS configuration, as far as possible).
 + Standardizing and Automating the release, publishing and deployment process of packages.
 + Standardizing the continuous integration process (based on gitlab ci)
 + Standardizing and Automating online documentation generation (based on gitlab pages, jekyll, doxygen, cppchecks and lcov).
 + Management of repositories for binaries (based on gitlab pages).
 + Standardizing and Automating license management (applying liecnse information everywhere needed), as well as other meta information about the package (authors, contact, etc.).
-+ Plugin mechanism to provide additionnal functionalities to manage external tools (typically IDE). For instance a plugin used to configure `atom-clang-complete` plugin in Atom IDE. 
-+ Standardization and management of build environments and target platforms, to allow the management of many execution targets for the same code and easily change the build environment to use (for instance changing the compiler in use for all packages). These features can be used to manage crosscompilation. 
++ Plugin mechanism to provide additionnal functionalities to manage external tools (typically IDE). For instance a plugin used to configure `atom-clang-complete` plugin in Atom IDE.
++ Standardization and management of build environments and target platforms, to allow the management of many execution targets for the same code and easily change the build environment to use (for instance changing the compiler in use for all packages). These features can be used to manage crosscompilation.
+
+# Known Limitations
+
+ + **Operating systems**: PID should work on most of UNIX platforms. It has been tested on Ubuntu, Arch Linux and Raspbian. Many UNIX systems have never or rarely been tested like SolarisOS, FreeBSD, iOS or MACOS as well as many Linux distributions (RedHat, Gentoo) and derivatives (Android). But these OS can be supported with little effort (PID being mostly cross-platform). For now **Windows is not supported**.
+ + **Gilab**: the CI is **limited to only one target platform**, in consequence only one binary archive per released version of packages can be automatically released and not many (for many platforms).
 
 # Install
 
@@ -80,7 +85,7 @@ That's it your team can start working in an isolated environment. This action en
 
 ## if you are a lone developper and want to contribute (for instance you want to publish open source packages)
 
-+ fork this repository so that you can use merge requests to provide your contributions. The forked repository becomes **your official repository**. 
++ fork this repository so that you can use merge requests to provide your contributions. The forked repository becomes **your official repository**.
 
 + clone**your official repository** in your workstation:
 
@@ -116,62 +121,28 @@ That's it you can start working in an isolated environment. This action ensures 
 
 ## Final steps
 
-I recommend to read the documentation in this [website](http://pid.lirmm.net/pid-framework). You will find many resources explaining how to start using PID. 
-
-# Remarks about OS portability
-
-PID has been designed to be usable on most of UNIX platforms, relying mainly on a cross platform CMake API. Nevertheless, it has been tested for linux and notably with Ubuntu, Arch Linux and Linux Mint. Most of linux distros should work, but some specific codes should be improved to support other distributions (when for instance you want to automatically deploy system packages with other package managers than apt). Except for this aspect, PID should work well in any case.
-
------
-
-For other UNIX system, there is nothing tested. Again most of functionnalities should work BUT new platforms have to be defined with adequate OS (Solaris or FreeBSD for instance) and no binary is available for these OS so you will have to generate your own. The previous remarks also applies for the following OS.
-
-
------
-
-Android is not specifically supported and I never test PID on such a system. Nevertheless Android having a linux kernel it should not be too difficult to provide a patch so that it would be fully managed as any linux distro. Of course it may only concern C/C++ development, PID is for now not supporting Java. I let those experts who would like to use PID to manage their packages make some proposals. 
-
------ 
-
-MacOS and iOS are particular case of UNIX systems and even if theorically supported, their support has many limits:
-
-- there are not so many prebuild binaries of packages for this OS, which can become painful for installing some packages with dependencies to external binaries.
-- the scripts have been tested on linux only, so you may encounter some problem using Mac OSX even if core mechanisms of MAC OSX (notably the management of dynamic libraries model) are implemented.
-
-Any contribution for this popular OS is welcome, being it patch for the PID system or any kind of configuration specific contribution (for instance for managing a packaging system like macport or prebuild binaries for Mac OSX).
-
------ 
-
-Windows is not supported at all. This is due to the fact that Windows is not a UNIX system and lacks very basic mechanisms that are used by PID (for instance symbolic links). I just have no time to work on this and furthermore I never use Windows so do not expect any contribution from me.
-
-Anyway any contribution that would make PID work on Windows would be very appreciated. The only requirement I have regarding these contributions is that they do not break the functionning for UNIX system. 
-
+I recommend to read the documentation in this [website](http://pid.lirmm.net/pid-framework). You will find many resources explaining how to start using PID.
 
 # About the license
 
-pid-workspace and PID base packages are licensed with the CeCILL-C open source license. A copy of the license is available in the file license.txt. 
+pid-workspace and PID base packages are licensed with the CeCILL-C open source license. A copy of the license is available in the file license.txt.
 
 CeCILL-C is an open source software license equivalent to and compatible with GNU LGPL. The difference is that it is governed by French law and disagreements or disputes shall be referred to the Paris Courts having jurisdiction.
 
-# Considering contribution
+# Contribution
 
-As told previously, any contribution is welcome:
+Any contribution is welcome:
 
-- new functionalities
-- adaptation to new OS
+- new functionalities, new OS support
 - patches for BUGS
-- rewriting of comments
-- better documentation (like new tutorials)
-- etc. 
+- better comments and documentation
 
-To provide a contribution to the pid-workspace simply use the pull/merge request mechanism. 
+To provide a contribution to the pid-workspace simply use the pull/merge request mechanism.
 
 If you want to contribute to packages consituting the pid framework that cannot be forked from online repository, simply ask me I will provide them on your favorite online repository hosting service.
 
-If you want to contribute to the documentation of overall pid framework, or to contribute to binary package referencing, I can do the same for the repository describing this framework. 
+If you want to contribute to the documentation of overall pid framework, or to contribute to binary package referencing, I can do the same for the repository describing this framework.
 
 # Contact
 
-If you have any question, remark, proposal about PID, please contact me using the **issues** of the project.
-
-
+For any question, remark, proposal about PID, please **contact me using the issues** of the project.
