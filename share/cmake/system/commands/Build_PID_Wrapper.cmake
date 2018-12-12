@@ -74,13 +74,6 @@ endif()
 
 message("[PID] INFO : building wrapper for external package ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
 
-#define the build mode
-if(NOT TARGET_BUILD_MODE OR (NOT TARGET_BUILD_MODE STREQUAL "Debug" AND NOT TARGET_BUILD_MODE STREQUAL "debug"))
-  set(CMAKE_BUILD_TYPE Release)
-else()#debug only if exlicitly asked for
-  message("[PID] INFO: building ${TARGET_EXTERNAL_PACKAGE} in Debug mode...")
-  set(CMAKE_BUILD_TYPE Debug)
-endif()
 
 set(package_dir ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE})
 set(package_version_src_dir ${package_dir}/src/${version})
@@ -127,7 +120,7 @@ if(use_os_variant)#instead of building the project using its variant coming from
 	#if system configuration is OK, this means that dependencies are also OK (also installed on system)
 	# but we need to be sure to have their CMake description (USE file), as this later will be used on current package description (mandatory for keeping consistency of description)
 	message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
-	resolve_Wrapper_Dependencies(${TARGET_EXTERNAL_PACKAGE} ${version})#TODO resolve with OS VARIANT constraint
+	resolve_Wrapper_Dependencies(${TARGET_EXTERNAL_PACKAGE} ${version} TRUE)
 	message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
 
 	# After external package own configuration check is OK, we have access to various configuration variables
@@ -135,6 +128,14 @@ if(use_os_variant)#instead of building the project using its variant coming from
 	generate_OS_Variant_Symlinks(${TARGET_EXTERNAL_PACKAGE} ${CURRENT_PLATFORM} ${version} ${TARGET_INSTALL_DIR})
 
 else()#by default build the given package version using external project specific build process
+	#define the build mode
+	if(NOT TARGET_BUILD_MODE OR (NOT TARGET_BUILD_MODE STREQUAL "Debug" AND NOT TARGET_BUILD_MODE STREQUAL "debug"))
+	  set(CMAKE_BUILD_TYPE Release)
+	else()#debug only if exlicitly asked for
+	  message("[PID] INFO: building ${TARGET_EXTERNAL_PACKAGE} in Debug mode...")
+	  set(CMAKE_BUILD_TYPE Debug)
+	endif()
+
 	# prepare script execution
 	set(deploy_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT})
 	set(TARGET_BUILD_DIR ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${version})
@@ -154,7 +155,7 @@ else()#by default build the given package version using external project specifi
 
 	  # checking for dependencies
 	  message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
-	  resolve_Wrapper_Dependencies(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
+	  resolve_Wrapper_Dependencies(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version} FALSE)
 		message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
 
 	  #prepare deployment script execution by caching build variable that may be used inside

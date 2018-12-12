@@ -2717,7 +2717,7 @@ if(method STREQUAL "FUNCTION")#using function set_PID_Package_Version
       endif()
     endif()
   endforeach()
-else()# VERSION argument of package
+else()# VERSION argument of package method=="ARG"
   set(IN_DECLARE FALSE)
   foreach(line IN LISTS PACKAGE_METADATA)
     if(NOT SIGNATURE_FOUND AND (line MATCHES "^[^#]*${declare_function_regex_pattern}[ \t]*\\(.*$"))#the pattern for declare function has been found

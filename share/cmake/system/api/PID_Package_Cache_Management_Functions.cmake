@@ -880,7 +880,7 @@ endfunction(add_Package_Dependency_To_Cache)
 #  add_External_Package_Dependency_To_Cache
 #  ----------------------------------------
 #
-#   .. command:: add_External_Package_Dependency_To_Cache(dep_package version exact list_of_components)
+#   .. command:: add_External_Package_Dependency_To_Cache(dep_package version exact system list_of_components)
 #
 #   Set adequate cache variables of currently defined package when defining an external package dependency.
 #
@@ -890,13 +890,16 @@ endfunction(add_Package_Dependency_To_Cache)
 #
 #     :exact: if TRUE the version constraint is exact.
 #
+#     :system: if TRUE the version constraint targets the OS installed version.
+#
 #     :list_of_components: the list of components that must belong to dep_package.
 #
-function(add_External_Package_Dependency_To_Cache dep_package version exact list_of_components)
+function(add_External_Package_Dependency_To_Cache dep_package version exact system list_of_components)
   append_Unique_In_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
   append_Unique_In_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} "${list_of_components}")
   set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX} ${system} CACHE INTERNAL "")#false by definition since no version constraint
 endfunction(add_External_Package_Dependency_To_Cache)
 
 #.rst:
@@ -909,47 +912,52 @@ endfunction(add_External_Package_Dependency_To_Cache)
 #  reset_Component_Cached_Variables
 #  --------------------------------
 #
-#   .. command:: reset_Component_Cached_Variables(component)
+#   .. command:: reset_Component_Cached_Variables(package component mode)
 #
-#   Reset all cache internal variables related to a given component. Used to ensure the cache is clean before configuring.
+#   Reset all cache internal variables related to a given component contained in a given package. Used to ensure the cache is clean before configuring.
+#
+#     :package: the name of the target package.
 #
 #     :component: the name of the target component.
 #
-function(reset_Component_Cached_Variables component)
-
+#     :mode: the build mode.
+#
+function(reset_Component_Cached_Variables package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 # resetting package dependencies
-foreach(a_dep_pack IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX})
-	foreach(a_dep_comp IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${USE_MODE_SUFFIX})
-		set(${PROJECT_NAME}_${component}_EXPORT_${a_dep_pack}_${a_dep_comp}${USE_MODE_SUFFIX} CACHE INTERNAL "")
+foreach(a_dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(a_dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${VAR_SUFFIX})
+		set(${package}_${component}_EXPORT_${a_dep_pack}_${a_dep_comp}${VAR_SUFFIX} CACHE INTERNAL "")
 	endforeach()
-	set(${PROJECT_NAME}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${USE_MODE_SUFFIX}  CACHE INTERNAL "")
+	set(${package}_${component}_DEPENDENCY_${a_dep_pack}_COMPONENTS${VAR_SUFFIX}  CACHE INTERNAL "")
 endforeach()
-set(${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}  CACHE INTERNAL "")
+set(${package}_${component}_DEPENDENCIES${VAR_SUFFIX}  CACHE INTERNAL "")
 
 # resetting internal dependencies
-foreach(a_internal_dep_comp IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-	set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${a_internal_dep_comp}${USE_MODE_SUFFIX} CACHE INTERNAL "")
+foreach(a_internal_dep_comp IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	set(${package}_${component}_INTERNAL_EXPORT_${a_internal_dep_comp}${VAR_SUFFIX} CACHE INTERNAL "")
 endforeach()
-set(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
+set(${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
 
 #resetting all other variables
-set(${PROJECT_NAME}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_HEADERS CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_C_STANDARD CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_CXX_STANDARD CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_BINARY_NAME${USE_MODE_SUFFIX} CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_SOURCE_CODE CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_SOURCE_DIR CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_AUX_SOURCE_CODE CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_AUX_MONITORED_PATH CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_DESCRIPTION CACHE INTERNAL "")
-set(${PROJECT_NAME}_${component}_USAGE_INCLUDES CACHE INTERNAL "")
+set(${package}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
+set(${package}_${component}_HEADERS CACHE INTERNAL "")
+set(${package}_${component}_C_STANDARD CACHE INTERNAL "")
+set(${package}_${component}_CXX_STANDARD CACHE INTERNAL "")
+set(${package}_${component}_BINARY_NAME${VAR_SUFFIX} CACHE INTERNAL "")
+set(${package}_${component}_DEFS${VAR_SUFFIX} CACHE INTERNAL "")
+set(${package}_${component}_OPTS${VAR_SUFFIX} CACHE INTERNAL "")
+set(${package}_${component}_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
+set(${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
+set(${package}_${component}_INC_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
+set(${package}_${component}_LIB_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
+set(${package}_${component}_SOURCE_CODE CACHE INTERNAL "")
+set(${package}_${component}_SOURCE_DIR CACHE INTERNAL "")
+set(${package}_${component}_AUX_SOURCE_CODE CACHE INTERNAL "")
+set(${package}_${component}_AUX_MONITORED_PATH CACHE INTERNAL "")
+set(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE INTERNAL "")
+set(${package}_${component}_DESCRIPTION CACHE INTERNAL "")
+set(${package}_${component}_USAGE_INCLUDES CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
 
 #.rst:
@@ -990,6 +998,166 @@ set(${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX} "${c_standard}" CA
 set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} "${cxx_standard}" CACHE INTERNAL "")#minimum C++ standard of the component interface
 endfunction(init_Component_Cached_Variables_For_Export)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Build_Info_Cached_Variables_From_Use| replace:: ``reset_Build_Info_Cached_Variables_From_Use``
+#  .. _reset_Build_Info_Cached_Variables_From_Use:
+#
+#  reset_Build_Info_Cached_Variables_From_Use
+#  ------------------------------------------
+#
+#   .. command:: reset_Build_Info_Cached_Variables_From_Use(package)
+#
+#   Reset cache internal variables related to the build environment coming from the use file of a package (native or external) used as a dependency in the current context.
+#
+#     :package: the name of the package dependency.
+#
+function(reset_Build_Info_Cached_Variables_From_Use package)#common for external and native packages
+  #cleaning the memorized dependency cache variables
+  #this is only usefull  avoid having BUGS in package build process after target platform ABI has been changed in workspace
+  set(${package}_BUILT_FOR_DISTRIBUTION CACHE INTERNAL "")
+  set(${package}_BUILT_FOR_DISTRIBUTION_VERSION CACHE INTERNAL "")
+  set(${package}_BUILT_OS_VARIANT CACHE INTERNAL "")#only for external but no side effects on natives
+  set(${package}_BUILT_WITH_CXX_COMPILER CACHE INTERNAL "")
+  set(${package}_BUILT_WITH_C_COMPILER CACHE INTERNAL "")
+  set(${package}_BUILT_WITH_CXX_COMPILER CACHE INTERNAL "")
+  set(${package}_BUILT_WITH_C_COMPILER CACHE INTERNAL "")
+  set(${package}_BUILT_WITH_COMPILER_IS_GNUCXX CACHE INTERNAL "")
+  set(${package}_BUILT_WITH_CXX_COMPILER_ID CACHE INTERNAL "")
+  set(${package}_BUILT_WITH_CXX_COMPILER_VERSION CACHE INTERNAL "")
+  set(${package}_BUILT_WITH_C_COMPILER_ID CACHE INTERNAL "")
+  set(${package}_BUILT_WITH_C_COMPILER_VERSION CACHE INTERNAL "")
+  set(${package}_BUILT_WITH_CXX_ABI CACHE INTERNAL "")
+  set(${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI CACHE INTERNAL "")
+  foreach(lib IN LISTS ${package}_BUILT_WITH_CXX_STD_LIBRARIES)
+    set(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION CACHE INTERNAL "")
+  endforeach()
+  set(${package}_BUILT_WITH_CXX_STD_LIBRARIES CACHE INTERNAL "")
+  foreach(symbol IN LISTS ${package}_BUILT_WITH_CXX_STD_SYMBOLS)
+    set(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION CACHE INTERNAL "")
+  endforeach()
+  set(${package}_BUILT_WITH_CXX_STD_SYMBOLS CACHE INTERNAL "")
+endfunction(reset_Build_Info_Cached_Variables_From_Use)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Native_Package_Dependency_Cached_Variables_From_Use| replace:: ``reset_Native_Package_Dependency_Cached_Variables_From_Use``
+#  .. _reset_Native_Package_Dependency_Cached_Variables_From_Use:
+#
+#  reset_Native_Package_Dependency_Cached_Variables_From_Use
+#  ---------------------------------------------------------
+#
+#   .. command:: reset_Native_Package_Dependency_Cached_Variables_From_Use(package mode)
+#
+#   Reset all cache internal variables coming from the use file of a native package used as a dependency in the current context.
+#
+#     :package: the name of the native package dependency.
+#
+#     :mode: the build mode.
+#
+function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  reset_Build_Info_Cached_Variables_From_Use(${package})
+  #cleaning everything
+
+  set(${package}_PLATFORM${VAR_SUFFIX} CACHE INTERNAL "")
+  foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
+    set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} CACHE INTERNAL "")
+  endforeach()
+  set(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} CACHE INTERNAL "")
+
+  foreach(comp IN LISTS ${package}_COMPONENTS${VAR_SUFFIX})
+    reset_Component_Cached_Variables(${package} ${comp} ${mode})
+  endforeach()
+  set(${package}_COMPONENTS CACHE INTERNAL "")
+  set(${package}_COMPONENTS_APPS CACHE INTERNAL "")
+  set(${package}_COMPONENTS_LIBS CACHE INTERNAL "")
+  set(${package}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
+
+  foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_SYSTEM${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_COMPONENTS${VAR_SUFFIX}  CACHE INTERNAL "")
+    reset_External_Package_Dependency_Cached_Variables_From_Use(${ext_dep} ${mode})#recursion !!
+  endforeach()
+  set(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
+
+  foreach(nat_dep IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
+    set(${package}_DEPENDENCY_${nat_dep}_VERSION CACHE INTERNAL "")
+    set(${package}_DEPENDENCY_${nat_dep}_VERSION_EXACT CACHE INTERNAL "")
+    set(${package}_DEPENDENCY_${nat_dep}_COMPONENTS CACHE INTERNAL "")
+    reset_Native_Package_Dependency_Cached_Variables_From_Use(${nat_dep} ${mode})#recursion !!
+  endforeach()
+  set(${package}_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
+endfunction(reset_Native_Package_Dependency_Cached_Variables_From_Use)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_External_Package_Dependency_Cached_Variables_From_Use| replace:: ``reset_External_Package_Dependency_Cached_Variables_From_Use``
+#  .. _reset_External_Package_Dependency_Cached_Variables_From_Use:
+#
+#  reset_External_Package_Dependency_Cached_Variables_From_Use
+#  -----------------------------------------------------------
+#
+#   .. command:: reset_External_Package_Dependency_Cached_Variables_From_Use(package mode)
+#
+#   Reset all cache internal variables coming from the use file of an external package used as a dependency in the current context.
+#
+#     :package: the name of the external package dependency.
+#
+#     :mode: the build mode.
+#
+function(reset_External_Package_Dependency_Cached_Variables_From_Use package mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  reset_Build_Info_Cached_Variables_From_Use(${package})
+  #cleaning
+  set(${package}_PLATFORM${VAR_SUFFIX} CACHE INTERNAL "")
+  foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
+    set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} CACHE INTERNAL "")
+  endforeach()
+  set(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} CACHE INTERNAL "")
+
+  foreach(comp IN LISTS ${package}_COMPONENTS${VAR_SUFFIX})
+    #resetting variables of the component
+    set(${package}_${comp}_INC_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_LIB_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_OPTS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_DEFS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_STATIC_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_SHARED_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_C_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_CXX_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
+    foreach(dep_pack IN LISTS ${package}_${comp}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+      foreach(dep_comp IN LISTS ${package}_${comp}_EXTERNAL_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
+        set(${package}_${comp}_EXTERNAL_EXPORT_${dep_pack}_${dep_comp}${VAR_SUFFIX} CACHE INTERNAL "")
+      endforeach()
+      set(${package}_${comp}_EXTERNAL_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX} CACHE INTERNAL "")
+    endforeach()
+    set(${package}_${comp}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
+  endforeach()
+  set(${package}_COMPONENTS${VAR_SUFFIX} CACHE INTERNAL "")
+
+  foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_SYSTEM${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_COMPONENTS${VAR_SUFFIX}  CACHE INTERNAL "")
+    reset_External_Package_Dependency_Cached_Variables_From_Use(${ext_dep} ${mode})#recursion !!
+  endforeach()
+  set(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
+
+endfunction(reset_External_Package_Dependency_Cached_Variables_From_Use)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1010,7 +1178,8 @@ function(reset_Package_Description_Cached_Variables)
 		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	endforeach()
+    reset_Native_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${CMAKE_BUILD_TYPE})
+  endforeach()
 	set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
 	# external package dependencies declaration must be reinitialized
@@ -1018,12 +1187,14 @@ function(reset_Package_Description_Cached_Variables)
 		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
-	endforeach()
+		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX} CACHE INTERNAL "")
+    reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${CMAKE_BUILD_TYPE})
+  endforeach()
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
 	# component declaration must be reinitialized otherwise some problem (redundancy of declarations) would appear
 	foreach(a_component IN LISTS ${PROJECT_NAME}_COMPONENTS)
-		reset_Component_Cached_Variables(${a_component})
+		reset_Component_Cached_Variables(${PROJECT_NAME} ${a_component} ${CMAKE_BUILD_TYPE})
 	endforeach()
 	reset_Declared()
 	set(${PROJECT_NAME}_COMPONENTS CACHE INTERNAL "")
@@ -1685,32 +1856,69 @@ foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX})
     file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
   endif()
 endforeach()
-# 1) external package dependencies
-file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
-foreach(a_ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX})
-	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	if(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX})
-		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
-	else()
-		file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
-	endif()
-	file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${a_ext_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-endforeach()
+#Use file generation process needs to integrate undirect required package dependencies that becomes direct due to transitivity in components
+#NB: this is mandatory to resolve conflicting dependencies versions in binary packages
+collect_Local_Exported_Dependencies(NATIVE_DEPS EXTERNAL_DEPS ${package} ${build_mode})
+#NB: each dep in these variable has the form: name,version,exact,system (see below for information extraction)
+# 1) external package dependencies
+if(EXTERNAL_DEPS)
+  file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+
+  #getting the list of all direct or undirect dependencies
+  foreach(a_ext_dep IN LISTS EXTERNAL_DEPS)
+    string(REPLACE "," ";" dep_spec ${a_ext_dep})
+    list(GET dep_spec 0 DEP_NAME)
+    list(GET dep_spec 1 DEP_VERSION)
+    list(GET dep_spec 2 DEP_EXACT)
+    list(GET dep_spec 3 DEP_SYSTEM)
+    list(APPEND USED_DEPS ${DEP_NAME})
+  endforeach()
+  file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${USED_DEPS} CACHE INTERNAL \"\")\n")
+
+  foreach(a_ext_dep IN LISTS EXTERNAL_DEPS)
+    string(REPLACE "," ";" dep_spec ${a_ext_dep})
+    list(GET dep_spec 0 DEP_NAME)
+    list(GET dep_spec 1 DEP_VERSION)
+    list(GET dep_spec 2 DEP_EXACT)
+    list(GET dep_spec 3 DEP_SYSTEM)
+
+    file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_VERSION${MODE_SUFFIX} ${DEP_VERSION} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_VERSION_EXACT${MODE_SUFFIX} ${DEP_EXACT} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_VERSION_SYSTEM${MODE_SUFFIX} ${DEP_SYSTEM} CACHE INTERNAL \"\")\n")
+    #component are only defined for direct dependencies, if any defined for such a dependency
+    file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_COMPONENTS${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+  endforeach()
+endif()
 
 # 2) native package dependencies
-file(APPEND ${file} "#### declaration of package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-file(APPEND ${file} "set(${package}_DEPENDENCIES${MODE_SUFFIX} ${${package}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-foreach(a_dep IN LISTS ${package}_DEPENDENCIES${MODE_SUFFIX})
-	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_VERSION${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-	if(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX})
-		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
-	else()
-		file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_VERSION_EXACT${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
-	endif()
-	file(APPEND ${file} "set(${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX} ${${package}_DEPENDENCY_${a_dep}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-endforeach()
+if(NATIVE_DEPS)
+  set(USED_DEPS)#reset to avoid troubles
+  file(APPEND ${file} "#### declaration of native package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
+  #getting the list of all direct or undirect dependencies
+  foreach(a_nat_dep IN LISTS NATIVE_DEPS)
+    string(REPLACE "," ";" dep_spec ${a_nat_dep})
+    list(GET dep_spec 0 DEP_NAME)
+    list(GET dep_spec 1 DEP_VERSION)
+    list(GET dep_spec 2 DEP_EXACT)
+    list(GET dep_spec 3 DEP_SYSTEM)
+    list(APPEND USED_DEPS ${DEP_NAME})
+  endforeach()
+  file(APPEND ${file} "set(${package}_DEPENDENCIES${MODE_SUFFIX} ${USED_DEPS} CACHE INTERNAL \"\")\n")
+
+  foreach(a_nat_dep IN LISTS NATIVE_DEPS)
+    string(REPLACE "," ";" dep_spec ${a_nat_dep})
+    list(GET dep_spec 0 DEP_NAME)
+    list(GET dep_spec 1 DEP_VERSION)
+    list(GET dep_spec 2 DEP_EXACT)
+    list(GET dep_spec 3 DEP_SYSTEM)
+
+  	file(APPEND ${file} "set(${package}_DEPENDENCY_${DEP_NAME}_VERSION${MODE_SUFFIX} ${DEP_VERSION} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${package}_DEPENDENCY_${DEP_NAME}_VERSION_EXACT${MODE_SUFFIX} ${DEP_EXACT} CACHE INTERNAL \"\")\n")
+    #component are only defined for direct dependencies, if any defined for such a dependency
+  	file(APPEND ${file} "set(${package}_DEPENDENCY_${DEP_NAME}_COMPONENTS${MODE_SUFFIX} ${${package}_DEPENDENCY_${DEP_NAME}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+  endforeach()
+endif()
 
 # 3) internal+external components specifications
 file(APPEND ${file} "#### declaration of components exported flags and binary in ${CMAKE_BUILD_TYPE} mode ####\n")

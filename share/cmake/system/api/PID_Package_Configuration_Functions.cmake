@@ -1354,3 +1354,236 @@ if(	${CMAKE_BUILD_TYPE} MATCHES Release
 
 endif()
 endfunction(clean_Install_Dir)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |locate_External_Package_Used_In_Component| replace:: ``locate_External_Package_Used_In_Component``
+#  .. _locate_External_Package_Used_In_Component:
+#
+#  locate_External_Package_Used_In_Component
+#  -----------------------------------------
+#
+#   .. command:: locate_External_Package_Used_In_Component(USE_PACKAGE package component mode external_package)
+#
+#   Tell whether an external package is used within a given component.
+#
+#     :package: the name of the package.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :external_package: the name of external package to check.
+#
+#     :USE_PACKAGE: the output variable that is TRUE if the external package is used within component, FALSE otherwise.
+#
+function(locate_External_Package_Used_In_Component USE_PACKAGE package component mode external_package)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  # consists in searching for the <${external_package}> in flags used by the component
+  set(${USE_PACKAGE} FALSE PARENT_SCOPE)
+  set(all_flags "${${package}_${component}_INC_DIRS${VAR_SUFFIX}};${${package}_${component}_LINKS${VAR_SUFFIX}};${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}};${${package}_${component}_LIB_DIRS${VAR_SUFFIX}};${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}")
+  string(FIND "${all_flags}" "<${external_package}>" INDEX)#simply find the pattern specifying the path to installed package version folder
+  if(INDEX GREATER -1)
+    set(${USE_PACKAGE} TRUE PARENT_SCOPE)
+  endif()
+endfunction(locate_External_Package_Used_In_Component)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_External_Packages_Used_In_Component| replace:: ``get_External_Packages_Used_In_Component``
+#  .. _get_External_Packages_Used_In_Component:
+#
+#  get_External_Packages_Used_In_Component
+#  ---------------------------------------
+#
+#   .. command:: get_External_Packages_Used_In_Component(USED_EXT_PACKAGES package component mode)
+#
+#   Get all external package that a given BINARY component depends on.
+#
+#     :package: the name of the package.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :external_package: the name of external package to check.
+#
+#     :USED_EXT_PACKAGES: the output variable that contains the list of external dependencies directly or undirectly used by component.
+#
+function(get_External_Packages_Used_In_Component USED_EXT_PACKAGES package component mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  set(external_deps)
+  foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+    locate_External_Package_Used_In_Component(IS_USED ${package} ${component} ${mode} ${ext_dep})
+    if(IS_USED)
+      list(APPEND external_deps ${ext_dep})
+    endif()
+    #need also to find in external dependencies of these external dependencies, if their name appears in exported symbol then they must be direct dependencies in binaries
+    #this is a special case as external packages are explicitly written in component flags
+    foreach(ext_dep_dep IN LISTS ${ext_dep}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+      locate_External_Package_Used_In_Component(IS_USED ${package} ${component} ${mode} ${ext_dep_dep})
+      if(IS_USED)
+        list(APPEND external_deps ${ext_dep_dep})
+      endif()
+    endforeach()
+  endforeach()
+  if(external_deps)
+    list(REMOVE_DUPLICATES external_deps)
+  endif()
+  set(${USED_EXT_PACKAGES} ${external_deps} PARENT_SCOPE)
+endfunction(get_External_Packages_Used_In_Component)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Packages_Used_In_Component| replace:: ``get_Packages_Used_In_Component``
+#  .. _get_Packages_Used_In_Component:
+#
+#  get_Packages_Used_In_Component
+#  ------------------------------
+#
+#   .. command:: get_Packages_Used_In_Component(USED_NATIVE_PACKAGES USED_EXT_PACKAGES package component mode)
+#
+#   Get all packages that a given BINARY component depends on.
+#
+#     :package: the name of the package.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :USED_NATIVE_PACKAGES: the output variable that contains the list of native dependencies directly or undirectly used by component.
+#
+#     :USED_EXT_PACKAGES: the output variable that contains the list of external dependencies directly or undirectly used by component.
+#
+function(get_Packages_Used_In_Component USED_NATIVE_PACKAGES USED_EXT_PACKAGES package component mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  set(${USED_NATIVE_PACKAGES} PARENT_SCOPE)
+  set(${USED_EXT_PACKAGES} PARENT_SCOPE)
+  #no need to look into internal dependencies as they will be finally managed by a call to this function
+
+  set(external_deps)
+  set(native_deps)
+
+  #first find the direct external dependencies + undirect dependencies
+  get_External_Packages_Used_In_Component(EXT_PACKAGES ${package} ${component} ${mode})
+  if(EXT_PACKAGES)
+    list(APPEND external_deps ${EXT_PACKAGES})
+  endif()
+
+  #second find the direct native dependencies = simple as dependencies to other native package are explicit
+  if(${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+    list(APPEND native_deps ${${package}_${component}_DEPENDENCIES${VAR_SUFFIX}})
+    #need to look into each of its native package dependencies
+    foreach(nat_dep IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+      foreach(nat_dep_com IN LISTS ${package}_${component}_DEPENDENCY_${nat_dep}_COMPONENTS${VAR_SUFFIX})#depends on some native components
+        #dealing with external dependencies => get exported references of external packages in these components
+        get_External_Packages_Used_In_Component(EXT_PACKAGES ${nat_dep} ${nat_dep_com} ${mode})
+        if(EXT_PACKAGES)
+          list(APPEND external_deps ${EXT_PACKAGES})
+        endif()
+        #dealing with native dependencies
+        foreach(nat_dep_com_dep IN LISTS ${nat_dep}_${nat_dep_com}_DEPENDENCIES${VAR_SUFFIX})
+          foreach(nat_dep_com_dep_comp IN LISTS ${nat_dep}_${nat_dep_com}_DEPENDENCY_${nat_dep_com_dep}_COMPONENTS${VAR_SUFFIX})#depends on some native components
+            if(${nat_dep}_${nat_dep_com}_EXPORT_${nat_dep_com_dep}_${nat_dep_com_dep_comp})#the dependency export another component from another package so symbols of this another component will appear in current package component
+              #=> the undirect package must be a direct dependency of this one
+              list(APPEND native_deps ${nat_dep_com_dep})
+            endif()
+          endforeach()
+        endforeach()
+      endforeach()
+    endforeach()
+  endif()
+
+  if(native_deps)
+    list(REMOVE_DUPLICATES native_deps)
+  endif()
+  if(external_deps)
+    list(REMOVE_DUPLICATES external_deps)
+  endif()
+  set(${USED_EXT_PACKAGES} ${external_deps} PARENT_SCOPE)
+  set(${USED_NATIVE_PACKAGES} ${native_deps} PARENT_SCOPE)
+
+endfunction(get_Packages_Used_In_Component)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |collect_Local_Exported_Dependencies| replace:: ``collect_Local_Exported_Dependencies``
+#  .. _collect_Local_Exported_Dependencies:
+#
+#  collect_Local_Exported_Dependencies
+#  -----------------------------------
+#
+#   .. command:: collect_Local_Exported_Dependencies(NATIVE_DEPS EXTERNAL_DEPS package mode)
+#
+#   Get all packages that a given BINARY package depends on.
+#
+#     :package: the name of the package.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :NATIVE_DEPS: the output variable that contains the list of native dependencies directly or undirectly used by component.
+#
+#     :EXTERNAL_DEPS: the output variable that contains the list of external dependencies directly or undirectly used by component.
+#
+function(collect_Local_Exported_Dependencies NATIVE_DEPS EXTERNAL_DEPS package mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  set(${NATIVE_DEPS} PARENT_SCOPE)
+  set(${EXTERNAL_DEPS} PARENT_SCOPE)
+
+  set(external_deps)
+  set(native_deps)
+
+  foreach(comp IN LISTS ${package}_COMPONENTS)# foreach component defined by the package
+    will_be_Installed(RESULT ${comp})
+    if(RESULT)#OK take into account this component because it is present in install tree (i.e. it lies in the binary package version)
+      get_Packages_Used_In_Component(USED_NATIVE_PACKAGES USED_EXT_PACKAGES ${package} ${comp} ${mode})
+      if(USED_NATIVE_PACKAGES)
+        list(APPEND native_deps ${USED_NATIVE_PACKAGES})
+      endif()
+      if(USED_EXT_PACKAGES)
+        list(APPEND external_deps ${USED_EXT_PACKAGES})
+      endif()
+    endif()
+  endforeach()
+
+  if(native_deps)
+    list(REMOVE_DUPLICATES native_deps)
+  endif()
+  if(external_deps)
+    list(REMOVE_DUPLICATES external_deps)
+  endif()
+  #need to memorize in binary the version of dependencies finally used to build it !!!
+  set(ext_result)
+  foreach(ext IN LISTS external_deps)#for direct external dependencies
+    if(${ext}_VERSION_SYSTEM)
+      set(system_str "TRUE")
+    else()
+      set(system_str "FALSE")
+    endif()
+    if(${ext}_VERSION_EXACT)# version may be or not set to semething so manage its value explicilty to avoid having an empty element in the list
+      list(APPEND ext_result "${ext},${${ext}_VERSION_STRING},TRUE,${system_str}")
+    else()
+      list(APPEND ext_result "${ext},${${ext}_VERSION_STRING},FALSE,${system_str}")
+    endif()
+  endforeach()
+
+  set(nat_result)
+  foreach(nat IN LISTS native_deps)#for direct external dependencies
+    if(${nat}_VERSION_EXACT)# version may be or not set to semething so manage its value explicilty to avoid having an empty element in the list
+      list(APPEND nat_result "${nat},${${nat}_VERSION_STRING},TRUE,FALSE")#native are never system dependencies
+    else()
+      list(APPEND nat_result "${nat},${${nat}_VERSION_STRING},FALSE,FALSE")#native are never system dependencies
+    endif()
+  endforeach()
+
+  set(${NATIVE_DEPS} ${nat_result} PARENT_SCOPE)
+  set(${EXTERNAL_DEPS} ${ext_result} PARENT_SCOPE)
+endfunction(collect_Local_Exported_Dependencies)

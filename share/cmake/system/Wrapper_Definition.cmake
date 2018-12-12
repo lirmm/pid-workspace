@@ -1175,7 +1175,7 @@ endfunction(translate_Into_Options)
 #  .. _get_External_Dependencies_Info:
 #
 #  get_External_Dependencies_Info
-#  ----------------------------------------
+#  ------------------------------
 #
 #   .. command:: get_External_Dependencies_Info([OPTIONS])
 #

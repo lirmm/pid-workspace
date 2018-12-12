@@ -250,15 +250,13 @@ endfunction(convert_PID_Libraries_Into_Library_Directories)
 #
 #        # the configuration boost returns differents variables such as: boost_VERSION, boost_RPATH, etc...
 #        # These variable are set according to the value of respectively: BOOST_VERSION, Boost_LIBRARY_DIRS, etc.
-#
 #        declare_PID_Configuration_Variables(boost
-#			      VARIABLES VERSION       LIBRARY_DIRS        INCLUDE_DIRS        RPATH
-#			      VALUES    BOOST_VERSION Boost_LIBRARY_DIRS  Boost_INCLUDE_DIRS  Boost_LIBRARY_DIRS
+#           VARIABLES VERSION       LIBRARY_DIRS        INCLUDE_DIRS        RPATH
+#           VALUES    BOOST_VERSION Boost_LIBRARY_DIRS  Boost_INCLUDE_DIRS  Boost_LIBRARY_DIRS
 #        )
-#
 #        PID_Configuration_Variables(boost
-#			     VARIABLES VERSION       LIBRARY_DIRS        INCLUDE_DIRS        RPATH
-#			     VALUES    BOOST_VERSION Boost_LIBRARY_DIRS  Boost_INCLUDE_DIRS  Boost_LIBRARY_DIRS
+#          VARIABLES VERSION       LIBRARY_DIRS        INCLUDE_DIRS        RPATH
+#          VALUES    BOOST_VERSION Boost_LIBRARY_DIRS  Boost_INCLUDE_DIRS  Boost_LIBRARY_DIRS
 #        )
 #
 macro(PID_Configuration_Variables)
