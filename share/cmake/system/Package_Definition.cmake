@@ -698,7 +698,7 @@ endmacro(declare_PID_Component_Documentation)
 #
 macro(check_PID_Platform)
 set(oneValueArgs NAME OS ARCH ABI TYPE CURRENT)
-set(multiValueArgs CONFIGURATION)
+set(multiValueArgs CONFIGURATION OPTIONAL)
 cmake_parse_arguments(CHECK_PID_PLATFORM "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(CHECK_PID_PLATFORM_NAME)
 	message("[PID] WARNING : NAME is a deprecated argument. Platforms are now defined at workspace level and this macro now check if the current platform satisfies configuration constraints according to the optionnal conditions specified by TYPE, ARCH, OS and ABI. The only constraints that will be checked are those for which the current platform satisfies the conditions.")
@@ -710,24 +710,29 @@ if(CHECK_PID_PLATFORM_NAME)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must define at least an ARCH when using the deprecated NAME keyword")
 	endif()
-	check_Platform_Constraints(RESULT IS_CURRENT "" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}") #no type as it was not managed with PID v1
+	check_Platform_Constraints(RESULT IS_CURRENT "" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}" FALSE) #no type as it was not managed with PID v1
 	set(${CHECK_PID_PLATFORM_NAME} ${IS_CURRENT})
 	if(IS_CURRENT AND NOT RESULT)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint cannot be satisfied !")
 	endif()
-
 else()
-	if(NOT CHECK_PID_PLATFORM_CONFIGURATION)
+	if(NOT CHECK_PID_PLATFORM_CONFIGURATION AND NOT OPTIONAL)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must use the CONFIGURATION keyword to describe the set of configuration constraints that apply to the current platform.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must use the keyword CONFIGURATION or OPTIONAL to describe the set of configuration constraints that apply to the current platform.")
 	endif()
-	#checking the constraints
-	check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}")
-	if(NOT RESULT)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint cannot be satisfied !")
-	endif()
+  if(CHECK_PID_PLATFORM_CONFIGURATION)
+	#checking the mandatory configurations
+  	check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}" FALSE)
+  	if(IS_CURRENT AND NOT RESULT)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+  		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint cannot be satisfied !")
+  	endif()
+  endif()
+  if(CHECK_PID_PLATFORM_OPTIONAL)
+    #finally checking optional configurations
+    check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_OPTIONAL}" TRUE)
+  endif()
 endif()
 endmacro(check_PID_Platform)
 
@@ -811,26 +816,6 @@ if(NOT OK)
 	message("[PID] ERROR : you must use one or more of the NAME, TYPE, ARCH, OS or ABI keywords together with corresponding variables that will contain the resulting property of the current platform in use.")
 endif()
 endfunction(get_PID_Platform_Info)
-
-macro(check_All_PID_Default_Platforms)
-set(multiValueArgs CONFIGURATION)
-message("[PID] WARNING : the check_All_PID_Default_Platforms function is deprecated as check_PID_Platform will now do the job equaly well.")
-
-check_PID_Platform(NAME linux64 OS linux ARCH 64 ABI CXX)
-check_PID_Platform(NAME linux32 OS linux ARCH 32 ABI CXX)
-check_PID_Platform(NAME linux64cxx11 OS linux ARCH 64 ABI CXX11)
-check_PID_Platform(NAME macosx64 OS macosx ARCH 64 ABI CXX)
-
-cmake_parse_arguments(CHECK_PID_PLATFORM "" "" "${multiValueArgs}" ${ARGN} )
-
-if(CHECK_PID_PLATFORM_CONFIGURATION)
-	check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${CHECK_PID_PLATFORM_CONFIGURATION}")
-	if(NOT RESULT)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling check_All_PID_Default_Platforms, the current platform dos not satisfy configuration constraints.")
-	endif()
-endif()
-endmacro(check_All_PID_Default_Platforms)
 
 #.rst:
 # .. ifmode:: user
