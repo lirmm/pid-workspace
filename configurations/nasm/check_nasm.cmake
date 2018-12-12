@@ -18,3 +18,8 @@
 #########################################################################################
 
 include(Configuration_Definition NO_POLICY_SCOPE)
+
+
+PID_Configuration_Variables(nasm
+				VARIABLES EXECUTABLE
+				VALUES 		NASM_EXE)
