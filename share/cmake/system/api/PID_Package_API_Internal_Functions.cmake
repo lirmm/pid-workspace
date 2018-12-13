@@ -1208,20 +1208,31 @@ endif()
 
 ### managing headers ###
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") # a module library has no declared interface (only used dynamically)
+	set(${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME ${dirname} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${c_name}_HEADERS CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${c_name}_HEADERS_ADDITIONAL_FILTERS ${more_headers} CACHE INTERNAL "")
 	if(dirname)# a pure header library may define no folder
+		set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
 		set(${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${dirname})
-		install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 		#a library defines a folder containing one or more headers and/or subdirectories
 		get_All_Headers_Relative(${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} "${${PROJECT_NAME}_${c_name}_HEADERS_ADDITIONAL_FILTERS}")
+		set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
+
+		#build the header selection pattern according to all selected headers
+		foreach(header IN LISTS ${PROJECT_NAME}_${c_name}_HEADERS)
+			set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "^.*${header}$|${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
+		endforeach()
+		#get complete path to files that will be used at compile time
 		get_All_Headers_Absolute(${PROJECT_NAME}_${c_name}_ALL_HEADERS ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} "${more_headers}")
+
+		#install the include folder with only header file
+		install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
+	elseif(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
+		#problem only header libraries may have no folder !!
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: when declaring library ${c_name} in ${PROJECT_NAME}, this component is not a header library and defines no folder where finding includes !!")
+		return()
 	endif()
-	set(${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME ${dirname} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${c_name}_HEADERS_ADDITIONAL_FILTERS ${more_headers} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
-	foreach(header IN LISTS ${PROJECT_NAME}_${c_name}_HEADERS)
-		set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "^.*${header}$|${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
-	endforeach()
 endif()
 
 ### managing sources and defining targets ###
