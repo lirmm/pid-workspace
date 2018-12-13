@@ -36,8 +36,11 @@ if(EXISTS "${ROS_PATH}/env.sh")
 
 	list(APPEND ros_packages roscpp)
 	list(REMOVE_DUPLICATES ros_packages)
+	set(CATKIN_BUILD_BINARY_PACKAGE TRUE)#before finding avoid the deployment of ROS env into install folder
+	set(CATKIN_INSTALL_INTO_PREFIX_ROOT)
 	find_package(catkin REQUIRED COMPONENTS ${ros_packages})
-
+	unset(CATKIN_BUILD_BINARY_PACKAGE)
+	unset(CATKIN_INSTALL_INTO_PREFIX_ROOT)
 	foreach(inc IN LISTS catkin_INCLUDE_DIRS)
 		string(REGEX REPLACE "^${ROS_PATH}(.*)$" "\\1" res_include ${inc})
 		if(NOT res_include STREQUAL inc) # it matches
