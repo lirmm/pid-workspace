@@ -12,6 +12,6 @@ set(gram-savitzky-golay_DESCRIPTION "C++ Implementation of Savitzky-Golay filter
 set(gram-savitzky-golay_YEARS 2018 CACHE INTERNAL "")
 set(gram-savitzky-golay_LICENSE GNULGPL CACHE INTERNAL "")
 set(gram-savitzky-golay_ADDRESS git@gite.lirmm.fr:signal-processing/gram-savitzky-golay.git CACHE INTERNAL "")
-set(gram-savitzky-golay_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(gram-savitzky-golay_PUBLIC_ADDRESS https://gite.lirmm.fr/signal-processing/gram-savitzky-golay.git CACHE INTERNAL "")
 set(gram-savitzky-golay_CATEGORIES CACHE INTERNAL "")
 set(gram-savitzky-golay_REFERENCES  CACHE INTERNAL "")
