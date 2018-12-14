@@ -1563,21 +1563,23 @@ function(collect_Local_Exported_Dependencies NATIVE_DEPS EXTERNAL_DEPS package m
   #need to memorize in binary the version of dependencies finally used to build it !!!
   set(ext_result)
   foreach(ext IN LISTS external_deps)#for direct external dependencies
-    if(${ext}_VERSION_SYSTEM)
+    if(${ext}_BUILT_OS_VARIANT)#need to know if this is the OS variant that has been found
       set(system_str "TRUE")
+      set(exact_str "TRUE")#an OS variant is always exact ?? we say YES as an hypothesis
     else()
       set(system_str "FALSE")
+      if(${ext}_REQUIRED_VERSION_EXACT)# version may be or not set to something so manage its value explicilty to avoid having an empty element in the list
+        set(exact_str "TRUE")#an OS variant is always exact ?? we say YES as an hypothesis
+      else()
+        set(exact_str "FALSE")#an OS variant is always exact ?? we say YES as an hypothesis
+      endif()
     endif()
-    if(${ext}_VERSION_EXACT)# version may be or not set to semething so manage its value explicilty to avoid having an empty element in the list
-      list(APPEND ext_result "${ext},${${ext}_VERSION_STRING},TRUE,${system_str}")
-    else()
-      list(APPEND ext_result "${ext},${${ext}_VERSION_STRING},FALSE,${system_str}")
-    endif()
+    list(APPEND ext_result "${ext},${${ext}_VERSION_STRING},${exact_str},${system_str}")
   endforeach()
 
   set(nat_result)
   foreach(nat IN LISTS native_deps)#for direct external dependencies
-    if(${nat}_VERSION_EXACT)# version may be or not set to semething so manage its value explicilty to avoid having an empty element in the list
+    if(${nat}_REQUIRED_VERSION_EXACT)# version may be or not set to semething so manage its value explicilty to avoid having an empty element in the list
       list(APPEND nat_result "${nat},${${nat}_VERSION_STRING},TRUE,FALSE")#native are never system dependencies
     else()
       list(APPEND nat_result "${nat},${${nat}_VERSION_STRING},FALSE,FALSE")#native are never system dependencies

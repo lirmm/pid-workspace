@@ -727,6 +727,219 @@ function(create_TestUnit_Target c_name c_standard cxx_standard sources internal_
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 endfunction(create_TestUnit_Target)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |collect_Links_And_Flags_For_External_Component| replace:: ``collect_Links_And_Flags_For_External_Component``
+#  .. _collect_Links_And_Flags_For_External_Component:
+#
+#  collect_Links_And_Flags_For_External_Component
+#  ----------------------------------------------
+#
+#   .. command:: collect_Links_And_Flags_For_External_Component(dep_package dep_component RES_INCS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_C_STANDARD RES_CXX_STANDARD RES_RUNTIME)
+#
+#     Get all required options needed to use an external component.
+#
+#     :dep_package: the name of the external package that contains the external component.
+#
+#     :dep_component: the name of the target external component.
+#
+#     :RES_INCS: output variable containing include path to use when using dep_component.
+#
+#     :RES_DEFS: output variable containing preprocessor definitions to use when using dep_component.
+#
+#     :RES_OPTS: output variable containing compiler options to use when using dep_component.
+#
+#     :RES_LINKS_STATIC: output variable containing the list of path to static libraries to use when using dep_component.
+#
+#     :RES_LINKS_SHARED: output variable containing the list of path to shared libraries and linker options to use when using dep_component.
+#
+#     :RES_C_STANDARD: output variable containing the C language standard to use when using dep_component.
+#
+#     :RES_CXX_STANDARD: output variable containing the C++ language standard to use when using dep_component.
+#
+#     :RES_RUNTIME: output variable containing the list of path to files or folder used at runtime by dep_component.
+#
+function(collect_Links_And_Flags_For_External_Component dep_package dep_component
+RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_C_STANDARD RES_CXX_STANDARD RES_RUNTIME)
+set(INCS_RESULT)
+set(LIBDIRS_RESULT)
+set(DEFS_RESULT)
+set(OPTS_RESULT)
+set(STATIC_LINKS_RESULT)
+set(SHARED_LINKS_RESULT)
+set(RUNTIME_RESULT)
+
+if(${dep_package}_${dep_component}_C_STANDARD${USE_MODE_SUFFIX})#initialize with current value
+	set(C_STD_RESULT ${${dep_package}_${dep_component}_C_STANDARD${USE_MODE_SUFFIX}})
+else()
+	set(C_STD_RESULT 90)#take lowest value
+endif()
+if(${dep_package}_${dep_component}_CXX_STANDARD${USE_MODE_SUFFIX})#initialize with current value
+	set(CXX_STD_RESULT ${${dep_package}_${dep_component}_CXX_STANDARD${USE_MODE_SUFFIX}})
+else()
+	set(CXX_STD_RESULT 98)#take lowest value
+endif()
+
+
+## collecting internal dependencies (recursive call on internal dependencies first)
+if(${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+	foreach(comp IN LISTS ${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+		collect_Links_And_Flags_For_External_Component(${dep_package} ${comp} INCS LDIRS DEFS OPTS LINKS_ST LINKS_SH C_STD CXX_STD RUNTIME_RES)
+		if(${dep_package}_${dep_component}_INTERNAL_EXPORT_${comp}${USE_MODE_SUFFIX})
+			if(INCS)
+				list (APPEND INCS_RESULT ${INCS})
+			endif()
+			if(DEFS)
+				list (APPEND DEFS_RESULT ${DEFS})
+			endif()
+		endif()
+
+		if(OPTS)
+			list (APPEND OPTS_RESULT ${OPTS})
+		endif()
+		if(LDIRS)
+			list (APPEND LIBDIRS_RESULT ${LDIRS})
+		endif()
+		if(LINKS_ST)
+			list (APPEND STATIC_LINKS_RESULT ${LINKS_ST})
+		endif()
+		if(LINKS_SH)
+			list (APPEND SHARED_LINKS_RESULT ${LINKS_SH})
+		endif()
+		if(C_STD)#always take the greater standard number
+			is_C_Version_Less(IS_LESS ${C_STD_RESULT} "${${dep_package}_${comp}_C_STANDARD${VAR_SUFFIX}}")
+			if(IS_LESS)
+				set(C_STD_RESULT ${${dep_package}_${comp}_C_STANDARD${VAR_SUFFIX}})
+			endif()
+		endif()
+		if(CXX_STD)#always take the greater standard number
+			is_CXX_Version_Less(IS_LESS ${CXX_STD_RESULT} "${${dep_package}_${comp}_CXX_STANDARD${VAR_SUFFIX}}")
+			if(IS_LESS)
+				set(CXX_STD_RESULT ${${dep_package}_${comp}_CXX_STANDARD${VAR_SUFFIX}})
+			endif()
+		endif()
+		if(RUNTIME_RES)
+			list (APPEND RUNTIME_RESULT ${RUNTIME_RES})
+		endif()
+	endforeach()
+endif()
+
+#1. Manage dependencies of the component
+if(${dep_package}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #if the external package has dependencies we have to resolve those needed by the component
+	#some checks to verify the validity of the declaration
+	if(NOT ${dep_package}_COMPONENTS${USE_MODE_SUFFIX})
+		message (FATAL_ERROR "[PID] CRITICAL ERROR declaring dependency to ${dep_component} in package ${dep_package} : component ${dep_component} is unknown in ${dep_package}.")
+		return()
+	endif()
+	list(FIND ${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${dep_component} INDEX)
+	if(INDEX EQUAL -1)
+		message (FATAL_ERROR "[PID] CRITICAL ERROR declaring dependency to ${dep_component} in package ${dep_package} : component ${dep_component} is unknown in ${dep_package}.")
+		return()
+	endif()
+
+	## collecting external dependencies (recursive call on external dependencies - the corresponding external package must exist)
+	foreach(dep IN LISTS ${dep_package}_${dep_component}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+		foreach(comp IN LISTS ${dep_package}_${dep_component}_EXTERNAL_DEPENDENCY_${dep}_COMPONENTS${USE_MODE_SUFFIX})#if no component defined this is not an errror !
+			collect_Links_And_Flags_For_External_Component(${dep} ${comp} INCS LDIRS DEFS OPTS LINKS_ST LINKS_SH C_STD CXX_STD RUNTIME_RES)
+			if(${dep_package}_${dep_component}_EXTERNAL_EXPORT_${dep}_${comp}${USE_MODE_SUFFIX})
+				if(INCS)
+					list (APPEND INCS_RESULT ${INCS})
+				endif()
+				if(DEFS)
+					list (APPEND DEFS_RESULT ${DEFS})
+				endif()
+			endif()
+
+			if(OPTS)
+				list (APPEND OPTS_RESULT ${OPTS})
+			endif()
+			if(LDIRS)
+				list (APPEND LIBDIRS_RESULT ${LDIRS})
+			endif()
+			if(LINKS_ST)
+				list (APPEND STATIC_LINKS_RESULT ${LINKS_ST})
+			endif()
+			if(LINKS_SH)
+				list (APPEND SHARED_LINKS_RESULT ${LINKS_SH})
+			endif()
+
+			is_C_Version_Less(IS_LESS ${C_STD_RESULT} "${C_STD}")#always take the greater standard number
+			if(IS_LESS)
+				set(C_STD_RESULT ${C_STD})
+			endif()
+			is_CXX_Version_Less(IS_LESS ${CXX_STD_RESULT} "${CXX_STD}")
+			if(IS_LESS)
+				set(CXX_STD_RESULT ${CXX_STD})
+			endif()
+
+			if(RUNTIME_RES)
+				list (APPEND RUNTIME_RESULT ${RUNTIME_RES})
+			endif()
+		endforeach()
+	endforeach()
+endif()
+
+#2. Manage the component properties and return the result
+if(${dep_package}_${dep_component}_INC_DIRS${USE_MODE_SUFFIX})
+	list(APPEND INCS_RESULT ${${dep_package}_${dep_component}_INC_DIRS${USE_MODE_SUFFIX}})
+endif()
+if(${dep_package}_${dep_component}_DEFS${USE_MODE_SUFFIX})
+	list(APPEND DEFS_RESULT ${${dep_package}_${dep_component}_DEFS${USE_MODE_SUFFIX}})
+endif()
+if(${dep_package}_${dep_component}_LIB_DIRS${USE_MODE_SUFFIX})
+	list(APPEND LIBDIRS_RESULT ${${dep_package}_${dep_component}_LIB_DIRS${USE_MODE_SUFFIX}})
+endif()
+if(${dep_package}_${dep_component}_OPTS${USE_MODE_SUFFIX})
+	list(APPEND OPTS_RESULT ${${dep_package}_${dep_component}_OPTS${USE_MODE_SUFFIX}})
+endif()
+if(${dep_package}_${dep_component}_STATIC_LINKS${USE_MODE_SUFFIX})
+	list(APPEND STATIC_LINKS_RESULT ${${dep_package}_${dep_component}_STATIC_LINKS${USE_MODE_SUFFIX}})
+endif()
+if(${dep_package}_${dep_component}_SHARED_LINKS${USE_MODE_SUFFIX})
+	list(APPEND SHARED_LINKS_RESULT ${${dep_package}_${dep_component}_SHARED_LINKS${USE_MODE_SUFFIX}})
+endif()
+if(${dep_package}_${dep_component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX})
+	list(APPEND RUNTIME_RESULT ${${dep_package}_${dep_component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX}})
+endif()
+
+#3. clearing the lists
+if(INCS_RESULT)
+	list(REMOVE_DUPLICATES INCS_RESULT)
+endif()
+if(DEFS_RESULT)
+	list(REMOVE_DUPLICATES DEFS_RESULT)
+endif()
+if(OPTS_RESULT)
+	list(REMOVE_DUPLICATES OPTS_RESULT)
+endif()
+if(LIBDIRS_RESULT)
+	list(REMOVE_DUPLICATES LIBDIRS_RESULT)
+endif()
+if(STATIC_LINKS_RESULT)
+	list(REMOVE_DUPLICATES STATIC_LINKS_RESULT)
+endif()
+if(SHARED_LINKS_RESULT)
+	list(REMOVE_DUPLICATES SHARED_LINKS_RESULT)
+endif()
+if(RUNTIME_RESULT)
+	list(REMOVE_DUPLICATES RUNTIME_RESULT)
+endif()
+
+#4. return the values
+set(${RES_INCS} ${INCS_RESULT} PARENT_SCOPE)
+set(${RES_LIB_DIRS} ${LIBDIRS_RESULT} PARENT_SCOPE)
+set(${RES_DEFS} ${DEFS_RESULT} PARENT_SCOPE)
+set(${RES_OPTS} ${OPTS_RESULT} PARENT_SCOPE)
+set(${RES_LINKS_STATIC} ${STATIC_LINKS_RESULT} PARENT_SCOPE)
+set(${RES_LINKS_SHARED} ${SHARED_LINKS_RESULT} PARENT_SCOPE)
+set(${RES_RUNTIME} ${RUNTIME_RESULT} PARENT_SCOPE)
+set(${RES_C_STANDARD} ${C_STD_RESULT} PARENT_SCOPE)
+set(${RES_CXX_STANDARD} ${CXX_STD_RESULT} PARENT_SCOPE)
+endfunction(collect_Links_And_Flags_For_External_Component)
+
 #.rst:
 #
 # .. ifmode:: internal
