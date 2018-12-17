@@ -801,7 +801,7 @@ endfunction(get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies)
 #
 #   .. command:: resolve_Source_Component_Linktime_Dependencies(component mode THIRD_PARTY_LINKS)
 #
-#   Resolve required symbols for building a component contained in currently defined package. This consists in finding undirect shared libraries that are theorically unknown in the context of the component but that are required in order to globally resolve symbols when linking the executable.
+#   Resolve required symbols for building an executable component contained in currently defined package. This consists in finding undirect shared libraries that are theorically unknown in the context of the component but that are required in order to globally resolve symbols when linking the executable.
 #
 #     :component: the name of the component.
 #
@@ -1275,7 +1275,7 @@ endfunction(get_Source_Component_Runtime_Resources_Dependencies)
 #
 function(create_Source_Component_Symlinks_Build_Tree component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(NOT "${resources}" STREQUAL "")
+if(resources)
 	foreach(resource IN LISTS resources)
 		create_Runtime_Symlink(${resource} ${CMAKE_BINARY_DIR}/.rpath ${component}${TARGET_SUFFIX})
 	endforeach()
