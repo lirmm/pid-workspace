@@ -1068,17 +1068,15 @@ endfunction(get_Compatible_Version)
 #
 #     :exact_versions: the sublist of list_of_versions that contains only exact versions constraints.
 #
-#     :use_system: if TRUE then the OS installed version of the package is used (only for external). It is automatically considered as exact.
-#
-function(find_Best_Compatible_Version BEST_VERSION_IN_LIST external package version_in_use version_in_use_exact version_in_use_is_system list_of_versions exact_versions use_system)
+function(find_Best_Compatible_Version BEST_VERSION_IN_LIST external package version_in_use version_in_use_exact version_in_use_is_system list_of_versions exact_versions)
   set(${BEST_VERSION_IN_LIST} PARENT_SCOPE)
-  if(external AND use_system)#specific case: a system version is used and it is the only possible version
-    get_Compatible_Version(IS_COMPATIBLE "${external}" ${package} "${version_in_use}" TRUE "${version_in_use_is_system}" "${list_of_versions}" TRUE TRUE)
-    if(NOT IS_COMPATIBLE)
+  if(external AND version_in_use_is_system)#specific case: a system version is used and it is the only possible version
+    list(FIND list_of_versions "SYSTEM" INDEX)#searching for a SYSTEM version among possible versions
+    if(INDEX EQUAL -1)#not found !!
       return()#no compatible version can be found if already required version is not strucly equal to OS installed version
     endif()
-    #OK all tests passed to simply returning THE GIVEN VERSION to indicate that the OS version is in use
-    set(${BEST_VERSION_IN_LIST} ${list_of_versions} PARENT_SCOPE)
+    #simply returning THE GIVEN VERSION to indicate that the OS version is in use
+    set(${BEST_VERSION_IN_LIST} ${version_in_use} PARENT_SCOPE)
   else()
     #first step: build the list of compatible versions
     set(list_of_compatible_versions)
@@ -1143,23 +1141,13 @@ endfunction(find_Best_Compatible_Version)
 #
 #     :version: version of the package.
 #
-#     :system: TRUE if package version is forced to be the OS installed version.
-#
-function(is_Exact_External_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE NEED_FINDING package version is_system)
+function(is_Exact_External_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE NEED_FINDING package version)
 set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
 set(${NEED_FINDING} FALSE PARENT_SCOPE)
 if(${package}_REQUIRED_VERSION_EXACT)
   if(NOT ${package}_REQUIRED_VERSION_EXACT VERSION_EQUAL version)#not compatible if versions are not exactly the same
 		return()
 	endif()
-  #check that both versions are related either to SYSTEM variant or to PID built variant
-  if(${package}_REQUIRED_VERSION_SYSTEM)
-    if(NOT is_system)
-      return()
-    endif()
-  elseif(is_system)
-    return()
-  endif()
 	set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)#otherwise same version so exactly compatible
 	return()
 endif()
@@ -1210,7 +1198,7 @@ function(is_External_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE 
 
 set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
 # 1) testing compatibility from current required version with a previous exact version constraint (current is compatible )
-if(${package}_REQUIRED_VERSION_EXACT)
+if(${package}_REQUIRED_VERSION_EXACT)#an exact version is already required
   if(NOT ${package}_REQUIRED_VERSION_EXACT VERSION_EQUAL version)#not compatible if versions are not exactly the same
     return()
   endif()
@@ -1729,7 +1717,9 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${external_dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
   if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}) # a specific version is required
     if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version is required
-      is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND ${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX}}") # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
+      is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND
+        ${external_dependency}
+        ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
 			if(IS_COMPATIBLE)
 				if(NEED_REFIND)
           if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX})#the OS version is required
@@ -2048,14 +2038,14 @@ if(EXIST)
     set(${package}_ROOT_DIR ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH}/${VERSION_TO_USE} CACHE INTERNAL "")
     include(${${package}_ROOT_DIR}/share/Use${package}-${VERSION_TO_USE}.cmake  OPTIONAL)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
     if(is_system)# an OS variant is required
-      if(NOT ${package}_BUILT_OS_VARIANT)
+      if(NOT ${package}_BUILT_OS_VARIANT)#the binary package is NOT an OS variant
         unset(${package}_ROOT_DIR CACHE)
-        exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the required OS variant version(${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
+        exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the required OS variant version (${VERSION_TO_USE}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
   	  endif()
-    else()
-      if(${package}_BUILT_OS_VARIANT)
+    else()#an OS variant is not required
+      if(${package}_BUILT_OS_VARIANT)#the binary package IS an OS variant
         unset(${package}_ROOT_DIR CACHE)
-        exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the required NON OS variant version(${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
+        exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the required NON OS variant version(${VERSION_TO_USE}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
       endif()
     endif()
 		set(${package}_FOUND TRUE CACHE INTERNAL "")

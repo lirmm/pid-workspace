@@ -62,7 +62,6 @@ PID_Configuration_Variables(ros
 			VARIABLES INCLUDE_DIRS 	RPATH  		LIBRARY_DIRS  LINK_OPTIONS  BOOST_COMPONENTS
 			VALUES 		ROS_INCS			ROS_LIBS	ROS_LIB_DIRS	ROS_LINKS			ROS_BOOST_PID_COMP)
 
-
 # constraints
 PID_Configuration_Constraints(ros REQUIRED distribution IN_BINARY packages VALUE ROS_PACKAGES)
 

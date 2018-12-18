@@ -566,7 +566,7 @@ endfunction(set_Current_Version)
 #
 #     :IS_CURRENT: the output variable that contains the current platform identifier if current platform matches all filters.
 #
-function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints)
+function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints optional)
 set(SKIP FALSE)
 #The check of compatibility between the target platform and the constraints is immediate using platform configuration information (platform files) + additionnal global information (distribution for instance) coming from the workspace
 
@@ -610,11 +610,14 @@ if(NOT SKIP AND constraints)
 		if(NOT RESULT_OK)
 			set(${RESULT} FALSE PARENT_SCOPE)
 		endif()
-		list(APPEND configurations_to_memorize ${CONFIG_NAME})#memorize name of the configuration
-		set(${CONFIG_NAME}_constraints_to_memorize ${CONFIG_CONSTRAINTS})#then memorize all constraints that apply to the configuration
+		if(RESULT_OK OR NOT optional)#if the result if FALSE and the configuration was optional then skip it
+			list(APPEND configurations_to_memorize ${CONFIG_NAME})#memorize name of the configuration
+			set(${CONFIG_NAME}_constraints_to_memorize ${CONFIG_CONSTRAINTS})#then memorize all constraints that apply to the configuration
+			list(APPEND constraints_to_memorize ${config})
+		endif()
 	endforeach()
 
-	#registering all configurations wether they are satisfied or not
+	#registering all configurations wether they are satisfied or not, except non satisfied optional ones
 	append_Unique_In_Cache(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} "${configurations_to_memorize}")
 
 	foreach(config IN LISTS configurations_to_memorize)
@@ -623,10 +626,13 @@ if(NOT SKIP AND constraints)
 			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} "${${config}_constraints_to_memorize}" CACHE INTERNAL "")
 		endif()
 	endforeach()
+
+	add_Platform_Constraint_Set("${type}" "${arch}" "${os}" "${abi}" "${constraints_to_memorize}")
+else()
+	# whatever the result the constraint is registered
+	add_Platform_Constraint_Set("${type}" "${arch}" "${os}" "${abi}" "${constraints}")
 endif()
 
-# whatever the result the constraint is registered
-add_Platform_Constraint_Set("${type}" "${arch}" "${os}" "${abi}" "${constraints}")
 endfunction(check_Platform_Constraints)
 
 #.rst:
@@ -1202,20 +1208,31 @@ endif()
 
 ### managing headers ###
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") # a module library has no declared interface (only used dynamically)
+	set(${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME ${dirname} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${c_name}_HEADERS CACHE INTERNAL "")
+	set(${PROJECT_NAME}_${c_name}_HEADERS_ADDITIONAL_FILTERS ${more_headers} CACHE INTERNAL "")
 	if(dirname)# a pure header library may define no folder
+		set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
 		set(${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${dirname})
-		install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
 		#a library defines a folder containing one or more headers and/or subdirectories
 		get_All_Headers_Relative(${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} "${${PROJECT_NAME}_${c_name}_HEADERS_ADDITIONAL_FILTERS}")
+		set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
+
+		#build the header selection pattern according to all selected headers
+		foreach(header IN LISTS ${PROJECT_NAME}_${c_name}_HEADERS)
+			set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "^.*${header}$|${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
+		endforeach()
+		#get complete path to files that will be used at compile time
 		get_All_Headers_Absolute(${PROJECT_NAME}_${c_name}_ALL_HEADERS ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} "${more_headers}")
+
+		#install the include folder with only header file
+		install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
+	elseif(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
+		#problem only header libraries may have no folder !!
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: when declaring library ${c_name} in ${PROJECT_NAME}, this component is not a header library and defines no folder where finding includes !!")
+		return()
 	endif()
-	set(${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME ${dirname} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${c_name}_HEADERS_ADDITIONAL_FILTERS ${more_headers} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
-	foreach(header IN LISTS ${PROJECT_NAME}_${c_name}_HEADERS)
-		set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN  "^.*${header}$|${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
-	endforeach()
 endif()
 
 ### managing sources and defining targets ###
@@ -1488,7 +1505,7 @@ endfunction(declare_Python_Component)
 #  declare_Native_Package_Dependency
 #  ---------------------------------
 #
-#   .. command:: declare_Native_Package_Dependency(dep_package optional list_of_versions exact_versions list_of_components)
+#   .. command:: declare_Native_Package_Dependency(dep_package optional all_possible_versions all_exact_versions list_of_components)
 #
 #     Specify a dependency between the currently defined package and another native package.
 #
@@ -1496,43 +1513,44 @@ endfunction(declare_Python_Component)
 #
 #     :optional: if TRUE the dependency is optional.
 #
-#     :list_of_versions: the list of possible incompatible versions for the dependency.
+#     :all_possible_versions: the list of possible incompatible versions for the dependency.
 #
-#     :exact_versions: the list of exact version among possible ones.
+#     :all_exact_versions: the list of exact version among possible ones.
 #
 #     :list_of_components: the list of required components that must belong to dependency.
 #
-function(declare_Native_Package_Dependency dep_package optional list_of_versions exact_versions list_of_components)
+function(declare_Native_Package_Dependency dep_package optional all_possible_versions all_exact_versions list_of_components)
 	set(unused FALSE)
 	### 0) for native package we need to prepare the list of version to make it full of version numbers with exactly 3 digits
-	if(list_of_versions)
-		foreach(ver IN LISTS list_of_versions)
+	set(list_of_possible_versions)
+	set(list_of_exact_versions)
+	if(all_possible_versions)
+		set(list_of_possible_versions)
+		set(list_of_exact_versions)
+		foreach(ver IN LISTS all_possible_versions)
 			normalize_Version_String(${ver} NORM_STR)
-			list(APPEND temp_list ${NORM_STR})
+			list(APPEND list_of_possible_versions ${NORM_STR})
 		endforeach()
-		set(list_of_versions ${temp_list})
-		foreach(ver IN LISTS exact_versions)
+		foreach(ver IN LISTS all_exact_versions)
 			normalize_Version_String(${ver} NORM_STR)
-			list(APPEND temp_exact ${NORM_STR})
+			list(APPEND list_of_exact_versions ${NORM_STR})
 		endforeach()
-		set(exact_versions ${temp_exact})
-		list(LENGTH list_of_versions SIZE)
-		list(GET list_of_versions 0 default_version) #by defaut this is the first element in the list that is taken
+		list(LENGTH list_of_possible_versions SIZE)
+		list(GET list_of_possible_versions 0 default_version) #by defaut this is the first element in the list that is taken
 	endif()
-
 	### 1) setting user cache variable. The goal is to given users the control "by-hand" on the version used for a given dependency ###
 	#1.A) preparing message coming with this user cache variable
-	if(NOT list_of_versions) # no version constraint specified
+	if(NOT list_of_possible_versions) # no version constraint specified
 		set(message_str "Select version of dependency ${dep_package} to be used by entering either keyword ANY or a valid version number.")
 	else()#there are version specified
-		fill_String_From_List(list_of_versions available_versions) #get available version as a string (used to print them)
+		fill_String_From_List(list_of_possible_versions available_versions) #get available version as a string (used to print them)
 		set(message_str "Select the version of dependency ${dep_package} to be used among versions: ${available_versions}.")
 	endif()
 	if(optional) #message for the optional dependency includes the possiiblity to input NONE
 		set(message_str "${message_str} Or use NONE to avoid using this dependency.")
 	endif()
 	#1.B) creating the user cache entries
-	if(NOT list_of_versions) # no version constraint specified
+	if(NOT list_of_possible_versions) # no version constraint specified
 		### setting default cache variable that user can directly manage "by-hand" ###
 		if(optional)
 			#set the cache option, NONE by default
@@ -1558,9 +1576,9 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 	# check if a version of this dependency is required by another package used in the current build process and memorize this version
 	get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_package})
 	if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
-		if(list_of_versions) #list of possible versions is constrained
+		if(list_of_possible_versions) #list of possible versions is constrained
 			#finding the best compatible version, if any (otherwise returned "version" variable is empty)
-			find_Best_Compatible_Version(force_version FALSE ${dep_package} ${REQUIRED_VERSION} "${IS_EXACT}" FALSE "${list_of_versions}" "${exact_versions}" FALSE)
+			find_Best_Compatible_Version(force_version FALSE ${dep_package} ${REQUIRED_VERSION} "${IS_EXACT}" FALSE "${list_of_possible_versions}" "${list_of_exact_versions}")
 			if(NOT force_version)#the build context is a dependent build and no compatible version has been found
 				if(optional)#hopefully the dependency is optional so we can deactivate it
 					set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)
@@ -1585,9 +1603,9 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 			if(optional)#hopefully the dependency is optional so we can force its deactivation
 				set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)#explicitlty deactivate the optional dependency (corrective action)
 				message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated because no version was specified by the user.")
-			elseif(list_of_versions)
+			elseif(list_of_possible_versions)
 					if(SIZE EQUAL 1)#only one possible version => do not provide it to to user
-						set(${dep_package}_ALTERNATIVE_VERSION_USED ${list_of_versions} CACHE INTERNAL "" FORCE)
+						set(${dep_package}_ALTERNATIVE_VERSION_USED ${list_of_possible_versions} CACHE INTERNAL "" FORCE)
 					else()
 						set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
 					endif()
@@ -1595,7 +1613,7 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 				set(${dep_package}_ALTERNATIVE_VERSION_USED "ANY" CACHE STRING "${message_str}" FORCE)
 			endif()
 		else()#there is a value for the ALTERNATIVE variable
-			if(list_of_versions)#there is a constraint on usable versions
+			if(list_of_possible_versions)#there is a constraint on usable versions
 				if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#the value in cache was previously ANY but user added a list of versions in the meantime
 					if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
 						set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
@@ -1603,7 +1621,7 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 						set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
 					endif()
 				else()#a version has been given explicitly (either from dependent build or directly by the user)
-					list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+					list(FIND list_of_possible_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 					if(INDEX EQUAL -1 )#no possible version found -> may be due to a change in cmake description of possible versions
 						#simply reset the description to first found
 						if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
@@ -1613,8 +1631,8 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 						endif()
 					endif()
 				endif()
-				if(exact_versions)
-					list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+				if(list_of_exact_versions)
+					list(FIND list_of_exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 					if(NOT INDEX EQUAL -1 )
 						set(USE_EXACT TRUE)
 					endif()
@@ -1622,6 +1640,7 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 			endif()
 		endif()
 	endif()
+
 	### 3) setting internal cache variable used to generate the use file and to resolve find operations
 	# they are simply set from the value of the alternative and depending on
 	if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
@@ -1660,7 +1679,7 @@ function(declare_Native_Package_Dependency dep_package optional list_of_versions
 		# here the version has been resolved, we need to manage the specific case where no version constraint was specified
 		# indeed, the use file should always contain a version constraint because the binary in itselt cannot adapt to different version
 		# it can only use the version used to build it (or any other compatible version)
-		if(NOT list_of_versions AND NOT REQUIRED_VERSION AND ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
+		if(NOT list_of_possible_versions AND NOT REQUIRED_VERSION AND ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
 			#no choice for a given version has been made already, so now memorize this choice to write it later in use file
 			if(${dep_package}_VERSION_STRING)#simply use the version that has been found
 				add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION_STRING}" FALSE "${list_of_components}") #set the dependency
@@ -1679,7 +1698,7 @@ endfunction(declare_Native_Package_Dependency)
 #  declare_External_Package_Dependency
 #  -----------------------------------
 #
-#   .. command:: declare_External_Package_Dependency(dep_package optional list_of_versions exact_versions list_of_components)
+#   .. command:: declare_External_Package_Dependency(dep_package optional list_of_possible_versions list_of_exact_versions list_of_components)
 #
 #     Specify a dependency between the currently defined native package and an external package.
 #
@@ -1687,30 +1706,30 @@ endfunction(declare_Native_Package_Dependency)
 #
 #     :optional: if TRUE the dependency is optional.
 #
-#     :list_of_versions: the list of possible incompatible versions for the dependency.
+#     :list_of_possible_versions: the list of possible incompatible versions for the dependency.
 #
-#     :exact_versions: the list of exact version among possible ones.
+#     :list_of_exact_versions: the list of exact version among possible ones.
 #
 #     :list_of_components: the list of required components that must belong to dependency.
 #
-function(declare_External_Package_Dependency dep_package optional list_of_versions exact_versions list_of_components)
+function(declare_External_Package_Dependency dep_package optional list_of_possible_versions list_of_exact_versions list_of_components)
 set(unused FALSE)
 
 ### 1) setting user cache variable. The goal is to given users the control "by-hand" on the version used for a given dependency ###
 #1.A) preparing message coming with this user cache variable
-if(NOT list_of_versions) # no version constraint specified
+if(NOT list_of_possible_versions) # no version constraint specified
 	set(message_str "Select version of dependency ${dep_package} to be used by entering either keyword ANY or a valid version number.")
 else()#there are version specified
-	fill_String_From_List(list_of_versions available_versions) #get available version as a string (used to print them)
+	fill_String_From_List(list_of_possible_versions available_versions) #get available version as a string (used to print them)
 	set(message_str "Select the version of dependency ${dep_package} to be used among versions: ${available_versions}.")
-	list(LENGTH list_of_versions SIZE)
-	list(GET list_of_versions 0 default_version) #by defaut this is the first element in the list that is taken
+	list(LENGTH list_of_possible_versions SIZE)
+	list(GET list_of_possible_versions 0 default_version) #by defaut this is the first element in the list that is taken
 endif()
 if(optional) #message for the optional dependency includes the possiiblity to input NONE
 	set(message_str "${message_str} Or use NONE to avoid using this dependency.")
 endif()
 #1.B) creating the user cache entries
-if(NOT list_of_versions) # no version constraint specified
+if(NOT list_of_possible_versions) # no version constraint specified
 	### setting default cache variable that user can directly manage "by-hand" ###
 	if(optional)
 		#set the cache option, NONE by default
@@ -1732,40 +1751,14 @@ else()#there are version(s) specified
 endif()
 
 ### 2) check and set the value of the user cache entry dependening on constraints coming from the build context (dependent build or classical build) #####
-#first do some checks
-#first perform some checks to see of arguments are consistent
-set(USE_SYSTEM FALSE)#by default do not use OS version for the dependency
-if(SIZE GREATER 1)#checking that if SYSTEM version is used this is the only usable version
-	list(FIND list_of_versions "SYSTEM" INDEX)
-	if(NOT INDEX EQUAL -1)
-		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but other versions non system are specifiedn which is forbidden.")
-		return()
-	endif()
-else()#only one version specified
-	if(list_of_versions STREQUAL "SYSTEM")#this is a system version !! => need to perform specific actions
-		#need to check the equivalent OS configuration, => getting the OS version
-		check_PID_Platform(CONFIGURATION ${dep_package})
-		if(NOT ${dep_package}_VERSION)
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
-			return()
-		endif()
-		set(list_of_versions ${${dep_package}_VERSION})# get the version installed on OS
-		set(exact_versions ${${dep_package}_VERSION})# mandatory: the OS installed version is EXACT
-		set(default_version ${${dep_package}_VERSION})
-		set(SIZE 1)
-		set(available_versions ${${dep_package}_VERSION})
-		set(USE_SYSTEM TRUE)
-		set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
-	endif()
-endif()
+set(USE_EXACT FALSE)
+set(chosen_version_for_selection)
 # check if a version of this dependency is required by another package used in the current build process and memorize this version
 get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_package})
 if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
-	if(list_of_versions) #list of possible versions is constrained
+	if(list_of_possible_versions) #list of possible versions is constrained
 		#finding the best compatible version, if any (otherwise returned "version" variable is empty)
-		find_Best_Compatible_Version(force_version TRUE ${dep_package} ${REQUIRED_VERSION} "${IS_EXACT}" "${IS_SYSTEM}" "${list_of_versions}" "${exact_versions}" ${USE_SYSTEM})
+		find_Best_Compatible_Version(force_version TRUE ${dep_package} ${REQUIRED_VERSION} "${IS_EXACT}" "${IS_SYSTEM}" "${list_of_possible_versions}" "${list_of_exact_versions}")
 		if(NOT force_version)#the build context is a dependent build and no compatible version has been found
 			if(optional)#hopefully the dependency is optional so we can deactivate it
 				set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)
@@ -1776,23 +1769,33 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 				return()
 			endif()
 		endif()
+		if(IS_SYSTEM)
+			set(chosen_version_for_selection "SYSTEM")#specific keyword to use to specify that the SYSTEM version is in use
+		else()
+			set(chosen_version_for_selection ${force_version})
+		endif()
 		#simply reset the description to first found
 		if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ${force_version} CACHE INTERNAL "" FORCE)
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${chosen_version_for_selection} CACHE INTERNAL "" FORCE)
 		else()#many possible versions now !!
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ${force_version} CACHE STRING "${message_str}" FORCE)
+			set(${dep_package}_ALTERNATIVE_VERSION_USED ${chosen_version_for_selection} CACHE STRING "${message_str}" FORCE)
 		endif()
 	else()#no constraint on version => use the required one
-		set(${dep_package}_ALTERNATIVE_VERSION_USED ${REQUIRED_VERSION} CACHE STRING "${message_str}" FORCE)#explicitlty set the dependency to the chosen version number
+		if(IS_SYSTEM)
+			set(chosen_version_for_selection "SYSTEM")#specific keyword to use to specify that the SYSTEM version is in use
+		else()
+			set(chosen_version_for_selection ${REQUIRED_VERSION})
+		endif()
+		set(${dep_package}_ALTERNATIVE_VERSION_USED ${chosen_version_for_selection} CACHE STRING "${message_str}" FORCE)#explicitlty set the dependency to the chosen version number
 	endif()
 	set(USE_EXACT ${IS_EXACT})
-	set(USE_SYSTEM ${IS_SYSTEM})
-else()#classical build
+
+else()#classical build => perform only corrective actions if cache variable is no more compatible with user specifications
 	if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)#SPECIAL CASE: no value set by user (i.e. error of the user)!!
 		if(optional)#hopefully the dependency is optional so we can force its deactivation
 			set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)#explicitlty deactivate the optional dependency (corrective action)
 			message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated because no version was specified by the user.")
-		elseif(list_of_versions)#set if to default version
+		elseif(list_of_possible_versions)#set if to default version
 			if(SIZE EQUAL 1)#only one possible version => do not provide it to to user
 				set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
 			else()
@@ -1801,16 +1804,17 @@ else()#classical build
 		else()#set if to ANY version
 			set(${dep_package}_ALTERNATIVE_VERSION_USED "ANY" CACHE STRING "${message_str}" FORCE)
 		endif()
-	else()
-		if(list_of_versions)#there is a constraint on usable versions
+
+	else()#OK the variable has a value
+		if(list_of_possible_versions)#there is a constraint on usable versions
 			if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#the value in cache was previously ANY but user added a list of versions in the meantime
 				if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
 					set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
 				else()
 					set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
 				endif()
-			else()#the value is a version
-				list(FIND list_of_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+			else()#the value is a version, check if this version is allowed
+				list(FIND list_of_possible_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 				if(INDEX EQUAL -1 )#no possible version found -> bad input of the user
 					#simply reset the description to first found
 					if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
@@ -1820,12 +1824,12 @@ else()#classical build
 					endif()
 				endif()
 			endif()
-			if(exact_versions)
-				list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-				if(NOT INDEX EQUAL -1 )
-					set(USE_EXACT TRUE)
-				endif()
-			endif()
+		endif()
+	endif()
+	if(list_of_exact_versions)
+		list(FIND list_of_exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+		if(NOT INDEX EQUAL -1 )
+			set(USE_EXACT TRUE)
 		endif()
 	endif()
 endif()
@@ -1833,16 +1837,19 @@ endif()
 # they are simply set from the value of the alternative and depending on
 if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 	set(unused TRUE)
+elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")#the system version has been selected => need to perform specific actions
+		#need to check the equivalent OS configuration to get the OS installed version
+	check_PID_Platform(CONFIGURATION ${dep_package})
+	if(NOT ${dep_package}_VERSION)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
+		return()
+	endif()
+	add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION}" ${USE_EXACT} TRUE "${list_of_components}") #set the dependency
 elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")# any version can be used so for now no contraint
 	add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE FALSE "${list_of_components}")
 else()#a version is specified by the user OR the dependent build process has automatically set it
-	if(USE_SYSTEM)#an OS installed version is required => need specific management
-		add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" TRUE TRUE "${list_of_components}") #set the dependency
-	elseif(USE_EXACT)
-		add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" TRUE FALSE "${list_of_components}") #set the dependency
-	else()#if the target version belong to the list of exact version then ... it is exact ^^
-		add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE FALSE "${list_of_components}") #set the dependency
-	endif()
+	add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" ${USE_EXACT} FALSE "${list_of_components}") #set the dependency
 endif()
 
 # 4) resolve the package dependency according to memorized internal variables
@@ -1875,7 +1882,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 	# here the version has been resolved, we need to manage the specific case where no version constraint was specified
 	# indeed, the use file should always contain a version constraint because the binary in itselt cannot adapt to different version
 	# it can only use the version used to build it (or any other compatible version)
-	if(NOT list_of_versions AND NOT REQUIRED_VERSION AND ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
+	if(NOT list_of_possible_versions AND NOT REQUIRED_VERSION AND ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
 		#no choice for a given version has been made already, so now memorize this choice to write it later in use file
 		if(${dep_package}_VERSION_STRING)#simply use the version that has been found
 			add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION_STRING}" FALSE FALSE "${list_of_components}") #set the dependency
@@ -2238,218 +2245,6 @@ else()
 	endif()
 endif()
 endfunction(declare_External_Package_Component_Dependency)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |collect_Links_And_Flags_For_External_Component| replace:: ``collect_Links_And_Flags_For_External_Component``
-#  .. _collect_Links_And_Flags_For_External_Component:
-#
-#  collect_Links_And_Flags_For_External_Component
-#  ----------------------------------------------
-#
-#   .. command:: collect_Links_And_Flags_For_External_Component(dep_package dep_component RES_INCS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_C_STANDARD RES_CXX_STANDARD RES_RUNTIME)
-#
-#     Get all required options needed to use an external component.
-#
-#     :dep_package: the name of the external package that contains the external component.
-#
-#     :dep_component: the name of the target external component.
-#
-#     :RES_INCS: output variable containing include path to use when using dep_component.
-#
-#     :RES_DEFS: output variable containing preprocessor definitions to use when using dep_component.
-#
-#     :RES_OPTS: output variable containing compiler options to use when using dep_component.
-#
-#     :RES_LINKS_STATIC: output variable containing the list of path to static libraries to use when using dep_component.
-#
-#     :RES_LINKS_SHARED: output variable containing the list of path to shared libraries and linker options to use when using dep_component.
-#
-#     :RES_C_STANDARD: output variable containing the C language standard to use when using dep_component.
-#
-#     :RES_CXX_STANDARD: output variable containing the C++ language standard to use when using dep_component.
-#
-#     :RES_RUNTIME: output variable containing the list of path to files or folder used at runtime by dep_component.
-#
-function(collect_Links_And_Flags_For_External_Component dep_package dep_component
-RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_C_STANDARD RES_CXX_STANDARD RES_RUNTIME)
-set(INCS_RESULT)
-set(LIBDIRS_RESULT)
-set(DEFS_RESULT)
-set(OPTS_RESULT)
-set(STATIC_LINKS_RESULT)
-set(SHARED_LINKS_RESULT)
-set(RUNTIME_RESULT)
-
-if(${dep_package}_${dep_component}_C_STANDARD${USE_MODE_SUFFIX})#initialize with current value
-	set(C_STD_RESULT ${${dep_package}_${dep_component}_C_STANDARD${USE_MODE_SUFFIX}})
-else()
-	set(C_STD_RESULT 90)#take lowest value
-endif()
-if(${dep_package}_${dep_component}_CXX_STANDARD${USE_MODE_SUFFIX})#initialize with current value
-	set(CXX_STD_RESULT ${${dep_package}_${dep_component}_CXX_STANDARD${USE_MODE_SUFFIX}})
-else()
-	set(CXX_STD_RESULT 98)#take lowest value
-endif()
-
-
-## collecting internal dependencies (recursive call on internal dependencies first)
-if(${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-	foreach(comp IN LISTS ${dep_package}_${dep_component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-		collect_Links_And_Flags_For_External_Component(${dep_package} ${comp} INCS LDIRS DEFS OPTS LINKS_ST LINKS_SH C_STD CXX_STD RUNTIME_RES)
-		if(${dep_package}_${dep_component}_INTERNAL_EXPORT_${comp}${USE_MODE_SUFFIX})
-			if(INCS)
-				list (APPEND INCS_RESULT ${INCS})
-			endif()
-			if(DEFS)
-				list (APPEND DEFS_RESULT ${DEFS})
-			endif()
-		endif()
-
-		if(OPTS)
-			list (APPEND OPTS_RESULT ${OPTS})
-		endif()
-		if(LDIRS)
-			list (APPEND LIBDIRS_RESULT ${LDIRS})
-		endif()
-		if(LINKS_ST)
-			list (APPEND STATIC_LINKS_RESULT ${LINKS_ST})
-		endif()
-		if(LINKS_SH)
-			list (APPEND SHARED_LINKS_RESULT ${LINKS_SH})
-		endif()
-		if(C_STD)#always take the greater standard number
-			is_C_Version_Less(IS_LESS ${C_STD_RESULT} "${${dep_package}_${comp}_C_STANDARD${VAR_SUFFIX}}")
-			if(IS_LESS)
-				set(C_STD_RESULT ${${dep_package}_${comp}_C_STANDARD${VAR_SUFFIX}})
-			endif()
-		endif()
-		if(CXX_STD)#always take the greater standard number
-			is_CXX_Version_Less(IS_LESS ${CXX_STD_RESULT} "${${dep_package}_${comp}_CXX_STANDARD${VAR_SUFFIX}}")
-			if(IS_LESS)
-				set(CXX_STD_RESULT ${${dep_package}_${comp}_CXX_STANDARD${VAR_SUFFIX}})
-			endif()
-		endif()
-		if(RUNTIME_RES)
-			list (APPEND RUNTIME_RESULT ${RUNTIME_RES})
-		endif()
-	endforeach()
-endif()
-
-#1. Manage dependencies of the component
-if(${dep_package}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #if the external package has dependencies we have to resolve those needed by the component
-	#some checks to verify the validity of the declaration
-	if(NOT ${dep_package}_COMPONENTS${USE_MODE_SUFFIX})
-		message (FATAL_ERROR "[PID] CRITICAL ERROR declaring dependency to ${dep_component} in package ${dep_package} : component ${dep_component} is unknown in ${dep_package}.")
-		return()
-	endif()
-	list(FIND ${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${dep_component} INDEX)
-	if(INDEX EQUAL -1)
-		message (FATAL_ERROR "[PID] CRITICAL ERROR declaring dependency to ${dep_component} in package ${dep_package} : component ${dep_component} is unknown in ${dep_package}.")
-		return()
-	endif()
-
-	## collecting external dependencies (recursive call on external dependencies - the corresponding external package must exist)
-	foreach(dep IN LISTS ${dep_package}_${dep_component}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-		foreach(comp IN LISTS ${dep_package}_${dep_component}_EXTERNAL_DEPENDENCY_${dep}_COMPONENTS${USE_MODE_SUFFIX})#if no component defined this is not an errror !
-			collect_Links_And_Flags_For_External_Component(${dep} ${comp} INCS LDIRS DEFS OPTS LINKS_ST LINKS_SH C_STD CXX_STD RUNTIME_RES)
-			if(${dep_package}_${dep_component}_EXTERNAL_EXPORT_${dep}_${comp}${USE_MODE_SUFFIX})
-				if(INCS)
-					list (APPEND INCS_RESULT ${INCS})
-				endif()
-				if(DEFS)
-					list (APPEND DEFS_RESULT ${DEFS})
-				endif()
-			endif()
-
-			if(OPTS)
-				list (APPEND OPTS_RESULT ${OPTS})
-			endif()
-			if(LDIRS)
-				list (APPEND LIBDIRS_RESULT ${LDIRS})
-			endif()
-			if(LINKS_ST)
-				list (APPEND STATIC_LINKS_RESULT ${LINKS_ST})
-			endif()
-			if(LINKS_SH)
-				list (APPEND SHARED_LINKS_RESULT ${LINKS_SH})
-			endif()
-
-			is_C_Version_Less(IS_LESS ${C_STD_RESULT} "${C_STD}")#always take the greater standard number
-			if(IS_LESS)
-				set(C_STD_RESULT ${C_STD})
-			endif()
-			is_CXX_Version_Less(IS_LESS ${CXX_STD_RESULT} "${CXX_STD}")
-			if(IS_LESS)
-				set(CXX_STD_RESULT ${CXX_STD})
-			endif()
-
-			if(RUNTIME_RES)
-				list (APPEND RUNTIME_RESULT ${RUNTIME_RES})
-			endif()
-		endforeach()
-	endforeach()
-endif()
-
-#2. Manage the component properties and return the result
-if(${dep_package}_${dep_component}_INC_DIRS${USE_MODE_SUFFIX})
-	list(APPEND INCS_RESULT ${${dep_package}_${dep_component}_INC_DIRS${USE_MODE_SUFFIX}})
-endif()
-if(${dep_package}_${dep_component}_DEFS${USE_MODE_SUFFIX})
-	list(APPEND DEFS_RESULT ${${dep_package}_${dep_component}_DEFS${USE_MODE_SUFFIX}})
-endif()
-if(${dep_package}_${dep_component}_LIB_DIRS${USE_MODE_SUFFIX})
-	list(APPEND LIBDIRS_RESULT ${${dep_package}_${dep_component}_LIB_DIRS${USE_MODE_SUFFIX}})
-endif()
-if(${dep_package}_${dep_component}_OPTS${USE_MODE_SUFFIX})
-	list(APPEND OPTS_RESULT ${${dep_package}_${dep_component}_OPTS${USE_MODE_SUFFIX}})
-endif()
-if(${dep_package}_${dep_component}_STATIC_LINKS${USE_MODE_SUFFIX})
-	list(APPEND STATIC_LINKS_RESULT ${${dep_package}_${dep_component}_STATIC_LINKS${USE_MODE_SUFFIX}})
-endif()
-if(${dep_package}_${dep_component}_SHARED_LINKS${USE_MODE_SUFFIX})
-	list(APPEND SHARED_LINKS_RESULT ${${dep_package}_${dep_component}_SHARED_LINKS${USE_MODE_SUFFIX}})
-endif()
-if(${dep_package}_${dep_component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX})
-	list(APPEND RUNTIME_RESULT ${${dep_package}_${dep_component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX}})
-endif()
-
-#3. clearing the lists
-if(INCS_RESULT)
-	list(REMOVE_DUPLICATES INCS_RESULT)
-endif()
-if(DEFS_RESULT)
-	list(REMOVE_DUPLICATES DEFS_RESULT)
-endif()
-if(OPTS_RESULT)
-	list(REMOVE_DUPLICATES OPTS_RESULT)
-endif()
-if(LIBDIRS_RESULT)
-	list(REMOVE_DUPLICATES LIBDIRS_RESULT)
-endif()
-if(STATIC_LINKS_RESULT)
-	list(REMOVE_DUPLICATES STATIC_LINKS_RESULT)
-endif()
-if(SHARED_LINKS_RESULT)
-	list(REMOVE_DUPLICATES SHARED_LINKS_RESULT)
-endif()
-if(RUNTIME_RESULT)
-	list(REMOVE_DUPLICATES RUNTIME_RESULT)
-endif()
-
-#4. return the values
-set(${RES_INCS} ${INCS_RESULT} PARENT_SCOPE)
-set(${RES_LIB_DIRS} ${LIBDIRS_RESULT} PARENT_SCOPE)
-set(${RES_DEFS} ${DEFS_RESULT} PARENT_SCOPE)
-set(${RES_OPTS} ${OPTS_RESULT} PARENT_SCOPE)
-set(${RES_LINKS_STATIC} ${STATIC_LINKS_RESULT} PARENT_SCOPE)
-set(${RES_LINKS_SHARED} ${SHARED_LINKS_RESULT} PARENT_SCOPE)
-set(${RES_RUNTIME} ${RUNTIME_RESULT} PARENT_SCOPE)
-set(${RES_C_STANDARD} ${C_STD_RESULT} PARENT_SCOPE)
-set(${RES_CXX_STANDARD} ${CXX_STD_RESULT} PARENT_SCOPE)
-endfunction(collect_Links_And_Flags_For_External_Component)
 
 #.rst:
 #
