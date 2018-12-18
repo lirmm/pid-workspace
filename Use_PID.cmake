@@ -95,6 +95,12 @@ foreach(dep_package IN LISTS ${PROJECT_NAME}_PID_PACKAGES)
 endforeach()
 set(${PROJECT_NAME}_PID_PACKAGES CACHE INTERNAL "")#reset list of packages
 reset_Packages_Finding_Variables()
+#resetting specific variables used to manage components defined locally
+foreach(comp IN LISTS DECLARED_LOCAL_COMPONENTS)
+	set(${comp}_LOCAL_DEPENDENCIES CACHE INTERNAL "")
+	set(${comp}_PID_DEPENDENCIES CACHE INTERNAL "")
+endforeach()
+set(DECLARED_LOCAL_COMPONENTS CACHE INTERNAL "")
 endmacro(import_PID_Workspace)
 
 #.rst:
@@ -180,194 +186,344 @@ endfunction(import_PID_Package)
 #      bind_PID_Components(NAME my-target COMPONENTS pid-rpath/rpathlib)
 #
 function(bind_PID_Components)
-set(oneValueArgs EXE LIB AR)
-set(multiValueArgs COMPONENTS)
-cmake_parse_arguments(BIND_PID_COMPONENTS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-if(NOT BIND_PID_COMPONENTS_EXE AND NOT BIND_PID_COMPONENTS_LIB AND NOT BIND_PID_COMPONENTS_AR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_PID_Components, name of the target must be given using EXE or LIB or AR keywords.")
-elseif((BIND_PID_COMPONENTS_EXE AND BIND_PID_COMPONENTS_LIB) OR (BIND_PID_COMPONENTS_EXE AND BIND_PID_COMPONENTS_AR) OR (BIND_PID_COMPONENTS_AR AND BIND_PID_COMPONENTS_LIB))
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_PID_Components, EXE and LIB keywords cannot be used together.")
-elseif(BIND_PID_COMPONENTS_EXE)
-	set(name ${BIND_PID_COMPONENTS_EXE})
-elseif(BIND_PID_COMPONENTS_LIB)
-	set(name ${BIND_PID_COMPONENTS_LIB})
-elseif(BIND_PID_COMPONENTS_AR)
-	set(name ${BIND_PID_COMPONENTS_AR})
-endif()
-
-#prepare component to be able to manage PID runtime path
-if(BIND_PID_COMPONENTS_EXE OR BIND_PID_COMPONENTS_LIB)
-	if(APPLE)
-		set_target_properties(${name} PROPERTIES INSTALL_RPATH "@loader_path/../lib;@loader_path;;@loader_path/.rpath/${name};@loader_path/../.rpath/${name}") #the library targets a specific folder that contains symbolic links to used shared libraries
-	elseif(UNIX)
-		set_target_properties(${name} PROPERTIES INSTALL_RPATH "\$ORIGIN/../lib;\$ORIGIN;\$ORIGIN/.rpath/${name};\$ORIGIN/../.rpath/${name}") #the library targets a specific folder that contains symbolic links to used shared libraries
+	set(oneValueArgs EXE LIB AR)
+	set(multiValueArgs COMPONENTS)
+	cmake_parse_arguments(BIND_PID_COMPONENTS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+	if(NOT BIND_PID_COMPONENTS_EXE AND NOT BIND_PID_COMPONENTS_LIB AND NOT BIND_PID_COMPONENTS_AR)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_PID_Components, name of the target must be given using EXE or LIB or AR keywords.")
+	elseif((BIND_PID_COMPONENTS_EXE AND BIND_PID_COMPONENTS_LIB) OR (BIND_PID_COMPONENTS_EXE AND BIND_PID_COMPONENTS_AR) OR (BIND_PID_COMPONENTS_AR AND BIND_PID_COMPONENTS_LIB))
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_PID_Components, EXE and LIB keywords cannot be used together.")
+	elseif(BIND_PID_COMPONENTS_EXE)
+		set(name ${BIND_PID_COMPONENTS_EXE})
+	elseif(BIND_PID_COMPONENTS_LIB)
+		set(name ${BIND_PID_COMPONENTS_LIB})
+	elseif(BIND_PID_COMPONENTS_AR)
+		set(name ${BIND_PID_COMPONENTS_AR})
 	endif()
-endif()
 
-if(NOT BIND_PID_COMPONENTS_COMPONENTS)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_PID_Components, at least one component name must be given using COMPONENTS keyword.")
-	return()
-endif()
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-foreach(dep IN LISTS BIND_PID_COMPONENTS_COMPONENTS)
-	message("dependency for ${name}= ${dep}")
-  extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
-  if(NOT RES_PACK)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_PID_Components, component name must be preceded by its package name and a / (e.g. <package>/<component>).")
-	else()
-		list(FIND ${PROJECT_NAME}_PID_PACKAGES ${RES_PACK} INDEX)
-		if(INDEX EQUAL -1)
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_PID_Components, package ${RES_PACK} has not been declare using import_PID_Package.")
+	#prepare component to be able to manage PID runtime path
+	if(BIND_PID_COMPONENTS_EXE OR BIND_PID_COMPONENTS_LIB)
+		if(APPLE)
+			set_target_properties(${name} PROPERTIES INSTALL_RPATH "@loader_path/../lib;@loader_path;;@loader_path/.rpath/${name};@loader_path/../.rpath/${name}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		elseif(UNIX)
+			set_target_properties(${name} PROPERTIES INSTALL_RPATH "\$ORIGIN/../lib;\$ORIGIN;\$ORIGIN/.rpath/${name};\$ORIGIN/../.rpath/${name}") #the library targets a specific folder that contains symbolic links to used shared libraries
 		endif()
 	endif()
-	#create the imported target for that component
-	get_Package_Type(${RES_PACK} PACK_TYPE)
-	if(PACK_TYPE STREQUAL "EXTERNAL")
-		#for direct external packages dependencies we need to do differently
-		collect_Links_And_Flags_For_External_Component(${RES_PACK} ${COMPONENT_NAME}
-					RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_ST RES_LINKS_SH RES_STD_C RES_STD_CXX RES_RUNTIME)
-		set(ALL_LINKS ${RES_LINKS_ST} ${RES_LINKS_SH})
-		if(ALL_LINKS)
-		  evaluate_Variables_In_List(EVAL_LNKS ALL_LINKS) #first evaluate element of the list => if they are variables they are evaluated
-			resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${EVAL_LNKS}" ${CMAKE_BUILD_TYPE})
-			if(COMPLETE_LINKS_PATH)
-				foreach(link IN LISTS COMPLETE_LINKS_PATH)
-					create_External_Dependency_Target(EXT_TARGET_NAME ${link} ${CMAKE_BUILD_TYPE})
-					if(EXT_TARGET_NAME)
-						list(APPEND EXT_LINKS_TARGETS ${EXT_TARGET_NAME})
-					else()
-						list(APPEND EXT_LINKS_OPTIONS ${link})
-					endif()
-				endforeach()
+
+	#updating list of local components bound to pid components
+	set(temp_list ${DECLARED_LOCAL_COMPONENTS} ${name})
+	list(REMOVE_DUPLICATES temp_list)
+	set(DECLARED_LOCAL_COMPONENTS ${temp_list} CACHE INTERNAL "")
+
+	if(NOT BIND_PID_COMPONENTS_COMPONENTS)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_PID_Components, at least one component name must be given using COMPONENTS keyword.")
+		return()
+	endif()
+
+	#for the given component memorize its pid dependencies
+	set(temp_list ${${name}_PID_DEPENDENCIES} ${BIND_PID_COMPONENTS_COMPONENTS})
+	list(REMOVE_DUPLICATES temp_list)
+	set(${name}_PID_DEPENDENCIES ${temp_list} CACHE INTERNAL "")
+
+	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+	foreach(dep IN LISTS BIND_PID_COMPONENTS_COMPONENTS)
+	  extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
+	  if(NOT RES_PACK)
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_PID_Components, component name must be preceded by its package name and a / (e.g. <package>/<component>).")
+		else()
+			list(FIND ${PROJECT_NAME}_PID_PACKAGES ${RES_PACK} INDEX)
+			if(INDEX EQUAL -1)
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_PID_Components, package ${RES_PACK} has not been declare using import_PID_Package.")
 			endif()
-			list(APPEND EXT_LINKS ${EXT_LINKS_TARGETS} ${EXT_LINKS_OPTIONS})
 		endif()
-		if(RES_INCS)
-		  evaluate_Variables_In_List(EVAL_INCS RES_INCS)#first evaluate element of the list => if they are variables they are evaluated
-			resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${EVAL_INCS}" ${CMAKE_BUILD_TYPE})
-		endif()
-		if(RES_OPTS)
-			evaluate_Variables_In_List(EVAL_OPTS RES_OPTS)#first evaluate element of the list => if they are variables they are evaluated
-		endif()
-		if(RES_LIB_DIRS)
-		  evaluate_Variables_In_List(EVAL_LDIRS RES_LIB_DIRS)
-			resolve_External_Libs_Path(COMPLETE_LIB_DIRS_PATH "${EVAL_LDIRS}" ${CMAKE_BUILD_TYPE})
-		endif()
-		if(RES_DEFS)
-		  evaluate_Variables_In_List(EVAL_DEFS RES_DEFS)#first evaluate element of the list => if they are variables they are evaluated
-		endif()
-		if(RES_STD_C)
-		  evaluate_Variables_In_List(EVAL_CSTD RES_STD_C)
-		endif()
-		if(RES_STD_CXX)
-		  evaluate_Variables_In_List(EVAL_CXXSTD RES_STD_CXX)
-		endif()
+		#create the imported target for that component
+		get_Package_Type(${RES_PACK} PACK_TYPE)
+		if(PACK_TYPE STREQUAL "EXTERNAL")
+			#for direct external packages dependencies we need to do differently
+			collect_Links_And_Flags_For_External_Component(${RES_PACK} ${COMPONENT_NAME}
+						RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_ST RES_LINKS_SH RES_STD_C RES_STD_CXX RES_RUNTIME)
+			set(ALL_LINKS ${RES_LINKS_ST} ${RES_LINKS_SH})
+			if(ALL_LINKS)
+			  evaluate_Variables_In_List(EVAL_LNKS ALL_LINKS) #first evaluate element of the list => if they are variables they are evaluated
+				resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${EVAL_LNKS}" ${CMAKE_BUILD_TYPE})
+				if(COMPLETE_LINKS_PATH)
+					foreach(link IN LISTS COMPLETE_LINKS_PATH)
+						create_External_Dependency_Target(EXT_TARGET_NAME ${link} ${CMAKE_BUILD_TYPE})
+						if(EXT_TARGET_NAME)
+							list(APPEND EXT_LINKS_TARGETS ${EXT_TARGET_NAME})
+						else()
+							list(APPEND EXT_LINKS_OPTIONS ${link})
+						endif()
+					endforeach()
+				endif()
+				list(APPEND EXT_LINKS ${EXT_LINKS_TARGETS} ${EXT_LINKS_OPTIONS})
+			endif()
+			if(RES_INCS)
+			  evaluate_Variables_In_List(EVAL_INCS RES_INCS)#first evaluate element of the list => if they are variables they are evaluated
+				resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${EVAL_INCS}" ${CMAKE_BUILD_TYPE})
+			endif()
+			if(RES_OPTS)
+				evaluate_Variables_In_List(EVAL_OPTS RES_OPTS)#first evaluate element of the list => if they are variables they are evaluated
+			endif()
+			if(RES_LIB_DIRS)
+			  evaluate_Variables_In_List(EVAL_LDIRS RES_LIB_DIRS)
+				resolve_External_Libs_Path(COMPLETE_LIB_DIRS_PATH "${EVAL_LDIRS}" ${CMAKE_BUILD_TYPE})
+			endif()
+			if(RES_DEFS)
+			  evaluate_Variables_In_List(EVAL_DEFS RES_DEFS)#first evaluate element of the list => if they are variables they are evaluated
+			endif()
+			if(RES_STD_C)
+			  evaluate_Variables_In_List(EVAL_CSTD RES_STD_C)
+			endif()
+			if(RES_STD_CXX)
+			  evaluate_Variables_In_List(EVAL_CXXSTD RES_STD_CXX)
+			endif()
 
-		# managing compile time flags
-		foreach(dir IN LISTS COMPLETE_INCLUDES_PATH)
-			target_include_directories(${name} PUBLIC "${dir}")
-		endforeach()
+			# managing compile time flags
+			foreach(dir IN LISTS COMPLETE_INCLUDES_PATH)
+				target_include_directories(${name} PUBLIC "${dir}")
+			endforeach()
 
-		foreach(def IN LISTS RES_DEFS)
-			target_compile_definitions(${name} PUBLIC "${def}")
-		endforeach()
+			foreach(def IN LISTS RES_DEFS)
+				target_compile_definitions(${name} PUBLIC "${def}")
+			endforeach()
 
-		foreach(opt IN LISTS RES_OPTS)
-			target_compile_options(${name} PUBLIC "${opt}")
-		endforeach()
+			foreach(opt IN LISTS RES_OPTS)
+				target_compile_options(${name} PUBLIC "${opt}")
+			endforeach()
 
-		# managing link time flags
-		foreach(link IN LISTS EXT_LINKS)
-			target_link_libraries(${name} PUBLIC ${link})
-		endforeach()
+			# managing link time flags
+			foreach(link IN LISTS EXT_LINKS)
+				target_link_libraries(${name} PUBLIC ${link})
+			endforeach()
 
-		foreach(dir IN LISTS COMPLETE_LIB_DIRS_PATH)
-		  target_link_libraries(${name} PUBLIC "-L${dir}")#generate -L linker flags for library dirs
-		endforeach()
+			foreach(dir IN LISTS COMPLETE_LIB_DIRS_PATH)
+			  target_link_libraries(${name} PUBLIC "-L${dir}")#generate -L linker flags for library dirs
+			endforeach()
 
-		# manage C/C++ language standards
-		if(RES_STD_C)#the std C is let optional as using a standard may cause error with posix includes
-			get_target_property(CURR_STD_C ${name} C_STANDARD)
-			is_C_Version_Less(IS_LESS ${CURR_STD_C} ${RES_STD_C})
+			# manage C/C++ language standards
+			if(RES_STD_C)#the std C is let optional as using a standard may cause error with posix includes
+				get_target_property(CURR_STD_C ${name} C_STANDARD)
+				is_C_Version_Less(IS_LESS ${CURR_STD_C} ${RES_STD_C})
+				if(IS_LESS)
+					set_target_properties(${name} PROPERTIES
+							C_STANDARD ${RES_STD_C}
+							C_STANDARD_REQUIRED YES
+							C_EXTENSIONS NO
+					)#setting the standard in use locally
+				endif()
+			endif()
+			get_target_property(CURR_STD_CXX ${name} CXX_STANDARD)
+			is_CXX_Version_Less(IS_LESS ${CURR_STD_CXX} ${RES_STD_CXX})
 			if(IS_LESS)
 				set_target_properties(${name} PROPERTIES
-						C_STANDARD ${RES_STD_C}
-						C_STANDARD_REQUIRED YES
-						C_EXTENSIONS NO
-				)#setting the standard in use locally
+					CXX_STANDARD ${RES_STD_CXX}
+					CXX_STANDARD_REQUIRED YES
+					CXX_EXTENSIONS NO
+					)#setting the standard in use locally
 			endif()
-		endif()
-		get_target_property(CURR_STD_CXX ${name} CXX_STANDARD)
-		is_CXX_Version_Less(IS_LESS ${CURR_STD_CXX} ${RES_STD_CXX})
-		if(IS_LESS)
-			set_target_properties(${name} PROPERTIES
-				CXX_STANDARD ${RES_STD_CXX}
-				CXX_STANDARD_REQUIRED YES
-				CXX_EXTENSIONS NO
-				)#setting the standard in use locally
-		endif()
 
-	else()
-		create_Dependency_Target(${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE}) #create the fake target for component
-		is_HeaderFree_Component(DEP_IS_HF ${RES_PACK} ${COMPONENT_NAME})
-		if(NOT DEP_IS_HF) #link that target (only possible with non runtime libraries)#TODO not sure this is consistent since a header lib may have undirect binaries !!
-			target_link_libraries(${name} PUBLIC ${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX})
-		endif()
+		else()
+			create_Dependency_Target(${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE}) #create the fake target for component
+			is_HeaderFree_Component(DEP_IS_HF ${RES_PACK} ${COMPONENT_NAME})
+			if(NOT DEP_IS_HF) #link that target (only possible with non runtime libraries)#TODO not sure this is consistent since a header lib may have undirect binaries !!
+				target_link_libraries(${name} PUBLIC ${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX})
+			endif()
 
-		target_include_directories(${name} PUBLIC
-		$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+			target_include_directories(${name} PUBLIC
+			$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
 
-		target_compile_definitions(${name} PUBLIC
-		$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+			target_compile_definitions(${name} PUBLIC
+			$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
-		target_compile_options(${name} PUBLIC
-		$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
+			target_compile_options(${name} PUBLIC
+			$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
 
-		# manage C/C++ language standards
-		if(${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX})#the std C is let optional as using a standard may cause error with posix includes
-			get_target_property(CURR_STD_C ${name} C_STANDARD)
-			is_C_Version_Less(IS_LESS ${CURR_STD_C} ${${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX}})
+			# manage C/C++ language standards
+			if(${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX})#the std C is let optional as using a standard may cause error with posix includes
+				get_target_property(CURR_STD_C ${name} C_STANDARD)
+				is_C_Version_Less(IS_LESS ${CURR_STD_C} ${${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX}})
+				if(IS_LESS)
+					set_target_properties(${name} PROPERTIES
+							C_STANDARD ${${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX}}
+							C_STANDARD_REQUIRED YES
+							C_EXTENSIONS NO
+					)#setting the standard in use locally
+				endif()
+			endif()
+			get_target_property(CURR_STD_CXX ${name} CXX_STANDARD)
+			is_CXX_Version_Less(IS_LESS ${CURR_STD_CXX} ${${RES_PACK}_${COMPONENT_NAME}_CXX_STANDARD${VAR_SUFFIX}})
 			if(IS_LESS)
 				set_target_properties(${name} PROPERTIES
-						C_STANDARD ${${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX}}
-						C_STANDARD_REQUIRED YES
-						C_EXTENSIONS NO
-				)#setting the standard in use locally
+					CXX_STANDARD ${${RES_PACK}_${COMPONENT_NAME}_CXX_STANDARD${VAR_SUFFIX}}
+					CXX_STANDARD_REQUIRED YES
+					CXX_EXTENSIONS NO
+					)#setting the standard in use locally
 			endif()
 		endif()
-		get_target_property(CURR_STD_CXX ${name} CXX_STANDARD)
-		is_CXX_Version_Less(IS_LESS ${CURR_STD_CXX} ${${RES_PACK}_${COMPONENT_NAME}_CXX_STANDARD${VAR_SUFFIX}})
-		if(IS_LESS)
-			set_target_properties(${name} PROPERTIES
-				CXX_STANDARD ${${RES_PACK}_${COMPONENT_NAME}_CXX_STANDARD${VAR_SUFFIX}}
-				CXX_STANDARD_REQUIRED YES
-				CXX_EXTENSIONS NO
-				)#setting the standard in use locally
+
+		#Note: there is no resolution of dependenct binary packages runtime dependencies (as for native package build) because resolution has already taken place after deployment of dependent packages.
+
+		#For executable we need to resolve everything before linking so that there is no more unresolved symbols
+		#equivalent with resolve_Source_Component_Linktime_Dependencies in native packages
+		if(BIND_PID_COMPONENTS_EXE)
+			#need to resolve all symbols before linking executable so need to find undirect symbols => same as for native packages
+			# 1) searching each direct dependency in other packages
+			set(undirect_deps)
+			find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} TRUE ${CMAKE_BUILD_TYPE})
+			if(LIST_OF_DEP_SHARED)
+				set(undirect_deps ${LIST_OF_DEP_SHARED})
+			endif()
+
+			if(undirect_deps) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
+				list(REMOVE_DUPLICATES undirect_deps)
+				get_target_property(thelibs ${name} LINK_LIBRARIES)
+				set_target_properties(${name} PROPERTIES LINK_LIBRARIES "${thelibs};${undirect_deps}")
+			endif()
 		endif()
+		#now generating symlinks in install tree of the component (for exe and shared libs)
+		#equivalent of resolve_Source_Component_Runtime_Dependencies in native packages
+		if(BIND_PID_COMPONENTS_EXE OR BIND_PID_COMPONENTS_LIB)
+			### STEP A: create symlinks in install tree
+			set(to_symlink ${undirect_deps}) # in case of an executable component add third party (undirect) links
+
+			get_Binary_Location(LOCATION_RES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE})
+			list(APPEND to_symlink ${LOCATION_RES})
+
+			#1) getting public shared links
+			get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
+			if(INT_DEP_RUNTIME_RESOURCES)
+				list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
+			endif()
+			#2) getting private shared links (undirect by definition)
+			get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE})
+			if(RES_PRIVATE_LINKS)
+				list(APPEND to_symlink ${RES_PRIVATE_LINKS})
+			endif()
+			#3) getting direct and undirect runtime resources dependencies
+			get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE})
+			if(RES_RESOURCES)
+				list(APPEND to_symlink ${RES_RESOURCES})
+			endif()
+			#finally create install rule for the symlinks
+			if(to_symlink)
+				list(REMOVE_DUPLICATES to_symlink)
+			endif()
+			foreach(resource IN LISTS to_symlink)
+				install_Runtime_Symlink(${resource} "${CMAKE_INSTALL_PREFIX}/.rpath" ${name})
+			endforeach()
+
+			### STEP B: create symlinks in build tree (to allow the runtime resources PID mechanism to work at runtime)
+			set(to_symlink) # in case of an executable component add third party (undirect) links
+			#no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
+			#1) getting runtime resources of the component dependency
+			get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE}) #resolve external runtime resources
+			if(INT_DEP_RUNTIME_RESOURCES)
+				list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
+			endif()
+			#2) getting component as runtime ressources if it a pure runtime entity (dynamically loaded library)
+			if(${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "MODULE")
+				list(APPEND to_symlink ${${RES_PACK}_ROOT_DIR}/lib/${${RES_PACK}_${COMPONENT_NAME}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+			elseif(${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "APP" OR ${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "EXAMPLE")
+				list(APPEND to_symlink ${${RES_PACK}_ROOT_DIR}/bin/${${RES_PACK}_${COMPONENT_NAME}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+			endif()
+			#finally create install rule for the symlinks
+			if(to_symlink)
+				list(REMOVE_DUPLICATES to_symlink)
+			endif()
+			foreach(resource IN LISTS to_symlink)
+				create_Runtime_Symlink(${resource} "${CMAKE_BINARY_DIR}/.rpath" ${name})
+			endforeach()
+		endif()
+	endforeach()
+
+	#creating specific .rpath folders if build tree to make it possible to use runtime resources in build tree
+	if(NOT EXISTS ${CMAKE_BINARY_DIR}/.rpath)
+		file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath)
 	endif()
 
-	#Note: there is no resolution of dependenct binary packages runtime dependencies (as for native package build) because resolution has already taken place after deployment of dependent packages.
+endfunction(bind_PID_Components)
 
-	#For executable we need to resolve everything before linking so that there is no more unresolved symbols
-	#equivalent with resolve_Source_Component_Linktime_Dependencies in native packages
-	if(BIND_PID_COMPONENTS_EXE)
+function(bind_Local_Component)
+	set(oneValueArgs EXE LIB AR COMPONENT)
+	cmake_parse_arguments(BIND_LOCAL_COMPONENT "" "${oneValueArgs}" "" ${ARGN})
+	if(NOT BIND_LOCAL_COMPONENT_EXE AND NOT BIND_LOCAL_COMPONENT_LIB AND NOT BIND_LOCAL_COMPONENT_AR)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_Local_Components, name of the target must be given using EXE or LIB or AR keywords.")
+	elseif((BIND_LOCAL_COMPONENT_EXE AND BIND_LOCAL_COMPONENT_LIB) OR (BIND_LOCAL_COMPONENT_EXE AND BIND_LOCAL_COMPONENT_AR) OR (BIND_LOCAL_COMPONENT_AR AND BIND_LOCAL_COMPONENT_LIB))
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_Local_Components, EXE and LIB keywords cannot be used together.")
+	elseif(BIND_LOCAL_COMPONENT_EXE)
+		set(component ${BIND_LOCAL_COMPONENT_EXE})
+	elseif(BIND_LOCAL_COMPONENT_LIB)
+		set(component ${BIND_LOCAL_COMPONENT_LIB})
+	elseif(BIND_LOCAL_COMPONENT_AR)
+		set(component ${BIND_LOCAL_COMPONENT_AR})
+	endif()
+
+	if(NOT BIND_LOCAL_COMPONENT_COMPONENT)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_Local_Components, a component name must be given using COMPONENT keyword.")
+		return()
+	endif()
+	set(dependency ${BIND_LOCAL_COMPONENT_COMPONENT})
+
+	#updating local dependencies for component
+	set(temp_list ${${component}_LOCAL_DEPENDENCIES})
+	list(APPEND temp_list ${dependency})
+	list(REMOVE_DUPLICATES temp_list)
+	set(${component}_LOCAL_DEPENDENCIES ${temp_list} CACHE INTERNAL "")
+
+	target_link_libraries(${component} PUBLIC ${dependency})#linking as usual
+
+	if(BIND_LOCAL_COMPONENT_EXE)#resolve global linking for executables !!
 		#need to resolve all symbols before linking executable so need to find undirect symbols => same as for native packages
-		# 1) searching each direct dependency in other packages
-		set(undirect_deps)
+		get_Local_Private_Shared_Libraries(LIBS ${dependency})
+		if(LIBS)
+			get_target_property(thelibs ${component} LINK_LIBRARIES)
+			set_target_properties(${component} PROPERTIES LINK_LIBRARIES "${thelibs};${LIBS}")
+		endif()
+	endif()
+	#then resolve symlinks required by PID components to find their runtime resources
+	if(BIND_LOCAL_COMPONENT_EXE OR BIND_LOCAL_COMPONENT_LIB)
+		generate_Local_Component_Symlinks(${component} ${dependency} "${LIBS}")
+	endif()
+endfunction(bind_Local_Component)
+
+function(get_Local_Private_Shared_Libraries LIBS local_component)
+	set(${LIBS} PARENT_SCOPE)
+	set(undirect_deps)
+	#recursion on local components first
+	foreach(dep IN LISTS ${local_component}_LOCAL_DEPENDENCIES)
+		get_Local_Private_Shared_Libraries(DEP_LIBS ${dep})
+		if(DEP_LIBS)
+			list(APPEND undirect_deps ${DEP_LIBS})
+		endif()
+	endforeach()
+
+	#then direct dependencies to PID components
+	foreach(dep IN LISTS ${local_component}_PID_DEPENDENCIES)
+		extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
 		find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} TRUE ${CMAKE_BUILD_TYPE})
 		if(LIST_OF_DEP_SHARED)
-			set(undirect_deps ${LIST_OF_DEP_SHARED})
+			list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
 		endif()
+	endforeach()
 
-		if(undirect_deps) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
-			list(REMOVE_DUPLICATES undirect_deps)
-			get_target_property(thelibs ${name} LINK_LIBRARIES)
-			set_target_properties(${name} PROPERTIES LINK_LIBRARIES "${thelibs};${undirect_deps}")
-		endif()
+	if(undirect_deps)
+		list(REMOVE_DUPLICATES undirect_deps)
 	endif()
-	#now generating symlinks in install tree of the component (for exe and shared libs)
-	#equivalent of resolve_Source_Component_Runtime_Dependencies in native packages
-	if(BIND_PID_COMPONENTS_EXE OR BIND_PID_COMPONENTS_LIB)
+	set(${LIBS} ${undirect_deps} PARENT_SCOPE)
+endfunction(get_Local_Private_Shared_Libraries)
+
+function(generate_Local_Component_Symlinks local_component local_dependency undirect_deps)
+	#recursion on local components first
+	foreach(dep IN LISTS ${local_dependency}_LOCAL_DEPENDENCIES)
+		generate_Local_Component_Symlinks(${local_component} ${dep} "")
+	endforeach()
+
+	foreach(dep IN LISTS ${local_dependency}_PID_DEPENDENCIES)
+		extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
+
+		#now generating symlinks in install tree of the component (for exe and shared libs)
+		#equivalent of resolve_Source_Component_Runtime_Dependencies in native packages
 		### STEP A: create symlinks in install tree
 		set(to_symlink ${undirect_deps}) # in case of an executable component add third party (undirect) links
 
@@ -394,10 +550,9 @@ foreach(dep IN LISTS BIND_PID_COMPONENTS_COMPONENTS)
 			list(REMOVE_DUPLICATES to_symlink)
 		endif()
 		foreach(resource IN LISTS to_symlink)
-			install_Runtime_Symlink(${resource} "${CMAKE_INSTALL_PREFIX}/.rpath" ${name})
+			install_Runtime_Symlink(${resource} "${CMAKE_INSTALL_PREFIX}/.rpath" ${local_component})
 		endforeach()
 
-		message("${name} symlinked in install tree: ${to_symlink}")
 		### STEP B: create symlinks in build tree (to allow the runtime resources PID mechanism to work at runtime)
 		set(to_symlink) # in case of an executable component add third party (undirect) links
 		#no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
@@ -417,15 +572,8 @@ foreach(dep IN LISTS BIND_PID_COMPONENTS_COMPONENTS)
 			list(REMOVE_DUPLICATES to_symlink)
 		endif()
 		foreach(resource IN LISTS to_symlink)
-			create_Runtime_Symlink(${resource} "${CMAKE_BINARY_DIR}/.rpath" ${name})
+			create_Runtime_Symlink(${resource} "${CMAKE_BINARY_DIR}/.rpath" ${local_component})
 		endforeach()
-	endif()
-endforeach()
+	endforeach()
 
-
-#creating specific .rpath folders if build tree to make it possible to use runtime resources in build tree
-if(NOT EXISTS ${CMAKE_BINARY_DIR}/.rpath)
-	file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath)
-endif()
-
-endfunction(bind_PID_Components)
+endfunction(generate_Local_Component_Symlinks)
