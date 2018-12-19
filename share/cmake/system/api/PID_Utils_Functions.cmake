@@ -3236,15 +3236,15 @@ endfunction(get_Framework_Repository_Address)
 #
 function(get_Jekyll_URLs full_url NAMESPACE REMAINING_URL)
 	string(REGEX REPLACE "^(http[s]?://[^/]+)/(.+)$" "\\1;\\2" all_urls ${full_url})
-	if(NOT (all_urls STREQUAL ${full_url}))#it matches
+	if(NOT (all_urls STREQUAL full_url))#it matches
 		list(GET all_urls 0 pub)
 		list(GET all_urls 1 base)
-		set(NAMESPACE ${pub} PARENT_SCOPE)
-		set(REMAINING_URL ${base} PARENT_SCOPE)
+		set(${NAMESPACE} ${pub} PARENT_SCOPE)
+		set(${REMAINING_URL} ${base} PARENT_SCOPE)
 	else()
 		string(REGEX REPLACE "^(http[s]?://[^/]+)/?$" "\\1" pub_url ${full_url})
-		set(NAMESPACE ${pub_url} PARENT_SCOPE)
-		set(REMAINING_URL PARENT_SCOPE)
+		set(${NAMESPACE} ${pub_url} PARENT_SCOPE)
+		set(${REMAINING_URL} PARENT_SCOPE)
 	endif()
 endfunction(get_Jekyll_URLs)
 
