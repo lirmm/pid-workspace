@@ -52,7 +52,7 @@ if (UNIX)
 	endif()
 
 	if(IS_FOUND)
-		found_PID_Configuration(boost TRUE)
+		found_PID_Configuration(crypt TRUE)
 	endif ()
 
 	unset(IS_FOUND)
