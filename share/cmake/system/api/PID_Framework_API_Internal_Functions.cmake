@@ -270,8 +270,7 @@ file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 if(DIR_NAME STREQUAL "build")
 
 	set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
-	list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the framework
-
+	set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake PARENT_SCOPE) # adding the cmake scripts files from the framework
 	init_PID_Version_Variable() # getting the workspace version used to generate the code
 	set(res_string)
 	foreach(string_el IN ITEMS ${author})
