@@ -2134,9 +2134,19 @@ else()# check that integration branch is a fast forward of master
 	merge_Into_Integration(${package})
 
 	### now starting a new version
+	list(LENGTH DIGITS SIZE)
+	if(SIZE GREATER 2)
+		list(GET DIGITS 2 patch)
+	else()
+		set(patch 0)
+	endif()
+	if(SIZE GREATER 1)
+		list(GET DIGITS 1 minor)
+	else()
+		set(minor 0)
+	endif()
 	list(GET DIGITS 0 major)
-	list(GET DIGITS 1 minor)
-	list(GET DIGITS 2 patch)
+
 	if("${next}" STREQUAL "MAJOR")
 		math(EXPR major "${major}+1")
 		set(minor 0)
