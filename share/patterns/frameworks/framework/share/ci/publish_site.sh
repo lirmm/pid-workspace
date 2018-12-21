@@ -8,3 +8,8 @@ else
 fi
 
 cp -R ./build/generated/* ./public/
+
+#specific cleaning action to remove generated /_site, if any
+if [ -d "./public/_site" ]; then
+  rm -Rf ./public/_site
+fi

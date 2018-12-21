@@ -17,44 +17,23 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(Configuration_Definition NO_POLICY_SCOPE)
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_PROCESSOR arm)
 
-found_PID_Configuration(crypt FALSE)
+# To install the toolchain on your system see here :
+# https://crosstool-ng.github.io/
 
-# - Find crypt installation
-# Try to find libraries for crypt on UNIX systems. The following values are defined
-#  crypt_FOUND        - True if posix is available
-#  crypt_LIBRARIES    - link against these to use posix system
-if (UNIX)
+#set(tools $ENV{HOME}/x-tools/)
+set(CMAKE_C_COMPILER armv8-rpi3-linux-gnueabihf-gcc)
+set(CMAKE_CXX_COMPILER armv8-rpi3-linux-gnueabihf-g++)
 
-	# posix is never a framework and some header files may be
-	# found in tcl on the mac
-	set(CMAKE_FIND_FRAMEWORK_SAVE ${CMAKE_FIND_FRAMEWORK})
-	set(CMAKE_FIND_FRAMEWORK NEVER)
+#Maybe useless
+SET(CMAKE_FIND_ROOT_PATH $ENV{HOME}/x-tools/armv8-rpi3-linux-gnueabihf)
 
-	find_path(crypt_INCLUDE_PATH crypt.h
-	          /usr/local/include/crypt
-		  /usr/local/include
-		  /usr/include/crypt
-		  /usr/include)
+#The one usefull
+SET(CMAKE_SYSROOT $ENV{HOME}/x-tools/armv8-rpi3-linux-gnueabihf/armv8-rpi3-linux-gnueabihf/sysroot)
 
-	find_library(crypt_LIB
-		NAMES crypt
-		PATHS /usr/local/lib /usr/lib /lib )
-
-	set(IS_FOUND TRUE)
-	if(crypt_INCLUDE_PATH AND crypt_LIB)
-		convert_PID_Libraries_Into_System_Links(crypt_LIB CRYPT_LINKS)#getting good system links (with -l)
-		convert_PID_Libraries_Into_Library_Directories(crypt_LIB CRYPT_LIBDIR)
-	else()
-		message("[PID] ERROR : cannot find crypt library.")
-		set(IS_FOUND FALSE)
-	endif()
-
-	if(IS_FOUND)
-		found_PID_Configuration(crypt TRUE)
-	endif ()
-
-	unset(IS_FOUND)
-	set(CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK_SAVE})
-endif ()
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)

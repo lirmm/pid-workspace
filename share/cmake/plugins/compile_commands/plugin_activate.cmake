@@ -17,44 +17,22 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(Configuration_Definition NO_POLICY_SCOPE)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 
-found_PID_Configuration(crypt FALSE)
+## main script
 
-# - Find crypt installation
-# Try to find libraries for crypt on UNIX systems. The following values are defined
-#  crypt_FOUND        - True if posix is available
-#  crypt_LIBRARIES    - link against these to use posix system
-if (UNIX)
+if(CMAKE_BUILD_TYPE MATCHES Release) #only generating in release mode
 
-	# posix is never a framework and some header files may be
-	# found in tcl on the mac
-	set(CMAKE_FIND_FRAMEWORK_SAVE ${CMAKE_FIND_FRAMEWORK})
-	set(CMAKE_FIND_FRAMEWORK NEVER)
+	if(${PROJECT_NAME}_COMPONENTS) #if no component => nothing to build so no need of compile commands
 
-	find_path(crypt_INCLUDE_PATH crypt.h
-	          /usr/local/include/crypt
-		  /usr/local/include
-		  /usr/include/crypt
-		  /usr/include)
+		set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+		if( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json" )
+			EXECUTE_PROCESS( COMMAND ${CMAKE_COMMAND} -E copy_if_different
+				${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json
+				${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json
+				)
+		endif()
 
-	find_library(crypt_LIB
-		NAMES crypt
-		PATHS /usr/local/lib /usr/lib /lib )
-
-	set(IS_FOUND TRUE)
-	if(crypt_INCLUDE_PATH AND crypt_LIB)
-		convert_PID_Libraries_Into_System_Links(crypt_LIB CRYPT_LINKS)#getting good system links (with -l)
-		convert_PID_Libraries_Into_Library_Directories(crypt_LIB CRYPT_LIBDIR)
-	else()
-		message("[PID] ERROR : cannot find crypt library.")
-		set(IS_FOUND FALSE)
 	endif()
 
-	if(IS_FOUND)
-		found_PID_Configuration(crypt TRUE)
-	endif ()
-
-	unset(IS_FOUND)
-	set(CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK_SAVE})
-endif ()
+endif()

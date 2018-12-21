@@ -248,7 +248,7 @@ endfunction(init_Meta_Info_Cache_Variables)
 #      :introduction: The introduction text used in current project static site (lone or framework)
 #
 function(init_Documentation_Info_Cache_Variables framework project_page repo home_page introduction)
-if(framework STREQUAL "")
+if(NOT framework)
 	set(${PROJECT_NAME}_FRAMEWORK CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PROJECT_PAGE ${project_page} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_SITE_ROOT_PAGE "${home_page}" CACHE INTERNAL "")

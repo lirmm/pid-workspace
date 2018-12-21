@@ -21,7 +21,7 @@ include(CMakeParseArguments)
 
 #.rst:
 #
-# .. ifmode:: internal
+# .. ifmode:: user
 #
 #  .. |import_PID_Workspace| replace:: ``import_PID_Workspace``
 #  .. _import_PID_Workspace:
@@ -33,7 +33,21 @@ include(CMakeParseArguments)
 #
 #     Import a PID workspace into current non PID CMake project.
 #
-#     :path: the path to the target workspace root folder.
+#   .. rubric:: Required parameters
+#
+#   :<path>: the path to the target workspace root folder.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     After the call, the PID workspace can be used in the local project.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      set(PATH_TO_PID_WORKSPACE /opt/pid/pid-workspace CACHE PATH "")
+#      import_PID_Workspace(PATH_TO_PID_WORKSPACE)
 #
 macro(import_PID_Workspace path)
 if(${path} STREQUAL "")
@@ -124,10 +138,15 @@ endmacro(import_PID_Workspace)
 #
 #   :VERSION <version string>: the version of the target package to import.
 #
+#   .. admonition:: Constraints
+#     :class: important
+#
+#     Must be called AFTER import_PID_Workspace.
+#
 #   .. admonition:: Effects
 #     :class: important
 #
-#     After the call, the content of the package can be in the local project.
+#     After the call, components defined by the PID package can be used in the local project.
 #
 #   .. rubric:: Example
 #
@@ -165,14 +184,19 @@ endfunction(import_PID_Package)
 #  bind_PID_Components
 #  -------------------
 #
-#  .. command:: bind_PID_Components(PACKAGE ... [VERSION ...])
+#  .. command:: bind_PID_Components(EXE|LIB|AR ... COMPONENTS ...)
 #
 #   Make the given local target depends on a set of PID components, typically libraries.
 #
 #   .. rubric:: Required parameters
 #
-#   :EXE|LIB <string>: the name of the local target and its type (EXE= exécutable binary, LIB=library).
+#   :EXE|LIB|AR <string>: the name of the local target and its type (EXE= exécutable binary, LIB=shared library, AR= archive library).
 #   :COMPONENTS <list of components>: the list of components to use. Each component has the pattern <package_name>/<component_name>
+#
+#   .. admonition:: Constraints
+#     :class: important
+#
+#     PID Packages used must have been immported using import_PID_Package BEFORE call to this function.
 #
 #   .. admonition:: Effects
 #     :class: important
@@ -444,6 +468,35 @@ function(bind_PID_Components)
 
 endfunction(bind_PID_Components)
 
+#.rst:
+# .. ifmode:: user
+#
+#  .. |bind_Local_Component| replace:: ``bind_Local_Component``
+#  .. _bind_Local_Component:
+#
+#  bind_Local_Component
+#  --------------------
+#
+#  .. command:: bind_Local_Component(EXE|LIB|AR ... COMPONENT ...)
+#
+#   Make the given local target depends on another local target (i.e. library). Use to manage transitivity between local components when the dependency depends on pid components.
+#
+#   .. rubric:: Required parameters
+#
+#   :EXE|LIB|AR <string>: the name of the local target and its type (EXE= exécutable binary, LIB=shared library, AR= archive library).
+#   :COMPONENT <string>: the name of the local component target that is the dependency.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     After the call, the content of the package can be in the local project.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      bind_Local_Component(EXE local COMPONENT mylib)
+#
 function(bind_Local_Component)
 	set(oneValueArgs EXE LIB AR COMPONENT)
 	cmake_parse_arguments(BIND_LOCAL_COMPONENT "" "${oneValueArgs}" "" ${ARGN})
