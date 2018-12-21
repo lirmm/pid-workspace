@@ -54,7 +54,7 @@ fi
 #initializing the pid-workspace
 if [ ! -d "./binaries/pid-workspace" ]; then
   # clone the workspace into the binaries folder
-  cd binaries && git clone git@gite.lirmm.fr:pid/pid-workspace.git
+  cd binaries && git clone https://gite.lirmm.fr/pid/pid-workspace.git
   # ensure to work on master branch
   cd pid-workspace && git checkout master
   # previous to an execution of cmake we need to set a link into the workspace that point to the current package
