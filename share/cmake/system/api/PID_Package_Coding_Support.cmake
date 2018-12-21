@@ -182,9 +182,10 @@ function(add_Static_Check component is_library)
 	endif()
 
 	set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")
+  set(CPPCHECK_LANGUAGE --language=c++)#always using c++ language
 	if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
 		add_test(NAME ${component}_staticcheck
-			 COMMAND ${CPPCHECK_EXECUTABLE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
+    COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
 		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: ")
 	endif()#TODO also manage the language standard here (option -std=)!! necessary ?
 
@@ -198,7 +199,7 @@ function(add_Static_Check component is_library)
 	#adding a target to print all issues for the given target, this is used to generate a report
 	add_custom_command(TARGET staticchecks PRE_BUILD
 		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
-		COMMAND ${CPPCHECK_EXECUTABLE} ${ALL_SETTINGS} ${CPPCHECK_ARGS} --xml-version=2 ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
+		COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${ALL_SETTINGS} ${CPPCHECK_ARGS} --xml-version=2 ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
 
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
