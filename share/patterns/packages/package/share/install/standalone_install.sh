@@ -32,11 +32,11 @@ with_examples="OFF"
 
 for an_arg in "$@"
 do
-  if [$an_arg = "test"]; then
+  if [ $an_arg = "test" ]; then
     with_tests="ON"
-  elif [$an_arg = "example"]; then
+  elif [ $an_arg = "example" ]; then
     with_examples="ON"
-  elif [$an_arg = "help"]; then
+  elif [ $an_arg = "help" ]; then
     echo "Usage: `\n` + argument \"test\" builds and run tests `\n` + argument \"example\" builds the examples."
   fi
 done
