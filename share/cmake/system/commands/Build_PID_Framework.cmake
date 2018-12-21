@@ -30,5 +30,7 @@ file(REMOVE ${PATH_TO_FRAMEWORK_RESULT})
 file(COPY ${PATH_TO_FRAMEWORK_SRC}/assets ${PATH_TO_FRAMEWORK_SRC}/_packages ${PATH_TO_FRAMEWORK_SRC}/_external ${PATH_TO_FRAMEWORK_SRC}/pages ${PATH_TO_FRAMEWORK_SRC}/_posts DESTINATION ${PATH_TO_FRAMEWORK_JEKYLL} NO_SOURCE_PERMISSIONS)
 
 #2) build site with jekyll
-
 execute_process(COMMAND ${JEKYLL_EXECUTABLE} build -d ${PATH_TO_FRAMEWORK_RESULT} WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_JEKYLL})
+
+#3) finally copy assets "as is" from "to_generate" folder to "generated" folder (to ensure that no jekyll processing removed some files)
+file(COPY ${PATH_TO_FRAMEWORK_JEKYLL}/assets DESTINATION ${PATH_TO_FRAMEWORK_RESULT} NO_SOURCE_PERMISSIONS)
