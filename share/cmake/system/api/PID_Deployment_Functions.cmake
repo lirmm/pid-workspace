@@ -2110,8 +2110,10 @@ endfunction(deploy_Source_External_Package_Version)
 #      :IS_SYSTEM: the output variable that is TRUE if SELECTED_VERSION must be an OS installed version, false otherwise.
 #
 function(resolve_Required_External_Package_Version RESOLUTION_OK SELECTED_VERSION IS_EXACT IS_SYSTEM package)
-	list(REMOVE_DUPLICATES ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
-	set(CURRENT_EXACT FALSE)
+  if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
+    list(REMOVE_DUPLICATES ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
+  endif()
+  set(CURRENT_EXACT FALSE)
   set(CURRENT_SYSTEM FALSE)
 	#1) first pass to eliminate everything impossible just when considering exactness
 	foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
