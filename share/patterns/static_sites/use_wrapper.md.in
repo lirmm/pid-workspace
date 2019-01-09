@@ -9,7 +9,7 @@ package: @PACKAGE_NAME@
 You can import @PACKAGE_NAME@ as usual with PID. In the root CMakelists.txt file of your package, after the package declaration you have to write something like:
 
 {% highlight cmake %}
-declare_PID_Package_Dependency(PACKAGE @PACKAGE_NAME@ EXTERNAL)
+PID_Dependency(@PACKAGE_NAME@)
 {% endhighlight %}
 
 It will try to install last version of this external package.
@@ -17,7 +17,7 @@ It will try to install last version of this external package.
 If you want a specific version (recommended), for instance the currently last released version:
 
 {% highlight cmake %}
-declare_PID_Package_Dependency(PACKAGE @PACKAGE_NAME@ EXTERNAL VERSION @PACKAGE_LAST_VERSION_WITHOUT_PATCH@)
+PID_Dependency(@PACKAGE_NAME@ VERSION @PACKAGE_LAST_VERSION_WITHOUT_PATCH@)
 {% endhighlight %}
 
 ## Components

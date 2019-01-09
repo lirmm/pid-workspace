@@ -896,7 +896,8 @@ if(${prefix}_${component}_USAGE_INCLUDES)
 	set(RES "${RES}{% endhighlight %}\n")
 endif()
 # for any kind of usable component
-set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applications, libraries or tests:\n\n{% highlight cmake %}\ndeclare_PID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tEXTERNAL\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n{% endhighlight %}\n\n")
+set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applications and tests, or those of your libraries that **do not export the dependency**:\n\n{% highlight cmake %}\nPID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tDEPEND\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n{% endhighlight %}\n\n")
+set(RES "${RES}\n\nIn the CMakeLists.txt files of libraries **exporting the dependency** :\n\n{% highlight cmake %}\nPID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tEXPORT\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n{% endhighlight %}\n\n")
 
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Component_Site_For_Wrapper)
@@ -1433,7 +1434,8 @@ if(NOT IS_HF)
 endif()
 
 # for any kind of usable component
-set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applications, libraries or tests:\n\n{% highlight cmake %}\ndeclare_PID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tNATIVE\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n{% endhighlight %}\n\n")
+set(RES "${RES}\n### CMake usage :\n\nIn the CMakeLists.txt files of your applications and tests, or those of your libraries that **do not export the dependency**:\n\n{% highlight cmake %}\nPID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tDEPEND\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n{% endhighlight %}\n\n")
+set(RES "${RES}\n\nIn the CMakeLists.txt files of libraries **exporting the dependency** :\n\n{% highlight cmake %}\nPID_Component_Dependency(\n\t\t\t\tCOMPONENT\tyour component name\n\t\t\t\tEXPORT\t${component}\n\t\t\t\tPACKAGE\t${PROJECT_NAME})\n{% endhighlight %}\n\n")
 
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Component_Site_For_Package)
