@@ -338,11 +338,8 @@ macro(declare_PID_External_Component)
 	#manage include folders
 	set(incs)
 	foreach(an_include IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_INCLUDES)
-		if(an_include MATCHES "^(<${curr_ext_package}>|/|/).*")
-			list(APPEND incs ${an_include})
-		else()#if the string DOES NOT start with a / (absolute path), or a <package> tag (relative path from package root) then we add the header <package> to the path
-			list(APPEND incs "<${curr_ext_package}>/${an_include}")# prepend the external package name
-		endif()
+    transform_External_Include_Into_Absolute_Path_Expression(RES_INC ${curr_ext_package} ${an_include})
+    list(APPEND incs ${RES_INC})
 	endforeach()
 	if(incs)
 		list(REMOVE_DUPLICATES incs)
@@ -384,12 +381,8 @@ macro(declare_PID_External_Component)
 	#manage links
 	set(links)
 	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_STATIC_LINKS)
-		#if the string DOES NOT start with a / (absolute path), a <package> (relative path from package root) or - (link option specification) then we add the header <package>
-		if(a_link MATCHES  "^(<${curr_ext_package}>|/|-|/).*")
-			list(APPEND links ${a_link})
-		else()
-			list(APPEND links "<${curr_ext_package}>/${a_link}")# prepend the external package name
-		endif()
+    transform_External_Link_Into_Absolute_Path_Expression(RES_LINK ${curr_ext_package} ${a_link})
+    list(APPEND links ${RES_LINK})
 	endforeach()
 	if(links)
 		list(REMOVE_DUPLICATES links)
@@ -399,13 +392,8 @@ macro(declare_PID_External_Component)
 	#manage shared links
 	set(links)
 	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_SHARED_LINKS)
-		#if the string DOES NOT start with a / (absolute path) or by a <package> tag (relative path from package root)
-    # or - (link option specification) then we add the header <package>
-		if(a_link MATCHES  "^(<${curr_ext_package}>|/|-|/).*")
-			list(APPEND links ${a_link})
-		else()
-			list(APPEND links "<${curr_ext_package}>/${a_link}")# prepend the external package name
-		endif()
+    transform_External_Link_Into_Absolute_Path_Expression(RES_LINK ${curr_ext_package} ${a_link})
+    list(APPEND links ${RES_LINK})
 	endforeach()
 	if(links)
 		list(REMOVE_DUPLICATES links)
@@ -416,15 +404,11 @@ macro(declare_PID_External_Component)
 	#manage runtime resources
 	set(resources)
 	foreach(a_resource IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_RUNTIME_RESOURCES)
-    #if the string DOES NOT start with a / (absolute path) or by a <package> tag (relative path from package root), then then we add the <package> tag at the begginning of the target path.
-		if(a_resource MATCHES "^(<${curr_ext_package}>|/).*$")
-			list(APPEND resources ${a_resource})
-		else()
-			list(APPEND resources "<${curr_ext_package}>/${a_resource}")# prepend the external package name
-		endif()
+    transform_External_Path_Into_Absolute_Path_Expression(RES_RES ${curr_ext_package} ${a_resource})
+    list(APPEND resources ${RES_RES})
 	endforeach()
 	if(resources)
-		list(REMOVE_DUPLICATES links)
+		list(REMOVE_DUPLICATES resources)
 		set(${curr_ext_package}_${curr_ext_comp}_RUNTIME_RESOURCES${VAR_SUFFIX} ${resources} CACHE INTERNAL "")
 	endif()
 endmacro(declare_PID_External_Component)

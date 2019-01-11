@@ -884,7 +884,7 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #     :OPTIONS <compile options>: These are compiler options to be used whenever a third party code use this component. This should be used only for options bound to compiler usage, not definitions or include directories.
 #     :RUNTIME_RESOURCES <list of path>: This argument is followed by a list of path relative to the installed external package version root folder.
 #     :EXPORT ...: list of components that are exported by the declared component. Each element has the pattern [<package name>/]<component_name>.
-#     :DEPENDS ...: list of components that the declared component depends on. Each element has the pattern [<package name>/]<component_name>.
+#     :DEPEND ...: list of components that the declared component depends on. Each element has the pattern [<package name>/]<component_name>.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -908,7 +908,7 @@ endmacro(PID_Wrapper_Component)
 
 macro(declare_PID_Wrapper_Component)
 set(oneValueArgs COMPONENT C_STANDARD CXX_STANDARD SONAME)
-set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPENDS) #known versions of the external package that can be used to build/run it
+set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPEND) #known versions of the external package that can be used to build/run it
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_COMPONENT)
   if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^CXX_STANDARD|C_STANDARD|SONAME|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|RUNTIME_RESOURCES$")
@@ -946,15 +946,15 @@ if(DECLARE_PID_WRAPPER_COMPONENT_EXPORT)#exported dependencies
   endforeach()
 endif()
 
-if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDS)#non exported dependencies
-  foreach(dep IN LISTS DECLARE_PID_WRAPPER_COMPONENT_DEPENDS)
+if(DECLARE_PID_WRAPPER_COMPONENT_DEPEND)#non exported dependencies
+  foreach(dep IN LISTS DECLARE_PID_WRAPPER_COMPONENT_DEPEND)
     extract_Component_And_Package_From_Dependency_String(RES_COMP RES_PACK ${dep})
     if(RES_PACK)
       set(COMP_ARGS "${RES_COMP};PACKAGE;${RES_PACK}")
     else()
       set(COMP_ARGS ${RES_COMP})
     endif()
-    declare_PID_Wrapper_Component_Dependency(COMPONENT ${component_name} DEPENDS EXTERNAL ${COMP_ARGS})
+    declare_PID_Wrapper_Component_Dependency(COMPONENT ${component_name} DEPEND EXTERNAL ${COMP_ARGS})
     endforeach()
 endif()
 
@@ -984,9 +984,9 @@ endmacro(declare_PID_Wrapper_Component)
 #
 #     :EXPORT: Tells whether the component exports the required dependency. Exporting means that the reference to the dependency is contained in its interface (header files). This can be only the case for libraries, not for applications.
 #
-#     :DEPENDS: Tells whether the component depends on but do not export the required dependency. Exporting means that the reference to the dependency is contained in its interface (header files).
+#     :DEPEND: Tells whether the component depends on but do not export the required dependency. Exporting means that the reference to the dependency is contained in its interface (header files).
 #
-#     :[EXTERNAL] <dependency>: This is the name of the component whose component <name> depends on. EXTERNAL keyword may be omitted if EXPORT or DEPENDS keyword are used.
+#     :[EXTERNAL] <dependency>: This is the name of the component whose component <name> depends on. EXTERNAL keyword may be omitted if EXPORT or DEPEND keyword are used.
 #
 #     :PACKAGE <name>: This is the name of the external package the dependency belongs to. This package must have been defined has a package dependency before this call. If this argument is not used, the dependency belongs to the current package (i.e. internal dependency).
 #
@@ -1013,12 +1013,12 @@ macro(PID_Wrapper_Component_Dependency)
 endmacro(PID_Wrapper_Component_Dependency)
 
 macro(declare_PID_Wrapper_Component_Dependency)
-set(options EXPORT DEPENDS)
+set(options EXPORT DEPEND)
 set(oneValueArgs COMPONENT EXTERNAL PACKAGE C_STANDARD CXX_STANDARD)
 set(multiValueArgs INCLUDES LIBRARY_DIRS SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT)
-  if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPENDS|EXTERNAL|PACKAGE|INCLUDES|LIBRARY_DIRS|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|C_STANDARD|CXX_STANDARD|RUNTIME_RESOURCES$")
+  if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPEND|EXTERNAL|PACKAGE|INCLUDES|LIBRARY_DIRS|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|C_STANDARD|CXX_STANDARD|RUNTIME_RESOURCES$")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component_Dependency requires to define the name of the declared component using the COMPONENT keyword or by giving the name as first argument.")
     return()
@@ -1031,9 +1031,9 @@ else()
   set(component_name ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT})
 endif()
 
-if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT AND DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPENDS)
+if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT AND DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPEND)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
-  message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling declare_PID_Wrapper_Component_Dependency, EXPORT and DEPENDS keywords cannot be used in same time.")
+  message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling declare_PID_Wrapper_Component_Dependency, EXPORT and DEPEND keywords cannot be used in same time.")
   return()
 endif()
 
@@ -1060,7 +1060,7 @@ if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE) #this is a dependency to an
 		)
 	else()#EXTERNAL keyword not used but it is optional
     if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS
-      AND (DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT OR DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPENDS))
+      AND (DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT OR DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPEND))
 
       list(GET DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS 0 target_component)
       declare_Wrapped_Component_Dependency_To_Explicit_Component(${component_name}
@@ -1088,10 +1088,10 @@ else()#this is a dependency to another component defined in the same external pa
     set(target_component ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL})
   else()
     if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS
-      AND (DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT OR DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPENDS))
+      AND (DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT OR DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPEND))
 
       list(GET DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS 0 target_component)
-    elseif(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT AND NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPENDS)
+    elseif(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT AND NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPEND)
       #OK export or depends on nothing and no other info can help decide what the user wants
       finish_Progress(${GLOBAL_PROGRESS_VAR})
   		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling declare_PID_Wrapper_Component_Dependency, need to define the component used by ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT}, by using the keyword EXTERNAL.")

@@ -2082,13 +2082,98 @@ endfunction(get_Package_Type)
 #
 function(is_External_Package_Defined ext_package RES_PATH_TO_PACKAGE)
 get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
-set(${RES_PATH_TO_PACKAGE} NOTFOUND PARENT_SCOPE)
 if(${ext_package}_FOUND)
 	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM_NAME}/${ext_package}/${${ext_package}_VERSION_STRING} PARENT_SCOPE)
 else()
 	set(${RES_PATH_TO_PACKAGE} PARENT_SCOPE)
 endif()
 endfunction(is_External_Package_Defined)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |transform_External_Link_Into_Absolute_Path_Expression| replace:: ``transform_External_Link_Into_Absolute_Path_Expression``
+#  .. _transform_External_Link_Into_Absolute_Path_Expression:
+#
+#  transform_External_Link_Into_Absolute_Path_Expression
+#  -----------------------------------------------------
+#
+#   .. command:: transform_External_Link_Into_Absolute_Path_Expression(RES ext_package link)
+#
+#    From a linker option, generate a package tag `<ext_package>` at beginning of the expresion it is a relative path to a library of the external package.
+#
+#     :ext_package: the name of external package
+#
+#     :link: the linker flag that can be a path to a library
+#
+#     :RES: the output variable that contains the corresponding linker expression (possibly with an absolute path to a library).
+#
+function(transform_External_Link_Into_Absolute_Path_Expression RES ext_package link)
+  #if the string DOES NOT start with a / (absolute path), a <package> (relative path from package root) or - (link option specification) then we add the header <package>
+  if(link MATCHES  "^(<${ext_package}>|/|-|/).*")
+    set(${RES} ${link} PARENT_SCOPE)#already well formed
+  else()
+    set(${RES} "<${ext_package}>/${link}" PARENT_SCOPE)# prepend the external package tag
+  endif()
+endfunction(transform_External_Link_Into_Absolute_Path_Expression)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |transform_External_Include_Into_Absolute_Path_Expression| replace:: ``transform_External_Include_Into_Absolute_Path_Expression``
+#  .. _transform_External_Include_Into_Absolute_Path_Expression:
+#
+#  transform_External_Include_Into_Absolute_Path_Expression
+#  --------------------------------------------------------
+#
+#   .. command:: transform_External_Include_Into_Absolute_Path_Expression(RES ext_package inc)
+#
+#    From an include option expression, generate a package tag `<ext_package>` at beginning of the expresion it is a relative path to an include folder of the external package.
+#
+#     :ext_package: the name of external package
+#
+#     :inc: the include flag that can be a path to an include folder.
+#
+#     :RES: the output variable that contains the corresponding include expression (possibly an absolute path to a folder).
+#
+function(transform_External_Include_Into_Absolute_Path_Expression RES ext_package inc)
+  if(inc MATCHES "^(<${ext_package}>|/|/).*")
+    set(${RES} ${inc} PARENT_SCOPE)
+  else()#if the string DOES NOT start with a / (absolute path), or a <package> tag (relative path from package root) then we add the header <package> to the path
+    set(${RES} "<${ext_package}>/${inc}" PARENT_SCOPE)# prepend the external package tag
+  endif()
+endfunction(transform_External_Include_Into_Absolute_Path_Expression)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |transform_External_Path_Into_Absolute_Path_Expression| replace:: ``transform_External_Path_Into_Absolute_Path_Expression``
+#  .. _transform_External_Path_Into_Absolute_Path_Expression:
+#
+#  transform_External_Path_Into_Absolute_Path_Expression
+#  -----------------------------------------------------
+#
+#   .. command:: transform_External_Path_Into_Absolute_Path_Expression(RES ext_package path)
+#
+#    From a path expression, generate a package tag `<ext_package>` at beginning of the expresion it is a relative path to a folder of the external package.
+#
+#     :ext_package: the name of external package
+#
+#     :path: the path expression.
+#
+#     :RES: the output variable that contains the corresponding path expression (an absolute path).
+#
+function(transform_External_Path_Into_Absolute_Path_Expression RES ext_package path)
+  #if the string DOES NOT start with a / (absolute path) or by a <package> tag (relative path from package root), then then we add the <package> tag at the begginning of the target path.
+  if(path MATCHES "^(<${ext_package}>|/).*$")
+    set(${RES} ${path} PARENT_SCOPE)
+  else()
+    set(${RES} "<${ext_package}>/${path}" PARENT_SCOPE)# prepend the external package tag
+  endif()
+endfunction(transform_External_Path_Into_Absolute_Path_Expression)
 
 #.rst:
 #
@@ -2119,8 +2204,10 @@ foreach(link IN LISTS ext_links)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
 		is_External_Package_Defined(${ext_package_name} PATHTO)
-		if(PATHTO STREQUAL NOTFOUND)
-      finish_Progress(${GLOBAL_PROGRESS_VAR})
+		if(NOT PATHTO)
+      if(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+      endif()
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
 		else()
 			set(fullpath ${PATHTO}${relative_path})
@@ -2132,9 +2219,11 @@ foreach(link IN LISTS ext_links)
 			list(GET RES_WITH_PREFIX 0 link_prefix)
 			list(GET RES_WITH_PREFIX 1 ext_package_name)
 			is_External_Package_Defined(${ext_package_name} PATHTO)
-			if(PATHTO STREQUAL NOTFOUND)
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!!")
+			if(NOT PATHTO)
+        if(GLOBAL_PROGRESS_VAR)
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+        endif()
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!!")
 				return()
 			endif()
 			liST(LENGTH RES_WITH_PREFIX SIZE)
@@ -2177,10 +2266,10 @@ function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH ext_inc_dirs mode
 set(res_includes)
 foreach(include_dir IN LISTS ext_inc_dirs)
 	string(REGEX REPLACE "^<([^>]+)>(.*)" "\\1;\\2" RES ${include_dir})
-	if(NOT RES STREQUAL ${include_dir})# a replacement has taken place => this is a full path to an incude dir of an external package
+	if(NOT RES STREQUAL include_dir)# a replacement has taken place => this is a full path to an incude dir of an external package
 		list(GET RES 0 ext_package_name)
 		is_External_Package_Defined(${ext_package_name} PATHTO)
-		if(PATHTO STREQUAL NOTFOUND)
+		if(NOT PATHTO)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 		endif()
@@ -2198,7 +2287,7 @@ foreach(include_dir IN LISTS ext_inc_dirs)
 			list(GET RES_WITH_PREFIX 1 relative_path)
 			list(GET RES_WITH_PREFIX 0 ext_package_name)
 			is_External_Package_Defined(${ext_package_name} PATHTO)
-			if(PATHTO STREQUAL NOTFOUND)
+			if(NOT PATHTO)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
 			endif()
@@ -2246,7 +2335,7 @@ foreach(resource IN LISTS ext_resources)
 		list(GET RES 0 ext_package_name)
 		list(GET RES 1 relative_path)
 		is_External_Package_Defined(${ext_package_name} PATHTO)
-		if(PATHTO STREQUAL NOTFOUND)
+		if(NOT PATHTO)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for resource ${resource}!! Please set the path to this external package.")
 		else()

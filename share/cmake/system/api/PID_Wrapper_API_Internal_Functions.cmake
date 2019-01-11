@@ -1933,7 +1933,7 @@ endmacro(define_Wrapper_Framework_Contribution)
 function(agregate_All_Build_Info_For_Component package component mode RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_STD_C RES_STD_CXX RES_LINKS RES_RESOURCES)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-#the variables containing the adequate values are located in teh use file of the package containing the component
+#the variables containing the adequate values are located in the use file of the package containing the component
 set(all_links ${${package}_${component}_STATIC_LINKS${VAR_SUFFIX}} ${${package}_${component}_SHARED_LINKS${VAR_SUFFIX}})
 set(all_definitions ${${package}_${component}_DEFS${VAR_SUFFIX}})
 set(all_includes ${${package}_${component}_INC_DIRS${VAR_SUFFIX}})
@@ -1982,6 +1982,7 @@ remove_Duplicates_From_List(all_compiler_options)
 remove_Duplicates_From_List(all_links)
 remove_Duplicates_From_List(c_std)
 remove_Duplicates_From_List(cxx_std)
+remove_Duplicates_From_List(all_resources)
 
 set(${RES_INCS} ${all_includes} PARENT_SCOPE)
 set(${RES_LIB_DIRS} ${all_lib_dirs} PARENT_SCOPE)
@@ -2023,8 +2024,17 @@ function(set_Build_Info_For_Component package component version)
 	set(lib_dirs ${${prefix}_COMPONENT_${component}_SYSTEM_LIB_DIRS})
 	set(defs ${${prefix}_COMPONENT_${component}_SYSTEM_DEFINITIONS})
 	set(opts ${${prefix}_COMPONENT_${component}_SYSTEM_OPTIONS})
+
+	#standards need to be resolve for the component (including its own standard constraints) to get a finally usable language standard resolved
 	set(c_std ${${prefix}_COMPONENT_${component}_SYSTEM_C_STANDARD})
+	if(${prefix}_COMPONENT_${component}_C_STANDARD)
+		take_Greater_C_Standard_Version(c_std ${prefix}_COMPONENT_${component}_C_STANDARD)
+	endif()
 	set(cxx_std ${${prefix}_COMPONENT_${component}_SYSTEM_CXX_STANDARD})
+	if(${prefix}_COMPONENT_${component}_CXX_STANDARD)
+		take_Greater_CXX_Standard_Version(cxx_std ${prefix}_COMPONENT_${component}_CXX_STANDARD)
+	endif()
+
 	set(res ${${prefix}_COMPONENT_${component}_SYSTEM_RUNTIME_RESOURCES})
 
 	#local recursion first and caching result to avoid doing many time the same operation
@@ -2032,7 +2042,7 @@ function(set_Build_Info_For_Component package component version)
 	foreach(dep_component IN LISTS ${prefix}_COMPONENT_${component}_INTERNAL_DEPENDENCIES)
 		if(NOT ${prefix}_COMPONENT_${dep_component}_BUILD_INFO_DONE)#if result not already in cache
 			set_Build_Info_For_Component(${package} ${dep_component} ${version})#compute the variable for dependencies then put it in cache
-		endif()
+		endif()#no need to resolve
 		#use the collected build information from dependencies and add it
 		list(APPEND links ${${prefix}_COMPONENT_${dep_component}_BUILD_LINKS})
 		list(APPEND includes ${${prefix}_COMPONENT_${dep_component}_BUILD_INCLUDES})
@@ -2047,14 +2057,14 @@ function(set_Build_Info_For_Component package component version)
 	#dealing with dependencies between external packages
 	foreach(dep_package IN LISTS ${prefix}_COMPONENT_${component}_DEPENDENCIES)
 		#add the direct use of package content within component (direct reference to includes defs, etc.)
-		list(APPEND links ${${prefix}_COMPONENT_${dep_component}_DEPENDENCY_${dep_package}_CONTENT_SHARED} ${${prefix}_COMPONENT_${dep_component}_DEPENDENCY_${dep_package}_CONTENT_STATIC})
-		list(APPEND includes ${${prefix}_COMPONENT_${dep_component}_DEPENDENCY_${dep_package}_CONTENT_INCLUDES})
-		list(APPEND lib_dirs ${${prefix}_COMPONENT_${dep_component}_DEPENDENCY_${dep_package}_CONTENT_LIB_DIRS})
-		list(APPEND defs ${${prefix}_COMPONENT_${dep_component}_DEPENDENCY_${dep_package}_CONTENT_DEFINITIONS})
-		list(APPEND opts ${${prefix}_COMPONENT_${dep_component}_DEPENDENCY_${dep_package}_CONTENT_OPTIONS})
-		list(APPEND res ${${prefix}_COMPONENT_${dep_component}_DEPENDENCY_${dep_package}_CONTENT_RUNTIME_RESOURCES})
-		list(APPEND c_std ${${prefix}_COMPONENT_${dep_component}_DEPENDENCY_${dep_package}_CONTENT_C_STANDARD})
-		list(APPEND cxx_std ${${prefix}_COMPONENT_${dep_component}_DEPENDENCY_${dep_package}_CONTENT_CXX_STANDARD})
+		list(APPEND links ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_SHARED} ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_STATIC})
+		list(APPEND includes ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_INCLUDES})
+		list(APPEND lib_dirs ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_LIB_DIRS})
+		list(APPEND defs ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_DEFINITIONS})
+		list(APPEND opts ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_OPTIONS})
+		list(APPEND res ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_RUNTIME_RESOURCES})
+		list(APPEND c_std ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_C_STANDARD})
+		list(APPEND cxx_std ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_CXX_STANDARD})
 
 		#add info comming from dependency between explicit components
 		foreach(dep_component IN LISTS ${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package})
@@ -2150,6 +2160,7 @@ function(configure_Wrapper_Build_Variables package version)
 	#########################Build per component information and put everything in a simple global structure##################
 	##########################################################################################################################
 	#agregate all build variables related to each component defined for that version of external package
+	#goal is to get everything related to dependencies used by components
 	foreach(component IN LISTS ${prefix}_COMPONENTS)
 		set_Build_Info_For_Component(${package} ${component} ${version})
 		take_Greater_C_Standard_Version(c_std ${prefix}_COMPONENT_${component}_BUILD_C_STANDARD)

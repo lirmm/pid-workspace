@@ -155,7 +155,7 @@ else()#by default build the given package version using external project specifi
 
 	  # checking for dependencies
 	  message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
-	  resolve_Wrapper_Dependencies(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version} FALSE)
+	  resolve_Wrapper_Dependencies(${TARGET_EXTERNAL_PACKAGE} ${version} FALSE)
 		message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
 
 	  #prepare deployment script execution by caching build variable that may be used inside
