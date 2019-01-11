@@ -6,6 +6,8 @@
 
 # Print Git version
 git --version
+dir_path=`pwd`
+dir_name=`basename $dir_path`
 
 ############################################################################################
 #  --  initializing the folder where dependencies and installed artefacts will be put  --  #

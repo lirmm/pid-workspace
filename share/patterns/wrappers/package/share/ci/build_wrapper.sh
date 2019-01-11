@@ -2,4 +2,4 @@
 #!/bin/bash
 
 # build the site
-cd build && cmake --build . --target build version="$1" && cd ..
+cd build && version=$1 cmake --build . --target build && cd ..

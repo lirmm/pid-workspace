@@ -41,7 +41,7 @@ stages:
   stage: deploy
   script:
    - chmod 700 ./share/ci/deploy_wrapper.sh
-   - ./share/ci/deploy_wrapper.sh
+   - ./share/ci/deploy_wrapper.sh $CI_COMMIT_TAG
   artifacts:
     paths:
      - public
