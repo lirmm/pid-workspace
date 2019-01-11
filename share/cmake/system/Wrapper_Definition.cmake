@@ -876,7 +876,8 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #     .. rubric:: Optional parameters
 #
 #     :C_STANDARD <number of standard>: This argument is followed by the version of the C language standard to be used to build this component. The values may be 90, 99 or 11.
-#     :CXX_STANDARD <number of standard>: his argument is followed by the version of the C++ language standard to be used to build this component. The values may be 98, 11, 14 or 17. If not specified the version 98 is used.
+#     :CXX_STANDARD <number of standard>: This argument is followed by the version of the C++ language standard to be used to build this component. The values may be 98, 11, 14 or 17. If not specified the version 98 is used.
+#     :SONAME <version number>: This argument allows to set the SONAME to use for that specific library instead of the default one.
 #     :DEFINITIONS <defs>: These are the preprocessor definitions used in the component’s interface.
 #     :INCLUDES <folders>: These are the include folder to pass to any component using the current component. Path are interpreted relative to the installed external package version root folder.
 #     :SHARED_LINKS <links>: These are shared link flags. Path are interpreted relative to the installed external package version root folder.
