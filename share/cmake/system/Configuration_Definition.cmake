@@ -293,15 +293,15 @@ endfunction(declare_PID_Configuration_Variables)
 #
 # .. ifmode:: user
 #
-#  .. |declare_PID_Configuration_Constraints| replace:: ``declare_PID_Configuration_Constraints``
-#  .. _declare_PID_Configuration_Contraints:
+#  .. |PID_Configuration_Constraints| replace:: ``PID_Configuration_Constraints``
+#  .. _PID_Configuration_Constraints:
 #
-#  declare_PID_Configuration_Constraints
-#  -------------------------------------
-#
-#   .. command:: declare_PID_Configuration_Constraints(name [OPTIONS...])
+#  PID_Configuration_Constraints
+#  -----------------------------
 #
 #   .. command:: PID_Configuration_Constraints(name  [OPTIONS...])
+#
+#   .. command:: declare_PID_Configuration_Constraints(name [OPTIONS...])
 #
 #      To be used in check files of configuration. Used to declare the list of constraints managed by the configuration.
 #
@@ -368,15 +368,15 @@ endfunction(declare_PID_Configuration_Constraints)
 #
 # .. ifmode:: user
 #
-#  .. |declare_PID_Configuration_Dependencies| replace:: ``declare_PID_Configuration_Dependencies``
-#  .. _declare_PID_Configuration_Dependencies:
+#  .. |PID_Configuration_Dependencies| replace:: ``PID_Configuration_Dependencies``
+#  .. _PID_Configuration_Dependencies:
 #
-#  declare_PID_Configuration_Dependencies
-#  --------------------------------------
-#
-#   .. command:: declare_PID_Configuration_Dependencies(name [OPTIONS...])
+#  PID_Configuration_Dependencies
+#  ------------------------------
 #
 #   .. command:: PID_Configuration_Dependencies(name  [OPTIONS...])
+#
+#   .. command:: declare_PID_Configuration_Dependencies(name [OPTIONS...])
 #
 #      To be used in check files of configuration. Used to declare the list of configuration that the given configuration depends on.
 #

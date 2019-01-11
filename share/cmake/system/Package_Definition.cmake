@@ -38,15 +38,15 @@ include(CMakeParseArguments)
 #
 # .. ifmode:: user
 #
-#  .. |declare_PID_Package| replace:: ``declare_PID_Package``
-#  .. _declare_PID_Package:
+#  .. |PID_Package| replace:: ``PID_Package``
+#  .. _PID_Package:
 #
-#  declare_PID_Package
-#  -------------------
-#
-#   .. command:: declare_PID_Package(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
+#  PID_Package
+#  -----------
 #
 #   .. command:: PID_Package(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
+#
+#   .. command:: declare_PID_Package(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
 #
 #     Declare the current CMake project as a PID package with specific meta-information passed as parameters.
 #
@@ -81,7 +81,7 @@ include(CMakeParseArguments)
 #
 #     .. code-block:: cmake
 #
-#        declare_PID_Package(
+#        PID_Package(
 #                          AUTHOR Robin Passama
 #                          INSTITUTION LIRMM
 #                          YEAR 2013-2018
@@ -158,8 +158,8 @@ endmacro(declare_PID_Package)
 #   .. admonition:: Constraints
 #      :class: warning
 #
-#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
-#      - It must be called : never if the VERSION argument of |declare_PID_Package|_ has been used ; **exactly once** otherwise.
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |PID_Package|_ but before |build_PID_Package|_.
+#      - It must be called : never if the VERSION argument of |PID_Package|_ has been used ; **exactly once** otherwise.
 #
 #   .. admonition:: Effects
 #      :class: important
@@ -197,15 +197,15 @@ endmacro(set_PID_Package_Version)
 #.rst:
 # .. ifmode:: user
 #
-#  .. |add_PID_Package_Author| replace:: ``add_PID_Package_Author``
-#  .. _add_PID_Package_Author:
+#  .. |PID_Author| replace:: ``PID_Author``
+#  .. _PID_Author:
 #
-#  add_PID_Package_Author
-#  -----------------------
-#
-#  .. command:: add_PID_Package_Author(AUTHOR ... [INSTITUTION ...])
+#  PID_Author
+#  ----------
 #
 #  .. command:: PID_Author(AUTHOR ... [INSTITUTION ...])
+#
+#  .. command:: add_PID_Package_Author(AUTHOR ... [INSTITUTION ...])
 #
 #   Add an author to the list of authors.
 #
@@ -220,7 +220,7 @@ endmacro(set_PID_Package_Version)
 #   .. admonition:: Constraints
 #      :class: warning
 #
-#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |PID_Package|_ but before |build_PID_Package|_.
 #
 #   .. admonition:: Effects
 #     :class: important
@@ -231,7 +231,7 @@ endmacro(set_PID_Package_Version)
 #
 #   .. code-block:: cmake
 #
-#      add_PID_Package_Author(AUTHOR Benjamin Navarro INSTITUTION LIRMM)
+#      PID_Author(AUTHOR Benjamin Navarro INSTITUTION LIRMM)
 #
 
 macro(PID_Author)
@@ -258,12 +258,15 @@ endmacro(add_PID_Package_Author)
 #.rst:
 # .. ifmode:: user
 #
-#  add_PID_Package_Reference
-#  -------------------------
+#  .. |PID_Reference| replace:: ``PID_Reference``
+#  .. _PID_Reference:
 #
-#  .. command:: add_PID_Package_Reference(VERSION ... PLATFORM ... URL ...)
+#  PID_Reference
+#  -------------
 #
 #  .. command:: PID_Reference(VERSION ... PLATFORM ... URL ...)
+#
+#  .. command:: add_PID_Package_Reference(VERSION ... PLATFORM ... URL ...)
 #
 #   Declare a reference to a known binary version of the package. This is useful to register various released version of the package.
 #
@@ -280,7 +283,7 @@ endmacro(add_PID_Package_Author)
 #   .. admonition:: Constraints
 #      :class: warning
 #
-#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |PID_Package|_ but before |build_PID_Package|_.
 #
 #   .. admonition:: Effects
 #     :class: important
@@ -293,7 +296,7 @@ endmacro(add_PID_Package_Author)
 #
 #   .. code-block:: cmake
 #
-#    add_PID_Package_Reference(VERSION 1.0.0 PLATFORM x86_linux_64_abi11
+#    PID_Reference(VERSION 1.0.0 PLATFORM x86_linux_64_abi11
 #      URL https://gite.lirmm.fr/pid/pid-binaries/wikis/pid-rpath/1.0.0/linux64/pid-rpath-1.0.0-linux64.tar.gz
 #          https://gite.lirmm.fr/pid/pid-binaries/wikis/pid-rpath/1.0.0/linux64/pid-rpath-1.0.0-dbg-linux64.tar.gz
 #    )
@@ -351,15 +354,15 @@ endmacro(add_PID_Package_Reference)
 #.rst:
 # .. ifmode:: user
 #
-#  .. |add_PID_Package_Category| replace:: ``add_PID_Package_Category``
-#  .. _add_PID_Package_Category:
+#  .. |PID_Category| replace:: ``PID_Category``
+#  .. _PID_Category:
 #
-#  add_PID_Package_Category
-#  ------------------------
-#
-#  .. command:: add_PID_Package_Category(CATEGORY)
+#  PID_Category
+#  ------------
 #
 #  .. command:: PID_Category(CATEGORY)
+#
+#  .. command:: add_PID_Package_Category(CATEGORY)
 #
 #   Declare that the current package belongs to a given category.
 #
@@ -370,7 +373,7 @@ endmacro(add_PID_Package_Reference)
 #   .. admonition:: Constraints
 #      :class: warning
 #
-#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |PID_Package|_ but before |build_PID_Package|_.
 #
 #   .. admonition:: Effects
 #     :class: important
@@ -381,7 +384,7 @@ endmacro(add_PID_Package_Reference)
 #
 #   .. code-block:: cmake
 #
-#    add_PID_Package_Category(example/packaging)
+#    PID_Category(example/packaging)
 #
 
 macro(PID_Category)
@@ -403,15 +406,15 @@ endmacro(declare_PID_Documentation)
 #.rst:
 # .. ifmode:: user
 #
-#  .. |declare_PID_Publishing| replace:: ``declare_PID_Publishing``
-#  .. _declare_PID_Publishing:
+#  .. |PID_Publishing| replace:: ``PID_Publishing``
+#  .. _PID_Publishing:
 #
-#  declare_PID_Publishing
-#  -----------------------
-#
-#  .. command:: declare_PID_Publishing(AUTHOR ... [INSTITUTION ...])
+#  PID_Publishing
+#  --------------
 #
 #  .. command:: PID_Publishing(AUTHOR ... [INSTITUTION ...])
+#
+#  .. command:: declare_PID_Publishing(AUTHOR ... [INSTITUTION ...])
 #
 #   Declare a site where the package is published, i.e. an online website where documentation and binaries of the package ar stored and accessible. There are two alternative for this function: defining a lone static site or defining the publication of the package in a framework.
 #
@@ -444,7 +447,7 @@ endmacro(declare_PID_Documentation)
 #   .. admonition:: Constraints
 #      :class: warning
 #
-#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_. It should also be called after every call to |set_PID_Package_Version|_, |add_PID_Package_Author|_ and |add_PID_Package_Category|_.
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |PID_Package|_ but before |build_PID_Package|_. It should also be called after every call to |set_PID_Package_Version|_, |PID_Author|_ and |PID_Category|_.
 #
 #   .. admonition:: Effects
 #     :class: important
@@ -468,18 +471,18 @@ endmacro(declare_PID_Documentation)
 #    			PUBLISH_BINARIES
 #         ALLOWED_PLATFORMS x86_64_linux_abi11)
 #
-#  Declaring the publication of the ``pid-rpath`` package into the ``PID`` framework:
+#   Declaring the publication of the ``pid-rpath`` package into the ``PID`` framework:
 #
-#  .. code-block:: cmake
+#   .. code-block:: cmake
 #
-#   declare_PID_Publishing(	PROJECT https://gite.lirmm.fr/pid/pid-rpath
-#   			FRAMEWORK pid
-#   			DESCRIPTION pid-rpath is a package providing a little API to ease the management of runtime resources within a PID workspace. Runtime resources may be either configuration files, executables or module libraries. Its usage is completely bound to the use of PID system.
-#   			ADVANCED specific_usage.md
-#   			PUBLISH_BINARIES
-#         ALLOWED_PLATFORMS x86_64_linux_abi11)
+#    PID_Publishing(
+#       PROJECT https://gite.lirmm.fr/pid/pid-rpath
+#       FRAMEWORK pid
+#       DESCRIPTION pid-rpath is a package providing a little API to ease the management of runtime resources within a PID workspace. Runtime resources may be either configuration files, executables or module libraries. Its usage is completely bound to the use of PID system.
+#       ADVANCED specific_usage.md
+#       PUBLISH_BINARIES
+#       ALLOWED_PLATFORMS x86_64_linux_abi11)
 #
-
 macro(PID_Publishing)
   declare_PID_Publishing(${ARGN})
 endmacro(PID_Publishing)
@@ -591,15 +594,15 @@ endmacro(declare_PID_Publishing)
 #.rst:
 # .. ifmode:: user
 #
-#  .. |declare_PID_Component_Documentation| replace:: ``declare_PID_Component_Documentation``
-#  .. _declare_PID_Component_Documentation:
+#  .. |PID_Documentation| replace:: ``PID_Documentation``
+#  .. _PID_Documentation:
 #
-#  declare_PID_Component_Documentation
-#  -----------------------------------
-#
-#  .. command:: declare_PID_Component_Documentation(COMPONENT ... FILE ...)
+#  PID_Documentation
+#  -----------------
 #
 #  .. command:: PID_Documentation(COMPONENT ... FILE ...)
+#
+#  .. command:: declare_PID_Component_Documentation(COMPONENT ... FILE ...)
 #
 #   Add specific documentation for a component
 #
@@ -611,18 +614,18 @@ endmacro(declare_PID_Publishing)
 #   .. admonition:: Constraints
 #      :class: warning
 #
-#      - The component must have been declared with |declare_PID_Component|_.
+#      - The component must have been declared with |PID_Component|_.
 #
 #   .. admonition:: Effects
 #     :class: important
 #
-#     This function registers a markdown page with documentation about the component. This page can be used to generate a specific web page for the component than will be put in the static site defined by the package deployment, see |declare_PID_Publishing|_.
+#     This function registers a markdown page with documentation about the component. This page can be used to generate a specific web page for the component than will be put in the static site defined by the package deployment, see |PID_Publishing|_.
 #
 #   .. rubric:: Example
 #
 #   .. code-block:: cmake
 #
-#    declare_PID_Component_Documentation(COMPONENT my-lib FILE mylib_usage.md)
+#    PID_Documentation(COMPONENT my-lib FILE mylib_usage.md)
 #
 
 macro(PID_Documentation)
@@ -647,6 +650,9 @@ endmacro(declare_PID_Component_Documentation)
 #.rst:
 # .. ifmode:: user
 #
+#  .. |check_PID_Platform| replace:: ``check_PID_Platform``
+#  .. _check_PID_Platform:
+#
 #  check_PID_Platform
 #  ------------------
 #
@@ -670,7 +676,7 @@ endmacro(declare_PID_Component_Documentation)
 #   .. admonition:: Constraints
 #      :class: warning
 #
-#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |PID_Package|_ but before |build_PID_Package|_.
 #
 #   .. admonition:: Effects
 #     :class: important
@@ -743,7 +749,7 @@ endmacro(check_PID_Platform)
 #  .. _get_PID_Platform_Info:
 #
 #  get_PID_Platform_Info
-#  -----------------------
+#  ---------------------
 #
 #  .. command:: get_PID_Platform_Info([OPTIONS])
 #
@@ -857,15 +863,15 @@ endmacro(build_PID_Package)
 #.rst:
 # .. ifmode:: user
 #
-#  .. |declare_PID_Component| replace:: ``declare_PID_Component``
-#  .. _declare_PID_Component:
+#  .. |PID_Component| replace:: ``PID_Component``
+#  .. _PID_Component:
 #
-#  declare_PID_Component
-#  -----------------------
-#
-#  .. command:: declare_PID_Component(<type> NAME ... DIRECTORY .. [OPTIONS])
+#  PID_Component
+#  -------------
 #
 #  .. command:: PID_Component(<type> NAME ... DIRECTORY .. [OPTIONS])
+#
+#  .. command:: declare_PID_Component(<type> NAME ... DIRECTORY .. [OPTIONS])
 #
 #   Declare a new component in the current package.
 #
@@ -919,8 +925,7 @@ endmacro(build_PID_Package)
 #
 #   .. code-block:: cmake
 #
-#      add_PID_Package_Author(AUTHOR Benjamin Navarro INSTITUTION LIRMM)
-#      declare_PID_Component(STATIC_LIB NAME my-static-lib DIRECTORY binary_lib
+#      PID_Component(STATIC_LIB NAME my-static-lib DIRECTORY binary_lib
 #                            INTERNAL DEFINITIONS EXPORT_SYMBOLS
 #                            EXPORT DEFINITIONS IMPORT_SYMBOLS
 #     )
@@ -1156,15 +1161,15 @@ endmacro(declare_PID_Component)
 #.rst:
 # .. ifmode:: user
 #
-#  .. |declare_PID_Package_Dependency| replace:: ``declare_PID_Package_Dependency``
-#  .. _declare_PID_Package_Dependency:
+#  .. |PID_Dependency| replace:: ``PID_Dependency``
+#  .. _PID_Dependency:
 #
-#  declare_PID_Package_Dependency
-#  ------------------------------
-#
-#  .. command:: declare_PID_Package_Dependency([PACKAGE] ... [EXTERNAL|NATIVE] [OPTIONS])
+#  PID_Dependency
+#  --------------
 #
 #  .. command:: PID_Dependency([PACKAGE] ... [EXTERNAL|NATIVE] [OPTIONS])
+#
+#  .. command:: declare_PID_Package_Dependency([PACKAGE] ... [EXTERNAL|NATIVE] [OPTIONS])
 #
 #   Declare a dependency between the current package and another package.
 #
@@ -1183,7 +1188,7 @@ endmacro(declare_PID_Component)
 #   .. admonition:: Constraints
 #      :class: warning
 #
-#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |declare_PID_Package|_ but before |build_PID_Package|_.
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |PID_Package|_ but before |build_PID_Package|_.
 #
 #   .. admonition:: Effects
 #     :class: important
@@ -1196,7 +1201,7 @@ endmacro(declare_PID_Component)
 #
 #   .. code-block:: cmake
 #
-#      declare_PID_Package_Dependency (
+#      PID_Dependency (
 #                PACKAGE another-package
 #                NATIVE VERSION 1.0
 #                COMPONENTS lib-other-sh
@@ -1308,15 +1313,15 @@ endmacro(declare_PID_Package_Dependency)
 #.rst:
 # .. ifmode:: user
 #
-#  .. |used_PID_Package_Dependency| replace:: ``used_PID_Package_Dependency``
-#  .. _used_PID_Package_Dependency:
+#  .. |used_PID_Dependency| replace:: ``used_PID_Dependency``
+#  .. _used_PID_Dependency:
 #
-#  used_PID_Package_Dependency
-#  ---------------------------
-#
-#  .. command:: used_PID_Package_Dependency([PACKAGE] ... [USED var] [VERSION var])
+#  used_PID_Dependency
+#  -------------------
 #
 #  .. command:: used_PID_Dependency([PACKAGE] ... [USED var] [VERSION var])
+#
+#  .. command:: used_PID_Package_Dependency([PACKAGE] ... [USED var] [VERSION var])
 #
 #    Get information about a dependency so that it can help the user configure the build.
 #
@@ -1343,7 +1348,7 @@ endmacro(declare_PID_Package_Dependency)
 #
 #   .. code-block:: cmake
 #
-#      used_PID_Package_Dependency(PACKAGE boost VERSION version_str)
+#      used_PID_Dependency(PACKAGE boost VERSION version_str)
 #      #configure components according to version_str...
 #
 macro(used_PID_Dependency)
@@ -1397,20 +1402,22 @@ endfunction(used_PID_Package_Dependency)
 #.rst:
 # .. ifmode:: user
 #
-#  .. |declare_PID_Component_Dependency| replace:: ``declare_PID_Component_Dependency``
-#  .. _declare_PID_Component_Dependency:
+#  .. |PID_Component_Dependency| replace:: ``PID_Component_Dependency``
+#  .. _PID_Component_Dependency:
 #
-#  declare_PID_Component_Dependency
-#  --------------------------------
+#  PID_Component_Dependency
+#  ------------------------
+#
+#  .. command:: PID_Component_Dependency([COMPONENT] ... [EXPORT|DEPEND] [NATIVE|EXTERNAL] ... [PACKAGE ...] [defintions...])
+#
+#  .. command:: PID_Component_Dependency([COMPONENT] ... [EXPORT] [EXTERNAL ...] [OPTIONS])
 #
 #  .. command:: declare_PID_Component_Dependency([COMPONENT] ... [EXPORT|DEPEND] [NATIVE|EXTERNAL] ... [PACKAGE ...] [defintions...])
 #
 #  .. command:: declare_PID_Component_Dependency([COMPONENT] ... [EXPORT] [EXTERNAL ...] [OPTIONS])
 #
-#  .. command:: PID_Component_Dependency([COMPONENT] ... [EXPORT] [EXTERNAL ...] [OPTIONS])
-#
 #   Declare a dependency for a component of the current package.
-#   First signature is used to defince a dependency to an explicity component either native or external. Compared to the DEPEND option of |declare_PID_Component|_ this function may define additional configuration for a given component dependency (typically setting definitions).
+#   First signature is used to defince a dependency to an explicity component either native or external. Compared to the DEPEND option of |PID_Component|_ this function may define additional configuration for a given component dependency (typically setting definitions).
 #   Second signature is used to define a dependency between the component and either the content of an external package or to the operating system.
 #   As often as possible first signature must be preferred to second one. This later here is mainly to ensure legacy compatibility.
 #
@@ -1443,7 +1450,7 @@ endfunction(used_PID_Package_Dependency)
 #   .. admonition:: Constraints
 #      :class: warning
 #
-#      - Must be called after the component has been declared using |declare_PID_Component|_.
+#      - Must be called after the component has been declared using |PID_Component|_.
 #
 #   .. admonition:: Effects
 #     :class: important
@@ -1455,17 +1462,17 @@ endfunction(used_PID_Package_Dependency)
 #   .. code-block:: cmake
 #
 #      #declare a dependency to the content of an external package (do not use component description - NOT RECOMMENDED)
-#      declare_PID_Component_Dependency(COMPONENT my-static-lib
+#      PID_Component_Dependency(COMPONENT my-static-lib
 #                                       EXTERNAL boost INCLUDE_DIRS <boost>/include
 #      )
 #
 #      #declare a dependency to an external component that is NOT exported
-#      declare_PID_Component_Dependency(my-static-lib
+#      PID_Component_Dependency(my-static-lib
 #                                       DEPEND EXTERNAL boost-headers PACKAGE boost
 #      )
 #
 #      #declare a dependency to a native package of same project that is exported
-#      declare_PID_Component_Dependency(COMPONENT my-static-lib
+#      PID_Component_Dependency(COMPONENT my-static-lib
 #                                       EXPORT NATIVE my-given-lib-bis
 #      )
 #
@@ -1475,10 +1482,10 @@ endfunction(used_PID_Package_Dependency)
 #      )
 #
 #      # suppose that package pid-rpath has been defined as a package dependency
-#      declare_PID_Component_Dependency(my-static-lib DEPEND rpathlib)
+#      PID_Component_Dependency(my-static-lib DEPEND rpathlib)
 #
 #      # suppose that package pid-rpath has been defined as a package dependency
-#      declare_PID_Component_Dependency(my-other-lib EXPORT rpathlib)
+#      PID_Component_Dependency(my-other-lib EXPORT rpathlib)
 #      #it is exported since includes of rpathlib are in public includes of my-other-lib
 #
 #
@@ -1910,7 +1917,7 @@ endfunction(run_PID_Test)
 #   .. admonition:: Constraints
 #      :class: warning
 #
-#      - This function must be called after a dependency to ``name`` has been declared using |declare_PID_Package_Dependency|_.
+#      - This function must be called after a dependency to ``name`` has been declared using |PID_Dependency|_.
 #
 #   .. admonition:: Effects
 #     :class: important

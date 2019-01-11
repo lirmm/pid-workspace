@@ -37,15 +37,15 @@ include(CMakeParseArguments)
 #
 # .. ifmode:: user
 #
-#  .. |declare_PID_Framework| replace:: ``declare_PID_Framework``
-#  .. _declare_PID_Framework:
+#  .. |PID_Framework| replace:: ``PID_Framework``
+#  .. _PID_Framework:
 #
-#  declare_PID_Framework
-#  ---------------------
-#
-#   .. command:: declare_PID_Framework(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... ADDRESS ... SITE ... [OPTIONS])
+#  PID_Framework
+#  -------------
 #
 #   .. command:: PID_Framework(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... ADDRESS ... SITE ... [OPTIONS])
+#
+#   .. command:: declare_PID_Framework(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... ADDRESS ... SITE ... [OPTIONS])
 #
 #      Declare the current CMake project as a PID framework.
 #
@@ -81,7 +81,7 @@ include(CMakeParseArguments)
 #
 #     .. code-block:: cmake
 #
-#        declare_PID_Framework(
+#        PID_Framework(
 #           AUTHOR       Robin Passama
 #       		MAIL         passama@lirmm.fr
 #       		INSTITUTION  LIRMM
@@ -146,15 +146,15 @@ endmacro(declare_PID_Framework)
 #
 # .. ifmode:: user
 #
-#  .. |add_PID_Framework_Author| replace:: ``add_PID_Framework_Author``
-#  .. _add_PID_Framework_Author:
+#  .. |PID_Framework_Author| replace:: ``PID_Framework_Author``
+#  .. _PID_Framework_Author:
 #
-#  add_PID_Framework_Author
-#  ------------------------
-#
-#   .. command:: add_PID_Framework_Author(AUHTOR ...[INSTITUTION ...])
+#  PID_Framework_Author
+#  --------------------
 #
 #   .. command:: PID_Framework_Author(AUHTOR ...[INSTITUTION ...])
+#
+#   .. command:: add_PID_Framework_Author(AUHTOR ...[INSTITUTION ...])
 #
 #      Add an author to the list of authors of the framework.
 #
@@ -180,7 +180,7 @@ endmacro(declare_PID_Framework)
 #
 #     .. code-block:: cmake
 #
-#        add_PID_Framework_Author(AUTHOR Another Writter INSTITUTION LIRMM)
+#        PID_Framework_Author(AUTHOR Another Writter INSTITUTION LIRMM)
 #
 macro(PID_Framework_Author)
   add_PID_Framework_Author(${ARGN})
@@ -199,15 +199,15 @@ endmacro(add_PID_Framework_Author)
 #
 # .. ifmode:: user
 #
-#  .. |add_PID_Framework_Category| replace:: ``add_PID_Framework_Category``
-#  .. _add_PID_Framework_Category:
+#  .. |PID_Framework_Category| replace:: ``PID_Framework_Category``
+#  .. _PID_Framework_Category:
 #
-#  add_PID_Framework_Category
-#  --------------------------
-#
-#   .. command:: add_PID_Framework_Category(...)
+#  PID_Framework_Category
+#  ----------------------
 #
 #   .. command:: PID_Framework_Category(...)
+#
+#   .. command:: add_PID_Framework_Category(...)
 #
 #      Define a new category for classifying packages of the current framework.
 #
@@ -229,7 +229,7 @@ endmacro(add_PID_Framework_Author)
 #
 #     .. code-block:: cmake
 #
-#        add_PID_Framework_Category(programming/filesystem)
+#        PID_Framework_Category(programming/filesystem)
 #
 macro(PID_Framework_Category)
   add_PID_Framework_Category(${ARGN})

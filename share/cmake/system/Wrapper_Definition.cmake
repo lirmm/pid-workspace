@@ -46,15 +46,15 @@ include(CMakeParseArguments)
 #
 # .. ifmode:: user
 #
-#  .. |declare_PID_Wrapper| replace:: ``declare_PID_Wrapper``
-#  .. _declare_PID_Wrapper:
+#  .. |PID_Wrapper| replace:: ``PID_Wrapper``
+#  .. _PID_Wrapper:
 #
-#  declare_PID_Wrapper
-#  -------------------
-#
-#   .. command:: declare_PID_Wrapper(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
+#  PID_Wrapper
+#  -----------
 #
 #   .. command:: PID_Wrapper(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
+#
+#   .. command:: declare_PID_Wrapper(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])
 #
 #      Declare the current CMake project as a PID wrapper for a given external package with specific meta-information passed as parameter.
 #
@@ -95,13 +95,13 @@ include(CMakeParseArguments)
 #
 #     .. code-block:: cmake
 #
-#        declare_PID_Wrapper(
-#		         AUTHOR Robin Passama
-#		         INSTITUTION LIRMM
-#		         YEAR 2013
-#		         LICENSE CeCILL-C
-#		         ADDRESS git@gite.lirmm.fr:passama/a-given-wrapper.git
-# 		       DESCRIPTION "an example PID wrapper"
+#        PID_Wrapper(
+#          AUTHOR Robin Passama
+#          INSTITUTION LIRMM
+#          YEAR 2013
+#          LICENSE CeCILL-C
+#          ADDRESS git@gite.lirmm.fr:passama/a-given-wrapper.git
+#          DESCRIPTION "an example PID wrapper"
 #        )
 #
 
@@ -144,15 +144,15 @@ endmacro(declare_PID_Wrapper)
 #
 # .. ifmode:: user
 #
-#  .. |define_PID_Wrapper_Original_Project_Info| replace:: ``define_PID_Wrapper_Original_Project_Info``
-#  .. _define_PID_Wrapper_Original_Project_Info:
+#  .. |PID_Original_Project| replace:: ``PID_Original_Project``
+#  .. _PID_Original_Project:
 #
-#  define_PID_Wrapper_Original_Project_Info
-#  ----------------------------------------
+#  PID_Original_Project
+#  --------------------
+#
+#   .. command:: PID_Original_Project(AUTHORS ... LICENSE ... URL ...)
 #
 #   .. command:: define_PID_Wrapper_Original_Project_Info(AUTHORS ... LICENSE ... URL ...)
-#
-#   .. command::PID_Original_Project(AUTHORS ... LICENSE ... URL ...)
 #
 #      Set the meta information about original project being wrapped by current project.
 #
@@ -179,12 +179,12 @@ endmacro(declare_PID_Wrapper)
 #
 #     .. code-block:: cmake
 #
-#        define_PID_Wrapper_Original_Project_Info(
-#	           AUTHORS "Boost.org contributors"
-#	           LICENSES "Boost license"
-#            URL http://www.boost.org)
+#      PID_Original_Project(
+#         AUTHORS "Boost.org contributors"
+#         LICENSES "Boost license"
+#         URL http://www.boost.org)
 #
-
+#
 macro(PID_Original_Project)
   define_PID_Wrapper_Original_Project_Info(${ARGN})
 endmacro(PID_Original_Project)
@@ -212,15 +212,15 @@ endmacro(define_PID_Wrapper_Original_Project_Info)
 #
 # .. ifmode:: user
 #
-#  .. |add_PID_Wrapper_Author| replace:: ``add_PID_Wrapper_Author``
-#  .. _add_PID_Wrapper_Author:
+#  .. |PID_Wrapper_Author| replace:: ``PID_Wrapper_Author``
+#  .. _PID_Wrapper_Author:
 #
-#  add_PID_Wrapper_Author
-#  ----------------------
-#
-#   .. command:: add_PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
+#  PID_Wrapper_Author
+#  -------------------
 #
 #   .. command:: PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
+#
+#   .. command:: add_PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])
 #
 #      Add an author to the list of authors of the wrapper.
 #
@@ -246,9 +246,9 @@ endmacro(define_PID_Wrapper_Original_Project_Info)
 #
 #     .. code-block:: cmake
 #
-#        add_PID_Wrapper_Author(AUTHOR Another Writter INSTITUTION LIRMM)
+#        PID_Wrapper_Author(AUTHOR Another Writter INSTITUTION LIRMM)
 #
-
+#
 macro(PID_Wrapper_Author)
   add_PID_Wrapper_Author(${ARGN})
 endmacro(PID_Wrapper_Author)
@@ -272,15 +272,15 @@ endmacro(add_PID_Wrapper_Author)
 #
 # .. ifmode:: user
 #
-#  .. |add_PID_Wrapper_Category| replace:: ``add_PID_Wrapper_Category``
-#  .. _add_PID_Wrapper_Category:
+#  .. |PID_Wrapper_Category| replace:: ``PID_Wrapper_Category``
+#  .. _PID_Wrapper_Category:
 #
-#  add_PID_Wrapper_Category
-#  ------------------------
-#
-#   .. command:: add_PID_Wrapper_Category(...)
+#  PID_Wrapper_Category
+#  --------------------
 #
 #   .. command:: PID_Wrapper_Category(...)
+#
+#   .. command:: add_PID_Wrapper_Category(...)
 #
 #      Declare that the current wrapper generates external packages that belong to a given category.
 #
@@ -302,7 +302,7 @@ endmacro(add_PID_Wrapper_Author)
 #
 #     .. code-block:: cmake
 #
-#        add_PID_Wrapper_Category(example/packaging)
+#        PID_Wrapper_Category(example/packaging)
 #
 
 macro(PID_Wrapper_Category)
@@ -321,15 +321,15 @@ endmacro(add_PID_Wrapper_Category)
 #
 # .. ifmode:: user
 #
-#  .. |define_PID_Wrapper_User_Option| replace:: ``define_PID_Wrapper_User_Option``
-#  .. _define_PID_Wrapper_User_Option:
+#  .. |PID_Wrapper_Option| replace:: ``PID_Wrapper_Option``
+#  .. _PID_Wrapper_Option:
 #
-#  define_PID_Wrapper_User_Option
-#  ------------------------------
-#
-#   .. command:: define_PID_Wrapper_User_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])
+#  PID_Wrapper_Option
+#  ------------------
 #
 #   .. command:: PID_Wrapper_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])
+#
+#   .. command:: define_PID_Wrapper_User_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])
 #
 #      Declare that the current wrapper generates external packages that belong to a given category.
 #
@@ -357,11 +357,9 @@ endmacro(add_PID_Wrapper_Category)
 #
 #     .. code-block:: cmake
 #
-#        define_PID_Wrapper_User_Option(
-#	          OPTION BUILD_WITH_CUDA_SUPPORT
-#	          TYPE BOOL
-#	          DEFAULT OFF
-#	          DESCRIPTION "set to ON to enable CUDA support during build")
+#        PID_Wrapper_Option(OPTION BUILD_WITH_CUDA_SUPPORT
+#          TYPE BOOL DEFAULT OFF
+#          DESCRIPTION "set to ON to enable CUDA support during build")
 #
 
 macro(PID_Wrapper_Option)
@@ -393,15 +391,15 @@ endmacro(define_PID_Wrapper_User_Option)
 #
 # .. ifmode:: user
 #
-#  .. |declare_PID_Wrapper_Publishing| replace:: ``declare_PID_Wrapper_Publishing``
-#  .. _declare_PID_Wrapper_Publishing:
+#  .. |PID_Wrapper_Publishing| replace:: ``PID_Wrapper_Publishing``
+#  .. _PID_Wrapper_Publishing:
 #
-#  declare_PID_Wrapper_Publishing
-#  ------------------------------
-#
-#   .. command:: declare_PID_Wrapper_Publishing(PROJECT ... GIT|FRAMEWORK ... [OPTIONS])
+#  PID_Wrapper_Publishing
+#  ----------------------
 #
 #   .. command:: PID_Wrapper_Publishing(PROJECT ... GIT|FRAMEWORK ... [OPTIONS])
+#
+#   .. command:: declare_PID_Wrapper_Publishing(PROJECT ... GIT|FRAMEWORK ... [OPTIONS])
 #
 #      Declare that the current wrapper generates external packages that belong to a given category.
 #
@@ -434,12 +432,12 @@ endmacro(define_PID_Wrapper_User_Option)
 #
 #     .. code-block:: cmake
 #
-#        declare_PID_Wrapper_Publishing(
-#              PROJECT https://gite.lirmm.fr/pid/boost
-#			         FRAMEWORK pid
-#			         DESCRIPTION boost is a PID wrapper for external project called Boost. Boost provides many libraries and templates to ease development in C++.
-#			         PUBLISH_BINARIES
-#			         ALLOWED_PLATFORMS x86_64_linux_abi11)
+#        PID_Wrapper_Publishing(
+#          PROJECT https://gite.lirmm.fr/pid/boost
+#          FRAMEWORK pid
+#          DESCRIPTION boost is a PID wrapper for external project called Boost. Boost provides many libraries and templates to ease development in C++.
+#          PUBLISH_BINARIES
+#          ALLOWED_PLATFORMS x86_64_linux_abi11)
 #
 
 macro(PID_Wrapper_Publishing)
@@ -565,15 +563,15 @@ endmacro(build_PID_Wrapper)
 #
 # .. ifmode:: user
 #
-#  .. |add_PID_Wrapper_Known_Version| replace:: ``add_PID_Wrapper_Known_Version``
-#  .. _add_PID_Wrapper_Known_Version:
+#  .. |PID_Wrapper_Version| replace:: ``PID_Wrapper_Version``
+#  .. _PID_Wrapper_Version:
 #
-#  add_PID_Wrapper_Known_Version
-#  -----------------------------
-#
-#   .. command:: add_PID_Wrapper_Known_Version(VERSION ... DEPLOY ... [OPTIONS])
+#  PID_Wrapper_Version
+#  -------------------
 #
 #   .. command:: PID_Wrapper_Version(VERSION ... DEPLOY ... [OPTIONS])
+#
+#   .. command:: add_PID_Wrapper_Known_Version(VERSION ... DEPLOY ... [OPTIONS])
 #
 #      Declare a new version of the original project wrapped into PID system.
 #
@@ -602,10 +600,9 @@ endmacro(build_PID_Wrapper)
 #
 #     .. code-block:: cmake
 #
-#        add_PID_Wrapper_Known_Version(VERSION 1.55.0 DEPLOY deploy.cmake
-#                              SONAME 1.55.0 #define the extension name to use for shared objects
+#        PID_Wrapper_Version(VERSION 1.55.0 DEPLOY deploy.cmake
+#            SONAME 1.55.0 #define the extension name to use for shared objects
 #        )
-#
 #
 
 macro(PID_Wrapper_Version)
@@ -691,15 +688,15 @@ endmacro(add_PID_Wrapper_Known_Version)
 #
 # .. ifmode:: user
 #
-#  .. |declare_PID_Wrapper_Platform_Configuration| replace:: ``declare_PID_Wrapper_Platform_Configuration``
-#  .. _declare_PID_Wrapper_Platform_Configuration:
+#  .. |PID_Wrapper_Configuration| replace:: ``PID_Wrapper_Configuration``
+#  .. _PID_Wrapper_Configuration:
 #
-#  declare_PID_Wrapper_Platform_Configuration
-#  ------------------------------------------
-#
-#   .. command:: declare_PID_Wrapper_Platform_Configuration(CONFIGURATION ... [PLATFORM ...])
+#  PID_Wrapper_Configuration
+#  -------------------------
 #
 #   .. command:: PID_Wrapper_Configuration(CONFIGURATION ... [PLATFORM ...])
+#
+#   .. command:: declare_PID_Wrapper_Platform_Configuration(CONFIGURATION ... [PLATFORM ...])
 #
 #      Declare a platform configuration constraint for the current version of the external project being described.
 #
@@ -725,7 +722,7 @@ endmacro(add_PID_Wrapper_Known_Version)
 #
 #     .. code-block:: cmake
 #
-#        declare_PID_Wrapper_Platform_Configuration(CONFIGURATION posix)
+#        PID_Wrapper_Configuration(CONFIGURATION posix)
 #
 
 macro(PID_Wrapper_Configuration)
@@ -749,15 +746,15 @@ endmacro(declare_PID_Wrapper_Platform_Configuration)
 #
 # .. ifmode:: user
 #
-#  .. |declare_PID_Wrapper_External_Dependency| replace:: ``declare_PID_Wrapper_External_Dependency``
-#  .. _declare_PID_Wrapper_External_Dependency:
+#  .. |PID_Wrapper_Dependency| replace:: ``PID_Wrapper_Dependency``
+#  .. _PID_Wrapper_Dependency:
 #
-#  declare_PID_Wrapper_External_Dependency
-#  ---------------------------------------
-#
-#   .. command:: declare_PID_Wrapper_External_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)
+#  PID_Wrapper_Dependency
+#  ----------------------
 #
 #   .. command:: PID_Wrapper_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)
+#
+#   .. command:: declare_PID_Wrapper_External_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)
 #
 #     Declare a dependency between the currently described version of the external package and another external package.
 #
@@ -785,7 +782,7 @@ endmacro(declare_PID_Wrapper_Platform_Configuration)
 #
 #     .. code-block:: cmake
 #
-#        declare_PID_Wrapper_External_Dependency (PACKAGE boost EXACT VERSION 1.55.0 EXACT VERSION 1.63.0 EXACT VERSION 1.64.0)
+#        PID_Wrapper_Dependency (PACKAGE boost EXACT VERSION 1.55.0 EXACT VERSION 1.63.0 EXACT VERSION 1.64.0)
 #
 macro(PID_Wrapper_Dependency)
   declare_PID_Wrapper_External_Dependency(${ARGN})
@@ -860,15 +857,15 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #
 # .. ifmode:: user
 #
-#  .. |declare_PID_Wrapper_Component| replace:: ``declare_PID_Wrapper_Component``
-#  .. _declare_PID_Wrapper_Component:
+#  .. |PID_Wrapper_Component| replace:: ``PID_Wrapper_Component``
+#  .. _PID_Wrapper_Component:
 #
-#  declare_PID_Wrapper_Component
-#  -----------------------------
+#  PID_Wrapper_Component
+#  ---------------------
 #
-#   .. command:: declare_PID_Wrapper_Component(COMPONENT ... [OPTIONS])
+#   .. command:: PID_Wrapper_Component([COMPONENT] ... [OPTIONS])
 #
-#   .. command:: PID_Wrapper_Component(COMPONENT ... [OPTIONS])
+#   .. command:: declare_PID_Wrapper_Component([COMPONENT] ... [OPTIONS])
 #
 #     Declare a new component for the current version of the external package.
 #
@@ -903,7 +900,7 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #
 #     .. code-block:: cmake
 #
-#        declare_PID_Wrapper_Component(COMPONENT libyaml INCLUDES include SHARED_LINKS ${posix_LINK_OPTIONS} lib/libyaml-cpp)
+#        PID_Wrapper_Component(COMPONENT libyaml INCLUDES include SHARED_LINKS ${posix_LINK_OPTIONS} lib/libyaml-cpp)
 #
 macro(PID_Wrapper_Component)
   declare_PID_Wrapper_Component(${ARGN})
@@ -967,15 +964,15 @@ endmacro(declare_PID_Wrapper_Component)
 #
 # .. ifmode:: user
 #
-#  .. |declare_PID_Wrapper_Component_Dependency| replace:: ``declare_PID_Wrapper_Component_Dependency``
-#  .. _declare_PID_Wrapper_Component_Dependency:
+#  .. |PID_Wrapper_Component_Dependency| replace:: ``PID_Wrapper_Component_Dependency``
+#  .. _PID_Wrapper_Component_Dependency:
 #
-#  declare_PID_Wrapper_Component_Dependency
-#  ----------------------------------------
-#
-#   .. command:: declare_PID_Wrapper_Component_Dependency([COMPONENT] ... [OPTIONS])
+#  PID_Wrapper_Component_Dependency
+#  --------------------------------
 #
 #   .. command:: PID_Wrapper_Component_Dependency([COMPONENT] ... [OPTIONS])
+#
+#   .. command:: declare_PID_Wrapper_Component_Dependency([COMPONENT] ... [OPTIONS])
 #
 #     Declare a dependency for a component defined in the current version of the current external package.
 #
@@ -1009,7 +1006,7 @@ endmacro(declare_PID_Wrapper_Component)
 #
 #     .. code-block:: cmake
 #
-#        declare_PID_Wrapper_Component_Dependency(COMPONENT libyaml EXPORT EXTERNAL boost-headers PACKAGE boost)
+#        PID_Wrapper_Component_Dependency(COMPONENT libyaml EXPORT EXTERNAL boost-headers PACKAGE boost)
 #
 macro(PID_Wrapper_Component_Dependency)
   declare_PID_Wrapper_Component_Dependency(${ARGN})
