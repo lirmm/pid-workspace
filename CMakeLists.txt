@@ -206,9 +206,10 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 ## register a package in the workspace
 add_custom_target(register
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
+					-DTARGET_WRAPPER=\${wrapper}
 					-DTARGET_FRAMEWORK=\${framework}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Register_PID_Package.cmake
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Register_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 

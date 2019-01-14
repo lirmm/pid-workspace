@@ -1920,6 +1920,29 @@ endfunction(register_PID_Package)
 #
 # .. ifmode:: internal
 #
+#  .. |register_PID_Wrapper| replace:: ``register_PID_Wrapper``
+#  .. _register_PID_Wrapper:
+#
+#  register_PID_Wrapper
+#  --------------------
+#
+#   .. command:: register_PID_Wrapper(wrapper)
+#
+#     Updating the workspace repository with updated (or newly created) reference and find files for a given external package wrapper.
+#
+#      :wrapper: the name of the external package wrapper to register.
+#
+function(register_PID_Wrapper wrapper)
+	go_To_Workspace_Master()
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper}/build ${CMAKE_MAKE_PROGRAM} install)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper}/build ${CMAKE_MAKE_PROGRAM} referencing)
+	publish_Wrapper_References_In_Workspace_Repository(${wrapper})
+endfunction(register_PID_Wrapper)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |register_PID_Framework| replace:: ``register_PID_Framework``
 #  .. _register_PID_Framework:
 #

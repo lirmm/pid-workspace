@@ -717,6 +717,34 @@ endfunction(publish_Package_References_In_Workspace_Repository)
 #
 # .. ifmode:: internal
 #
+#  .. |publish_Wrapper_References_In_Workspace_Repository| replace:: ``publish_Wrapper_References_In_Workspace_Repository``
+#  .. _publish_Wrapper_References_In_Workspace_Repository:
+#
+#  publish_Wrapper_References_In_Workspace_Repository
+#  --------------------------------------------------
+#
+#   .. command:: publish_Wrapper_References_In_Workspace_Repository(wrapper)
+#
+#     Commit and push cmake script files (find and reference) used to reference an external package.
+#
+#     :wrapper: the name of external package wrapper to use.
+#
+function(publish_Wrapper_References_In_Workspace_Repository wrapper)
+  if(EXISTS ${WORKSPACE_DIR}/share/cmake/find/Find${wrapper}.cmake
+  AND EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${wrapper}.cmake)
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/find/Find${wrapper}.cmake OUTPUT_QUIET ERROR_QUIET)
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/references/ReferExternal${wrapper}.cmake OUTPUT_QUIET ERROR_QUIET)
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git commit -m "${wrapper} registered" OUTPUT_QUIET ERROR_QUIET)
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git push origin master OUTPUT_QUIET ERROR_QUIET)
+  else()
+  	message("[PID] ERROR : problem registering wrapper ${wrapper}, cannot find adequate cmake files in workspace.")
+  endif()
+endfunction(publish_Wrapper_References_In_Workspace_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |publish_Framework_References_In_Workspace_Repository| replace:: ``publish_Framework_References_In_Workspace_Repository``
 #  .. _publish_Framework_References_In_Workspace_Repository:
 #
