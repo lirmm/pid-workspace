@@ -29,10 +29,6 @@ if(NOT TARGET_PACKAGE AND ENV{package})
 	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
 endif()
 
-if(NOT TARGET_WRAPPER AND ENV{wrapper})
-	set(TARGET_WRAPPER $ENV{wrapper} CACHE INTERNAL "")
-endif()
-
 if(NOT TARGET_FRAMEWORK AND ENV{framework})
 	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
 endif()
@@ -42,13 +38,9 @@ if(TARGET_PACKAGE)
 	if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE}
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
 		register_PID_Package(${TARGET_PACKAGE})
-	else()
-		message("[PID] ERROR : the package ${TARGET_PACKAGE} cannot be found in the workspace (a folder with same name should be in ${WORKSPACE_DIR}/packages folder).")
-	endif()
-elseif(TARGET_WRAPPER)
-	if(EXISTS ${WORKSPACE_DIR}/wrappers/${TARGET_WRAPPER}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${TARGET_WRAPPER})
-		register_PID_Wrapper(${TARGET_WRAPPER})
+	elseif(EXISTS ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE})
+		register_PID_Wrapper(${TARGET_PACKAGE})
 	else()
 		message("[PID] ERROR : the package ${TARGET_PACKAGE} cannot be found in the workspace (a folder with same name should be in ${WORKSPACE_DIR}/packages folder).")
 	endif()

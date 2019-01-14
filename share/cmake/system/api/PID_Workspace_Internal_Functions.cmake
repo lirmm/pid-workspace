@@ -1823,7 +1823,7 @@ if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
 			set(${RESULT} FALSE PARENT_SCOPE)
 		endif()
 	endif()
-elseif("${version}" MATCHES "all")#all versions targetted (including own versions and installers folder)
+elseif(version MATCHES "all")#all versions targetted (including own versions and installers folder)
 	if( EXISTS ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package}
 	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
@@ -1867,6 +1867,33 @@ endif()
 #clearing source folder
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/packages/${package})
 endfunction(remove_PID_Package)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |remove_PID_Wrapper| replace:: ``remove_PID_Wrapper``
+#  .. _remove_PID_Wrapper:
+#
+#  remove_PID_Wrapper
+#  ------------------
+#
+#   .. command:: remove_PID_Wrapper(wrapper)
+#
+#    Clear the workspace of any trace of the target wrapper (including its source repository).
+#
+#      :wrapper: the name of the wrapper.
+#
+function(remove_PID_Wrapper wrapper)
+	get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
+	#clearing install folder
+	if(	EXISTS ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${wrapper})
+		clear_PID_Package(RES ${package} all)
+	endif()
+	#clearing source folder
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/wrappers/${wrapper})
+
+endfunction(remove_PID_Wrapper)
 
 #.rst:
 #
