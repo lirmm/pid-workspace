@@ -39,7 +39,7 @@ if(TARGET_PACKAGE OR ENV{package})
 		remove_PID_Package(${TARGET_PACKAGE})
 	elseif(EXISTS ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE}
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE})
-		remove_PID_Wrapper(${TARGET_PACKAGE})()
+		remove_PID_Wrapper(${TARGET_PACKAGE})
 		message("[PID] ERROR : the package to be removed, named ${TARGET_PACKAGE}, does not lies in the workspace.")
 	endif()
 elseif(TARGET_FRAMEWORK)
