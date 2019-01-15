@@ -383,7 +383,7 @@ endfunction(declare_PID_Configuration_Constraints)
 #     .. rubric:: Required parameters
 #
 #     :<name>: the name of the configuration.
-#     :DEPENDS <list of configuration checks>: The list of expressions representing the different systems configurations used by given configuration.
+#     :DEPEND <list of configuration checks>: The list of expressions representing the different systems configurations used by given configuration.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -399,25 +399,25 @@ endfunction(declare_PID_Configuration_Constraints)
 #
 #     .. code-block:: cmake
 #
-#        declare_PID_Configuration_Dependencies(ros DEPENDS boost)
+#        declare_PID_Configuration_Dependencies(ros DEPEND boost)
 #
-#        PID_Configuration_Dependencies(ros DEPENDS boost)
+#        PID_Configuration_Dependencies(ros DEPEND boost)
 #
 macro(PID_Configuration_Dependencies)
   declare_PID_Configuration_Dependencies(${ARGN})
 endmacro(PID_Configuration_Dependencies)
 
 function(declare_PID_Configuration_Dependencies)
-  set(multiValueArg DEPENDS) #the value may be a list
+  set(multiValueArg DEPEND) #the value may be a list
   cmake_parse_arguments(PID_CONFIGURATION_DEPENDENCIES "" "" "${multiValueArg}" ${ARGN})
   set(name ${ARGV0})
-  if(NOT name OR name STREQUAL "DEPENDS")
+  if(NOT name OR name STREQUAL "DEPEND")
     message("[PID] WARNING: Bad usage of function declare_PID_Configuration_Dependencies, you must give the name of the configuration as first argument.")
-  elseif(NOT PID_CONFIGURATION_DEPENDENCIES_DEPENDS)
-    message("[PID] WARNING: Bad usage of function declare_PID_Configuration_Dependencies, you must give at least one configuration that ${name} depends on using DEPENDS keyword.")
+  elseif(NOT PID_CONFIGURATION_DEPENDENCIES_DEPEND)
+    message("[PID] WARNING: Bad usage of function declare_PID_Configuration_Dependencies, you must give at least one configuration that ${name} depends on using DEPEND keyword.")
   else()
-    foreach(dep IN LISTS PID_CONFIGURATION_DEPENDENCIES_DEPENDS)
-      append_Unique_In_cache(${name}_CONFIGURATION_DEPENDENCIES "${PID_CONFIGURATION_DEPENDENCIES_DEPENDS}")
+    foreach(dep IN LISTS PID_CONFIGURATION_DEPENDENCIES_DEPEND)
+      append_Unique_In_cache(${name}_CONFIGURATION_DEPENDENCIES "${PID_CONFIGURATION_DEPENDENCIES_DEPEND}")
     endforeach()
   endif()
 endfunction(declare_PID_Configuration_Dependencies)

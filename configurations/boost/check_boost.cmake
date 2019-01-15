@@ -29,4 +29,4 @@ PID_Configuration_Constraints(boost IN_BINARY libraries					version
 																		VALUE 		BOOST_COMPONENTS	BOOST_VERSION)
 
 
-PID_Configuration_Dependencies(boost DEPENDS posix)
+PID_Configuration_Dependencies(boost DEPEND posix)

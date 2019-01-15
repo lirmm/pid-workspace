@@ -66,4 +66,4 @@ PID_Configuration_Variables(ros
 PID_Configuration_Constraints(ros REQUIRED distribution IN_BINARY packages VALUE ROS_PACKAGES)
 
 # dependencies
-PID_Configuration_Dependencies(ros DEPENDS boost[libraries=ROS_BOOST_LIBS])
+PID_Configuration_Dependencies(ros DEPEND boost[libraries=ROS_BOOST_LIBS])
