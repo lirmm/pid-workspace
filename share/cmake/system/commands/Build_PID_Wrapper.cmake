@@ -185,7 +185,8 @@ if(NOT use_os_variant)# perform specific operations at the end of the install pr
 	if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install_script_file})
 	  file(COPY ${package_version_src_dir}/${post_install_script_file} DESTINATION  ${TARGET_INSTALL_DIR}/share)
 	  message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/share/${post_install_script_file} ...")
-	  include(${TARGET_INSTALL_DIR}/share/${post_install_script_file} NO_POLICY_SCOPE)#execute the script
+		set(${TARGET_EXTERNAL_PACKAGE}_VERSION_STRING ${version})#only variable that is not defined yet is the versio string of current project
+		include(${TARGET_INSTALL_DIR}/share/${post_install_script_file} NO_POLICY_SCOPE)#execute the script
 	endif()
 
 	# create a relocatable binary archive, on demand.
