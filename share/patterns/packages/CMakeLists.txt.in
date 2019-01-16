@@ -5,7 +5,7 @@ include(Package_Definition NO_POLICY_SCOPE)
 
 PROJECT(@PACKAGE_NAME@)
 
-declare_PID_Package(
+PID_Package(
 			AUTHOR      @PACKAGE_AUTHOR_NAME@
 			YEAR        @PACKAGE_YEARS@
 			LICENSE     @PACKAGE_LICENSE@
