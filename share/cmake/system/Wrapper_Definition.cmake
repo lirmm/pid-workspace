@@ -1940,7 +1940,8 @@ function(build_Autotools_External_Project)
   set(CXX_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_CXX_FLAGS})
   set(LD_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_LD_FLAGS})
 
-  get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler LINKER ld_tool LDFLAGS ld_flags)
+  get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler LINKER ld_tool)
+  get_Environment_Info(SHARED LDFLAGS ld_flags)
   get_Environment_Info(C RELEASE CFLAGS c_flags COMPILER c_compiler)
 
   if(c_flags)
@@ -2072,7 +2073,8 @@ function(build_Waf_External_Project)
   set(CXX_FLAGS_ENV ${BUILD_WAF_EXTERNAL_PROJECT_CXX_FLAGS})
   set(LD_FLAGS_ENV ${BUILD_WAF_EXTERNAL_PROJECT_LD_FLAGS})
 
-  get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler LINKER ld_tool LDFLAFS ld_flags)
+  get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler LINKER ld_tool)
+  get_Environment_Info(SHARED LDFLAGS ld_flags)
   get_Environment_Info(C RELEASE CFLAGS c_flags COMPILER c_compiler)
 
   if(c_flags)
