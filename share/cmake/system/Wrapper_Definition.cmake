@@ -1529,6 +1529,88 @@ endfunction(get_Environment_Info)
 
 
 #.rst:
+# .. ifmode:: user
+#
+#  .. |get_Target_Platform_Info| replace:: ``get_Target_Platform_Info``
+#  .. _get_Target_Platform_Info:
+#
+#  get_Target_Platform_Info
+#  ---------------------
+#
+#  .. command:: get_Target_Platform_Info([OPTIONS])
+#
+#   Get information about the target platform. This can be used to configure the build accordingly.
+#
+#   .. rubric:: Optional parameters
+#
+#   All arguments are optional but at least one must be provided. All properties are retrieved for the target platform.
+#
+#   :NAME <VAR>: Output the name of the target platform in ``VAR``
+#   :TYPE <VAR>: Ouptut the processor type in ``VAR``
+#   :OS <VAR>: Output the OS name in ``VAR``
+#   :ARCH <VAR>: Output the architecture in ``VAR``
+#   :ABI <VAR>: Output the ABI in ``VAR``
+#   :DISTRIBUTION <VAR>: Output the distribution in ``VAR``
+#   :PYTHON <VAR>: Output the Python version in ``VAR``
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     After the call, the variables defined by the user will be set to the corresponding value. Then it can be used to control the configuration of the package.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      get_Target_Platform_Info(OS curr_os ARCH curr_proc ABI curr_abi TYPE curr_proc_type)
+#      message("curr_os=${curr_os}")
+#
+function(get_Target_Platform_Info)
+set(oneValueArgs NAME OS ARCH ABI TYPE PYTHON DISTRIBUTION VERSION)
+cmake_parse_arguments(GET_TARGET_PLATFORM_INFO "" "${oneValueArgs}" "" ${ARGN} )
+set(OK FALSE)
+if(GET_TARGET_PLATFORM_INFO_NAME)
+	set(OK TRUE)
+	set(${GET_TARGET_PLATFORM_INFO_NAME} ${CURRENT_PLATFORM} PARENT_SCOPE)
+endif()
+if(GET_TARGET_PLATFORM_INFO_TYPE)
+	set(OK TRUE)
+	set(${GET_TARGET_PLATFORM_INFO_TYPE} ${CURRENT_PLATFORM_TYPE} PARENT_SCOPE)
+endif()
+if(GET_TARGET_PLATFORM_INFO_OS)
+	set(OK TRUE)
+	set(${GET_TARGET_PLATFORM_INFO_OS} ${CURRENT_PLATFORM_OS} PARENT_SCOPE)
+endif()
+if(GET_TARGET_PLATFORM_INFO_ARCH)
+	set(OK TRUE)
+	set(${GET_TARGET_PLATFORM_INFO_ARCH} ${CURRENT_PLATFORM_ARCH} PARENT_SCOPE)
+endif()
+if(GET_TARGET_PLATFORM_INFO_ABI)
+	set(OK TRUE)
+  if(CURRENT_PLATFORM_ABI STREQUAL "abi11")
+    set(${GET_TARGET_PLATFORM_INFO_ABI} CXX11 PARENT_SCOPE)
+  elseif(CURRENT_PLATFORM_ABI STREQUAL "abi98")
+    set(${GET_TARGET_PLATFORM_INFO_ABI} CXX PARENT_SCOPE)
+  endif()
+endif()
+if(GET_TARGET_PLATFORM_INFO_PYTHON)
+		set(OK TRUE)
+		set(${GET_TARGET_PLATFORM_INFO_PYTHON} ${CURRENT_PYTHON} PARENT_SCOPE)
+endif()
+if(GET_TARGET_PLATFORM_INFO_DISTRIBUTION)
+		set(OK TRUE)
+		set(${GET_TARGET_PLATFORM_INFO_DISTRIBUTION} ${CURRENT_DISTRIBUTION} PARENT_SCOPE)
+endif()
+if(GET_TARGET_PLATFORM_INFO_DISTRIBUTION_VERSION)
+		set(OK TRUE)
+		set(${GET_TARGET_PLATFORM_INFO_DISTRIBUTION_VERSION} ${CURRENT_DISTRIBUTION_VERSION} PARENT_SCOPE)
+endif()
+if(NOT OK)
+	message("[PID] ERROR : you must use one or more of the NAME, TYPE, ARCH, OS or ABI keywords together with corresponding variables that will contain the resulting property of the current platform in use.")
+endif()
+endfunction(get_Target_Platform_Info)
+
+#.rst:
 #
 # .. ifmode:: user
 #
