@@ -1648,6 +1648,137 @@ if(INSTALL_EXTERNAL_PROJECT_PATH)
 endif()
 endfunction(install_External_Project)
 
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |build_B2_External_Project| replace:: ``build_B2_External_Project``
+#  .. _build_B2_External_Project:
+#
+#  build_B2_External_Project
+#  -------------------------
+#
+#   .. command:: build_B2_External_Project(URL ... ARCHIVE ... FOLDER ... PATH ... [OPTIONS])
+#
+#     Configure, build and install an external project defined with Boost build.
+#
+#     .. rubric:: Required parameters
+#
+#     :PROJECT <string>: The name of the external project.
+#     :FOLDER <string>: The name of the folder containing the project.
+#     :MODE <Release|Debug>: The build mode.
+#
+#     .. rubric:: Optional parameters
+#
+#     :QUIET: if used then the output of this command will be silent.
+#     :COMMENT <string>: A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.
+#     :DEFINITIONS <list of definitions>: the CMake definitions you need to provide to the cmake build script.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  Build and install the external project into workspace install tree..
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#         build_B2_External_Project(PROJECT boost FOLDER boost_1_64_0 MODE Release)
+#
+function(build_B2_External_Project)
+  set(options QUIET) #used to define the context
+  set(oneValueArgs PROJECT FOLDER MODE COMMENT)
+  set(multiValueArgs DEFINITIONS)
+  cmake_parse_arguments(BUILD_B2_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  if(NOT BUILD_B2_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_B2_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_B2_EXTERNAL_PROJECT_MODE)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : PROJECT, FOLDER and MODE arguments are mandatory when calling build_B2_External_Project.")
+    return()
+  endif()
+
+  if(BUILD_B2_EXTERNAL_PROJECT_QUIET)
+    set(OUTPUT_MODE OUTPUT_QUIET)
+  endif()
+
+
+  if(BUILD_B2_EXTERNAL_PROJECT_COMMENT)
+    set(use_comment "(${BUILD_B2_EXTERNAL_PROJECT_COMMENT}) ")
+  endif()
+
+  #create the build folder inside the project folder
+  set(project_dir ${TARGET_BUILD_DIR}/${BUILD_B2_EXTERNAL_PROJECT_FOLDER})
+  if(NOT EXISTS ${project_dir})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling build_B2_External_Project  the build folder specified (${BUILD_B2_EXTERNAL_PROJECT_FOLDER}) does not exist.")
+    return()
+  endif()
+
+  # preparing b2 invocation parameters
+  #configure build mode (to get available parameters see https://boostorg.github.io/build/tutorial.html section "Feature reference")
+  if(BUILD_B2_EXTERNAL_PROJECT_MODE STREQUAL Debug)
+      set(DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "variant=debug")
+  else()
+      set(DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "variant=release")
+  endif()
+  # configure current platform
+  list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "address-model=${CURRENT_PLATFORM_ARCH}")#address model is specified the same way in PID and b2
+  list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "architecture=${CURRENT_PLATFORM_TYPE}")#processor architecture supported are "x86" and "arm" so PID uses same names than b2
+  if(CURRENT_PLATFORM_OS STREQUAL macosx)#we use a specific identifier in PID only for macos otherwise thay are the same than b2
+    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "target-os=darwin")#processor architecture
+  else()
+    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "target-os=${CURRENT_PLATFORM_OS}")#processor architecture
+  endif()
+   #ABI definition is already in compile flags
+  # configure toolchain
+  if(CMAKE_COMPILER_IS_GNUCXX)
+    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "toolset=gcc")
+    set(install_toolset "gcc")
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "clang")
+    set(install_toolset "clang")
+    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "toolset=clang")
+	else()# add new support for compiler or use CMake generic mechanism to do so for instance : CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"
+    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "toolset=${CMAKE_CXX_COMPILER_ID}")
+    set(install_toolset "${CMAKE_CXX_COMPILER_ID}")
+	endif()
+  #configure compilation flags
+  get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler)
+  get_Environment_Info(C RELEASE CFLAGS c_flags)
+
+  if(c_flags)
+    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "cflags=${c_flags}")
+  endif()
+  if(cxx_flags)
+    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "cxxflags=${cxx_flags}")
+  endif()
+
+  if(BUILD_B2_EXTERNAL_PROJECT_DEFINITIONS)
+    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "define=${BUILD_B2_EXTERNAL_PROJECT_DEFINITIONS}")
+  endif()
+
+  message("[PID] INFO : Configuring ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+  execute_process(COMMAND ${project_dir}/bootstrap.sh WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})
+
+  #generating the jam file for boost build
+  set(jamfile ${project_dir}/user-config.jam)
+  set(TOOLSET_NAME ${install_toolset})
+  set(TOOLSET_COMPILER_PATH ${cxx_compiler})
+  set(TOOLSET_COMPILER_PATH ${cxx_compiler})
+  if(CURRENT_PYTHON)
+    set(PYTHON_TOOLSET "using python : ${CURRENT_PYTHON} : ${CURRENT_PYTHON_EXECUTABLE} ;")
+  endif()
+  configure_file( ${WORKSPACE_DIR}/share/patterns/wrappers/b2_pid_config.jam.in
+                  ${jamfile}
+                  @ONLY)
+
+  get_Environment_Info(JOBS jobs)
+  message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+  execute_process(COMMAND ${project_dir}/b2 install ${jobs} --prefix=${TARGET_INSTALL_DIR} --user-config=${jamfile} ${DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD}
+    WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})
+
+endfunction(build_B2_External_Project)
 
 #.rst:
 #
