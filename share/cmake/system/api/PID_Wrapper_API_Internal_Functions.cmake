@@ -1994,6 +1994,105 @@ set(${RES_LINKS} ${all_links} PARENT_SCOPE)
 set(${RES_RESOURCES} ${all_resources} PARENT_SCOPE)
 endfunction(agregate_All_Build_Info_For_Component)
 
+
+#
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Build_Info_For_Dependency| replace:: ``set_Build_Info_For_Dependency``
+#  .. _set_Build_Info_For_Dependency:
+#
+#  set_Build_Info_For_Dependency
+#  -----------------------------
+#
+#   .. command:: set_Build_Info_For_Dependency(prefix dep_package component)
+#
+#    Set the cache variable containing Build information for a given dependency.
+#
+#      :prefix: the prefix of cache variables used to .
+#
+#      :component: the name of the target component.
+#
+#      :version: the given version.
+#
+function(set_Build_Info_For_Dependency prefix dep_package component)
+	########## manage per dependency build variables ############
+
+	# get current value of dependency variables
+	set(links ${${prefix}_DEPENDENCY_${dep_package}_BUILD_LINKS})
+	set(includes ${${prefix}_DEPENDENCY_${dep_package}_BUILD_INCLUDES})
+	set(lib_dirs ${${prefix}_DEPENDENCY_${dep_package}_BUILD_LIB_DIRS})
+	set(defs ${${prefix}_DEPENDENCY_${dep_package}_BUILD_DEFINITIONS})
+	set(opts ${${prefix}_DEPENDENCY_${dep_package}_BUILD_COMPILER_OPTIONS})
+	set(rres ${${prefix}_DEPENDENCY_${dep_package}_BUILD_RUNTIME_RESOURCES})
+	set(c_std ${${prefix}_DEPENDENCY_${dep_package}_BUILD_C_STANDARD})
+	set(cxx_std ${${prefix}_DEPENDENCY_${dep_package}_BUILD_CXX_STANDARD})
+
+	# add the flags coming from direct dependencies to an external package content
+	list(APPEND links ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_SHARED} ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_STATIC})
+	list(APPEND includes ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_INCLUDES})
+	list(APPEND lib_dirs ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_LIB_DIRS})
+	list(APPEND defs ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_DEFINITIONS})
+	list(APPEND opts ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_OPTIONS})
+	list(APPEND rres ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_RUNTIME_RESOURCES})
+	list(APPEND c_std ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_C_STANDARD})
+	list(APPEND cxx_std ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_CXX_STANDARD})
+
+	#add info comming from dependency between explicit components
+	foreach(dep_component IN LISTS ${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package})
+		agregate_All_Build_Info_For_Component(${dep_package} ${dep_component} Release
+		RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_STD_C RES_STD_CXX RES_LINKS RES_RESOURCES)
+		list(APPEND links ${RES_LINKS})
+		list(APPEND includes ${RES_INCS})
+		list(APPEND lib_dirs ${RES_LIB_DIRS})
+		list(APPEND defs ${RES_DEFS})
+		list(APPEND opts ${RES_OPTS})
+		list(APPEND rres ${RES_RESOURCES})
+		list(APPEND c_std ${RES_STD_C})
+		list(APPEND cxx_std ${RES_STD_CXX})
+	endforeach()
+
+	# evaluate variables in global variables, if any
+	evaluate_Variables_In_List(EVAL_BUILD_LNKS links) #first evaluate element of the list => if they are variables they are evaluated
+	evaluate_Variables_In_List(EVAL_BUILD_INCS includes)
+	evaluate_Variables_In_List(EVAL_BUILD_LDIRS lib_dirs)
+	evaluate_Variables_In_List(EVAL_BUILD_DEFS defs)
+	evaluate_Variables_In_List(EVAL_BUILD_OPTS opts)
+	evaluate_Variables_In_List(EVAL_BUILD_RRES rres)
+	evaluate_Variables_In_List(EVAL_BUILD_CSTD c_std)
+	evaluate_Variables_In_List(EVAL_BUILD_CXXSTD cxx_std)
+
+	#clean a bit the result, to avoid unecessary repetitions
+	remove_Duplicates_From_List(EVAL_BUILD_LNKS)
+	remove_Duplicates_From_List(EVAL_BUILD_INCS)
+	remove_Duplicates_From_List(EVAL_BUILD_LDIRS)
+	remove_Duplicates_From_List(EVAL_BUILD_DEFS)
+	remove_Duplicates_From_List(EVAL_BUILD_OPTS)
+	remove_Duplicates_From_List(EVAL_BUILD_RRES)
+	remove_Duplicates_From_List(EVAL_BUILD_CSTD)
+	remove_Duplicates_From_List(EVAL_BUILD_CXXSTD)
+
+	# resolve all path into absolute path if required (path to external package content)
+	resolve_External_Libs_Path(BUILD_COMPLETE_LINKS_PATH "${EVAL_BUILD_LNKS}" Release)
+	resolve_External_Libs_Path(BUILD_COMPLETE_LDIRS_PATH "${EVAL_BUILD_LDIRS}" Release)
+	resolve_External_Includes_Path(BUILD_COMPLETE_INCS_PATH "${EVAL_BUILD_INCS}" Release)
+	remove_Duplicates_From_List(BUILD_COMPLETE_LINKS_PATH)
+	remove_Duplicates_From_List(BUILD_COMPLETE_LDIRS_PATH)
+	remove_Duplicates_From_List(BUILD_COMPLETE_INCS_PATH)
+	
+	# set the gloal variables adequately
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_LINKS ${BUILD_COMPLETE_LINKS_PATH} CACHE INTERNAL "")
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_INCLUDES ${BUILD_COMPLETE_INCS_PATH} CACHE INTERNAL "")
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_LIB_DIRS ${BUILD_COMPLETE_LDIRS_PATH} CACHE INTERNAL "")
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_DEFINITIONS ${EVAL_BUILD_DEFS} CACHE INTERNAL "")
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_COMPILER_OPTIONS ${EVAL_BUILD_OPTS} CACHE INTERNAL "")
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_RUNTIME_RESOURCES ${EVAL_BUILD_RRES} CACHE INTERNAL "")
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_C_STANDARD ${EVAL_BUILD_CSTD} CACHE INTERNAL "")
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_CXX_STANDARD ${EVAL_BUILD_CXXSTD} CACHE INTERNAL "")
+
+endfunction(set_Build_Info_For_Dependency)
+
 #
 #.rst:
 #
@@ -2049,13 +2148,16 @@ function(set_Build_Info_For_Component package component version)
 		list(APPEND lib_dirs ${${prefix}_COMPONENT_${dep_component}_BUILD_LIB_DIRS})
 		list(APPEND defs ${${prefix}_COMPONENT_${dep_component}_BUILD_DEFINITIONS})
 		list(APPEND opts ${${prefix}_COMPONENT_${dep_component}_BUILD_COMPILER_OPTIONS})
-		list(APPEND res ${${prefix}_COMPONENT_${dep_component}_BUILD_RESOURCES})
+		list(APPEND res ${${prefix}_COMPONENT_${dep_component}_BUILD_RUNTIME_RESOURCES})
 		list(APPEND c_std ${${prefix}_COMPONENT_${dep_component}_BUILD_C_STANDARD})
 		list(APPEND cxx_std ${${prefix}_COMPONENT_${dep_component}_BUILD_CXX_STANDARD})
 	endforeach()
 
 	#dealing with dependencies between external packages
 	foreach(dep_package IN LISTS ${prefix}_COMPONENT_${component}_DEPENDENCIES)
+
+		set_Build_Info_For_Dependency(${prefix} ${dep_package} ${component})
+		######### continue collecting global build variables ##########
 		#add the direct use of package content within component (direct reference to includes defs, etc.)
 		list(APPEND links ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_SHARED} ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_STATIC})
 		list(APPEND includes ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_INCLUDES})
@@ -2123,7 +2225,7 @@ function(set_Build_Info_For_Component package component version)
 	set(${prefix}_COMPONENT_${component}_BUILD_C_STANDARD ${c_std} CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_CXX_STANDARD ${cxx_std} CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_LINKS ${COMPLETE_LINKS_PATH} CACHE INTERNAL "")
-	set(${prefix}_COMPONENT_${component}_BUILD_RESOURCES ${EVAL_RRES} CACHE INTERNAL "")
+	set(${prefix}_COMPONENT_${component}_BUILD_RUNTIME_RESOURCES ${EVAL_RRES} CACHE INTERNAL "")
 endfunction(set_Build_Info_For_Component)
 
 #
@@ -2161,6 +2263,7 @@ function(configure_Wrapper_Build_Variables package version)
 	##########################################################################################################################
 	#agregate all build variables related to each component defined for that version of external package
 	#goal is to get everything related to dependencies used by components
+
 	foreach(component IN LISTS ${prefix}_COMPONENTS)
 		set_Build_Info_For_Component(${package} ${component} ${version})
 		take_Greater_C_Standard_Version(c_std ${prefix}_COMPONENT_${component}_BUILD_C_STANDARD)
@@ -2170,7 +2273,7 @@ function(configure_Wrapper_Build_Variables package version)
 		list(APPEND all_compiler_options ${${prefix}_COMPONENT_${component}_BUILD_COMPILER_OPTIONS})
 		list(APPEND all_includes ${${prefix}_COMPONENT_${component}_BUILD_INCLUDES})
 		list(APPEND all_lib_dirs ${${prefix}_COMPONENT_${component}_BUILD_LIB_DIRS})
-		list(APPEND all_resources ${${prefix}_COMPONENT_${component}_BUILD_RESOURCES})
+		list(APPEND all_resources ${${prefix}_COMPONENT_${component}_BUILD_RUNTIME_RESOURCES})
 	endforeach()
 	#after this loop all lists contain evaluated content so no need to evaluate variables again
 
@@ -2190,7 +2293,7 @@ function(configure_Wrapper_Build_Variables package version)
 	set(${prefix}_BUILD_C_STANDARD ${c_std} CACHE INTERNAL "")
 	set(${prefix}_BUILD_CXX_STANDARD ${cxx_std} CACHE INTERNAL "")
 	set(${prefix}_BUILD_LINKS ${all_links} CACHE INTERNAL "")
-	set(${prefix}_BUILD_RESOURCES ${all_resources} CACHE INTERNAL "")
+	set(${prefix}_BUILD_RUNTIME_RESOURCES ${all_resources} CACHE INTERNAL "")
 endfunction(configure_Wrapper_Build_Variables)
 
 ################################################################################
