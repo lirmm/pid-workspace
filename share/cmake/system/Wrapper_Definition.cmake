@@ -1867,6 +1867,123 @@ endfunction(build_B2_External_Project)
 #
 # .. ifmode:: user
 #
+#  .. |build_Autotools_External_Project| replace:: ``build_Autotools_External_Project``
+#  .. _build_Autotools_External_Project:
+#
+#  build_Autotools_External_Project
+#  --------------------------------
+#
+#   .. command:: build_Autotools_External_Project(PROJECT ... FOLDER ... MODE ... [OPTIONS])
+#
+#     Configure, build and install an external project defined with GNU autotools.
+#
+#     .. rubric:: Required parameters
+#
+#     :PROJECT <string>: The name of the external project.
+#     :FOLDER <string>: The name of the folder containing the project.
+#     :MODE <Release|Debug>: The build mode.
+#
+#     .. rubric:: Optional parameters
+#
+#     :QUIET: if used then the output of this command will be silent.
+#     :COMMENT <string>: A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.
+#     :DEFINITIONS <list of definitions>: the CMake definitions you need to provide to the cmake build script.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  Build and install the external project into workspace install tree..
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#         build_Autotools_External_Project(PROJECT aproject FOLDER a_project_v12 MODE Release)
+#
+function(build_Autotools_External_Project)
+  set(options QUIET) #used to define the context
+  set(oneValueArgs PROJECT FOLDER MODE COMMENT)
+  set(multiValueArgs C_FLAGS CXX_FLAGS LD_FLAGS OPTIONS)
+  cmake_parse_arguments(BUILD_AUTOTOOLS_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  if(NOT BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_AUTOTOOLS_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_AUTOTOOLS_EXTERNAL_PROJECT_MODE)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : PROJECT, FOLDER and MODE arguments are mandatory when calling build_Autotools_External_Project.")
+    return()
+  endif()
+
+  if(BUILD_AUTOTOOLS_EXTERNAL_PROJECT_QUIET)
+    # waf outputs its messages on cerr...
+    set(OUTPUT_MODE OUTPUT_QUIET ERROR_QUIET)
+  endif()
+
+  if(BUILD_AUTOTOOLS_EXTERNAL_PROJECT_COMMENT)
+    set(use_comment "(${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_COMMENT}) ")
+  endif()
+
+  #create the build folder inside the project folder
+  set(project_dir ${TARGET_BUILD_DIR}/${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_FOLDER})
+  if(NOT EXISTS ${project_dir})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling build_Autotools_External_Project the build folder specified (${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_FOLDER}) does not exist.")
+    return()
+  endif()
+
+  message("[PID] INFO : Configuring ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+
+  # preparing b2 invocation parameters
+  #put back environment variables in previosu state
+  #configure compilation flags
+  set(C_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_C_FLAGS})
+  set(CXX_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_CXX_FLAGS})
+  set(LD_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_LD_FLAGS})
+
+  get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler LINKER ld_tool LDFLAGS ld_flags)
+  get_Environment_Info(C RELEASE CFLAGS c_flags COMPILER c_compiler)
+
+  if(c_flags)
+    list(APPEND C_FLAGS_ENV ${c_flags})
+  endif()
+  if(cxx_flags)
+    list(APPEND CXX_FLAGS_ENV ${cxx_flags})
+  endif()
+  if(ld_flags)
+    list(APPEND LD_FLAGS_ENV ${ld_flags})
+  endif()
+  set(CONFIGURE_FLAGS)
+  if(C_FLAGS_ENV)
+    fill_String_From_List(C_FLAGS_ENV RES_STRING)
+    list(APPEND CONFIGURE_FLAGS CFLAGS='${RES_STRING}')
+  endif()
+  if(CXX_FLAGS_ENV)
+    fill_String_From_List(CXX_FLAGS_ENV RES_STRING)
+    list(APPEND CONFIGURE_FLAGS CXXFLAGS='${RES_STRING}')
+  endif()
+  if(LD_FLAGS_ENV)
+    fill_String_From_List(LD_FLAGS_ENV RES_STRING)
+    list(APPEND CONFIGURE_FLAGS LDFLAGS='${RES_STRING}')
+  endif()
+  list(APPEND CONFIGURE_FLAGS CC=${c_compiler})
+  list(APPEND CONFIGURE_FLAGS CXX=${cxx_compiler})
+  list(APPEND CONFIGURE_FLAGS LD=${ld_tool})
+
+  execute_process(COMMAND ./configure ${CONFIGURE_FLAGS} --prefix=${TARGET_INSTALL_DIR} ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_OPTIONS} ..
+                  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})
+
+  get_Environment_Info(JOBS jobs)
+  message("[PID] INFO : Building ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+  execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} ${jobs} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})#build
+  message("[PID] INFO : Installing ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+  execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} install WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})#install
+
+endfunction(build_Autotools_External_Project)
+
+#.rst:
+#
+# .. ifmode:: user
+#
 #  .. |build_Waf_External_Project| replace:: ``build_Waf_External_Project``
 #  .. _build_Waf_External_Project:
 #
