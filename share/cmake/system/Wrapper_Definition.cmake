@@ -1740,7 +1740,7 @@ endfunction(install_External_Project)
 #  build_B2_External_Project
 #  -------------------------
 #
-#   .. command:: build_B2_External_Project(URL ... ARCHIVE ... FOLDER ... PATH ... [OPTIONS])
+#   .. command:: build_B2_External_Project(PROJECT ... FOLDER ... MODE ... [OPTIONS])
 #
 #     Configure, build and install an external project defined with Boost build.
 #
@@ -1861,6 +1861,143 @@ function(build_B2_External_Project)
     WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})
 
 endfunction(build_B2_External_Project)
+
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |build_Waf_External_Project| replace:: ``build_Waf_External_Project``
+#  .. _build_Waf_External_Project:
+#
+#  build_Waf_External_Project
+#  --------------------------
+#
+#   .. command:: build_Waf_External_Project(PROJECT ... FOLDER ... MODE ... [OPTIONS])
+#
+#     Configure, build and install an external project defined with python Waf tool.
+#
+#     .. rubric:: Required parameters
+#
+#     :PROJECT <string>: The name of the external project.
+#     :FOLDER <string>: The name of the folder containing the project.
+#     :MODE <Release|Debug>: The build mode.
+#
+#     .. rubric:: Optional parameters
+#
+#     :QUIET: if used then the output of this command will be silent.
+#     :COMMENT <string>: A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.
+#     :DEFINITIONS <list of definitions>: the CMake definitions you need to provide to the cmake build script.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  Build and install the external project into workspace install tree..
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#         build_Waf_External_Project(PROJECT aproject FOLDER a_project_v12 MODE Release)
+#
+function(build_Waf_External_Project)
+  set(options QUIET) #used to define the context
+  set(oneValueArgs PROJECT FOLDER MODE COMMENT)
+  set(multiValueArgs C_FLAGS CXX_FLAGS LD_FLAGS OPTIONS)
+  cmake_parse_arguments(BUILD_WAF_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  if(NOT BUILD_WAF_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_WAF_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_WAF_EXTERNAL_PROJECT_MODE)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : PROJECT, FOLDER and MODE arguments are mandatory when calling build_Waf_External_Project.")
+    return()
+  endif()
+
+  if(BUILD_WAF_EXTERNAL_PROJECT_QUIET)
+    # waf outputs its messages on cerr...
+    set(OUTPUT_MODE OUTPUT_QUIET ERROR_QUIET)
+  endif()
+
+  if(BUILD_WAF_EXTERNAL_PROJECT_COMMENT)
+    set(use_comment "(${BUILD_WAF_EXTERNAL_PROJECT_COMMENT}) ")
+  endif()
+
+  #create the build folder inside the project folder
+  set(project_dir ${TARGET_BUILD_DIR}/${BUILD_WAF_EXTERNAL_PROJECT_FOLDER})
+  if(NOT EXISTS ${project_dir})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling build_Waf_External_Project the build folder specified (${BUILD_WAF_EXTERNAL_PROJECT_FOLDER}) does not exist.")
+    return()
+  endif()
+
+  message("[PID] INFO : Configuring, building and installing ${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+
+  # preparing b2 invocation parameters
+  #configure build mode (to get available parameters see https://boostorg.github.io/build/tutorial.html section "Feature reference")
+  if(BUILD_WAF_EXTERNAL_PROJECT_MODE STREQUAL Debug)
+      set(DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "variant=debug")
+  else()
+      set(DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "variant=release")
+  endif()
+  # configure current platform
+  list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "address-model=${CURRENT_PLATFORM_ARCH}")#address model is specified the same way in PID and b2
+  list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "architecture=${CURRENT_PLATFORM_TYPE}")#processor architecture supported are "x86" and "arm" so PID uses same names than b2
+  if(CURRENT_PLATFORM_OS STREQUAL macosx)#we use a specific identifier in PID only for macos otherwise thay are the same than b2
+    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "target-os=darwin")#processor architecture
+  else()
+    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "target-os=${CURRENT_PLATFORM_OS}")#processor architecture
+  endif()
+   #ABI definition is already in compile flags
+
+  #configure compilation flags
+  set(C_FLAGS_ENV ${BUILD_WAF_EXTERNAL_PROJECT_C_FLAGS})
+  set(CXX_FLAGS_ENV ${BUILD_WAF_EXTERNAL_PROJECT_CXX_FLAGS})
+  set(LD_FLAGS_ENV ${BUILD_WAF_EXTERNAL_PROJECT_LD_FLAGS})
+
+  get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler LINKER ld_tool LDFLAFS ld_flags)
+  get_Environment_Info(C RELEASE CFLAGS c_flags COMPILER c_compiler)
+
+  if(c_flags)
+    list(APPEND C_FLAGS_ENV ${c_flags})
+  endif()
+  if(cxx_flags)
+    list(APPEND CXX_FLAGS_ENV ${cxx_flags})
+  endif()
+  if(ld_flags)
+    list(APPEND LD_FLAGS_ENV ${ld_flags})
+  endif()
+
+  set(TEMP_LDFLAGS "$ENV{LDFLAGS}")
+  set(TEMP_C "$ENV{CFLAGS}")
+  set(TEMP_CXX "$ENV{CXXFLAGS}")
+  set(TEMP_C_COMPILER "$ENV{CC}")
+  set(TEMP_CXX_COMPILER "$ENV{CXX}")
+  set(TEMP_LD "$ENV{LD}")
+
+  fill_String_From_List(LD_FLAGS_ENV RES_STRING)
+  set(ENV{LDFLAGS} ${RES_STRING})
+  fill_String_From_List(C_FLAGS_ENV RES_STRING)
+  set(ENV{CFLAGS} ${RES_STRING})
+  fill_String_From_List(CXX_FLAGS_ENV RES_STRING)
+  set(ENV{CXXFLAGS} "${RES_STRING}")
+  set(ENV{CC} "${c_compiler}")
+  set(ENV{CXX} "${cxx_compiler}")
+  set(ENV{LD} "${ld_tool}")
+
+  message("LDFLAGS=$ENV{LDFLAGS} CFLAGS=$ENV{CFLAGS} CXXFLAGS=$ENV{CXXFLAGS} CC=$ENV{CC} CXX=$ENV{CXX} LD=$ENV{LD}")
+  get_Environment_Info(JOBS jobs)
+  execute_process(COMMAND ${CURRENT_PYTHON_EXECUTABLE} waf distclean configure build install ${BUILD_WAF_EXTERNAL_PROJECT_OPTIONS} ${jobs} --prefix=${TARGET_INSTALL_DIR} ..
+                  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})
+
+  #put back environment variables in previosu state
+  set(ENV{LDFLAGS} "${TEMP_LD}")
+  set(ENV{CFLAGS} "${TEMP_C}")
+  set(ENV{CXXFLAGS} "${TEMP_CXX}")
+  set(ENV{CC} "${TEMP_C_COMPILER}")
+  set(ENV{CXX} "${TEMP_CXX_COMPILER}")
+  set(ENV{LD} "${TEMP_LD}")
+endfunction(build_Waf_External_Project)
 
 #.rst:
 #
