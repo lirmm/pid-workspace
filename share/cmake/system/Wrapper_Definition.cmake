@@ -2104,7 +2104,6 @@ function(build_Waf_External_Project)
   set(ENV{CXX} "${cxx_compiler}")
   set(ENV{LD} "${ld_tool}")
 
-  message("LDFLAGS=$ENV{LDFLAGS} CFLAGS=$ENV{CFLAGS} CXXFLAGS=$ENV{CXXFLAGS} CC=$ENV{CC} CXX=$ENV{CXX} LD=$ENV{LD}")
   get_Environment_Info(JOBS jobs)
   execute_process(COMMAND ${CURRENT_PYTHON_EXECUTABLE} waf distclean configure build install ${BUILD_WAF_EXTERNAL_PROJECT_OPTIONS} ${jobs} --prefix=${TARGET_INSTALL_DIR} ..
                   WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})
