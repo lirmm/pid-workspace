@@ -30,18 +30,17 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 PROJECT(pid-workspace C CXX ASM)
 
-configure_Git()
-if(NOT GIT_CONFIGURED)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\ngit config --global user.name \"Your Name\"\ngit config --global user.email <your email address>\n")
-endif()
-
-
 manage_Platforms(${CMAKE_SOURCE_DIR}) # define the current platform in use and provide to the user some options to control finally targetted platform
 
 manage_Plugins() # define available plugins and plugins in use
 
 set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external CACHE INTERNAL "")
+
+configure_Git()
+if(NOT GIT_CONFIGURED)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\n git config --global user.name \"Your Name\" \n git config --global user.email <your email address> \n")
+endif()
 
 ###### automatically managing reference to official remote repository #####
 set(PID_OFFICIAL_REMOTE_ADDRESS "https://gite.lirmm.fr/pid/pid-workspace.git" CACHE STRING "address of the official PID repository") #this is the "central" repo for PID system
