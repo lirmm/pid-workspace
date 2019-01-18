@@ -44,16 +44,23 @@ set(PID_GIT_FUNCTIONS_INCLUDED TRUE)
 #
 #   .. command:: configure_Git()
 #
-#      Memorize the version of the git tool used.
+#      Check that git is well configured and memorize the version of the git tool used.
 #
 function(configure_Git)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git --version OUTPUT_VARIABLE version_string)
 string(REGEX REPLACE "^[^0-9]*([0-9]+\\.[0-9]+\\.[0-9]+).*$" "\\1" VERSION ${version_string})
-if(VERSION STREQUAL ${version_string})
+if(VERSION STREQUAL version_string)
 	message("[PID] WARNING : cannot determine version of git")
-	set(GIT_VERSION CACHE INTERNAL "" FORCE)
+	set(GIT_VERSION CACHE INTERNAL "")
 else()
-	set(GIT_VERSION ${VERSION} CACHE INTERNAL "" FORCE)
+	set(GIT_VERSION ${VERSION} CACHE INTERNAL "")
+endif()
+#now check that git is configured
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git config --get user.name OUTPUT_VARIABLE username)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git config --get user.email OUTPUT_VARIABLE usermail)
+set(GIT_CONFIGURED TRUE CACHE INTERNAL "")
+if(NOT username OR NOT usermail)
+  set(GIT_CONFIGURED FALSE CACHE INTERNAL "")
 endif()
 endfunction(configure_Git)
 

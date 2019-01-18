@@ -82,6 +82,10 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references) # using c
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/platforms) # using platform check modules
 
 configure_Git()
+if(NOT GIT_CONFIGURED)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\ngit config --global user.name \"Your Name\"\ngit config --global user.email <your email address>\n")
+	return()
+endif()
 set(${PROJECT_NAME}_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL "")#to keep compatibility with PID v1 released package versions
 initialize_Build_System()#initializing PID specific settings for build
 
