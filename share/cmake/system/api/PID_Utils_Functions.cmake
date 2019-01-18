@@ -1710,6 +1710,43 @@ else()
 endif()
 endfunction(is_Shared_Lib_With_Path)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Library_Dirs_For_Links| replace:: ``get_Library_Dirs_For_Links``
+#  .. _get_Library_Dirs_For_Links:
+#
+#  get_Library_Dirs_For_Links
+#  --------------------------
+#
+#   .. command:: get_Library_Dirs_For_Links(OUT_LDIRS ext_package list_of_libraries)
+#
+#    Provides the list of library dirs provided by a given external package.
+#
+#     :ext_package: the name of external package
+#
+#     :list_of_libraries: the list variable containing links defined in external package
+#
+#     :OUT_LDIRS: the output variable that contains the list of library dirs.
+#
+function(get_Library_Dirs_For_Links OUT_LDIRS ext_package list_of_libraries)
+  set(ret_ldirs)
+  if(list_of_libraries AND ${list_of_libraries})#the variable containing the list trully contains a list
+    foreach(lib IN LISTS ${list_of_libraries})
+      if(lib MATCHES "^<${ext_package}>.+$")
+        get_filename_component(FOLDER ${lib} DIRECTORY)
+        list(APPEND ret_ldirs ${FOLDER})
+      endif()#if a system link is used (absolute) no need to define the library dir because not related to the package
+    endforeach()
+    if(ret_ldirs)
+      list(REMOVE_DUPLICATES ret_ldirs)
+    endif()
+  endif()
+  set(${OUT_LDIRS} ${ret_ldirs} PARENT_SCOPE)
+endfunction(get_Library_Dirs_For_Links)
+
 #.rst:
 #
 # .. ifmode:: internal
