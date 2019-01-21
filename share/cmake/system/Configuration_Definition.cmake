@@ -115,6 +115,44 @@ macro(installable_PID_Configuration config value)
   set(${config}_CONFIG_INSTALLABLE ${value})
 endmacro(installable_PID_Configuration)
 
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |execute_OS_Configuration_Command| replace:: ``execute_OS_Configuration_Command``
+#  .. _execute_OS_Configuration_Command:
+#
+#  execute_OS_Configuration_Command
+#  --------------------------------
+#
+#   .. command:: execute_OS_Configuration_Command(...)
+#
+#      invoque a command of the operating system with adequate privileges.
+#
+#     .. rubric:: Required parameters
+#
+#     :...: the commands to be passed (do not use sudo !)
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        Execute the command with adequate privileges .
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        execute_OS_Configuration_Command(apt-get install -y libgtk2.0-dev libgtkmm-2.4-dev)
+#
+macro(execute_OS_Configuration_Command)
+if(IN_CI_PROCESS)
+  execute_process(COMMAND ${ARGN})
+else()
+  execute_process(COMMAND sudo ${ARGN})#need to have super user privileges except in CI where suding sudi is forbidden
+endif()
+endmacro(execute_OS_Configuration_Command)
+
 #.rst:
 #
 # .. ifmode:: user

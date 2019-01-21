@@ -19,7 +19,7 @@
 
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian)
-	execute_process(COMMAND sudo apt-get install -y freeglut3-dev mesa-utils libglfw3-dev)
+	execute_OS_Configuration_Command(apt-get install -y freeglut3-dev mesa-utils libglfw3-dev)
 elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-	execute_process(COMMAND sudo pacman -S freeglut mesa glfw-x11 --noconfirm)
+	execute_OS_Configuration_Command(pacman -S freeglut mesa glfw-x11 --noconfirm)
 endif()

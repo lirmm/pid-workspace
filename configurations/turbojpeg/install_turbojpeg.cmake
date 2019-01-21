@@ -19,10 +19,10 @@
 
 if(CURRENT_DISTRIBUTION STREQUAL ubuntu)
 	if(CURRENT_DISTRIBUTION_VERSION VERSION_LESS 17.10)
-		execute_process(COMMAND sudo apt-get install -y libturbojpeg libjpeg-turbo8-dev)
+		execute_OS_Configuration_Command(apt-get install -y libturbojpeg libjpeg-turbo8-dev)
 	else()
-		execute_process(COMMAND sudo apt-get install -y libturbojpeg0-dev)
+		execute_OS_Configuration_Command(apt-get install -y libturbojpeg0-dev)
 	endif()
 elseif(CURRENT_DISTRIBUTION STREQUAL debian)
-	execute_process(COMMAND sudo apt-get install -y libturbojpeg0-dev)
+	execute_OS_Configuration_Command(apt-get install -y libturbojpeg0-dev)
 endif()

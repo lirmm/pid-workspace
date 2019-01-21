@@ -29,11 +29,11 @@
 				set(to_print "${ROS_APT_LIST}\n${to_print}")
 			endif()
 			file(WRITE ${CMAKE_BINARY_DIR}/ros-latest.list "${to_print}")
-			execute_process(COMMAND sudo ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/ros-latest.list ${apt_list_for_ros})
+			execute_OS_Configuration_Command(${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/ros-latest.list ${apt_list_for_ros})
 			file(REMOVE ${CMAKE_BINARY_DIR}/ros-latest.list)
-			execute_process(COMMAND sudo apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116)
-			execute_process(COMMAND sudo apt-get update)
-			execute_process(COMMAND sudo apt-get -y install ros-${ros_distribution}-ros-base)
+			execute_OS_Configuration_Command(apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116)
+			execute_OS_Configuration_Command(apt-get update)
+			execute_OS_Configuration_Command(apt-get -y install ros-${ros_distribution}-ros-base)
 
 			#updating environment variables in order to use ROS
 			if(CURRENT_SHELL STREQUAL ZSH)#shell is zsh
@@ -50,7 +50,7 @@
 		if(ros_packages)
 			foreach(package IN LISTS ros_packages)
 				string(REPLACE "_" "-" package_name ${package})
-				execute_process(COMMAND sudo apt-get -y install ros-${ros_distribution}-${package_name})
+				execute_OS_Configuration_Command(apt-get -y install ros-${ros_distribution}-${package_name})
 			endforeach()
 		endif()
 

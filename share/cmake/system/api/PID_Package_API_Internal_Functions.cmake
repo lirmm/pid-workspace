@@ -200,11 +200,13 @@ elseif(DIR_NAME STREQUAL "build")
 	############ creating custom targets to delegate calls to mode specific targets ################
 	################################################################################################
 
+	set(SUDOER_PRIVILEGES)
 	if(RUN_TESTS_WITH_PRIVILEGES)
-		set(SUDOER_PRIVILEGES sudo)
-	else()
-		set(SUDOER_PRIVILEGES)
+		if(IN_CI_PROCESS)
+			set(SUDOER_PRIVILEGES sudo)
+		endif()
 	endif()
+
 	# global build target
 	if(BUILD_RELEASE_ONLY)
 		add_custom_target(build
@@ -1005,14 +1007,14 @@ add_custom_target(list_dependencies
 ######### creating build target for easy sequencing all make commands #########
 ###############################################################################
 
+set(SUDOER_PRIVILEGES)
 if(RUN_TESTS_WITH_PRIVILEGES)
-	set(SUDOER_PRIVILEGES sudo)
-else()
-	set(SUDOER_PRIVILEGES)
+	if(NOT IN_CI_PROCESS)#do not use sudo if in CI process
+		set(SUDOER_PRIVILEGES sudo)
+	endif()
 endif()
 
 #creating a global build command
-
 
 package_Has_Nothing_To_Install(NOTHING_INSTALLED)
 if(NOTHING_INSTALLED) #if nothing to install, it means that there is nothing to generate... so do nothing

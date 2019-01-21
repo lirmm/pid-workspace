@@ -20,7 +20,7 @@
 #installation process for known distributions
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian)
-	execute_process(COMMAND sudo apt-get install -y libboost-dev)
+	execute_OS_Configuration_Command(apt-get install -y libboost-dev)
 elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-	execute_process(COMMAND sudo pacman -S boost --noconfirm)
+	execute_OS_Configuration_Command(pacman -S boost --noconfirm)
 endif()

@@ -19,7 +19,7 @@
 
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian)
-	execute_process(COMMAND sudo apt-get install -y zlib1g zlib1g-dev)
+	execute_OS_Configuration_Command(apt-get install -y zlib1g zlib1g-dev)
 elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-	execute_process(COMMAND sudo pacman -S zlib --noconfirm)
+	execute_OS_Configuration_Command(pacman -S zlib --noconfirm)
 endif()

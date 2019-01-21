@@ -18,7 +18,7 @@
 #########################################################################################
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian)
-	execute_process(COMMAND sudo apt-get install -y libusb-1.0-0-dev)
+	execute_OS_Configuration_Command(apt-get install -y libusb-1.0-0-dev)
 elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-	execute_process(COMMAND sudo pacman -S libusb --noconfirm)
+	execute_OS_Configuration_Command(pacman -S libusb --noconfirm)
 endif()
