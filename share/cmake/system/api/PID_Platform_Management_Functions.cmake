@@ -457,11 +457,11 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
     endif()
 
     # finding artifacts to fulfill system configuration
-    find_Configuration(FOUND ${config_name})
+    find_Configuration(${config_name})
     set(${config_name}_CONFIG_AVAILABLE TRUE)
-    if(NOT FOUND)
-    	install_Configuration(INSTALLED ${config_name})
-    	if(NOT INSTALLED)
+    if(NOT ${config_name}_CONFIG_FOUND)
+    	install_Configuration(${config_name})
+    	if(NOT ${config_name}_INSTALLED)
         set(${config_name}_CONFIG_AVAILABLE FALSE)
       endif()
     endif()
@@ -574,15 +574,11 @@ function(is_Allowed_System_Configuration ALLOWED config_name config_args)
       endif()
     endforeach()
 
-    include(${WORKSPACE_DIR}/configurations/${config_name}/find_${config_name}.cmake)	# find the artifact from the configuration
+    find_Configuration(${config_name}) # find the artifacts used by this configuration
     if(NOT ${config_name}_CONFIG_FOUND)# not found, trying to see if it can be installed
-      if(EXISTS ${WORKSPACE_DIR}/configurations/${config_name}/installable_${config_name}.cmake)
-        include(${WORKSPACE_DIR}/configurations/${config_name}/installable_${config_name}.cmake)
-        if(NOT ${config_name}_INSTALLABLE)
+      is_Configuration_Installable(INSTALLABLE ${config_name})
+      if(NOT INSTALLABLE)
           return()
-        endif()
-      else()
-        return()
       endif()
     endif()
   else()
@@ -604,21 +600,16 @@ endfunction(is_Allowed_System_Configuration)
 #  find_Configuration
 #  ------------------
 #
-#   .. command:: find_Configuration(FOUND config)
+#   .. command:: find_Configuration(config)
 #
-#   Call the procedure for finding artefacts related to a configuration.
+#   Call the procedure for finding artefacts related to a configuration. Set the ${config}_FOUND variable, that is TRUE is configuration has been found, FALSE otherwise.
 #
 #     :config: the name of the configuration to find.
 #
-#     :FOUND: the output variable that is TRUE is configuration has been found, FALSE otherwise.
-#
-macro(find_Configuration FOUND config)
-  set(${FOUND} FALSE)
+macro(find_Configuration config)
+  set(${config_name}_CONFIG_FOUND)
   if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/find_${config}.cmake)
     include(${WORKSPACE_DIR}/configurations/${config}/find_${config}.cmake)
-    if(${config}_CONFIG_FOUND)
-      set(${FOUND} TRUE)
-    endif()
   endif()
 endmacro(find_Configuration)
 
@@ -640,15 +631,15 @@ endmacro(find_Configuration)
 #
 #     :INSTALLABLE: the output variable that is TRUE is configuartion can be installed, FALSE otherwise.
 #
-macro(is_Configuration_Installable INSTALLABLE config)
-  set(${INSTALLABLE} FALSE)
+function(is_Configuration_Installable INSTALLABLE config)
+  set(${INSTALLABLE} FALSE PARENT_SCOPE)
   if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/installable_${config}.cmake)
     include(${WORKSPACE_DIR}/configurations/${config}/installable_${config}.cmake)
-    if(${config}_INSTALLABLE)
-      set(${INSTALLABLE} TRUE)
+    if(${config}_CONFIG_INSTALLABLE)
+      set(${INSTALLABLE} TRUE PARENT_SCOPE)
     endif()
   endif()
-endmacro(is_Configuration_Installable)
+endfunction(is_Configuration_Installable)
 
 #.rst:
 #
@@ -660,25 +651,23 @@ endmacro(is_Configuration_Installable)
 #  install_Configuration
 #  ---------------------
 #
-#   .. command:: install_Configuration(INSTALLED config)
+#   .. command:: install_Configuration(config)
 #
-#   Call the install procedure of a given configuration.
+#   Call the install procedure of a given configuration. Set the ${config}_INSTALLED variable to TRUE if the configuration has been installed on OS.
 #
 #     :config: the name of the configuration to install.
 #
-#     :INSTALLED: the output variable that is TRUE is configuartion has been installed, FALSE otherwise.
-#
-macro(install_Configuration INSTALLED config)
-  set(${INSTALLED} FALSE)
+macro(install_Configuration config)
+  set(${config}_INSTALLED FALSE)
   is_Configuration_Installable(INSTALLABLE ${config})
   if(INSTALLABLE)
     message("[PID] INFO : installing configuration ${config}...")
   	if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/install_${config}.cmake)
       include(${WORKSPACE_DIR}/configurations/${config}/install_${config}.cmake)
-      find_Configuration(FOUND ${config})
-      if(FOUND)
+      find_Configuration(${config})
+      if(${config}_CONFIG_FOUND)
         message("[PID] INFO : configuration ${config} installed !")
-        set(${INSTALLED} TRUE)
+        set(${config}_INSTALLED TRUE)
       else()
         message("[PID] WARNING : install of configuration ${config} has failed !")
       endif()
