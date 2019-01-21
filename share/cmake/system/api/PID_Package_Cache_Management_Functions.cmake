@@ -1080,6 +1080,8 @@ function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode)
   set(${package}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
 
   foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_ALL_POSSIBLE_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_ALL_EXACT_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_SYSTEM${VAR_SUFFIX} CACHE INTERNAL "")
@@ -1089,9 +1091,11 @@ function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode)
   set(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
 
   foreach(nat_dep IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
-    set(${package}_DEPENDENCY_${nat_dep}_VERSION CACHE INTERNAL "")
-    set(${package}_DEPENDENCY_${nat_dep}_VERSION_EXACT CACHE INTERNAL "")
-    set(${package}_DEPENDENCY_${nat_dep}_COMPONENTS CACHE INTERNAL "")
+    set(${package}_DEPENDENCY_${nat_dep}_ALL_POSSIBLE_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_DEPENDENCY_${nat_dep}_ALL_EXACT_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_DEPENDENCY_${nat_dep}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_DEPENDENCY_${nat_dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_DEPENDENCY_${nat_dep}_COMPONENTS${VAR_SUFFIX} CACHE INTERNAL "")
     reset_Native_Package_Dependency_Cached_Variables_From_Use(${nat_dep} ${mode})#recursion !!
   endforeach()
   set(${package}_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
@@ -1148,6 +1152,8 @@ function(reset_External_Package_Dependency_Cached_Variables_From_Use package mod
   set(${package}_COMPONENTS${VAR_SUFFIX} CACHE INTERNAL "")
 
   foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_ALL_POSSIBLE_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_ALL_EXACT_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_SYSTEM${VAR_SUFFIX} CACHE INTERNAL "")
@@ -1175,6 +1181,8 @@ endfunction(reset_External_Package_Dependency_Cached_Variables_From_Use)
 function(reset_Package_Description_Cached_Variables)
 	# package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
+    set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -1184,6 +1192,8 @@ function(reset_Package_Description_Cached_Variables)
 
 	# external package dependencies declaration must be reinitialized
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+    set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -1202,6 +1212,46 @@ function(reset_Package_Description_Cached_Variables)
 	set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
 	set(${PROJECT_NAME}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
 endfunction(reset_Package_Description_Cached_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Dependency_Complete_Description| replace:: ``set_Dependency_Complete_Description``
+#  .. _set_Dependency_Complete_Description:
+#
+#  set_Dependency_Complete_Description
+#  -----------------------------------
+#
+#   .. command:: set_Dependency_Complete_Description(dep_package external possible_versions exact_versions)
+#
+#   setting internal cache variables used to memorize all possible versions for a given dependency (for documentation purpose only).
+#
+#     :dep_package: the name of the external package dependency.
+#
+#     :external: if TRUE dep_package is an external package, otherwise it is a native package.
+#
+#     :possible_versions: the name of the variable that contains the list of possible version for that dependency.
+#
+#     :possible_versions: the name of the variable that contains the list of exact versions among possible ones for that dependency.
+#
+function(set_Dependency_Complete_Description dep_package external possible_versions exact_versions)
+if(external)
+  if(possible_versions AND ${possible_versions})
+    set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} ${${possible_versions}} CACHE INTERNAL "")
+    if(exact_versions AND ${exact_versions})
+      set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} ${${exact_versions}} CACHE INTERNAL "")
+    endif()
+  endif()
+else()#for native packages use another set of variables
+  if(possible_versions AND ${possible_versions})
+    set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} ${${possible_versions}} CACHE INTERNAL "")
+    if(exact_versions AND ${exact_versions})
+      set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} ${${exact_versions}} CACHE INTERNAL "")
+    endif()
+  endif()
+endif()
+endfunction(set_Dependency_Complete_Description)
 
 #.rst:
 #

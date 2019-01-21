@@ -469,7 +469,9 @@ if("${PACKAGE_DEPENDENCIES_DESCRIPTION}" STREQUAL "") #means that the package ha
 	endforeach()
 
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES)# we take nly dependencies of the release version
-		generate_External_Dependency_Site(${dep_package} "${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION}" "${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dependency}_VERSION_EXACT}" RES_CONTENT_EXTERNAL)
+		generate_External_Dependency_Site(RES_CONTENT_EXTERNAL ${dep_package}
+      ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS
+      ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS)
 		set(EXTERNAL_SITE_SECTION "${EXTERNAL_SITE_SECTION}\n${RES_CONTENT_EXTERNAL}")
 	endforeach()
 
@@ -715,18 +717,11 @@ endif()
 if(NOT PACKAGE_DEPENDENCIES_DESCRIPTION) #means that the package has dependencies
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_DEPENDENCIES)# we take only dependencies of the last version
     set(prefix ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_DEPENDENCY_${dep_package})
-    set(is_exact FALSE)
-    if(${prefix}_VERSIONS_EXACT)
-      list(FIND ${prefix}_VERSIONS_EXACT ${${prefix}_VERSION_USED_FOR_BUILD} INDEX)
-      if(INDEX EQUAL -1)#not an exact version
-        set(is_exact TRUE)
-      endif()
-    endif()
-    if(is_exact)
-      generate_External_Dependency_Site(${dep_package} "${${prefix}_VERSION_USED_FOR_BUILD}" TRUE RES_CONTENT_EXTERNAL)
-    else()
-      generate_External_Dependency_Site(${dep_package} "${${prefix}_VERSION_USED_FOR_BUILD}" FALSE RES_CONTENT_EXTERNAL)
-    endif()
+
+    generate_External_Dependency_Site(RES_CONTENT_EXTERNAL ${dep_package}
+            ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_DEPENDENCY_${dep_package}_VERSIONS
+            ${PROJECT_NAME}_KNOWN_VERSION_${PACKAGE_LAST_VERSION_WITH_PATCH}_DEPENDENCY_${dep_package}_VERSIONS_EXACT)
+
     set(EXTERNAL_SITE_SECTION "${EXTERNAL_SITE_SECTION}\n${RES_CONTENT_EXTERNAL}")
 	endforeach()
 	set(PACKAGE_DEPENDENCIES_DESCRIPTION "${EXTERNAL_SITE_SECTION}\n")
@@ -1207,14 +1202,23 @@ elseif(${dependency}_FRAMEWORK) #the package belongs to a framework, creating a 
 else()# the dependency has no documentation site
 	set(RES "+ ${dependency}")
 endif()
-if(${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION)
-	if(${PROJECT_NAME}_DEPENDENCY_${dependency}_${${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION}_EXACT)
-		set(RES "${RES}: exact version ${${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION} required.")
-	else()
-		set(RES "${RES}: version ${${PROJECT_NAME}_DEPENDENCY_${dependency}_VERSION} or compatible.")
-	endif()
+
+if(${PROJECT_NAME}_DEPENDENCY_${dependency}_ALL_POSSIBLE_VERSIONS)
+  set(ALL_VERSIONS)
+  foreach(vers IN LISTS ${PROJECT_NAME}_DEPENDENCY_${dependency}_ALL_POSSIBLE_VERSIONS)
+    if(ALL_VERSIONS)
+      set(ALL_VERSIONS "${ALL_VERSIONS},")
+    endif()
+    list(FIND ${PROJECT_NAME}_DEPENDENCY_${dependency}_ALL_EXACT_VERSIONS ${vers} INDEX)
+    if(index EQUAL -1)
+      set(ALL_VERSIONS "${ALL_VERSIONS} version ${vers} or compatible")
+    else()
+      set(ALL_VERSIONS "${ALL_VERSIONS} exact version ${vers}")
+    endif()
+  endforeach()
+  set(RES "${RES}:${ALL_VERSIONS}.")
 else()
-	set(RES "${RES}: last version available.")
+	set(RES "${RES}: any version available.")
 endif()
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_Dependency_Site)
@@ -1229,15 +1233,19 @@ endfunction(generate_Dependency_Site)
 #  generate_External_Dependency_Site
 #  ---------------------------------
 #
-#   .. command:: generate_External_Dependency_Site(dependency RES_CONTENT)
+#   .. command:: generate_External_Dependency_Site(RES_CONTENT dependency list_of_versions exact_versions)
 #
 #      Generate section of md file for an external package dependency. This defines markdown links to the static static site of the dependency.
 #
 #      :dependency: the name of the dependency.
 #
+#      :list_of_versions: the variable containing the list of possible versions for the dependency.
+#
+#      :exact_versions: the variable containing the list of exact versions (amon possible) for the dependency.
+#
 #      :RES_CONTENT: output variable containing the markdown content used to target the dependency static site.
 #
-function(generate_External_Dependency_Site dependency version exact RES_CONTENT)
+function(generate_External_Dependency_Site RES_CONTENT dependency list_of_versions exact_versions)
 if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${dependency}.cmake)
 	include (${WORKSPACE_DIR}/share/cmake/references/ReferExternal${dependency}.cmake) #get the information about the framework
 endif()
@@ -1255,14 +1263,23 @@ if(${dependency}_FRAMEWORK)
 else()
 	set(RES "+ ${dependency}")
 endif()
-if(version)
-	if(exact)
-		set(RES "${RES}: exact version ${version} required.")
-	else()
-		set(RES "${RES}: version ${version} or compatible.")
-	endif()
+
+if(list_of_versions AND ${list_of_versions})
+  set(ALL_VERSIONS)
+  foreach(vers IN LISTS ${list_of_versions})
+    if(ALL_VERSIONS)#there is already content in ALL_VERSIONS => managing append operation
+      set(ALL_VERSIONS "${ALL_VERSIONS},")
+    endif()
+    list(FIND exact_versions ${vers} INDEX)
+    if(index EQUAL -1)
+      set(ALL_VERSIONS "${ALL_VERSIONS} version ${vers} or compatible")
+    else()
+      set(ALL_VERSIONS "${ALL_VERSIONS} exact version ${vers}")
+    endif()
+  endforeach()
+  set(RES "${RES}:${ALL_VERSIONS}.")
 else()
-	set(RES "${RES}: any version available (dangerous).")
+	set(RES "${RES}: any version available.")
 endif()
 set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_External_Dependency_Site)

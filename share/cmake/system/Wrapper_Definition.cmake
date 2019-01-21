@@ -724,7 +724,6 @@ endmacro(add_PID_Wrapper_Known_Version)
 #
 #        PID_Wrapper_Configuration(CONFIGURATION posix)
 #
-
 macro(PID_Wrapper_Configuration)
   declare_PID_Wrapper_Platform_Configuration(${ARGN})
 endmacro(PID_Wrapper_Configuration)
@@ -1221,7 +1220,7 @@ cmake_parse_arguments(GET_EXTERNAL_DEPENDENCY_INFO "${options}" "${oneValueArgs}
 #for cleaner description at next lines only
 if(GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE)
   set(prefix ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_DEPENDENCY_${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE})
-  set(dep_version ${${prefix}_DEPENDENCY_${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE}_VERSION_USED_FOR_BUILD})
+  set(dep_version ${${prefix}_VERSION_USED_FOR_BUILD})
   set(ext_package_root ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE}/${dep_version})
 else()
   set(prefix ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION})
@@ -1535,7 +1534,7 @@ endfunction(get_Environment_Info)
 #  .. _get_Target_Platform_Info:
 #
 #  get_Target_Platform_Info
-#  ---------------------
+#  ------------------------
 #
 #  .. command:: get_Target_Platform_Info([OPTIONS])
 #
