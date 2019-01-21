@@ -1444,18 +1444,20 @@ endfunction(initialize_Git_Repository_Push_Address)
 #     :INITIALIZED: the output variable that is TRUE if package's remote is initialized, FALSE otherwise
 #
 function(test_Package_Remote_Initialized package url INITIALIZED)
+  if(EXISTS ${WORKSPACE_DIR}/pid/${package})
+    file(REMOVE_RECURSE ${WORKSPACE_DIR}/pid/${package})
+  endif()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid git clone ${url} OUTPUT_QUIET ERROR_QUIET) #cloning in a temporary area
 
 execute_process(COMMAND git branch -a
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/pid/${package}
 		OUTPUT_VARIABLE all_branches ERROR_QUIET)#getting all branches
 
-if(all_branches AND NOT all_branches STREQUAL "")
+if(all_branches)
 	string(REPLACE "\n" ";" GIT_BRANCHES ${all_branches})
 	set(INTEGRATION_FOUND FALSE)
 	foreach(branch IN LISTS GIT_BRANCHES)#checking that the origin/integration branch exists
-		string(REGEX REPLACE "^[ \t]*remotes/(origin/integration)[ \t]*$" "\\1" A_BRANCH ${branch})
-		if(NOT branch STREQUAL "${A_BRANCH}")#i.e. match found (this is the origin integration branch)
+		if(branch MATCHES "^[ \t]*remotes/(origin/integration)[ \t]*$")
 			set(INTEGRATION_FOUND TRUE)
 			break()
 		endif()
@@ -1489,13 +1491,16 @@ endfunction(test_Package_Remote_Initialized)
 #     :INITIALIZED: the output variable that is TRUE if package's remote is initialized, FALSE otherwise
 #
 function(test_Remote_Initialized repository url INITIALIZED)
+if(EXISTS ${WORKSPACE_DIR}/pid/${repository})#cleaning pid folder if for any reason a repo with same name already lie in there
+  file(REMOVE_RECURSE ${WORKSPACE_DIR}/pid/${repository})
+endif()
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/pid git clone ${url} OUTPUT_QUIET ERROR_QUIET) #cloning in a temporary area
 
 execute_process(COMMAND git branch -a
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/pid/${repository}
 		OUTPUT_VARIABLE all_branches ERROR_QUIET)#getting all branches
 
-if(all_branches AND NOT all_branches STREQUAL "")#the repository must have branches to be initialized
+if(all_branches)#the repository must have branches to be initialized
 	set(${INITIALIZED} TRUE PARENT_SCOPE)
 else()
 	set(${INITIALIZED} FALSE PARENT_SCOPE)
