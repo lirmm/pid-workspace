@@ -17,4 +17,4 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-execute_process(COMMAND sudo apt-get install xorg openbox libx11-dev libxt-dev libxft-dev libxpm-dev libxcomposite-dev libxdamage-dev libxtst-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxcursor-dev libxss-dev libxkbfile-dev)
+execute_process(COMMAND sudo apt-get install -y xorg openbox libx11-dev libxt-dev libxft-dev libxpm-dev libxcomposite-dev libxdamage-dev libxtst-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxcursor-dev libxss-dev libxkbfile-dev)
