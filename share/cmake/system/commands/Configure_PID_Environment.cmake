@@ -36,11 +36,11 @@ endfunction(clean_Build_Tree)
 
 #first check that commmand parameters are not passed as environment variables
 
-if(NOT TARGET_ENVIRONMENT AND ENV{environment})
-	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "")
+if(NOT TARGET_ENVIRONMENT AND DEFINED ENV{environment})
+	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
 endif()
-if(NOT TARGET_VERSION AND ENV{version})
-	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "")
+if(NOT TARGET_VERSION AND DEFINED ENV{version})
+	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
 endif()
 
 #second: do the job

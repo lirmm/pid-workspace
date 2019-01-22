@@ -25,15 +25,15 @@ load_Current_Platform() #loading the current platform configuration
 
 #first check that commmand parameters are not passed as environment variables
 
-if(NOT TARGET_FRAMEWORK AND ENV{framework})
-	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
 endif()
-if(NOT TARGET_PACKAGE AND ENV{package})
-	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
 # perform actions of the command
-if(TARGET_PACKAGE OR ENV{package})
+if(TARGET_PACKAGE)
 	if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE}
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
 		remove_PID_Package(${TARGET_PACKAGE})

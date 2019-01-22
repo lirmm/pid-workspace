@@ -26,17 +26,17 @@ message("[PID] INFO : launching release of package ${TARGET_PACKAGE} ...")
 
 #first check that commmand parameters are not passed as environment variables
 
-if(NOT AUTOMATIC_RELEASE AND ENV{recursive})
-	set(AUTOMATIC_RELEASE $ENV{recursive} CACHE INTERNAL "")
+if(NOT AUTOMATIC_RELEASE AND DEFINED ENV{recursive})
+	set(AUTOMATIC_RELEASE $ENV{recursive} CACHE INTERNAL "" FORCE)
 endif()
-if(NOT TARGET_PACKAGE AND ENV{package})
-	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
-if(NOT NEXT_VERSION AND ENV{nextversion})
-	set(NEXT_VERSION $ENV{nextversion} CACHE INTERNAL "")
+if(NOT NEXT_VERSION AND DEFINED ENV{nextversion})
+	set(NEXT_VERSION $ENV{nextversion} CACHE INTERNAL "" FORCE)
 endif()
-if(NOT FROM_BRANCH AND ENV{branch})
-	set(FROM_BRANCH $ENV{branch} CACHE INTERNAL "")
+if(NOT FROM_BRANCH AND DEFINED ENV{branch})
+	set(FROM_BRANCH $ENV{branch} CACHE INTERNAL "" FORCE)
 endif()
 
 #do the check of argument values

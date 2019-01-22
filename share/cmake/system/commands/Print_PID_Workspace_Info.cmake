@@ -29,16 +29,16 @@ load_Current_Platform() #loading the current platform configuration
 include(${WORKSPACE_DIR}/pid/CategoriesInfo.cmake NO_POLICY_SCOPE)
 
 #manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
-if(NOT TARGET_FRAMEWORK AND ENV{framework})
-	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_PACKAGE AND ENV{package})#to manage the call for non UNIX makefile generators
-	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+if(NOT TARGET_PACKAGE AND DEFINED ENV{package})#to manage the call for non UNIX makefile generators
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_LICENSE AND ENV{license})#to manage the call for non UNIX makefile generators
-	set(TARGET_LICENSE $ENV{license} CACHE INTERNAL "")
+if(NOT TARGET_LICENSE AND DEFINED ENV{license})#to manage the call for non UNIX makefile generators
+	set(TARGET_LICENSE $ENV{license} CACHE INTERNAL "" FORCE)
 endif()
 
 #perfom the command

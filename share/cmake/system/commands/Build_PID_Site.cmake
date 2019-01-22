@@ -27,12 +27,12 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 
 #manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
-if(NOT SYNCHRO AND ENV{synchro})
-	set(SYNCHRO $ENV{synchro} CACHE INTERNAL "")
+if(NOT SYNCHRO AND DEFINED ENV{synchro})
+	set(SYNCHRO $ENV{synchro} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT FORCED_UPDATE AND ENV{force})#to manage the call for non UNIX makefile generators
-	set(FORCED_UPDATE $ENV{force} CACHE INTERNAL "")
+if(NOT FORCED_UPDATE AND DEFINED ENV{force})#to manage the call for non UNIX makefile generators
+	set(FORCED_UPDATE $ENV{force} CACHE INTERNAL "" FORCE)
 endif()
 
 # managing script arguments

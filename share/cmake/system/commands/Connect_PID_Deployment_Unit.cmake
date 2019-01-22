@@ -27,28 +27,28 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
 #first check that commmand parameters are not passed as environment variables
-if(NOT OFFICIAL_GIT_URL AND ENV{official})
-	set(OFFICIAL_GIT_URL $ENV{official} CACHE INTERNAL "")
+if(NOT OFFICIAL_GIT_URL AND DEFINED ENV{official})
+	set(OFFICIAL_GIT_URL $ENV{official} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT ORIGIN_GIT_URL AND ENV{origin})
-	set(ORIGIN_GIT_URL $ENV{origin} CACHE INTERNAL "")
+if(NOT ORIGIN_GIT_URL AND DEFINED ENV{origin})
+	set(ORIGIN_GIT_URL $ENV{origin} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT FORCED_RECONNECTION AND ENV{force})
-	set(FORCED_RECONNECTION $ENV{force} CACHE INTERNAL "")
+if(NOT FORCED_RECONNECTION AND DEFINED ENV{force})
+	set(FORCED_RECONNECTION $ENV{force} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_PACKAGE AND ENV{package})
-	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_FRAMEWORK AND ENV{framework})
-	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_WRAPPER AND ENV{wrapper})
-	set(TARGET_WRAPPER $ENV{wrapper} CACHE INTERNAL "")
+if(NOT TARGET_WRAPPER AND DEFINED ENV{wrapper})
+	set(TARGET_WRAPPER $ENV{wrapper} CACHE INTERNAL "" FORCE)
 endif()
 
 #early common check

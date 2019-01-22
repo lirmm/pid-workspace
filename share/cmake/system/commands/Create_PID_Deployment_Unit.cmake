@@ -27,36 +27,36 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
 #first check that commmand parameters are not passed as environment variables
-if(NOT OPTIONAL_LICENSE AND ENV{license})
-	set(OPTIONAL_LICENSE $ENV{license} CACHE INTERNAL "")
+if(NOT OPTIONAL_LICENSE AND DEFINED ENV{license})
+	set(OPTIONAL_LICENSE $ENV{license} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT OPTIONNAL_GIT_URL AND ENV{url})
-	set(OPTIONNAL_GIT_URL $ENV{url} CACHE INTERNAL "")
+if(NOT OPTIONNAL_GIT_URL AND DEFINED ENV{url})
+	set(OPTIONNAL_GIT_URL $ENV{url} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT OPTIONAL_AUTHOR AND ENV{author})
-	set(OPTIONAL_AUTHOR $ENV{author} CACHE INTERNAL "")
+if(NOT OPTIONAL_AUTHOR AND DEFINED ENV{author})
+	set(OPTIONAL_AUTHOR $ENV{author} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT OPTIONAL_INSTITUTION AND ENV{affiliation})
-	set(OPTIONAL_INSTITUTION $ENV{affiliation} CACHE INTERNAL "")
+if(NOT OPTIONAL_INSTITUTION AND DEFINED ENV{affiliation})
+	set(OPTIONAL_INSTITUTION $ENV{affiliation} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT OPTIONNAL_SITE AND ENV{site})
-	set(OPTIONNAL_SITE $ENV{site} CACHE INTERNAL "")
+if(NOT OPTIONNAL_SITE AND DEFINED ENV{site})
+	set(OPTIONNAL_SITE $ENV{site} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_FRAMEWORK AND ENV{framework})
-	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_PACKAGE AND ENV{package})
-	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_WRAPPER AND ENV{wrapper})
-	set(TARGET_WRAPPER $ENV{wrapper} CACHE INTERNAL "")
+if(NOT TARGET_WRAPPER AND DEFINED ENV{wrapper})
+	set(TARGET_WRAPPER $ENV{wrapper} CACHE INTERNAL "" FORCE)
 endif()
 
 #now verify that arguments are consistent and perform adequate actions

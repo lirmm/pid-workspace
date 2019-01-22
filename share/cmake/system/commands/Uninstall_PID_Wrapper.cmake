@@ -17,8 +17,8 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(NOT TARGET_EXTERNAL_VERSION AND ENV{version})#to manage the call for non UNIX makefile generators
-  set(TARGET_EXTERNAL_VERSION $ENV{version} CACHE INTERNAL "")
+if(NOT TARGET_EXTERNAL_VERSION AND DEFINED ENV{version})#to manage the call for non UNIX makefile generators
+  set(TARGET_EXTERNAL_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
 endif()
 
 if(NOT TARGET_EXTERNAL_VERSION)

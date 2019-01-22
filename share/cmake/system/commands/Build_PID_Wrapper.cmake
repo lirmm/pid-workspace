@@ -39,24 +39,24 @@ load_Current_Platform() #loading the current platform configuration before execu
 #########################################################################################
 
 #manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
-if(NOT TARGET_EXTERNAL_VERSION AND ENV{version})
-	set(TARGET_EXTERNAL_VERSION $ENV{version} CACHE INTERNAL "")
+if(NOT TARGET_EXTERNAL_VERSION AND DEFINED ENV{version})
+	set(TARGET_EXTERNAL_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_BUILD_MODE AND ENV{mode})#to manage the call for non UNIX makefile generators
-	set(TARGET_BUILD_MODE $ENV{mode} CACHE INTERNAL "")
+if(NOT TARGET_BUILD_MODE AND DEFINED ENV{mode})#to manage the call for non UNIX makefile generators
+	set(TARGET_BUILD_MODE $ENV{mode} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT GENERATE_BINARY_ARCHIVE AND ENV{archive})#to manage the call for non UNIX makefile generators
-	set(GENERATE_BINARY_ARCHIVE $ENV{archive} CACHE INTERNAL "")
+if(NOT GENERATE_BINARY_ARCHIVE AND DEFINED ENV{archive})#to manage the call for non UNIX makefile generators
+	set(GENERATE_BINARY_ARCHIVE $ENV{archive} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT DO_NOT_EXECUTE_SCRIPT AND ENV{skip_script})#to manage the call for non UNIX makefile generators
-	set(DO_NOT_EXECUTE_SCRIPT $ENV{skip_script} CACHE INTERNAL "")
+if(NOT DO_NOT_EXECUTE_SCRIPT AND DEFINED ENV{skip_script})#to manage the call for non UNIX makefile generators
+	set(DO_NOT_EXECUTE_SCRIPT $ENV{skip_script} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT USE_SYSTEM_VARIANT AND ENV{os_variant})#to manage the call for non UNIX makefile generators
-	set(USE_SYSTEM_VARIANT $ENV{os_variant} CACHE INTERNAL "")
+if(NOT USE_SYSTEM_VARIANT AND DEFINED ENV{os_variant})#to manage the call for non UNIX makefile generators
+	set(USE_SYSTEM_VARIANT $ENV{os_variant} CACHE INTERNAL "" FORCE)
 endif()
 
 if(USE_SYSTEM_VARIANT AND (USE_SYSTEM_VARIANT STREQUAL "true" OR USE_SYSTEM_VARIANT STREQUAL "TRUE"  OR USE_SYSTEM_VARIANT STREQUAL "ON" ))

@@ -25,12 +25,12 @@ include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
 #manage arguments if they have been passed as environment variables
-if(NOT TARGET_PACKAGE AND ENV{package})
-	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_FRAMEWORK AND ENV{framework})
-	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "")
+if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
 endif()
 
 #perform the actions of the command

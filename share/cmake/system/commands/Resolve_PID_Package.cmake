@@ -36,11 +36,11 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 
 #first check that commmand parameters are not passed as environment variables
 
-if(NOT TARGET_VERSION AND ENV{version})
-	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "")
+if(NOT TARGET_VERSION AND DEFINED ENV{version})
+	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
 endif()
-if(NOT TARGET_PACKAGE AND ENV{package})
-	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
 

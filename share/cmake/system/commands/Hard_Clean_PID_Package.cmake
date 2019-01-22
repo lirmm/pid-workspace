@@ -25,12 +25,12 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
 #manage usage of environment variables
-if(NOT TARGET_PACKAGE AND ENV{package})
-  set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
+  set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT RECONFIGURE AND ENV{configure})
-  set(RECONFIGURE $ENV{configure} CACHE INTERNAL "")
+if(NOT RECONFIGURE AND DEFINED ENV{configure})
+  set(RECONFIGURE $ENV{configure} CACHE INTERNAL "" FORCE)
 endif()
 
 if(TARGET_PACKAGE)

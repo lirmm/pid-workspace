@@ -81,12 +81,12 @@ load_Current_Platform() #loading the current platform configuration
 
 
 #manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
-if(NOT FLAT_PRESENTATION AND ENV{flat})
-	set(FLAT_PRESENTATION $ENV{flat} CACHE INTERNAL "")
+if(NOT FLAT_PRESENTATION AND DEFINED ENV{flat})
+	set(FLAT_PRESENTATION $ENV{flat} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT WRITE_TO_FILE AND ENV{write_file})
-	set(WRITE_TO_FILE $ENV{write_file} CACHE INTERNAL "")
+if(NOT WRITE_TO_FILE AND DEFINED ENV{write_file})
+	set(WRITE_TO_FILE $ENV{write_file} CACHE INTERNAL "" FORCE)
 endif()
 
 if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)

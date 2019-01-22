@@ -30,11 +30,11 @@ begin_Progress(workspace NEED_REMOVE)
 
 #first check that commmand parameters are not passed as environment variables
 
-if(NOT TARGET_PACKAGES AND ENV{package})
-	set(TARGET_PACKAGES $ENV{package} CACHE INTERNAL "")
+if(NOT TARGET_PACKAGES AND DEFINED ENV{package})
+	set(TARGET_PACKAGES $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
-#do the job 
+#do the job
 if(TARGET_PACKAGES AND NOT TARGET_PACKAGES STREQUAL "all")
 	#clean them first
 	foreach(package IN LISTS TARGET_PACKAGES)

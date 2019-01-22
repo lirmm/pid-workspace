@@ -31,8 +31,8 @@ load_Current_Platform() #loading the current platform configuration
 
 
 #manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
-if(NOT WITH_OFFICIAL AND ENV{official})
-	set(WITH_OFFICIAL $ENV{official} CACHE INTERNAL "")
+if(NOT WITH_OFFICIAL AND DEFINED ENV{official})
+	set(WITH_OFFICIAL $ENV{official} CACHE INTERNAL "" FORCE)
 endif()
 
 # check that current branch of package is integration

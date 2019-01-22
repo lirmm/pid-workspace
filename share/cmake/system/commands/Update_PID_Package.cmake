@@ -44,8 +44,8 @@ begin_Progress(workspace NEED_REMOVE)
 
 #first check that commmand parameters are not passed as environment variables
 
-if(NOT TARGET_PACKAGE AND ENV{package})
-	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "")
+if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
+	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
 #perform actions of the commands
