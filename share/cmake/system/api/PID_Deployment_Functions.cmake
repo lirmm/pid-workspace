@@ -865,11 +865,21 @@ function(build_And_Install_Source DEPLOYED package version branch run_tests)
         message("[PID] INFO : building of package ${package} (from branch ${branch}) ...")
       endif()
 		endif()
-		execute_process(
-			COMMAND ${CMAKE_MAKE_PROGRAM} build "force=true"
-			WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-			RESULT_VARIABLE BUILD_RES
-			)
+        target_Options_Passed_Via_Environment(use_env)
+        if(${use_env})
+            SET(ENV{force} true)
+            execute_process(
+                COMMAND ${CMAKE_MAKE_PROGRAM} build
+                WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+                RESULT_VARIABLE BUILD_RES
+            )
+        else()
+            execute_process(
+                COMMAND ${CMAKE_MAKE_PROGRAM} build "force=true"
+                WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+                RESULT_VARIABLE BUILD_RES
+            )
+        endif()
     if(version)
   		get_System_Variables(platform package_string)
   		if(BUILD_RES EQUAL 0
@@ -1894,19 +1904,33 @@ endfunction(get_Wrapper_Known_Versions RES_VERSIONS package)
 #      :INSTALLED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
 #
 function(build_And_Install_External_Package_Version INSTALLED package version is_system)
- if(ADDITIONNAL_DEBUG_INFO)
+  if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : building version ${version} of external package ${package} ...")
- endif()
- set(args_to_use version=${version})
- if(is_system)
-   set(args_to_use ${args_to_use} os_variant=true)
- endif()
+  endif()
 
- execute_process(#call the wrapper command used to build the version of the external package
-  	COMMAND ${CMAKE_MAKE_PROGRAM} build ${args_to_use}
-  	WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
-  	RESULT_VARIABLE BUILD_RES
-  )
+  target_Options_Passed_Via_Environment(use_env)
+  if(${use_env})
+     set(ENV{version} ${version})
+     if(is_system)
+         set(ENV{os_variant} true)
+     endif()
+     execute_process(#call the wrapper command used to build the version of the external package
+         COMMAND ${CMAKE_MAKE_PROGRAM} build
+         WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
+         RESULT_VARIABLE BUILD_RES
+     )
+  else()
+     set(args_to_use version=${version})
+     if(is_system)
+         set(args_to_use ${args_to_use} os_variant=true)
+     endif()
+     execute_process(#call the wrapper command used to build the version of the external package
+         COMMAND ${CMAKE_MAKE_PROGRAM} build ${args_to_use}
+         WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
+         RESULT_VARIABLE BUILD_RES
+     )
+  endif()
+
   get_System_Variables(platform package_string)
   if(BUILD_RES EQUAL 0
   AND EXISTS ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
