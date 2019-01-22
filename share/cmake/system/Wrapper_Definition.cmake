@@ -1914,6 +1914,8 @@ function(build_Autotools_External_Project)
     return()
   endif()
 
+  get_GNU_Make_Program(MAKE_EXE ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT})
+
   if(BUILD_AUTOTOOLS_EXTERNAL_PROJECT_QUIET)
     # waf outputs its messages on cerr...
     set(OUTPUT_MODE OUTPUT_QUIET ERROR_QUIET)
