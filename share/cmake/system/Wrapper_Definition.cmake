@@ -1664,8 +1664,8 @@ function(install_External_Project)
   if(NOT INSTALL_EXTERNAL_PROJECT_URL OR NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE OR NOT INSTALL_EXTERNAL_PROJECT_FOLDER)
     if(INSTALL_EXTERNAL_PROJECT_PATH)
       set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
-      set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-      endif()
+    endif()
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     message(FATAL_ERROR "[PID] CRITICAL ERROR : PATH, URL, ARCHIVE and FOLDER arguments must be provided to install_External_Project.")
     return()
   endif()
@@ -1692,8 +1692,8 @@ function(install_External_Project)
     endif()
     if(INSTALL_EXTERNAL_PROJECT_PATH)
       set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
-      set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-      endif()
+    endif()
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
 
@@ -1718,8 +1718,8 @@ function(install_External_Project)
     endif()
     if(INSTALL_EXTERNAL_PROJECT_PATH)
       set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
-      set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-      endif()
+    endif()
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
 
@@ -1793,6 +1793,7 @@ function(build_B2_External_Project)
   #create the build folder inside the project folder
   set(project_dir ${TARGET_BUILD_DIR}/${BUILD_B2_EXTERNAL_PROJECT_FOLDER})
   if(NOT EXISTS ${project_dir})
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling build_B2_External_Project  the build folder specified (${BUILD_B2_EXTERNAL_PROJECT_FOLDER}) does not exist.")
     return()
   endif()
@@ -1840,7 +1841,12 @@ function(build_B2_External_Project)
   endif()
 
   message("[PID] INFO : Configuring ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  execute_process(COMMAND ${project_dir}/bootstrap.sh WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})
+  execute_process(COMMAND ${project_dir}/bootstrap.sh WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}  RESULT_VARIABLE result)
+  if(NOT result EQUAL 0)#error at configuration time
+    message("[PID] ERROR : cannot configure boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    return()
+  endif()
 
   #generating the jam file for boost build
   set(jamfile ${project_dir}/user-config.jam)
@@ -1857,8 +1863,12 @@ function(build_B2_External_Project)
   get_Environment_Info(JOBS jobs)
   message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
   execute_process(COMMAND ${project_dir}/b2 install ${jobs} --prefix=${TARGET_INSTALL_DIR} --user-config=${jamfile} ${DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD}
-    WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})
-
+  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result)
+  if(NOT result EQUAL 0)#error at configuration time
+    message("[PID] ERROR : cannot build and installboost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    return()
+  endif()
 endfunction(build_B2_External_Project)
 
 
@@ -1972,14 +1982,29 @@ function(build_Autotools_External_Project)
   list(APPEND CONFIGURE_FLAGS LD=${ld_tool})
 
   execute_process(COMMAND ./configure ${CONFIGURE_FLAGS} --prefix=${TARGET_INSTALL_DIR} ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_OPTIONS}
-                  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})
+                  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
+                  RESULT_VARIABLE result)
 
+  if(NOT result EQUAL 0)#error at configuration time
+    message("[PID] ERROR : cannot configure autotools project ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    return()
+  endif()
   get_Environment_Info(JOBS jobs)
   message("[PID] INFO : Building ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  execute_process(COMMAND ${MAKE_EXE} ${jobs} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})#build
+  execute_process(COMMAND ${MAKE_EXE} ${jobs} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result)#build
+  if(NOT result EQUAL 0)#error at configuration time
+    message("[PID] ERROR : cannot build autotools project ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    return()
+  endif()
   message("[PID] INFO : Installing ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  execute_process(COMMAND ${MAKE_EXE} install WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})#install
-
+  execute_process(COMMAND ${MAKE_EXE} install WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result)#install
+  if(NOT result EQUAL 0)#error at configuration time
+    message("[PID] ERROR : cannot install autotools project ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    return()
+  endif()
 endfunction(build_Autotools_External_Project)
 
 #.rst:
@@ -2107,7 +2132,8 @@ function(build_Waf_External_Project)
 
   get_Environment_Info(JOBS jobs)
   execute_process(COMMAND ${CURRENT_PYTHON_EXECUTABLE} waf distclean configure build install ${BUILD_WAF_EXTERNAL_PROJECT_OPTIONS} ${jobs} --prefix=${TARGET_INSTALL_DIR} ..
-                  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})
+                  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
+                  RESULT_VARIABLE result)
 
   #put back environment variables in previosu state
   set(ENV{LDFLAGS} "${TEMP_LD}")
@@ -2116,6 +2142,11 @@ function(build_Waf_External_Project)
   set(ENV{CC} "${TEMP_C_COMPILER}")
   set(ENV{CXX} "${TEMP_CXX_COMPILER}")
   set(ENV{LD} "${TEMP_LD}")
+  if(NOT result EQUAL 0)#error at configuration time
+    message("[PID] ERROR : cannot configure/build/install Waf project ${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    return()
+  endif()
 endfunction(build_Waf_External_Project)
 
 #.rst:
@@ -2211,18 +2242,35 @@ function(build_CMake_External_Project)
                             ${calling_defs}
                             -C ${WORKSPACE_DIR}/pid/Workspace_Build_Info.cmake
                             ..
-    WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE})
-
+    WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
+    RESULT_VARIABLE result)
+  if(NOT result EQUAL 0)#error at configuration time
+    message("[PID] ERROR : cannot configure CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    return()
+  endif()
   #once configure, build it
   get_Environment_Info(MAKE make_program JOBS jobs)
   message("[PID] INFO : Building ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
   execute_process(
     COMMAND ${make_program} ${jobs} WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
+    RESULT_VARIABLE result
   )
+  if(NOT result EQUAL 0)#error at configuration time
+    message("[PID] ERROR : cannot build CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    return()
+  endif()
 
   message("[PID] INFO : Installing ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
   execute_process(
     COMMAND ${make_program} install WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
+    RESULT_VARIABLE result
   )
+  if(NOT result EQUAL 0)#error at configuration time
+    message("[PID] ERROR : cannot install CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    return()
+  endif()
 
 endfunction(build_CMake_External_Project)
