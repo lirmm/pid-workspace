@@ -2681,7 +2681,7 @@ endfunction(package_Already_Built)
 #
 #   .. command:: test_Modified_Components(package build_tool RESULT)
 #
-#    Check wether a components of a package have modification.
+#    Check wether components of a package have any modifications.
 #
 #     :package: the name of the target package.
 #
@@ -2691,9 +2691,11 @@ endfunction(package_Already_Built)
 #
 function(test_Modified_Components package build_tool RESULT)
 set(${RESULT} FALSE PARENT_SCOPE)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build/release ${build_tool} cmake_check_build_system OUTPUT_VARIABLE NEED_UPDATE)
-if(NOT NEED_UPDATE STREQUAL "")
-	set(${RESULT} TRUE PARENT_SCOPE)
+if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")#rule to check if any modification is generated only by makefiles 
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build/release ${build_tool} cmake_check_build_system OUTPUT_VARIABLE NEED_UPDATE)
+  if(NOT NEED_UPDATE STREQUAL "")
+  	set(${RESULT} TRUE PARENT_SCOPE)
+  endif()
 endif()
 endfunction(test_Modified_Components)
 

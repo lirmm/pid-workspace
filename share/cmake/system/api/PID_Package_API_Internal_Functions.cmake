@@ -282,7 +282,7 @@ elseif(DIR_NAME STREQUAL "build")
 	endif()
 
 	# redefinition of clean target (cleaning the build tree)
-	add_custom_target(clean
+	add_custom_target(cleaning
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} clean
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
 		COMMENT "[PID] Cleaning package ${PROJECT_NAME} (Debug and Release modes) ..."
