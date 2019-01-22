@@ -1,0 +1,13 @@
+{
+	"configurations": [
+		{
+			"name": "PID",
+			"generator": "@CMAKE_GENERATOR@",
+			"configurationType" : "Debug",
+			"buildRoot":  "${projectDir}/build",
+			"cmakeCommandArgs": "",
+			"buildCommandArgs": "",
+			"ctestCommandArgs": ""
+		}
+	]
+}
