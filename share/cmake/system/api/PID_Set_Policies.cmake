@@ -60,6 +60,10 @@ if(POLICY CMP0054)
 	cmake_policy(SET CMP0054 NEW) #only KEYWORDS (without "") are considered as KEYWORDS
 endif()
 
+if(POLICY CMP0058)#if in a version of CMake that provides this policy
+	cmake_policy(SET CMP0058 NEW) #avoid ninja to warn about Policy CMP0058 is not set
+endif()
+
 if(POLICY CMP0064)
 	cmake_policy(SET CMP0064 NEW) #do not warn when a Keyword between guillemet "" is used in an if expression
 endif()
