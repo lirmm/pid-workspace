@@ -126,14 +126,24 @@ elseif(DIR_NAME STREQUAL "build")
 	################################################################################################
 
 	# target to check if source tree need to be rebuilt
-	add_custom_target(checksources
-			COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
-						 -DPACKAGE_NAME=${PROJECT_NAME}
-						 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/release/share/Info${PROJECT_NAME}.cmake
-						 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Check_PID_Package_Modification.cmake
-			COMMENT "[PID] Checking for modified source tree ..."
-    	)
-
+	if(NOT CMAKE_VERSION VERSION_LESS 3.2.3) #version of CMake is >= 3.2.3 => BYPRODUCTS argument can be used to configure Ninja
+		add_custom_target(checksources
+				BYPRODUCTS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources
+				COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
+							 -DPACKAGE_NAME=${PROJECT_NAME}
+							 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/release/share/Info${PROJECT_NAME}.cmake
+							 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Check_PID_Package_Modification.cmake
+				COMMENT "[PID] Checking for modified source tree ..."
+	    	)
+	 else() #version is < 3.2.3 => BYPRODUCTS keyword does not exist
+		 add_custom_target(checksources
+				 COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
+								-DPACKAGE_NAME=${PROJECT_NAME}
+								-DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/release/share/Info${PROJECT_NAME}.cmake
+								-P ${WORKSPACE_DIR}/share/cmake/system/commands/Check_PID_Package_Modification.cmake
+				 COMMENT "[PID] Checking for modified source tree ..."
+				 )
+	 endif()
 	# target to reconfigure the project
 	add_custom_command(OUTPUT ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
 			COMMAND ${CMAKE_MAKE_PROGRAM} rebuild_cache
