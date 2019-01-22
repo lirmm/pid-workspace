@@ -22,7 +22,7 @@ fi
 if [ ! -d "./binaries/pid-workspace" ]; then
   cd binaries && git clone git@gite.lirmm.fr:pid/pid-workspace.git && cd pid-workspace/pid && cmake -DIN_CI_PROCESS=ON .. && cd ../../..
 else
-  cd binaries/pid-workspace/pid && git pull -f official master && cmake .. && cd ../../..
+  cd binaries/pid-workspace/pid && git pull -f official master && cmake -DIN_CI_PROCESS=ON .. && cd ../../..
 fi
 
 # previous to an execution we need to set a link into the workspace that point to the current package
