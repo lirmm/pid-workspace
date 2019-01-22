@@ -1729,6 +1729,41 @@ if(INSTALL_EXTERNAL_PROJECT_PATH)
 endif()
 endfunction(install_External_Project)
 
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |return_External_Project_Error| replace:: ``return_External_Project_Error``
+#  .. _return_External_Project_Error:
+#
+#  return_External_Project_Error
+#  -----------------------------
+#
+#   .. command:: return_External_Project_Error()
+#
+#     Make the current wrapper script to return an error.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  generates an error code for the current deploy script.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#         return_External_Project_Error()
+#
+function(return_External_Project_Error)
+  set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+endfunction(return_External_Project_Error)
+
 #.rst:
 #
 # .. ifmode:: user
@@ -1772,6 +1807,9 @@ endfunction(install_External_Project)
 #         build_B2_External_Project(PROJECT boost FOLDER boost_1_64_0 MODE Release)
 #
 function(build_B2_External_Project)
+  if(ERROR_IN_SCRIPT)
+    return()
+  endif()
   set(options QUIET) #used to define the context
   set(oneValueArgs PROJECT FOLDER MODE COMMENT)
   set(multiValueArgs DEFINITIONS)
@@ -1794,7 +1832,7 @@ function(build_B2_External_Project)
   set(project_dir ${TARGET_BUILD_DIR}/${BUILD_B2_EXTERNAL_PROJECT_FOLDER})
   if(NOT EXISTS ${project_dir})
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling build_B2_External_Project  the build folder specified (${BUILD_B2_EXTERNAL_PROJECT_FOLDER}) does not exist.")
+    message("[PID] ERROR : when calling build_B2_External_Project  the build folder specified (${BUILD_B2_EXTERNAL_PROJECT_FOLDER}) does not exist.")
     return()
   endif()
 
@@ -1863,9 +1901,10 @@ function(build_B2_External_Project)
   get_Environment_Info(JOBS jobs)
   message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
   execute_process(COMMAND ${project_dir}/b2 install ${jobs} --prefix=${TARGET_INSTALL_DIR} --user-config=${jamfile} ${DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD}
-  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result)
-  if(NOT result EQUAL 0)#error at configuration time
-    message("[PID] ERROR : cannot build and installboost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result ERROR_VARIABLE varerr)
+  if(NOT result EQUAL 0
+    AND NOT (varerr MATCHES "^link\\.jam: No such file or directory[ \t\n]*$"))#if the error is the one specified this is a normal situation (i.e. a BUG in previous version of b2, -> this message should be a warning)
+    message("[PID] ERROR : cannot build and install boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
@@ -1915,6 +1954,9 @@ endfunction(build_B2_External_Project)
 #         build_Autotools_External_Project(PROJECT aproject FOLDER a_project_v12 MODE Release)
 #
 function(build_Autotools_External_Project)
+  if(ERROR_IN_SCRIPT)
+    return()
+  endif()
   set(options QUIET) #used to define the context
   set(oneValueArgs PROJECT FOLDER MODE COMMENT)
   set(multiValueArgs C_FLAGS CXX_FLAGS LD_FLAGS OPTIONS)
@@ -2050,6 +2092,9 @@ endfunction(build_Autotools_External_Project)
 #         build_Waf_External_Project(PROJECT aproject FOLDER a_project_v12 MODE Release)
 #
 function(build_Waf_External_Project)
+  if(ERROR_IN_SCRIPT)
+    return()
+  endif()
   set(options QUIET) #used to define the context
   set(oneValueArgs PROJECT FOLDER MODE COMMENT)
   set(multiValueArgs C_FLAGS CXX_FLAGS LD_FLAGS OPTIONS)
@@ -2195,6 +2240,9 @@ endfunction(build_Waf_External_Project)
 #
 #
 function(build_CMake_External_Project)
+  if(ERROR_IN_SCRIPT)
+    return()
+  endif()
   set(options QUIET) #used to define the context
   set(oneValueArgs PROJECT FOLDER MODE COMMENT)
   set(multiValueArgs DEFINITIONS)
@@ -2272,5 +2320,4 @@ function(build_CMake_External_Project)
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
-
 endfunction(build_CMake_External_Project)
