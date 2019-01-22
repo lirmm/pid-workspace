@@ -836,22 +836,26 @@ endfunction(deploy_Package_Repository)
 #
 function(build_And_Install_Source DEPLOYED package version branch run_tests)
 	if(ADDITIONNAL_DEBUG_INFO)
-    if(version)
-      message("[PID] INFO : configuring version ${version} of package ${package} ...")
-    else()
-      message("[PID] INFO : configuring package ${package} (from branch ${branch}) ...")
-    endif()
+        if(version)
+          message("[PID] INFO : configuring version ${version} of package ${package} ...")
+        else()
+          message("[PID] INFO : configuring package ${package} (from branch ${branch}) ...")
+        endif()
 	endif()
-  if(run_tests)
-    set(TESTS_ARE_USED ON)
-  else()
-    set(TESTS_ARE_USED OFF)
-  endif()
-  execute_process(
-		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=${TESTS_ARE_USED} -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF -D ADDITIONNAL_DEBUG_INFO:BOOL=${ADDITIONNAL_DEBUG_INFO} ..
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-		RESULT_VARIABLE CONFIG_RES
-	)
+    if(run_tests)
+        set(TESTS_ARE_USED ON)
+    else()
+        set(TESTS_ARE_USED OFF)
+    endif()
+
+    # Configure the project twice to properly set then use all workspace variables (e.g. generator)
+    foreach(_ RANGE 1)
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=${TESTS_ARE_USED} -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF -D ADDITIONNAL_DEBUG_INFO:BOOL=${ADDITIONNAL_DEBUG_INFO} ..
+            WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+            RESULT_VARIABLE CONFIG_RES
+        )
+    endforeach()
 
 	if(CONFIG_RES EQUAL 0)
 		if(ADDITIONNAL_DEBUG_INFO)
