@@ -1839,7 +1839,7 @@ function(load_And_Configure_Wrapper LOADED package)
 		message("[PID] INFO : configuring wrapper of external package ${package} ...")
 	endif()
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} ..
+		COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
 		RESULT_VARIABLE CONFIG_RES
 	)
