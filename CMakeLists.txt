@@ -36,6 +36,9 @@ manage_Plugins() # define available plugins and plugins in use
 
 set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external CACHE INTERNAL "")
+#spefici user entry to manage CI process speicifities
+option(IN_CI_PROCESS "Determine wether the build takes place in a CI environment (ON) or not (default to OFF)." OFF)
+mark_as_advanced(IN_CI_PROCESS)
 
 configure_Git()
 if(NOT GIT_CONFIGURED)
