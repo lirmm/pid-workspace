@@ -1976,9 +1976,9 @@ function(build_Autotools_External_Project)
 
   get_Environment_Info(JOBS jobs)
   message("[PID] INFO : Building ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} ${jobs} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})#build
+  execute_process(COMMAND ${MAKE_EXE} ${jobs} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})#build
   message("[PID] INFO : Installing ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} install WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})#install
+  execute_process(COMMAND ${MAKE_EXE} install WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE})#install
 
 endfunction(build_Autotools_External_Project)
 
