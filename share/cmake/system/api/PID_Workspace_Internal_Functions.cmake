@@ -2797,6 +2797,11 @@ function(write_Platform_Description file)
 	#managing CI
 	file(APPEND ${file} "set(IN_CI_PROCESS ${IN_CI_PROCESS} CACHE INTERNAL \"\" FORCE)\n")
 
+	# store the CMake generator
+	file(APPEND ${file} "set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CMAKE_GENERATOR ${CMAKE_GENERATOR} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CMAKE_EXTRA_GENERATOR ${CMAKE_EXTRA_GENERATOR} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CMAKE_GENERATOR_TOOLSET ${CMAKE_GENERATOR_TOOLSET} CACHE INTERNAL \"\" FORCE)\n")
 endfunction(write_Platform_Description)
 
 #.rst:

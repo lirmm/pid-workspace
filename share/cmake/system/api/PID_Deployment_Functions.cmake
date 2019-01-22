@@ -836,22 +836,26 @@ endfunction(deploy_Package_Repository)
 #
 function(build_And_Install_Source DEPLOYED package version branch run_tests)
 	if(ADDITIONNAL_DEBUG_INFO)
-    if(version)
-      message("[PID] INFO : configuring version ${version} of package ${package} ...")
-    else()
-      message("[PID] INFO : configuring package ${package} (from branch ${branch}) ...")
-    endif()
+        if(version)
+          message("[PID] INFO : configuring version ${version} of package ${package} ...")
+        else()
+          message("[PID] INFO : configuring package ${package} (from branch ${branch}) ...")
+        endif()
 	endif()
-  if(run_tests)
-    set(TESTS_ARE_USED ON)
-  else()
-    set(TESTS_ARE_USED OFF)
-  endif()
-  execute_process(
-		COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=${TESTS_ARE_USED} -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF -D ADDITIONNAL_DEBUG_INFO:BOOL=${ADDITIONNAL_DEBUG_INFO} ..
-		WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-		RESULT_VARIABLE CONFIG_RES
-	)
+    if(run_tests)
+        set(TESTS_ARE_USED ON)
+    else()
+        set(TESTS_ARE_USED OFF)
+    endif()
+
+    # Configure the project twice to properly set then use all workspace variables (e.g. generator)
+    foreach(_ RANGE 1)
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=${TESTS_ARE_USED} -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF -D ADDITIONNAL_DEBUG_INFO:BOOL=${ADDITIONNAL_DEBUG_INFO} ..
+            WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+            RESULT_VARIABLE CONFIG_RES
+        )
+    endforeach()
 
 	if(CONFIG_RES EQUAL 0)
 		if(ADDITIONNAL_DEBUG_INFO)
@@ -861,11 +865,21 @@ function(build_And_Install_Source DEPLOYED package version branch run_tests)
         message("[PID] INFO : building of package ${package} (from branch ${branch}) ...")
       endif()
 		endif()
-		execute_process(
-			COMMAND ${CMAKE_MAKE_PROGRAM} build "force=true"
-			WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
-			RESULT_VARIABLE BUILD_RES
-			)
+        target_Options_Passed_Via_Environment(use_env)
+        if(${use_env})
+            SET(ENV{force} true)
+            execute_process(
+                COMMAND ${CMAKE_MAKE_PROGRAM} build
+                WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+                RESULT_VARIABLE BUILD_RES
+            )
+        else()
+            execute_process(
+                COMMAND ${CMAKE_MAKE_PROGRAM} build "force=true"
+                WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+                RESULT_VARIABLE BUILD_RES
+            )
+        endif()
     if(version)
   		get_System_Variables(platform package_string)
   		if(BUILD_RES EQUAL 0
@@ -1825,7 +1839,7 @@ function(load_And_Configure_Wrapper LOADED package)
 		message("[PID] INFO : configuring wrapper of external package ${package} ...")
 	endif()
 	execute_process(
-		COMMAND ${CMAKE_COMMAND} ..
+		COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" ..
 		WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
 		RESULT_VARIABLE CONFIG_RES
 	)
@@ -1890,19 +1904,33 @@ endfunction(get_Wrapper_Known_Versions RES_VERSIONS package)
 #      :INSTALLED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
 #
 function(build_And_Install_External_Package_Version INSTALLED package version is_system)
- if(ADDITIONNAL_DEBUG_INFO)
+  if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : building version ${version} of external package ${package} ...")
- endif()
- set(args_to_use version=${version})
- if(is_system)
-   set(args_to_use ${args_to_use} os_variant=true)
- endif()
+  endif()
 
- execute_process(#call the wrapper command used to build the version of the external package
-  	COMMAND ${CMAKE_MAKE_PROGRAM} build ${args_to_use}
-  	WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
-  	RESULT_VARIABLE BUILD_RES
-  )
+  target_Options_Passed_Via_Environment(use_env)
+  if(${use_env})
+     set(ENV{version} ${version})
+     if(is_system)
+         set(ENV{os_variant} true)
+     endif()
+     execute_process(#call the wrapper command used to build the version of the external package
+         COMMAND ${CMAKE_MAKE_PROGRAM} build
+         WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
+         RESULT_VARIABLE BUILD_RES
+     )
+  else()
+     set(args_to_use version=${version})
+     if(is_system)
+         set(args_to_use ${args_to_use} os_variant=true)
+     endif()
+     execute_process(#call the wrapper command used to build the version of the external package
+         COMMAND ${CMAKE_MAKE_PROGRAM} build ${args_to_use}
+         WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
+         RESULT_VARIABLE BUILD_RES
+     )
+  endif()
+
   get_System_Variables(platform package_string)
   if(BUILD_RES EQUAL 0
   AND EXISTS ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)

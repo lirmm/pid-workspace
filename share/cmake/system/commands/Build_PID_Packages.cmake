@@ -53,7 +53,13 @@ endif()
 
 #build the packages
 foreach(package IN LISTS LIST_OF_TARGETS)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build force=true)
+	target_Options_Passed_Via_Environment(use_env)
+	if(${use_env})
+		SET(ENV{force} true)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build)
+	else()
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build force=true)
+	endif()
 endforeach()
 
 
