@@ -62,10 +62,14 @@ endif()
 if(USE_SYSTEM_VARIANT AND (USE_SYSTEM_VARIANT STREQUAL "true" OR USE_SYSTEM_VARIANT STREQUAL "TRUE"  OR USE_SYSTEM_VARIANT STREQUAL "ON" ))
 	set(use_os_variant TRUE)
 endif()
+
+begin_Progress(${TARGET_EXTERNAL_PACKAGE} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
+
 #checking that user input is coherent
 if(NOT TARGET_EXTERNAL_VERSION)
+	finish_Progress(${GLOBAL_PROGRESS_VAR})
   message(FATAL_ERROR "[PID] CRITICAL ERROR: you must define the version to build and deploy using version= argument to the build command")
-  return()
+	return()
 elseif(TARGET_EXTERNAL_VERSION MATCHES "^v.*$")#if version is given as a version folder name (i.e. "v<version string>")
   normalize_Version_Tags(version "${TARGET_EXTERNAL_VERSION}")
 else()
@@ -85,6 +89,7 @@ if(NOT EXISTS ${package_version_build_dir})
 endif()
 
 if(NOT EXISTS ${package_dir}/build/Build${TARGET_EXTERNAL_PACKAGE}.cmake)
+	finish_Progress(${GLOBAL_PROGRESS_VAR})
   message(FATAL_ERROR "[PID] CRITICAL ERROR : build configuration file has not been generated for ${TARGET_EXTERNAL_PACKAGE}, please rerun wrapper configruation...")
   return()
 endif()
@@ -94,10 +99,12 @@ include(${package_dir}/build/Build${TARGET_EXTERNAL_PACKAGE}.cmake)#load the con
 if(${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS) #check that the target version exists
   list(FIND ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS ${version} INDEX)
   if(INDEX EQUAL -1)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : ${TARGET_EXTERNAL_PACKAGE} external package version ${version} is not defined by wrapper of ${TARGET_EXTERNAL_PACKAGE}")
     return()
   endif()
 else()
+	finish_Progress(${GLOBAL_PROGRESS_VAR})
   message(FATAL_ERROR "[PID] CRITICAL ERROR : wrapper of ${TARGET_EXTERNAL_PACKAGE} does not define any version !!! Build aborted ...")
   return()
 endif()
@@ -114,6 +121,7 @@ if(use_os_variant)#instead of building the project using its variant coming from
 	#this resolution is based on the standard "version" argument of corresponding configuration
 	check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${TARGET_EXTERNAL_PACKAGE}[version=${version}]")
 	if(NOT RESULT_OK)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message("[PID] ERROR : Cannot deploy OS variant of ${TARGET_EXTERNAL_PACKAGE} with version ${version} because of platform configuration error !")
 		return()
 	endif()
@@ -147,6 +155,7 @@ else()#by default build the given package version using external project specifi
 	  #checking for system configurations
 	  resolve_Wrapper_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
 	  if(NOT IS_OK)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
 	    message("[PID] ERROR : Cannot satisfy target platform's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
 	    return()
 	  else()
@@ -165,6 +174,7 @@ else()#by default build the given package version using external project specifi
 	  set(ERROR_IN_SCRIPT FALSE)
 	  include(${package_version_src_dir}/${deploy_script_file} NO_POLICY_SCOPE)#execute the script
 	  if(ERROR_IN_SCRIPT)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
 	    message(FATAL_ERROR "[PID] CRITICAL ERROR: Cannot deploy external package ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
 	    return()
 	  endif()
@@ -222,3 +232,4 @@ if(NOT use_os_variant)# perform specific operations at the end of the install pr
 else()
 	message("[PID] INFO : external package ${TARGET_EXTERNAL_PACKAGE} version ${version} configured from OS settings.")
 endif()
+finish_Progress(${GLOBAL_PROGRESS_VAR})
