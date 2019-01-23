@@ -75,6 +75,7 @@ elseif(TARGET_EXTERNAL_VERSION MATCHES "^v.*$")#if version is given as a version
 else()
   set(version ${TARGET_EXTERNAL_VERSION})
 endif()
+set(TARGET_EXTERNAL_VERSION ${version} CACHE INTERNAL "" FORCE) #reset the variable TARGET_EXTERNAL_VERSION to make it usable in scripts
 
 message("[PID] INFO : building wrapper for external package ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
 
