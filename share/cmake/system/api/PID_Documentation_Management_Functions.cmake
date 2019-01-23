@@ -1922,8 +1922,7 @@ function(produce_Wrapper_Static_Site_Content package framework versions platform
     foreach(version IN LISTS versions)
       set(target_archive_path ${WORKSPACE_DIR}/wrappers/${package}/build/${version}/installer/${package}-${version}-${platform}.tar.gz)
       set(target_dbg_archive_path ${WORKSPACE_DIR}/wrappers/${package}/build/${version}/installer/${package}-${version}-dbg-${platform}.tar.gz)
-      if(EXISTS ${target_archive_path})
-        #an archive has been generated for this package version
+      if(EXISTS ${target_archive_path})#an archive has been generated for this package version by the wrapper
         set(target_bin_path ${TARGET_BINARIES_PATH}/${version}/${platform})
         if(NOT EXISTS ${target_bin_path})
           file(MAKE_DIRECTORY ${target_bin_path})#create the target folder

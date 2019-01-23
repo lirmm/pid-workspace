@@ -203,24 +203,25 @@ if(NOT use_os_variant)# perform specific operations at the end of the install pr
 	# create a relocatable binary archive, on demand.
 	if(GENERATE_BINARY_ARCHIVE AND (GENERATE_BINARY_ARCHIVE STREQUAL "true" OR GENERATE_BINARY_ARCHIVE STREQUAL "TRUE" OR GENERATE_BINARY_ARCHIVE STREQUAL "ON"))
 	  #cleaning the build folder to start from a clean situation
-	  set(path_to_installer_content ${TARGET_BUILD_DIR}/installer/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM})
+		set(name_of_archive_folder ${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM})
+		set(path_to_installer_content ${TARGET_BUILD_DIR}/installer/${name_of_archive_folder})
 	  if(EXISTS ${path_to_installer_content} AND IS_DIRECTORY ${path_to_installer_content})
 	    file(REMOVE_RECURSE ${path_to_installer_content})
 	  endif()
 
 	  if(TARGET_BUILD_MODE STREQUAL "Debug")
-	    set(path_to_installer_archive ${TARGET_BUILD_DIR}/installer/${TARGET_EXTERNAL_PACKAGE}-${version}-dbg-${CURRENT_PLATFORM}.tar.gz)
+	    set(installer_archive_name ${TARGET_EXTERNAL_PACKAGE}-${version}-dbg-${CURRENT_PLATFORM}.tar.gz)
 	  else()
-	    set(path_to_installer_archive ${TARGET_BUILD_DIR}/installer/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM}.tar.gz)
+			set(installer_archive_name ${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM}.tar.gz)
 	  endif()
+		set(path_to_installer_archive ${TARGET_BUILD_DIR}/installer/${installer_archive_name})
 	  file(REMOVE ${path_to_installer_archive})
 
 	  #need to create an archive from relocatable binary created in install tree (use the / at the end of the copied path to target content of the folder and not folder itself)
 	  file(COPY ${TARGET_INSTALL_DIR}/ DESTINATION ${path_to_installer_content})
 
 	  #generate archive
-	  execute_process(COMMAND ${CMAKE_COMMAND} -E tar cf ${path_to_installer_archive}
-	      ${path_to_installer_content}
+	  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_DIR}/installer ${CMAKE_COMMAND} -E tar cvf ${installer_archive_name} ${name_of_archive_folder}
 				WORKING_DIRECTORY ${TARGET_BUILD_DIR}/installer
 	    )
 
