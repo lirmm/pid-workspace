@@ -1905,7 +1905,7 @@ endfunction(configure_Wrapper_Pages)
 function(produce_Wrapper_Static_Site_Content package framework versions platform include_installer force)
 
   #### preparing the copy depending on the target: lone static site or framework ####
-  if(framework AND NOT framework STREQUAL "")
+  if(framework)
   	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_external/${package})
   	set(TARGET_POSTS_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_posts)
     set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/binaries)
@@ -1920,17 +1920,17 @@ function(produce_Wrapper_Static_Site_Content package framework versions platform
   set(NEW_POST_CONTENT_BINARY_VERSIONS)
   if(include_installer) #reinstall all the binary archives that lie in the wrapper build folder
     foreach(version IN LISTS versions)
-      if(EXISTS ${WORKSPACE_DIR}/wrappers/${package}/build/${package}-${version}-${platform}.tar.gz)
+      set(target_archive_path ${WORKSPACE_DIR}/wrappers/${package}/build/${version}/installer/${package}-${version}-${platform}.tar.gz)
+      set(target_dbg_archive_path ${WORKSPACE_DIR}/wrappers/${package}/build/${version}/installer/${package}-${version}-dbg-${platform}.tar.gz)
+      if(EXISTS ${target_archive_path})
         #an archive has been generated for this package version
         set(target_bin_path ${TARGET_BINARIES_PATH}/${version}/${platform})
         if(NOT EXISTS ${target_bin_path})
           file(MAKE_DIRECTORY ${target_bin_path})#create the target folder
         endif()
-        file(COPY ${WORKSPACE_DIR}/wrappers/${package}/build/${package}-${version}-${platform}.tar.gz
-      	   DESTINATION  ${target_bin_path})#copy the release archive
-        if(EXISTS ${WORKSPACE_DIR}/wrappers/${package}/build/${package}-${version}-dbg-${platform}.tar.gz)#copy debug archive if it exist
-      			file(COPY ${WORKSPACE_DIR}/wrappers/${package}/build/${package}-${version}-dbg-${platform}.tar.gz
-      			     DESTINATION  ${target_bin_path})#copy the binaries
+        file(COPY ${target_archive_path} DESTINATION ${target_bin_path})#copy the release archive
+        if(EXISTS ${target_dbg_archive_path})#copy debug archive if it exist
+      			file(COPY ${target_dbg_archive_path} DESTINATION ${target_bin_path})#copy the binaries
       	endif()
         set(BINARY_PACKAGE ${package})
       	set(BINARY_VERSION ${version})
