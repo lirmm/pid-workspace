@@ -203,15 +203,15 @@ if(NOT use_os_variant)# perform specific operations at the end of the install pr
 	# create a relocatable binary archive, on demand.
 	if(GENERATE_BINARY_ARCHIVE AND (GENERATE_BINARY_ARCHIVE STREQUAL "true" OR GENERATE_BINARY_ARCHIVE STREQUAL "TRUE" OR GENERATE_BINARY_ARCHIVE STREQUAL "ON"))
 	  #cleaning the build folder to start from a clean situation
-	  set(path_to_installer_content ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM})
+	  set(path_to_installer_content ${TARGET_BUILD_DIR}/installer/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM})
 	  if(EXISTS ${path_to_installer_content} AND IS_DIRECTORY ${path_to_installer_content})
 	    file(REMOVE_RECURSE ${path_to_installer_content})
 	  endif()
 
 	  if(TARGET_BUILD_MODE STREQUAL "Debug")
-	    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-dbg-${CURRENT_PLATFORM}.tar.gz)
+	    set(path_to_installer_archive ${TARGET_BUILD_DIR}/installer/${TARGET_EXTERNAL_PACKAGE}-${version}-dbg-${CURRENT_PLATFORM}.tar.gz)
 	  else()
-	    set(path_to_installer_archive ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE}/build/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM}.tar.gz)
+	    set(path_to_installer_archive ${TARGET_BUILD_DIR}/installer/${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM}.tar.gz)
 	  endif()
 	  file(REMOVE ${path_to_installer_archive})
 
@@ -221,6 +221,7 @@ if(NOT use_os_variant)# perform specific operations at the end of the install pr
 	  #generate archive
 	  execute_process(COMMAND ${CMAKE_COMMAND} -E tar cf ${path_to_installer_archive}
 	      ${path_to_installer_content}
+				WORKING_DIRECTORY ${TARGET_BUILD_DIR}/installer
 	    )
 
 	  # immediate cleaning to avoid keeping unecessary data in build tree
