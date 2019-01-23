@@ -2439,111 +2439,64 @@ endfunction(resolve_Wrapper_Configuration)
 #      :os_variant: if TRUE the os_variant of the dependency will be used.
 #
 function(resolve_Wrapper_Dependency package version dep_package os_variant)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX Release)
 set(PROJECT_NAME ${package})
+set(USE_MODE_SUFFIX ${VAR_SUFFIX})
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)
 set(prefix ${package}_KNOWN_VERSION_${version})
-set(${dep_package}_FOUND FALSE)
-# based on the version constraint, try to find an adequate package version in workspace
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)#by default downloading is the behavior of a wrapper so download is always automatic
-set(${dep_package}_FIND_VERSION_SYSTEM FALSE)#not an OS variant that is searched by default
-if(NOT ${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED
-OR ${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
-	#the dependency is considered as not used
-	set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD CACHE INTERNAL "")#no version used to build => not used
-elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#any version -> means last available
-	if(os_variant)#os_variant => exact !!
-		set(${dep_package}_FIND_VERSION_SYSTEM TRUE)
-	endif()
-	if(${prefix}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
-		find_package(${dep_package}
-			REQUIRED
-			COMPONENTS ${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS})
-	else()#do not check for components
-		find_package(${dep_package} REQUIRED)
-	endif()
-	if(${dep_package}_FOUND)
-		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
-		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD_IS_SYSTEM FALSE CACHE INTERNAL "")
-	endif()
-elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
+set(unused FALSE)
+if(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
+	set(unused TRUE)#dependency will be unused in that situation even if wrapper is generating os variant of teh external package
+elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM" #the system version has been selected => need to perform specific actions
+			OR os_variant)#the wrapper is generating an os variant so all its dependencies are os variant too
+	#need to check the equivalent OS configuration to get the OS installed version
 	check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${dep_package}")
-	if(NOT RESULT_OK)
+	if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
 		return()
+	endif()
+	#need to detect the version in order to pas it to add_External_Package_Dependency_To_Cache
+	add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION}" TRUE TRUE "${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS}") #set the dependency
+elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")# any version can be used so for now no contraint
+	add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE FALSE "${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS}")
+else()#a version is specified by the user OR the dependent build process has automatically set it
+	list(FIND ${prefix}_DEPENDENCY_${dep_package}_VERSIONS_EXACT ${${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED} EXACT_AT)
+	if(EXACT_AT GREATER -1)#exact version used
+		set(USE_EXACT TRUE)
 	else()
-		set(${dep_package}_FIND_VERSION_SYSTEM TRUE)#need to check the equivalent OS configuration to get the OS installed version
-		if(${prefix}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
-			find_package(${dep_package} ${${dep_package}_VERSION}
-				EXACT REQUIRED
-			COMPONENTS ${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS})
-		else()#do not check for components
-			find_package(${dep_package} ${${dep_package}_VERSION}
-			EXACT REQUIRED)
-		endif()
+		set(USE_EXACT FALSE)
 	endif()
-	if(${dep_package}_FOUND)
-		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
-		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD_IS_SYSTEM TRUE CACHE INTERNAL "")
-	endif()
-else()#this is a version number !!
-	set(version_used ${${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED})
-	if(os_variant)#os_variant => exact !!
-		set(${dep_package}_FIND_VERSION_SYSTEM TRUE)
-		if(${prefix}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
-			find_package(${dep_package} ${version_used}
-				EXACT REQUIRED
-				COMPONENTS ${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS})
-		else()#do not check for components
-			find_package(${dep_package} ${version_used}
-				EXACT REQUIRED)
-		endif()
-		if(${dep_package}_FOUND)
-			set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
-			set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD_IS_SYSTEM TRUE CACHE INTERNAL "")
-		endif()
-	else()#not an OS variant of the version
-		list(FIND ${prefix}_DEPENDENCY_${dep_package}_VERSIONS_EXACT ${version_used} EXACT_AT)
-		if(EXACT_AT GREATER -1)#exact version used
-			if(${prefix}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
-				find_package(${dep_package} ${version_used}
-					EXACT REQUIRED
-					COMPONENTS ${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS})
-			else()#do not check for components
-				find_package(${dep_package} ${version_used}
-					EXACT REQUIRED)
-			endif()
-		else()#any compatible version
-			if(${prefix}_DEPENDENCY_${dep_package}_COMPONENTS)#check components
-				find_package(${dep_package} ${version_used}
-					REQUIRED
-					COMPONENTS ${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS})
-			else()#do not check for components
-				find_package(${dep_package} ${version_used}
-					REQUIRED)#this is the basic situation
-			endif()
-		endif()
-	endif()
-	if(${dep_package}_FOUND)
-		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
-		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD_IS_SYSTEM FALSE CACHE INTERNAL "")
-	endif()
+	add_External_Package_Dependency_To_Cache(${dep_package} "${${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED}" ${USE_EXACT} FALSE "${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS}") #set the dependency
 endif()
+# from here: external package description variables have been set the same as for native package => same functions can be used
 
-#  managing automatic install process if required (when not found)
-if(NOT ${dep_package}_FOUND #testing if the package has been previously found
-	AND ${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD)#and if not if it requires to be found (i.e. not optional)
-
-		list(FIND ${package}_TOINSTALL_EXTERNAL_PACKAGES ${dep_package} INDEX)
-		if(INDEX EQUAL -1)
-			#if the package where not specified as REQUIRED in the find_package call, we face a case of conditional dependency => the package has not been registered as "to install" while now we know it must be installed
-			list(FIND ${prefix}_DEPENDENCY_${dep_package}_VERSIONS_EXACT ${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD} EXACT_AT)
-			if(EXACT_AT GREATER -1)#exact version used
-				set(is_exact TRUE)
+# resolve the package dependency according to memorized internal variables
+if(NOT unused) #if the dependency is really used (in case it were optional and unselected by user)
+	# try to find the adequate package version => it is necessarily required
+	#package has never been found by a direct call to find_package in root CMakeLists.txt
+	resolve_External_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} Release)
+	if(NOT IS_COMPATIBLE)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		set(message_versions "")
+		if(${dep_package}_ALL_REQUIRED_VERSIONS)
+			set(message_versions "All non exact required versions are : ${${dep_package}_ALL_REQUIRED_VERSIONS}")
+		elseif(${dep_package}_REQUIRED_VERSION_EXACT)#the exact required version is contained in ${dep_package}_REQUIRED_VERSION_EXACT variable.
+			if(${dep_package}_REQUIRED_VERSION_SYSTEM)
+				set(message_versions "OS installed version already required is ${${dep_package}_REQUIRED_VERSION_EXACT}")
 			else()
-				set(is_exact FALSE)
+				set(message_versions "Exact version already required is ${${dep_package}_REQUIRED_VERSION_EXACT}")
 			endif()
-			add_To_Install_External_Package_Specification(${dep_package} "${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD}" ${is_exact} ${${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD_IS_SYSTEM})
 		endif()
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} coming from package ${PROJECT_NAME}. ${message_versions}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
+		return()
+	elseif(${dep_package}_FOUND)#dependency has been found in workspace after resolution
+		add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
+		#set the variables used at build time
+		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
+		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD_IS_SYSTEM ${${dep_package}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL "")
+	endif()
+
 endif()
 endfunction(resolve_Wrapper_Dependency)
 
@@ -2560,7 +2513,7 @@ endfunction(resolve_Wrapper_Dependency)
 #
 #   .. command:: resolve_Wrapper_Dependencies(package version os_variant)
 #
-#    Resolve all dependency of a given external project version. Will end up in deploying the dependencies that are not satisfied, if they exist.
+#    Resolve all dependencies of a given external project version. Will end up in deploying the dependencies that are not satisfied, if they exist.
 #
 #      :package: the name of target external package.
 #
@@ -2572,7 +2525,8 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 	set(PROJECT_NAME ${package}) #to be sure that all functions will work properly
 	set(prefix ${package}_KNOWN_VERSION_${version})
 
-	#1) try to find dependencies
+	#1) from wrapper description we generate the internal variables used to manage each dependency
+	# and we try to find these dependencies in workspace
 	foreach(dep_package IN LISTS ${prefix}_DEPENDENCIES)#among all dependencies that have been specified
 		resolve_Wrapper_Dependency(${package} ${version} ${dep_package} ${os_variant})
 	endforeach()
@@ -2580,7 +2534,7 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 	# from here only direct dependencies have been satisfied if they are present in the workspace, otherwise they need to be installed
 	# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
-	foreach(dep_pack IN LISTS ${prefix}_DEPENDENCIES)
+	foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES)#contains only used dependencies
 		need_Install_External_Package(MUST_BE_INSTALLED ${dep_pack})
 		if(MUST_BE_INSTALLED)
 			install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE)
@@ -2599,12 +2553,15 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
 				return()
 			else()#OK resolution took place !!
+				#set the variables used at build time
+				set(${prefix}_DEPENDENCY_${dep_pack}_VERSION_USED_FOR_BUILD ${${dep_pack}_VERSION_STRING} CACHE INTERNAL "")
+				set(${prefix}_DEPENDENCY_${dep_pack}_VERSION_USED_FOR_BUILD_IS_SYSTEM ${${dep_pack}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL "")
 				add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
-				if(${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
+				if(${dep_pack}_EXTERNAL_DEPENDENCIES) #are there any dependency (external only) for this external package
 					resolve_Package_Dependencies(${dep_pack} Release TRUE)#recursion : resolving dependencies for each external package dependency
 				endif()
 			endif()
-		else()
+		else()#no need to be installed -> already found
 			resolve_Package_Dependencies(${dep_pack} Release TRUE)
 		endif()
 	endforeach()
