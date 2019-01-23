@@ -24,8 +24,13 @@ else  # no libraries => this is a pure applicative package, no examples since n
       cmake -DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=ON -DBUILD_AND_RUN_TESTS=OFF -DENABLE_PARALLEL_BUILD=ON -DBUILD_EXAMPLES=OFF -DBUILD_API_DOC=OFF -DBUILD_STATIC_CODE_CHECKING_REPORT=ON -DADDITIONNAL_DEBUG_INFO=OFF -DWORKSPACE_DIR="../binaries/pid-workspace" ..
     fi
 fi
+CONF_RES=$?
 
 # always generating the dependencies file of the package
 cmake --build . --target list_dependencies -- write_file=true
 
 cd ..
+
+if [ $CONF_RES != 0 ]; then
+  exit $CONF_RES
+fi
