@@ -79,11 +79,15 @@ if(TARGET_ENVIRONMENT) # checking if the target environment has to change
 		endif()
 		message("[PID] INFO : changing to environment ${TARGET_ENVIRONMENT}")
 
+		# save the generator currently in use
+		include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake)
+		set(CURRENT_GENERATOR ${CMAKE_GENERATOR})
+
 		#removing all cmake or pid configuration files
 		clean_Build_Tree(${WORKSPACE_DIR})
 
 		# reconfigure the pid workspace
-		execute_process(COMMAND ${CMAKE_COMMAND} -DCURRENT_ENVIRONMENT=${TARGET_ENVIRONMENT} -DCMAKE_TOOLCHAIN_FILE=${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/PID_Toolchain.cmake ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+		execute_process(COMMAND ${CMAKE_COMMAND} -G "${CURRENT_GENERATOR}" -DCURRENT_ENVIRONMENT=${TARGET_ENVIRONMENT} -DCMAKE_TOOLCHAIN_FILE=${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/PID_Toolchain.cmake ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 	else()
 		message("[PID] ERROR : the target environment ${TARGET_ENVIRONMENT} does not refer to a known environment in the workspace.")
 	endif()
