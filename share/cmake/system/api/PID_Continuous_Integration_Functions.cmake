@@ -221,17 +221,8 @@ endfunction(add_CI_Config_File_Runner_Selection_By_Platform)
 function(add_CI_Config_File_Jobs_Definitions_By_Platform configfile platform)
 file(APPEND ${configfile} "#pipeline generated for platform: ${platform}\n\n")
 
-file(APPEND ${configfile} "#integration jobs for platform ${platform}\n\n")
-file(APPEND ${configfile} "configure_integration_${platform}:\n  <<: *configure_integration\n  <<: *selection_platform_${platform}\n\n")
 file(APPEND ${configfile} "build_integration_${platform}:\n  <<: *build_integration\n  <<: *selection_platform_${platform}\n\n")
-file(APPEND ${configfile} "deploy_integration_${platform}:\n  <<: *deploy_integration\n  <<: *selection_platform_${platform}\n\n")
-file(APPEND ${configfile} "cleanup_integration_${platform}:\n  <<: *cleanup_integration\n  <<: *selection_platform_${platform}\n\n")
-
-file(APPEND ${configfile} "#release jobs for platform ${platform}\n\n")
-file(APPEND ${configfile} "configure_release_${platform}:\n  <<: *configure_release\n  <<: *selection_platform_${platform}\n\n")
 file(APPEND ${configfile} "build_release_${platform}:\n  <<: *build_release\n  <<: *selection_platform_${platform}\n\n")
-file(APPEND ${configfile} "deploy_release_${platform}:\n  <<: *deploy_release\n  <<: *selection_platform_${platform}\n\n")
-file(APPEND ${configfile} "cleanup_release_${platform}:\n  <<: *cleanup_release\n  <<: *selection_platform_${platform}\n\n")
 endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform)
 
 #########################################################################################
@@ -289,14 +280,7 @@ endfunction(verify_Wrapper_CI_Content)
 function(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper configfile platform)
 extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
 file(APPEND ${configfile} "#pipeline generated for platform: ${platform}\n\n")
-file(APPEND ${configfile} "#jobs for platform ${platform}\n\n")
-file(APPEND ${configfile} "configure_wrapper_${platform}:\n <<: *configure_wrapper\n <<: *selection_platform_${platform}\n\n")
 file(APPEND ${configfile} "build_wrapper_${platform}:\n <<: *build_wrapper\n <<: *selection_platform_${platform}\n\n")
-if(RES_ARCH AND RES_BITS)#this is not a custom platform used for CI
-  #CI custom platform do not have a deploy phase
-  file(APPEND ${configfile} "deploy_wrapper_${platform}:\n <<: *deploy_wrapper\n <<: *selection_platform_${platform}\n\n")
-endif()
-file(APPEND ${configfile} "cleanup_wrapper_${platform}:\n <<: *cleanup_wrapper\n <<: *selection_platform_${platform}\n\n")
 endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper)
 
 #.rst:

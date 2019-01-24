@@ -1,6 +1,8 @@
 #!/bin/bash
 
-cd build
+echo "--------------------------------------------------------------"
+echo "----[PID] CI : configuring the project -----------------------"
+echo "--------------------------------------------------------------"
 
 #NB: never building API doc not binaries on integration, but always geberating developpers reports
 if [ "$PACKAGE_HAS_LIBRARIES" = true ] ; then
@@ -26,11 +28,15 @@ else  # no libraries => this is a pure applicative package, no examples since n
 fi
 CONF_RES=$?
 
-# always generating the dependencies file of the package
-cmake --build . --target list_dependencies -- write_file=true
-
-cd ..
-
 if [ $CONF_RES != 0 ]; then
+  echo "--------------------------------------------------------------"
+  echo "----[PID] CI : configuring the project: FAIL -----------------"
+  echo "--------------------------------------------------------------"
   exit $CONF_RES
 fi
+# always generating the dependencies file of the package
+write_file=true cmake --build . --target list_dependencies
+
+echo "--------------------------------------------------------------"
+echo "----[PID] CI : configuring the project: DONE -----------------"
+echo "--------------------------------------------------------------"

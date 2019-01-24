@@ -2,10 +2,9 @@
 #!/bin/bash
 
 # build the site
-
-echo "[PID] CI : generating the binary archive..."
-
-cd build
+echo "--------------------------------------------------------------"
+echo "----[PID] CI : building the project --------------------------"
+echo "--------------------------------------------------------------"
 
 if [ "$PACKAGE_BINARIES_PUBLISHED" = true ]; then
   # if wrapper publishes binaries then we need to specifically configure archives generation during the build
@@ -15,8 +14,13 @@ else
 fi
 BUILD_RES=$?
 
-cd ..
-
 if [ $BUILD_RES != 0 ]; then
+  echo "--------------------------------------------------------------"
+  echo "----[PID] CI : building the project: FAIL --------------------"
+  echo "--------------------------------------------------------------"
 	exit $BUILD_RES
 fi
+
+echo "--------------------------------------------------------------"
+echo "----[PID] CI : building the project: DONE --------------------"
+echo "--------------------------------------------------------------"

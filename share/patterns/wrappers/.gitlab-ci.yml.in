@@ -2,56 +2,24 @@ variables:
  PACKAGE_HAS_SITE: "@PACKAGE_CI_HAS_SITE@"
  PACKAGE_BINARIES_PUBLISHED: "@PACKAGE_CI_PUBLISH_BINARIES@"
 
-cache:
- key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
- paths:
-  - binaries/
-  - build/
-
 stages:
- - configure
  - build
- - deploy
- - cleanup
 
- ############ generic jobs patterns #############
+############ generic jobs patterns #############
 
-### configure (CMake project configuration)
-.configure_wrapper_: &configure_wrapper
-  stage: configure
-  script:
-    - chmod 700 ./share/ci/prepare_wrapper_ci.sh
-    - chmod 700 ./share/ci/configure_wrapper.sh
-    - ./share/ci/prepare_wrapper_ci.sh
-    - ./share/ci/configure_wrapper.sh
-  only:
-   - /^v.*$/
-
-### build the wrapper
 .build_wrapper_: &build_wrapper
   stage: build
   script:
-   - chmod 700 ./share/ci/build_wrapper.sh
-   - ./share/ci/build_wrapper.sh $CI_COMMIT_TAG
-  only:
-   - /^v.*$/
-
-### deploy (make interesting part of the result available wiki+doc, binaries)
-.deploy_wrapper_: &deploy_wrapper
-  stage: deploy
-  script:
-   - chmod 700 ./share/ci/deploy_wrapper.sh
-   - ./share/ci/deploy_wrapper.sh $CI_COMMIT_TAG
-  only:
-   - /^v.*$/
-
-## cleanup everything at the end
-.cleanup_wrapper_: &cleanup_wrapper
-  stage: cleanup
-  script:
-   - chmod 700 ./share/ci/cleanup_wrapper.sh
-   - ./share/ci/cleanup_wrapper.sh
-  when: always
+   - chmod 700 ./share/ci/prepare_wrapper_ci.sh
+   - ./share/ci/prepare_wrapper_ci.sh
+   - cd build
+   - chmod 700 ../share/ci/configure_wrapper.sh
+   - ../share/ci/configure_wrapper.sh
+   - chmod 700 ../share/ci/build_wrapper.sh
+   - ../share/ci/build_wrapper.sh $CI_COMMIT_TAG
+   - chmod 700 ../share/ci/deploy_wrapper.sh
+   - ../share/ci/deploy_wrapper.sh $CI_COMMIT_TAG
+   - cd ..
   only:
    - /^v.*$/
 

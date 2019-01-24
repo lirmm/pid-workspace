@@ -3,6 +3,9 @@
 #########################
 #  --  Git prepare  --  #
 #########################
+echo "--------------------------------------------------------------"
+echo "----[PID] CI : preparing workspace ---------------------------"
+echo "--------------------------------------------------------------"
 
 # Print Git version
 git --version
@@ -26,5 +29,8 @@ else
 fi
 
 # previous to an execution we need to set a link into the workspace that point to the current package
-echo "creating link into binaries/pid-workspace/packages/$dir_name"
 cd binaries/pid-workspace/packages && ln -s $dir_path $dir_name && cd ../../..
+
+echo "--------------------------------------------------------------"
+echo "----[PID] CI : preparing workspace: DONE ---------------------"
+echo "--------------------------------------------------------------"
