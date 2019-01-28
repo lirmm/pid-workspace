@@ -778,6 +778,34 @@ endfunction(publish_Framework_References_In_Workspace_Repository)
 #
 # .. ifmode:: internal
 #
+#  .. |publish_Environment_References_In_Workspace_Repository| replace:: ``publish_Environment_References_In_Workspace_Repository``
+#  .. _publish_Environment_References_In_Workspace_Repository:
+#
+#  publish_Environment_References_In_Workspace_Repository
+#  ----------------------------------------------------
+#
+#   .. command:: publish_Environment_References_In_Workspace_Repository(environment)
+#
+#     Commit and push cmake script files (reference) used to reference a environment.
+#
+#     :environment: the name of target environment
+#
+function(publish_Environment_References_In_Workspace_Repository environment)
+if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${environment}.cmake)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git add share/cmake/references/ReferEnvironment${environment}.cmake OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git commit -m "environment ${environment} registered" OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR} git push origin master OUTPUT_QUIET ERROR_QUIET)
+else()
+	message("[PID] ERROR : problem registering environment ${environment}, cannot find adequate cmake files in workspace.")
+endif()
+endfunction(publish_Environment_References_In_Workspace_Repository)
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |update_Workspace_Repository| replace:: ``update_Workspace_Repository``
 #  .. _update_Workspace_Repository:
 #
@@ -2396,6 +2424,249 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/framewo
 message("[PID] INFO: Origin remote has been changed to ${url}.")
 endfunction(change_Origin_Framework_Repository)
 
+
+##############################################################################
+############## environment repository related functions #######################
+##############################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |clone_Environment_Repository| replace:: ``clone_Environment_Repository``
+#  .. _clone_Environment_Repository:
+#
+#  clone_Environment_Repository
+#  --------------------------
+#
+#   .. command:: clone_Environment_Repository(IS_DEPLOYED framework url)
+#
+#     Clone the repository of an environment in adequate folder of the workspace.
+#
+#     :environment: the name of target environment
+#
+#     :url: the git url to clone
+#
+#     :IS_DEPLOYED: the output variable that is TRUE if environment has been cloned, FALSE otherwise
+#
+function(clone_Environment_Repository IS_DEPLOYED environment url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+
+#environment may be named by only by their name or with a -framework suffix
+if(EXISTS ${WORKSPACE_DIR}/environments/${environment} AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${environment})
+	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
+else()
+	if(EXISTS ${WORKSPACE_DIR}/environments/${environment}-environment AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${environment}-environment)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${WORKSPACE_DIR}/environments/${environment}-environment ${WORKSPACE_DIR}/environments/${environment} OUTPUT_QUIET ERROR_QUIET)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git lfs pull origin master)#fetching master branch to get most up to date archives
+		set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
+	else()
+		set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
+		message("[PID] ERROR : impossible to clone the repository of environment ${environment} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this framework.")
+	endif()
+endif()
+endfunction(clone_Environment_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |init_Environment_Repository| replace:: ``init_Environment_Repository``
+#  .. _init_Environment_Repository:
+#
+#  init_Environment_Repository
+#  -------------------------
+#
+#   .. command:: init_Environment_Repository(environment)
+#
+#     Initialize a environment folder as a git repository.
+#
+#     :environment: the name of the target environment
+#
+function(init_Environment_Repository environment)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git init)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git add -A)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git add -f build/.gitignore)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git commit -m "initialization of environment")
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git lfs track "*.tar.gz" OUTPUT_QUIET ERROR_QUIET)
+endfunction(init_Environment_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Environment_Repository| replace:: ``update_Environment_Repository``
+#  .. _update_Environment_Repository:
+#
+#  update_Environment_Repository
+#  ---------------------------
+#
+#   .. command:: update_Environment_Repository(environment)
+#
+#     Update local environment's repository (pull).
+#
+#     :environment: the name of target environment
+#
+function(update_Environment_Repository environment)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git lfs pull origin master)#fetching master branch to get most up to date archives
+endfunction(update_Environment_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_Environment_Repository| replace:: ``publish_Environment_Repository``
+#  .. _publish_Environment_Repository:
+#
+#  publish_Environment_Repository
+#  ----------------------------
+#
+#   .. command:: publish_Environment_Repository(environment PUBLISHED)
+#
+#     Commit and push unpublished content of local environment's repository.
+#
+#     :environment: the name of target environment
+#
+function(publish_Environment_Repository environment PUBLISHED)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git status --porcelain OUTPUT_VARIABLE res)
+if(res)#there is something to commit !
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git add -A OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git commit -m "publishing new version of framework")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git push origin master RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+  if(PUSH_RESULT EQUAL 0)
+    set(${PUBLISHED} TRUE PARENT_SCOPE)
+    return()
+  endif()
+endif()
+set(${PUBLISHED} FALSE PARENT_SCOPE)
+endfunction(publish_Environment_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |register_Environment_Repository_Address| replace:: ``register_Environment_Repository_Address``
+#  .. _register_Environment_Repository_Address:
+#
+#  register_Environment_Repository_Address
+#  -------------------------------------
+#
+#   .. command:: register_Environment_Repository_Address(environment)
+#
+#     Create a commit after update of the environment repository address in its CMakeLists.txt.
+#
+#     :environment: the name of target environment
+#
+function(register_Environment_Repository_Address environment)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git add CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git commit -m "adding repository address to the root CMakeLists.txt file")
+endfunction(register_Environment_Repository_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |connect_Environment_Repository| replace:: ``connect_Environment_Repository``
+#  .. _connect_Environment_Repository:
+#
+#  connect_Environment_Repository
+#  ----------------------------
+#
+#   .. command:: connect_Environment_Repository(environment url)
+#
+#     Connect a environment's repository to a remote. Used first time the environment is connected after its creation.
+#
+#     :environment: the name of the environment
+#
+#     :url: the url of the environment's remote
+#
+function(connect_Environment_Repository environment url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git remote add origin ${url})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git push origin master OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git fetch origin)
+endfunction(connect_Environment_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reconnect_Environment_Repository| replace:: ``reconnect_Environment_Repository``
+#  .. _reconnect_Environment_Repository:
+#
+#  reconnect_Environment_Repository
+#  --------------------------------
+#
+#   .. command:: reconnect_Environment_Repository(framework url)
+#
+#     Reonnect an already connected environment's repository to another remote.
+#
+#     :environment: the name of the environment
+#
+#     :url: the url of the environment's remote
+#
+function(reconnect_Environment_Repository environment url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git remote set-url origin ${url})
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git pull origin master)#updating master
+endfunction(reconnect_Environment_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Environment_Connected| replace:: ``is_Environment_Connected``
+#  .. _is_Environment_Connected:
+#
+#  is_Environment_Connected
+#  ------------------------
+#
+#   .. command:: is_Environment_Connected(CONNECTED environment remote)
+#
+#     Tell wether a environment's repository is connected with a given remote.
+#
+#     :environment: the name of target environment
+#
+#     :remote: the name of the remote
+#
+#     :CONNECTED: the output variable that is TRUE if environment is connected to the remote, FALSE otherwise (including if the remote does not exist)
+#
+function(is_Environment_Connected CONNECTED environment remote)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git remote show ${remote} OUTPUT_QUIET ERROR_VARIABLE res)
+	if(NOT res OR res STREQUAL "")
+		set(${CONNECTED} TRUE PARENT_SCOPE)
+	else()
+		set(${CONNECTED} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Environment_Connected)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |change_Origin_Environment_Repository| replace:: ``change_Origin_Environment_Repository``
+#  .. _change_Origin_Environment_Repository:
+#
+#  change_Origin_Environment_Repository
+#  ------------------------------------
+#
+#   .. command:: change_Origin_Environment_Repository(environment url)
+#
+#     Set the origin remote to a completely new address.
+#
+#     :environment: the name of target environment
+#
+#     :url: the new url of the origin remote
+#
+function(change_Origin_Environment_Repository environment url)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git remote set-url origin ${url} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git pull origin master OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git push origin master OUTPUT_QUIET ERROR_QUIET)
+message("[PID] INFO: Origin remote has been changed to ${url}.")
+endfunction(change_Origin_Environment_Repository)
+
 ########################################################################################
 ############## static site repository repository related functions #####################
 ########################################################################################
@@ -2543,9 +2814,9 @@ if(res)#there is something to commit
   set(CONTINUE TRUE)
   set(COUNTER 0)
   while(CONTINUE)
-    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
-    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
+    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git push origin master RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
     if(PUSH_RESULT EQUAL 0)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()

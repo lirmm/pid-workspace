@@ -30,7 +30,20 @@ if(ALL_FILES)
 endif()
 endfunction(clean_Build_Tree)
 
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/platforms)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations)
 
+include(PID_Deployment_Functions NO_POLICY_SCOPE)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Git_Functions NO_POLICY_SCOPE)
+include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
+include(PID_Environment_API_Internal_Functions NO_POLICY_SCOPE)
 
 ### script used to configure the environment to another one
 
@@ -39,72 +52,116 @@ endfunction(clean_Build_Tree)
 if(NOT TARGET_ENVIRONMENT AND DEFINED ENV{environment})
 	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
 endif()
-if(NOT TARGET_VERSION AND DEFINED ENV{version})
-	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
+
+if(NOT TARGET_SYSROOT AND DEFINED ENV{sysroot})
+	set(TARGET_SYSROOT $ENV{sysroot} CACHE INTERNAL "" FORCE)
+endif()
+
+if(NOT TARGET_STAGING AND DEFINED ENV{staging})
+	set(TARGET_STAGING $ENV{staging} CACHE INTERNAL "" FORCE)
+endif()
+
+#more on platform
+if(NOT TARGET_PLATFORM AND DEFINED ENV{platform})
+	set(TARGET_PLATFORM $ENV{platform} CACHE INTERNAL "" FORCE)
+endif()
+
+if(TARGET_PLATFORM)
+	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${TARGET_PLATFORM})
+	set(TARGET_PROC_TYPE ${RES_ARCH} CACHE INTERNAL "" FORCE)
+	set(TARGET_PROC_ARCH ${RES_BITS} CACHE INTERNAL "" FORCE)
+	set(TARGET_OS ${RES_OS} CACHE INTERNAL "" FORCE)
+	set(TARGET_ABI ${RES_ABI} CACHE INTERNAL "" FORCE)
+else()
+	if(NOT TARGET_PROC_TYPE AND DEFINED ENV{proc_type})
+		set(TARGET_PROC_TYPE $ENV{proc_type} CACHE INTERNAL "" FORCE)
+	endif()
+	if(NOT TARGET_PROC_ARCH AND DEFINED ENV{proc_arch})
+		set(TARGET_PROC_ARCH $ENV{proc_arch} CACHE INTERNAL "" FORCE)
+	endif()
+	if(NOT TARGET_OS AND DEFINED ENV{os})
+		set(TARGET_OS $ENV{os} CACHE INTERNAL "" FORCE)
+	endif()
+	if(NOT TARGET_ABI AND DEFINED ENV{abi})
+		if("$ENV{abi}" STREQUAL "abi98" OR "$ENV{abi}" STREQUAL "98")
+			set(TARGET_ABI CXX CACHE INTERNAL "" FORCE)
+		elseif("$ENV{abi}" STREQUAL "abi11" OR "$ENV{abi}" STREQUAL "11")
+			set(TARGET_ABI CXX11 CACHE INTERNAL "" FORCE)
+		else()
+			message("[PID] ERROR: unknown ABI specified: $ENV{abi}")
+		endif()
+	endif()
+endif()
+
+if(NOT TARGET_GENERATOR AND DEFINED ENV{generator})
+	set(TARGET_GENERATOR $ENV{generator} CACHE INTERNAL "" FORCE)
+endif()
+
+if(NOT TARGET_TOOLSET AND DEFINED ENV{toolset})
+	set(TARGET_TOOLSET $ENV{toolset} CACHE INTERNAL "" FORCE)
 endif()
 
 #second: do the job
 
-if(TARGET_ENVIRONMENT) # checking if the target environment has to change
-	if(TARGET_ENVIRONMENT STREQUAL "python")
-			# reconfigure the pid workspace
-			if(TARGET_VERSION)
-				if(TARGET_VERSION STREQUAL "default")
-					message("[PID] INFO : changing to default python version ... ")
-					execute_process(COMMAND ${CMAKE_COMMAND} -DUSE_PYTHON_VERSION= ${WORKSPACE_DIR}
-							WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
-				else()
-					message("[PID] INFO : changing to python version ${TARGET_VERSION} ... ")
-					execute_process(COMMAND ${CMAKE_COMMAND} -DUSE_PYTHON_VERSION=${TARGET_VERSION} ${WORKSPACE_DIR}
-						WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
-				endif()
-			endif()
-	elseif(TARGET_ENVIRONMENT STREQUAL "instance")
-		# reconfigure the pid workspace
-		if(TARGET_VERSION)
-			if(TARGET_VERSION STREQUAL "default")
-				execute_process(COMMAND ${CMAKE_COMMAND} -DUSE_INSTANCE_NAME= ${WORKSPACE_DIR}
-						WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
-			else()
-				message("[PID] INFO : setting instance ${TARGET_VERSION}")
-				execute_process(COMMAND ${CMAKE_COMMAND} -DUSE_INSTANCE_NAME=${TARGET_VERSION} ${WORKSPACE_DIR}
-						WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
-			endif()
-		else()
-			message("[PID] ERROR : you need to specify the name of the instance using version= argument... ")
-			return()
-		endif()
-	elseif(	TARGET_ENVIRONMENT STREQUAL "${CURRENT_ENVIRONMENT}"
-		OR (NOT CURRENT_ENVIRONMENT AND TARGET_ENVIRONMENT STREQUAL "host"))
-		message("[PID] INFO : the target environment ${TARGET_ENVIRONMENT} is already the current environment of the workspace.")
-	elseif(TARGET_ENVIRONMENT STREQUAL "host") # going back to default environment
-		message("[PID] INFO : changing to default host environment")
-		#removing all cmake or pid configuration files
-		clean_Build_Tree(${WORKSPACE_DIR})
+if(NOT TARGET_ENVIRONMENT) # checking if the target environment has to change
+	message(FATAL_ERROR "[PID] ERROR : you must set the name of the target environment using environment=*name of the environment*. Use host to go back to default host build environment configuration.")
+	return()
+endif()
 
-		# reconfigure the pid workspace
-		execute_process(COMMAND ${CMAKE_COMMAND} -DCURRENT_ENVIRONMENT= ${WORKSPACE_DIR}
-				WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+if(TARGET_ENVIRONMENT STREQUAL "host")
+	message("[PID] INFO : changing to default host environment")
+	#removing all cmake or pid configuration files
+	clean_Build_Tree(${WORKSPACE_DIR})
+	# reconfigure the pid workspace with no environment
+	execute_process(COMMAND ${CMAKE_COMMAND} -DCURRENT_ENVIRONMENT= ${WORKSPACE_DIR}
+			WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 
-	elseif(EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/PID_Environment_Description.cmake)# selecting a specific environment
-		include(${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/PID_Environment_Description.cmake)
-		if(PID_ENVIRONMENT_NOT_AVAILABLE)#check to be sure that the environment can be used
-			return()
-		endif()
-		message("[PID] INFO : changing to environment ${TARGET_ENVIRONMENT}")
+else() #we need to change the environment
 
-		# save the generator currently in use
+	# 1. load the environment into current context
+	load_Environment(IS_LOADED ${TARGET_ENVIRONMENT})
+	if(NOT IS_LOADED)
+		message(FATAL_ERROR "[PID] ERROR : environment ${TARGET_ENVIRONMENT} is unknown in workspace, or cannot be installed due to connection problems or permission issues.")
+		return()
+	endif()
+	message("[PID] INFO : changing build environment to ${TARGET_ENVIRONMENT}")
+
+	if(NOT TARGET_GENERATOR)
 		include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake)
-		set(CURRENT_GENERATOR ${CMAKE_GENERATOR})
+		set(TARGET_GENERATOR ${CMAKE_GENERATOR} CACHE INTERNAL "")
+		#by default we will keep the same generator except if user specifies a new one
+		#or if redefined by the environment
+	endif()
 
-		#removing all cmake or pid configuration files
-		clean_Build_Tree(${WORKSPACE_DIR})
+	# 2. evaluate the environment with current call context
+	# Warning: the generator in use may be forced by the environment, this later has priority over user defined one.
+	# Warning: the sysroot in use may be forced by the user, so the sysroot passed by user has always priority over those defined by environments.
+	# Warning: the staging in use may be forced by the user, so the staging passed by user has always priority over those defined by environments.
+	evaluate_Environment_From_Configure(EVAL_OK ${TARGET_ENVIRONMENT} "${TARGET_SYSROOT}" "${TARGET_STAGING}" "${TARGET_GENERATOR}" "${TARGET_TOOLSET}" "${TARGET_PROC_TYPE}" "${TARGET_PROC_ARCH}" "${TARGET_OS}" "${TARGET_ABI}" )
+	if(NOT EVAL_OK)
+		message(FATAL_ERROR "[PID] ERROR : cannot evaluate environment ${TARGET_ENVIRONMENT} on current host. Aborting workspace configruation.")
+		return()
+	endif()
+	#removing all cmake or pid configuration files in pid workspace
+	clean_Build_Tree(${WORKSPACE_DIR})
 
-		# reconfigure the pid workspace
-		execute_process(COMMAND ${CMAKE_COMMAND} -G "${CURRENT_GENERATOR}" -DCURRENT_ENVIRONMENT=${TARGET_ENVIRONMENT} -DCMAKE_TOOLCHAIN_FILE=${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/PID_Toolchain.cmake ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+	# reconfigure the pid workspace:
+	# - preloading cache for all PID specific variables (-C option of cmake)
+	# - using a toolchain file to configure build toolchain (-DCMAKE_TOOLCHAIN_FILE= option).
+	if(EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Toolchain.cmake)
+		execute_process(COMMAND ${CMAKE_COMMAND}
+										-DCMAKE_TOOLCHAIN_FILE=${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Toolchain.cmake
+										-DCURRENT_ENVIRONMENT=${TARGET_ENVIRONMENT}
+										# -C ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Description.cmake
+										${WORKSPACE_DIR}
+									WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 	else()
-		message("[PID] ERROR : the target environment ${TARGET_ENVIRONMENT} does not refer to a known environment in the workspace.")
+		execute_process(COMMAND ${CMAKE_COMMAND}
+									-DCURRENT_ENVIRONMENT=${TARGET_ENVIRONMENT}
+									# -C ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Description.cmake
+									${WORKSPACE_DIR}
+								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 	endif()
 else()
-	message("[PID] ERROR : you must set the name of the target environment using environment=*name of the environment folder in ${WORKSPACE_DIR}/environments/*. You cas use the value python to set the python version (using version=) in use and/or the python path (using register=).")
+	message("[PID] ERROR : the target environment ${TARGET_ENVIRONMENT} does not refer to a known environment in the workspace.")
 endif()

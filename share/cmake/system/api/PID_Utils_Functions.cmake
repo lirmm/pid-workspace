@@ -72,7 +72,7 @@ endfunction(get_Mode_Variables)
 #  get_Platform_Variables
 #  ----------------------
 #
-#   .. command:: get_Platform_Variables(PLATFORM_NAME PACKAGE_STRING)
+#   .. command:: get_Platform_Variables([OPTION value]...)
 #
 #     Getting basic system variables related to current target platform (common accessor usefull in many places).
 #
@@ -150,25 +150,25 @@ endfunction(is_A_System_Reference_Path)
 #  extract_Info_From_Platform
 #  --------------------------
 #
-#   .. command:: extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE name)
+#   .. command:: extract_Info_From_Platform(RES_TYPE RES_ARCH RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE name)
 #
 #     Extract the different elements of a platform name (e.g. x86_64_linux_abi11) to get corresponding information.
 #
 #     :name: the name of the platform
 #
-#     :RES_ARCH: the output variable containing processor architecture name (e.g. x86)
+#     :RES_TYPE: the output variable containing processor architecture type (e.g. x86)
 #
-#     :RES_BITS: the output variable containing processor bits number (e.g. 32 or 64)
+#     :RES_ARCH: the output variable containing processor registry size (e.g. 32 or 64)
 #
 #     :RES_OS: the output variable containing  kernel name (e.g. linux) or empty string if the target platform has no kernel (e.g. microcontroller)
 #
-#     :RES_ABI: the output variable containing abi name (e.g. abi11 or abi98)
+#     :RES_ABI: the output variable containing abi name (e.g. CXX or CXX11)
 #
 #     :RES_INSTANCE: the output variable containing platform instance name (may be empty in case of a valid match)
 #
 #     :RES_PLATFORM_BASE: the output variable containing platform base name (in case no instance is specified it is == name)
 #
-function(extract_Info_From_Platform RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE name)
+function(extract_Info_From_Platform RES_TYPE RES_ARCH RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE name)
   if(name MATCHES "^(.+)__([^_]+)__$")#there is an instance name
     set(platform_name ${CMAKE_MATCH_1})
     set(instance_name ${CMAKE_MATCH_2})# this is a custom platform name used for CI and binary deployment
@@ -199,7 +199,11 @@ function(extract_Info_From_Platform RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANC
 	set(${RES_ARCH} ${arch} PARENT_SCOPE)
 	set(${RES_BITS} ${bits} PARENT_SCOPE)
 	set(${RES_OS} ${os} PARENT_SCOPE)
-	set(${RES_ABI} ${abi} PARENT_SCOPE)
+  if(abi STREQUAL "abi98")
+	   set(${RES_ABI} CXX PARENT_SCOPE)
+  elseif(abi STREQUAL "abi11")
+	   set(${RES_ABI} CXX11 PARENT_SCOPE)
+  endif()
   set(${RES_INSTANCE} ${instance_name} PARENT_SCOPE)
   set(${RES_PLATFORM_BASE} ${platform_name} PARENT_SCOPE)
 endfunction(extract_Info_From_Platform)
@@ -1147,7 +1151,7 @@ if(mail AND NOT mail STREQUAL "")
 else()
 	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
 endif()
-endfunction()
+endfunction(generate_Contact_String)
 
 #.rst:
 #
@@ -3413,6 +3417,88 @@ function(get_Jekyll_URLs full_url NAMESPACE REMAINING_URL)
 		set(${REMAINING_URL} PARENT_SCOPE)
 	endif()
 endfunction(get_Jekyll_URLs)
+
+
+################################################################
+################ Environments Life cycle management ############
+################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Environment_Repository_Address| replace:: ``set_Environment_Repository_Address``
+#  .. _set_Environment_Repository_Address:
+#
+#  set_Environment_Repository_Address
+#  --------------------------------
+#
+#   .. command:: set_Environment_Repository_Address(environment git_url)
+#
+#    Add a repository address of a environment in its description (i.e. in CMakeLists.txt)  .
+#
+#     :environment: the name of the target environment.
+#
+#     :git_url: the git url to set.
+#
+function(set_Environment_Repository_Address environment git_url)
+	file(READ ${WORKSPACE_DIR}/environments/${environment}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE  "([ \t\n]+)YEAR" "\\1ADDRESS ${git_url}\n\\1YEAR" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/environments/${environment}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(set_Environment_Repository_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Environment_Repository_Address| replace:: ``reset_Environment_Repository_Address``
+#  .. _reset_Environment_Repository_Address:
+#
+#  reset_Environment_Repository_Address
+#  ----------------------------------
+#
+#   .. command:: reset_Environment_Repository_Address(environment new_git_url)
+#
+#    Change the repository address of a environment in its description (i.e. in CMakeLists.txt)  .
+#
+#     :environment: the name of the target environment.
+#
+#     :new_git_url: the new git url to set.
+#
+function(reset_Environment_Repository_Address environment new_git_url)
+	file(READ ${WORKSPACE_DIR}/sites/frameworks/${environment}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "([ \t\n]+)ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/sites/frameworks/${environment}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(reset_Environment_Repository_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Environment_Repository_Address| replace:: ``get_Environment_Repository_Address``
+#  .. _get_Environment_Repository_Address:
+#
+#  get_Environment_Repository_Address
+#  --------------------------------
+#
+#   .. command:: get_Environment_Repository_Address(environment RES_URL)
+#
+#    Get the repository address of a environment from its description (i.e. in CMakeLists.txt)  .
+#
+#     :environment: the name of the target environment.
+#
+#     :RES_URL: the output variable containing the URL of the environment in its description.
+#
+function(get_Environment_Repository_Address environment RES_URL)
+	file(READ ${WORKSPACE_DIR}/environments/${environment}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
+	if(url STREQUAL CONTENT)#no match
+		set(${RES_URL} "" PARENT_SCOPE)
+		return()
+	endif()
+	set(${RES_URL} ${url} PARENT_SCOPE)
+endfunction(get_Environment_Repository_Address)
+
 
 ################################################################
 ################ Static site file management ###################

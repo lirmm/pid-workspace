@@ -25,6 +25,9 @@ load_Current_Platform() #loading the current platform configuration
 
 #first check that commmand parameters are not passed as environment variables
 
+if(NOT TARGET_ENVIRONMENT AND DEFINED ENV{environment})
+	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
+endif()
 if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
 	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
 endif()
@@ -48,6 +51,13 @@ elseif(TARGET_FRAMEWORK)
 		remove_PID_Framework(${TARGET_FRAMEWORK})
 	else()
 		message("[PID] ERROR : the framework to be removed, named ${TARGET_FRAMEWORK}, does not lies in the workspace.")
+	endif()
+elseif(TARGET_ENVIRONMENT)
+	if(EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT})
+		remove_PID_Environment(${TARGET_ENVIRONMENT})
+	else()
+		message("[PID] ERROR : the environment to be removed, named ${TARGET_ENVIRONMENT}, does not lies in the workspace.")
 	endif()
 else()
 	message("[PID] ERROR : you must specify the name of the package to remove using package=<name of package> argument, or the name of the framework to remove by using framework=<name of framework> argument.")

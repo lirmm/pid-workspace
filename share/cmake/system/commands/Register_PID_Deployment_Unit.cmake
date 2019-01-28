@@ -33,6 +33,10 @@ if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
 	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
 endif()
 
+if(NOT TARGET_ENVIRONMENT AND DEFINED ENV{environment})
+	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
+endif()
+
 #perform the actions of the command
 if(TARGET_PACKAGE)
 	if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE}
@@ -51,6 +55,13 @@ elseif(TARGET_FRAMEWORK)
 	else()
 		message("[PID] ERROR : the framework ${TARGET_FRAMEWORK} cannot be found in the workspace (a folder with same name should be in ${WORKSPACE_DIR}/sites/frameworks folder).")
 	endif()
+elseif(TARGET_ENVIRONMENT)
+	if(EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT})
+		register_PID_Environment(${TARGET_ENVIRONMENT})
+	else()
+		message("[PID] ERROR : the environment ${TARGET_ENVIRONMENT} cannot be found in the workspace (a folder with same name should be in ${WORKSPACE_DIR}/sites/frameworks folder).")
+	endif()
 else()
-	message("[PID] ERROR : you must specify the name of the package or framework to register using either package=<name of package> or framework=<name fo framework>")
+	message("[PID] ERROR : you must specify the name of the package, environment or framework to register using either package=<name of package> or framework=<name fo framework>")
 endif()

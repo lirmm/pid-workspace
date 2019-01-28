@@ -21,7 +21,7 @@ set(CURRENT_ABI CACHE INTERNAL "")
 
 function(get_Standard_Library_Symbol_Version RES_SYMBOL_VERSIONS operating_system library_name path_to_library)
 	set(${RES_SYMBOL_VERSIONS} PARENT_SCOPE)
-	if(library_name MATCHES "stdc\\+\\+")#gnu c++ library (mau be named stdc++11 as well)
+	if(library_name MATCHES "stdc\\+\\+")#gnu c++ library (may be named stdc++11 as well)
 
 		#managing LIBC symbol versions
 		file(STRINGS ${path_to_library} LIBC_SYMBOLS REGEX ".*GLIBC_.*")
@@ -137,9 +137,20 @@ set(CXX_STD_SYMBOLS ${STD_ABI_SYMBOLS} CACHE INTERNAL "")
 set(CXX_STANDARD_LIBRARIES ${STD_LIBS} CACHE INTERNAL "")
 
 #depending on symbol versions we can detect which compiler was used to build the standard library !!
-set(USE_CXX_ABI CACHE STRING "Give the compiler ABI standard to use (either 98 or 11 are valid values). If none given, the default compiler ABI will be used.")
-if(	NOT USE_CXX_ABI #user did not specified anything
-		OR NOT USE_CXX_ABI MATCHES "^11|98$")#user specified something stupid
+list(FIND CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=1" INDEX)
+if(NOT INDEX EQUAL -1)#there is a flag that explicilty sets the ABI to 11
+		set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
+else()
+	list(FIND CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=0" INDEX)
+	if(NOT INDEX EQUAL -1)#there is a flag that explicilty sets the ABI to 98
+			set(CURRENT_ABI "CXX" CACHE INTERNAL "")
+	else()
+		set(CURRENT_ABI CACHE INTERNAL "")
+	endif()
+endif()
+
+if(NOT CURRENT_ABI)#no ABI explictly specified
+	#use default ABI of the binary version of current std libc++ in use
 	foreach(symb IN LISTS STD_ABI_SYMBOLS)
 		if(symb STREQUAL "CXXABI_")
 			if(NOT ${symb}_ABI_VERSION VERSION_LESS 1.3.9) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
@@ -160,22 +171,18 @@ if(	NOT USE_CXX_ABI #user did not specified anything
 	else()
 		set(CURRENT_ABI "CXX" CACHE INTERNAL "")
 	endif()
-else()# set the ABI depending on user wishes
-	if(USE_CXX_ABI STREQUAL 11)
-		set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
-	else()
-		set(CURRENT_ABI "CXX" CACHE INTERNAL "")
-	endif()
 endif()
 
 # ABI detection is no more based on knowledge of the compiler version
-#but now we check that minumum version of the compiler are used
+#but now we check that minumum version of the compiler are used together with ABI CXX11
 if(CURRENT_ABI STREQUAL "CXX11")#check that compiler in use supports the CXX11 ABI
 	if(CMAKE_COMPILER_IS_GNUCXX)
 		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.1)#before version 5.1 of gcc the cxx11 abi is not supported
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : compiler in use (${CMAKE_CXX_COMPILER_ID} version ${CMAKE_CXX_COMPILER_VERSION}) does not support CXX11 ABI.")
 		endif()
-	elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "clang")
+	elseif( CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+					OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
+				  OR CMAKE_CXX_COMPILER_ID STREQUAL "clang")
 		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.8)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : compiler in use (${CMAKE_CXX_COMPILER_ID} version ${CMAKE_CXX_COMPILER_VERSION}) does not support CXX11 ABI.")
 		endif()

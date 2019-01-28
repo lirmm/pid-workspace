@@ -26,6 +26,70 @@ endif()
 set(PID_PLATFORM_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |detect_Current_Platform| replace:: ``detect_Current_Platform``
+#  .. detect_Current_Platform:
+#
+#  detect_Current_Platform
+#  -----------------------
+#
+#   .. command:: detect_Current_Platform()
+#
+#     Puts into cmake variables the description of current platform, deduced from current environment.
+#
+macro(detect_Current_Platform)
+	# Now detect the current platform maccording to host environemnt selection (call to script for platform detection)
+	include(CheckTYPE)
+	include(CheckARCH)
+	include(CheckOS)
+	include(CheckABI)
+	include(CheckPython)
+	include(CheckFortran)
+	include(CheckCUDA)
+	if(NOT CURRENT_DISTRIBUTION)
+		set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family = ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS}\n + compiler ABI= ${CURRENT_ABI}")
+	else()
+		if(NOT CURRENT_DISTRIBUTION_VERSION)
+			set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family= ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS} (${CURRENT_DISTRIBUTION})\n + compiler ABI= ${CURRENT_ABI}")
+		else()#there is a version number bound to the distribution
+			set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family= ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS} (${CURRENT_DISTRIBUTION} ${CURRENT_DISTRIBUTION_VERSION})\n + compiler ABI= ${CURRENT_ABI}")
+		endif()
+	endif()
+	#simply rewriting previously defined variable to normalize their names between workspace and packages (same accessor function can then be used from any place)
+	set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL "" FORCE)
+	set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL "" FORCE)
+	set(CURRENT_PLATFORM_TYPE ${CURRENT_TYPE} CACHE INTERNAL "" FORCE)
+	set(CURRENT_PLATFORM_ARCH ${CURRENT_ARCH} CACHE INTERNAL "" FORCE)
+	set(CURRENT_PLATFORM_OS ${CURRENT_OS} CACHE INTERNAL "" FORCE)
+	if(CURRENT_ABI STREQUAL CXX11)
+		set(CURRENT_PLATFORM_ABI abi11 CACHE INTERNAL "" FORCE)
+	else()
+		set(CURRENT_PLATFORM_ABI abi98 CACHE INTERNAL "" FORCE)
+	endif()
+
+	if(CURRENT_PLATFORM_OS)#the OS is optional (for microcontrolers there is no OS)
+		set(CURRENT_PLATFORM ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_OS}_${CURRENT_PLATFORM_ABI} CACHE INTERNAL "" FORCE)
+	else()
+		set(CURRENT_PLATFORM ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_ABI} CACHE INTERNAL "" FORCE)
+	endif()
+
+	set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external/${CURRENT_PLATFORM} CACHE INTERNAL "")
+	set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install/${CURRENT_PLATFORM} CACHE INTERNAL "")
+	message("[PID] INFO : Target platform in use is ${CURRENT_PLATFORM}:\n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n")
+
+	if(Python_Language_AVAILABLE)
+		message("[PID] INFO : Python may be used, target python version in use is ${CURRENT_PYTHON}. To use python modules installed in workspace please set the PYTHONPATH to =${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}\n")
+	endif()
+	if(CUDA_Language_AVAILABLE)
+		message("[PID] INFO : CUDA language (version ${CUDA_VERSION}) may be used.")
+	endif()
+	if(Fortran_Language_AVAILABLE)
+		message("[PID] INFO : Fortran language may be used.")
+	endif()
+endmacro(detect_Current_Platform)
 
 #############################################################################################
 ############### API functions for managing platform description variables ###################
@@ -253,32 +317,32 @@ endfunction(is_Compatible_With_Current_ABI)
 #
 # .. ifmode:: internal
 #
-#  .. |parse_Configuration_Constraints| replace:: ``parse_Configuration_Constraints``
+#  .. |parse_System_Check_Constraints| replace:: ``parse_System_Check_Constraints``
 #  .. _parse_Configuration_Constraints:
 #
-#  parse_Configuration_Constraints
+#  parse_System_Check_Constraints
 #  -------------------------------
 #
-#   .. command:: parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS configuration_constraint)
+#   .. command:: parse_System_Check_Constraints(NAME ARGS constraint)
 #
-#     Extract the arguments passed to a configuration check.
+#     Extract the arguments passed to a configuration or environment check.
 #
-#     :configuration_constraint: the string representing the configuration constraint check.
+#     :constraint: the string representing the constraint check.
 #
-#     :CONFIG_NAME: the output variable containing the name of the configuration
+#     :NAME: the output variable containing the name of the configuration
 #
-#     :CONFIG_ARGS: the output variable containing the list of  arguments of the constraint check.
+#     :ARGS: the output variable containing the list of  arguments of the constraint check.
 #
-function(parse_Configuration_Constraints CONFIG_NAME CONFIG_ARGS configuration_constraint)
-  string(REPLACE " " "" configuration_constraint ${configuration_constraint})#remove the spaces if any
-  string(REPLACE "\t" "" configuration_constraint ${configuration_constraint})#remove the tabulations if any
+function(parse_System_Check_Constraints NAME ARGS constraint)
+  string(REPLACE " " "" constraint ${constraint})#remove the spaces if any
+  string(REPLACE "\t" "" constraint ${constraint})#remove the tabulations if any
 
-  string(REGEX REPLACE "^([^[]+)\\[([^]]+)\\]$" "\\1;\\2" NAME_ARGS "${configuration_constraint}")#argument list format : configuration[list_of_args]
-  if(NOT NAME_ARGS STREQUAL configuration_constraint)#it matches !! => there are arguments passed to the configuration
+  string(REGEX REPLACE "^([^[]+)\\[([^]]+)\\]$" "\\1;\\2" NAME_ARGS "${constraint}")#argument list format : configuration[list_of_args]
+  if(NOT NAME_ARGS STREQUAL constraint)#it matches !! => there are arguments passed to the configuration
     list(GET NAME_ARGS 0 THE_NAME)
     list(GET NAME_ARGS 1 THE_ARGS)
-    set(${CONFIG_ARGS} PARENT_SCOPE)
-    set(${CONFIG_NAME} PARENT_SCOPE)
+    set(${ARGS} PARENT_SCOPE)
+    set(${NAME} PARENT_SCOPE)
     if(NOT THE_ARGS)
       return()
     endif()
@@ -290,13 +354,13 @@ function(parse_Configuration_Constraints CONFIG_NAME CONFIG_ARGS configuration_c
       endif()
       list(APPEND result ${ARG_VAL})
     endforeach()
-      set(${CONFIG_ARGS} ${result} PARENT_SCOPE)
-      set(${CONFIG_NAME} ${THE_NAME} PARENT_SCOPE)
+      set(${ARGS} ${result} PARENT_SCOPE)
+      set(${NAME} ${THE_NAME} PARENT_SCOPE)
   else()#this is a configuration constraint without arguments
-    set(${CONFIG_ARGS} PARENT_SCOPE)
-    set(${CONFIG_NAME} ${configuration_constraint} PARENT_SCOPE)
+    set(${ARGS} PARENT_SCOPE)
+    set(${NAME} ${constraint} PARENT_SCOPE)
   endif()
-endfunction(parse_Configuration_Constraints)
+endfunction(parse_System_Check_Constraints)
 
 #.rst:
 #
@@ -345,7 +409,7 @@ endfunction(generate_Configuration_Parameters)
 #
 #   .. command:: generate_Configuration_Constraints(RESULTING_EXPRESSION config_name config_args)
 #
-#     Generate an expression (string) that describes the configuration check given by configuration name and arguments. Inverse operation of parse_Configuration_Constraints.
+#     Generate an expression (string) that describes the configuration check given by configuration name and arguments. Inverse operation of parse_System_Check_Constraints.
 #
 #     :config_name: the name of the system configuration.
 #
@@ -397,7 +461,7 @@ endfunction(generate_Configuration_Constraints)
 #     :CONSTRAINTS: the output variable that contains the constraints that applmy to the configuration once used. It includes arguments (constraints imposed by user) and generated contraints (constraints automatically defined by the configuration itself once used).
 #
 function(check_System_Configuration RESULT NAME CONSTRAINTS config)
-  parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+  parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
   if(NOT CONFIG_NAME)
     set(${NAME} PARENT_SCOPE)
     set(${CONSTRAINTS} PARENT_SCOPE)
@@ -564,7 +628,7 @@ function(is_Allowed_System_Configuration ALLOWED config_name config_args)
 
     # checking dependencies first
     foreach(check IN LISTS ${config_name}_CONFIGURATION_DEPENDENCIES)
-      parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${check}")
+      parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${check}")
       if(NOT CONFIG_NAME)
         return()
       endif()
@@ -778,7 +842,7 @@ endfunction(check_Configuration_Arguments)
 #
 #     :config: the name of the configuration to be checked.
 #
-#     :arguments: the parent scope variable containing the list of arguments generated from parse_Configuration_Constraints.
+#     :arguments: the parent scope variable containing the list of arguments generated from parse_System_Check_Constraints.
 #
 function(prepare_Configuration_Arguments config arguments)
   if(NOT arguments OR NOT ${arguments})

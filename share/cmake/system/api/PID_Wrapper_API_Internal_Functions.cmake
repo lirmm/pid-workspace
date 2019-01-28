@@ -804,7 +804,7 @@ endfunction(add_Known_Version)
 function(declare_Wrapped_Configuration platform configurations options)
 if(platform)# if a platform constraint applies
 	foreach(config IN LISTS configurations)
-		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
+		parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
 		if(NOT CONFIG_NAME)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
@@ -858,7 +858,7 @@ if(platform)# if a platform constraint applies
 
 else()#no platform constraint applies => this platform configuration is adequate for all platforms
 	foreach(config IN LISTS configurations)
-		parse_Configuration_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+		parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
 		if(NOT CONFIG_NAME)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")

@@ -1163,9 +1163,62 @@ function(print_Framework_Info framework)
 	endif()
 endfunction(print_Framework_Info)
 
-########################################################################
-#################### Packages lifecycle management #####################
-########################################################################
+################################################################################
+#################### Deployment units lifecycle management #####################
+################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_PID_Environment| replace:: ``create_PID_Environment``
+#  .. _create_PID_Environment:
+#
+#  create_PID_Environment
+#  ------------------
+#
+#   .. command:: create_PID_Environment(environment author institution license)
+#
+#   Create a environment project into workspace.
+#
+#      :environment: the name of the environment to create.
+#
+#      :author: the name of the environment's author.
+#
+#      :institution: the institution of the environment's author.
+#
+#      :license: the name of license applying to the environment.
+#
+function(create_PID_Environment environment author institution license)
+	#copying the pattern folder into the package folder and renaming it
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/environments/environment ${WORKSPACE_DIR}/environments/${environment} OUTPUT_QUIET ERROR_QUIET)
+
+	#setting variables
+	set(ENVIRONMENT_NAME ${environment})
+	if(author)
+		set(ENVIRONMENT_AUTHOR_NAME "${author}")
+	else()
+		set(ENVIRONMENT_AUTHOR_NAME "$ENV{USER}")
+	endif()
+	if(institution)
+		set(ENVIRONMENT_AUTHOR_INSTITUTION "INSTITUTION	${institution}")
+	else()
+		set(ENVIRONMENT_AUTHOR_INSTITUTION "")
+	endif()
+	if(license)
+		set(ENVIRONMENT_LICENSE "${license}")
+	else()
+		message("[PID] WARNING: no license defined so using the default CeCILL license.")
+		set(ENVIRONMENT_LICENSE "CeCILL")#default license is CeCILL
+	endif()
+	set(ENVIRONMENT_DESCRIPTION "\"TODO: input a short description of environment ${environment} utility here\"")
+	string(TIMESTAMP date "%Y")
+	set(ENVIRONMENT_YEARS ${date})
+	# generating the root CMakeLists.txt of the package
+	configure_file(${WORKSPACE_DIR}/share/patterns/environments/CMakeLists.txt.in ${WORKSPACE_DIR}/environments/${environment}/CMakeLists.txt @ONLY)
+	#configuring git repository
+	init_Environment_Repository(${environment})
+endfunction(create_PID_Environment)
 
 #.rst:
 #
@@ -1665,6 +1718,42 @@ endfunction(connect_PID_Wrapper)
 #
 # .. ifmode:: internal
 #
+#  .. |connect_PID_Environment| replace:: ``connect_PID_Environment``
+#  .. _connect_PID_Environment:
+#
+#  connect_PID_Environment
+#  ---------------------
+#
+#   .. command:: connect_PID_Environment(environment git_url first_time)
+#
+#    Configuring the official remote repository of the given environment.
+#
+#      :environment: the name of the environment.
+#
+#      :git_url: the url of the official remote used for that environment.
+#
+#      :first_time: if FALSE a reconnection of official repository will take place.
+#
+function(connect_PID_Environment environment git_url first_time)
+if(first_time)#first time this environment is connected because newly created
+	# set the address of the official repository in the CMakeLists.txt of the environment
+	set_Environment_Repository_Address(${environment} ${git_url})
+	register_Environment_Repository_Address(${environment})
+	# synchronizing with the "official" remote git repository
+	connect_Environment_Repository(${environment} ${git_url})
+else() #forced reconnection
+	# updating the address of the official repository in the CMakeLists.txt of the package
+	reset_Environment_Repository_Address(${environment} ${git_url})
+	register_Environment_Repository_Address(${environment})
+	# synchronizing with the new "official" remote git repository
+	reconnect_Environment_Repository(${environment} ${git_url})
+endif()
+endfunction(connect_PID_Environment)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |connect_PID_Framework| replace:: ``connect_PID_Framework``
 #  .. _connect_PID_Framework:
 #
@@ -1916,6 +2005,26 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/si
 endfunction(remove_PID_Framework)
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |remove_PID_Environment| replace:: ``remove_PID_Environment``
+#  .. _remove_PID_Environment:
+#
+#  remove_PID_Environment
+#  --------------------
+#
+#   .. command:: remove_PID_Environment(environment)
+#
+#    Remove the repository of a given environment from the workspace.
+#
+#      :environment: the name of the environment.
+#
+function(remove_PID_Environment environment)
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/environments/${environment})
+endfunction(remove_PID_Environment)
+
 ##################################################
 ############ registering deployment units ########
 ##################################################
@@ -1988,6 +2097,28 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/framewo
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework}/build ${CMAKE_MAKE_PROGRAM} referencing)
 publish_Framework_References_In_Workspace_Repository(${framework})
 endfunction(register_PID_Framework)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |register_PID_Environment| replace:: ``register_PID_Environment``
+#  .. _register_PID_Environment:
+#
+#  register_PID_Environment
+#  ----------------------
+#
+#   .. command:: register_PID_Environment(environment)
+#
+#     Updating the workspace repository with an updated (or newly created) reference file for a given environment.
+#
+#      :environment: the name of the environment to register.
+#
+function(register_PID_Environment environment)
+go_To_Workspace_Master()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment}/build ${CMAKE_MAKE_PROGRAM} referencing)
+publish_Environment_References_In_Workspace_Repository(${environment})
+endfunction(register_PID_Environment)
 
 ##########################################
 ############ releasing packages ##########
@@ -2452,71 +2583,6 @@ endfunction(print_License_Info)
 #
 # .. ifmode:: internal
 #
-#  .. |detect_Current_Platform| replace:: ``detect_Current_Platform``
-#  .. detect_Current_Platform:
-#
-#  detect_Current_Platform
-#  -----------------------
-#
-#   .. command:: detect_Current_Platform()
-#
-#     Puts into cmake variables the description of current platform, deduced from current environment.
-#
-function(detect_Current_Platform)
-	# Now detect the current platform maccording to host environemnt selection (call to script for platform detection)
-	include(CheckTYPE)
-	include(CheckARCH)
-	include(CheckOS)
-	include(CheckABI)
-	include(CheckPython)
-	include(CheckFortran)
-	include(CheckCUDA)
-	if(CURRENT_DISTRIBUTION STREQUAL "")
-		set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family = ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS}\n + compiler ABI= ${CURRENT_ABI}")
-	else()
-		if(CURRENT_DISTRIBUTION_VERSION STREQUAL "")
-			set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family= ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS} (${CURRENT_DISTRIBUTION})\n + compiler ABI= ${CURRENT_ABI}")
-		else()#there is a version number bound to the distribution
-			set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family= ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS} (${CURRENT_DISTRIBUTION} ${CURRENT_DISTRIBUTION_VERSION})\n + compiler ABI= ${CURRENT_ABI}")
-		endif()
-	endif()
-	#simply rewriting previously defined variable to normalize their names between workspace and packages (same accessor function can then be used from any place)
-	set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL "" FORCE)
-	set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL "" FORCE)
-	set(CURRENT_PLATFORM_TYPE ${CURRENT_TYPE} CACHE INTERNAL "" FORCE)
-	set(CURRENT_PLATFORM_ARCH ${CURRENT_ARCH} CACHE INTERNAL "" FORCE)
-	set(CURRENT_PLATFORM_OS ${CURRENT_OS} CACHE INTERNAL "" FORCE)
-	if(CURRENT_ABI STREQUAL CXX11)
-		set(CURRENT_PLATFORM_ABI abi11 CACHE INTERNAL "" FORCE)
-	else()
-		set(CURRENT_PLATFORM_ABI abi98 CACHE INTERNAL "" FORCE)
-	endif()
-
-	if(CURRENT_PLATFORM_OS)#the OS is optional (for microcontrolers there is no OS)
-		set(CURRENT_PLATFORM ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_OS}_${CURRENT_PLATFORM_ABI} CACHE INTERNAL "" FORCE)
-	else()
-		set(CURRENT_PLATFORM ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_ABI} CACHE INTERNAL "" FORCE)
-	endif()
-
-	set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external/${CURRENT_PLATFORM} CACHE INTERNAL "")
-	set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install/${CURRENT_PLATFORM} CACHE INTERNAL "")
-	message("[PID] INFO : Target platform in use is ${CURRENT_PLATFORM}:\n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n")
-
-	if(Python_Language_AVAILABLE)
-		message("[PID] INFO : Python may be used, target python version in use is ${CURRENT_PYTHON}. To use python modules installed in workspace please set the PYTHONPATH to =${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}\n")
-	endif()
-	if(CUDA_Language_AVAILABLE)
-		message("[PID] INFO : CUDA language (version ${CUDA_VERSION}) may be used.")
-	endif()
-	if(Fortran_Language_AVAILABLE)
-		message("[PID] INFO : Fortran language may be used.")
-	endif()
-endfunction(detect_Current_Platform)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |write_Current_Configuration_Build_Related_Variables| replace:: ``write_Current_Configuration_Build_Related_Variables``
 #  .. _write_Current_Configuration_Build_Related_Variables:
 #
@@ -2539,7 +2605,7 @@ if(CURRENT_ABI STREQUAL "CXX11")
 		list(REMOVE_ITEM CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=0")
 	endif()
 	set(TEMP_FLAGS ${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=1)
-else()
+else()#using legacy ABI
 	list(FIND CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=1" INDEX)
 	if(NOT INDEX EQUAL -1)
 		list(REMOVE_ITEM CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=1")
@@ -2851,7 +2917,7 @@ function(manage_Platforms path_to_workspace)
 set(WORKSPACE_DIR ${path_to_workspace} CACHE INTERNAL "")
 if(CURRENT_ENVIRONMENT)
 	#load the environment description
-	include(${CMAKE_SOURCE_DIR}/environments/${CURRENT_ENVIRONMENT}/PID_Environment_Description.cmake)
+	include(${CMAKE_SOURCE_DIR}/environments/${CURRENT_ENVIRONMENT}/build/PID_Environment_Description.cmake)
 	message("[PID] INFO: ${PID_ENVIRONMENT_DESCRIPTION}")
 else()
 	message("[PID] INFO: development environment in use is the host default environment (based on ${CMAKE_CXX_COMPILER_ID} build toolchain).")

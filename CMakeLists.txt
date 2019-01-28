@@ -158,6 +158,7 @@ add_custom_target(create
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DTARGET_FRAMEWORK=\${framework}
 					-DTARGET_WRAPPER=\${wrapper}
+					-DTARGET_ENVIRONMENT=\${environment}
 					-DOPTIONAL_AUTHOR="\${author}"
 					-DOPTIONAL_INSTITUTION="\${affiliation}"
 					-DOPTIONAL_LICENSE=\${license}
@@ -173,6 +174,7 @@ add_custom_target(connect
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_FRAMEWORK=\${framework}
 					-DTARGET_PACKAGE=\${package}
 					-DTARGET_WRAPPER=\${wrapper}
+					-DTARGET_ENVIRONMENT=\${environment}
 					-DOFFICIAL_GIT_URL=\${official}
 					-DORIGIN_GIT_URL=\${origin}
 					-DFORCED_RECONNECTION=\${force}
@@ -205,8 +207,9 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 add_custom_target(remove
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DTARGET_FRAMEWORK=\${framework}
+					-DTARGET_ENVIRONMENT=\${environment}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Remove_PID_Package.cmake
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Remove_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -214,6 +217,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 add_custom_target(register
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DTARGET_FRAMEWORK=\${framework}
+					-DTARGET_ENVIRONMENT=\${environment}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Register_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -250,8 +254,17 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_OFFICIAL=\${official}
 ## configuring the workspace
 add_custom_target(configure
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_ENVIRONMENT=\${environment}
-					-DTARGET_VERSION=\${version}
+					-DTARGET_SYSROOT=\${sysroot}
+					-DTARGET_STAGING=\${staging}
+					-DTARGET_PLATFORM=\${platform}
+					-DTARGET_PROC_TYPE=\${type}
+					-DTARGET_PROC_ARCH=\${arch}
+					-DTARGET_OS=\${os}
+					-DTARGET_ABI=\${abi}
+					-DTARGET_GENERATOR=\${generator}
+					-DTARGET_TOOLSET=\${toolset}
 					-DCURRENT_ENVIRONMENT=${CURRENT_ENVIRONMENT}
+					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Configure_PID_Environment.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

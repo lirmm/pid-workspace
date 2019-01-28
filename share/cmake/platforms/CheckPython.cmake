@@ -25,15 +25,7 @@ set(PYTHONINTERP_FOUND FALSE)
 set(PYTHONLIBS_FOUND FALSE)
 set(Python_Language_AVAILABLE FALSE CACHE INTERNAL "")
 
-unset(PYTHON_EXECUTABLE CACHE)
-unset(PYTHON_LIBRARY CACHE)
-unset(PYTHON_INCLUDE_DIR CACHE)
-
-if(USE_PYTHON_VERSION)
-  find_package(PythonInterp ${USE_PYTHON_VERSION} EXACT) # find the specified python interpreter
-else()
-  find_package(PythonInterp) # find the default python interpreter
-endif()
+find_package(PythonInterp) # find the default python interpreter (but will be configured with python variable from toolchain file)
 
 if(PYTHONINTERP_FOUND)
   set(PY_VERSION "${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")

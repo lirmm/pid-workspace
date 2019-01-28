@@ -59,9 +59,57 @@ if(NOT TARGET_WRAPPER AND DEFINED ENV{wrapper})
 	set(TARGET_WRAPPER $ENV{wrapper} CACHE INTERNAL "" FORCE)
 endif()
 
+if(NOT TARGET_ENVIRONMENT AND DEFINED ENV{environment})
+	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
+endif()
+
+
 #now verify that arguments are consistent and perform adequate actions
 
-if(TARGET_FRAMEWORK)# a framework is created
+if(TARGET_ENVIRONMENT)# a framework is created
+	include(${WORKSPACE_DIR}/share/cmake/references/ReferEnvironment${TARGET_ENVIRONMENT}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+	if(NOT REQUIRED_STATUS STREQUAL NOTFOUND)
+		message("[PID] ERROR : An environment with the same name ${TARGET_ENVIRONMENT} is already referenced in the workspace repository.")
+		return()
+	endif()
+	if(EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT} AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT})
+		message("[PID] ERROR : An environment with the same name ${TARGET_ENVIRONMENT} already resides in the workspace filesystem.")
+		return()
+	endif()
+	if(OPTIONAL_LICENSE)
+		include(${WORKSPACE_DIR}/share/cmake/licenses/License${OPTIONAL_LICENSE}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+		if(REQUIRED_STATUS STREQUAL NOTFOUND)
+			message("[PID] ERROR : License ${OPTIONAL_LICENSE} does not refer to any known license in the workspace.")
+			return()
+		endif()
+	endif()
+	if(OPTIONNAL_GIT_URL)
+		get_Repository_Name(RES_NAME ${OPTIONNAL_GIT_URL})
+		if(	NOT RES_NAME STREQUAL TARGET_ENVIRONMENT
+		AND NOT RES_NAME STREQUAL "${TARGET_ENVIRONMENT}-environment")
+			message("[PID] ERROR : the git url of the repository (${OPTIONNAL_GIT_URL}) does not define a repository with same name than environment ${TARGET_ENVIRONMENT}.")
+			return()
+		endif()
+	endif()
+	# from here we are sure the request is well formed
+	if(OPTIONNAL_GIT_URL)
+		#HERE
+		test_Remote_Initialized(${TARGET_ENVIRONMENT} ${OPTIONNAL_GIT_URL} IS_INITIALIZED)#the framework is initialized as soon as it has a branch
+		if(IS_INITIALIZED)#simply clone
+			clone_Environment_Repository(IS_DEPLOYED ${TARGET_ENVIRONMENT} ${OPTIONNAL_GIT_URL})
+			message("[PID] INFO : new environment ${TARGET_ENVIRONMENT} has just been cloned from official remote ${OPTIONNAL_GIT_URL}.")
+		else()#we need to synchronize normally with an empty repository
+			create_PID_Environment(${TARGET_ENVIRONMENT} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}")
+			connect_PID_Environment(${TARGET_ENVIRONMENT} ${OPTIONNAL_GIT_URL} TRUE)
+			message("[PID] INFO : new environment ${TARGET_ENVIRONMENT} has just been connected to official remote ${OPTIONNAL_GIT_URL}.")
+		endif()
+
+	else() #simply create the package locally
+		create_PID_Environment(${TARGET_ENVIRONMENT} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}")
+		message("[PID] INFO : new environment ${TARGET_ENVIRONMENT} has just been created locally.")
+	endif()
+
+elseif(TARGET_FRAMEWORK)# a framework is created
 	include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${TARGET_FRAMEWORK}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(NOT REQUIRED_STATUS STREQUAL NOTFOUND)
 		message("[PID] ERROR : A framework with the same name ${TARGET_FRAMEWORK} is already referenced in the workspace repository.")

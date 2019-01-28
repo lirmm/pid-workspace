@@ -1,0 +1,23 @@
+
+This repository is used to manage the lifecycle of @ENVIRONMENT_NAME@ environment.
+An environment provides a procedure to configure the build tools used within a PID workspace.
+To get more info about PID please visit [this site](http://pid.lirmm.net/pid-framework/).
+
+Purpose
+=========
+
+@README_OVERVIEW@
+
+
+License
+=========
+
+@LICENSE_FOR_README@
+
+
+About authors
+=====================
+
+@ENVIRONMENT_NAME@ is maintained by the following contributors: @README_AUTHORS_LIST@
+
+Please contact @README_CONTACT_AUTHOR@ for more information or questions.

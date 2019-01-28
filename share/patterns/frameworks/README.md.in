@@ -1,13 +1,15 @@
 
-Overview
-=========
+This repository is used to manage the lifecycle of @FRAMEWORK_NAME@ framework.
+In the PID methodology a framework is a group of packages used in a given domain that are published (API, release binaries) in a common frame.
+To get more info about PID please visit [this site](http://pid.lirmm.net/pid-framework/).
 
-This repository is used to manage the lifecycle of @FRAMEWORK_NAME@ framework. 
+Purpose
+=========
 
 @README_OVERVIEW@
 
 
-This repository has been used to generate the static site of the framework. 
+This repository has been used to generate the static site of the framework.
 
 Please visit @FRAMEWORK_SITE@ to view the result and get more information.
 
@@ -23,5 +25,3 @@ About authors
 @FRAMEWORK_NAME@ is maintained by the following contributors: @README_AUTHORS_LIST@
 
 Please contact @README_CONTACT_AUTHOR@ for more information or questions.
-
-

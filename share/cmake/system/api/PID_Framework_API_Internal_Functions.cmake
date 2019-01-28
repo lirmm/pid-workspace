@@ -599,7 +599,7 @@ function(generate_Framework_Reference_File pathtonewfile)
 set(file ${pathtonewfile})
 file(WRITE ${file} "")
 
-file(APPEND ${file} "#### referencing package ${PROJECT_NAME} mode ####\n")
+file(APPEND ${file} "#### referencing framework ${PROJECT_NAME} mode ####\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_MAIN_AUTHOR ${${PROJECT_NAME}_FRAMEWORK_MAIN_AUTHOR} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_MAIN_INSTITUTION ${${PROJECT_NAME}_FRAMEWORK_MAIN_INSTITUTION} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_YEARS ${${PROJECT_NAME}_FRAMEWORK_YEARS} CACHE INTERNAL \"\")\n")

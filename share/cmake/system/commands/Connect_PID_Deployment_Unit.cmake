@@ -51,6 +51,10 @@ if(NOT TARGET_WRAPPER AND DEFINED ENV{wrapper})
 	set(TARGET_WRAPPER $ENV{wrapper} CACHE INTERNAL "" FORCE)
 endif()
 
+if(NOT TARGET_ENVIRONMENT AND DEFINED ENV{environment})
+	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
+endif()
+
 #early common check
 if(NOT OFFICIAL_GIT_URL AND NOT ORIGIN_GIT_URL)
 	message("[PID] ERROR : you must enter a git url using official=<git url> argument. This will set the address of the official remote from where you will update released modifications. You can in addition set the address of the origin remote by using origin=<git url>. This will set the address where you will push your modifications. If you do not set origin then it will take the value of official.")
@@ -130,6 +134,40 @@ elseif(TARGET_FRAMEWORK)# a framework is connected
 		endif()
 	else()#connect for first time
 		connect_PID_Framework(${TARGET_FRAMEWORK} ${URL} TRUE)
+	endif()
+
+elseif(TARGET_ENVIRONMENT)# an environment is connected
+	if(NOT EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT} OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT})
+		message("[PID] ERROR : Environment ${TARGET_ENVIRONMENT} to connect is not contained in the workspace.")
+		return()
+	endif()
+	if(OFFICIAL_GIT_URL AND ORIGIN_GIT_URL) #environment has no official remote compared to package
+		message("[PID] ERROR : Cannot use two different git remotes (origin and official) for environment ${TARGET_ENVIRONMENT}  .")
+		return()
+	endif()
+	set(URL)
+	if(OFFICIAL_GIT_URL)
+		set(URL ${OFFICIAL_GIT_URL})
+	elseif(ORIGIN_GIT_URL)
+		set(URL ${ORIGIN_GIT_URL})
+	endif()
+	get_Repository_Name(RES_NAME ${URL})
+	if(NOT RES_NAME STREQUAL TARGET_ENVIRONMENT AND NOT RES_NAME STREQUAL "${TARGET_ENVIRONMENT}-environment")#the adress can have the -environment extension
+		message("[PID] ERROR : the git url of the origin remote repository (${URL}) does not define a repository with same name than environment ${TARGET_FRAMEWORK}.")
+		return()
+	endif()
+	set(ALREADY_CONNECTED FALSE)
+	is_Environment_Connected(ALREADY_CONNECTED ${TARGET_ENVIRONMENT} origin)
+	if(ALREADY_CONNECTED )#the package must be connected to the official remote for this option to be valid
+		if(NOT (FORCED_RECONNECTION STREQUAL "true"))
+			message("[PID] ERROR : environment ${TARGET_ENVIRONMENT} is already connected to a git repository. Use the force=true option to force the reconnection.")
+			return()
+		else()
+			#here the request is OK, we can apply => changing the origin to make it target a new origin remote (most of time from official TO private remote)
+			connect_PID_Environment(${TARGET_ENVIRONMENT} ${URL} FALSE)
+		endif()
+	else()#connect for first time
+		connect_PID_Environment(${TARGET_ENVIRONMENT} ${URL} TRUE)
 	endif()
 
 elseif(TARGET_PACKAGE)
