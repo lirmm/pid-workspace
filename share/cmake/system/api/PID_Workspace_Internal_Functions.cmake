@@ -1517,14 +1517,14 @@ set(REPOSITORY_IN_WORKSPACE FALSE)
 if(EXISTS ${WORKSPACE_DIR}/wrappers/${package})
 	set(REPOSITORY_IN_WORKSPACE TRUE)
 endif()
-get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
+get_Platform_Variables(BASENAME platform_name)
 set(MAX_CURR_VERSION 0.0.0)
 if("${version}" STREQUAL "")#deploying the latest version of the package
-
+#TODO check this
 	#first try to directly download its archive
 	if(${package}_REFERENCES) #there are references to external package binaries
 		foreach(version_i IN LISTS ${package}_REFERENCES)
-			list(FIND ${package}_REFERENCE_${version_i} ${PLATFORM_NAME} INDEX)
+			list(FIND ${package}_REFERENCE_${version_i} ${platform_name} INDEX)
 			if(NOT INDEX EQUAL -1) #a reference for this OS is known
 				if(${version_i} VERSION_GREATER ${MAX_CURR_VERSION})
 					set(MAX_CURR_VERSION ${version_i})
@@ -1532,7 +1532,7 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 			endif()
 		endforeach()
 		if(NOT ${MAX_CURR_VERSION} STREQUAL 0.0.0)
-			if(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package}/${MAX_CURR_VERSION}
+			if(EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${package}/${MAX_CURR_VERSION}
 			AND NOT redeploy)
 				message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} already lies in the workspace, use force=true to force the redeployment.")
 				return()
@@ -1563,8 +1563,8 @@ if("${version}" STREQUAL "")#deploying the latest version of the package
 		endif()
 		set(list_of_installed_versions)
 		if(NOT redeploy #only exlcude the installed versions if redeploy is not required
-		AND EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package}/)
-			list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package})
+		AND EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${package}/)
+			list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/external/${platform_name}/${package})
 			set(list_of_installed_versions ${RES_VERSIONS})
 		endif()
 		deploy_Source_External_Package(DEPLOYED ${package} "${list_of_installed_versions}")
@@ -1807,30 +1807,30 @@ endfunction(add_Connection_To_PID_Framework)
 #      :RESULT: the output variable that is TRUE if package version has been removed, FALSE otherwise.
 #
 function(clear_PID_Package RESULT package version)
-get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
+get_Platform_Variables(BASENAME platform_name)
 set(${RESULT} TRUE PARENT_SCOPE)
 if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
 
-	if( EXISTS ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package}/${version}
-	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package}/${version})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package}/${version})
+	if( EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version})
 	else()
-		if( EXISTS ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package}/${version}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package}/${version})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package}/${version})
+		if( EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${package}/${version}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform_name}/${package}/${version})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${platform_name}/${package}/${version})
 		else()
 			message("[PID] ERROR : package ${package} version ${version} does not resides in workspace install directory.")
 			set(${RESULT} FALSE PARENT_SCOPE)
 		endif()
 	endif()
 elseif(version MATCHES "all")#all versions targetted (including own versions and installers folder)
-	if( EXISTS ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package}
-	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
+	if( EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${platform_name}/${package})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${platform_name}/${package})
 	else()
-		if( EXISTS ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${package})
+		if( EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${package}
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform_name}/${package})
+			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${platform_name}/${package})
 		else()
 			message("[PID] ERROR : package ${package} is not installed in workspace.")
 			set(${RESULT} FALSE PARENT_SCOPE)
@@ -1859,9 +1859,9 @@ endfunction(clear_PID_Package)
 #      :package: the name of the package.
 #
 function(remove_PID_Package package)
-get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
+get_Platform_Variables(BASENAME platform_name)
 #clearing install folder
-if(	EXISTS ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
+if(	EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package})
 	clear_PID_Package(RES ${package} all)
 endif()
 #clearing source folder
@@ -1885,9 +1885,9 @@ endfunction(remove_PID_Package)
 #      :wrapper: the name of the wrapper.
 #
 function(remove_PID_Wrapper wrapper)
-	get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
+	get_Platform_Variables(BASENAME platform_name)
 	#clearing install folder
-	if(	EXISTS ${WORKSPACE_DIR}/external/${PLATFORM_NAME}/${wrapper})
+	if(	EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${wrapper})
 		clear_PID_Package(RES ${package} all)
 	endif()
 	#clearing source folder
@@ -2247,10 +2247,10 @@ endfunction(release_PID_Package)
 #      :package: the name of the native package to update.
 #
 function(update_PID_Source_Package package)
-get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
+get_Platform_Variables(BASENAME platform_name)
 set(INSTALLED FALSE)
 message("[PID] INFO : launch the update of source package ${package}...")
-list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
+list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${platform_name}/${package})
 deploy_Source_Native_Package(INSTALLED ${package} "${version_dirs}" FALSE)
 if(NOT INSTALLED)
 	message("[PID] ERROR : cannot update ${package}.")
@@ -2276,9 +2276,9 @@ endfunction(update_PID_Source_Package)
 #      :package: the name of the naive package to update.
 #
 function(update_PID_Binary_Package package)
-get_System_Variables(PLATFORM_NAME PACKAGE_STRING)
+get_Platform_Variables(BASENAME platform_name)
 message("[PID] INFO : launch the update of binary package ${package}...")
-list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${PLATFORM_NAME}/${package})
+list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${platform_name}/${package})
 deploy_Binary_Native_Package(DEPLOYED ${package} "${version_dirs}")
 if(NOT DEPLOYED)
 	message("[PID] ERROR : cannot update ${package}.")
@@ -2758,6 +2758,8 @@ function(write_Platform_Description file)
 
 	# defining properties of the current platform
 	file(APPEND ${file} "set(CURRENT_PLATFORM ${CURRENT_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PLATFORM_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\" FORCE)\n")
+
 	file(APPEND ${file} "set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\" FORCE)\n")

@@ -18,8 +18,11 @@
 #########################################################################################
 
 set(CURRENT_DISTRIBUTION CACHE INTERNAL "")
+set(CURRENT_DISTRIBUTION_VERSION "" CACHE INTERNAL "")
 set(CURRENT_PACKAGE_STRING CACHE INTERNAL "")
 set(CURRENT_OS CACHE INTERNAL "")
+
+set(CURRENT_PLATFORM_INSTANCE ${USE_INSTANCE_NAME} CACHE INTERNAL "")#reset with current value of instance name
 
 #test of the os is based on the compiler used  (APPLE and UNIX variables) AND on system variables affected by crosscompilation (CMAKE_SYSTEM_NAME)
 #So it adapts to the current development environment in use

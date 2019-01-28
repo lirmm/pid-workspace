@@ -59,7 +59,21 @@ if(TARGET_ENVIRONMENT) # checking if the target environment has to change
 						WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 				endif()
 			endif()
-
+	elseif(TARGET_ENVIRONMENT STREQUAL "instance")
+		# reconfigure the pid workspace
+		if(TARGET_VERSION)
+			if(TARGET_VERSION STREQUAL "default")
+				execute_process(COMMAND ${CMAKE_COMMAND} -DUSE_INSTANCE_NAME= ${WORKSPACE_DIR}
+						WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+			else()
+				message("[PID] INFO : setting instance ${TARGET_VERSION}")
+				execute_process(COMMAND ${CMAKE_COMMAND} -DUSE_INSTANCE_NAME=${TARGET_VERSION} ${WORKSPACE_DIR}
+						WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+			endif()
+		else()
+			message("[PID] ERROR : you need to specify the name of the instance using version= argument... ")
+			return()
+		endif()
 	elseif(	TARGET_ENVIRONMENT STREQUAL "${CURRENT_ENVIRONMENT}"
 		OR (NOT CURRENT_ENVIRONMENT AND TARGET_ENVIRONMENT STREQUAL "host"))
 		message("[PID] INFO : the target environment ${TARGET_ENVIRONMENT} is already the current environment of the workspace.")

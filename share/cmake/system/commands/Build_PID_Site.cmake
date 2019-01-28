@@ -35,6 +35,10 @@ if(NOT FORCED_UPDATE AND DEFINED ENV{force})#to manage the call for non UNIX mak
 	set(FORCED_UPDATE $ENV{force} CACHE INTERNAL "" FORCE)
 endif()
 
+if(NOT ONLY_BINARIES AND DEFINED ENV{only_binaries})
+	set(ONLY_BINARIES $ENV{only_binaries} CACHE INTERNAL "" FORCE)
+endif()
+
 # managing script arguments
 if(NOT TARGET_PACKAGE)
 	message("[PID] ERROR : the target package for which the static website is built is not defined !")
@@ -57,6 +61,13 @@ if(FORCED_UPDATE STREQUAL "true" OR FORCED_UPDATE STREQUAL "TRUE" OR FORCED_UPDA
 	set(forced_update TRUE)
 else()
 	set(forced_update FALSE)
+endif()
+
+
+if(ONLY_BINARIES STREQUAL "true" OR ONLY_BINARIES STREQUAL "TRUE" OR ONLY_BINARIES STREQUAL "ON")
+	set(generate_only_binaries TRUE)
+else()
+	set(generate_only_binaries FALSE)
 endif()
 
 if(INCLUDES_API_DOC)
@@ -110,17 +121,18 @@ elseif(SITE_GIT)# the package site is put into a dedicated static site
 		update_Local_Static_Site_Project(${TARGET_PACKAGE} ${project_url} ${site_url}) # update static site repository, to ensure its synchronization
 	endif()
 else()
-	message("[PID] CRITICAL ERROR: cannot build package site due to bad arguments. This situation should never appear so you may face a BUG in PID. Please contact PID developers.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot build package site due to bad arguments. This situation should never appear so you may face a BUG in PID. Please contact PID developers.")
+	return()
 endif()
 
 #2) clean generate and copy files according to project documentation
 if(is_native)
-	produce_Package_Static_Site_Content(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}" "${TARGET_VERSION}" ${TARGET_PLATFORM} ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
+	produce_Package_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${TARGET_VERSION}" ${TARGET_PLATFORM} "${TARGET_INSTANCE}" ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
 else()
 	#need to parse the version argument as there may have many versions
 	include(CMakeParseArguments)
 	separate_arguments(KNOWN_VERSIONS)
-	produce_Wrapper_Static_Site_Content(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}" "${KNOWN_VERSIONS}" ${TARGET_PLATFORM} ${include_installer} ${forced_update}) # copy everything needed
+	produce_Wrapper_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${KNOWN_VERSIONS}" ${TARGET_PLATFORM} "${TARGET_INSTANCE}" ${include_installer} ${forced_update}) # copy everything needed
 endif()
 
 #3) build static site
@@ -150,5 +162,4 @@ else()
 	else()
 		message("[PID] INFO : static site of ${TARGET_PACKAGE} has been updated locally.")
 	endif()
-
 endif()

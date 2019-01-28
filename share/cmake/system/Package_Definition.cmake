@@ -400,7 +400,7 @@ add_Category("${ARGV0}")
 endmacro(add_PID_Package_Category)
 
 macro(declare_PID_Documentation)
-	message("[PID] WARNING : the declare_PID_Documentation is deprecated and is no more used in PID version 2. To define a documentation site please use declare_PID_Publishing function. Skipping documentation generation phase.")
+	message("[PID] WARNING : the declare_PID_Documentation is deprecated and is no more used in PID version 2. To define a documentation site please use PID_Publishing function. Skipping documentation generation phase.")
 endmacro(declare_PID_Documentation)
 
 #.rst:

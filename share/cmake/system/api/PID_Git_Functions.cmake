@@ -2249,16 +2249,29 @@ endfunction(update_Framework_Repository)
 #
 function(publish_Framework_Repository framework PUBLISHED)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git status --porcelain OUTPUT_VARIABLE res)
-if(res)
+if(res)#there is something to commit !
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git add -A OUTPUT_QUIET ERROR_QUIET)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git commit -m "publishing new version of framework")
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master OUTPUT_VARIABLE out_push)#pushing to master branch of origin
-	set(${PUBLISHED} TRUE PARENT_SCOPE)
-else()
-	set(${PUBLISHED} FALSE PARENT_SCOPE)
+  set(CONTINUE TRUE)
+  set(COUNTER 0)
+  while(CONTINUE)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
+  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+    if(PUSH_RESULT EQUAL 0)
+      set(${PUBLISHED} TRUE PARENT_SCOPE)
+      return()
+    else()# cannot push => due to another runner updating
+      message("[PID] INFO: waiting 30 seconds before publishing again the result...")
+      execute_process(COMMAND ${CMAKE_COMMAND} -E sleep 30  OUTPUT_QUIET ERROR_QUIET) #waiting 30 seconds before repulling again
+      math(EXPR COUNTER "${COUNTER}+1")
+      if(COUNTER GREATER 120)# more than 1 hour trying to pull
+        set(CONTINUE FALSE)
+      endif()
+    endif()
+  endwhile()
 endif()
+set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Framework_Repository)
 
 #.rst:
@@ -2523,15 +2536,28 @@ endfunction(update_Static_Site_Repository)
 #     :PUBLISHED: the output variable that is TRUE if package static site has been pushed to a remote repository
 #
 function(publish_Static_Site_Repository package PUBLISHED)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git status --porcelain OUTPUT_VARIABLE res)
-	if(res AND NOT res STREQUAL "")
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git add -A OUTPUT_QUIET ERROR_QUIET)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git commit -m "publising ${package} static site" OUTPUT_QUIET ERROR_QUIET)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git push origin master OUTPUT_QUIET ERROR_QUIET)#pushing the package site by pushing to master branch of origin => will induce an automatic management of artefact generation/publication to finally publish the resulting web site
-		set(${PUBLISHED} TRUE PARENT_SCOPE)
-	else()
-		set(${PUBLISHED} FALSE PARENT_SCOPE)
-	endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git status --porcelain OUTPUT_VARIABLE res)
+if(res)#there is something to commit
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git add -A OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git commit -m "publising ${package} static site" OUTPUT_QUIET ERROR_QUIET)
+  set(CONTINUE TRUE)
+  set(COUNTER 0)
+  while(CONTINUE)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
+    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+    if(PUSH_RESULT EQUAL 0)
+      set(${PUBLISHED} TRUE PARENT_SCOPE)
+      return()
+    else()# cannot push => due to another runner updating
+      message("[PID] INFO: waiting 30 seconds before publishing again the result...")
+      execute_process(COMMAND ${CMAKE_COMMAND} -E sleep 30  OUTPUT_QUIET ERROR_QUIET) #waiting 30 seconds before repulling again
+      math(EXPR COUNTER "${COUNTER}+1")
+      if(COUNTER GREATER 120)# more than 1 hour trying to pull
+        set(CONTINUE FALSE)
+      endif()
+    endif()
+  endwhile()
+endif()
+set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Static_Site_Repository)

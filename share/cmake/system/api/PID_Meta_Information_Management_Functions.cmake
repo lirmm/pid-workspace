@@ -262,6 +262,32 @@ endif()
 set(${PROJECT_NAME}_SITE_INTRODUCTION "${introduction}" CACHE INTERNAL "")
 endfunction(init_Documentation_Info_Cache_Variables)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Documentation_Site_Generated| replace:: ``check_Documentation_Site_Generated``
+#  .. _check_Documentation_Site_Generated:
+#
+#  check_Documentation_Site_Generated
+#  ----------------------------------
+#
+#   .. command:: check_Documentation_Site_Generated(GENERATED)
+#
+#     Check if the project generates static site pages.
+#
+#      :GENERATED: The output variable that is TRUE if static site may be generated from the project
+#
+function(check_Documentation_Site_Generated GENERATED)
+if(${PROJECT_NAME}_FRAMEWORK OR ${PROJECT_NAME}_SITE_GIT_ADDRESS)
+  set(${GENERATED} TRUE PARENT_SCOPE)
+else()
+  set(${GENERATED} FALSE PARENT_SCOPE)
+endif()
+endfunction(check_Documentation_Site_Generated)
+
+
 #.rst:
 #
 # .. ifmode:: internal

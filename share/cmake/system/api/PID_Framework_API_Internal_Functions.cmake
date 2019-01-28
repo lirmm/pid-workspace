@@ -151,20 +151,23 @@ foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os f
 	list_Subdirectories(ALL_PLATFORMS ${dir}/${ref_version})
 	if(ALL_PLATFORMS)
 		foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
+
+			extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${ref_platform})
+
 			# now referencing the binaries
 			list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
 			if(	ALL_BINARIES
-				AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz)#release version must exist in any case
+				AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)#release version must exist in any case
 
 				if(NOT VERSION_REGISTERED)  # the version is registered only if there are binaries inside (sanity check)
 					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} ${ref_version} CACHE INTERNAL \"\")\n") # the version is registered
 					set(VERSION_REGISTERED TRUE)
 				endif()
 				file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} ${ref_platform} CACHE INTERNAL \"\")\n") # the platform is registered only if there are binaries inside (sanity check)
-					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
-					if(EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz)# binary versions for debug may exist
-						file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${ref_platform}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
-					endif()
+				file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
+				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${RES_PLATFORM_BASE}-dbg-${ref_platform}.tar.gz)# binary versions for debug may exist
+					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
+				endif()
 				endif()
 			endforeach()
 		endif()
@@ -838,66 +841,33 @@ foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os f
 		list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
 
 		if(ALL_BINARIES) # check to avoid problem is the binaries have been badly released
+			extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${ref_platform})
 
 			# the version is registered only if there are binaries inside (sanity check)
-			if(native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
+			if(native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)
 				set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
 				set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
-				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)# release version must exist for native packages
+				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)# release version must exist for native packages
 
 				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)# debug version may no exist for native packages
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
+					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
 				endif()
-			elseif(NOT NATIVE AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) #at least a release version is required for external packages
+			elseif(NOT NATIVE AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz) #at least a release version is required for external packages
 
 				set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
 				set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
-				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz)
-				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${package}-${ref_version}-${ref_platform})
-				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${package}-${ref_version}-dbg-${ref_platform})
+				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)
+				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${package}-${ref_version}-${RES_PLATFORM_BASE})
+				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
+					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
+					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${package}-${ref_version}-dbg-${RES_PLATFORM_BASE})
 				endif()
 			endif()
 		endif()
 	endforeach()
-	if(NOT native) # testing the reference on external with symlinks
-		list_Platform_Symlinks(ALL_PLATFORMS ${dir}/${ref_version})
-		foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
-			# now referencing the binaries
-			list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
-			if(ALL_BINARIES) #do not check for binary archive name since it may differ from standard regarding platform (kind of generic platform name may be used instead of the symink one)
-				set(RELEASE_BINARY)
-				set(DEBUG_BINARY)
-				foreach(binary IN LISTS ALL_BINARIES)
-					string(REGEX REPLACE "^${package}-${ref_version}-dbg-([^\\.]+)\\.tar\\.gz$" "\\1" RES ${binary})
-					if(NOT RES STREQUAL "${binary}") # package binary debug with any kind of platform
-						set(DEBUG_BINARY ${RES})
-					else()
-						string(REGEX REPLACE "^${package}-${ref_version}-([^\\.]*)\\.tar\\.gz$" "\\1" RES ${binary})
-						if(NOT RES STREQUAL "${binary}") # package binary release with any kind of platform
-							set(RELEASE_BINARY ${RES})
-						endif()
-
-					endif()
-				endforeach()
-				if(RELEASE_BINARY) #if no release version do nothing
-					set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version}) #adding the version
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform}) #adding the platform
-
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${RELEASE_BINARY}/${package}-${ref_version}-${RELEASE_BINARY}.tar.gz)
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${package}-${ref_version}-${RELEASE_BINARY})
-					if(DEBUG_BINARY)
-						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${DEBUG_BINARY}/${package}-${ref_version}-dbg-${DEBUG_BINARY}.tar.gz)
-						set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${package}-${ref_version}-dbg-${DEBUG_BINARY})
-					endif()
-				endif()
-			endif()
-		endforeach()
-	endif()
 endforeach()
 
-if(${package}_FRAMEWORK_REFERENCES)
+if(${package}_FRAMEWORK_REFERENCES)#there are registered references
 	list(REMOVE_DUPLICATES ${package}_FRAMEWORK_REFERENCES)
 	file(APPEND ${file} "set(${package}_REFERENCES ${${package}_FRAMEWORK_REFERENCES} CACHE INTERNAL \"\")\n") # the version is registered
 	foreach(ref_version IN LISTS ${package}_FRAMEWORK_REFERENCES)

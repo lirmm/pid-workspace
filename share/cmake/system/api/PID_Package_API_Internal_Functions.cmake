@@ -468,7 +468,7 @@ if(NOT ${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in 
 endif()
 
 package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME} FALSE)
-get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+get_Platform_Variables(BASENAME curr_platform INSTANCE curr_instance)
 set(INCLUDING_BINARIES FALSE)
 set(INCLUDING_COVERAGE FALSE)
 set(INCLUDING_STATIC_CHECKS FALSE)
@@ -497,7 +497,8 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
-						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
+						-DTARGET_PLATFORM=${curr_platform}
+						-DTARGET_INSTANCE=${curr_instance}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DINCLUDES_API_DOC=${BUILD_API_DOC}
@@ -516,7 +517,8 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
-						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
+						-DTARGET_PLATFORM=${curr_platform}
+						-DTARGET_INSTANCE=${curr_instance}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}
@@ -666,7 +668,7 @@ endfunction(check_Platform_Constraints)
 #     Finalize configuration of the current package build process. Internal counterpart of build_PID_Package.
 #
 macro(build_Package)
-get_System_Variables(CURRENT_PLATFORM_NAME PACKAGE_SYSTEM_STRING)
+get_Platform_Variables(BASENAME curr_platform_name PKG_STRING cpack_platform_str)
 
 ### configuring RPATH management in CMake
 set(CMAKE_SKIP_BUILD_RPATH FALSE) # don't skip the full RPATH for the build tree
@@ -920,10 +922,11 @@ if(GENERATE_INSTALLER)
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}")
 	list(APPEND CPACK_GENERATOR TGZ)
 
-	set(PACKAGE_SOURCE_NAME ${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${PACKAGE_SYSTEM_STRING}.tar.gz)
-	set(PACKAGE_TARGET_NAME ${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${CURRENT_PLATFORM_NAME}.tar.gz) #we use specific PID platform name instead of CMake default one to avoid troubles (because it is not really discrimant)
 
-	if(PACKAGE_SYSTEM_STRING)
+	if(cpack_platform_str)
+		set(PACKAGE_SOURCE_NAME ${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${cpack_platform_str}.tar.gz)
+		set(PACKAGE_TARGET_NAME ${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}${INSTALL_NAME_SUFFIX}-${curr_platform_name}.tar.gz) #we use specific PID platform name instead of CMake default one to avoid troubles (because it is not really discrimant)
+
 		if(${PROJECT_NAME}_LICENSE)
 			package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME} FALSE)
 			if(CLOSED)
@@ -995,7 +998,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	# adding an uninstall command (uninstall the whole installed version currently built)
 	add_custom_target(uninstall
 		COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
-		COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
+		COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${curr_platform_name}/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
 		VERBATIM
 	)
 

@@ -61,7 +61,10 @@ endfunction(reset_CI_Variables)
 #      :platform: The target platform.
 #
 function(allow_CI_For_Platform platform)
-	set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS} ${platform} CACHE INTERNAL "")
+  list(FIND ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${platform} INDEX)
+  if(INDEX EQUAL -1)##append the patform only if not already defined
+	   set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS} ${platform} CACHE INTERNAL "")
+  endif()
 endfunction(allow_CI_For_Platform)
 
 #########################################################################################
@@ -93,7 +96,7 @@ elseif(NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/share/ci)#the ci folder is missing
 	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
 	message("[PID] INFO : creating the ci folder in package ${PROJECT_NAME} repository")
 else() #updating these files by silently replacing the ci folder
-	file(REMOVE ${CMAKE_SOURCE_DIR}/share/ci)
+	file(REMOVE_RECURSE ${CMAKE_SOURCE_DIR}/share/ci)
 	file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
 endif()
 endfunction(verify_Package_CI_Content)
@@ -116,9 +119,11 @@ function(generate_Package_CI_Config_File)
 
 if(NOT ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
 	if(EXISTS ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)
-		file(REMOVE ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)#remove the file as CI is allowed for no platform
+		file(REMOVE ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)#remove the file because CI is allowed for no platform
 	endif()
 	return() #no CI to run so no need to generate the file
+else()
+  list(GET ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS 0 PACKAGE_CI_MAIN_PLATFORM)
 endif()
 
 verify_Package_CI_Content()
@@ -142,12 +147,13 @@ foreach(component IN LISTS ${PROJECT_NAME}_DECLARED_COMPS)#looking into all decl
 endforeach()
 
 #is there a static site defined for the project ?
-if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS)
+check_Documentation_Site_Generated(IS_GENERATED)
+if(NOT IS_GENERATED)# CI may generate site during CI but it is not mandatory
 	set(PACKAGE_CI_HAS_SITE "false")
-	set(PACKAGE_CI_PUBLISH_BINARIES "false")
+	set(PACKAGE_CI_PUBLISH_BINARIES "false")# if no site then no repository for binaries and no place where to show developper info
 	set(PACKAGE_CI_PUBLISH_DEV_INFO "false")
 else()
-	set(PACKAGE_CI_HAS_SITE "true")
+	set(PACKAGE_CI_HAS_SITE "true")#CI also generate and publish site (using gitlab pages)
 	if(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING)
 		set(PACKAGE_CI_PUBLISH_BINARIES "true")
 	else()
@@ -254,7 +260,7 @@ elseif(NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/share/ci)#the ci folder is missing
 	file(COPY ${WORKSPACE_DIR}/share/patterns/wrappers/package/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
 	message("[PID] INFO : creating the ci folder in wrapper ${PROJECT_NAME} repository")
 else() #updating these files by silently replacing the ci folder
-	file(REMOVE ${CMAKE_SOURCE_DIR}/share/ci)
+	file(REMOVE_RECURSE ${CMAKE_SOURCE_DIR}/share/ci)
 	file(COPY ${WORKSPACE_DIR}/share/patterns/wrappers/package/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
 endif()
 endfunction(verify_Wrapper_CI_Content)
@@ -278,7 +284,6 @@ endfunction(verify_Wrapper_CI_Content)
 #      :platform: the platform identifier.
 #
 function(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper configfile platform)
-extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI ${platform})
 file(APPEND ${configfile} "#pipeline generated for platform: ${platform}\n\n")
 file(APPEND ${configfile} "build_wrapper_${platform}:\n <<: *build_wrapper\n <<: *selection_platform_${platform}\n\n")
 endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper)
@@ -304,6 +309,8 @@ if(NOT ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
 		file(REMOVE ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)#remove the file as CI is allowed for no platform
 	endif()
 	return() #no CI to run so no need to generate the file
+else()
+  list(GET ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS 0 PACKAGE_CI_MAIN_PLATFORM)
 endif()
 
 verify_Wrapper_CI_Content()

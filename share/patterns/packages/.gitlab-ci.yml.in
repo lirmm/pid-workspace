@@ -5,6 +5,7 @@ variables:
   PACKAGE_HAS_SITE: "@PACKAGE_CI_HAS_SITE@"
   PACKAGE_BINARIES_PUBLISHED: "@PACKAGE_CI_PUBLISH_BINARIES@"
   PACKAGE_DEV_INFO_PUBLISHED: "@PACKAGE_CI_PUBLISH_DEV_INFO@"
+  PACKAGE_MAIN_PLATFORM: "@PACKAGE_CI_MAIN_PLATFORM@"
 
 stages:
  - build
@@ -17,7 +18,7 @@ stages:
    stage: build
    script:
      - chmod 700 ./share/ci/prepare_package_ci.sh
-     - ./share/ci/prepare_package_ci.sh
+     - ./share/ci/prepare_package_ci.sh "$CI_RUNNER_TAGS"
      - cd build
      - chmod 700 ../share/ci/configure_package_integration.sh
      - ../share/ci/configure_package_integration.sh
@@ -29,7 +30,7 @@ stages:
    only:
      - integration
    artifacts:
-     name: artefacts_integration
+     name: "artefacts_integration_${CI_RUNNER_ID}"
      paths:
        - developper_info.tgz
      when: on_success
@@ -38,19 +39,19 @@ stages:
    stage: build
    script:
      - chmod 700 ./share/ci/prepare_package_ci.sh
-     - ./share/ci/prepare_package_ci.sh
+     - ./share/ci/prepare_package_ci.sh "$CI_RUNNER_TAGS"
      - cd build
      - chmod 700 ../share/ci/configure_package_release.sh
      - ../share/ci/configure_package_release.sh
      - chmod 700 ../share/ci/build_package.sh
      - ../share/ci/build_package.sh
      - chmod 700 ../share/ci/deploy_package_release.sh
-     - ../share/ci/deploy_package_release.sh
+     - ../share/ci/deploy_package_release.sh $CI_RUNNER_TAGS
      - cd ..
    only:
         - /^v.*$/
    artifacts:
-     name: "artefacts_${CI_COMMIT_TAG}"
+     name: "artefacts_${CI_COMMIT_TAG}_${CI_RUNNER_ID}"
      paths:
        - dependencies.txt
 

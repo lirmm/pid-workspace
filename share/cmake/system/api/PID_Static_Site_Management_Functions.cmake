@@ -164,7 +164,7 @@ endfunction(static_Site_Project_Exists)
 #      :framework: the name of the framework package belongs to, or empty string for a lone static site.
 #
 function (build_Package_Static_Site package framework)
-if(framework AND NOT framework STREQUAL "")
+if(framework)
 	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/frameworks/${framework} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 else()

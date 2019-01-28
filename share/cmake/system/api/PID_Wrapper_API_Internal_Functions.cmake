@@ -620,7 +620,7 @@ endfunction(generate_Wrapper_Build_File)
 #
 function(create_Wrapper_Documentation_Target)
 package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME} TRUE)
-get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+get_Platform_Variables(BASENAME curr_platform_str)
 set(INCLUDING_BINARIES FALSE)
 if(NOT CLOSED)#check if project is closed source or not
 	# management of binaries publication
@@ -637,7 +637,8 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DKNOWN_VERSIONS="${${PROJECT_NAME}_KNOWN_VERSIONS}"
-						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
+						-DTARGET_PLATFORM=${curr_platform_str}
+						-DTARGET_INSTANCE=${CURRENT_PLATFORM_INSTANCE}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
@@ -652,7 +653,8 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DKNOWN_VERSIONS="${${PROJECT_NAME}_KNOWN_VERSIONS}"
-						-DTARGET_PLATFORM=${CURRENT_PLATFORM_NAME}
+						-DTARGET_PLATFORM=${curr_platform_str}
+						-DTARGET_INSTANCE=${CURRENT_PLATFORM_INSTANCE}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}
@@ -1368,6 +1370,7 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\")\n")
   file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file_for_version} "set(${package}_BUILT_OS_VARIANT ${os_variant} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\")\n")
 
   file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_PYTHON_VERSION ${CURRENT_PYTHON} CACHE INTERNAL \"\")\n")
 

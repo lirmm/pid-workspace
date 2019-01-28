@@ -1849,6 +1849,8 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
   #writing info about compiler used to build the binary
   file(APPEND ${file} "set(${package}_BUILT_FOR_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${package}_BUILT_FOR_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${package}_BUILT_FOR_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\")\n")
+
 
   file(APPEND ${file} "set(${package}_BUILT_WITH_PYTHON_VERSION ${CURRENT_PYTHON} CACHE INTERNAL \"\")\n")
 
@@ -1895,11 +1897,11 @@ else()
 	set(MODE_SUFFIX _DEBUG)
 endif()
 
-get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+get_Platform_Variables(BASENAME curr_platform_name)
 #mode dependent info written adequately depending on the mode
 # 0) platforms configuration constraints
 file(APPEND ${file} "#### declaration of platform dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-file(APPEND ${file} "set(${package}_PLATFORM${MODE_SUFFIX} ${CURRENT_PLATFORM_NAME} CACHE INTERNAL \"\")\n") # not really usefull since a use file is bound to a given platform, but may be usefull for debug
+file(APPEND ${file} "set(${package}_PLATFORM${MODE_SUFFIX} ${curr_platform_name} CACHE INTERNAL \"\")\n") # not really usefull since a use file is bound to a given platform, but may be usefull for debug
 file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX})
   if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX})
@@ -2267,14 +2269,14 @@ endfunction(current_External_Dependencies_For_Package)
 #   Create the dependencies description file (Dep<package>.cmake) for the currenlty defined package. This file is used to track modifications of packages used.
 #
 macro(generate_Dependencies_File)
-get_System_Variables(CURRENT_PLATFORM_NAME CURRENT_PACKAGE_STRING)
+get_Platform_Variables(BASENAME curr_platform_name)
 get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
 set(file ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 file(WRITE ${file} "")
 ############# FIRST PART : statically declared dependencies ################
 
 # 1) platforms
-file(APPEND ${file} "set(TARGET_PLATFORM ${CURRENT_PLATFORM_NAME} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(TARGET_PLATFORM ${curr_platform_name} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(TARGET_PLATFORM_TYPE ${CURRENT_PLATFORM_TYPE} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(TARGET_PLATFORM_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(TARGET_PLATFORM_OS ${CURRENT_PLATFORM_OS} CACHE INTERNAL \"\")\n")

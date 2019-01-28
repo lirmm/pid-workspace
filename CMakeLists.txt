@@ -210,7 +210,6 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-
 ## register a package in the workspace
 add_custom_target(register
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
@@ -219,7 +218,6 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Register_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-
 
 ## releasing a package
 add_custom_target(release
@@ -231,7 +229,6 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Release_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-
 
 ## updating a package
 add_custom_target(update
