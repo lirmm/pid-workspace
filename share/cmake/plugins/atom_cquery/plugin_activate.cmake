@@ -16,23 +16,3 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
-include(PID_Utils_Functions NO_POLICY_SCOPE)
-
-## main script
-
-if(CMAKE_BUILD_TYPE MATCHES Release) #only generating in release mode
-
-	if(${PROJECT_NAME}_COMPONENTS) #if no component => nothing to build so no need of compile commands
-
-		set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE CACHE BOOL "" FORCE)
-		if( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json" )
-			EXECUTE_PROCESS( COMMAND ${CMAKE_COMMAND} -E copy_if_different
-				${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json
-				${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json
-				)
-		endif()
-
-	endif()
-
-endif()
