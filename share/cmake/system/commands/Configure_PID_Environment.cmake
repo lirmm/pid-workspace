@@ -93,14 +93,6 @@ else()
 	endif()
 endif()
 
-if(NOT TARGET_GENERATOR AND DEFINED ENV{generator})
-	set(TARGET_GENERATOR $ENV{generator} CACHE INTERNAL "" FORCE)
-endif()
-
-if(NOT TARGET_TOOLSET AND DEFINED ENV{toolset})
-	set(TARGET_TOOLSET $ENV{toolset} CACHE INTERNAL "" FORCE)
-endif()
-
 #second: do the job
 
 if(NOT TARGET_ENVIRONMENT) # checking if the target environment has to change
@@ -126,18 +118,19 @@ else() #we need to change the environment
 	endif()
 	message("[PID] INFO : changing build environment to ${TARGET_ENVIRONMENT}")
 
-	if(NOT TARGET_GENERATOR)
-		include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake)
-		set(TARGET_GENERATOR ${CMAKE_GENERATOR} CACHE INTERNAL "")
-		#by default we will keep the same generator except if user specifies a new one
-		#or if redefined by the environment
-	endif()
+	#by default we will keep the same generator except if environment specifies a new one
+	include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake)
+	set(CURRENT_GENERATOR "${CMAKE_GENERATOR}")
+	set(CURRENT_GENERATOR_EXTRA "${CMAKE_EXTRA_GENERATOR}")
+	set(CURRENT_GENERATOR_TOOLSET "${CMAKE_GENERATOR_TOOLSET}")
+	set(CURRENT_GENERATOR_PLATFORM "${CMAKE_GENERATOR_PLATFORM}")
+	set(CURRENT_GENERATOR_INSTANCE "${CMAKE_GENERATOR_INSTANCE}")
 
 	# 2. evaluate the environment with current call context
 	# Warning: the generator in use may be forced by the environment, this later has priority over user defined one.
 	# Warning: the sysroot in use may be forced by the user, so the sysroot passed by user has always priority over those defined by environments.
 	# Warning: the staging in use may be forced by the user, so the staging passed by user has always priority over those defined by environments.
-	evaluate_Environment_From_Configure(EVAL_OK ${TARGET_ENVIRONMENT} "${TARGET_SYSROOT}" "${TARGET_STAGING}" "${TARGET_GENERATOR}" "${TARGET_TOOLSET}" "${TARGET_PROC_TYPE}" "${TARGET_PROC_ARCH}" "${TARGET_OS}" "${TARGET_ABI}" )
+	evaluate_Environment_From_Configure(EVAL_OK ${TARGET_ENVIRONMENT} "${TARGET_SYSROOT}" "${TARGET_STAGING}" "${TARGET_PROC_TYPE}" "${TARGET_PROC_ARCH}" "${TARGET_OS}" "${TARGET_ABI}")
 	if(NOT EVAL_OK)
 		message(FATAL_ERROR "[PID] ERROR : cannot evaluate environment ${TARGET_ENVIRONMENT} on current host. Aborting workspace configruation.")
 		return()
@@ -149,16 +142,21 @@ else() #we need to change the environment
 	# - preloading cache for all PID specific variables (-C option of cmake)
 	# - using a toolchain file to configure build toolchain (-DCMAKE_TOOLCHAIN_FILE= option).
 	if(EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Toolchain.cmake)
+		#preferable to copy the toolchain file in build tree of the workspace
+		# this way no risk that an environment that is reconfigured generate no more toolchain file (create an error in workspace)
+		file(	COPY ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Toolchain.cmake
+					DESTINATION ${WORKSPACE_DIR}/pid)
+
 		execute_process(COMMAND ${CMAKE_COMMAND}
-										-DCMAKE_TOOLCHAIN_FILE=${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Toolchain.cmake
+										-DCMAKE_TOOLCHAIN_FILE=${WORKSPACE_DIR}/pid/PID_Toolchain.cmake
 										-DCURRENT_ENVIRONMENT=${TARGET_ENVIRONMENT}
-										# -C ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Description.cmake
+										-C ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Description.cmake
 										${WORKSPACE_DIR}
 									WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 	else()
 		execute_process(COMMAND ${CMAKE_COMMAND}
 									-DCURRENT_ENVIRONMENT=${TARGET_ENVIRONMENT}
-									# -C ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Description.cmake
+									-C ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Description.cmake
 									${WORKSPACE_DIR}
 								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 	endif()

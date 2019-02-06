@@ -116,7 +116,10 @@ function(reset_Environment_Description)
 
   # variable to manage generator in use
   set(${PROJECT_NAME}_GENERATOR CACHE INTERNAL "")
+  set(${PROJECT_NAME}_GENERATOR_EXTRA CACHE INTERNAL "")
   set(${PROJECT_NAME}_GENERATOR_TOOLSET CACHE INTERNAL "")
+  set(${PROJECT_NAME}_GENERATOR_PLATFORM CACHE INTERNAL "")
+  set(${PROJECT_NAME}_GENERATOR_INSTANCE CACHE INTERNAL "")
 endfunction(reset_Environment_Description)
 
 
@@ -342,6 +345,7 @@ macro(build_Environment_Project)
 
   detect_Current_Platform()
   evaluate_Environment_Constraints() #get the parameters passed to the environment
+  evaluate_Generator()
   evaluate_Environment_Platform(HOST_MATCHES_TARGET)
   if(NOT HOST_MATCHES_TARGET)#if host does not match all constraints -> we need to configure the toochain using available solutions
     #now evaluate current environment regarding
@@ -352,7 +356,6 @@ macro(build_Environment_Project)
         is_Environment_Solution_Eligible(SOL_POSSIBLE ${index})
         if(SOL_POSSIBLE)
           evaluate_Environment_Solution(EVAL_RESULT ${index})
-          message("solution ${index} EVAL_RESULT=${EVAL_RESULT}")
           if(EVAL_RESULT)# solution check is OK, the solution can be used
             generate_Environment_Toolchain_File(${index})
             set(possible_solution TRUE)
@@ -543,10 +546,6 @@ endfunction(load_Environment)
 #
 #      :staging: the path to staging.
 #
-#      :generator: the name of the generator to use.
-#
-#      :toolset: the name of the generator toolset to use.
-#
 #      :type: the target type of processor (x86, arm, etc.).
 #
 #      :arch: the target processor architecture (16, 32, 64).
@@ -557,8 +556,7 @@ endfunction(load_Environment)
 #
 #      :EVAL_OK: the output variable that is TRUE if the environment has been evaluated and exitted without errors.
 #
-function(evaluate_Environment_From_Configure EVAL_OK environment sysroot staging generator toolset type arch os abi)
-
+function(evaluate_Environment_From_Configure EVAL_OK environment sysroot staging type arch os abi)
 set(${EVAL_OK} FALSE PARENT_SCOPE)
 # 1. Get CMake definition for variables that are managed by the environment and set by user
 set(environment_build_folder ${WORKSPACE_DIR}/environments/${environment}/build)
@@ -578,32 +576,42 @@ foreach(var IN LISTS ${environment}_INPUTS)
 endforeach()
 # 2. reconfigure the environment
 
-# 2.1 add specific variables like for sysroot, staging and generator in the list of definitions
-if(sysroot)
-  list(APPEND list_of_defs -DFORCED_SYSROOT="${sysroot}")
+ #preamble: for generators, forst determine what is the preferred one
+if(CURRENT_GENERATOR)
+  list(APPEND list_of_defs -DPREFERRED_GENERATOR=\"${CURRENT_GENERATOR}\")
 endif()
-if(staging)
-  list(APPEND list_of_defs -DFORCED_STAGING="${staging}")
+if(CURRENT_GENERATOR_EXTRA)
+  list(APPEND list_of_defs -DPREFERRED_GENERATOR_EXTRA=\"${CURRENT_GENERATOR_EXTRA}\")
 endif()
-if(generator)
-  list(APPEND list_of_defs -DPREFERRED_GENERATOR="${generator}")
+if(CURRENT_GENERATOR_TOOLSET)
+  list(APPEND list_of_defs -DPREFERRED_GENERATOR_TOOLSET=\"${CURRENT_GENERATOR_TOOLSET}\")
 endif()
-if(toolset)
-  list(APPEND list_of_defs -DPREFERRED_GENERATOR_TOOLSET="${toolset}")
+if(CURRENT_GENERATOR_PLATFORM)
+  list(APPEND list_of_defs -DPREFERRED_GENERATOR_PLATFORM=\"${CURRENT_GENERATOR_PLATFORM}\")
 endif()
-if(type)
-  list(APPEND list_of_defs -DFORCED_PROC_TYPE="${type}")
-endif()
-if(arch)
-  list(APPEND list_of_defs -DFORCED_PROC_ARCH="${arch}")
-endif()
-if(os)
-  list(APPEND list_of_defs -DFORCED_OS="${os}")
-endif()
-if(abi)
-  list(APPEND list_of_defs -DFORCED_ABI="${abi}")
+if(CURRENT_GENERATOR_INSTANCE)
+  list(APPEND list_of_defs -DPREFERRED_GENERATOR_INSTANCE=\"${CURRENT_GENERATOR_INSTANCE}\")
 endif()
 
+# 2.1 add specific variables like for sysroot, staging and generator in the list of definitions
+if(sysroot)
+  list(APPEND list_of_defs -DFORCED_SYSROOT=${sysroot})
+endif()
+if(staging)
+  list(APPEND list_of_defs -DFORCED_STAGING=${staging})
+endif()
+if(type)
+  list(APPEND list_of_defs -DFORCED_PROC_TYPE=${type})
+endif()
+if(arch)
+  list(APPEND list_of_defs -DFORCED_PROC_ARCH=${arch})
+endif()
+if(os)
+  list(APPEND list_of_defs -DFORCED_OS=${os})
+endif()
+if(abi)
+  list(APPEND list_of_defs -DFORCED_ABI=${abi})
+endif()
 # 2.2 reconfigure the environment with new definitions (user and specific variables) and in normal mode (-DGENERATE_INPUTS_DESCRIPTION=FALSE)
 execute_process(COMMAND ${CMAKE_COMMAND} ${list_of_defs} .. WORKING_DIRECTORY ${environment_build_folder} RESULT_VARIABLE res)
 # 1.2 import variable description file
@@ -670,9 +678,6 @@ function(set_Build_Variables_From_Environment environment)
   if(${environment}_INSTANCE AND NOT ${PROJECT_NAME}_INSTANCE)#if instance name is not already defined then set it
     set(${PROJECT_NAME}_INSTANCE ${${environment}_INSTANCE} CACHE INTERNAL "")#upper level instance name has always priority over internally defined ones
   endif()
-  if(${environment}_CXX_ABI)# import the ABI constraint
-    set(${PROJECT_NAME}_CXX_ABI ${${environment}_CXX_ABI} CACHE INTERNAL "")
-  endif()
   if(${environment}_TARGET_SYSTEM_NAME)
     set(${PROJECT_NAME}_TARGET_SYSTEM_NAME ${${environment}_TARGET_SYSTEM_NAME} CACHE INTERNAL "")
   endif()
@@ -692,7 +697,7 @@ function(set_Build_Variables_From_Environment environment)
         set(${PROJECT_NAME}_${lang}_COMPILER ${${environment}_${lang}_COMPILER} CACHE INTERNAL "")
       endif()
       if(${environment}_${lang}_COMPILER_FLAGS)
-        set(${PROJECT_NAME}_${lang}_COMPILER_FLAGS ${${environment}_${lang}_COMPILER_FLAGS} CACHE INTERNAL "")
+        append_Unique_In_Cache(${PROJECT_NAME}_${lang}_COMPILER_FLAGS "${${environment}_${lang}_COMPILER_FLAGS}" CACHE INTERNAL "")
       endif()
       if(lang STREQUAL CUDA)
         if(${environment}_${lang}_HOST_COMPILER)
@@ -711,7 +716,7 @@ function(set_Build_Variables_From_Environment environment)
         set(${PROJECT_NAME}_${lang}_INTERPRETER ${${environment}_${lang}_INTERPRETER} CACHE INTERNAL "")
       endif()
       if(${environment}_${lang}_INCLUDE_DIRS)
-        set(${PROJECT_NAME}_${lang}_INCLUDE_DIRS ${${environment}_${lang}_INCLUDE_DIRS} CACHE INTERNAL "")
+        append_Unique_In_Cache(${PROJECT_NAME}_${lang}_INCLUDE_DIRS "${${environment}_${lang}_INCLUDE_DIRS}" CACHE INTERNAL "")
       endif()
       if(${environment}_${lang}_LIBRARY)
         set(${PROJECT_NAME}_${lang}_LIBRARY ${${environment}_${lang}_LIBRARY} CACHE INTERNAL "")
@@ -744,7 +749,7 @@ function(set_Build_Variables_From_Environment environment)
     append_Unique_In_Cache(${PROJECT_NAME}_LIBRARY_DIRS "${${environment}_LIBRARY_DIRS}")
   endif()
   if(${environment}_PROGRAM_DIRS)
-    append_Unique_In_Cache(${PROJECT_NAME}_PROGRAM "${${environment}_PROGRAM}")
+    append_Unique_In_Cache(${PROJECT_NAME}_PROGRAM_DIRS "${${environment}_PROGRAM_DIRS}")
   endif()
   if(${environment}_EXE_LINKER_FLAGS)
     append_Unique_In_Cache(${PROJECT_NAME}_EXE_LINKER_FLAGS "${${environment}_EXE_LINKER_FLAGS}")
@@ -758,12 +763,23 @@ function(set_Build_Variables_From_Environment environment)
   if(${environment}_STATIC_LINKER_FLAGS)
     append_Unique_In_Cache(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${${environment}_STATIC_LINKER_FLAGS}")
   endif()
+
   if(${environment}_GENERATOR)#may overwrite user choice
     set(${PROJECT_NAME}_GENERATOR ${${environment}_GENERATOR} CACHE INTERNAL "")
+  endif()
+  if(${environment}_GENERATOR_EXTRA)#may overwrite user choice
+    set(${PROJECT_NAME}_GENERATOR_EXTRA ${${environment}_GENERATOR_EXTRA} CACHE INTERNAL "")
   endif()
   if(${environment}_GENERATOR_TOOLSET)#may overwrite user choice
     set(${PROJECT_NAME}_GENERATOR_TOOLSET ${${environment}_GENERATOR_TOOLSET} CACHE INTERNAL "")
   endif()
+  if(${environment}_GENERATOR_PLATFORM)#may overwrite user choice
+    set(${PROJECT_NAME}_GENERATOR_PLATFORM ${${environment}_GENERATOR_PLATFORM} CACHE INTERNAL "")
+  endif()
+  if(${environment}_GENERATOR_INSTANCE)#may overwrite user choice
+    set(${PROJECT_NAME}_GENERATOR_INSTANCE ${${environment}_GENERATOR_INSTANCE} CACHE INTERNAL "")
+  endif()
+
 endfunction(set_Build_Variables_From_Environment)
 
 #.rst:
@@ -1013,6 +1029,37 @@ function(generate_Environment_License_File)
   endif()
 endfunction(generate_Environment_License_File)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |evaluate_Generator| replace:: ``evaluate_Generator``
+#  .. _evaluate_Generator:
+#
+#  evaluate_Generator
+#  ------------------
+#
+#   .. command:: evaluate_Generator()
+#
+#   Set generator related variables to the default value of the upper level.
+#
+function(evaluate_Generator)
+  if(PREFERRED_GENERATOR)
+    set(${PROJECT_NAME}_GENERATOR ${PREFERRED_GENERATOR} CACHE INTERNAL "")# cannot be overwritten
+  endif()
+  if(PREFERRED_GENERATOR_EXTRA)
+    set(${PROJECT_NAME}_GENERATOR_EXTRA ${PREFERRED_GENERATOR_EXTRA} CACHE INTERNAL "")# cannot be overwritten
+  endif()
+  if(PREFERRED_GENERATOR_TOOLSET)
+    set(${PROJECT_NAME}_GENERATOR_TOOLSET ${PREFERRED_GENERATOR_TOOLSET} CACHE INTERNAL "")# cannot be overwritten
+  endif()
+  if(PREFERRED_GENERATOR_PLATFORM)
+    set(${PROJECT_NAME}_GENERATOR_PLATFORM ${PREFERRED_GENERATOR_PLATFORM} CACHE INTERNAL "")# cannot be overwritten
+  endif()
+  if(PREFERRED_GENERATOR_INSTANCE)
+    set(${PROJECT_NAME}_GENERATOR_INSTANCE ${PREFERRED_GENERATOR_INSTANCE} CACHE INTERNAL "")# cannot be overwritten
+  endif()
+endfunction(evaluate_Generator)
 
 #.rst:
 #
@@ -1052,12 +1099,6 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
   endif()
   if(FORCED_ABI)
     set(${PROJECT_NAME}_ABI_CONSTRAINT ${FORCED_ABI} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-  if(PREFERRED_GENERATOR)
-    set(${PROJECT_NAME}_GENERATOR ${PREFERRED_GENERATOR} CACHE INTERNAL "")# can be overwritten
-  endif()
-  if(PREFERRED_GENERATOR_TOOLSET)
-    set(${PROJECT_NAME}_GENERATOR_TOOLSET ${PREFERRED_GENERATOR_TOOLSET} CACHE INTERNAL "")# can be overwritten
   endif()
 
   if(${PROJECT_NAME}_ARCH_CONSTRAINT AND ${PROJECT_NAME}_TYPE_CONSTRAINT)#processor architecture constraint is fully specified
@@ -1100,7 +1141,6 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
     if(NOT CURRENT_PLATFORM_ABI STREQUAL ${PROJECT_NAME}_ABI_CONSTRAINT)
       #for the ABI it is not necessary to cross compile, juste to have adequate compiler and pass adequate arguments
       set(result FALSE)
-      set(${PROJECT_NAME}_CXX_ABI ${${PROJECT_NAME}_ABI_CONSTRAINT} CACHE INTERNAL "")
     endif()
   endif()
 
@@ -1382,6 +1422,23 @@ function(generate_Environment_Toolchain_File index)
   set(description_file ${CMAKE_BINARY_DIR}/PID_Toolchain.cmake)
   file(WRITE ${description_file} "")
 
+  # setting the generator
+  if(${PROJECT_NAME}_GENERATOR)
+    file(APPEND ${description_file} "set(CMAKE_GENERATOR ${${PROJECT_NAME}_GENERATOR} CACHE INTERNAL \"\" FORCE)\n")
+    if(${PROJECT_NAME}_GENERATOR_EXTRA)
+      file(APPEND ${description_file} "set(CMAKE_EXTRA_GENERATOR ${${PROJECT_NAME}_GENERATOR_EXTRA} CACHE INTERNAL \"\" FORCE)\n")
+    endif()
+    if(${PROJECT_NAME}_GENERATOR_TOOLSET)
+      file(APPEND ${description_file} "set(CMAKE_GENERATOR_TOOLSET ${${PROJECT_NAME}_GENERATOR_TOOLSET} CACHE INTERNAL \"\" FORCE)\n")
+    endif()
+    if(${PROJECT_NAME}_GENERATOR_PLATFORM)
+      file(APPEND ${description_file} "set(CMAKE_GENERATOR_PLATFORM ${${PROJECT_NAME}_GENERATOR_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
+    endif()
+    if(${PROJECT_NAME}_GENERATOR_INSTANCE)
+      file(APPEND ${description_file} "set(CMAKE_GENERATOR_INSTANCE ${${PROJECT_NAME}_GENERATOR_INSTANCE} CACHE INTERNAL \"\" FORCE)\n")
+    endif()
+  endif()
+
   if(${PROJECT_NAME}_CROSSCOMPILATION)
     #when cross compiling need to set target system name and processor
     file(APPEND ${description_file} "set(CMAKE_SYSTEM_NAME ${${PROJECT_NAME}_TARGET_SYSTEM_NAME} CACHE INTERNAL \"\" FORCE)\n")
@@ -1491,6 +1548,8 @@ function(generate_Environment_Toolchain_File index)
     # avoid problem with try_compile when cross compiling
     file(APPEND ${description_file} "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE INTERNAL \"\" FORCE)\n")
   endif()
+
+
 endfunction(generate_Environment_Toolchain_File)
 
 #.rst:
@@ -1514,15 +1573,9 @@ set(input_file ${WORKSPACE_DIR}/share/patterns/environments/PID_Environment_Desc
 set(ENVIRONMENT_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION})
 set(ENVIRONMENT_CROSSCOMPILATION ${${PROJECT_NAME}_CROSSCOMPILATION})
 set(ENVIRONMENT_INSTANCE ${${PROJECT_NAME}_INSTANCE})
+set(ENVIRONMENT_CI ${IN_CI_PROCESS})
 
-if(${PROJECT_NAME}_GENERATOR)
-  set(ENVIRONMENT_GENERATOR "set(CMAKE_GENERATOR ${${PROJECT_NAME}_GENERATOR} CACHE INTERNAL \"\")")
-  if(${PROJECT_NAME}_GENERATOR_TOOLSET)
-    set(ENVIRONMENT_TOOLSET "set(CMAKE_GENERATOR_TOOLSET ${${PROJECT_NAME}_GENERATOR_TOOLSET} CACHE INTERNAL \"\")")
-  endif()
-endif()
 configure_file(${input_file} ${description_file} @ONLY)
-
 endfunction(generate_Environment_Description_File)
 
 #.rst:
@@ -1580,6 +1633,10 @@ file(APPEND ${file} "set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_
 file(APPEND ${file} "set(${PROJECT_NAME}_MODULE_LINKER_FLAGS ${${PROJECT_NAME}_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+
 file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR ${${PROJECT_NAME}_GENERATOR} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_EXTRA ${${PROJECT_NAME}_GENERATOR_EXTRA} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_TOOLSET ${${PROJECT_NAME}_GENERATOR_TOOLSET} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_PLATFORM ${${PROJECT_NAME}_GENERATOR_PLATFORM} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_INSTANCE ${${PROJECT_NAME}_GENERATOR_INSTANCE} CACHE INTERNAL \"\")\n")
 endfunction(generate_Environment_Solution_File)
