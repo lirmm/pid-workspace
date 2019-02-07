@@ -180,8 +180,8 @@ function(extract_Info_From_Platform RES_TYPE RES_ARCH RES_OS RES_ABI RES_INSTANC
   if(list_of_properties STREQUAL platform_name)#if no replacement, try without kernel name
     string(REGEX REPLACE "^([^_]+)_([^_]+)_([^_]+)$" "\\1;\\2;\\3" list_of_properties ${platform_name})
     if(list_of_properties STREQUAL platform_name)#bad name => not allowed
+    	set(${RES_TYPE} PARENT_SCOPE)
     	set(${RES_ARCH} PARENT_SCOPE)
-    	set(${RES_BITS} PARENT_SCOPE)
     	set(${RES_OS} PARENT_SCOPE)
     	set(${RES_ABI} PARENT_SCOPE)
     	set(${RES_INSTANCE} PARENT_SCOPE)
@@ -194,10 +194,10 @@ function(extract_Info_From_Platform RES_TYPE RES_ARCH RES_OS RES_ABI RES_INSTANC
   	list(GET list_of_properties 3 abi)
   endif()
 
-	list(GET list_of_properties 0 arch)
-	list(GET list_of_properties 1 bits)
+	list(GET list_of_properties 0 type)
+	list(GET list_of_properties 1 arch)
+	set(${RES_TYPE} ${type} PARENT_SCOPE)
 	set(${RES_ARCH} ${arch} PARENT_SCOPE)
-	set(${RES_BITS} ${bits} PARENT_SCOPE)
 	set(${RES_OS} ${os} PARENT_SCOPE)
   if(abi STREQUAL "abi98")
 	   set(${RES_ABI} CXX PARENT_SCOPE)

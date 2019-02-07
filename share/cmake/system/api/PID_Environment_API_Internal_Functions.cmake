@@ -95,6 +95,7 @@ function(reset_Environment_Description)
   #reset compiler settings issue from finding procedure
   foreach(lang IN ITEMS C CXX ASM Fortran CUDA)
     set(${PROJECT_NAME}_${lang}_COMPILER CACHE INTERNAL "")#full path to compiler in use
+    set(${PROJECT_NAME}_${lang}_COMPILER_ID CACHE INTERNAL "")#full path to compiler in use
     set(${PROJECT_NAME}_${lang}_COMPILER_FLAGS CACHE INTERNAL "")#compiler flags
     if(lang STREQUAL "CUDA")
       set(${PROJECT_NAME}_${lang}_HOST_COMPILER CACHE INTERNAL "")
@@ -104,6 +105,11 @@ function(reset_Environment_Description)
     endif()
   endforeach()
   set(${PROJECT_NAME}_LINKER CACHE INTERNAL "")#full path to linker tool
+  set(${PROJECT_NAME}_AR CACHE INTERNAL "")
+  set(${PROJECT_NAME}_RANLIB CACHE INTERNAL "")
+  set(${PROJECT_NAME}_NM CACHE INTERNAL "")
+  set(${PROJECT_NAME}_OBJDUMP CACHE INTERNAL "")
+  set(${PROJECT_NAME}_OBJCOPY CACHE INTERNAL "")
   set(${PROJECT_NAME}_EXE_LINKER_FLAGS CACHE INTERNAL "")
   set(${PROJECT_NAME}_MODULE_LINKER_FLAGS CACHE INTERNAL "")
   set(${PROJECT_NAME}_SHARED_LINKER_FLAGS CACHE INTERNAL "")
@@ -116,6 +122,7 @@ function(reset_Environment_Description)
 
   # variable to manage generator in use
   set(${PROJECT_NAME}_GENERATOR CACHE INTERNAL "")
+  set(${PROJECT_NAME}_MAKE_PROGRAM CACHE INTERNAL "")
   set(${PROJECT_NAME}_GENERATOR_EXTRA CACHE INTERNAL "")
   set(${PROJECT_NAME}_GENERATOR_TOOLSET CACHE INTERNAL "")
   set(${PROJECT_NAME}_GENERATOR_PLATFORM CACHE INTERNAL "")
@@ -580,6 +587,9 @@ endforeach()
 if(CURRENT_GENERATOR)
   list(APPEND list_of_defs -DPREFERRED_GENERATOR=\"${CURRENT_GENERATOR}\")
 endif()
+if(CURRENT_MAKE_PROGRAM)
+  list(APPEND list_of_defs -DPREFERRED_MAKE_PROGRAM=\"${CURRENT_MAKE_PROGRAM}\")
+endif()
 if(CURRENT_GENERATOR_EXTRA)
   list(APPEND list_of_defs -DPREFERRED_GENERATOR_EXTRA=\"${CURRENT_GENERATOR_EXTRA}\")
 endif()
@@ -695,6 +705,7 @@ function(set_Build_Variables_From_Environment environment)
     if(NOT lang STREQUAL Python)
       if(${environment}_${lang}_COMPILER)
         set(${PROJECT_NAME}_${lang}_COMPILER ${${environment}_${lang}_COMPILER} CACHE INTERNAL "")
+        set(${PROJECT_NAME}_${lang}_COMPILER_ID ${${environment}_${lang}_COMPILER_ID} CACHE INTERNAL "")
       endif()
       if(${environment}_${lang}_COMPILER_FLAGS)
         append_Unique_In_Cache(${PROJECT_NAME}_${lang}_COMPILER_FLAGS "${${environment}_${lang}_COMPILER_FLAGS}" CACHE INTERNAL "")
@@ -766,6 +777,9 @@ function(set_Build_Variables_From_Environment environment)
 
   if(${environment}_GENERATOR)#may overwrite user choice
     set(${PROJECT_NAME}_GENERATOR ${${environment}_GENERATOR} CACHE INTERNAL "")
+  endif()
+  if(${environment}_MAKE_PROGRAM)#may overwrite user choice
+    set(${PROJECT_NAME}_MAKE_PROGRAM ${${environment}_MAKE_PROGRAM} CACHE INTERNAL "")
   endif()
   if(${environment}_GENERATOR_EXTRA)#may overwrite user choice
     set(${PROJECT_NAME}_GENERATOR_EXTRA ${${environment}_GENERATOR_EXTRA} CACHE INTERNAL "")
@@ -1047,6 +1061,10 @@ function(evaluate_Generator)
   if(PREFERRED_GENERATOR)
     set(${PROJECT_NAME}_GENERATOR ${PREFERRED_GENERATOR} CACHE INTERNAL "")# cannot be overwritten
   endif()
+  if(PREFERRED_MAKE_PROGRAM)
+    set(${PROJECT_NAME}_MAKE_PROGRAM ${PREFERRED_MAKE_PROGRAM} CACHE INTERNAL "")# cannot be overwritten
+  endif()
+
   if(PREFERRED_GENERATOR_EXTRA)
     set(${PROJECT_NAME}_GENERATOR_EXTRA ${PREFERRED_GENERATOR_EXTRA} CACHE INTERNAL "")# cannot be overwritten
   endif()
@@ -1102,28 +1120,28 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
   endif()
 
   if(${PROJECT_NAME}_ARCH_CONSTRAINT AND ${PROJECT_NAME}_TYPE_CONSTRAINT)#processor architecture constraint is fully specified
-    if(NOT CURRENT_PLATFORM_TYPE STREQUAL ${PROJECT_NAME}_ARCH_CONSTRAINT
-    OR NOT CURRENT_PLATFORM_ARCH STREQUAL ${PROJECT_NAME}_TYPE_CONSTRAINT)
-      set(${PROJECT_NAME}_CROSSCOMPILATION TRUE CACHE INTERNAL "")#if processor differs then this is corsscompilation
+    if(NOT CURRENT_PLATFORM_ARCH STREQUAL ${PROJECT_NAME}_ARCH_CONSTRAINT
+    OR NOT CURRENT_PLATFORM_TYPE STREQUAL ${PROJECT_NAME}_TYPE_CONSTRAINT)
+      set(${PROJECT_NAME}_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)#if processor differs then this is corsscompilation
       set(result FALSE)
 
-      if(${PROJECT_NAME}_ARCH_CONSTRAINT STREQUAL "x86")
-        if(${PROJECT_NAME}_TYPE_CONSTRAINT EQUAL 32)
+      if(${PROJECT_NAME}_TYPE_CONSTRAINT STREQUAL "x86")
+        if(${PROJECT_NAME}_ARCH_CONSTRAINT EQUAL 32)
           set(proc_name x86)
-        elseif(${PROJECT_NAME}_TYPE_CONSTRAINT EQUAL 64)
+        elseif(${PROJECT_NAME}_ARCH_CONSTRAINT EQUAL 64)
           set(proc_name x86_64)
         endif()
-      elseif(${PROJECT_NAME}_ARCH_CONSTRAINT STREQUAL "arm")
+      elseif(${PROJECT_NAME}_TYPE_CONSTRAINT STREQUAL "arm")
         set(proc_name arm)
       endif()
-      set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR ${proc_name})
+      set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR ${proc_name} CACHE INTERNAL "")
     endif()
   endif()
 
   if(${PROJECT_NAME}_OS_CONSTRAINT)#operating system type constraint is specified
     if(NOT CURRENT_PLATFORM_OS STREQUAL ${PROJECT_NAME}_OS_CONSTRAINT)
       set(result FALSE)
-      set(${PROJECT_NAME}_CROSSCOMPILATION TRUE CACHE INTERNAL "")
+      set(${PROJECT_NAME}_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)
       if(${PROJECT_NAME}_OS_CONSTRAINT STREQUAL "linux")
         set(os_name Linux)
       elseif(${PROJECT_NAME}_OS_CONSTRAINT STREQUAL "macosx")
@@ -1425,6 +1443,7 @@ function(generate_Environment_Toolchain_File index)
   # setting the generator
   if(${PROJECT_NAME}_GENERATOR)
     file(APPEND ${description_file} "set(CMAKE_GENERATOR ${${PROJECT_NAME}_GENERATOR} CACHE INTERNAL \"\" FORCE)\n")
+    file(APPEND ${description_file} "set(CMAKE_MAKE_PROGRAM ${${PROJECT_NAME}_MAKE_PROGRAM} CACHE INTERNAL \"\" FORCE)\n")
     if(${PROJECT_NAME}_GENERATOR_EXTRA)
       file(APPEND ${description_file} "set(CMAKE_EXTRA_GENERATOR ${${PROJECT_NAME}_GENERATOR_EXTRA} CACHE INTERNAL \"\" FORCE)\n")
     endif()
@@ -1457,12 +1476,32 @@ function(generate_Environment_Toolchain_File index)
   endif()
 
   # add build tools variables  to the toolset
+  if(${PROJECT_NAME}_CROSSCOMPILATION AND CMAKE_VERSION VERSION_LESS 3.6)#when crosscompiling I need to force the C/C++ compilers if CMake < 3.6
+    file(APPEND ${description_file} "include(CMakeForceCompiler)\n")
+  endif()
   foreach(lang IN ITEMS C CXX ASM Fortran Python CUDA)
     #simply registering the compiler, id, version and flags
     if(NOT lang STREQUAL "Python")
-      if(${PROJECT_NAME}_${lang}_COMPILER)
+      if(${PROJECT_NAME}_${lang}_COMPILER)#compiler has been set
+        if(${PROJECT_NAME}_CROSSCOMPILATION  #during crosscomppilation
+          AND lang MATCHES "C|CXX|Fortran"   #force commands are only available for those languages
+          AND CMAKE_VERSION VERSION_LESS 3.6)#in CMake < 3.6
+          #when crosscompiling force no check of compilers
+          file(APPEND ${description_file} "CMAKE_FORCE_${lang}_COMPILER(${${PROJECT_NAME}_${lang}_COMPILER} \"${${PROJECT_NAME}_${lang}_COMPILER_ID}\")\n")
+          if(lang STREQUAL C)#if no check then the CMAKE_SIZE_OF_VOID_P must be set !!
+            if(${PROJECT_NAME}_ARCH_CONSTRAINT)#if any constraint has been defined
+              math(EXPR register_size "${${PROJECT_NAME}_ARCH_CONSTRAINT}/8")
+            else()
+              math(EXPR register_size "${CURRENT_PLATFORM_ARCH}/8")
+            endif()
+            #need to add this variable if I force the compiler => allow PID to finnaly deduce architecture from build configuration
+            file(APPEND ${description_file} "set(CMAKE_SIZEOF_VOID_P ${register_size} CACHE INETRNAL \"\" FORCE)\n")
+          endif()
+        endif()
+        #add the default command for setting compiler anytime
         file(APPEND ${description_file} "set(CMAKE_${lang}_COMPILER ${${PROJECT_NAME}_${lang}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
       endif()
+
       if(${PROJECT_NAME}_${lang}_COMPILER_FLAGS)
         file(APPEND ${description_file} "set(CMAKE_${lang}_FLAGS ${${PROJECT_NAME}_${lang}_COMPILER_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
       endif()
@@ -1545,8 +1584,11 @@ function(generate_Environment_Toolchain_File index)
     file(APPEND ${description_file} "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY CACHE INTERNAL \"\" FORCE)\n")
     file(APPEND ${description_file} "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY CACHE INTERNAL \"\" FORCE)\n")
 
-    # avoid problem with try_compile when cross compiling
-    file(APPEND ${description_file} "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE INTERNAL \"\" FORCE)\n")
+
+    if(NOT CMAKE_VERSION VERSION_LESS 3.6)#CMAKE_TRY_COMPILE_TARGET_TYPE availane since version 3.6 of CMake
+      # avoid problem with try_compile when cross compiling
+      file(APPEND ${description_file} "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE INTERNAL \"\" FORCE)\n")
+    endif()
   endif()
 
 
@@ -1609,6 +1651,8 @@ file(APPEND ${file} "set(${PROJECT_NAME}_PROGRAM_DIRS ${${PROJECT_NAME}_PROGRAM_
 foreach(lang IN ITEMS C CXX ASM Python CUDA)
   if(NOT lang STREQUAL Python)
     file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_COMPILER ${${PROJECT_NAME}_${lang}_COMPILER} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_COMPILER_ID ${${PROJECT_NAME}_${lang}_COMPILER_ID} CACHE INTERNAL \"\")\n")
+
     file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_COMPILER_FLAGS ${${PROJECT_NAME}_${lang}_COMPILER_FLAGS} CACHE INTERNAL \"\")\n")
     if(lang STREQUAL CUDA)
       file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_HOST_COMPILER ${${PROJECT_NAME}_${lang}_HOST_COMPILER} CACHE INTERNAL \"\")\n")
