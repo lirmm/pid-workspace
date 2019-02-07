@@ -728,7 +728,7 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX
 			return()
 		endif()
 		resolve_External_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
-		if(NOT ${dep_pack}_FOUND)#this time the package must be found since installed => internak BUG in PID
+		if(NOT ${dep_pack}_FOUND)#this time the package must be found since installed => internal BUG in PID
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
 			return()
@@ -754,7 +754,7 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX
 				resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)#recursion : resolving dependencies for each external package dependency
 			endif()
 		endif()
-	else()
+	else()#no need to install => simply resolve its dependencies
 		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)
 	endif()
 endforeach()

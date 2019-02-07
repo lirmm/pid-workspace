@@ -20,7 +20,6 @@
 include(Configuration_Definition NO_POLICY_SCOPE)
 
 found_PID_Configuration(cuda FALSE)
-
 if(CUDA_VERSION)#if the CUDA version is known (means that a nvcc compiler has been defined)
 	if(	NOT cuda_version														#no contraint on version
 			OR cuda_version VERSION_EQUAL CUDA_VERSION) #required VS provided CUDA version match !

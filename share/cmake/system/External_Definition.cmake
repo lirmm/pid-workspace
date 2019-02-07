@@ -171,15 +171,26 @@ cmake_parse_arguments(CHECK_EXTERNAL_PID_PLATFORM "${options}" "${oneValueArgs}"
 if(CHECK_EXTERNAL_PID_PLATFORM_PACKAGE
 	AND CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION
 	AND CHECK_EXTERNAL_PID_PLATFORM_PLATFORM)
-	if(NOT ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_DECLARED)
-		message("[PID] WARNING: Bad usage of function check_PID_External_Package_Platform: package ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE} is unknown. Use macro declare_PID_External_Package to declare it")
+  set(package ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE})
+	if(NOT ${package}_DECLARED)
+		message("[PID] WARNING: Bad usage of function check_PID_External_Package_Platform: package ${package} is unknown. Use macro declare_PID_External_Package to declare it")
 		return() #return will exit from current Use file included (because we are in a macro)
 	endif()
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-	set(${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_PLATFORM${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM} CACHE INTERNAL "")
-	set(${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION} CACHE INTERNAL "")
+	set(${package}_PLATFORM${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM} CACHE INTERNAL "")
+
+  foreach(config IN LISTS CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION)
+    parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+    if(CONFIG_NAME)
+      append_Unique_In_Cache(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} ${CONFIG_NAME})
+      append_Unique_In_Cache(${package}_PLATFORM_CONFIGURATION_${CONFIG_NAME}_ARGS${VAR_SUFFIX} "${CONFIG_ARGS}")
+    else()
+      message("[PID] WARNING: when calling check_PID_External_Package_Platform configuration ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION} cannot be evaluated since unknown!")
+      return() #return will exit from current Use file included (because we are in a macro)
+    endif()
+  endforeach()
 else()
-	message("[PID] WARNING: Bad usage of function check_PID_External_Package_Platform: PACKAGE (value: ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}), PLATFORM (value: ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM}) and CONFIGURATION (value: ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION}) keywords must be used !")
+	message("[PID] WARNING: Bad usage of function check_PID_External_Package_Platform: PACKAGE (value: ${package}), PLATFORM (value: ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM}) and CONFIGURATION (value: ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION}) keywords must be used !")
 	return() #return will exit from current Use file included (because we are in a macro)
 endif()
 endmacro(check_PID_External_Package_Platform)
@@ -576,7 +587,6 @@ if(TARGET_PACKAGE AND NOT TARGET_COMPONENT) #if a target package is specified bu
     endif()
   endforeach()
   append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_LIB_DIRS${VAR_SUFFIX} "${lib_dirs}")
-
 	#manage compile options
 	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPILER_OPTIONS}")
 	#manage definitions

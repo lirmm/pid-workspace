@@ -19,7 +19,6 @@
 
 include(Configuration_Definition NO_POLICY_SCOPE)
 
-
 # returned variables
 PID_Configuration_Variables(cuda
 				VARIABLES VERSION				LINK_OPTIONS 	INCLUDE_DIRS 			LIBRARY_DIRS  		COMPILER_OPTIONS	RPATH 					REAL_ARCHITECTURE 	VIRTUAL_ARCHITECTURE	TOOLKIT_PATH
