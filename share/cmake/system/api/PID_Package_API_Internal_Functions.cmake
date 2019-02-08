@@ -67,12 +67,12 @@ include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 #     :readme_file: the path to a user-defined content of the readme file of the package.
 #
 macro(declare_Package author institution mail year license address public_address description readme_file)
-activate_Adequate_Languages()
-file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
 
+file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 manage_Current_Platform(${DIR_NAME}) #loading the current platform configuration and perform adequate actions if any changes
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
+activate_Adequate_Languages()
 #################################################
 ############ Managing options ###################
 #################################################

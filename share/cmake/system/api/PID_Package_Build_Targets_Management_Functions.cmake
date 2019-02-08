@@ -985,13 +985,14 @@ foreach(opt IN LISTS options)
 endforeach()
 
 # managing link time flags
+foreach(dir IN LISTS lib_dirs)#always putting library dirs flags before other links  (enfore resolution of library path before resolving library links)
+  target_link_libraries(${component_name}${mode_suffix} INTERFACE "-L${dir}")#generate -L linker flags for library dirs
+endforeach()
+
 foreach(link IN LISTS links)
 	target_link_libraries(${component_name}${mode_suffix} INTERFACE ${link})
 endforeach()
 
-foreach(dir IN LISTS lib_dirs)
-  target_link_libraries(${component_name}${mode_suffix} INTERFACE "-L${dir}")#generate -L linker flags for library dirs
-endforeach()
 endfunction(manage_Additional_Component_Exported_Flags)
 
 #.rst:
@@ -1042,12 +1043,12 @@ foreach(opt IN LISTS options)
 endforeach()
 
 # managing link time flags
-foreach(link IN LISTS links)
-	target_link_libraries(${component_name}${mode_suffix} PRIVATE ${link})
+foreach(dir IN LISTS lib_dirs) #put library dirs flags BEFORE library flags in link libraries !!
+  target_link_libraries(${component_name}${mode_suffix} PRIVATE "-L${dir}")#generate -L linker flags for library dirs
 endforeach()
 
-foreach(dir IN LISTS lib_dirs)
-  target_link_libraries(${component_name}${mode_suffix} PRIVATE "-L${dir}")#generate -L linker flags for library dirs
+foreach(link IN LISTS links)
+	target_link_libraries(${component_name}${mode_suffix} PRIVATE ${link})
 endforeach()
 
 #management of standards (setting minimum standard at beginning)

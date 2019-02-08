@@ -1605,7 +1605,6 @@ endfunction(generate_Description_For_External_Component_Dependency)
 #      :component: the name of the component that declares the dependency.
 #
 function(generate_Description_For_External_Component_System_Dependency file_for_version package version component)
-message("generate_Description_For_External_Component_System_Dependency ${package}")
 #direct system dependencies
 set(package_rel_to_write FALSE)
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_INCLUDES)

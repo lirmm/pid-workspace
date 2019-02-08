@@ -242,7 +242,10 @@ function(convert_PID_Libraries_Into_Library_Directories list_of_libraries_var OU
   if(${list_of_libraries_var})#the variable containing the list trully contains a list
   	foreach(lib IN LISTS ${list_of_libraries_var})
   		get_filename_component(FOLDER ${lib} DIRECTORY)
-  		list(APPEND all_links ${FOLDER})
+      is_A_System_Reference_Path(${FOLDER} IS_SYSTEM)#do not add it if folder is a  default libraries folder
+      if(NOT IS_SYSTEM)
+        list(APPEND all_links ${FOLDER})
+      endif()
   	endforeach()
     if(all_links)
       list(REMOVE_DUPLICATES all_links)

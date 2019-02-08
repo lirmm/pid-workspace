@@ -20,48 +20,46 @@
 include(Configuration_Definition NO_POLICY_SCOPE)
 
 found_PID_Configuration(cuda FALSE)
-if(CUDA_VERSION)#if the CUDA version is known (means that a nvcc compiler has been defined)
-	if(	NOT cuda_version														#no contraint on version
-			OR cuda_version VERSION_EQUAL CUDA_VERSION) #required VS provided CUDA version match !
-		set(adequate_version_found TRUE)
-	else()
-		set(adequate_version_found FALSE)
+if(NOT CUDA_VERSION OR NOT CMAKE_CUDA_COMPILER)#if the CUDA version is known and a nvcc compiler has been defined
+	return()#if NVCC not found no need to continue
+endif()
+
+if(cuda_version)# a version constraint is defined (if code works only with a given version)
+	if(NOT cuda_version VERSION_EQUAL CUDA_VERSION) #required VS provided CUDA versions DO NOT match !
+		return()
 	endif()
+endif()
 
-	if(NOT cuda_architecture)                            #no contraint on architecture
-		set(arch_to_use ${DEFAULT_CUDA_ARCH})
-	else()#there is one or more target architecture(s) defined
-		foreach(arch IN LISTS cuda_architecture)
-			list(FIND AVAILABLE_CUDA_ARCHS ${cuda_architecture} INDEX)
-			if(NOT INDEX EQUAL -1)#check if the target arch is a possible arch for NVCC compiler
-				list(GET AVAILABLE_CUDA_ARCHS ${INDEX} RES_ARCH)
-				list(APPEND arch_to_use ${RES_ARCH})
-			else()#problem => cannot build for all architectures so exit
-				set(arch_to_use)
-				break()
-			endif()
-		endforeach()
+#there is one or more target architecture(s) defined
+set(list_of_arch)# we put all those architectures inside this variable
+string(REPLACE " " ";" all_flags "${CMAKE_CUDA_FLAGS}")
+foreach(flag IN LISTS all_flags)#checking that architecture is supported
+	if(flag MATCHES "arch=compute_([^,]+),code=sm_(.+)"
+		AND ("${CMAKE_MATCH_1}" STREQUAL "${CMAKE_MATCH_2}"))
+		list(APPEND list_of_arch ${CMAKE_MATCH_1})
 	endif()
+endforeach()
 
-	if(arch_to_use AND adequate_version_found)
-		found_PID_Configuration(cuda TRUE)
-		set(CUDA_ARCH ${arch_to_use})
+if(cuda_architecture) # a constraint on architecture version is defined (if some deatures work for only a restricted set of architectures)
+	string(REPLACE "." "" ARCH_LIST "${cuda_architecture}")
+	foreach(arch IN LISTS ARCH_LIST)#for each arch that is checked
+		list(FIND list_of_arch ${arch} INDEX)
+		if(NOT INDEX EQUAL -1)#check if the target arch is a used arch for NVCC compiler
+			return()
+		endif()
+	endforeach()
+endif()
 
+found_PID_Configuration(cuda TRUE)
+set(CUDA_ARCH_REAL)# CUDA sm architecture
+set(CUDA_ARCH_FEATURES)# CUDA compute architecture
 
-		set(NVCC_FLAGS_EXTRA "")# NVCC flags to be set
-		set(CUDA_ARCH_REAL "")# CUDA sm architecture
-		set(CUDA_ARCH_FEATURES "")# CUDA compute architecture
+# Tell NVCC to add binaries for the specified GPUs
+foreach(arch IN LISTS list_of_arch)
+	list(APPEND CUDA_ARCH_REAL "${arch}")
+	list(APPEND CUDA_ARCH_FEATURES "${arch}")
+endforeach()
 
-		string(REGEX REPLACE "\\." "" ARCH_LIST "${CUDA_ARCH}")
-		# Tell NVCC to add binaries for the specified GPUs
-		foreach(arch IN LISTS ARCH_LIST)
-		  set(NVCC_FLAGS_EXTRA ${NVCC_FLAGS_EXTRA} -gencode arch=compute_${arch},code=sm_${arch})
-	    set(CUDA_ARCH_REAL "${CUDA_ARCH_REAL} ${arch}"  CACHE INTERNAL "")
-	    set(CUDA_ARCH_FEATURES "${CUDA_ARCH_FEATURES} ${arch}"  CACHE INTERNAL "")
-		endforeach()
-		set(NVCC_FLAGS_EXTRA ${NVCC_FLAGS_EXTRA} -D_FORCE_INLINES)
-		convert_PID_Libraries_Into_System_Links(CUDA_LIBRARIES CUDA_LINKS)#getting good system links (with -l)
-		convert_PID_Libraries_Into_Library_Directories(CUDA_CUDART_LIBRARY CUDA_LIBRARY_DIR)
-	endif()
-
-endif()#if NVCC not found no need to continue
+convert_PID_Libraries_Into_System_Links(CUDA_LIBRARIES CUDA_LINKS)#getting good system links (with -l)
+convert_PID_Libraries_Into_Library_Directories(CUDA_CUDART_LIBRARY CUDA_LIBRARY_DIR)
+set(NVCC_FLAGS_EXTRA ${CMAKE_CUDA_FLAGS})

@@ -568,7 +568,9 @@ set(${EVAL_OK} FALSE PARENT_SCOPE)
 # 1. Get CMake definition for variables that are managed by the environment and set by user
 set(environment_build_folder ${WORKSPACE_DIR}/environments/${environment}/build)
 # 1.1 configure environment to generate variable description file (-DGENERATE_INPUTS_DESCRIPTION=TRUE)
-execute_process(COMMAND ${CMAKE_COMMAND} -DGENERATE_INPUTS_DESCRIPTION=TRUE .. WORKING_DIRECTORY ${environment_build_folder})
+hard_Clean_Build_Folder(${environment_build_folder})
+execute_process(COMMAND ${CMAKE_COMMAND} -DGENERATE_INPUTS_DESCRIPTION=TRUE ..
+                WORKING_DIRECTORY ${environment_build_folder})
 # 1.2 import variable description file
 if(NOT EXISTS ${environment_build_folder}/PID_Inputs.cmake)
   return()
@@ -578,7 +580,11 @@ include(${environment_build_folder}/PID_Inputs.cmake)
 set(list_of_defs)
 foreach(var IN LISTS ${environment}_INPUTS)
   if(DEFINED ENV{${var}})# an environment variable is defined for that constraint
-    list(APPEND list_of_defs -DVAR_${var}="$ENV{${var}}")
+    string(REPLACE " " "" VAL_LIST "$ENV{${var}}")#remove the spaces in the string if any
+    string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
+    list(APPEND list_of_defs -DVAR_${var}=${VAL_LIST})
+  else()
+    list(APPEND list_of_defs -DVAR_${var}=)
   endif()
 endforeach()
 # 2. reconfigure the environment
@@ -622,6 +628,7 @@ endif()
 if(abi)
   list(APPEND list_of_defs -DFORCED_ABI=${abi})
 endif()
+
 # 2.2 reconfigure the environment with new definitions (user and specific variables) and in normal mode (-DGENERATE_INPUTS_DESCRIPTION=FALSE)
 execute_process(COMMAND ${CMAKE_COMMAND} ${list_of_defs} .. WORKING_DIRECTORY ${environment_build_folder} RESULT_VARIABLE res)
 # 1.2 import variable description file
@@ -827,9 +834,9 @@ function(prepare_Environment_Arguments LIST_OF_DEFS environment arguments)
     list(GET argument_couples 1 value)
     list(REMOVE_AT argument_couples 0 1)#update the list of arguments in parent scope
     string(REPLACE " " "" VAL_LIST "${value}")#remove the spaces in the string if any
-    string(REPLACE "," ";" VAL_LIST "${VAL_LIST}")#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
+    string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
     #generate the variable
-    list(APPEND result_list "-DVAR_${name}=\"${VAL_LIST}\"")
+    list(APPEND result_list -DVAR_${name}=${VAL_LIST})
   endwhile()
   set(${LIST_OF_DEFS} ${result_list} PARENT_SCOPE)
 endfunction(prepare_Environment_Arguments)
@@ -1353,7 +1360,9 @@ endfunction(check_Environment_Configuration_Constraint)
 function(evaluate_Environment_Constraints)
 foreach(opt IN LISTS ${PROJECT_NAME}_OPTIONAL_CONSTRAINTS)
   if(opt AND DEFINED VAR_${opt}) #cmake variable containing the input variable exist => input variable passed by the user
-    set(${PROJECT_NAME}_${opt} ${VAR_${opt}} PARENT_SCOPE)#create the local variable used in scripts
+    string(REPLACE " " "" VAL_LIST "${VAR_${opt}}")#remove the spaces in the string if any
+    string(REPLACE "," ";" VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
+    set(${PROJECT_NAME}_${opt} ${VAL_LIST} PARENT_SCOPE)#create the local variable used in scripts
   endif()
 endforeach()
 
@@ -1362,7 +1371,9 @@ foreach(req IN LISTS ${PROJECT_NAME}_REQUIRED_CONSTRAINTS)
     message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} requires ${req} to be defined.")
     return()
   endif()
-  set(${PROJECT_NAME}_${req} ${VAR_${req}} PARENT_SCOPE)#create the local variable used in scripts
+  string(REPLACE " " "" VAL_LIST "${VAR_${req}}")#remove the spaces in the string if any
+  string(REPLACE "," ";" VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
+  set(${PROJECT_NAME}_${req} ${VAL_LIST} PARENT_SCOPE)#create the local variable used in scripts
 endforeach()
 #also evaluate constraints coming from dependent environment
 if(FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT) #arch constraint has been forced
@@ -1503,17 +1514,18 @@ function(generate_Environment_Toolchain_File index)
       endif()
 
       if(${PROJECT_NAME}_${lang}_COMPILER_FLAGS)
-        file(APPEND ${description_file} "set(CMAKE_${lang}_FLAGS ${${PROJECT_NAME}_${lang}_COMPILER_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+        file(APPEND ${description_file} "set(CMAKE_${lang}_FLAGS  \"${${PROJECT_NAME}_${lang}_COMPILER_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
       endif()
       if(lang STREQUAL CUDA)
         if(${PROJECT_NAME}_${lang}_COMPILER)
           file(APPEND ${description_file} "set(CUDA_NVCC_EXECUTABLE ${${PROJECT_NAME}_${lang}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
         endif()
         if(${PROJECT_NAME}_${lang}_COMPILER_FLAGS)
-          file(APPEND ${description_file} "set(CUDA_NVCC_FLAGS ${${PROJECT_NAME}_${lang}_COMPILER_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+          file(APPEND ${description_file} "set(CUDA_NVCC_FLAGS \"${${PROJECT_NAME}_${lang}_COMPILER_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
         endif()
         if(${PROJECT_NAME}_${lang}_HOST_COMPILER)
           file(APPEND ${description_file} "set(CUDA_HOST_COMPILER ${${PROJECT_NAME}_${lang}_HOST_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+          file(APPEND ${description_file} "set(CMAKE_CUDA_HOST_COMPILER ${${PROJECT_NAME}_${lang}_HOST_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
         endif()
       else()
         if(${PROJECT_NAME}_${lang}_AR)
@@ -1583,7 +1595,6 @@ function(generate_Environment_Toolchain_File index)
     file(APPEND ${description_file} "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY CACHE INTERNAL \"\" FORCE)\n")
     file(APPEND ${description_file} "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY CACHE INTERNAL \"\" FORCE)\n")
     file(APPEND ${description_file} "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY CACHE INTERNAL \"\" FORCE)\n")
-
 
     if(NOT CMAKE_VERSION VERSION_LESS 3.6)#CMAKE_TRY_COMPILE_TARGET_TYPE availane since version 3.6 of CMake
       # avoid problem with try_compile when cross compiling

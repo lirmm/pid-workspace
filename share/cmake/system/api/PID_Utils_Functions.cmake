@@ -125,19 +125,15 @@ endfunction(get_Platform_Variables)
 #     :IS_SYSTEM: the output variable that is TRUE if path is a system reference path, FALSE otherwise
 #
 function(is_A_System_Reference_Path path IS_SYSTEM)
-if(UNIX)
-	if(path STREQUAL / OR path STREQUAL /usr OR path STREQUAL /usr/local)
-		set(${IS_SYSTEM} TRUE PARENT_SCOPE)
-	else()
-		set(${IS_SYSTEM} FALSE PARENT_SCOPE)
-	endif()
-endif()
-#for macosx need to manage also more specific path where to find libraries
-if(APPLE AND NOT ${IS_SYSTEM})
-	if(path STREQUAL /Library/Frameworks OR path STREQUAL /Network/Library/Frameworks OR path STREQUAL /System/Library/Framework)
-		set(${IS_SYSTEM} TRUE PARENT_SCOPE)
-	endif()
-endif()
+  list(APPEND all_default_path ${CMAKE_C_IMPLICIT_LINK_DIRECTORIES} ${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES})
+  list(REMOVE_DUPLICATES all_default_path)
+  foreach(a_path IN LISTS all_default_path)
+    if(a_path STREQUAL path)#OK path is in default path => remove it
+      set(${IS_SYSTEM} TRUE PARENT_SCOPE)
+      return()
+    endif()
+  endforeach()
+  set(${IS_SYSTEM} FALSE PARENT_SCOPE)
 endfunction(is_A_System_Reference_Path)
 
 #.rst:
@@ -1367,6 +1363,7 @@ endfunction(package_License_Is_Closed_Source)
 ################ Source file management #####################
 #############################################################
 
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1382,31 +1379,23 @@ endfunction(package_License_Is_Closed_Source)
 #    Activate adequate languages in the current CMake project, depending on source file used in the project.
 #
 macro(activate_Adequate_Languages)
-get_All_Sources_Absolute(list_of_files ${CMAKE_SOURCE_DIR})#list all source files
-get_property(USED_LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES) #getting all languages already in use
 
-foreach(source_file IN LISTS list_of_files)
-		get_filename_component(EXTENSION ${source_file} EXT)
-		if(EXTENSION STREQUAL ".f")#we have a fortran file
-				list(FIND USED_LANGUAGES Fortran INDEX)
-				if(INDEX EQUAL -1)#fortran is not in use already
-					enable_language(Fortran)#use fortran
-					list(APPEND USED_LANGUAGES Fortran)
-				endif()
-		elseif(EXTENSION STREQUAL ".asm" OR EXTENSION STREQUAL ".s" OR EXTENSION STREQUAL ".S" )#we have an assembler file
-				list(FIND USED_LANGUAGES ASM INDEX)
-				if(INDEX EQUAL -1)#assembler is not in use already
-					enable_language(ASM)#use assembler
-					list(APPEND USED_LANGUAGES ASM)
-				endif()
-    elseif(EXTENSION STREQUAL ".cu")#we have an assembler file
-				list(FIND USED_LANGUAGES CUDA INDEX)
-				if(INDEX EQUAL -1)#assembler is not in use already
-					enable_language(CUDA)#use assembler
-					list(APPEND USED_LANGUAGES CUDA)
-				endif()
-		endif()
-endforeach()
+#enable assembler by default => assembler will be used anytime because it is a C/C++ project
+enable_language(ASM)#use assembler
+
+if(CMAKE_Fortran_COMPILER)
+  enable_language(Fortran)#use fortran
+endif()
+
+if(CMAKE_CUDA_COMPILER)#if a CUDA compiler is defined by the current environment, then enable language
+  if(NOT CMAKE_VERSION VERSION_LESS 3.8)# CMake 3.8+ supports CUDA
+    set(temp_flags ${CMAKE_CUDA_FLAGS})#need to deactivate forced flags to avoid problems when detecting language
+    set(CMAKE_CUDA_FLAGS CACHE INTERNAL "" FORCE)
+    enable_language(CUDA)#use cuda compiler
+    set(CMAKE_CUDA_FLAGS ${temp_flags} CACHE INTERNAL "" FORCE)
+  endif()
+endif()
+
 endmacro(activate_Adequate_Languages)
 
 #.rst:
@@ -2047,7 +2036,7 @@ function(get_Platform_Related_Binary_Prefix_Suffix PREFIX SUFFIX platform_os typ
     elseif(platform_os STREQUAL "macosx")
       set(${SUFFIX} .dylib PARENT_SCOPE)
       set(${PREFIX} lib PARENT_SCOPE)
-    else()
+    elseif(platform_os STREQUAL "linux")
       set(${SUFFIX} .so PARENT_SCOPE)
       set(${PREFIX} lib PARENT_SCOPE)
     endif()

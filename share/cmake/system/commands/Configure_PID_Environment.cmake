@@ -96,7 +96,6 @@ else()
 		endif()
 	endif()
 endif()
-
 #second: do the job
 
 if(NOT TARGET_ENVIRONMENT) # checking if the target environment has to change
@@ -107,7 +106,7 @@ endif()
 if(TARGET_ENVIRONMENT STREQUAL "host")
 	message("[PID] INFO : changing to default host environment")
 	#removing all cmake or pid configuration files
-	clean_Build_Tree(${WORKSPACE_DIR})
+	hard_Clean_Build_Folder(${WORKSPACE_DIR}/pid)
 	# reconfigure the pid workspace with no environment
 	execute_process(COMMAND ${CMAKE_COMMAND} -DCURRENT_ENVIRONMENT= ${WORKSPACE_DIR}
 			WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
@@ -150,6 +149,7 @@ else() #we need to change the environment
 		#preferable to copy the toolchain file in build tree of the workspace
 		# this way no risk that an environment that is reconfigured generate no more toolchain file (create an error in workspace)
 		file(	COPY ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Toolchain.cmake
+							 ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Description.cmake
 					DESTINATION ${WORKSPACE_DIR}/pid)
 
 		execute_process(COMMAND ${CMAKE_COMMAND}
@@ -158,13 +158,17 @@ else() #we need to change the environment
 										-C ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Description.cmake
 										${WORKSPACE_DIR}
 									WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+
 	else()
+		file(	COPY ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Description.cmake
+					DESTINATION ${WORKSPACE_DIR}/pid)
+
 		execute_process(COMMAND ${CMAKE_COMMAND}
 									-DCURRENT_ENVIRONMENT=${TARGET_ENVIRONMENT}
-									-C ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Description.cmake
+									-C ${WORKSPACE_DIR}/pid/PID_Environment_Description.cmake
 									${WORKSPACE_DIR}
 								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+
 	endif()
-else()
-	message("[PID] ERROR : the target environment ${TARGET_ENVIRONMENT} does not refer to a known environment in the workspace.")
+
 endif()
