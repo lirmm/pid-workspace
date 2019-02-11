@@ -125,14 +125,17 @@ endfunction(get_Platform_Variables)
 #     :IS_SYSTEM: the output variable that is TRUE if path is a system reference path, FALSE otherwise
 #
 function(is_A_System_Reference_Path path IS_SYSTEM)
+  set(all_default_path)
   list(APPEND all_default_path ${CMAKE_C_IMPLICIT_LINK_DIRECTORIES} ${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES})
-  list(REMOVE_DUPLICATES all_default_path)
-  foreach(a_path IN LISTS all_default_path)
-    if(a_path STREQUAL path)#OK path is in default path => remove it
-      set(${IS_SYSTEM} TRUE PARENT_SCOPE)
-      return()
-    endif()
-  endforeach()
+  if(all_default_path)
+    list(REMOVE_DUPLICATES all_default_path)
+    foreach(a_path IN LISTS all_default_path)
+      if(a_path STREQUAL path)#OK path is in default path => remove it
+        set(${IS_SYSTEM} TRUE PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  endif()
   set(${IS_SYSTEM} FALSE PARENT_SCOPE)
 endfunction(is_A_System_Reference_Path)
 
