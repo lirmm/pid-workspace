@@ -107,6 +107,7 @@ add_custom_target(man ALL
 add_custom_target(info
 	COMMAND ${CMAKE_COMMAND} -DTARGET_PACKAGE="\${package}"
 					-DTARGET_FRAMEWORK=\${framework}
+					-DTARGET_ENVIRONMENT=\${environment}
 					-DTARGET_LICENSE=\${license}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Print_PID_Workspace_Info.cmake

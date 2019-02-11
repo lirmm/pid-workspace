@@ -1163,6 +1163,20 @@ function(print_Framework_Info framework)
 	endif()
 endfunction(print_Framework_Info)
 
+
+function(print_Environment_Info env)
+	message("ENVIRONMENT: ${env}")
+	fill_String_From_List(${env}_DESCRIPTION descr_string)
+	message("DESCRIPTION: ${descr_string}")
+	message("LICENSE: ${${env}_LICENSE}")
+	message("DATES: ${${env}_YEARS}")
+	message("REPOSITORY: ${${env}_ADDRESS}")
+	print_Package_Contact(${env})
+	message("AUTHORS:")
+	foreach(author IN LISTS ${env}_AUTHORS_AND_INSTITUTIONS)
+		print_Author(${author})
+	endforeach()
+endfunction(print_Environment_Info)
 ################################################################################
 #################### Deployment units lifecycle management #####################
 ################################################################################
