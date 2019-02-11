@@ -17,22 +17,12 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(PID_Utils_Functions NO_POLICY_SCOPE)
+set(atom_cquery_PLUGIN_DESCRIPTION "Use this plugin to use the Atom's ide-cquery plugin (C/C++ autocomplete, linter, formatting, etc)" CACHE INTERNAL "")
 
-## main script
+set(atom_cquery_PLUGIN_ACTIVATION_MESSAGE CACHE INTERNAL "")
 
-if(CMAKE_BUILD_TYPE MATCHES Release) #only generating in release mode
+set(atom_cquery_PLUGIN_ACTIVATED_MESSAGE "Atom's ide-cquery plugin support activated" CACHE INTERNAL "")
 
-	if(${PROJECT_NAME}_COMPONENTS) #if no component => nothing to build so no need of compile commands
+set(atom_cquery_PLUGIN_RESIDUAL_FILES ".vscode" CACHE INTERNAL "")
 
-		set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE CACHE BOOL "" FORCE)
-		if( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json" )
-			EXECUTE_PROCESS( COMMAND ${CMAKE_COMMAND} -E copy_if_different
-				${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json
-				${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json
-				)
-		endif()
-
-	endif()
-
-endif()
+set(atom_cquery_DEPENDS compile_commands)

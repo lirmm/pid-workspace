@@ -19,6 +19,8 @@
 
 set(compile_commands_PLUGIN_DESCRIPTION "use this plugin to generate compile commands configuration files to be used to get auto completion and in editor errors for your favorite editor" CACHE INTERNAL "")
 
-set(compile_commands_PLUGIN_ACTIVATION_MESSAGE "plugin compile_commands: generating compile_commands.json configuration file" CACHE INTERNAL "")
+set(compile_commands_PLUGIN_ACTIVATION_MESSAGE "generating compile_commands.json configuration file" CACHE INTERNAL "")
+
+set(compile_commands_PLUGIN_ACTIVATED_MESSAGE "Generation of compilation databases for packages activated" CACHE INTERNAL "")
 
 set(compile_commands_PLUGIN_RESIDUAL_FILES "compile_commands.json" CACHE INTERNAL "")
