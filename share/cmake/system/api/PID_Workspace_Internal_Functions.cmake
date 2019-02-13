@@ -1176,6 +1176,24 @@ function(print_Environment_Info env)
 	foreach(author IN LISTS ${env}_AUTHORS_AND_INSTITUTIONS)
 		print_Author(${author})
 	endforeach()
+	if(EXISTS ${WORKSPACE_DIR}/environments/${env})#the environment exists in workspace
+		set(environment_build_folder ${WORKSPACE_DIR}/environments/${env}/build)
+
+		execute_process(COMMAND ${CMAKE_COMMAND} -DGENERATE_INPUTS_DESCRIPTION=TRUE ..
+		WORKING_DIRECTORY ${environment_build_folder} OUTPUT_QUIET ERROR_QUIET)
+
+		if(NOT EXISTS ${environment_build_folder}/PID_Inputs.cmake)
+		  return()
+		endif()
+		include(${environment_build_folder}/PID_Inputs.cmake)
+		set(list_of_defs)
+		if(${env}_INPUTS)
+			message("CONSTRAINTS:")
+			foreach(var IN LISTS ${env}_INPUTS)
+				message(" - ${var}")
+			endforeach()
+		endif()
+	endif()
 endfunction(print_Environment_Info)
 ################################################################################
 #################### Deployment units lifecycle management #####################
