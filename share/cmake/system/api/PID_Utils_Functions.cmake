@@ -3423,7 +3423,7 @@ endfunction(get_Jekyll_URLs)
 #  .. _set_Environment_Repository_Address:
 #
 #  set_Environment_Repository_Address
-#  --------------------------------
+#  ----------------------------------
 #
 #   .. command:: set_Environment_Repository_Address(environment git_url)
 #
@@ -3447,7 +3447,7 @@ endfunction(set_Environment_Repository_Address)
 #  .. _reset_Environment_Repository_Address:
 #
 #  reset_Environment_Repository_Address
-#  ----------------------------------
+#  ------------------------------------
 #
 #   .. command:: reset_Environment_Repository_Address(environment new_git_url)
 #
@@ -3471,7 +3471,7 @@ endfunction(reset_Environment_Repository_Address)
 #  .. _get_Environment_Repository_Address:
 #
 #  get_Environment_Repository_Address
-#  --------------------------------
+#  ----------------------------------
 #
 #   .. command:: get_Environment_Repository_Address(environment RES_URL)
 #

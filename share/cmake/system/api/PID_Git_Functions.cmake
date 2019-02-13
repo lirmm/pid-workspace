@@ -782,7 +782,7 @@ endfunction(publish_Framework_References_In_Workspace_Repository)
 #  .. _publish_Environment_References_In_Workspace_Repository:
 #
 #  publish_Environment_References_In_Workspace_Repository
-#  ----------------------------------------------------
+#  ------------------------------------------------------
 #
 #   .. command:: publish_Environment_References_In_Workspace_Repository(environment)
 #
@@ -2437,7 +2437,7 @@ endfunction(change_Origin_Framework_Repository)
 #  .. _clone_Environment_Repository:
 #
 #  clone_Environment_Repository
-#  --------------------------
+#  ----------------------------
 #
 #   .. command:: clone_Environment_Repository(IS_DEPLOYED framework url)
 #
@@ -2476,7 +2476,7 @@ endfunction(clone_Environment_Repository)
 #  .. _init_Environment_Repository:
 #
 #  init_Environment_Repository
-#  -------------------------
+#  ---------------------------
 #
 #   .. command:: init_Environment_Repository(environment)
 #
@@ -2500,7 +2500,7 @@ endfunction(init_Environment_Repository)
 #  .. _update_Environment_Repository:
 #
 #  update_Environment_Repository
-#  ---------------------------
+#  -----------------------------
 #
 #   .. command:: update_Environment_Repository(environment)
 #
@@ -2521,7 +2521,7 @@ endfunction(update_Environment_Repository)
 #  .. _publish_Environment_Repository:
 #
 #  publish_Environment_Repository
-#  ----------------------------
+#  ------------------------------
 #
 #   .. command:: publish_Environment_Repository(environment PUBLISHED)
 #
@@ -2553,7 +2553,7 @@ endfunction(publish_Environment_Repository)
 #  .. _register_Environment_Repository_Address:
 #
 #  register_Environment_Repository_Address
-#  -------------------------------------
+#  ---------------------------------------
 #
 #   .. command:: register_Environment_Repository_Address(environment)
 #
@@ -2574,7 +2574,7 @@ endfunction(register_Environment_Repository_Address)
 #  .. _connect_Environment_Repository:
 #
 #  connect_Environment_Repository
-#  ----------------------------
+#  ------------------------------
 #
 #   .. command:: connect_Environment_Repository(environment url)
 #

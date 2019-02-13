@@ -1189,7 +1189,7 @@ endfunction(print_Environment_Info)
 #  .. _create_PID_Environment:
 #
 #  create_PID_Environment
-#  ------------------
+#  ----------------------
 #
 #   .. command:: create_PID_Environment(environment author institution license)
 #
@@ -1736,7 +1736,7 @@ endfunction(connect_PID_Wrapper)
 #  .. _connect_PID_Environment:
 #
 #  connect_PID_Environment
-#  ---------------------
+#  -----------------------
 #
 #   .. command:: connect_PID_Environment(environment git_url first_time)
 #
@@ -2027,7 +2027,7 @@ endfunction(remove_PID_Framework)
 #  .. _remove_PID_Environment:
 #
 #  remove_PID_Environment
-#  --------------------
+#  ----------------------
 #
 #   .. command:: remove_PID_Environment(environment)
 #
@@ -2120,7 +2120,7 @@ endfunction(register_PID_Framework)
 #  .. _register_PID_Environment:
 #
 #  register_PID_Environment
-#  ----------------------
+#  ------------------------
 #
 #   .. command:: register_PID_Environment(environment)
 #
