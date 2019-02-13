@@ -408,6 +408,16 @@ elseif(DIR_NAME STREQUAL "build")
 	# if a code style is provided, copy the configuration file to the package root folder
 	if(NOT "${code_style}" STREQUAL "")
 		configure_file(${WORKSPACE_DIR}/share/patterns/format/.clang-format.${code_style}.in ${PACKAGE_FORMAT_FILE})
+		get_Clang_Format_Program(CLANG_FORMAT_EXE)
+		if(CLANG_FORMAT_EXE)
+			add_custom_target(format
+				COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
+							 -DPACKAGE_NAME=${PROJECT_NAME}
+							 -DCLANG_FORMAT_EXE=${CLANG_FORMAT_EXE}
+							 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Format_PID_Package_Sources.cmake
+				COMMENT "[PID] formatting the source files"
+			)
+		endif()
 	elseif(EXISTS ${PACKAGE_FORMAT_FILE})
 		# code style has been removed, removing the configuration file
 		file(REMOVE ${PACKAGE_FORMAT_FILE})
