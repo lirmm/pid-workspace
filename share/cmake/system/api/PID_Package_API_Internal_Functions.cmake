@@ -65,8 +65,9 @@ include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 #     :public_address: the public counterpart url to address.
 #     :description: a short description of the package.
 #     :readme_file: the path to a user-defined content of the readme file of the package.
+#     :code_style: determines which clang-format file will be used to format the source code.
 #
-macro(declare_Package author institution mail year license address public_address description readme_file)
+macro(declare_Package author institution mail year license address public_address description readme_file code_style)
 set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 manage_Current_Platform("${DIR_NAME}") #loading the current platform configuration and perform adequate actions if any changes
@@ -402,6 +403,14 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMENT "[PID] listing dependencies of the package ${PROJECT_NAME} ..."
 			VERBATIM
 		)
+	endif()
+	set(PACKAGE_FORMAT_FILE ${CMAKE_SOURCE_DIR}/.clang-format)
+	# if a code style is provided, copy the configuration file to the package root folder
+	if(NOT "${code_style}" STREQUAL "")
+		configure_file(${WORKSPACE_DIR}/share/patterns/format/.clang-format.${code_style}.in ${PACKAGE_FORMAT_FILE})
+	elseif(EXISTS ${PACKAGE_FORMAT_FILE})
+		# code style has been removed, removing the configuration file
+		file(REMOVE ${PACKAGE_FORMAT_FILE})
 	endif()
 
 	if(BUILD_DEPENDENT_PACKAGES AND ADDITIONNAL_DEBUG_INFO)
