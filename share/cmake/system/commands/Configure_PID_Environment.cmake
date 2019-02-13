@@ -96,6 +96,16 @@ else()
 		endif()
 	endif()
 endif()
+
+
+if(NOT TARGET_DISTRIBUTION AND DEFINED ENV{distribution})
+	set(TARGET_DISTRIBUTION $ENV{distribution} CACHE INTERNAL "" FORCE)
+	#more on platform
+	if(NOT TARGET_DISTRIBUTION_VERSION AND DEFINED ENV{distrib_version})
+		set(TARGET_DISTRIBUTION_VERSION $ENV{distrib_version} CACHE INTERNAL "" FORCE)
+	endif()
+endif()
+
 #second: do the job
 
 if(NOT TARGET_ENVIRONMENT) # checking if the target environment has to change
@@ -134,7 +144,7 @@ else() #we need to change the environment
 	# Warning: the generator in use may be forced by the environment, this later has priority over user defined one.
 	# Warning: the sysroot in use may be forced by the user, so the sysroot passed by user has always priority over those defined by environments.
 	# Warning: the staging in use may be forced by the user, so the staging passed by user has always priority over those defined by environments.
-	evaluate_Environment_From_Configure(EVAL_OK ${TARGET_ENVIRONMENT} "${TARGET_SYSROOT}" "${TARGET_STAGING}" "${TARGET_PROC_TYPE}" "${TARGET_PROC_ARCH}" "${TARGET_OS}" "${TARGET_ABI}")
+	evaluate_Environment_From_Configure(EVAL_OK ${TARGET_ENVIRONMENT} "${TARGET_SYSROOT}" "${TARGET_STAGING}" "${TARGET_PROC_TYPE}" "${TARGET_PROC_ARCH}" "${TARGET_OS}" "${TARGET_ABI}" "${TARGET_DISTRIBUTION}" "${TARGET_DISTRIBUTION_VERSION}")
 	if(NOT EVAL_OK)
 		message(FATAL_ERROR "[PID] ERROR : cannot evaluate environment ${TARGET_ENVIRONMENT} on current host. Aborting workspace configruation.")
 		return()

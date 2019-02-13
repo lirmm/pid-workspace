@@ -561,9 +561,13 @@ endfunction(load_Environment)
 #
 #      :abi: the target c++ ABI (98 or 11).
 #
+#      :distribution: the target OS distribution (e.g. ubuntu)
+#
+#      :distrib_version: the target distribution version (e.g. 16.04).
+#
 #      :EVAL_OK: the output variable that is TRUE if the environment has been evaluated and exitted without errors.
 #
-function(evaluate_Environment_From_Configure EVAL_OK environment sysroot staging type arch os abi)
+function(evaluate_Environment_From_Configure EVAL_OK environment sysroot staging type arch os abi distribution distrib_version)
 set(${EVAL_OK} FALSE PARENT_SCOPE)
 # 1. Get CMake definition for variables that are managed by the environment and set by user
 set(environment_build_folder ${WORKSPACE_DIR}/environments/${environment}/build)
@@ -627,6 +631,12 @@ if(os)
 endif()
 if(abi)
   list(APPEND list_of_defs -DFORCED_ABI=${abi})
+endif()
+if(distribution)
+  list(APPEND list_of_defs -DFORCED_DISTRIB=${distribution})
+endif()
+if(distrib_version)
+  list(APPEND list_of_defs -DFORCED_DISTRIB_VERSION=${distrib_version})
 endif()
 
 # 2.2 reconfigure the environment with new definitions (user and specific variables) and in normal mode (-DGENERATE_INPUTS_DESCRIPTION=FALSE)
@@ -1106,7 +1116,7 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
   set(${PROJECT_NAME}_CROSSCOMPILATION FALSE CACHE INTERNAL "")
   set(result TRUE)
 
-  #manage paraleters passed to the environment by the configure script
+  #manage parameters passed to the environment by the configure script
   if(FORCED_SYSROOT)
     set(${PROJECT_NAME}_TARGET_SYSROOT ${FORCED_SYSROOT} CACHE INTERNAL "")# cannot be overwritten
   endif()
@@ -1125,61 +1135,47 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
   if(FORCED_ABI)
     set(${PROJECT_NAME}_ABI_CONSTRAINT ${FORCED_ABI} CACHE INTERNAL "")# cannot be overwritten
   endif()
-
-  if(${PROJECT_NAME}_ARCH_CONSTRAINT AND ${PROJECT_NAME}_TYPE_CONSTRAINT)#processor architecture constraint is fully specified
-    if(NOT CURRENT_PLATFORM_ARCH STREQUAL ${PROJECT_NAME}_ARCH_CONSTRAINT
-    OR NOT CURRENT_PLATFORM_TYPE STREQUAL ${PROJECT_NAME}_TYPE_CONSTRAINT)
-      set(${PROJECT_NAME}_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)#if processor differs then this is corsscompilation
-      set(result FALSE)
-
-      if(${PROJECT_NAME}_TYPE_CONSTRAINT STREQUAL "x86")
-        if(${PROJECT_NAME}_ARCH_CONSTRAINT EQUAL 32)
-          set(proc_name x86)
-        elseif(${PROJECT_NAME}_ARCH_CONSTRAINT EQUAL 64)
-          set(proc_name x86_64)
-        endif()
-      elseif(${PROJECT_NAME}_TYPE_CONSTRAINT STREQUAL "arm")
-        set(proc_name arm)
-      endif()
-      set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR ${proc_name} CACHE INTERNAL "")
-    endif()
+  if(FORCED_DISTRIB)
+    set(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT ${FORCED_DISTRIB} CACHE INTERNAL "")# cannot be overwritten
+  endif()
+  if(FORCED_DISTRIB_VERSION)
+    set(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT ${FORCED_DISTRIB_VERSION} CACHE INTERNAL "")# cannot be overwritten
   endif()
 
-  if(${PROJECT_NAME}_OS_CONSTRAINT)#operating system type constraint is specified
-    if(NOT CURRENT_PLATFORM_OS STREQUAL ${PROJECT_NAME}_OS_CONSTRAINT)
+  #determine if host is target and if we need to crosscompile
+  if(${PROJECT_NAME}_TYPE_CONSTRAINT
+      AND NOT CURRENT_PLATFORM_TYPE STREQUAL ${PROJECT_NAME}_TYPE_CONSTRAINT)
+      set(${PROJECT_NAME}_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)#if processor differs then this is crosscompilation
       set(result FALSE)
-      set(${PROJECT_NAME}_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)
-      if(${PROJECT_NAME}_OS_CONSTRAINT STREQUAL "linux")
-        set(os_name Linux)
-      elseif(${PROJECT_NAME}_OS_CONSTRAINT STREQUAL "macosx")
-        set(os_name Darwin)
-      elseif(${PROJECT_NAME}_OS_CONSTRAINT STREQUAL "windows")
-        set(os_name Windows)
-      else()#unknown target OS -> considered as Generic (no OS)
-        set(os_name Generic)
-      endif()
-      set(${PROJECT_NAME}_TARGET_SYSTEM_NAME ${os_name} CACHE INTERNAL "")
-    endif()
   endif()
 
-  if(${PROJECT_NAME}_ABI_CONSTRAINT)#processor architecture type constraint is specified
-    if(NOT CURRENT_PLATFORM_ABI STREQUAL ${PROJECT_NAME}_ABI_CONSTRAINT)
+  if(${PROJECT_NAME}_ARCH_CONSTRAINT
+      AND NOT CURRENT_PLATFORM_ARCH STREQUAL ${PROJECT_NAME}_ARCH_CONSTRAINT)
+      set(result FALSE)
+  endif()
+
+  if(${PROJECT_NAME}_OS_CONSTRAINT #operating system type constraint is specified
+    AND NOT CURRENT_PLATFORM_OS STREQUAL ${PROJECT_NAME}_OS_CONSTRAINT)
+    set(${PROJECT_NAME}_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)#if OS differs then this is corsscompilation
+      set(result FALSE)
+  endif()
+
+  if(${PROJECT_NAME}_ABI_CONSTRAINT #processor architecture type constraint is specified
+      AND NOT CURRENT_PLATFORM_ABI STREQUAL ${PROJECT_NAME}_ABI_CONSTRAINT)
       #for the ABI it is not necessary to cross compile, juste to have adequate compiler and pass adequate arguments
-      set(result FALSE)
-    endif()
+    set(result FALSE)
   endif()
 
   #compiling for another distribution does not necessarily mean crosscompiling
-  if(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT)
-    if(NOT CURRENT_DISTRIBUTION STREQUAL ${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT)
-      set(result FALSE)# TODO stop everything because we will never reach such compliance levelin crosscompilation
-      # but we can still crosscompile for other distributions like raspbian
-    endif()
+  if(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT
+     AND NOT CURRENT_DISTRIBUTION STREQUAL ${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT)
+    set(result FALSE)
+    set(${PROJECT_NAME}_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)# but we can still crosscompile for other distributions like raspbian
   endif()
-  if(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT)
-    if(NOT CURRENT_DISTRIBUTION_VERSION STREQUAL ${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT)
-      set(result FALSE)# TODO stop everything because we will never reach such compliance levelin crosscompilation
-    endif()
+
+  if(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT
+  AND NOT CURRENT_DISTRIBUTION_VERSION STREQUAL ${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT)
+    set(result FALSE)
   endif()
 
   if(${PROJECT_NAME}_CONFIGURATION_CONSTRAINT)
@@ -1188,6 +1184,7 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
       set(result FALSE)
     endif()
   endif()
+
 
   # 2 solutions: either current host is matching with constraints (use CHECK script) OR current host needs to be configured
   # additionnal check for target platform
@@ -1204,12 +1201,57 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
     endif()
   endif()
 
+  #provides the result to say if host is target
+  set(${CURRENT_HOST_MATCHES_TARGET} ${result} PARENT_SCOPE)
+
   if(result)#host matches the complete specification
     if(${PROJECT_NAME}_INSTANCE_CONSTRAINT)# if an instance name is given and everything match then the host receives this instance name
       set(${PROJECT_NAME}_INSTANCE ${${PROJECT_NAME}_INSTANCE_CONSTRAINT} CACHE INTERNAL "")
     endif()
   endif()
-  set(${CURRENT_HOST_MATCHES_TARGET} ${result} PARENT_SCOPE)
+
+  if(${PROJECT_NAME}_CROSSCOMPILATION)#if host is not target and cross=> We may need to define cross compilation relared information
+    if(${PROJECT_NAME}_TYPE_CONSTRAINT)
+      set(use_proc_type ${${PROJECT_NAME}_TYPE_CONSTRAINT})
+    else()#type is same as current
+      set(use_proc_type ${CURRENT_PLATFORM_TYPE})
+    endif()
+    if(${PROJECT_NAME}_ARCH_CONSTRAINT)
+      set(use_proc_arch ${${PROJECT_NAME}_ARCH_CONSTRAINT})
+    else()#type is same as current
+      set(use_proc_arch ${CURRENT_PLATFORM_ARCH})
+    endif()
+    if(${PROJECT_NAME}_OS_CONSTRAINT)#operating system type constraint is specified
+      set(use_os ${${PROJECT_NAME}_OS_CONSTRAINT})
+    else()
+      set(use_os ${CURRENT_PLATFORM_ARCH})
+    endif()
+    #configure crosscompilation variables
+    if(use_proc_type STREQUAL "x86")
+      if(use_proc_arch EQUAL 32)
+        set(proc_name x86)
+      elseif(use_proc_arch EQUAL 64)
+        set(proc_name x86_64)
+      endif()
+    elseif(use_proc_type STREQUAL "arm")
+      set(proc_name arm)
+    #TODO add more processors
+    endif()
+    set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR ${proc_name} CACHE INTERNAL "")
+    #configuring OS
+    if(use_os STREQUAL "linux")
+      set(os_name Linux)
+    elseif(use_os STREQUAL "macosx")
+      set(os_name Darwin)
+    elseif(use_os STREQUAL "windows")
+      set(os_name Windows)
+    #TODO add more OS here
+    else()#unknown target OS -> considered as Generic (no OS)
+      set(os_name Generic)
+    endif()
+    set(${PROJECT_NAME}_TARGET_SYSTEM_NAME ${os_name} CACHE INTERNAL "")
+  endif()
+
 endfunction(evaluate_Environment_Platform)
 
 
