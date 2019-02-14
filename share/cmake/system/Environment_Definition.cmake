@@ -194,7 +194,6 @@ endmacro(add_PID_Environment_Author)
 #      :check_script: path relative to src folder of the script file used to check if current host can be considered as target platform
 #
 #     :PLATFORM <platform>: defines a complete specification of the target platform (e.g. x86_64_linux_abi11).
-#     :INSTANCE <name>: defines an instance name for the platform.
 #     :TYPE <proc>: the type of architecture for processor of the platform (e.g. x86).
 #     :ARCH <bits>: the size of processor architecture registry, 16, 32 or 64.
 #     :OS <kernel>: the OS kernel of the platform (e.g. linux).
@@ -214,7 +213,6 @@ endmacro(add_PID_Environment_Author)
 #     .. code-block:: cmake
 #
 #        PID_Environment_Platform(
-#           INSTANCE bazar_robot
 #           PLATFORM x86_64_linux_abi11
 #           DISTRIBUTION ubuntu
 #           DISTRIB_VERSION 18.04
@@ -229,22 +227,9 @@ if(${PROJECT_NAME}_PLATFORM_CONSTRAINT_DEFINED)
   message(FATAL_ERROR "[PID] CRITICAL ERROR: PID_Environment_Platform can be called only once per environment.")
   return()
 endif()
-set(oneValueArgs CHECK INSTANCE PLATFORM ARCH TYPE OS ABI DISTRIBUTION DISTRIB_VERSION)
+set(oneValueArgs CHECK PLATFORM ARCH TYPE OS ABI DISTRIBUTION DISTRIB_VERSION)
 set(multiValueArgs CONFIGURATION)
 cmake_parse_arguments(DECLARE_PID_ENV_PLATFORM "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-
-if(DECLARE_PID_ENV_PLATFORM_INSTANCE) #an instance name os defined, so we need a complete description of the platform
-  if(NOT DECLARE_PID_ENV_PLATFORM_PLATFORM
-     AND NOT (DECLARE_PID_ENV_PLATFORM_ARCH AND DECLARE_PID_ENV_PLATFORM_TYPE AND DECLARE_PID_ENV_PLATFORM_OS AND DECLARE_PID_ENV_PLATFORM_ABI)
-  )
-  message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling PID_Environment_Platform you must define the PLATFORM of the INSTANCE.")
-  return()
-  endif()
-  if(NOT DECLARE_PID_ENV_PLATFORM_DISTRIB_VERSION)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling PID_Environment_Platform you must define the DISTRIBUTION and the DISTRIB_VERSION of the INSTANCE.")
-    return()
-  endif()
-endif()
 
 if(DECLARE_PID_ENV_PLATFORM_DISTRIB_VERSION)
   if(NOT DECLARE_PID_ENV_PLATFORM_DISTRIBUTION)
@@ -277,7 +262,7 @@ else()#getting more specific contraint on platform
   endif()
 endif()
 
-define_Build_Environment_Platform("${DECLARE_PID_ENV_PLATFORM_INSTANCE}" "${type_constraint}" "${arch_constraint}" "${os_constraint}" "${abi_constraint}" "${DECLARE_PID_ENV_PLATFORM_DISTRIBUTION}" "${DECLARE_PID_ENV_PLATFORM_DISTRIB_VERSION}" "${DECLARE_PID_ENV_PLATFORM_CONFIGURATION}" "${DECLARE_PID_ENV_PLATFORM_CHECK}")
+define_Build_Environment_Platform("${type_constraint}" "${arch_constraint}" "${os_constraint}" "${abi_constraint}" "${DECLARE_PID_ENV_PLATFORM_DISTRIBUTION}" "${DECLARE_PID_ENV_PLATFORM_DISTRIB_VERSION}" "${DECLARE_PID_ENV_PLATFORM_CONFIGURATION}" "${DECLARE_PID_ENV_PLATFORM_CHECK}")
 
 endmacro(declare_PID_Environment_Platform)
 

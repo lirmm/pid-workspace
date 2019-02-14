@@ -56,7 +56,6 @@ function(reset_Environment_Description)
   #### reset global descriptive information ####
   #reset constraints on platform
   set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_DEFINED CACHE INTERNAL "")
-  set(${PROJECT_NAME}_INSTANCE_CONSTRAINT CACHE INTERNAL "")
   set(${PROJECT_NAME}_ARCH_CONSTRAINT CACHE INTERNAL "")
   set(${PROJECT_NAME}_TYPE_CONSTRAINT CACHE INTERNAL "")
   set(${PROJECT_NAME}_OS_CONSTRAINT CACHE INTERNAL "")
@@ -218,11 +217,9 @@ endmacro(declare_Environment)
 #  define_Build_Environment_Platform
 #  ---------------------------------
 #
-#   .. command:: define_Build_Environment_Platform(instance type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version config check_script)
+#   .. command:: define_Build_Environment_Platform(type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version config check_script)
 #
 #   Define platform targetted by the curren environment. It consists in setting adequate internal cache variables.
-#
-#      :instance: the name of environment instance.
 #
 #      :type_constraint: constraint on processor architecture type constraint (x86 or arm for instance)
 #
@@ -240,9 +237,8 @@ endmacro(declare_Environment)
 #
 #      :check_script: path to the check script used to test specific build variables on host in order to know if host really matches.
 #
-function(define_Build_Environment_Platform instance type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version config check_script)
+function(define_Build_Environment_Platform type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version config check_script)
   set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_DEFINED TRUE CACHE INTERNAL "")
-  set(${PROJECT_NAME}_INSTANCE_CONSTRAINT ${instance} CACHE INTERNAL "")
   set(${PROJECT_NAME}_TYPE_CONSTRAINT ${type_constraint} CACHE INTERNAL "")
   set(${PROJECT_NAME}_ARCH_CONSTRAINT ${arch_constraint} CACHE INTERNAL "")
   set(${PROJECT_NAME}_OS_CONSTRAINT ${os_constraint} CACHE INTERNAL "")
@@ -701,9 +697,6 @@ endfunction(evaluate_Environment)
 function(set_Build_Variables_From_Environment environment)
   if(${environment}_CROSSCOMPILATION)
     set(${PROJECT_NAME}_CROSSCOMPILATION ${${environment}_CROSSCOMPILATION} CACHE INTERNAL "")
-  endif()
-  if(${environment}_INSTANCE AND NOT ${PROJECT_NAME}_INSTANCE)#if instance name is not already defined then set it
-    set(${PROJECT_NAME}_INSTANCE ${${environment}_INSTANCE} CACHE INTERNAL "")#upper level instance name has always priority over internally defined ones
   endif()
   if(${environment}_TARGET_SYSTEM_NAME)
     set(${PROJECT_NAME}_TARGET_SYSTEM_NAME ${${environment}_TARGET_SYSTEM_NAME} CACHE INTERNAL "")
@@ -1204,12 +1197,6 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
   #provides the result to say if host is target
   set(${CURRENT_HOST_MATCHES_TARGET} ${result} PARENT_SCOPE)
 
-  if(result)#host matches the complete specification
-    if(${PROJECT_NAME}_INSTANCE_CONSTRAINT)# if an instance name is given and everything match then the host receives this instance name
-      set(${PROJECT_NAME}_INSTANCE ${${PROJECT_NAME}_INSTANCE_CONSTRAINT} CACHE INTERNAL "")
-    endif()
-  endif()
-
   if(${PROJECT_NAME}_CROSSCOMPILATION)#if host is not target and cross=> We may need to define cross compilation relared information
     if(${PROJECT_NAME}_TYPE_CONSTRAINT)
       set(use_proc_type ${${PROJECT_NAME}_TYPE_CONSTRAINT})
@@ -1677,7 +1664,7 @@ set(input_file ${WORKSPACE_DIR}/share/patterns/environments/PID_Environment_Desc
 
 set(ENVIRONMENT_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION})
 set(ENVIRONMENT_CROSSCOMPILATION ${${PROJECT_NAME}_CROSSCOMPILATION})
-set(ENVIRONMENT_INSTANCE ${${PROJECT_NAME}_INSTANCE})
+set(ENVIRONMENT_INSTANCE ${PROJECT_NAME})
 set(ENVIRONMENT_CI ${IN_CI_PROCESS})
 
 configure_file(${input_file} ${description_file} @ONLY)
@@ -1701,7 +1688,6 @@ function(generate_Environment_Solution_File)
 set(file ${CMAKE_BINARY_DIR}/PID_Environment_Solution_Info.cmake)
 file(WRITE ${file} "")#reset the description
 file(APPEND ${file} "set(${PROJECT_NAME}_CROSSCOMPILATION ${${PROJECT_NAME}_CROSSCOMPILATION} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_INSTANCE ${${PROJECT_NAME}_INSTANCE} CACHE INTERNAL \"\")\n")
 
 file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSTEM_NAME ${${PROJECT_NAME}_TARGET_SYSTEM_NAME} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR ${${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR} CACHE INTERNAL \"\")\n")
