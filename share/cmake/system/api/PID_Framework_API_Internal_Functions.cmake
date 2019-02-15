@@ -642,8 +642,8 @@ endfunction(generate_Framework_Reference_File)
 #   Update the CI config file with the one coming from the workspace
 #
 function(update_Environment_CI_Config_File)
-
 file(COPY ${WORKSPACE_DIR}/share/patterns/frameworks/framework/.gitlab-ci.yml DESTINATION ${CMAKE_SOURCE_DIR})
+verify_Framework_CI_Content()
 endfunction(update_Environment_CI_Config_File)
 
 #.rst:
@@ -959,3 +959,38 @@ if(${PROJECT_NAME}_FRAMEWORK_ADDRESS)
 )
 endif()
 endmacro(build_Framework)
+
+
+#########################################################################################
+############################ CI for external packages wrappers ##########################
+#########################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |verify_Framework_CI_Content| replace:: ``verify_Framework_CI_Content``
+#  .. _verify_Framework_CI_Content:
+#
+#  verify_Framework_CI_Content
+#  ---------------------------
+#
+#   .. command:: verify_Framework_CI_Content()
+#
+#    Verify that framework CI scripts exist in wrapper repository and perform corrective action otherwise.
+#
+function(verify_Framework_CI_Content)
+
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/share/ci)#the ci folder is missing
+	file(COPY ${WORKSPACE_DIR}/share/patterns/frameworks/framework/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
+	message("[PID] INFO : creating the ci folder in framework ${PROJECT_NAME} repository")
+elseif(NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/share/ci)#the ci folder is missing
+	file(REMOVE ${CMAKE_SOURCE_DIR}/share/ci)
+	message("[PID] WARNING : removed file ${CMAKE_SOURCE_DIR}/share/ci in framework ${PROJECT_NAME}")
+	file(COPY ${WORKSPACE_DIR}/share/patterns/frameworks/framework/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
+	message("[PID] INFO : creating the ci folder in framework ${PROJECT_NAME} repository")
+else() #updating these files by silently replacing the ci folder
+	file(REMOVE_RECURSE ${CMAKE_SOURCE_DIR}/share/ci)
+	file(COPY ${WORKSPACE_DIR}/share/patterns/frameworks/framework/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
+endif()
+endfunction(verify_Framework_CI_Content)

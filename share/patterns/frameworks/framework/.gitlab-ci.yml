@@ -1,14 +1,7 @@
 
-cache:
-  key: "$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA"
-  paths:
-   - binaries/
-   - build/
-
 stages:
  - build
  - deploy
- - cleanup
 
 ### build (CMake project configuration)
 build_framework:
@@ -20,6 +13,11 @@ build_framework:
     - ./share/ci/configure_framework.sh
     - chmod 700 ./share/ci/build_site.sh
     - ./share/ci/build_site.sh
+    - chmod 700 ./share/ci/publish_site.sh
+    - ./share/ci/publish_site.sh
+  artifacts:
+    paths:
+    - public
   only:
     - master
   tags:
@@ -29,24 +27,10 @@ build_framework:
 pages:
   stage: deploy
   script:
-   - chmod 700 ./share/ci/publish_site.sh
-   - ./share/ci/publish_site.sh
+    - echo "[PID] generating static web site"
   artifacts:
     paths:
     - public
-  only:
-    - master
-  tags:
-    - pid
-
-
-## cleanup everything at the end
-cleanup_build:
-  stage: cleanup
-  script:
-   - chmod 700 ./share/ci/cleanup.sh
-   - ./share/ci/cleanup.sh
-  when: always
   only:
     - master
   tags:
