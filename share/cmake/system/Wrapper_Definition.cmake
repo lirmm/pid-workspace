@@ -1166,13 +1166,13 @@ endfunction(translate_Into_Options)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |get_External_Dependencies_Info| replace:: ``get_External_Dependencies_Info``
 #  .. _get_External_Dependencies_Info:
 #
 #  get_External_Dependencies_Info
-#  ------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: get_External_Dependencies_Info([OPTIONS])
 #
@@ -1296,13 +1296,13 @@ endfunction(get_External_Dependencies_Info)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |get_User_Option_Info| replace:: ``get_User_Option_Info``
 #  .. _get_User_Option_Info:
 #
 #  get_User_Option_Info
-#  --------------------
+#  ^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: get_User_Option_Info(OPTION ... RESULT ...)
 #
@@ -1363,13 +1363,13 @@ endfunction(get_User_Option_Info)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |get_Environment_Info| replace:: ``get_Environment_Info``
 #  .. _get_Environment_Info:
 #
 #  get_Environment_Info
-#  --------------------
+#  ^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: get_Environment_Info([JOBS ...] [MAKE...])
 #
@@ -1528,13 +1528,13 @@ endfunction(get_Environment_Info)
 
 
 #.rst:
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |get_Target_Platform_Info| replace:: ``get_Target_Platform_Info``
 #  .. _get_Target_Platform_Info:
 #
 #  get_Target_Platform_Info
-#  ------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #  .. command:: get_Target_Platform_Info([OPTIONS])
 #
@@ -1611,13 +1611,13 @@ endfunction(get_Target_Platform_Info)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |install_External_Project| replace:: ``install_External_Project``
 #  .. _install_External_Project:
 #
 #  install_External_Project
-#  ------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: install_External_Project(URL ... ARCHIVE ... FOLDER ... PATH ... [OPTIONS])
 #
@@ -1732,13 +1732,13 @@ endfunction(install_External_Project)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |return_External_Project_Error| replace:: ``return_External_Project_Error``
 #  .. _return_External_Project_Error:
 #
 #  return_External_Project_Error
-#  -----------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: return_External_Project_Error()
 #
@@ -1766,13 +1766,13 @@ endfunction(return_External_Project_Error)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |build_B2_External_Project| replace:: ``build_B2_External_Project``
 #  .. _build_B2_External_Project:
 #
 #  build_B2_External_Project
-#  -------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: build_B2_External_Project(PROJECT ... FOLDER ... MODE ... [OPTIONS])
 #
@@ -1913,13 +1913,13 @@ endfunction(build_B2_External_Project)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |build_Autotools_External_Project| replace:: ``build_Autotools_External_Project``
 #  .. _build_Autotools_External_Project:
 #
 #  build_Autotools_External_Project
-#  --------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: build_Autotools_External_Project(PROJECT ... FOLDER ... MODE ... [OPTIONS])
 #
@@ -2051,13 +2051,13 @@ endfunction(build_Autotools_External_Project)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |build_Waf_External_Project| replace:: ``build_Waf_External_Project``
 #  .. _build_Waf_External_Project:
 #
 #  build_Waf_External_Project
-#  --------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: build_Waf_External_Project(PROJECT ... FOLDER ... MODE ... [OPTIONS])
 #
@@ -2196,13 +2196,13 @@ endfunction(build_Waf_External_Project)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |build_CMake_External_Project| replace:: ``build_CMake_External_Project``
 #  .. _build_CMake_External_Project:
 #
 #  build_CMake_External_Project
-#  ----------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: build_CMake_External_Project(URL ... ARCHIVE ... FOLDER ... PATH ... [OPTIONS])
 #

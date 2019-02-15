@@ -191,8 +191,6 @@ endmacro(add_PID_Environment_Author)
 #
 #     .. rubric:: Optional parameters
 #
-#      :check_script: path relative to src folder of the script file used to check if current host can be considered as target platform
-#
 #     :PLATFORM <platform>: defines a complete specification of the target platform (e.g. x86_64_linux_abi11).
 #     :TYPE <proc>: the type of architecture for processor of the platform (e.g. x86).
 #     :ARCH <bits>: the size of processor architecture registry, 16, 32 or 64.
@@ -453,13 +451,13 @@ endmacro(build_PID_Environment)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |configure_Environment_Tool| replace:: ``configure_Environment_Tool``
 #  .. _configure_Environment_Tool:
 #
 #  configure_Environment_Tool
-#  --------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: configure_Environment_Tool(LANGUAGE ... [COMPILER...] [AR...] [RANLIB...] [FLAGS...])
 #
@@ -631,13 +629,13 @@ endfunction(configure_Environment_Tool)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |return_Environment_Check| replace:: ``return_Environment_Check``
 #  .. _return_Environment_Check:
 #
 #  return_Environment_Check
-#  ------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: return_Environment_Check(value)
 #
@@ -665,13 +663,13 @@ endmacro(return_Environment_Check)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |return_Environment_Configured| replace:: ``return_Environment_Configured``
 #  .. _return_Environment_Configured:
 #
 #  return_Environment_Configured
-#  -----------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: return_Environment_Configured(value)
 #
@@ -699,13 +697,13 @@ endmacro(return_Environment_Configured)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |get_Environment_Target_Platform| replace:: ``get_Environment_Target_Platform``
 #  .. _get_Environment_Target_Platform:
 #
 #  get_Environment_Target_Platform
-#  -------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: get_Environment_Target_Platform()
 #
@@ -788,13 +786,13 @@ endfunction(get_Environment_Target_Platform)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |get_Environment_Host_Platform| replace:: ``get_Environment_Host_Platform``
 #  .. _get_Environment_Host_Platform:
 #
 #  get_Environment_Host_Platform
-#  ------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: get_Environment_Host_Platform([OPTION var]...)
 #
@@ -847,13 +845,13 @@ endfunction(get_Environment_Host_Platform)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |execute_OS_Command| replace:: ``execute_OS_Command``
 #  .. _execute_OS_Command:
 #
 #  execute_OS_Command
-#  ------------------
+#  ^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: execute_OS_Command(...)
 #
@@ -885,13 +883,13 @@ endmacro(execute_OS_Command)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |get_Environment_Target_ABI_Flags| replace:: ``get_Environment_Target_ABI_Flags``
 #  .. _get_Environment_Target_ABI_Flags:
 #
 #  get_Environment_Target_ABI_Flags
-#  --------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: get_Environment_Target_ABI_Flags(FLAGS target_abi)
 #
@@ -919,13 +917,13 @@ endfunction(get_Environment_Target_ABI_Flags)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: script
 #
 #  .. |evaluate_Host_Platform| replace:: ``evaluate_Host_Platform``
 #  .. _evaluate_Host_Platform:
 #
 #  evaluate_Host_Platform
-#  ----------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: evaluate_Host_Platform()
 #
