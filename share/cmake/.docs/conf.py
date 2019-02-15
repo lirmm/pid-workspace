@@ -159,6 +159,8 @@ try:
 except:
     html_theme_path = []
 
+print('[PID] using sphinx theme '+repr(html_theme))
+
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 #html_title = None
