@@ -13,6 +13,14 @@ Package Description
 .. cmake-module:: ../../system/api/PID_Package_Configuration_Functions.cmake
 
 
+Wrapper Description
+===================
+
+.. setmode:: internal
+
+.. cmake-module:: ../../system/api/PID_Wrapper_API_Internal_Functions.cmake
+
+
 Framework Description
 =====================
 
@@ -21,12 +29,12 @@ Framework Description
 .. cmake-module:: ../../system/api/PID_Framework_API_Internal_Functions.cmake
 
 
-Wrapper Description
-===================
+Environment Description
+=======================
 
 .. setmode:: internal
 
-.. cmake-module:: ../../system/api/PID_Wrapper_API_Internal_Functions.cmake
+.. cmake-module:: ../../system/api/PID_Environment_API_Internal_Functions.cmake
 
 
 Workspace Utilities

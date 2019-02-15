@@ -825,7 +825,7 @@ endfunction(check_Configuration_Arguments)
 # .. ifmode:: internal
 #
 #  .. |prepare_Configuration_Arguments| replace:: ``prepare_Configuration_Arguments``
-#  .. _prepare_Config_Arguments:
+#  .. _prepare_Configuration_Arguments:
 #
 #  prepare_Configuration_Arguments
 #  -------------------------------

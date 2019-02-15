@@ -1468,7 +1468,7 @@ endfunction(evaluate_Environment_Constraints)
 #  .. _generate_Environment_Toolchain_File:
 #
 #  generate_Environment_Toolchain_File
-#  --------------------------------
+#  -----------------------------------
 #
 #   .. command:: generate_Environment_Toolchain_File(index)
 #
