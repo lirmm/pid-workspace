@@ -626,6 +626,26 @@ else()
 endif()
 endfunction(generate_Framework_Reference_File)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Environment_CI_Config_File| replace:: ``update_Environment_CI_Config_File``
+#  .. _update_Environment_CI_Config_File:
+#
+#  update_Environment_CI_Config_File
+#  ----------------------------------
+#
+#   .. command:: update_Environment_CI_Config_File(pathtonewfile)
+#
+#   Update the CI config file with the one coming from the workspace
+#
+function(update_Environment_CI_Config_File)
+
+file(COPY ${WORKSPACE_DIR}/share/patterns/frameworks/framework/.gitlab-ci.yml DESTINATION ${CMAKE_SOURCE_DIR})
+endfunction(update_Environment_CI_Config_File)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -918,6 +938,7 @@ generate_Framework_Readme_File() # generating and putting into source directory 
 generate_Framework_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Framework_Data() # generating the data files for jekyll (result in the build tree)
 generate_Framework_Binary_References() # generating in the project the cmake script files that allow to find references on packages of the framework
+update_Environment_CI_Config_File() #update CI file with version coming from framework
 
 # build steps
 # 1) create or clean the "generated" folder in build tree.
