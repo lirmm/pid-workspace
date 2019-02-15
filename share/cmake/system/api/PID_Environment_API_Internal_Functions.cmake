@@ -335,28 +335,48 @@ endfunction(define_Environment_Solution_Procedure)
 #  Finalize the build process configuration of the current environment project.
 #
 macro(build_Environment_Project)
+
+  # build command simply relaunch configuration with parameters managed
+  add_custom_target(build
+    COMMAND ${CMAKE_COMMAND}
+    -DWORKSPACE_DIR=${WORKSPACE_DIR}
+    -DTARGET_ENVIRONMENT=\${environment}
+		-DTARGET_SYSROOT=\${sysroot}
+		-DTARGET_STAGING=\${staging}
+		-DTARGET_PLATFORM=\${platform}
+		-DTARGET_PROC_TYPE=\${type}
+		-DTARGET_PROC_ARCH=\${arch}
+		-DTARGET_OS=\${os}
+		-DTARGET_ABI=\${abi}
+		-DTARGET_DISTRIBUTION=\${distribution}
+		-DTARGET_DISTRIBUTION_VERSION=\${distrib_version}
+		-DIN_CI_PROCESS=${IN_CI_PROCESS}
+    -DTARGET_ENVIRONMENT=${PROJECT_NAME}
+    -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Environment.cmake
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  )
+
   #########################################################################################################################
   ######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
   #########################################################################################################################
   if(${PROJECT_NAME}_ADDRESS)
-  	generate_Environment_Reference_File(${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake)
-  	#copy the reference file of the package into the "references" folder of the workspace
-  	add_custom_target(referencing
-  		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
-  		COMMAND ${CMAKE_COMMAND} -E echo "Environment references have been registered into the worskpace"
-  		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-  )
+    generate_Environment_Reference_File(${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake)
+    #copy the reference file of the package into the "references" folder of the workspace
+    add_custom_target(referencing
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
+      COMMAND ${CMAKE_COMMAND} -E echo "Environment references have been registered into the worskpace"
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
   endif()
 
-  if(GENERATE_INPUTS_DESCRIPTION)
+  if(NOT EVALUATION_RUN)
     generate_Environment_Inputs_Description_File()
-    set(GENERATE_INPUTS_DESCRIPTION FALSE CACHE INTERNAL "" FORCE)
-    message("[PID] constraints description file has been generated ...")
+    generate_Environment_Readme_Files() # generating and putting into source directory the readme file used by git hosting service
+    generate_Environment_License_File() # generating and putting into source directory the file containing license info about the package
     return()#directly exit
   endif()
 
-  generate_Environment_Readme_Files() # generating and putting into source directory the readme file used by git hosting service
-  generate_Environment_License_File() # generating and putting into source directory the file containing license info about the package
+  set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)
 
   detect_Current_Platform()
   evaluate_Environment_Constraints() #get the parameters passed to the environment
@@ -532,13 +552,13 @@ endfunction(load_Environment)
 #
 # .. ifmode:: internal
 #
-#  .. |evaluate_Environment_From_Configure| replace:: ``evaluate_Environment_From_Configure``
-#  .. _evaluate_Environment_From_Configure:
+#  .. |evaluate_Environment_From_Script| replace:: ``evaluate_Environment_From_Script``
+#  .. _evaluate_Environment_From_Script:
 #
-#  evaluate_Environment_From_Configure
+#  evaluate_Environment_From_Script
 #  -----------------------------------
 #
-#   .. command:: evaluate_Environment_From_Configure(EVAL_OK environment sysroot staging generator toolset)
+#   .. command:: evaluate_Environment_From_Script(EVAL_OK environment sysroot staging generator toolset)
 #
 #     Configure the target environment with management of environment variables coming from user.
 #
@@ -562,14 +582,14 @@ endfunction(load_Environment)
 #
 #      :EVAL_OK: the output variable that is TRUE if the environment has been evaluated and exitted without errors.
 #
-function(evaluate_Environment_From_Configure EVAL_OK environment sysroot staging type arch os abi distribution distrib_version)
+function(evaluate_Environment_From_Script EVAL_OK environment sysroot staging type arch os abi distribution distrib_version)
 set(${EVAL_OK} FALSE PARENT_SCOPE)
 # 1. Get CMake definition for variables that are managed by the environment and set by user
 set(environment_build_folder ${WORKSPACE_DIR}/environments/${environment}/build)
-# 1.1 configure environment to generate variable description file (-DGENERATE_INPUTS_DESCRIPTION=TRUE)
-hard_Clean_Build_Folder(${environment_build_folder})
-execute_process(COMMAND ${CMAKE_COMMAND} -DGENERATE_INPUTS_DESCRIPTION=TRUE ..
-                WORKING_DIRECTORY ${environment_build_folder})
+# 1.1 configure environment
+hard_Clean_Build_Folder(${environment_build_folder}) #starting froma clean situation
+execute_process(COMMAND ${CMAKE_COMMAND} ..
+                WORKING_DIRECTORY ${environment_build_folder})#simply ensure that input are generated
 # 1.2 import variable description file
 if(NOT EXISTS ${environment_build_folder}/PID_Inputs.cmake)
   return()
@@ -634,8 +654,9 @@ if(distrib_version)
   list(APPEND list_of_defs -DFORCED_DISTRIB_VERSION=${distrib_version})
 endif()
 
-# 2.2 reconfigure the environment with new definitions (user and specific variables) and in normal mode (-DGENERATE_INPUTS_DESCRIPTION=FALSE)
-execute_process(COMMAND ${CMAKE_COMMAND} ${list_of_defs} .. WORKING_DIRECTORY ${environment_build_folder} RESULT_VARIABLE res)
+# 2.2 reconfigure the environment with new definitions (user and specific variables) and evalutae it againts host
+execute_process(COMMAND ${CMAKE_COMMAND} -DEVALUATION_RUN=TRUE ${list_of_defs} .. WORKING_DIRECTORY ${environment_build_folder})
+
 # 1.2 import variable description file
 if(res OR NOT EXISTS ${environment_build_folder}/PID_Environment_Description.cmake)
   return()
@@ -643,7 +664,7 @@ endif()
 
 set(${EVAL_OK} TRUE PARENT_SCOPE)
 # at the end: 2 files, toolchain file (optional, only generated if needed) and environment description in environment build folder
-endfunction(evaluate_Environment_From_Configure)
+endfunction(evaluate_Environment_From_Script)
 
 
 #.rst:
