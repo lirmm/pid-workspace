@@ -1,0 +1,10 @@
+#### referencing environment python_interpreter mode ####
+set(python_interpreter_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(python_interpreter_MAIN_INSTITUTION _CNRS/LIRMM CACHE INTERNAL "")
+set(python_interpreter_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_CNRS/LIRMM)" CACHE INTERNAL "")
+set(python_interpreter_YEARS 2019 CACHE INTERNAL "")
+set(python_interpreter_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(python_interpreter_ADDRESS git@gite.lirmm.fr:pid/environments/python_interpreter.git CACHE INTERNAL "")
+set(python_interpreter_PUBLIC_ADDRESS https://gite.lirmm.fr/pid/environments/python_interpreter.git CACHE INTERNAL "")
+set(python_interpreter_LICENSE CeCILL-C CACHE INTERNAL "")
+set(python_interpreter_DESCRIPTION using a given python version into PID workspace CACHE INTERNAL "")

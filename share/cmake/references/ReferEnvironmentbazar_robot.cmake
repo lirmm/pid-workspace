@@ -1,0 +1,10 @@
+#### referencing environment bazar_robot mode ####
+set(bazar_robot_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(bazar_robot_MAIN_INSTITUTION _CNRS/LIRMM CACHE INTERNAL "")
+set(bazar_robot_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_CNRS/LIRMM)" CACHE INTERNAL "")
+set(bazar_robot_YEARS 2014 CACHE INTERNAL "")
+set(bazar_robot_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(bazar_robot_ADDRESS git@gite.lirmm.fr:pid/environments/bazar_robot.git CACHE INTERNAL "")
+set(bazar_robot_PUBLIC_ADDRESS https://gite.lirmm.fr/pid/environments/bazar_robot.git CACHE INTERNAL "")
+set(bazar_robot_LICENSE CeCILL-C CACHE INTERNAL "")
+set(bazar_robot_DESCRIPTION used environment for the bazar robot server CACHE INTERNAL "")

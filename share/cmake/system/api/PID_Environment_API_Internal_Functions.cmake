@@ -335,6 +335,18 @@ endfunction(define_Environment_Solution_Procedure)
 #  Finalize the build process configuration of the current environment project.
 #
 macro(build_Environment_Project)
+  #########################################################################################################################
+  ######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
+  #########################################################################################################################
+  if(${PROJECT_NAME}_ADDRESS)
+  	generate_Environment_Reference_File(${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake)
+  	#copy the reference file of the package into the "references" folder of the workspace
+  	add_custom_target(referencing
+  		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
+  		COMMAND ${CMAKE_COMMAND} -E echo "Environment references have been registered into the worskpace"
+  		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  )
+  endif()
 
   if(GENERATE_INPUTS_DESCRIPTION)
     generate_Environment_Inputs_Description_File()
@@ -376,19 +388,6 @@ macro(build_Environment_Project)
   #generate workspace configuration files only if really usefull
   generate_Environment_Description_File()
   generate_Environment_Solution_File()
-
-  #########################################################################################################################
-  ######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
-  #########################################################################################################################
-  if(${PROJECT_NAME}_ADDRESS)
-  	generate_Environment_Reference_File(${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake)
-  	#copy the reference file of the package into the "references" folder of the workspace
-  	add_custom_target(referencing
-  		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/share/cmake/references
-  		COMMAND ${CMAKE_COMMAND} -E echo "Environment references have been registered into the worskpace"
-  		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-  )
-  endif()
 endmacro(build_Environment_Project)
 
 #.rst:
