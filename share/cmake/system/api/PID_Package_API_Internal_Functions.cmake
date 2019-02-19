@@ -495,6 +495,7 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DIN_CI_PROCESS=${IN_CI_PROCESS}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
 						-DTARGET_PLATFORM=${curr_platform}
@@ -515,6 +516,7 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DIN_CI_PROCESS=${IN_CI_PROCESS}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
 						-DTARGET_PLATFORM=${curr_platform}

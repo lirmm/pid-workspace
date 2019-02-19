@@ -2275,32 +2275,46 @@ endfunction(update_Framework_Repository)
 #
 #     :framework: the name of target framework
 #
+#     :PUBLISHED: the output variable that is TRUE if framework published, FALSE otherwise
+#
 function(publish_Framework_Repository framework PUBLISHED)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git status --porcelain OUTPUT_VARIABLE res)
 if(res)#there is something to commit !
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git add -A OUTPUT_QUIET ERROR_QUIET)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git commit -m "publishing new version of framework")
-  set(CONTINUE TRUE)
-  set(COUNTER 0)
-  while(CONTINUE)
-    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
-  	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
-    if(PUSH_RESULT EQUAL 0)
-      set(${PUBLISHED} TRUE PARENT_SCOPE)
-      return()
-    else()# cannot push => due to another runner updating
-      message("[PID] INFO: waiting 30 seconds before publishing again the result...")
-      execute_process(COMMAND ${CMAKE_COMMAND} -E sleep 30  OUTPUT_QUIET ERROR_QUIET) #waiting 30 seconds before repulling again
-      math(EXPR COUNTER "${COUNTER}+1")
-      if(COUNTER GREATER 120)# more than 1 hour trying to pull
-        set(CONTINUE FALSE)
-      endif()
-    endif()
-  endwhile()
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull --ff-only origin master OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+if(PULL_RESULT EQUAL 0)#no conflict to manage
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git push origin master OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+  if(PUSH_RESULT EQUAL 0)
+    set(${PUBLISHED} TRUE PARENT_SCOPE)
+    return()
+  endif()
 endif()
 set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Framework_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |merge_Framework_Repository| replace:: ``merge_Framework_Repository``
+#  .. _merge_Framework_Repository:
+#
+#  merge_Framework_Repository
+#  ---------------------------
+#
+#   .. command:: merge_Framework_Repository(framework)
+#
+#     Force the merge of master branch of origin into local framework's repository.
+#
+#     :framework: the name of target framework
+#
+function(merge_Framework_Repository framework)
+  #pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework} git pull -f origin master OUTPUT_QUIET ERROR_QUIET)
+endfunction(merge_Framework_Repository)
 
 #.rst:
 #
@@ -2812,24 +2826,35 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/package
 if(res)#there is something to commit
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git add -A OUTPUT_QUIET ERROR_QUIET)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git commit -m "publising ${package} static site" OUTPUT_QUIET ERROR_QUIET)
-  set(CONTINUE TRUE)
-  set(COUNTER 0)
-  while(CONTINUE)
-    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
-    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git push origin master RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
-    if(PUSH_RESULT EQUAL 0)
-      set(${PUBLISHED} TRUE PARENT_SCOPE)
-      return()
-    else()# cannot push => due to another runner updating
-      message("[PID] INFO: waiting 30 seconds before publishing again the result...")
-      execute_process(COMMAND ${CMAKE_COMMAND} -E sleep 30  OUTPUT_QUIET ERROR_QUIET) #waiting 30 seconds before repulling again
-      math(EXPR COUNTER "${COUNTER}+1")
-      if(COUNTER GREATER 120)# more than 1 hour trying to pull
-        set(CONTINUE FALSE)
-      endif()
-    endif()
-  endwhile()
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git pull --ff-only  origin master OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+if(PULL_RESULT EQUAL 0)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git lfs pull origin master OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git push origin master RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+  if(PUSH_RESULT EQUAL 0)
+    set(${PUBLISHED} TRUE PARENT_SCOPE)
+    return()
+  endif()
 endif()
 set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Static_Site_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |merge_Static_Site_Repository| replace:: ``merge_Static_Site_Repository``
+#  .. _merge_Static_Site_Repository:
+#
+#  merge_Static_Site_Repository
+#  ----------------------------
+#
+#   .. command:: merge_Static_Site_Repository(package)
+#
+#     Force the merge of master branch of origin into local package's static site repository.
+#
+#     :package: the name of target package
+#
+function(merge_Static_Site_Repository package)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/packages/${package} git pull -f origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+endfunction(merge_Static_Site_Repository)
