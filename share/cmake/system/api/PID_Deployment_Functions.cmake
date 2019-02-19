@@ -1655,7 +1655,7 @@ extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI instance_str platfor
 #release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
-generate_Binary_Package_Name(${package} ${version} ${platform_str} Release FILE_BINARY FOLDER_BINARY)
+generate_Binary_Package_Name(${package} ${version} ${platform_str} Release FILE_BINARY FOLDER_BINARY)#whatever the platform is with instance or not, archive and folder are named the same way
 set(download_url ${${package}_REFERENCE_${version}_${platform}_URL})#platform in download url may contain also the instance extension
 file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
@@ -2868,7 +2868,6 @@ endfunction(deploy_Framework_Repository)
 #      :IS_DEPLOYED: the output variable that is TRUE if environment has ben deployed.
 #
 function(deploy_Environment_Repository IS_DEPLOYED environment)
-  message("deploy_Environment_Repository ${environment}_ADDRESS=${${environment}_ADDRESS} ${environment}_PUBLIC_ADDRESS=${${environment}_PUBLIC_ADDRESS}")
 if(${environment}_ADDRESS OR ${environment}_PUBLIC_ADDRESS)
 	if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : cloning the repository of environment ${environment}...")
