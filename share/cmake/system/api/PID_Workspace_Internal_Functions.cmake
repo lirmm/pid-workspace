@@ -1459,6 +1459,39 @@ endfunction(deploy_PID_Framework)
 #
 # .. ifmode:: internal
 #
+#  .. |deploy_PID_Environment| replace:: ``deploy_PID_Environment``
+#  .. _deploy_PID_Environment:
+#
+#  deploy_PID_Environment
+#  ----------------------
+#
+#   .. command:: deploy_PID_Environment(environment verbose)
+#
+#   Deploy a environment into workspace. Result in installing an existing environment repository in the workspace filesystem.
+#
+#      :environment: the name of the environment to deploy.
+#
+#      :verbose: if TRUE the deployment will print more information to standard output.
+#
+function(deploy_PID_Environment environment verbose)
+set(PROJECT_NAME ${environment})
+if(verbose)
+	set(ADDITIONNAL_DEBUG_INFO ON)
+else()
+	set(ADDITIONNAL_DEBUG_INFO OFF)
+endif()
+	deploy_Environment_Repository(DEPLOYED ${environment})
+	if(DEPLOYED)
+		message("[PID] INFO : environment ${environment} has been deployed.")
+	else()
+		message("[PID] ERROR : cannot deploy ${environment} repository.")
+	endif()
+endfunction(deploy_PID_Environment)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |deploy_PID_Native_Package| replace:: ``deploy_PID_Native_Package``
 #  .. _deploy_PID_Native_Package:
 #

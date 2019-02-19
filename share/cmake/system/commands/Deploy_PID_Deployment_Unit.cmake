@@ -45,6 +45,10 @@ if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
 	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
 endif()
 
+if(NOT TARGET_ENVIRONMENT AND DEFINED ENV{environment})
+	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
+endif()
+
 if(NOT TARGET_VERSION AND DEFINED ENV{version})
 	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
 endif()
@@ -98,6 +102,21 @@ if(TARGET_FRAMEWORK)# a framework is deployed
 	deploy_PID_Framework(${TARGET_FRAMEWORK} "${VERBOSE_MODE}") #do the job
 	return()
 
+elseif(TARGET_ENVIRONMENT)# deployment of an environment is required
+	# checks of the arguments
+	include(ReferEnvironment${TARGET_ENVIRONMENT} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+	if(REQUIRED_STATUS STREQUAL NOTFOUND)
+		message("[PID] ERROR : Environment name ${TARGET_ENVIRONMENT} does not refer to any known environment in the workspace.")
+		return()
+	endif()
+	# deployment of the framework
+	if(EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT} AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT})
+		message("[PID] ERROR : Source repository for environment ${TARGET_FRAMEWORK} already resides in the workspace.")
+		return()
+	endif()
+	message("[PID] INFO : deploying PID environment ${TARGET_ENVIRONMENT} in the workspace ...")
+	deploy_PID_Environment(${TARGET_ENVIRONMENT} "${VERBOSE_MODE}") #do the job
+	return()
 else()# a package deployment is required
 
 	####################################################################

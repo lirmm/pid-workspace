@@ -43,16 +43,25 @@ platform=${platform/" "/""}
 
 # 2 separate platform and environment names
 instance=""
-if [[ $platform =~ '^(.*)__([^_]+)__$' ]]; then
+reg_expr="^(.*)__(.+)__$"
+
+if [[ $platform =~ $reg_expr ]]; then
     instance=${BASH_REMATCH[2]}
     platform=${BASH_REMATCH[1]}
 fi
 
 if [  "$instance" != "" ]; then
   echo "[PID] CI : configuring environment $instance on platform $platform ..."
-  cd build
+  cd binaries/pid-workspace/pid
   environment=$instance platform=$platform cmake --build . --target configure
-  cd ..
+  CONFIGURE_RES=$?
+  cd ../../..
+  if [ $CONFIGURE_RES != 0 ]; then
+    echo "--------------------------------------------------------------"
+    echo "----[PID] CI : configuring workspace: FAIL -------------------"
+    echo "--------------------------------------------------------------"
+    exit $CONFIGURE_RES
+  fi
 fi
 
 echo "--------------------------------------------------------------"

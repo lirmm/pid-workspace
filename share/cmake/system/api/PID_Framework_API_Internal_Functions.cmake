@@ -663,7 +663,7 @@ endfunction(update_Environment_CI_Config_File)
 function(generate_Framework_Binary_References)
 set(dir ${CMAKE_SOURCE_DIR}/src/_packages)
 list_Subdirectories(ALL_PACKAGES ${dir})
-foreach(package IN LISTS ALL_PACKAGES)
+foreach(package IN LISTS ALL_PACKAGES)# generating binaries reference cmake files for each native package
 	generate_Framework_Binary_Reference_For_Package(${package} TRUE)
 endforeach()
 #dealing also with external packages (no documentation only binary references)
@@ -869,10 +869,10 @@ foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os f
 				set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
 				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)# release version must exist for native packages
 
-				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${ref_platform}.tar.gz)# debug version may no exist for native packages
+				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)# debug version may no exist for native packages
 					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
 				endif()
-			elseif(NOT NATIVE AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz) #at least a release version is required for external packages
+			elseif(NOT native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz) #at least a release version is required for external packages
 
 				set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
 				set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
@@ -891,10 +891,10 @@ if(${package}_FRAMEWORK_REFERENCES)#there are registered references
 	list(REMOVE_DUPLICATES ${package}_FRAMEWORK_REFERENCES)
 	file(APPEND ${file} "set(${package}_REFERENCES ${${package}_FRAMEWORK_REFERENCES} CACHE INTERNAL \"\")\n") # the version is registered
 	foreach(ref_version IN LISTS ${package}_FRAMEWORK_REFERENCES)
-		list(REMOVE_DUPLICATES ${package}_FRAMEWORK_REFERENCE_${ref_version})
+		list(REMOVE_DUPLICATES ${package}_FRAMEWORK_REFERENCE_${ref_version}) #there is at least one platform referenced so no need to test for nullity
 		file(APPEND ${file} "set(${package}_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n")
-		foreach(ref_platform IN LISTS ${package}_FRAMEWORK_REFERENCE_${ref_version}) #there is at least one platform referenced so no need to test for nullity
 
+		foreach(ref_platform IN LISTS ${package}_FRAMEWORK_REFERENCE_${ref_version})
 			#release binary referencing
 			file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL} CACHE INTERNAL \"\")\n")#reference on the release binary
 			if(NOT native)

@@ -2450,14 +2450,15 @@ endfunction(change_Origin_Framework_Repository)
 #     :IS_DEPLOYED: the output variable that is TRUE if environment has been cloned, FALSE otherwise
 #
 function(clone_Environment_Repository IS_DEPLOYED environment url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments git clone ${url} OUTPUT_QUIET ERROR_QUIET)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments git clone ${url})
 
 #environment may be named by only by their name or with a -framework suffix
 if(EXISTS ${WORKSPACE_DIR}/environments/${environment} AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${environment})
-	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
+  set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git fetch origin OUTPUT_QUIET ERROR_QUIET) #just in case of
 else()
-	if(EXISTS ${WORKSPACE_DIR}/environments/${environment}-environment AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${environment}-environment)
+  if(EXISTS ${WORKSPACE_DIR}/environments/${environment}-environment
+    AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${environment}-environment)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${WORKSPACE_DIR}/environments/${environment}-environment ${WORKSPACE_DIR}/environments/${environment} OUTPUT_QUIET ERROR_QUIET)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment} git lfs pull origin master)#fetching master branch to get most up to date archives
 		set(${IS_DEPLOYED} TRUE PARENT_SCOPE)

@@ -1163,7 +1163,7 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
   endif()
 
   if(${PROJECT_NAME}_ARCH_CONSTRAINT
-      AND NOT CURRENT_PLATFORM_ARCH STREQUAL ${PROJECT_NAME}_ARCH_CONSTRAINT)
+  AND NOT CURRENT_PLATFORM_ARCH EQUAL ${PROJECT_NAME}_ARCH_CONSTRAINT)
       set(result FALSE)
   endif()
 
@@ -1173,10 +1173,22 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
       set(result FALSE)
   endif()
 
-  if(${PROJECT_NAME}_ABI_CONSTRAINT #processor architecture type constraint is specified
-      AND NOT CURRENT_PLATFORM_ABI STREQUAL ${PROJECT_NAME}_ABI_CONSTRAINT)
+  if(${PROJECT_NAME}_ABI_CONSTRAINT)#processor architecture type constraint is specified
+
+    if(CURRENT_PLATFORM_ABI MATCHES "CXX11|11|abi11")
+      set(curr_abi 11)
+    else()
+      set(curr_abi 98)
+    endif()
+    if(${PROJECT_NAME}_ABI_CONSTRAINT MATCHES "CXX11|11|abi11")
+      set(cte_abi 11)
+    else()
+      set(cte_abi 98)
+    endif()
+    if(NOT cte_abi EQUAL curr_abi)
       #for the ABI it is not necessary to cross compile, juste to have adequate compiler and pass adequate arguments
-    set(result FALSE)
+      set(result FALSE)
+    endif()
   endif()
 
   #compiling for another distribution does not necessarily mean crosscompiling

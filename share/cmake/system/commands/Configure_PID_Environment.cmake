@@ -97,7 +97,6 @@ else()
 	endif()
 endif()
 
-
 if(NOT TARGET_DISTRIBUTION AND DEFINED ENV{distribution})
 	set(TARGET_DISTRIBUTION $ENV{distribution} CACHE INTERNAL "" FORCE)
 	#more on platform

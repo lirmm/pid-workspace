@@ -168,7 +168,7 @@ endfunction(is_A_System_Reference_Path)
 #     :RES_PLATFORM_BASE: the output variable containing platform base name (in case no instance is specified it is == name)
 #
 function(extract_Info_From_Platform RES_TYPE RES_ARCH RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE name)
-  if(name MATCHES "^(.+)__([^_]+)__$")#there is an instance name
+  if(name MATCHES "^(.+)__(.+)__$")#there is an instance name
     set(platform_name ${CMAKE_MATCH_1})
     set(instance_name ${CMAKE_MATCH_2})# this is a custom platform name used for CI and binary deployment
   else()
@@ -948,13 +948,15 @@ endfunction(list_Platform_Symlinks)
 function(list_Platform_Subdirectories RESULT curdir)
 	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
 	set(dirlist "")
-	foreach(child ${children})
-		if(IS_DIRECTORY ${curdir}/${child}
-			AND NOT IS_SYMLINK ${curdir}/${child}
-			AND "${child}" MATCHES "^[^_]+_[^_]+_[^_]+_[^_]+$")
-			list(APPEND dirlist ${child})
-		endif()
-	endforeach()
+  if(children)
+  	foreach(child ${children})
+  		if(IS_DIRECTORY ${curdir}/${child}
+  			AND NOT IS_SYMLINK ${curdir}/${child}
+  			AND "${child}" MATCHES "^[^_]+_[^_]+_[^_]+_[^_]+(__.+__)?$")#platform name pattern takes into account pontential environment instance
+  			list(APPEND dirlist ${child})
+  		endif()
+  	endforeach()
+  endif()
 	set(${RESULT} ${dirlist} PARENT_SCOPE)
 endfunction(list_Platform_Subdirectories)
 

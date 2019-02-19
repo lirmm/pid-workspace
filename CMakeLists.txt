@@ -118,6 +118,7 @@ add_custom_target(info
 add_custom_target(deploy
 	COMMAND ${CMAKE_COMMAND} -DTARGET_PACKAGE=\${package}
 					-DTARGET_VERSION=\${version}
+					-DTARGET_ENVIRONMENT=\${environment}
 					-DTARGET_FRAMEWORK=\${framework}
 					-DVERBOSE_MODE=\${verbose}
 					-DFORCE_REDEPLOY=\${force}

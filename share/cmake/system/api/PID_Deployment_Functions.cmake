@@ -735,23 +735,24 @@ endfunction(install_Native_Package)
 #
 function(load_Package_Binary_References REFERENCES_FOUND package)
 set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
+set(to_include)
 if(${package}_FRAMEWORK) #references are deployed in a framework
 	if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${package}_FRAMEWORK}.cmake)
 		#when package is in a framework there is one more indirection to get references (we need to get information about this framework before downloading the reference file)
-		include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${package}_FRAMEWORK}.cmake)
+		include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${${package}_FRAMEWORK}.cmake )
 		set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_FRAMEWORK_SITE})#get the address of the framework static site
-		file(DOWNLOAD ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
+    file(DOWNLOAD ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 		list(GET res 0 numeric_error)
 
 		if(numeric_error EQUAL 0 #framework site is online & reference available.
 		AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
-			include(${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+      set(to_include ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 		else() #it may be an external package, try this
 			file(DOWNLOAD ${FRAMEWORK_ADDRESS}/external/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 			list(GET res 0 numeric_error)
 			if(numeric_error EQUAL 0 #framework site is online & reference available.
 			AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
-				include(${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+				set(to_include ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 			endif()
 		endif()
 	endif()
@@ -761,8 +762,21 @@ elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static s
 	list(GET res 0 numeric_error)
 	if(numeric_error EQUAL 0 #static site online & reference available.
 	AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
-		include(${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+		set(to_include ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 	endif()
+endif()
+if(to_include)#there is a file to include but if static site is private it may have returned an invalid file (HTML connection ERROR response)
+  file(STRINGS ${to_include} LINES)
+  set(erroneous_file FALSE)
+  foreach(line IN LISTS LINES)
+    if(NOT line MATCHES "^(#.+|set\(.+\))")
+      set(erroneous_file TRUE)
+      break()
+    endif()
+  endforeach()
+  if(NOT erroneous_file)
+    include(${to_include})
+  endif()
 endif()
 if(${package}_REFERENCES) #if there are direct reference (simpler case), no need to do more becase binary references are already included
 	set(${REFERENCES_FOUND} TRUE PARENT_SCOPE)
@@ -2830,3 +2844,51 @@ else()
 	message("[PID] ERROR : impossible to clone the repository of framework ${framework} (no repository address defined). This is maybe due to a malformed package, please contact the administrator of this framework.")
 endif()
 endfunction(deploy_Framework_Repository)
+
+#############################################################################################
+############################### functions for frameworks ####################################
+#############################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Environment_Repository| replace:: ``deploy_Environment_Repository``
+#  .. _deploy_Environment_Repository:
+#
+#  deploy_Environment_Repository
+#  -----------------------------
+#
+#   .. command:: deploy_Environment_Repository(IS_DEPLOYED environment)
+#
+#    Deploy an environment git repository into the workspace.
+#
+#      :environment: The name of the environment.
+#
+#      :IS_DEPLOYED: the output variable that is TRUE if environment has ben deployed.
+#
+function(deploy_Environment_Repository IS_DEPLOYED environment)
+  message("deploy_Environment_Repository ${environment}_ADDRESS=${${environment}_ADDRESS} ${environment}_PUBLIC_ADDRESS=${${environment}_PUBLIC_ADDRESS}")
+if(${environment}_ADDRESS OR ${environment}_PUBLIC_ADDRESS)
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] INFO : cloning the repository of environment ${environment}...")
+	endif()
+  if(${environment}_PUBLIC_ADDRESS)
+    set(addr ${${environment}_PUBLIC_ADDRESS})
+  elseif(${environment}_ADDRESS)
+    set(addr ${${environment}_ADDRESS})
+  endif()
+	clone_Environment_Repository(DEPLOYED ${environment} ${addr})
+	if(DEPLOYED)
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] INFO : repository of environment ${environment} has been cloned.")
+		endif()
+	else()
+		message("[PID] ERROR : cannot clone the repository of environment ${environment}.")
+	endif()
+	set(${IS_DEPLOYED} ${DEPLOYED} PARENT_SCOPE)
+else()
+	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
+	message("[PID] ERROR : impossible to clone the repository of environment ${environment} (no repository address defined). This is maybe due to a malformed package, please contact the administrator of this environment.")
+endif()
+endfunction(deploy_Environment_Repository)

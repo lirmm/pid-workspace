@@ -95,134 +95,131 @@ endfunction(add_Example_To_Doc c_name)
 #     Generate the doxygen API documentation for current package project.
 #
 function(generate_API)
-
 if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
 
-if(NOT BUILD_API_DOC)
-	return()
-endif()
+  if(NOT BUILD_API_DOC)
+  	return()
+  endif()
+  if(EXISTS ${PROJECT_SOURCE_DIR}/share/doxygen/img/)
+  	install(DIRECTORY ${PROJECT_SOURCE_DIR}/share/doxygen/img/ DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/doc/)
+  	file(COPY ${PROJECT_SOURCE_DIR}/share/doxygen/img/ DESTINATION ${PROJECT_BINARY_DIR}/share/doc/)
+  endif()
 
-if(EXISTS ${PROJECT_SOURCE_DIR}/share/doxygen/img/)
-	install(DIRECTORY ${PROJECT_SOURCE_DIR}/share/doxygen/img/ DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/doc/)
-	file(COPY ${PROJECT_SOURCE_DIR}/share/doxygen/img/ DESTINATION ${PROJECT_BINARY_DIR}/share/doc/)
-endif()
+  #finding doxygen tool and doxygen configuration file
+  find_package(Doxygen)
+  if(NOT DOXYGEN_FOUND)
+  	message("[PID] WARNING : Doxygen not found please install it to generate the API documentation")
+  	return()
+  endif()
 
-#finding doxygen tool and doxygen configuration file
-find_package(Doxygen)
-if(NOT DOXYGEN_FOUND)
-	message("[PID] WARNING : Doxygen not found please install it to generate the API documentation")
-	return()
-endif(NOT DOXYGEN_FOUND)
 
-find_file(DOXYFILE_IN   "Doxyfile.in"
-			PATHS "${CMAKE_SOURCE_DIR}/share/doxygen"
-			NO_DEFAULT_PATH
-	)
+  find_file(DOXYFILE_IN   "Doxyfile.in"
+  			PATHS "${CMAKE_SOURCE_DIR}/share/doxygen"
+  			NO_DEFAULT_PATH
+  	)
 
-set(DOXYFILE_PATH)
-if(DOXYFILE_IN MATCHES DOXYFILE_IN-NOTFOUND)
-	find_file(GENERIC_DOXYFILE_IN   "Doxyfile.in"
-					PATHS "${WORKSPACE_DIR}/share/patterns/packages"
-					NO_DEFAULT_PATH
-		)
-	if(GENERIC_DOXYFILE_IN MATCHES GENERIC_DOXYFILE_IN-NOTFOUND)
-		message("[PID] ERROR : no doxygen template file found ... skipping documentation generation !!")
-	else()
-		set(DOXYFILE_PATH ${GENERIC_DOXYFILE_IN})
-	endif()
-	unset(GENERIC_DOXYFILE_IN CACHE)
-else()
-	set(DOXYFILE_PATH ${DOXYFILE_IN})
-endif()
-unset(DOXYFILE_IN CACHE)
+  set(DOXYFILE_PATH)
+  if(DOXYFILE_IN MATCHES DOXYFILE_IN-NOTFOUND)
+  	find_file(GENERIC_DOXYFILE_IN   "Doxyfile.in"
+  					PATHS "${WORKSPACE_DIR}/share/patterns/packages"
+  					NO_DEFAULT_PATH
+  		)
+  	if(GENERIC_DOXYFILE_IN MATCHES GENERIC_DOXYFILE_IN-NOTFOUND)
+  		message("[PID] ERROR : no doxygen template file found ... skipping documentation generation !!")
+  	else()
+  		set(DOXYFILE_PATH ${GENERIC_DOXYFILE_IN})
+  	endif()
+  	unset(GENERIC_DOXYFILE_IN CACHE)
+  else()
+  	set(DOXYFILE_PATH ${DOXYFILE_IN})
+  endif()
+  unset(DOXYFILE_IN CACHE)
+  if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
+  	# general variables
+  	set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
+  	set(DOXYFILE_MAIN_PAGE "${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md")
+  	set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
+  	set(DOXYFILE_PROJECT_VERSION ${${PROJECT_NAME}_VERSION})
+  	set(DOXYFILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/doc)
+  	set(DOXYFILE_HTML_DIR html)
+  	set(DOXYFILE_LATEX_DIR latex)
 
-if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
-	# general variables
-	set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
-	set(DOXYFILE_MAIN_PAGE "${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md")
-	set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
-	set(DOXYFILE_PROJECT_VERSION ${${PROJECT_NAME}_VERSION})
-	set(DOXYFILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/doc)
-	set(DOXYFILE_HTML_DIR html)
-	set(DOXYFILE_LATEX_DIR latex)
+  	### new targets ###
+  	# creating the specific target to run doxygen
+    add_custom_target(doxygen
+  		${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/share/Doxyfile
+  		DEPENDS ${CMAKE_BINARY_DIR}/share/Doxyfile
+  		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  		COMMENT "Generating API documentation with Doxygen" VERBATIM
+  	)
 
-	### new targets ###
-	# creating the specific target to run doxygen
-	add_custom_target(doxygen
-		${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/share/Doxyfile
-		DEPENDS ${CMAKE_BINARY_DIR}/share/Doxyfile
-		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-		COMMENT "Generating API documentation with Doxygen" VERBATIM
-	)
+  	# target to clean installed doc
+  	set_property(DIRECTORY
+  		APPEND PROPERTY
+  		ADDITIONAL_MAKE_CLEAN_FILES
+  		"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_HTML_DIR}")
 
-	# target to clean installed doc
-	set_property(DIRECTORY
-		APPEND PROPERTY
-		ADDITIONAL_MAKE_CLEAN_FILES
-		"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_HTML_DIR}")
+  	# creating the doc target
+  	if(NOT TARGET doc)
+  		add_custom_target(doc)
+  	endif()
 
-	# creating the doc target
-	if(NOT TARGET doc)
-		add_custom_target(doc)
-	endif()
+  	add_dependencies(doc doxygen)
 
-	add_dependencies(doc doxygen)
+  	### end new targets ###
 
-	### end new targets ###
+  	### doxyfile configuration ###
 
-	### doxyfile configuration ###
+  	# configuring doxyfile for html generation
+  	set(DOXYFILE_GENERATE_HTML "YES")
 
-	# configuring doxyfile for html generation
-	set(DOXYFILE_GENERATE_HTML "YES")
+  	# configuring doxyfile to use dot executable if available
+  	set(DOXYFILE_DOT "NO")
+  	if(DOXYGEN_DOT_EXECUTABLE)
+  		set(DOXYFILE_DOT "YES")
+  	endif()
 
-	# configuring doxyfile to use dot executable if available
-	set(DOXYFILE_DOT "NO")
-	if(DOXYGEN_DOT_EXECUTABLE)
-		set(DOXYFILE_DOT "YES")
-	endif()
+  	# configuring doxyfile for latex generation
+  	set(DOXYFILE_PDFLATEX "NO")
 
-	# configuring doxyfile for latex generation
-	set(DOXYFILE_PDFLATEX "NO")
+  	if(BUILD_LATEX_API_DOC)
+  		# target to clean installed doc
+  		set_property(DIRECTORY
+  			APPEND PROPERTY
+  			ADDITIONAL_MAKE_CLEAN_FILES
+  			"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
+  		set(DOXYFILE_GENERATE_LATEX "YES")
+  		find_package(LATEX)
+  		find_program(DOXYFILE_MAKE make)
+  		mark_as_advanced(DOXYFILE_MAKE)
+  		if(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+  			if(PDFLATEX_COMPILER)
+  				set(DOXYFILE_PDFLATEX "YES")
+  			endif(PDFLATEX_COMPILER)
 
-	if(BUILD_LATEX_API_DOC)
-		# target to clean installed doc
-		set_property(DIRECTORY
-			APPEND PROPERTY
-			ADDITIONAL_MAKE_CLEAN_FILES
-			"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
-		set(DOXYFILE_GENERATE_LATEX "YES")
-		find_package(LATEX)
-		find_program(DOXYFILE_MAKE make)
-		mark_as_advanced(DOXYFILE_MAKE)
-		if(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
-			if(PDFLATEX_COMPILER)
-				set(DOXYFILE_PDFLATEX "YES")
-			endif(PDFLATEX_COMPILER)
+  			add_custom_command(TARGET doxygen
+  				POST_BUILD
+  				COMMAND "${DOXYFILE_MAKE}"
+  				COMMENT	"Running LaTeX for Doxygen documentation in ${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}..."
+  				WORKING_DIRECTORY "${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
+  		else()
+  			set(DOXYGEN_LATEX "NO")
+  		endif()
+  	else()
+  		set(DOXYFILE_GENERATE_LATEX "NO")
+  	endif()
 
-			add_custom_command(TARGET doxygen
-				POST_BUILD
-				COMMAND "${DOXYFILE_MAKE}"
-				COMMENT	"Running LaTeX for Doxygen documentation in ${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}..."
-				WORKING_DIRECTORY "${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
-		else(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
-			set(DOXYGEN_LATEX "NO")
-		endif(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+  	#configuring the Doxyfile.in file to generate a doxygen configuration file
+  	configure_file(${DOXYFILE_PATH} ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
+  	### end doxyfile configuration ###
 
-	else()
-		set(DOXYFILE_GENERATE_LATEX "NO")
-	endif()
-
-	#configuring the Doxyfile.in file to generate a doxygen configuration file
-	configure_file(${DOXYFILE_PATH} ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
-	### end doxyfile configuration ###
-
-	### installing documentation ###
-	install(DIRECTORY ${CMAKE_BINARY_DIR}/share/doc DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
-	### end installing documentation ###
-
-endif()
-	set(BUILD_API_DOC OFF FORCE)
-endif()
+  	### installing documentation ###
+  	install(DIRECTORY ${CMAKE_BINARY_DIR}/share/doc DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+  	### end installing documentation ###
+  else()
+    set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
+  endif()
+endif()#in release mode
 endfunction(generate_API)
 
 #.rst:
@@ -1092,19 +1089,19 @@ endif()
 
 # configure menus content depending on project configuration
 if(BUILD_API_DOC)
-set(PACKAGE_HAS_API_DOC true)
+  set(PACKAGE_HAS_API_DOC true)
 else()
-set(PACKAGE_HAS_API_DOC false)
+  set(PACKAGE_HAS_API_DOC false)
 endif()
 if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
-set(PACKAGE_HAS_COVERAGE true)
+  set(PACKAGE_HAS_COVERAGE true)
 else()
-set(PACKAGE_HAS_COVERAGE false)
+  set(PACKAGE_HAS_COVERAGE false)
 endif()
 if(BUILD_STATIC_CODE_CHECKING_REPORT)
-set(PACKAGE_HAS_STATIC_CHECKS true)
+  set(PACKAGE_HAS_STATIC_CHECKS true)
 else()
-set(PACKAGE_HAS_STATIC_CHECKS false)
+  set(PACKAGE_HAS_STATIC_CHECKS false)
 endif()
 endmacro(configure_Static_Site_Generation_Variables)
 
