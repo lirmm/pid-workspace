@@ -2079,7 +2079,7 @@ if(NOT RES_VERSION)
 endif()
 list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
-	build_And_Install_External_Package_Version(INSTALLED ${package} ${RES_VERSION} ${is_system})
+	build_And_Install_External_Package_Version(INSTALLED ${package} ${RES_VERSION} "${is_system}")
 	if(NOT INSTALLED) # this package version has FAILED TO be built during current process
 		set(${DEPLOYED} FALSE PARENT_SCOPE)
 		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE)
@@ -2376,7 +2376,8 @@ endif()
 if(NO_VERSION)
 	deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "${list_of_installed_versions}")
 else()
-	deploy_Source_External_Package_Version(SOURCE_DEPLOYED ${package} ${SELECTED} ${IS_EXACT} ${IS_SYSTEM} "${list_of_installed_versions}")
+  message("SELECTED=${SELECTED} IS_EXACT=${IS_EXACT} IS_SYSTEM=${IS_SYSTEM}")
+	deploy_Source_External_Package_Version(SOURCE_DEPLOYED ${package} ${SELECTED} "${IS_EXACT}" "${IS_SYSTEM}" "${list_of_installed_versions}")
 endif()
 
 if(SOURCE_DEPLOYED)
