@@ -19,7 +19,7 @@
 
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian)
-	execute_OS_Configuration_Command(apt-get install openssl)
+	execute_OS_Configuration_Command(apt install -y openssl libssl-dev)
 elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
 	execute_OS_Configuration_Command(pacman -S openssl --noconfirm)
 endif()
