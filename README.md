@@ -1,4 +1,3 @@
-
 # Introduction
 
 PID is a development methodology used to standardize and automate the development process of C/C++ projects. The present repository contains the base implementation of PID, based on CMake scripts.
@@ -7,7 +6,7 @@ This project defines a **workspace** where users put their C/C++ projects and th
 
 # What is it useful for ?
 
-The term "methodoloy" is supposed to cover all phases of the development process. My intent when I first wrote this framework is to provide a packaging system where people can easily share and reuse the projects they work(ed) on, either under source of binary format. Indeed, in the context of my laboratory (LIRMM, Montpellier, France), and more precisely for robotic teams, we had no real frame to develop and share our projects which lead to tremendously complex reuse of code.
+The term "methodoloy" is supposed to cover all phases of the development process. My intent when I first wrote this framework is to provide a packaging system where people can easily share and reuse the projects they work(ed) on, either under source or binary format. Indeed, in the context of my laboratory (LIRMM, Montpellier, France), and more precisely for robotic teams, we had no real frame to develop and share our projects which lead to tremendously complex reuse of code.
 
 The basic idea is to use a CMake API to describe all aspects of the project in the most precise and formal way: software they generate ; projects then depends on ; git branches they define; available versions released ; prebuild binaries already available online ; documentation or licensing aspects and so on. This way PID automates everything related to project development in a kind of standard "way of doing".
 
