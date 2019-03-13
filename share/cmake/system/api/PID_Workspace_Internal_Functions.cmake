@@ -2042,7 +2042,7 @@ function(remove_PID_Wrapper wrapper)
 	get_Platform_Variables(BASENAME platform_name)
 	#clearing install folder
 	if(	EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${wrapper})
-		clear_PID_Package(RES ${package} all)
+		clear_PID_Package(RES ${wrapper} all)
 	endif()
 	#clearing source folder
 	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/wrappers/${wrapper})
