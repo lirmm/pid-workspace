@@ -68,9 +68,8 @@ include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 #
 macro(declare_Package author institution mail year license address public_address description readme_file)
 set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
-
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
-manage_Current_Platform(${DIR_NAME}) #loading the current platform configuration and perform adequate actions if any changes
+manage_Current_Platform("${DIR_NAME}") #loading the current platform configuration and perform adequate actions if any changes
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 activate_Adequate_Languages()
 #################################################
@@ -833,6 +832,7 @@ resolve_Compile_Options_For_Targets(${CMAKE_BUILD_TYPE})
 ############ MANAGING non source files ###################
 ##########################################################
 generate_Package_Readme_Files() # generating and putting into source directory the readme file used by gitlab + in build tree the api doc welcome page (contain the same information)
+generate_Package_Git_Ignore_File() # generating and putting into source directory the .gitignore file removing all unwanted artifacts
 generate_Package_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Package_Install_Script() # generating and putting into source directory the file and folder containing stand alone install scripts
 generate_Find_File() # generating/installing the generic cmake find file for the package

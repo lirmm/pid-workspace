@@ -277,6 +277,26 @@ endfunction(generate_Package_License_File)
 #
 # .. ifmode:: internal
 #
+#  .. |generate_Package_Git_Ignore_File| replace:: ``generate_Package_Git_Ignore_File``
+#  .. _generate_Package_Git_Ignore_File:
+#
+#  generate_Package_Git_Ignore_File
+#  -----------------------------
+#
+#   .. command:: generate_Package_Git_Ignore_File()
+#
+#     Create/Update the .gitignore file for current package project.
+#
+function(generate_Package_Git_Ignore_File)
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+  file(COPY ${WORKSPACE_DIR}/share/patterns/packages/package/.gitignore DESTINATION ${CMAKE_SOURCE_DIR})
+endif()
+endfunction(generate_Package_Git_Ignore_File)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |generate_Package_Readme_Files| replace:: ``generate_Package_Readme_Files``
 #  .. _generate_Package_Readme_Files:
 #
