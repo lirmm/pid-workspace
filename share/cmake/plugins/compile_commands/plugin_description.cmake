@@ -23,4 +23,4 @@ set(compile_commands_PLUGIN_ACTIVATION_MESSAGE "generating compile_commands.json
 
 set(compile_commands_PLUGIN_ACTIVATED_MESSAGE "Generation of compilation databases for packages activated" CACHE INTERNAL "")
 
-set(compile_commands_PLUGIN_RESIDUAL_FILES "compile_commands.json" CACHE INTERNAL "")
+set(compile_commands_PLUGIN_RESIDUAL_FILES "compile_commands.json;.ccls-cache;.vscode" CACHE INTERNAL "")
