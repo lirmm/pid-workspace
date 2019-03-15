@@ -163,9 +163,7 @@ macro(declare_Environment author institution mail year license address public_ad
   reset_Environment_Description()
   file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
   if(DIR_NAME STREQUAL "build")
-    message("------------------------------------------------------")
-    message("[PID] INFO: evaluating environment ${PROJECT_NAME} ...")
-  	set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
+    set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
   	list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake) # adding the cmake scripts files from the framework
     list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
     list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
@@ -340,7 +338,7 @@ macro(build_Environment_Project)
   add_custom_target(build
     COMMAND ${CMAKE_COMMAND}
     -DWORKSPACE_DIR=${WORKSPACE_DIR}
-    -DTARGET_ENVIRONMENT=\${environment}
+    -DTARGET_ENVIRONMENT=${PROJECT_NAME}
 		-DTARGET_SYSROOT=\${sysroot}
 		-DTARGET_STAGING=\${staging}
 		-DTARGET_PLATFORM=\${platform}
@@ -351,7 +349,6 @@ macro(build_Environment_Project)
 		-DTARGET_DISTRIBUTION=\${distribution}
 		-DTARGET_DISTRIBUTION_VERSION=\${distrib_version}
 		-DIN_CI_PROCESS=${IN_CI_PROCESS}
-    -DTARGET_ENVIRONMENT=${PROJECT_NAME}
     -P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Environment.cmake
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )

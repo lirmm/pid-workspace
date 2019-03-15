@@ -255,7 +255,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_OFFICIAL=\${official}
 
 ## configuring the workspace
 add_custom_target(configure
-COMMAND ${CMAKE_COMMAND} 	-DTARGET_ENVIRONMENT=\${environment}
+COMMAND ${CMAKE_COMMAND} -DTARGET_ENVIRONMENT=\${environment}
 					-DTARGET_SYSROOT=\${sysroot}
 					-DTARGET_STAGING=\${staging}
 					-DTARGET_PLATFORM=\${platform}
@@ -269,6 +269,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_ENVIRONMENT=\${environment}
 					-DCURRENT_ENVIRONMENT=${CURRENT_ENVIRONMENT}
 					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} #using default or current native build system
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Configure_PID_Environment.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
