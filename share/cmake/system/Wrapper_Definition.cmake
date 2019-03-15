@@ -2272,8 +2272,22 @@ function(build_CMake_External_Project)
   # pre-populate the cache with the cache file of the workspace containing build infos,
   # then populate with additionnal information
   set(calling_defs)
+
   foreach(def IN LISTS BUILD_CMAKE_EXTERNAL_PROJECT_DEFINITIONS)
-    list(APPEND calling_defs -D${def})
+   # Managing list and variables
+   if(def MATCHES "(.*)=(.+)") #if a cmake assignement
+     if(DEFINED ${CMAKE_MATCH_2}) # if right-side of the assignement is a variable
+       set(val ${${CMAKE_MATCH_2}}) #take the value of the variable
+     else()
+       set(val ${CMAKE_MATCH_2})
+     endif()
+     list(LENGTH val SIZE)
+     if(SIZE GREATER 1)
+       list(APPEND calling_defs "\"-D${CMAKE_MATCH_1}=${val}\"")
+     else()
+       list(APPEND calling_defs "-D${CMAKE_MATCH_1}=${val}")
+     endif()
+   endif()
   endforeach()
 
   if(BUILD_CMAKE_EXTERNAL_PROJECT_COMMENT)
