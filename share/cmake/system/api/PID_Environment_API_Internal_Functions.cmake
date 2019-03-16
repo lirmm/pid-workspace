@@ -605,7 +605,7 @@ foreach(var IN LISTS ${environment}_INPUTS)
 endforeach()
 # 2. reconfigure the environment
 
- #preamble: for generators, forst determine what is the preferred one
+ #preamble: for generators, first determine what is the preferred one
 if(CURRENT_GENERATOR)
   list(APPEND list_of_defs -DPREFERRED_GENERATOR=\"${CURRENT_GENERATOR}\")
 endif()
