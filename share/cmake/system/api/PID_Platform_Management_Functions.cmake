@@ -335,11 +335,10 @@ endfunction(is_Compatible_With_Current_ABI)
 function(parse_System_Check_Constraints NAME ARGS constraint)
   string(REPLACE " " "" constraint ${constraint})#remove the spaces if any
   string(REPLACE "\t" "" constraint ${constraint})#remove the tabulations if any
-
-  string(REGEX REPLACE "^([^[]+)\\[([^]]+)\\]$" "\\1;\\2" NAME_ARGS "${constraint}")#argument list format : configuration[list_of_args]
-  if(NOT NAME_ARGS STREQUAL constraint)#it matches !! => there are arguments passed to the configuration
-    list(GET NAME_ARGS 0 THE_NAME)
-    list(GET NAME_ARGS 1 THE_ARGS)
+  set(result)
+  if(constraint MATCHES "^([^[]+)\\[([^]]+)\\]$")#it matches !! => there are arguments passed to the configuration
+    set(THE_NAME ${CMAKE_MATCH_1})
+    set(THE_ARGS ${CMAKE_MATCH_2})
     set(${ARGS} PARENT_SCOPE)
     set(${NAME} PARENT_SCOPE)
     if(NOT THE_ARGS)
@@ -468,6 +467,7 @@ function(check_System_Configuration RESULT NAME CONSTRAINTS config)
     message("[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
     return()
   endif()
+
   check_System_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${CONFIG_NAME} CONFIG_ARGS)
   set(${NAME} ${CONFIG_NAME} PARENT_SCOPE)
   set(${RESULT} ${RESULT_WITH_ARGS} PARENT_SCOPE)
@@ -506,7 +506,6 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
 
     reset_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
     include(${WORKSPACE_DIR}/configurations/${config_name}/check_${config_name}.cmake)#get the description of the configuration check
-
     #now preparing args passed to the configruation (generate cmake variables)
     if(${config_args})#testing if the variable containing arguments is not empty
       prepare_Configuration_Arguments(${config_name} ${config_args})#setting variables that correspond to the arguments passed to the check script

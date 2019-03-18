@@ -798,38 +798,22 @@ endfunction(parse_Package_Dependency_Version_Arguments)
 #     :PATCH: the output variable set to the value of version patch number.
 #
 function(get_Version_String_Numbers version_string MAJOR MINOR PATCH)
-string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" A_VERSION "${version_string}")
-if(A_VERSION STREQUAL "${version_string}") #no match try with more than 3 elements
-string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)\\.?(.*)$" "\\1;\\2;\\3;\\4" A_VERSION "${version_string}")
-endif()
-if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed with major.minor.patch (at least) format
-	list(GET A_VERSION 0 major_vers)
-	list(GET A_VERSION 1 minor_vers)
-	list(GET A_VERSION 2 patch_vers)
-	set(${MAJOR} ${major_vers} PARENT_SCOPE)
-	set(${MINOR} ${minor_vers} PARENT_SCOPE)
-	set(${PATCH} ${patch_vers} PARENT_SCOPE)
-else()#testing with only two elements
-	string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version_string}")
-	if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed with major.minor format
-		list(GET A_VERSION 0 major_vers)
-		list(GET A_VERSION 1 minor_vers)
-		set(${MAJOR} ${major_vers} PARENT_SCOPE)
-		set(${MINOR} ${minor_vers} PARENT_SCOPE)
-		set(${PATCH} PARENT_SCOPE)
-	else() #only a major number ??
-		string(REGEX REPLACE "^([0-9]+)$" "\\1" A_VERSION "${version_string}")
-		if(NOT A_VERSION STREQUAL "${version_string}") # version string is well formed with major.minor format
-			list(GET A_VERSION 0 major_vers)
-			set(${MAJOR} ${major_vers} PARENT_SCOPE)
-			set(${MINOR} PARENT_SCOPE)
-			set(${PATCH} PARENT_SCOPE)
-		else() #not even a number
-      set(${MAJOR} PARENT_SCOPE)
-      set(${MINOR} PARENT_SCOPE)
-      set(${PATCH} PARENT_SCOPE)
-    endif()
-	endif()
+if(version_string MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)\\.?(.*)$") # version string is well formed with major.minor.patch (at least) format
+	set(${MAJOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
+	set(${MINOR} ${CMAKE_MATCH_2} PARENT_SCOPE)
+	set(${PATCH} ${CMAKE_MATCH_3} PARENT_SCOPE)
+elseif(version_string MATCHES "^([0-9]+)\\.([0-9]+)$") # version string is well formed with major.minor format
+	set(${MAJOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
+	set(${MINOR} ${CMAKE_MATCH_2} PARENT_SCOPE)
+	set(${PATCH} PARENT_SCOPE)
+elseif(version_string MATCHES "^([0-9]+)$") #only a major number ??
+	set(${MAJOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
+	set(${MINOR} PARENT_SCOPE)
+	set(${PATCH} PARENT_SCOPE)
+else() #not even a number
+  set(${MAJOR} PARENT_SCOPE)
+  set(${MINOR} PARENT_SCOPE)
+  set(${PATCH} PARENT_SCOPE)
 endif()
 endfunction(get_Version_String_Numbers)
 
@@ -1951,6 +1935,8 @@ endfunction(extract_ELF_Symbol_Version)
 #     :RES_TYPE: the output variable that contains the type of the target binary (SHARED, STATIC or OPTION if none of the two first) .
 #
 function(get_Link_Type RES_TYPE input_link)
+
+set(${RES_TYPE} OPTION PARENT_SCOPE)# by default if no extension => considered as a specific linker option
 get_filename_component(LIB_TYPE ${input_link} EXT)
 if(LIB_TYPE)
     if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib (MACOSX)
@@ -1965,12 +1951,7 @@ if(LIB_TYPE)
 		set(${RES_TYPE} STATIC PARENT_SCOPE)
 	elseif(LIB_TYPE MATCHES "^\\.lib$")#found lib (windows)
 		set(${RES_TYPE} STATIC PARENT_SCOPE)
-	else()#unknown extension => linker option
-		set(${RES_TYPE} OPTION PARENT_SCOPE)
 	endif()
-else()
-	# no extension => a possibly strange linker option
-	set(${RES_TYPE} OPTION PARENT_SCOPE)
 endif()
 endfunction(get_Link_Type)
 
@@ -3855,6 +3836,47 @@ function(take_Greater_CXX_Standard_Version greater_cxx_var to_compare_cxx_var)
 	endif()
 endfunction(take_Greater_CXX_Standard_Version)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |compare_ABIs| replace:: ``compare_ABIs``
+#  .. _compare_ABIs:
+#
+#  compare_ABIs
+#  ------------
+#
+#   .. command:: compare_ABIs(ARE_EQUAL abi1 abi2)
+#
+#    Tells wether two abi identifier are refering to the same ABI or not.
+#
+#     :ARE_EQUAL: the output variable that is TRUE is both abi are the same.
+#
+#     :abi1: first abi identifier to compare.
+#
+#     :abi2: second abi identifier to compare.
+#
+function(compare_ABIs ARE_EQUAL abi1 abi2)
+  if(abi1 MATCHES "CXX11|11|abi11")
+    set(abi1_number 2)
+  elseif(abi1 MATCHES "abi98|CXX|98")
+    set(abi1_number 1)
+  else()
+    set(abi1_number 0)#unknown ABI
+  endif()
+  if(abi2 MATCHES "CXX11|11|abi11")
+    set(abi2_number 2)
+  elseif(abi1 MATCHES "abi98|CXX|98")
+    set(abi2_number 1)
+  else()
+    set(abi2_number 0)
+  endif()
+  if(abi1_number EQUAL abi2_number)
+    set(${ARE_EQUAL} TRUE PARENT_SCOPE)
+  else()
+    set(${ARE_EQUAL} FALSE PARENT_SCOPE)
+  endif()
+endfunction(compare_ABIs)
 
 #################################################################################################
 ################################### pure CMake utilities ########################################
