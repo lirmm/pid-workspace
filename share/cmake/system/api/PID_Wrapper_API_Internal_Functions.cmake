@@ -2022,9 +2022,8 @@ set(all_compiler_options ${${package}_${component}_OPTS${VAR_SUFFIX}})
 set(all_resources ${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}})
 set(c_std ${${package}_${component}_C_STANDARD${VAR_SUFFIX}})
 set(cxx_std ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}})
-
-foreach(dep_component IN LISTS ${package}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	agregate_All_Build_Info_For_Component(${package} ${dep_component}
+foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	agregate_All_Build_Info_For_Component(${package} ${dep_component} ${mode}
 	INTERN_INCS INTERN_LIB_DIRS INTERN_DEFS INTERN_OPTS INTERN_STD_C INTERN_STD_CXX INTERN_LINKS INTERN_RESOURCES)
 
 	list(APPEND all_links ${INTERN_LINKS})
@@ -2223,7 +2222,7 @@ function(set_Build_Info_For_Component package component version)
 			set_Build_Info_For_Component(${package} ${dep_component} ${version})#compute the variable for dependencies then put it in cache
 		endif()#no need to resolve
 		#use the collected build information from dependencies and add it
-		list(APPEND links ${${prefix}_COMPONENT_${dep_component}_BUILD_LINKS})
+	list(APPEND links ${${prefix}_COMPONENT_${dep_component}_BUILD_LINKS})
 		list(APPEND includes ${${prefix}_COMPONENT_${dep_component}_BUILD_INCLUDES})
 		list(APPEND lib_dirs ${${prefix}_COMPONENT_${dep_component}_BUILD_LIB_DIRS})
 		list(APPEND defs ${${prefix}_COMPONENT_${dep_component}_BUILD_DEFINITIONS})
@@ -2262,7 +2261,6 @@ function(set_Build_Info_For_Component package component version)
 			list(APPEND cxx_std ${RES_STD_CXX})
 		endforeach()
 	endforeach()
-
 	#evaluate variables, if any
 	evaluate_Variables_In_List(EVAL_LNKS links) #first evaluate element of the list => if they are variables they are evaluated
 	evaluate_Variables_In_List(EVAL_INCS includes)
@@ -2272,7 +2270,6 @@ function(set_Build_Info_For_Component package component version)
 	evaluate_Variables_In_List(EVAL_RRES res)
 	evaluate_Variables_In_List(EVAL_CSTD c_std)
 	evaluate_Variables_In_List(EVAL_CXXSTD cxx_std)
-
 	#clean a bit the result, to avoid unecessary repetitions
 	remove_Duplicates_From_List(EVAL_LNKS)
 	remove_Duplicates_From_List(EVAL_INCS)
