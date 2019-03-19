@@ -26,12 +26,7 @@ get_filename_component(__libpath_cudart "${CUDA_CUDART_LIBRARY}" PATH)
 # We use major only in library search as major/minor is not entirely consistent among platforms.
 # Also, looking for exact minor version of .so is in general not a good idea.
 # More strict enforcement of minor/patch version is done if/when the header file is examined.
-if(CUDNN_FIND_VERSION_EXACT)
-  SET(__cudnn_ver_suffix ".${CUDNN_FIND_VERSION_MAJOR}")
-  SET(__cudnn_lib_win_name cudnn64_${CUDNN_FIND_VERSION_MAJOR})
-else()
-  SET(__cudnn_lib_win_name cudnn64)
-endif()
+set(__cudnn_lib_win_name cudnn64)
 
 find_library(CUDNN_LIBRARY
   NAMES libcudnn.so${__cudnn_ver_suffix} libcudnn${__cudnn_ver_suffix}.dylib ${__cudnn_lib_win_name}

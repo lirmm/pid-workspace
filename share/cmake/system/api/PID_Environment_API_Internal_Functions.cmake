@@ -371,10 +371,12 @@ macro(build_Environment_Project)
     generate_Environment_Readme_Files() # generating and putting into source directory the readme file used by git hosting service
     generate_Environment_License_File() # generating and putting into source directory the file containing license info about the package
     return()#directly exit
+  else()#the make build will do the evaluation run
+    message("------------------------------------------------------")
+    message("[PID] INFO: evaluating environment ${PROJECT_NAME} ...")
   endif()
 
   set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)
-
   detect_Current_Platform()
   evaluate_Environment_Constraints() #get the parameters passed to the environment
   evaluate_Generator()
@@ -426,7 +428,6 @@ endmacro(build_Environment_Project)
 #     :MANAGE_RESULT: the output variable that is TRUE if dependency check is OK, FALSE otherwise.
 #
 function(manage_Environment_Dependency MANAGE_RESULT environment)
-
 # 1) load the environment
 load_Environment(LOAD_RESULT ${environment})
 if(NOT LOAD_RESULT)
@@ -689,13 +690,13 @@ function(evaluate_Environment EVAL_OK environment)
 parse_System_Check_Constraints(ENV_NAME ENV_ARGS ${environment}) #get environment name from environment expression (extract arguments and base name)
 set(env_build_folder ${WORKSPACE_DIR}/environments/${ENV_NAME}/build)
 #clean the build folder cache
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove CMakeCache.txt PID_Toolchain.cmake PID_Environment_Description.cmake PID_Environment_Solution_Info.cmake WORKING_DIRECTORY ${env_build_folder})
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove CMakeCache.txt PID_Toolchain.cmake PID_Environment_Description.cmake PID_Environment_Solution_Info.cmake
+                WORKING_DIRECTORY ${env_build_folder})
 
 #build the list of variables that will be passed to configuration process
 prepare_Environment_Arguments(LIST_OF_DEFS_ARGS ${ENV_NAME} ENV_ARGS)
 prepare_Platform_Constraints_Definitions(${ENV_NAME} LIST_OF_DEFS_PLATFORM)
-
-execute_process(COMMAND ${CMAKE_COMMAND} ${LIST_OF_DEFS_ARGS} ${LIST_OF_DEFS_PLATFORM} ..  WORKING_DIRECTORY ${env_build_folder})
+execute_process(COMMAND ${CMAKE_COMMAND} -DEVALUATION_RUN=TRUE ${LIST_OF_DEFS_ARGS} ${LIST_OF_DEFS_PLATFORM} ..  WORKING_DIRECTORY ${env_build_folder})#configure, then build
 
 # 2) => it should produce a resulting solution info file => including this file locally to get all definitions then apply them to local variables (overwritting).
 # locally we manage thoses variables at configuration time. VAR_<name> is the variable for <name> argument.
@@ -706,7 +707,7 @@ if(NOT EXISTS ${env_build_folder}/PID_Environment_Solution_Info.cmake)
   return()
 endif()
 include(${env_build_folder}/PID_Environment_Solution_Info.cmake)
-set_Build_Variables_From_Environment(${environment})
+set_Build_Variables_From_Environment(${ENV_NAME})
 set(${EVAL_OK} TRUE PARENT_SCOPE)
 endfunction(evaluate_Environment)
 
@@ -801,7 +802,6 @@ function(set_Build_Variables_From_Environment environment)
   if(${environment}_STATIC_LINKER_FLAGS)
     append_Unique_In_Cache(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${${environment}_STATIC_LINKER_FLAGS}")
   endif()
-
   if(${environment}_GENERATOR)#may overwrite user choice
     set(${PROJECT_NAME}_GENERATOR ${${environment}_GENERATOR} CACHE INTERNAL "")
   endif()
@@ -883,22 +883,22 @@ endfunction(prepare_Environment_Arguments)
 function(prepare_Platform_Constraints_Definitions environment_name LIST_OF_DEFS)
   set(result_list)
   if(${PROJECT_NAME}_TYPE_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_TYPE_CONSTRAINT=\"${${PROJECT_NAME}_TYPE_CONSTRAINT}\"")
+    list(APPEND result_list "-DFORCE_${environment_name}_TYPE_CONSTRAINT=${${PROJECT_NAME}_TYPE_CONSTRAINT}")
   endif()
   if(${PROJECT_NAME}_ARCH_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_ARCH_CONSTRAINT=\"${${PROJECT_NAME}_ARCH_CONSTRAINT}\"")
+    list(APPEND result_list "-DFORCE_${environment_name}_ARCH_CONSTRAINT=${${PROJECT_NAME}_ARCH_CONSTRAINT}")
   endif()
   if(${PROJECT_NAME}_OS_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_OS_CONSTRAINT=\"${${PROJECT_NAME}_OS_CONSTRAINT}\"")
+    list(APPEND result_list "-DFORCE_${environment_name}_OS_CONSTRAINT=${${PROJECT_NAME}_OS_CONSTRAINT}")
   endif()
   if(${PROJECT_NAME}_ABI_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_ABI_CONSTRAINT=\"${${PROJECT_NAME}_ABI_CONSTRAINT}\"")
+    list(APPEND result_list "-DFORCE_${environment_name}_ABI_CONSTRAINT=${${PROJECT_NAME}_ABI_CONSTRAINT}")
   endif()
   if(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_DISTRIBUTION_CONSTRAINT=\"${${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT}\"")
+    list(APPEND result_list "-DFORCE_${environment_name}_DISTRIBUTION_CONSTRAINT=${${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT}")
   endif()
   if(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_DISTRIB_VERSION_CONSTRAINT=\"${${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT}\"")
+    list(APPEND result_list "-DFORCE_${environment_name}_DISTRIB_VERSION_CONSTRAINT=${${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT}")
   endif()
   #configuration and chgeck scripts are purely local information
   set(${LIST_OF_DEFS} ${result_list} PARENT_SCOPE)
@@ -1154,7 +1154,7 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
 
   #determine if host is target and if we need to crosscompile
   if(${PROJECT_NAME}_TYPE_CONSTRAINT
-      AND NOT CURRENT_PLATFORM_TYPE STREQUAL ${PROJECT_NAME}_TYPE_CONSTRAINT)
+  AND NOT CURRENT_PLATFORM_TYPE STREQUAL ${PROJECT_NAME}_TYPE_CONSTRAINT)
       set(${PROJECT_NAME}_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)#if processor differs then this is crosscompilation
       set(result FALSE)
   endif()
@@ -1171,18 +1171,8 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
   endif()
 
   if(${PROJECT_NAME}_ABI_CONSTRAINT)#processor architecture type constraint is specified
-
-    if(CURRENT_PLATFORM_ABI MATCHES "CXX11|11|abi11")
-      set(curr_abi 11)
-    else()
-      set(curr_abi 98)
-    endif()
-    if(${PROJECT_NAME}_ABI_CONSTRAINT MATCHES "CXX11|11|abi11")
-      set(cte_abi 11)
-    else()
-      set(cte_abi 98)
-    endif()
-    if(NOT cte_abi EQUAL curr_abi)
+    compare_ABIs(ARE_EQUAL ${${PROJECT_NAME}_ABI_CONSTRAINT} ${CURRENT_PLATFORM_ABI})
+    if(NOT ARE_EQUAL)
       #for the ABI it is not necessary to cross compile, juste to have adequate compiler and pass adequate arguments
       set(result FALSE)
     endif()
@@ -1221,6 +1211,10 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
     if(NOT ENVIRONMENT_CHECK_RESULT)#host does matches all requirements, so trying to configure these requirements
       set(result FALSE)
     endif()
+  else()#no check file means that a solution need to be applied any time
+    #used to manage environment that define "user station profiles" or "real target platform" based on dependencies
+    #at least a solution must be available in that case
+    set(result FALSE)
   endif()
 
   #provides the result to say if host is target
@@ -1305,12 +1299,12 @@ function(is_Environment_Solution_Eligible RESULT index)
   endif()
 
   if(${PROJECT_NAME}_SOLUTION_${index}_ARCH)# a constraint on processor architecture
-    if(NOT ${PROJECT_NAME}_SOLUTION_${index}_ARCH STREQUAL CURRENT_PLATFORM_TYPE)#not the current one
+    if(NOT ${PROJECT_NAME}_SOLUTION_${index}_ARCH STREQUAL CURRENT_PLATFORM_ARCH)#not the current one
       return()
     endif()
   endif()
   if(${PROJECT_NAME}_SOLUTION_${index}_TYPE)# a constraint on processor architecture
-    if(NOT ${PROJECT_NAME}_SOLUTION_${index}_TYPE STREQUAL CURRENT_PLATFORM_ARCH)#not the current one
+    if(NOT ${PROJECT_NAME}_SOLUTION_${index}_TYPE STREQUAL CURRENT_PLATFORM_TYPE)#not the current one
       return()
     endif()
   endif()
@@ -1320,11 +1314,11 @@ function(is_Environment_Solution_Eligible RESULT index)
     endif()
   endif()
   if(${PROJECT_NAME}_SOLUTION_${index}_ABI)# a constraint on processor architecture type
-    if(NOT ${PROJECT_NAME}_SOLUTION_${index}_ABI STREQUAL CURRENT_PLATFORM_ABI)#not the current one
+    compare_ABIs(ARE_EQUAL "${${PROJECT_NAME}_SOLUTION_${index}_ABI}" "${CURRENT_PLATFORM_ABI}")
+    if(NOT ARE_EQUAL)#not the current one
       return()
     endif()
   endif()
-
   set(${RESULT} TRUE PARENT_SCOPE)
 
 endfunction(is_Environment_Solution_Eligible)
@@ -1358,8 +1352,8 @@ function(evaluate_Environment_Solution EVAL_SOL_RESULT index)
       return()
     endif()
   endforeach()
-  # from here, means that everything is OK and configuration can apply
-  if(${PROJECT_NAME}_SOLUTION_${index}_CONFIGURE)# a configuration script is provided
+  # from here, means that everything is OK and specific configuration, if any, can apply
+  if(${PROJECT_NAME}_SOLUTION_${index}_CONFIGURE)# a configuration script is provided => there is some more configuration to do
     if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_SOLUTION_${index}_CONFIGURE})#addintionnal check is required to manage input constraints
       message(FATAL_ERROR "[PID] CRITICAL ERROR: the file ${${PROJECT_NAME}_SOLUTION_${index}_CONFIGURE} cannot be found in src folder of ${PROJECT_NAME}")
       return()
@@ -1393,7 +1387,8 @@ endfunction(evaluate_Environment_Solution)
 #
 function(check_Environment_Configuration_Constraint CHECK_RESULT)
   foreach(config IN LISTS ${PROJECT_NAME}_CONFIGURATION_CONSTRAINT)
-    check_System_Configuration(RESULT NAME CONSTRAINTS ${config})
+
+    check_System_Configuration(RESULT NAME CONSTRAINTS "${config}")
     if(NOT RESULT)
       set(${CHECK_RESULT} FALSE PARENT_SCOPE)
     endif()
@@ -1613,19 +1608,19 @@ function(generate_Environment_Toolchain_File index)
   endif()
   if(${PROJECT_NAME}_EXE_LINKER_FLAGS)
     fill_String_From_List(${PROJECT_NAME}_EXE_LINKER_FLAGS LANG_FLAGS)
-    file(APPEND ${description_file} "set(CMAKE_EXE_LINKER_FLAGS ${LANG_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+    file(APPEND ${description_file} "set(CMAKE_EXE_LINKER_FLAGS \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
   endif()
   if(${PROJECT_NAME}_MODULE_LINKER_FLAGS)
     fill_String_From_List(${PROJECT_NAME}_MODULE_LINKER_FLAGS LANG_FLAGS)
-    file(APPEND ${description_file} "set(CMAKE_MODULE_LINKER_FLAGS ${LANG_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+    file(APPEND ${description_file} "set(CMAKE_MODULE_LINKER_FLAGS \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
   endif()
   if(${PROJECT_NAME}_SHARED_LINKER_FLAGS)
     fill_String_From_List(${PROJECT_NAME}_SHARED_LINKER_FLAGS LANG_FLAGS)
-    file(APPEND ${description_file} "set(CMAKE_SHARED_LINKER_FLAGS ${LANG_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+    file(APPEND ${description_file} "set(CMAKE_SHARED_LINKER_FLAGS \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
   endif()
   if(${PROJECT_NAME}_STATIC_LINKER_FLAGS)
     fill_String_From_List(${PROJECT_NAME}_STATIC_LINKER_FLAGS LANG_FLAGS)
-    file(APPEND ${description_file} "set(CMAKE_STATIC_LINKER_FLAGS ${LANG_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+    file(APPEND ${description_file} "set(CMAKE_STATIC_LINKER_FLAGS \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
   endif()
 
   if(${PROJECT_NAME}_AR)
@@ -1664,7 +1659,7 @@ function(generate_Environment_Toolchain_File index)
     file(APPEND ${description_file} "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY CACHE INTERNAL \"\" FORCE)\n")
     file(APPEND ${description_file} "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY CACHE INTERNAL \"\" FORCE)\n")
 
-    if(NOT CMAKE_VERSION VERSION_LESS 3.6)#CMAKE_TRY_COMPILE_TARGET_TYPE availane since version 3.6 of CMake
+    if(NOT CMAKE_VERSION VERSION_LESS 3.6)#CMAKE_TRY_COMPILE_TARGET_TYPE available since version 3.6 of CMake
       # avoid problem with try_compile when cross compiling
       file(APPEND ${description_file} "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE INTERNAL \"\" FORCE)\n")
     endif()
@@ -1751,10 +1746,10 @@ file(APPEND ${file} "set(${PROJECT_NAME}_NM ${${PROJECT_NAME}_NM} CACHE INTERNAL
 file(APPEND ${file} "set(${PROJECT_NAME}_OBJDUMP ${${PROJECT_NAME}_OBJDUMP} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_OBJCOPY ${${PROJECT_NAME}_OBJCOPY} CACHE INTERNAL \"\")\n")
 
-file(APPEND ${file} "set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_MODULE_LINKER_FLAGS ${${PROJECT_NAME}_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_MODULE_LINKER_FLAGS ${${PROJECT_NAME}_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
 
 file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR ${${PROJECT_NAME}_GENERATOR} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_EXTRA ${${PROJECT_NAME}_GENERATOR_EXTRA} CACHE INTERNAL \"\")\n")
