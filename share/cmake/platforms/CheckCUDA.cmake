@@ -12,8 +12,27 @@ set(CUDA_LIBRARIES CACHE INTERNAL "")
 set(CUDA_INCLUDE_DIRS CACHE INTERNAL "")
 find_package(CUDA)
 if(NOT CUDA_FOUND)#simply stop the configuration
-  message("[PID] WARNING : CUDA language is not supported because no CUDA compiler has been found.")
-  return()
+  if(NOT CUDA_NVCC_EXECUTABLE OR NOT CUDA_VERSION)
+    message("[PID] WARNING : CUDA language is not supported because no CUDA compiler has been found.")
+    return()
+  else()#situation where runtime things have been found but toolkit "things" have not been found
+        #try to find again but automatically setting the toolkit root dir from
+        get_filename_component(PATH_TO_BIN ${CUDA_NVCC_EXECUTABLE} REALPATH)#get the path with symlinks resolved
+        get_filename_component(PATH_TO_BIN_FOLDER ${PATH_TO_BIN} DIRECTORY)#get the path with symlinks resolved
+        if(PATH_TO_BIN_FOLDER MATCHES "^.*/bin(32|64)?$")#if path finishes with bin or bin32 or bin 64
+          #remove the binary folder
+          get_filename_component(PATH_TO_TOOLKIT ${PATH_TO_BIN_FOLDER} DIRECTORY)#get folder containing the bin folder
+        endif()
+
+        if(PATH_TO_TOOLKIT AND EXISTS ${PATH_TO_TOOLKIT})
+          set(CUDA_TOOLKIT_ROOT_DIR ${PATH_TO_TOOLKIT} CACHE PATH "" FORCE)
+        endif()
+        find_package(CUDA)
+        if(NOT CUDA_FOUND)#simply stop the configuration
+          message("[PID] WARNING : cannot automatically find all CUDA artefacts. Please set the CUDA_TOOLKIT_ROOT_DIR variable !")
+          return()
+        endif()
+  endif()
 endif()
 
 #setting general variables
@@ -34,7 +53,6 @@ endif()
 
 set(__cuda_arch_bin)
 set(__cuda_arch_ptx)
-
 
 # Check which arch can be computed depending on the version of NVCC
 if(CUDA_VERSION VERSION_LESS "6.0")#CUDA not really managed under version 6

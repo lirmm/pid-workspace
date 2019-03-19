@@ -1812,7 +1812,7 @@ function(build_B2_External_Project)
   endif()
   set(options QUIET) #used to define the context
   set(oneValueArgs PROJECT FOLDER MODE COMMENT)
-  set(multiValueArgs DEFINITIONS)
+  set(multiValueArgs DEFINITIONS INCLUDES LINKS)
   cmake_parse_arguments(BUILD_B2_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   if(NOT BUILD_B2_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_B2_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_B2_EXTERNAL_PROJECT_MODE)
     message(FATAL_ERROR "[PID] CRITICAL ERROR : PROJECT, FOLDER and MODE arguments are mandatory when calling build_B2_External_Project.")
@@ -1839,28 +1839,28 @@ function(build_B2_External_Project)
   # preparing b2 invocation parameters
   #configure build mode (to get available parameters see https://boostorg.github.io/build/tutorial.html section "Feature reference")
   if(BUILD_B2_EXTERNAL_PROJECT_MODE STREQUAL Debug)
-      set(DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "variant=debug")
+      set(ARGS_FOR_B2_BUILD "variant=debug")
   else()
-      set(DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "variant=release")
+      set(ARGS_FOR_B2_BUILD "variant=release")
   endif()
   # configure current platform
-  list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "address-model=${CURRENT_PLATFORM_ARCH}")#address model is specified the same way in PID and b2
-  list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "architecture=${CURRENT_PLATFORM_TYPE}")#processor architecture supported are "x86" and "arm" so PID uses same names than b2
+  set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} address-model=${CURRENT_PLATFORM_ARCH}")#address model is specified the same way in PID and b2
+  set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} architecture=${CURRENT_PLATFORM_TYPE}")#processor architecture supported are "x86" and "arm" so PID uses same names than b2
   if(CURRENT_PLATFORM_OS STREQUAL macosx)#we use a specific identifier in PID only for macos otherwise thay are the same than b2
-    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "target-os=darwin")#processor architecture
+    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} target-os=darwin")#processor architecture
   else()
-    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "target-os=${CURRENT_PLATFORM_OS}")#processor architecture
+    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} target-os=${CURRENT_PLATFORM_OS}")#processor architecture
   endif()
    #ABI definition is already in compile flags
   # configure toolchain
   if(CMAKE_COMPILER_IS_GNUCXX)
-    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "toolset=gcc")
+    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} toolset=gcc")
     set(install_toolset "gcc")
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "clang")
     set(install_toolset "clang")
-    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "toolset=clang")
+    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} toolset=clang")
 	else()# add new support for compiler or use CMake generic mechanism to do so for instance : CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"
-    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "toolset=${CMAKE_CXX_COMPILER_ID}")
+    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} toolset=${CMAKE_CXX_COMPILER_ID}")
     set(install_toolset "${CMAKE_CXX_COMPILER_ID}")
 	endif()
   #configure compilation flags
@@ -1868,14 +1868,35 @@ function(build_B2_External_Project)
   get_Environment_Info(C RELEASE CFLAGS c_flags)
 
   if(c_flags)
-    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "cflags=${c_flags}")
+    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} cflags=\"${c_flags}\"")#need to use guillemet because pass "as is"
   endif()
   if(cxx_flags)
-    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "cxxflags=${cxx_flags}")
+    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} cxxflags=\"${cxx_flags}\"")#need to use guillemet because pass "as is"
+  endif()
+
+  if(BUILD_B2_EXTERNAL_PROJECT_LINKS)
+    set(all_links)
+    foreach(link IN LISTS BUILD_B2_EXTERNAL_PROJECT_LINKS)#specific includes (to manage dependencies)
+      set(all_links "${all_links} ${link}")
+    endforeach()
+    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} linkflags=\"${links}\"")#need to use guillemet because pass "as is"
   endif()
 
   if(BUILD_B2_EXTERNAL_PROJECT_DEFINITIONS)
-    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "define=${BUILD_B2_EXTERNAL_PROJECT_DEFINITIONS}")
+    foreach(def IN LISTS BUILD_B2_EXTERNAL_PROJECT_DEFINITIONS)
+      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} define=${def}")#specific preprocessor definition
+    endforeach()
+  endif()
+  if(BUILD_B2_EXTERNAL_PROJECT_INCLUDES)
+    foreach(inc IN LISTS BUILD_B2_EXTERNAL_PROJECT_INCLUDES)#specific includes (to manage dependencies)
+      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} include=${inc}")
+    endforeach()
+  endif()
+
+  if(CMAKE_HOST_WIN32)#on a window host path must be resolved
+    separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${ARGS_FOR_B2_BUILD}")
+  else()#if not on wondows use a UNIX like command syntac
+    separate_arguments(COMMAND_ARGS_AS_LIST UNIX_COMMAND "${ARGS_FOR_B2_BUILD}")#always from host perpective
   endif()
 
   message("[PID] INFO : Configuring ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
@@ -1890,7 +1911,6 @@ function(build_B2_External_Project)
   set(jamfile ${project_dir}/user-config.jam)
   set(TOOLSET_NAME ${install_toolset})
   set(TOOLSET_COMPILER_PATH ${cxx_compiler})
-  set(TOOLSET_COMPILER_PATH ${cxx_compiler})
   if(CURRENT_PYTHON)
     set(PYTHON_TOOLSET "using python : ${CURRENT_PYTHON} : ${CURRENT_PYTHON_EXECUTABLE} ;")
   endif()
@@ -1900,7 +1920,7 @@ function(build_B2_External_Project)
 
   get_Environment_Info(JOBS jobs)
   message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  execute_process(COMMAND ${project_dir}/b2 install ${jobs} --prefix=${TARGET_INSTALL_DIR} --user-config=${jamfile} ${DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD}
+  execute_process(COMMAND ${project_dir}/b2 install ${jobs} --prefix=${TARGET_INSTALL_DIR} --user-config=${jamfile} ${COMMAND_ARGS_AS_LIST}
   WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result ERROR_VARIABLE varerr)
   if(NOT result EQUAL 0
     AND NOT (varerr MATCHES "^link\\.jam: No such file or directory[ \t\n]*$"))#if the error is the one specified this is a normal situation (i.e. a BUG in previous version of b2, -> this message should be a warning)
@@ -1986,7 +2006,7 @@ function(build_Autotools_External_Project)
 
   message("[PID] INFO : Configuring ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
 
-  # preparing b2 invocation parameters
+  # preparing autotools invocation parameters
   #put back environment variables in previosu state
   #configure compilation flags
   set(C_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_C_FLAGS})
@@ -1998,7 +2018,7 @@ function(build_Autotools_External_Project)
   get_Environment_Info(C RELEASE CFLAGS c_flags COMPILER c_compiler)
 
   if(c_flags)
-    list(APPEND C_FLAGS_ENV ${c_flags})
+    set(APPEND C_FLAGS_ENV ${c_flags})
   endif()
   if(cxx_flags)
     list(APPEND CXX_FLAGS_ENV ${cxx_flags})
@@ -2008,21 +2028,23 @@ function(build_Autotools_External_Project)
   endif()
   set(CONFIGURE_FLAGS)
   if(C_FLAGS_ENV)
-    fill_String_From_List(C_FLAGS_ENV RES_STRING)
-    list(APPEND CONFIGURE_FLAGS CFLAGS=${RES_STRING})
+    fill_String_From_List(C_FLAGS_ENV C_FLAGS_ENV)
+    list(APPEND CONFIGURE_FLAGS "CFLAGS=${C_FLAGS_ENV}")
   endif()
   if(CXX_FLAGS_ENV)
-    fill_String_From_List(CXX_FLAGS_ENV RES_STRING)
-    list(APPEND CONFIGURE_FLAGS CXXFLAGS=${RES_STRING})
+    fill_String_From_List(CXX_FLAGS_ENV CXX_FLAGS_ENV)
+    list(APPEND CONFIGURE_FLAGS "CXXFLAGS=${CXX_FLAGS_ENV}")
   endif()
   if(LD_FLAGS_ENV)
-    fill_String_From_List(LD_FLAGS_ENV RES_STRING)
-    list(APPEND CONFIGURE_FLAGS LDFLAGS=${RES_STRING})
+    fill_String_From_List(LD_FLAGS_ENV LD_FLAGS_ENV)
+    list(APPEND CONFIGURE_FLAGS "LDFLAGS=${LD_FLAGS_ENV}")
   endif()
-  list(APPEND CONFIGURE_FLAGS CC=${c_compiler})
-  list(APPEND CONFIGURE_FLAGS CXX=${cxx_compiler})
+  get_filename_component(RES_CC ${c_compiler} REALPATH)
+  get_filename_component(RES_CXX ${cxx_compiler} REALPATH)
+  #prefer passing absolute real path (i.e. without symlink) to autoconf (may improve compiler detection)
+  list(APPEND CONFIGURE_FLAGS CC=${RES_CC})
+  list(APPEND CONFIGURE_FLAGS CXX=${RES_CXX})
   list(APPEND CONFIGURE_FLAGS LD=${ld_tool})
-
   execute_process(COMMAND ./configure ${CONFIGURE_FLAGS} --prefix=${TARGET_INSTALL_DIR} ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_OPTIONS}
                   WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
                   RESULT_VARIABLE result)
@@ -2125,17 +2147,9 @@ function(build_Waf_External_Project)
   # preparing b2 invocation parameters
   #configure build mode (to get available parameters see https://boostorg.github.io/build/tutorial.html section "Feature reference")
   if(BUILD_WAF_EXTERNAL_PROJECT_MODE STREQUAL Debug)
-      set(DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "variant=debug")
+      set(ARGS_FOR_WAF_BUILD "variant=debug")
   else()
-      set(DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "variant=release")
-  endif()
-  # configure current platform
-  list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "address-model=${CURRENT_PLATFORM_ARCH}")#address model is specified the same way in PID and b2
-  list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "architecture=${CURRENT_PLATFORM_TYPE}")#processor architecture supported are "x86" and "arm" so PID uses same names than b2
-  if(CURRENT_PLATFORM_OS STREQUAL macosx)#we use a specific identifier in PID only for macos otherwise thay are the same than b2
-    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "target-os=darwin")#processor architecture
-  else()
-    list(APPEND DEFAUL_SYSTEM_VALUE_FOR_B2_BUILD "target-os=${CURRENT_PLATFORM_OS}")#processor architecture
+      set(ARGS_FOR_WAF_BUILD "variant=release")
   endif()
    #ABI definition is already in compile flags
 
@@ -2244,7 +2258,7 @@ function(build_CMake_External_Project)
     return()
   endif()
   set(options QUIET) #used to define the context
-  set(oneValueArgs PROJECT FOLDER MODE COMMENT)
+  set(oneValueArgs PROJECT FOLDER MODE USER_JOBS COMMENT)
   set(multiValueArgs DEFINITIONS)
   cmake_parse_arguments(BUILD_CMAKE_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   if(NOT BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_CMAKE_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_CMAKE_EXTERNAL_PROJECT_MODE)
@@ -2269,26 +2283,25 @@ function(build_CMake_External_Project)
     hard_Clean_Build_Folder(${project_build_dir})
   endif()
 
-  # pre-populate the cache with the cache file of the workspace containing build infos,
-  # then populate with additionnal information
   set(calling_defs)
-
+  #compute user defined CMake definitions => create the arguments of the command line with space separated arguments
+  # this is to allow the usage of a list of list in CMake
   foreach(def IN LISTS BUILD_CMAKE_EXTERNAL_PROJECT_DEFINITIONS)
    # Managing list and variables
-   if(def MATCHES "(.*)=(.+)") #if a cmake assignement
+   if(def MATCHES "(.*)=(.+)") #if a cmake assignement (should be the case for any definition)
      if(DEFINED ${CMAKE_MATCH_2}) # if right-side of the assignement is a variable
        set(val ${${CMAKE_MATCH_2}}) #take the value of the variable
      else()
        set(val ${CMAKE_MATCH_2})
      endif()
-     list(LENGTH val SIZE)
-     if(SIZE GREATER 1)
-       list(APPEND calling_defs "\"-D${CMAKE_MATCH_1}=${val}\"")
-     else()
-       list(APPEND calling_defs "-D${CMAKE_MATCH_1}=${val}")
-     endif()
+     set(calling_defs "${calling_defs} -D${CMAKE_MATCH_1}=${val}")
    endif()
   endforeach()
+  if(CMAKE_HOST_WIN32)#on a window host path must be resolved
+		separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${calling_defs}")
+	else()#if not on wondows use a UNIX like command syntac
+		separate_arguments(COMMAND_ARGS_AS_LIST UNIX_COMMAND "${calling_defs}")#always from host perpective
+	endif()
 
   if(BUILD_CMAKE_EXTERNAL_PROJECT_COMMENT)
     set(use_comment "(${BUILD_CMAKE_EXTERNAL_PROJECT_COMMENT}) ")
@@ -2296,13 +2309,15 @@ function(build_CMake_External_Project)
 
   message("[PID] INFO : Configuring ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}...")
 
+  # pre-populate the cache with the cache file of the workspace containing build infos,
+  # then populate with additionnal information
   execute_process(
     COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=${TARGET_MODE}
                             -DCMAKE_INSTALL_PREFIX=${TARGET_INSTALL_DIR}
                             -DCMAKE_SKIP_INSTALL_RPATH=OFF
                             -DCMAKE_SKIP_RPATH=OFF
                             -C ${WORKSPACE_DIR}/pid/Workspace_Build_Info.cmake
-                            ${calling_defs}
+                            ${COMMAND_ARGS_AS_LIST}
                             ..
     WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
     RESULT_VARIABLE result)
@@ -2312,8 +2327,13 @@ function(build_CMake_External_Project)
     return()
   endif()
   #once configure, build it
+  # Use user-defined number of jobs if defined
   get_Environment_Info(MAKE make_program JOBS jobs)
+  if(BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS)
+    set(jobs -j${BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS})
+  endif()
   message("[PID] INFO : Building ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
+  message("[PID] INFO : Building using ${jobs} jobs ...")
   execute_process(
     COMMAND ${make_program} ${jobs} WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
     RESULT_VARIABLE result
