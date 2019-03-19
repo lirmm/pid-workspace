@@ -2329,7 +2329,7 @@ function(build_CMake_External_Project)
   #once configure, build it
   # Use user-defined number of jobs if defined
   get_Environment_Info(MAKE make_program JOBS jobs)
-  if(BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS
+  if(BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS)
     set(jobs -j${BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS})
   endif()
   message("[PID] INFO : Building ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
