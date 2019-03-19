@@ -2256,7 +2256,7 @@ function(build_CMake_External_Project)
     return()
   endif()
   set(options QUIET) #used to define the context
-  set(oneValueArgs PROJECT FOLDER MODE COMMENT)
+  set(oneValueArgs PROJECT FOLDER MODE USER_JOBS COMMENT)
   set(multiValueArgs DEFINITIONS)
   cmake_parse_arguments(BUILD_CMAKE_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   if(NOT BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_CMAKE_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_CMAKE_EXTERNAL_PROJECT_MODE)
@@ -2325,8 +2325,13 @@ function(build_CMake_External_Project)
     return()
   endif()
   #once configure, build it
+  # Use user-defined number of jobs if defined
   get_Environment_Info(MAKE make_program JOBS jobs)
+  if(BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS
+    set(jobs -j${BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS})
+  endif()
   message("[PID] INFO : Building ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
+  message("[PID] INFO : Building using ${jobs} jobs ...")
   execute_process(
     COMMAND ${make_program} ${jobs} WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
     RESULT_VARIABLE result
