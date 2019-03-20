@@ -1704,17 +1704,24 @@ endfunction(get_Target_Platform_Info)
 #
 function(install_External_Project)
   set(options) #used to define the context
-  set(oneValueArgs PROJECT VERSION URL ARCHIVE FOLDER PATH)
+  set(oneValueArgs PROJECT VERSION URL ARCHIVE GIT_CLONE_COMMIT FOLDER PATH)
   set(multiValueArgs)
   cmake_parse_arguments(INSTALL_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-  if(NOT INSTALL_EXTERNAL_PROJECT_URL OR NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE OR NOT INSTALL_EXTERNAL_PROJECT_FOLDER)
+  if(NOT INSTALL_EXTERNAL_PROJECT_URL OR (NOT INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT AND NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE) OR NOT INSTALL_EXTERNAL_PROJECT_FOLDER)
     if(INSTALL_EXTERNAL_PROJECT_PATH)
       set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
     endif()
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : PATH, URL, ARCHIVE and FOLDER arguments must be provided to install_External_Project.")
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : PATH, URL, ARCHIVE (or GIT_CLONE_COMMIT) and FOLDER arguments must be provided to install_External_Project.")
     return()
   endif()
+
+  if(INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT AND INSTALL_EXTERNAL_PROJECT_ARCHIVE)
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : ARCHIVE and GIT_CLONE_COMMIT arguments are exclusive.")
+    return()
+  endif()
+
   if(INSTALL_EXTERNAL_PROJECT_VERSION)
     set(version_str " version ${INSTALL_EXTERNAL_PROJECT_VERSION}")
   else()
@@ -1725,42 +1732,64 @@ function(install_External_Project)
     execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
   endif()
 
-  if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
+  if(INSTALL_EXTERNAL_PROJECT_ARCHIVE)
+    if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
+      if(INSTALL_EXTERNAL_PROJECT_PROJECT)
+        message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
+      endif()
+      file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE} SHOW_PROGRESS)
+    endif()
+
+    if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
+      if(INSTALL_EXTERNAL_PROJECT_PROJECT)
+        message("[PID] ERROR : During deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot download the archive.")
+      endif()
+      if(INSTALL_EXTERNAL_PROJECT_PATH)
+        set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
+      endif()
+      set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+      return()
+    endif()
+
+    #cleaning the already extracted folder
+    if(EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
+      file(REMOVE_RECURSE ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
+    endif()
+
     if(INSTALL_EXTERNAL_PROJECT_PROJECT)
-      message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
+      message("[PID] INFO : Extracting ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
     endif()
-    file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE} SHOW_PROGRESS)
-  endif()
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E tar xf ${INSTALL_EXTERNAL_PROJECT_ARCHIVE}
+      WORKING_DIRECTORY ${TARGET_BUILD_DIR}
+    )
+  elseif(INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT)
+    if(EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
+      file(REMOVE_RECURSE ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
+    endif()
 
-  if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
     if(INSTALL_EXTERNAL_PROJECT_PROJECT)
-      message("[PID] ERROR : during deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot download the archive.")
+      message("[PID] INFO : Cloning ${INSTALL_EXTERNAL_PROJECT_PROJECT} with commit ${INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT} ...")
     endif()
-    if(INSTALL_EXTERNAL_PROJECT_PATH)
-      set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
-    endif()
-    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-    return()
+    execute_process(
+      COMMAND git clone ${INSTALL_EXTERNAL_PROJECT_URL}
+      WORKING_DIRECTORY ${TARGET_BUILD_DIR}
+    )
+    execute_process(
+      COMMAND git checkout ${INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT}
+      WORKING_DIRECTORY ${TARGET_BUILD_DIR}
+    )
   endif()
-
-  #cleaning the already extracted folder
-  if(EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
-    file(REMOVE_RECURSE ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
-  endif()
-
-  if(INSTALL_EXTERNAL_PROJECT_PROJECT)
-    message("[PID] INFO : Extracting ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
-  endif()
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -E tar xf ${INSTALL_EXTERNAL_PROJECT_ARCHIVE}
-    WORKING_DIRECTORY ${TARGET_BUILD_DIR}
-  )
 
   #check that the extract went well
   if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER}
       OR NOT IS_DIRECTORY ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
     if(INSTALL_EXTERNAL_PROJECT_PROJECT)
-      message("[PID] ERROR : during deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot extract the archive.")
+      if(INSTALL_EXTERNAL_PROJECT_ARCHIVE)
+        message("[PID] ERROR : during deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot extract the archive.")
+      elseif(INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT)
+        message("[PID] ERROR : during cloning of ${INSTALL_EXTERNAL_PROJECT_PROJECT}, cannot extract the archive.")
+      endif()
     endif()
     if(INSTALL_EXTERNAL_PROJECT_PATH)
       set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
