@@ -1238,32 +1238,61 @@ endif()
 if(GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES)
   if(GET_EXTERNAL_DEPENDENCY_INFO_FLAGS)
 		translate_Into_Options(INCLUDES ${${prefix}_BUILD_INCLUDES} FLAGS RES_INCLUDES)
-		set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${RES_INCLUDES} PARENT_SCOPE)
-	else()
-  	set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${${prefix}_BUILD_INCLUDES} PARENT_SCOPE)
+    if(RES_INCLUDES)
+	    set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${RES_INCLUDES} PARENT_SCOPE)
+    else()
+      set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} "" PARENT_SCOPE)
+    endif()
+  else()
+    if(${prefix}_BUILD_INCLUDES)
+  	  set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} ${${prefix}_BUILD_INCLUDES} PARENT_SCOPE)
+    else()
+      set(${GET_EXTERNAL_DEPENDENCY_INFO_INCLUDES} "" PARENT_SCOPE)
+    endif()
 	endif()
 endif()
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_LIBRARY_DIRS)
 	if(GET_EXTERNAL_DEPENDENCY_INFO_FLAGS)
 		translate_Into_Options(LIBRARY_DIRS ${${prefix}_BUILD_LIB_DIRS} FLAGS RES_LIB_DIRS)
-		set(${GET_EXTERNAL_DEPENDENCY_INFO_LIBRARY_DIRS} ${RES_LIB_DIRS} PARENT_SCOPE)
-	else()
-  	set(${GET_EXTERNAL_DEPENDENCY_INFO_LIBRARY_DIRS} ${${prefix}_BUILD_LIB_DIRS} PARENT_SCOPE)
+    if(RES_LIB_DIRS)
+	    set(${GET_EXTERNAL_DEPENDENCY_INFO_LIBRARY_DIRS} ${RES_LIB_DIRS} PARENT_SCOPE)
+    else()
+      set(${GET_EXTERNAL_DEPENDENCY_INFO_LIBRARY_DIRS} "" PARENT_SCOPE)
+    endif()
+  else()
+    if(${prefix}_BUILD_LIB_DIRS)
+	    set(${GET_EXTERNAL_DEPENDENCY_INFO_LIBRARY_DIRS} ${${prefix}_BUILD_LIB_DIRS} PARENT_SCOPE)
+    else()
+      set(${GET_EXTERNAL_DEPENDENCY_INFO_LIBRARY_DIRS} "" PARENT_SCOPE)
+    endif()
 	endif()
 endif()
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS)
 	if(GET_EXTERNAL_DEPENDENCY_INFO_FLAGS)
 		translate_Into_Options(DEFINITIONS ${${prefix}_BUILD_DEFINITIONS} FLAGS RES_DEFS)
-		set(${GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS} ${RES_DEFS} PARENT_SCOPE)
+    if(RES_DEFS)
+	    set(${GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS} ${RES_DEFS} PARENT_SCOPE)
+    else()
+      set(${GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS} "" PARENT_SCOPE)
+    endif()
 	else()
-	  set(${GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS} ${${prefix}_BUILD_DEFINITIONS} PARENT_SCOPE)
+    if(${prefix}_BUILD_LIB_DIRS)
+      set(${GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS} ${${prefix}_BUILD_DEFINITIONS} PARENT_SCOPE)
+    else()
+      set(${GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS} "" PARENT_SCOPE)
+    endif()
+
 	endif()
 endif()
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_OPTIONS)
-  set(${GET_EXTERNAL_DEPENDENCY_INFO_OPTIONS} ${${prefix}_BUILD_COMPILER_OPTIONS} PARENT_SCOPE)
+  if(${prefix}_BUILD_COMPILER_OPTIONS)
+    set(${GET_EXTERNAL_DEPENDENCY_INFO_OPTIONS} ${${prefix}_BUILD_COMPILER_OPTIONS} PARENT_SCOPE)
+  else()
+    set(${GET_EXTERNAL_DEPENDENCY_INFO_OPTIONS} "" PARENT_SCOPE)
+  endif()
 endif()
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_C_STANDARD)
@@ -1285,11 +1314,19 @@ if(GET_EXTERNAL_DEPENDENCY_INFO_CXX_STANDARD)
 endif()
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_LINKS)
-  set(${GET_EXTERNAL_DEPENDENCY_INFO_LINKS} ${${prefix}_BUILD_LINKS} PARENT_SCOPE)
+  if(${prefix}_BUILD_LINKS)
+    set(${GET_EXTERNAL_DEPENDENCY_INFO_LINKS} ${${prefix}_BUILD_LINKS} PARENT_SCOPE)
+  else()
+    set(${GET_EXTERNAL_DEPENDENCY_INFO_LINKS} "" PARENT_SCOPE)
+  endif()
 endif()
 
 if(GET_EXTERNAL_DEPENDENCY_INFO_RESOURCES)
-  set(${GET_EXTERNAL_DEPENDENCY_INFO_RESOURCES} ${${prefix}_BUILD_RUNTIME_RESOURCES} PARENT_SCOPE)
+  if(${prefix}_BUILD_RUNTIME_RESOURCES)
+    set(${GET_EXTERNAL_DEPENDENCY_INFO_RESOURCES} ${${prefix}_BUILD_RUNTIME_RESOURCES} PARENT_SCOPE)
+  else()
+    set(${GET_EXTERNAL_DEPENDENCY_INFO_RESOURCES} "" PARENT_SCOPE)
+  endif()
 endif()
 
 endfunction(get_External_Dependencies_Info)
@@ -1414,7 +1451,7 @@ endfunction(get_User_Option_Info)
 #
 function(get_Environment_Info)
   set(options MODULE SHARED STATIC EXE DEBUG RELEASE C CXX ASM) #used to define the context
-  set(oneValueArgs COMPILER AR LINKER MAKE RANLIB JOBS OBJDUMP OBJCOPY NM) #returned values conditionned by options
+  set(oneValueArgs COMPILER AR LINKER MAKE RANLIB JOBS JOBS_NUMBER OBJDUMP OBJCOPY NM) #returned values conditionned by options
   set(multiValueArgs CFLAGS LDFLAGS) #returned values conditionned by options
   cmake_parse_arguments(GET_ENVIRONMENT_INFO "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -1427,6 +1464,15 @@ function(get_Environment_Info)
     	set(${GET_ENVIRONMENT_INFO_JOBS} "-j${NUMBER_OF_JOBS}" PARENT_SCOPE)
     else()
     	set(${GET_ENVIRONMENT_INFO_JOBS} "" PARENT_SCOPE)
+    endif()
+  endif()
+
+  if(GET_ENVIRONMENT_INFO_JOBS_NUMBER)
+    include(ProcessorCount)
+    ProcessorCount(NUMBER_OF_JOBS)
+    math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")
+    if(${NUMBER_OF_JOBS} GREATER 1)
+      set(${GET_ENVIRONMENT_INFO_JOBS_NUMBER} ${NUMBER_OF_JOBS} PARENT_SCOPE)
     endif()
   endif()
 
@@ -1658,17 +1704,24 @@ endfunction(get_Target_Platform_Info)
 #
 function(install_External_Project)
   set(options) #used to define the context
-  set(oneValueArgs PROJECT VERSION URL ARCHIVE FOLDER PATH)
+  set(oneValueArgs PROJECT VERSION URL ARCHIVE GIT_CLONE_COMMIT FOLDER PATH)
   set(multiValueArgs)
   cmake_parse_arguments(INSTALL_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-  if(NOT INSTALL_EXTERNAL_PROJECT_URL OR NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE OR NOT INSTALL_EXTERNAL_PROJECT_FOLDER)
+  if(NOT INSTALL_EXTERNAL_PROJECT_URL OR (NOT INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT AND NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE) OR NOT INSTALL_EXTERNAL_PROJECT_FOLDER)
     if(INSTALL_EXTERNAL_PROJECT_PATH)
       set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
     endif()
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : PATH, URL, ARCHIVE and FOLDER arguments must be provided to install_External_Project.")
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : PATH, URL, ARCHIVE (or GIT_CLONE_COMMIT) and FOLDER arguments must be provided to install_External_Project.")
     return()
   endif()
+
+  if(INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT AND INSTALL_EXTERNAL_PROJECT_ARCHIVE)
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : ARCHIVE and GIT_CLONE_COMMIT arguments are exclusive.")
+    return()
+  endif()
+
   if(INSTALL_EXTERNAL_PROJECT_VERSION)
     set(version_str " version ${INSTALL_EXTERNAL_PROJECT_VERSION}")
   else()
@@ -1679,42 +1732,64 @@ function(install_External_Project)
     execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
   endif()
 
-  if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
+  if(INSTALL_EXTERNAL_PROJECT_ARCHIVE)
+    if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
+      if(INSTALL_EXTERNAL_PROJECT_PROJECT)
+        message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
+      endif()
+      file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE} SHOW_PROGRESS)
+    endif()
+
+    if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
+      if(INSTALL_EXTERNAL_PROJECT_PROJECT)
+        message("[PID] ERROR : During deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot download the archive.")
+      endif()
+      if(INSTALL_EXTERNAL_PROJECT_PATH)
+        set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
+      endif()
+      set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+      return()
+    endif()
+
+    #cleaning the already extracted folder
+    if(EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
+      file(REMOVE_RECURSE ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
+    endif()
+
     if(INSTALL_EXTERNAL_PROJECT_PROJECT)
-      message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
+      message("[PID] INFO : Extracting ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
     endif()
-    file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE} SHOW_PROGRESS)
-  endif()
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E tar xf ${INSTALL_EXTERNAL_PROJECT_ARCHIVE}
+      WORKING_DIRECTORY ${TARGET_BUILD_DIR}
+    )
+  elseif(INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT)
+    if(EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
+      file(REMOVE_RECURSE ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
+    endif()
 
-  if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
     if(INSTALL_EXTERNAL_PROJECT_PROJECT)
-      message("[PID] ERROR : during deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot download the archive.")
+      message("[PID] INFO : Cloning ${INSTALL_EXTERNAL_PROJECT_PROJECT} with commit ${INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT} ...")
     endif()
-    if(INSTALL_EXTERNAL_PROJECT_PATH)
-      set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
-    endif()
-    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-    return()
+    execute_process(
+      COMMAND git clone ${INSTALL_EXTERNAL_PROJECT_URL}
+      WORKING_DIRECTORY ${TARGET_BUILD_DIR}
+    )
+    execute_process(
+      COMMAND git checkout ${INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT}
+      WORKING_DIRECTORY ${TARGET_BUILD_DIR}
+    )
   endif()
-
-  #cleaning the already extracted folder
-  if(EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
-    file(REMOVE_RECURSE ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
-  endif()
-
-  if(INSTALL_EXTERNAL_PROJECT_PROJECT)
-    message("[PID] INFO : Extracting ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
-  endif()
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -E tar xf ${INSTALL_EXTERNAL_PROJECT_ARCHIVE}
-    WORKING_DIRECTORY ${TARGET_BUILD_DIR}
-  )
 
   #check that the extract went well
   if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER}
       OR NOT IS_DIRECTORY ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
     if(INSTALL_EXTERNAL_PROJECT_PROJECT)
-      message("[PID] ERROR : during deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot extract the archive.")
+      if(INSTALL_EXTERNAL_PROJECT_ARCHIVE)
+        message("[PID] ERROR : during deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot extract the archive.")
+      elseif(INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT)
+        message("[PID] ERROR : during cloning of ${INSTALL_EXTERNAL_PROJECT_PROJECT}, cannot extract the archive.")
+      endif()
     endif()
     if(INSTALL_EXTERNAL_PROJECT_PATH)
       set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
@@ -2288,13 +2363,22 @@ function(build_CMake_External_Project)
   # this is to allow the usage of a list of list in CMake
   foreach(def IN LISTS BUILD_CMAKE_EXTERNAL_PROJECT_DEFINITIONS)
    # Managing list and variables
-   if(def MATCHES "(.*)=(.+)") #if a cmake assignement (should be the case for any definition)
+   if(def MATCHES "(.+)=(.+)") #if a cmake assignement (should be the case for any definition)
      if(DEFINED ${CMAKE_MATCH_2}) # if right-side of the assignement is a variable
        set(val ${${CMAKE_MATCH_2}}) #take the value of the variable
      else()
        set(val ${CMAKE_MATCH_2})
      endif()
-     set(calling_defs "${calling_defs} -D${CMAKE_MATCH_1}=${val}")
+     set(var ${CMAKE_MATCH_1})
+     if(val #if val has a value OR if value of val is "FALSE"
+        OR val MATCHES "FALSE|OFF"
+        OR val EQUAL 0
+        OR val MATCHES "NOTFOUND")#if VAL is not empty
+        message("")
+       set(calling_defs "${calling_defs} -D${var}=${val}")
+     endif()
+   else()#no setting this is a cmake specific argument
+     set(calling_defs "${calling_defs} ${def}")
    endif()
   endforeach()
   if(CMAKE_HOST_WIN32)#on a window host path must be resolved
