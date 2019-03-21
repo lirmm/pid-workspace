@@ -213,7 +213,7 @@ macro(SuiteSparse_FIND_COMPONENTS )
 			")
 			endif ()
 		else()
-      list(APPEND SuiteSparse_LIBRARIES	"${SuiteSparse_${suitesparseCompUC}_LIBRARY_RELEASE} ${SuiteSparse_${suitesparseCompUC}_LIBRARY_DEBUG}")
+      list(APPEND SuiteSparse_LIBRARIES	${SuiteSparse_${suitesparseCompUC}_LIBRARY_RELEASE})# ${SuiteSparse_${suitesparseCompUC}_LIBRARY_DEBUG}")
 			#list(APPEND SuiteSparse_LIBRARIES	optimized "${SuiteSparse_${suitesparseCompUC}_LIBRARY_RELEASE}" debug "${SuiteSparse_${suitesparseCompUC}_LIBRARY_DEBUG}")
 		endif()
 
