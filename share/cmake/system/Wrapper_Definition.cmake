@@ -1665,14 +1665,14 @@ endfunction(get_Target_Platform_Info)
 #  install_External_Project
 #  ^^^^^^^^^^^^^^^^^^^^^^^^
 #
-#   .. command:: install_External_Project(URL ... ARCHIVE ... FOLDER ... PATH ... [OPTIONS])
+#   .. command:: install_External_Project(URL ... ARCHIVE|GIT_CLONE_COMMIT ... FOLDER ... PATH ... [OPTIONS])
 #
 #     Download and install the given archive and returns the path to the installed project.
 #
 #     .. rubric:: Required parameters
 #
 #     :URL <url>: The URL from where to download the archive.
-#     :ARCHIVE <string>: The name of the archive downloaded.
+#     :ARCHIVE|GIT_CLONE_COMMIT <string>: The name of the archive downloaded or the identifier of the commit to checkout to. Both keyword ARCHIVE and GIT_CLONE_COMMIT are exclusive.
 #     :FOLDER <string>: The folder resulting from archive extraction.
 #
 #     .. rubric:: Optional parameters
@@ -1777,7 +1777,7 @@ function(install_External_Project)
     )
     execute_process(
       COMMAND git checkout ${INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT}
-      WORKING_DIRECTORY ${TARGET_BUILD_DIR}
+      WORKING_DIRECTORY ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER}
     )
   endif()
 
