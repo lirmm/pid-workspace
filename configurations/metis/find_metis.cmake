@@ -18,25 +18,25 @@
 #########################################################################################
 
 include(Configuration_Definition NO_POLICY_SCOPE)
-include(PID_Utils_Functions NO_POLICY_SCOPE)
 
-found_PID_Configuration(mkl FALSE)
-# - Find intel_mkl installation
-# Try to find libraries for intel_mkl on UNIX systems. The following values are defined
-#  mkl_FOUND        - True if intel_mkl is available
-if (UNIX)
-  set(CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/mkl ${CMAKE_MODULE_PATH})
-	find_package(MKL QUIET)
+found_PID_Configuration(metis FALSE)
 
-	if(NOT MKL_FOUND OR NOT MKL_LIBRARIES) # check failed
-		unset(MKL_FOUND)
-		return()
-	endif()
+if(UNIX)
+  find_path(METIS_INCLUDE_DIRS metis.h)
+  find_library(METIS_LIBRARIES metis)
 
-	convert_PID_Libraries_Into_System_Links(MKL_LIBRARIES MKL_LINKS)#getting good system links (with -l)
-	convert_PID_Libraries_Into_Library_Directories(MKL_LIBRARIES MKL_LIBRARY_DIRS)
-
-  if(MKL_FOUND)
-    found_PID_Configuration(mkl TRUE)
+  set(IS_FOUND TRUE)
+  if(METIS_INCLUDE_DIRS AND METIS_LIBRARIES)
+    convert_PID_Libraries_Into_System_Links(METIS_LIBRARIES METIS_LINKS)#getting good system links (with -l)
+    convert_PID_Libraries_Into_Library_Directories(METIS_LIBRARIES METIS_LIBDIR)
+  else()
+    message("[PID] ERROR : cannot find metis library.")
+    set(IS_FOUND FALSE)
   endif()
-endif()
+
+  if(IS_FOUND)
+    found_PID_Configuration(metis TRUE)
+  endif ()
+
+  unset(IS_FOUND)
+endif ()

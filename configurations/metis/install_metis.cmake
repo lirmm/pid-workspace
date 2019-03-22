@@ -17,26 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-include(Configuration_Definition NO_POLICY_SCOPE)
-include(PID_Utils_Functions NO_POLICY_SCOPE)
-
-found_PID_Configuration(mkl FALSE)
-# - Find intel_mkl installation
-# Try to find libraries for intel_mkl on UNIX systems. The following values are defined
-#  mkl_FOUND        - True if intel_mkl is available
-if (UNIX)
-  set(CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/mkl ${CMAKE_MODULE_PATH})
-	find_package(MKL QUIET)
-
-	if(NOT MKL_FOUND OR NOT MKL_LIBRARIES) # check failed
-		unset(MKL_FOUND)
-		return()
-	endif()
-
-	convert_PID_Libraries_Into_System_Links(MKL_LIBRARIES MKL_LINKS)#getting good system links (with -l)
-	convert_PID_Libraries_Into_Library_Directories(MKL_LIBRARIES MKL_LIBRARY_DIRS)
-
-  if(MKL_FOUND)
-    found_PID_Configuration(mkl TRUE)
-  endif()
+#installation process for known distributions
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_OS_Configuration_Command(apt-get install -y libmetis-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_OS_Configuration_Command(pacman -S metis --noconfirm)
 endif()

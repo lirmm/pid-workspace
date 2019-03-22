@@ -1,6 +1,6 @@
 #########################################################################################
 #       This file is part of the program PID                                            #
-#       Program description : build system supportting the PID methodology              #
+#       Program description : build system supporting the PID methodology              	#
 #       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
 #       et de Microelectronique de Montpellier). All Right reserved.                    #
 #                                                                                       #
@@ -18,25 +18,8 @@
 #########################################################################################
 
 include(Configuration_Definition NO_POLICY_SCOPE)
-include(PID_Utils_Functions NO_POLICY_SCOPE)
 
-found_PID_Configuration(mkl FALSE)
-# - Find intel_mkl installation
-# Try to find libraries for intel_mkl on UNIX systems. The following values are defined
-#  mkl_FOUND        - True if intel_mkl is available
-if (UNIX)
-  set(CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/mkl ${CMAKE_MODULE_PATH})
-	find_package(MKL QUIET)
-
-	if(NOT MKL_FOUND OR NOT MKL_LIBRARIES) # check failed
-		unset(MKL_FOUND)
-		return()
-	endif()
-
-	convert_PID_Libraries_Into_System_Links(MKL_LIBRARIES MKL_LINKS)#getting good system links (with -l)
-	convert_PID_Libraries_Into_Library_Directories(MKL_LIBRARIES MKL_LIBRARY_DIRS)
-
-  if(MKL_FOUND)
-    found_PID_Configuration(mkl TRUE)
-  endif()
-endif()
+# returned variables
+PID_Configuration_Variables(metis
+			VARIABLES 	LIBRARIES LIB_DIRS 		INCLUDE_DIRS 		LINK_OPTIONS
+		VALUES 		 METIS_LIBRARIES 	METIS_LIBRARY_DIRS METIS_INCLUDE_DIRS 		METIS_LINKS)

@@ -18,25 +18,11 @@
 #########################################################################################
 
 include(Configuration_Definition NO_POLICY_SCOPE)
-include(PID_Utils_Functions NO_POLICY_SCOPE)
 
-found_PID_Configuration(mkl FALSE)
-# - Find intel_mkl installation
-# Try to find libraries for intel_mkl on UNIX systems. The following values are defined
-#  mkl_FOUND        - True if intel_mkl is available
-if (UNIX)
-  set(CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/mkl ${CMAKE_MODULE_PATH})
-	find_package(MKL QUIET)
-
-	if(NOT MKL_FOUND OR NOT MKL_LIBRARIES) # check failed
-		unset(MKL_FOUND)
-		return()
-	endif()
-
-	convert_PID_Libraries_Into_System_Links(MKL_LIBRARIES MKL_LINKS)#getting good system links (with -l)
-	convert_PID_Libraries_Into_Library_Directories(MKL_LIBRARIES MKL_LIBRARY_DIRS)
-
-  if(MKL_FOUND)
-    found_PID_Configuration(mkl TRUE)
-  endif()
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian
+	OR CURRENT_DISTRIBUTION STREQUAL arch)
+	installable_PID_Configuration(metis TRUE)
+else()#no known install process for other linux distributions and other OS
+	installable_PID_Configuration(metis FALSE)
 endif()

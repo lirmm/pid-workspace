@@ -18,25 +18,23 @@
 #########################################################################################
 
 include(Configuration_Definition NO_POLICY_SCOPE)
-include(PID_Utils_Functions NO_POLICY_SCOPE)
 
-found_PID_Configuration(mkl FALSE)
-# - Find intel_mkl installation
-# Try to find libraries for intel_mkl on UNIX systems. The following values are defined
-#  mkl_FOUND        - True if intel_mkl is available
-if (UNIX)
-  set(CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/mkl ${CMAKE_MODULE_PATH})
-	find_package(MKL QUIET)
+found_PID_Configuration(suitesparse FALSE)
 
-	if(NOT MKL_FOUND OR NOT MKL_LIBRARIES) # check failed
-		unset(MKL_FOUND)
+if(UNIX)
+  set(CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/suitesparse ${CMAKE_MODULE_PATH})
+	find_package(SuiteSparse QUIET)
+
+	if(NOT SuiteSparse_FOUND OR NOT SuiteSparse_LIBRARIES)
+		unset(SuiteSparse_FOUND)
 		return()
 	endif()
 
-	convert_PID_Libraries_Into_System_Links(MKL_LIBRARIES MKL_LINKS)#getting good system links (with -l)
-	convert_PID_Libraries_Into_Library_Directories(MKL_LIBRARIES MKL_LIBRARY_DIRS)
+	convert_PID_Libraries_Into_System_Links(SuiteSparse_LIBRARIES SuiteSparse_LINKS)#getting good system links (with -l)
+	convert_PID_Libraries_Into_Library_Directories(SuiteSparse_LIBRARIES SuiteSparse_LIBRARY_DIRS)
 
-  if(MKL_FOUND)
-    found_PID_Configuration(mkl TRUE)
+  if(SuiteSparse_FOUND)
+    found_PID_Configuration(suitesparse TRUE)
+    unset(SuiteSparse_FOUND)
   endif()
-endif()
+endif ()
