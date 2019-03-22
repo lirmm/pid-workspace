@@ -22,7 +22,7 @@
 # SGI - SGI MPT Library
 
 # linux
-get_Target_Platform_Info(OS curr_os ARCH curr_proc ABI curr_abi TYPE curr_proc_type)
+get_Platform_Variables(OS curr_os ARCH curr_proc ABI curr_abi TYPE curr_proc_type)
 if(NOT curr_proc_type STREQUAL "x86")
   message("[PID] ERROR: cannot use MKL on non intel systems.")
   set(MKL_FOUND FALSE)

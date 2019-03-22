@@ -18,6 +18,7 @@
 #########################################################################################
 
 include(Configuration_Definition NO_POLICY_SCOPE)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 found_PID_Configuration(mkl FALSE)
 # - Find intel_mkl installation
