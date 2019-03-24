@@ -11,6 +11,14 @@ set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE INTERNAL "")
 set(CUDA_LIBRARIES CACHE INTERNAL "")
 set(CUDA_INCLUDE_DIRS CACHE INTERNAL "")
 find_package(CUDA)
+if(NOT CUDA_nppi_LIBRARY)#nppi is deduced from other libs (just to allow old code to resolve symbols)
+  set(CUDA_nppi_LIBRARY ${CUDA_nppial_LIBRARY} ${CUDA_nppicc_LIBRARY} ${CUDA_nppicom_LIBRARY} ${CUDA_nppidei_LIBRARY} ${CUDA_nppif_LIBRARY} ${CUDA_nppig_LIBRARY} ${CUDA_nppim_LIBRARY} ${CUDA_nppist_LIBRARY} ${CUDA_nppisu_LIBRARY} ${CUDA_nppitc_LIBRARY} CACHE INTERNAL "" FORCE)
+endif()
+
+if(NOT CUDA_npp_LIBRARY)#old "all in one" npp library has been splitted into 3 libs (since 5.0)
+  set(CUDA_npp_LIBRARY ${CUDA_nppi_LIBRARY} ${CUDA_nppc_LIBRARY} ${CUDA_npps_LIBRARY} CACHE INTERNAL "" FORCE)
+endif()
+
 if(NOT CUDA_FOUND)#simply stop the configuration
   if(NOT CUDA_NVCC_EXECUTABLE OR NOT CUDA_VERSION)
     message("[PID] WARNING : CUDA language is not supported because no CUDA compiler has been found.")
