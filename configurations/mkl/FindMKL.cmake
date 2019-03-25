@@ -30,8 +30,6 @@ if(NOT curr_proc_type STREQUAL "x86")
 endif()
 
 IF(UNIX AND NOT APPLE)
-   message("proc_type : ${curr_proc_type}")
-   message("arch: ${curr_proc}")
     if(curr_proc EQUAL 32)
       SET(MKL_ARCH_DIR "32")
     else()

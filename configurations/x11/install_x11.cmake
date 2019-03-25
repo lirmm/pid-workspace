@@ -17,4 +17,5 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+execute_OS_Configuration_Command(apt update)
 execute_OS_Configuration_Command(apt-get install -y xorg openbox libx11-dev libxt-dev libxft-dev libxpm-dev libxcomposite-dev libxdamage-dev libxtst-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxcursor-dev libxss-dev libxkbfile-dev)
