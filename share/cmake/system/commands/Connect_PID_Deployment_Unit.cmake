@@ -92,7 +92,7 @@ if(TARGET_WRAPPER)# a framework is connected
 	is_Package_Connected(ALREADY_CONNECTED ${TARGET_WRAPPER} origin)
 	if(ALREADY_CONNECTED )#the package must be connected to the official remote for this option to be valid
 		if(NOT (FORCED_RECONNECTION STREQUAL "true"))
-			message("[PID] ERROR : framework ${TARGET_WRAPPER} is already connected to a git repository. Use the force=true option to force the reconnection.")
+			message("[PID] ERROR : wrapper ${TARGET_WRAPPER} is already connected to a git repository. Use the force=true option to force the reconnection.")
 			return()
 		else()
 			#here the request is OK, we can apply => changing the origin to make it target a new origin remote (most of time from official TO private remote)
