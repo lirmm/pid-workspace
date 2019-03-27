@@ -281,7 +281,7 @@ endfunction(generate_Package_License_File)
 #  .. _generate_Package_Git_Ignore_File:
 #
 #  generate_Package_Git_Ignore_File
-#  -----------------------------
+#  --------------------------------
 #
 #   .. command:: generate_Package_Git_Ignore_File()
 #
