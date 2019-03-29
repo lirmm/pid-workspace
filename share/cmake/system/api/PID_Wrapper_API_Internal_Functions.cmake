@@ -1577,7 +1577,7 @@ else()
 	set(resources "")
 endif()
 if(package_rel_to_write)#write all the imported stuff from another external package in one call
-	file(APPEND ${file_for_version} "declare_PID_External_Component_Dependency(PACKAGE ${package} COMPONENT ${component} EXTERNAL ${dependency}${includes}${lib_dirs}${shared}${static}${defs}${opts}${c_std}${cxx_std}${resources})\n")
+file(APPEND ${file_for_version} "declare_PID_External_Component_Dependency(PACKAGE ${package} COMPONENT ${component} EXTERNAL ${external_package_dependency}${includes}${lib_dirs}${shared}${static}${defs}${opts}${c_std}${cxx_std}${resources})\n")
 endif()
 endfunction(generate_Description_For_External_Component_Dependency)
 
