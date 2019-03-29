@@ -152,24 +152,25 @@ else()#by default build the given package version using external project specifi
 
 	set(post_install_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT})
 
+	#checking for system configurations
+	resolve_Wrapper_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
+	if(NOT IS_OK)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message("[PID] ERROR : Cannot satisfy target platform's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
+		return()
+	else()
+		message("[PID] INFO : all required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
+	endif()
+
+	# checking for dependencies
+	message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
+	resolve_Wrapper_Dependencies(${TARGET_EXTERNAL_PACKAGE} ${version} FALSE)
+	message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
+
+	#prepare deployment script execution by caching build variable that may be used inside
+	configure_Wrapper_Build_Variables(${TARGET_EXTERNAL_PACKAGE} ${version})
+
 	if(NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true)
-	  #checking for system configurations
-	  resolve_Wrapper_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
-	  if(NOT IS_OK)
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-	    message("[PID] ERROR : Cannot satisfy target platform's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
-	    return()
-	  else()
-	    message("[PID] INFO : all required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
-	  endif()
-
-	  # checking for dependencies
-	  message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
-	  resolve_Wrapper_Dependencies(${TARGET_EXTERNAL_PACKAGE} ${version} FALSE)
-		message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
-
-	  #prepare deployment script execution by caching build variable that may be used inside
-	  configure_Wrapper_Build_Variables(${TARGET_EXTERNAL_PACKAGE} ${version})
 
 	  message("[PID] INFO : Executing deployment script ${package_version_src_dir}/${deploy_script_file}...")
 	  set(ERROR_IN_SCRIPT FALSE)
