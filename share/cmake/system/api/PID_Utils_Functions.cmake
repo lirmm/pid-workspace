@@ -1892,7 +1892,7 @@ function(convert_Library_Path_To_Default_System_Library_Link RESULTING_LINK libr
   endif()
   get_filename_component(LIB_NAME ${library_path} NAME)
   string(REGEX REPLACE "^lib(.+)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
-  string(REGEX REPLACE "^(.+)\\.so(\\.[0-9]+)*$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+  string(REGEX REPLACE "^(.+)\\.(so(\\.[0-9]+)*|l?a)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
 
   set(${RESULTING_LINK} "-l${LIB_NAME}" PARENT_SCOPE)
 endfunction(convert_Library_Path_To_Default_System_Library_Link)
