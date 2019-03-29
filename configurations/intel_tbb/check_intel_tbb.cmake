@@ -23,6 +23,6 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 # returned variables
 PID_Configuration_Variables(intel_tbb
 				VARIABLES 	VERSION 	LINK_OPTIONS 	LIBRARY_DIRS 		RPATH   	INCLUDE_DIRS
-				VALUES 		TBB_VERSION 	TBB_LINKS 	TBB_LIBRARY_DIRS 	TBB_LIBS 	TBB_INCLUDE_DIRS)
+				VALUES 		TBB_VERSION 	TBB_LINKS 	TBB_LIBRARY_DIRS 	TBB_LIBRARIES 	TBB_INCLUDE_DIRS)
 
 PID_Configuration_Dependencies(intel_tbb DEPEND posix)
