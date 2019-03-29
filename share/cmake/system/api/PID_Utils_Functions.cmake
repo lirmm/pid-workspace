@@ -256,12 +256,11 @@ endfunction(extract_Info_From_Platform)
 #     :RES_PACK: the output variable that contains the name of the package, if any specified, or that is empty otherwise.
 #
 function(extract_Component_And_Package_From_Dependency_String RES_COMP RES_PACK dependency_string)
-string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" RESULT_LIST ${dependency_string})
-if(NOT RESULT_LIST STREQUAL dependency_string) #it matches => this is a dependency string with package expression using / symbol
+if(dependency_string MATCHES "^([^/]+)/(.+)$") #it matches => this is a dependency string with package expression using / symbol
   list(GET RESULT_LIST 0 package)
   list(GET RESULT_LIST 1 component)
-  set(${RES_COMP} ${component} PARENT_SCOPE)
-  set(${RES_PACK} ${package} PARENT_SCOPE)
+  set(${RES_COMP} ${CMAKE_MATCH_2} PARENT_SCOPE)
+  set(${RES_PACK} ${CMAKE_MATCH_1} PARENT_SCOPE)
 else()#this is a dependency that only specifies the name of the component
   set(${RES_PACK} PARENT_SCOPE)
   set(${RES_COMP} ${dependency_string} PARENT_SCOPE)
