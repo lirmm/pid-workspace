@@ -2744,6 +2744,7 @@ endif()
 # 0) checking global ABI compatibility
 is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${package})
 if(NOT IS_ABI_COMPATIBLE)
+  message("[PID] WARNING : binaries in package ${package} version ${version} are not compatible with your current platform settings.")
   set(${RESULT} FALSE PARENT_SCOPE)
   return() #problem => the binary package has been built with an incompatible C++ ABI
 endif()
@@ -2765,6 +2766,7 @@ foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this pla
   if(RESULT_OK)
     message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
   else()
+    message("[PID] WARNING : platform configuration ${config} for package ${package} is NOT satisfied.")
     set(${RESULT} FALSE PARENT_SCOPE)
     return()
   endif()
