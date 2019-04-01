@@ -21,6 +21,8 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 found_PID_Configuration(openssl FALSE)
 
+set(CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/openssl ${CMAKE_MODULE_PATH})
+set(GENERATE_TARGETS FALSE)
 if(openssl_version)
 	find_package(OpenSSL ${openssl_version} EXACT QUIET)
 else()
