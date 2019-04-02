@@ -2681,15 +2681,15 @@ endif()
 # need to deal also with linker option related to rpath/runpath. With recent version of the linker the RUNPATH is set by default NOT the RPATH
 # cmake does not manage this aspect it consider that this is always the RPATH in USE BUT this is not TRUE
 # so force the usage of a linker flag to deactivate the RUNPATH generation
-string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
+string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 if(NOT CMAKE_EXE_LINKER_FLAGS)
 	set(CMAKE_EXE_LINKER_FLAGS "-Wl,--disable-new-dtags" CACHE STRING "" FORCE)
 endif()
-string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_MODULE_LINKER_FLAGS ${CMAKE_MODULE_LINKER_FLAGS})
+string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS}")
 if(NOT CMAKE_MODULE_LINKER_FLAGS)
 	set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--disable-new-dtags" CACHE STRING "" FORCE)
 endif()
-string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
+string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
 if(NOT CMAKE_SHARED_LINKER_FLAGS)
 	set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--disable-new-dtags" CACHE STRING "" FORCE)
 endif()
