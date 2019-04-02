@@ -2543,6 +2543,7 @@ if(RES STREQUAL "UNKNOWN")
     add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
     message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
     set(${DEPLOYED} FALSE PARENT_SCOPE)
+    return()
   endif()
   add_Managed_Package_In_Current_Process(${package} ${version} "SUCCESS" TRUE)
 
