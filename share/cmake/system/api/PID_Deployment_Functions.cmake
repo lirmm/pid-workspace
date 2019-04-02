@@ -2376,7 +2376,6 @@ endif()
 if(NO_VERSION)
 	deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "${list_of_installed_versions}")
 else()
-  message("SELECTED=${SELECTED} IS_EXACT=${IS_EXACT} IS_SYSTEM=${IS_SYSTEM}")
 	deploy_Source_External_Package_Version(SOURCE_DEPLOYED ${package} ${SELECTED} "${IS_EXACT}" "${IS_SYSTEM}" "${list_of_installed_versions}")
 endif()
 
@@ -2451,6 +2450,7 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
       add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
       message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
       set(${DEPLOYED} FALSE PARENT_SCOPE)
+      return()
     endif()
 
     add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
