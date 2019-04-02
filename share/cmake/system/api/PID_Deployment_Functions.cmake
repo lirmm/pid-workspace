@@ -1468,6 +1468,9 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 
       if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
         add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
+        #need to remove the package because it cannot be configured
+        uninstall_Binary_Package(${package} FALSE ${RES_VERSION} ${RES_PLATFORM})
+        message("[PID] ERROR : cannot configure version ${version} of native package ${package}.")
         set(${DEPLOYED} FALSE PARENT_SCOPE)
       	return()
       endif()
@@ -1566,6 +1569,9 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
 
       if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
         add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
+        #need to remove the package because it cannot be configured
+        uninstall_Binary_Package(${package} FALSE ${RES_VERSION} ${RES_PLATFORM})
+        message("[PID] ERROR : cannot configure version ${RES_VERSION} of native package ${package}.")
         set(${DEPLOYED} FALSE PARENT_SCOPE)
       	return()
       endif()
@@ -2448,6 +2454,8 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 
     if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
       add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
+      #need to remove the package because it cannot be configured
+      uninstall_Binary_Package(${package} TRUE ${RES_VERSION} ${TARGET_PLATFORM})
       message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
       set(${DEPLOYED} FALSE PARENT_SCOPE)
       return()
@@ -2541,6 +2549,8 @@ if(RES STREQUAL "UNKNOWN")
 
   if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
     add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
+    #need to remove the package because it cannot be configured
+    uninstall_Binary_Package(${package} TRUE ${version} ${TARGET_PLATFORM})
     message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
     set(${DEPLOYED} FALSE PARENT_SCOPE)
     return()
@@ -2698,6 +2708,40 @@ execute_process(
 set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_External_Package)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |uninstall_Binary_Package| replace:: ``uninstall_Binary_Package``
+#  .. _uninstall_Binary_Package:
+#
+#  uninstall_Binary_Package
+#  ------------------------
+#
+#   .. command:: uninstall_Binary_Package(package external version platform)
+#
+#    Remove the given binary package from install tree
+#
+#      :package: The name of the external package.
+#
+#      :external: if TRUE the target package is an external package, otherwise it is a native package.
+#
+#      :version: version of the external package to install.
+#
+#      :platform: target platform for archive binary content (name may contain also instance extension).
+#
+function(uninstall_Binary_Package package external version platform)
+  if(external)
+    set(path_to_install ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
+  else()
+    set(path_to_install ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
+  endif()
+  if(EXISTS ${path_to_install})
+    file(REMOVE_RECURSE ${path_to_install})
+  endif()
+endfunction(uninstall_Binary_Package)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -2706,13 +2750,15 @@ endfunction(download_And_Install_Binary_External_Package)
 #  .. _configure_Binary_Package:
 #
 #  configure_Binary_Package
-#  --------------------------
+#  ------------------------
 #
-#   .. command:: configure_Binary_Package(package version platform mode)
+#   .. command:: configure_Binary_Package(RESULT package external version platform mode)
 #
 #    Configure the external package after it has been installed in workspace. It can lead to the install of OS packages depending of its system configuration.
 #
 #      :package: The name of the external package.
+#
+#      :external: if true teh target package is an external package, otherwise it is a native package.
 #
 #      :version: version of the external package to install.
 #
