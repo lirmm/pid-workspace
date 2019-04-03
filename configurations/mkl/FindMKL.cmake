@@ -272,6 +272,7 @@ ENDIF()
 INCLUDE(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MKL DEFAULT_MSG MKL_INCLUDE_DIR MKL_LIBRARIES)
 
+set(MKL_LIBDIRS ${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR})
 #if(MKL_FOUND)
 #        LINK_DIRECTORIES(${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}) # hack
 #endif()
