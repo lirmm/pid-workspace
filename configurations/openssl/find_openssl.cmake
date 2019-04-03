@@ -21,17 +21,18 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 found_PID_Configuration(openssl FALSE)
 
+set(CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/openssl ${CMAKE_MODULE_PATH})
+set(GENERATE_TARGETS FALSE)
 if(openssl_version)
 	find_package(OpenSSL ${openssl_version} EXACT QUIET)
 else()
 	find_package(OpenSSL QUIET)
 endif()
 
-
 if(NOT OPENSSL_FOUND)
 	found_PID_Configuration(openssl FALSE)
 endif()
-
+set(OPENSSL_NICE_VERSION ${OPENSSL_VERSION_MAJOR}.${OPENSSL_VERSION_MINOR}.${OPENSSL_VERSION_FIX})
 convert_PID_Libraries_Into_System_Links(OPENSSL_LIBRARIES OPENSSL_LINKS)#getting good system links (with -l)
 convert_PID_Libraries_Into_Library_Directories(OPENSSL_LIBRARIES OPENSSL_LIBDIRS)
 

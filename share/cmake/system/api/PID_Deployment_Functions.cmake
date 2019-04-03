@@ -1468,6 +1468,9 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 
       if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
         add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
+        #need to remove the package because it cannot be configured
+        uninstall_Binary_Package(${package} FALSE ${RES_VERSION} ${RES_PLATFORM})
+        message("[PID] ERROR : cannot configure version ${version} of native package ${package}.")
         set(${DEPLOYED} FALSE PARENT_SCOPE)
       	return()
       endif()
@@ -1566,6 +1569,9 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
 
       if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
         add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
+        #need to remove the package because it cannot be configured
+        uninstall_Binary_Package(${package} FALSE ${RES_VERSION} ${RES_PLATFORM})
+        message("[PID] ERROR : cannot configure version ${RES_VERSION} of native package ${package}.")
         set(${DEPLOYED} FALSE PARENT_SCOPE)
       	return()
       endif()
@@ -2376,7 +2382,6 @@ endif()
 if(NO_VERSION)
 	deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "${list_of_installed_versions}")
 else()
-  message("SELECTED=${SELECTED} IS_EXACT=${IS_EXACT} IS_SYSTEM=${IS_SYSTEM}")
 	deploy_Source_External_Package_Version(SOURCE_DEPLOYED ${package} ${SELECTED} "${IS_EXACT}" "${IS_SYSTEM}" "${list_of_installed_versions}")
 endif()
 
@@ -2449,8 +2454,11 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 
     if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
       add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
+      #need to remove the package because it cannot be configured
+      uninstall_Binary_Package(${package} TRUE ${RES_VERSION} ${TARGET_PLATFORM})
       message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
       set(${DEPLOYED} FALSE PARENT_SCOPE)
+      return()
     endif()
 
     add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
@@ -2541,8 +2549,11 @@ if(RES STREQUAL "UNKNOWN")
 
   if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
     add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
+    #need to remove the package because it cannot be configured
+    uninstall_Binary_Package(${package} TRUE ${version} ${TARGET_PLATFORM})
     message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
     set(${DEPLOYED} FALSE PARENT_SCOPE)
+    return()
   endif()
   add_Managed_Package_In_Current_Process(${package} ${version} "SUCCESS" TRUE)
 
@@ -2697,6 +2708,40 @@ execute_process(
 set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_External_Package)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |uninstall_Binary_Package| replace:: ``uninstall_Binary_Package``
+#  .. _uninstall_Binary_Package:
+#
+#  uninstall_Binary_Package
+#  ------------------------
+#
+#   .. command:: uninstall_Binary_Package(package external version platform)
+#
+#    Remove the given binary package from install tree
+#
+#      :package: The name of the external package.
+#
+#      :external: if TRUE the target package is an external package, otherwise it is a native package.
+#
+#      :version: version of the external package to install.
+#
+#      :platform: target platform for archive binary content (name may contain also instance extension).
+#
+function(uninstall_Binary_Package package external version platform)
+  if(external)
+    set(path_to_install ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
+  else()
+    set(path_to_install ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
+  endif()
+  if(EXISTS ${path_to_install})
+    file(REMOVE_RECURSE ${path_to_install})
+  endif()
+endfunction(uninstall_Binary_Package)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -2705,13 +2750,15 @@ endfunction(download_And_Install_Binary_External_Package)
 #  .. _configure_Binary_Package:
 #
 #  configure_Binary_Package
-#  --------------------------
+#  ------------------------
 #
-#   .. command:: configure_Binary_Package(package version platform mode)
+#   .. command:: configure_Binary_Package(RESULT package external version platform mode)
 #
 #    Configure the external package after it has been installed in workspace. It can lead to the install of OS packages depending of its system configuration.
 #
 #      :package: The name of the external package.
+#
+#      :external: if true teh target package is an external package, otherwise it is a native package.
 #
 #      :version: version of the external package to install.
 #
@@ -2744,6 +2791,7 @@ endif()
 # 0) checking global ABI compatibility
 is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${package})
 if(NOT IS_ABI_COMPATIBLE)
+  message("[PID] WARNING : binaries in package ${package} version ${version} are not compatible with your current platform settings.")
   set(${RESULT} FALSE PARENT_SCOPE)
   return() #problem => the binary package has been built with an incompatible C++ ABI
 endif()
@@ -2765,6 +2813,7 @@ foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this pla
   if(RESULT_OK)
     message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
   else()
+    message("[PID] WARNING : platform configuration ${config} for package ${package} is NOT satisfied.")
     set(${RESULT} FALSE PARENT_SCOPE)
     return()
   endif()

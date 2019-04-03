@@ -1,6 +1,6 @@
 #########################################################################################
 #       This file is part of the program PID                                            #
-#       Program description : build system supporting the PID methodology              	#
+#       Program description : build system supportting the PID methodology              #
 #       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
 #       et de Microelectronique de Montpellier). All Right reserved.                    #
 #                                                                                       #
@@ -16,13 +16,7 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
-include(Configuration_Definition NO_POLICY_SCOPE)
-
-
-# returned variables
-PID_Configuration_Variables(mkl
-			VARIABLES LINK_OPTIONS  LIBRARY_DIRS 		RPATH  					INCLUDE_DIRS 		LIBRARIES
-			VALUES 		MKL_LINKS			MKL_LIBDIRS	 		MKL_LIBRARIES 	MKL_INCLUDE_DIR MKL_LIBRARIES)
-
-PID_Configuration_Dependencies(mkl DEPEND posix)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	execute_OS_Configuration_Command(apt install -y libudev-dev)
+endif()

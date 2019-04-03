@@ -1,6 +1,6 @@
 #########################################################################################
 #       This file is part of the program PID                                            #
-#       Program description : build system supporting the PID methodology              	#
+#       Program description : build system supportting the PID methodology              #
 #       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
 #       et de Microelectronique de Montpellier). All Right reserved.                    #
 #                                                                                       #
@@ -19,10 +19,33 @@
 
 include(Configuration_Definition NO_POLICY_SCOPE)
 
+found_PID_Configuration(udev FALSE)
 
-# returned variables
-PID_Configuration_Variables(mkl
-			VARIABLES LINK_OPTIONS  LIBRARY_DIRS 		RPATH  					INCLUDE_DIRS 		LIBRARIES
-			VALUES 		MKL_LINKS			MKL_LIBDIRS	 		MKL_LIBRARIES 	MKL_INCLUDE_DIR MKL_LIBRARIES)
+# - Find libusb installation
+# Try to find libraries for libusb on UNIX systems. The following values are defined
+#  libusb_FOUND        - True if libusb is available
+#  libusb_LIBRARIES    - link against these to use libusb library
+if (UNIX)
 
-PID_Configuration_Dependencies(mkl DEPEND posix)
+	find_path(UDEV_INCLUDE_DIR_FOUND libudev.h)
+	find_library(UDEV_LIBRARIES_FOUND NAMES udev libudev PATHS ${ADDITIONAL_LIBRARY_PATHS} ${UDEV_PATH_LIB})
+
+	set(IS_FOUND TRUE)
+	if (UDEV_LIBRARIES_FOUND AND UDEV_INCLUDE_DIR_FOUND)
+		set(UDEV_INCLUDE_DIR ${UDEV_INCLUDE_DIR_FOUND})
+		set(UDEV_LIBRARIES ${UDEV_LIBRARIES_FOUND})
+		convert_PID_Libraries_Into_System_Links(UDEV_LIBRARIES UDEV_LINKS)#getting good system links (with -l)
+		convert_PID_Libraries_Into_Library_Directories(UDEV_LIBRARIES UDEV_LIBDIR)
+	else()
+		message("[PID] ERROR : cannot find libudev library.")
+		set(IS_FOUND FALSE)
+	endif ()
+
+	if(IS_FOUND)
+		found_PID_Configuration(udev TRUE)
+	endif ()
+
+	unset(IS_FOUND)
+	unset(UDEV_LIBRARIES_FOUND CACHE)
+	unset(UDEV_INCLUDE_DIR_FOUND CACHE)
+endif ()

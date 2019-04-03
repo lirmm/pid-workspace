@@ -19,10 +19,7 @@
 
 include(Configuration_Definition NO_POLICY_SCOPE)
 
-
 # returned variables
-PID_Configuration_Variables(mkl
-			VARIABLES LINK_OPTIONS  LIBRARY_DIRS 		RPATH  					INCLUDE_DIRS 		LIBRARIES
-			VALUES 		MKL_LINKS			MKL_LIBDIRS	 		MKL_LIBRARIES 	MKL_INCLUDE_DIR MKL_LIBRARIES)
-
-PID_Configuration_Dependencies(mkl DEPEND posix)
+PID_Configuration_Variables(udev
+				VARIABLES LINK_OPTIONS		LIBRARY_DIRS 	RPATH   			  INCLUDE_DIRS
+				VALUES 		UDEV_LINKS			UDEV_LIBDIR		UDEV_LIBRARIES 	UDEV_INCLUDE_DIR)
