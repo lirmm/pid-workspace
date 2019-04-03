@@ -35,5 +35,7 @@ if (UNIX)
 
 	convert_PID_Libraries_Into_System_Links(MKL_LIBRARIES MKL_LINKS)#getting good system links (with -l)
 	convert_PID_Libraries_Into_Library_Directories(MKL_LIBRARIES MKL_LIBDIRS)
+
+  set(MKL_LINKS -Wl,--no-as-needed ${MKL_LINKS})
   found_PID_Configuration(mkl TRUE)
 endif()
