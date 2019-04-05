@@ -21,11 +21,11 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(cudnn
-				VARIABLES VERSION				LINK_OPTIONS 	INCLUDE_DIRS 			LIBRARY_DIRS  			RPATH
-			VALUES 		CUDNN_VERSION		CUDNN_LINK 		CUDNN_INCLUDE_DIR CUDNN_LIBRARY_DIR		CUDNN_LIBRARY)
+				VARIABLES VERSION					LINK_OPTIONS 	INCLUDE_DIRS 			LIBRARY_DIRS  			RPATH
+				VALUES 		CUDNN_VERSION		CUDNN_LINK 		CUDNN_INCLUDE_DIR CUDNN_LIBRARY_DIR		CUDNN_LIBRARY)
 
 # constraints (no required constraints)
-PID_Configuration_Constraints(cudnn OPTIONAL version)
+PID_Configuration_Constraints(cudnn IN_BINARY version VALUE CUDNN_VERSION)
 
 # dependencies
 PID_Configuration_Dependencies(cudnn DEPEND cuda)

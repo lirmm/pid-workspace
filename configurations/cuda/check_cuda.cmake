@@ -25,4 +25,4 @@ PID_Configuration_Variables(cuda
 				VALUES 		CUDA_VERSION	CUDA_LINKS 		CUDA_INCLUDE_DIRS CUDA_LIBRARY_DIR	NVCC_FLAGS_EXTRA  CUDA_LIBRARIES	CUDA_ARCH_REAL 			CUDA_ARCH_FEATURES		CUDA_TOOLKIT_TARGET_DIR)
 
 # constraints (no required constraints)
-PID_Configuration_Constraints(cuda OPTIONAL architecture version)
+PID_Configuration_Constraints(cuda IN_BINARY architecture version VALUE CUDA_ARCH_REAL CUDA_VERSION)

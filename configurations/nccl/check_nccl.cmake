@@ -25,7 +25,7 @@ PID_Configuration_Variables(nccl
 			VALUES 		NCCL_VERSION	NCCL_LINK 		NCCL_INCLUDE_DIR  NCCL_LIBRARY_DIR		NCCL_LIBRARY)
 
 # constraints (no required constraints)
-PID_Configuration_Constraints(nccl OPTIONAL version)
+PID_Configuration_Constraints(nccl IN_BINARY version VALUE NCCL_VERSION)
 
 # dependencies
 PID_Configuration_Dependencies(nccl DEPEND cuda)
