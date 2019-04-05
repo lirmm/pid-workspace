@@ -2467,3 +2467,187 @@ function(build_CMake_External_Project)
     return()
   endif()
 endfunction(build_CMake_External_Project)
+
+#.rst:
+#
+# .. ifmode:: script
+#
+#  .. |build_Bazel_External_Project| replace:: ``build_Bazel_External_Project``
+#  .. _build_Bazel_External_Project:
+#
+#  build_Bazel_External_Project
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: build_Bazel_External_Project(PROJECT ... FOLDER ... INSTALL_PATH ... MODE ... TARGET .. [OPTIONS])
+#
+#     Configure, build and install a Bazel (google build system) external project.
+#
+#     .. rubric:: Required parameters
+#
+#     :PROJECT <string>: The name of the external project.
+#     :FOLDER <string>: The name of the folder containing the project.
+#     :INSTALL_PATH <path>: The path where the components are supposed to be found
+#     :MODE <Release|Debug>: The build mode.
+#     :TARGET <string>: The name of the target being built.
+#
+#     .. rubric:: Optional parameters
+#
+#     :MIN_VERSION: minimum version of bazel tool to use.
+#     :MAX_VERSION: maximum version of bazel tool to use.
+#     :QUIET: if used then the output of this command will be silent.
+#     :COMMENT <string>: A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.
+#     :DEFINITIONS <list of definitions>: the bazel definitions (environment variables) you need to provide to the cmake build script.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  Build and install the external project into workspace install tree..
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        build_Bazel_External_Project( PROJECT tensorflow FOLDER tensorflow-1.13.1 MODE Release
+#                              COMMENT "shared libraries")
+#
+#
+function(build_Bazel_External_Project)
+  if(ERROR_IN_SCRIPT)
+    return()
+  endif()
+  set(options QUIET) #used to define the context
+  set(oneValueArgs PROJECT FOLDER MODE COMMENT MIN_VERSION MAX_VERSION INSTALL_PATH TARGET)
+  set(multiValueArgs DEFINITIONS)
+  cmake_parse_arguments(BUILD_BAZEL_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  if(NOT BUILD_BAZEL_EXTERNAL_PROJECT_PROJECT
+      OR NOT BUILD_BAZEL_EXTERNAL_PROJECT_FOLDER
+      OR NOT BUILD_BAZEL_EXTERNAL_PROJECT_MODE
+      OR NOT BUILD_BAZEL_EXTERNAL_PROJECT_TARGET)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : PROJECT, FOLDER, TARGET and MODE arguments are mandatory when calling build_CMake_External_Project.")
+    return()
+  endif()
+
+  if(BUILD_BAZEL_EXTERNAL_PROJECT_QUIET)
+    set(OUTPUT_MODE OUTPUT_QUIET)
+  endif()
+
+  if(BUILD_BAZEL_EXTERNAL_PROJECT_MODE STREQUAL Debug)
+    set(TARGET_MODE Debug)
+  else()
+    set(TARGET_MODE Release)
+  endif()
+
+  if(BUILD_BAZEL_EXTERNAL_PROJECT_COMMENT)
+    set(use_comment "(${BUILD_BAZEL_EXTERNAL_PROJECT_COMMENT}) ")
+  endif()
+
+  if(BUILD_BAZEL_EXTERNAL_PROJECT_MIN_VERSION OR BUILD_BAZEL_EXTERNAL_PROJECT_MAX_VERSION)#a constraint on bazel version to use
+    if(BUILD_BAZEL_EXTERNAL_PROJECT_MIN_VERSION AND BUILD_BAZEL_EXTERNAL_PROJECT_MAX_VERSION)
+      if(NOT BUILD_BAZEL_EXTERNAL_PROJECT_MAX_VERSION VERSION_GREATER BUILD_BAZEL_EXTERNAL_PROJECT_MIN_VERSION)
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : MIN_VERSION specified is greater than MAX_VERSION constraint.")
+        return()
+      endif()
+    endif()
+    if(BUILD_BAZEL_EXTERNAL_PROJECT_MIN_VERSION)
+      find_package(Bazel ${BUILD_BAZEL_EXTERNAL_PROJECT_MIN_VERSION})
+    endif()
+    if(BAZEL_FOUND)#a version has been found
+      if(BUILD_BAZEL_EXTERNAL_PROJECT_MAX_VERSION) #but a max version constraint is defined
+        if(BAZEL_VERSION VERSION_GREATER BUILD_BAZEL_EXTERNAL_PROJECT_MAX_VERSION)#does not fit the constraints
+          message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot find a bazel version compatible with MIN_VERSION and MAX_VERSION constraints.")
+          return()
+        endif()
+      endif()
+    elseif(BUILD_BAZEL_EXTERNAL_PROJECT_MAX_VERSION)#there is only a max version specified !!
+      find_package(Bazel ${BUILD_BAZEL_EXTERNAL_PROJECT_MAX_VERSION} EXACT) #use exact to avoid using greater version number
+      if(NOT BAZEL_FOUND)
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot find a bazel version compatible with MIN_VERSION and MAX_VERSION constraints.")
+        return()
+      endif()
+    endif()
+  else()#no version constraint so code is supposed to work with any version of bazel
+    find_package(Bazel)
+    if(NOT BAZEL_FOUND)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot find bazel installed.")
+      return()
+    endif()
+
+  endif()
+
+  set(project_src_dir ${TARGET_BUILD_DIR}/${BUILD_BAZEL_EXTERNAL_PROJECT_FOLDER})
+  string(REPLACE " " ";" CMAKE_CXX_FLAGS cxx_flags_list)
+  foreach(flag IN LISTS cxx_flags_list)
+    if(flag)
+      list(APPEND bazel_build_arguments "--cxxopt ${flag}")#do not give build mode related options as they are already managed by bazel
+    endif()
+  endforeach()
+  string(REPLACE " " ";" CMAKE_CXX_FLAGS c_flags_list)
+  foreach(flag IN LISTS c_flags_list)
+    if(flag)
+      list(APPEND bazel_build_arguments "--conlyopt ${flag}")#do not give build mode related options as they are already managed by bazel
+    endif()
+  endforeach()
+
+  if(TARGET_MODE STREQUAL Debug)
+    list(APPEND bazel_build_arguments "--config=dbg")
+  else()
+    list(APPEND bazel_build_arguments "--config=opt")
+  endif()
+
+  #adding all arguments coming with the current target platform
+  # list(APPEND bazel_arguments )
+  # TODO look at possible available arguments to the bazel tool see https://docs.bazel.build/versions/master/user-manual.html
+
+  # everythng related
+  get_Environment_Info(JOBS_NUMBER jobs)
+  if(NOT jobs EQUAL 0)
+    set(jobs_opt "--jobs=${jobs}")
+  endif()
+  if(NOT OUTPUT_MODE STREQUAL OUTPUT_QUIET)
+    set(failure_report "--verbose_failures")
+  endif()
+
+  set(used_target ${BUILD_BAZEL_EXTERNAL_PROJECT_TARGET})
+  message("[PID] INFO : Building ${BUILD_BAZEL_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
+  execute_process(
+    COMMAND ${BAZEL_EXECUTABLE} build
+    ${failure_report} #getting info about failure
+    ${jobs_opt} #set the adequate number of jobs
+    --color no --curses yes #no need color, but nice output !
+    ${bazel_build_arguments}
+    ${BUILD_BAZEL_EXTERNAL_PROJECT_DEFINITIONS} #add specific definitions if any
+    ${used_target} #give the target name as last argument
+    WORKING_DIRECTORY ${project_src_dir} ${OUTPUT_MODE}
+    RESULT_VARIABLE result
+  )
+
+  if(NOT result EQUAL 0)#error at configuration time
+    message("[PID] ERROR : cannot build Bazel project ${BUILD_BAZEL_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    return()
+  endif()
+
+  if(BUILD_BAZEL_EXTERNAL_PROJECT_INSTALL_PATH)
+    message("[PID] INFO : Installing ${BUILD_BAZEL_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
+    #need to do this "by hand", binaries first
+    set(bin_path ${project_src_dir}/${BUILD_BAZEL_EXTERNAL_PROJECT_INSTALL_PATH})
+    get_filename_component(binary_name ${BUILD_BAZEL_EXTERNAL_PROJECT_INSTALL_PATH} NAME)
+    if(NOT EXISTS ${bin_path})
+      message("[PID] ERROR : cannot find binaries generated by Bazel project ${BUILD_BAZEL_EXTERNAL_PROJECT_PROJECT} ${use_comment} ... (missing is ${bin_path})")
+      set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+      return()
+    endif()
+    get_Link_Type(RES_TYPE ${binary_name})
+    if(RES_TYPE STREQUAL "OPTION")#if an option it means it is not identified as a library => it is an executable in current context
+      file(COPY ${bin_path} DESTINATION ${TARGET_INSTALL_DIR}/bin)
+    else()
+      file(COPY ${bin_path} DESTINATION ${TARGET_INSTALL_DIR}/lib)
+    endif()
+  endif()
+
+endfunction(build_Bazel_External_Project)
