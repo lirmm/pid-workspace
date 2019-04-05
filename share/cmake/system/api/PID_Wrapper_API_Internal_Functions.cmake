@@ -814,6 +814,7 @@ if(platform)# if a platform constraint applies
 				append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} "${platform}")
 		endif()
 		append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")# update the list of required configurations
+		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
 
 		if(platform STREQUAL CURRENT_PLATFORM)
 			#check that the configuration applies to the current platform if the current platform is the target of this constraint
@@ -824,7 +825,6 @@ if(platform)# if a platform constraint applies
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satify configuration ${config}!")
 				return()
 			endif()
-			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONSTRAINTS}" CACHE INTERNAL "")
 			set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 		endif()
 	endforeach()
@@ -845,7 +845,7 @@ if(platform)# if a platform constraint applies
 				endif()
 			endif()
 
-			if(${CONFIG_NAME}_AVAILABLE) #if available then it is considered as used
+			if(${CONFIG_NAME}_AVAILABLE) #if available then it is considered as "used"
 				append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")
 				if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} # no other platform constraint already applies
 					OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} STREQUAL "all")#the configuration has no constraint
@@ -876,12 +876,18 @@ else()#no platform constraint applies => this platform configuration is adequate
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satify configuration ${config} with current platform!")
 			return()
 		endif()
-		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONSTRAINTS}" CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
 		set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 	endforeach()
 
 	#now dealing with options
 	foreach(config IN LISTS options)
+		parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+		if(NOT CONFIG_NAME)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] ERROR : configuration check ${config} is ill formed. Configuration being optional it is skipped automatically.")
+			return()
+		endif()
 		check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}")
 		if(RESULT_OK)
 			set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
@@ -900,7 +906,7 @@ else()#no platform constraint applies => this platform configuration is adequate
 			if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} # no other platform constraint already applies
 				OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} STREQUAL "all")#the configuration has no constraint
 				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} "all" CACHE INTERNAL "")
-				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONSTRAINTS}" CACHE INTERNAL "")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
 			endif()
 		endif()
 	endforeach()
@@ -2401,14 +2407,12 @@ endfunction(configure_Wrapper_Build_Variables)
 function(resolve_Wrapper_Configuration CONFIGURED package version)
 	set(IS_CONFIGURED TRUE)
 	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-		check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${config}")
-		if(NOT RESULT_OK)
+		check_System_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${config} ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS)
+		if(NOT RESULT_WITH_ARGS)
 			set(IS_CONFIGURED FALSE)
-			if(CONFIG_NAME)
-				set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")
-			endif()
+			set(${config}_AVAILABLE FALSE CACHE INTERNAL "")
 		else()
-			set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")
+			set(${config}_AVAILABLE TRUE CACHE INTERNAL "")
 		endif()
 	endforeach()
 	set(${CONFIGURED} ${IS_CONFIGURED} PARENT_SCOPE)

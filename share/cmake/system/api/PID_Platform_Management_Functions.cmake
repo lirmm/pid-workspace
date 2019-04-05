@@ -467,7 +467,6 @@ function(check_System_Configuration RESULT NAME CONSTRAINTS config)
     message("[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
     return()
   endif()
-
   check_System_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${CONFIG_NAME} CONFIG_ARGS)
   set(${NAME} ${CONFIG_NAME} PARENT_SCOPE)
   set(${RESULT} ${RESULT_WITH_ARGS} PARENT_SCOPE)
@@ -501,7 +500,6 @@ endfunction(check_System_Configuration)
 function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS config_name config_args)
   set(${BINARY_CONTRAINTS} PARENT_SCOPE)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
-
   if(EXISTS ${WORKSPACE_DIR}/configurations/${config_name}/check_${config_name}.cmake)
 
     reset_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
@@ -850,7 +848,7 @@ function(prepare_Configuration_Arguments config arguments)
     string(REPLACE "," ";" VAL_LIST "${VAL_LIST}")#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
     list(FIND ${config}_REQUIRED_CONSTRAINTS ${name} INDEX)
     set(GENERATE_VAR FALSE)
-    if(NOT INDEX EQUAL -1)
+    if(NOT INDEX EQUAL -1)# it is a required constraint
       set(GENERATE_VAR TRUE)
     else()
       list(FIND ${config}_OPTIONAL_CONSTRAINTS ${name} INDEX)
