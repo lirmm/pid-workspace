@@ -85,9 +85,6 @@ set(package_version_src_dir ${package_dir}/src/${version})
 set(package_version_build_dir ${package_dir}/build/${version})
 set(package_version_install_dir ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${version})
 
-if(NOT EXISTS ${package_version_build_dir})
-  file(MAKE_DIRECTORY ${package_version_build_dir})
-endif()
 
 if(NOT EXISTS ${package_dir}/build/Build${TARGET_EXTERNAL_PACKAGE}.cmake)
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -108,6 +105,10 @@ else()
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
   message(FATAL_ERROR "[PID] CRITICAL ERROR : wrapper of ${TARGET_EXTERNAL_PACKAGE} does not define any version !!! Build aborted ...")
   return()
+endif()
+
+if(NOT EXISTS ${package_version_build_dir})#create the directory for building that version
+	file(MAKE_DIRECTORY ${package_version_build_dir})
 endif()
 
 if(EXISTS ${package_version_install_dir})#clean the install folder
