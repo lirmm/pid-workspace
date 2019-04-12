@@ -51,6 +51,10 @@ cmake_policy(SET CMP0026 NEW) #avoid using the LOCATION property
 cmake_policy(SET CMP0045 NEW) #allow to test if a target exist without a warning on a get_target_property
 cmake_policy(SET CMP0007 NEW) #do not allow a list to have empty elements without warning
 
+if(POLICY CMP0009)
+  cmake_policy(SET CMP0009 NEW)#do not follow symlinks by default in file(GLOB RECURSE)
+endif()
+
 # guarded policies (they exist in further version of CMake)
 if(POLICY CMP0053)
 	cmake_policy(SET CMP0053 NEW) #iSimplify variable reference and escape sequence evaluation

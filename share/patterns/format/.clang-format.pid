@@ -2,8 +2,7 @@
 Language:        Cpp
 BasedOnStyle:  LLVM
 PointerAlignment: Left
-BreakBeforeBraces: Stroustrup
-BreakConstructorInitializers: AfterColon
+BreakBeforeBraces: Attach
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 AllowShortFunctionsOnASingleLine: false
 SortIncludes:    false
@@ -11,4 +10,7 @@ SortIncludes:    false
 IndentWidth:     4
 AccessModifierOffset: -4
 TabWidth:        4
+Standard:        Cpp03
+SpacesInAngles: true
+Cpp11BracedListStyle: false
 ...

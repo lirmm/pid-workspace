@@ -22,13 +22,14 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
+include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE) # to be able to interpret description of external components
 
 function(format_source_directory dir)
     # get C/C++ files based on extension matching
-    get_All_Cpp_Sources_Absolute(sources ${dir})
+    get_All_Cpp_Sources_Absolute(CPP_SOURCES ${dir})
 
-    foreach(file IN LISTS sources)
+    foreach(file IN LISTS CPP_SOURCES)
         # format the file inplace (-i) using the closest .clang-format file in the hierarchy (-style=file)
         execute_process(
             COMMAND ${CLANG_FORMAT_EXE} -style=file -i ${file}
