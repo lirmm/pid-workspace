@@ -1441,7 +1441,7 @@ endif()
 #defining the target to build the application
 
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need to be relocatable since they are purely local
-	create_Executable_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
+	create_Executable_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_link_flags}")
 
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 	if(symlinks AND ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP")
@@ -1450,7 +1450,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need t
 		endforeach()
 	endif()
 else()
-	create_TestUnit_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
+	create_TestUnit_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_link_flags}")
 endif()
 register_Component_Binary(${c_name})# resgistering name of the executable
 
