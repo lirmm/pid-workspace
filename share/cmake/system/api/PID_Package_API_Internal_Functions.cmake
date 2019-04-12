@@ -404,23 +404,41 @@ elseif(DIR_NAME STREQUAL "build")
 			VERBATIM
 		)
 	endif()
-	set(PACKAGE_FORMAT_FILE ${CMAKE_SOURCE_DIR}/.clang-format)
+	set(PACKAGE_FORMAT_FILE ${CMAKE_SOURCE_DIR}/share/format/.clang-format)
 	# if a code style is provided, copy the configuration file to the package root folder
+	set(no_format TRUE)
 	if(NOT "${code_style}" STREQUAL "")
-		configure_file(${WORKSPACE_DIR}/share/patterns/format/.clang-format.${code_style}.in ${PACKAGE_FORMAT_FILE})
-		get_Clang_Format_Program(CLANG_FORMAT_EXE)
-		if(CLANG_FORMAT_EXE)
-			add_custom_target(format
-				COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
-							 -DPACKAGE_NAME=${PROJECT_NAME}
-							 -DCLANG_FORMAT_EXE=${CLANG_FORMAT_EXE}
-							 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Format_PID_Package_Sources.cmake
-				COMMENT "[PID] formatting the source files"
-			)
+		if(NOT EXISTS ${WORKSPACE_DIR}/share/patterns/format/.clang-format.${code_style}.in)
+			message("[PID] WARNING: you use an undefined code format ${code_style}")
+			set(format_cmd_message " no format called ${code_style} found. Formatting aborted.")
+		else()
+			configure_file(${WORKSPACE_DIR}/share/patterns/format/.clang-format.${code_style}.in ${PACKAGE_FORMAT_FILE})
+			get_Clang_Format_Program(CLANG_FORMAT_EXE)
+			if(CLANG_FORMAT_EXE)
+				add_custom_target(format
+					COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
+								 -DPACKAGE_NAME=${PROJECT_NAME}
+								 -DCLANG_FORMAT_EXE=${CLANG_FORMAT_EXE}
+								 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Format_PID_Package_Sources.cmake
+					COMMENT "[PID] formatting the source files"
+				)
+				set(no_format FALSE)
+			else()
+				set(format_cmd_message " no clang formatter found. Formatting aborted.")
+			endif()
 		endif()
 	elseif(EXISTS ${PACKAGE_FORMAT_FILE})
 		# code style has been removed, removing the configuration file
 		file(REMOVE ${PACKAGE_FORMAT_FILE})
+		set(format_cmd_message "no format defined.")
+	else()
+		set(format_cmd_message "formatting not activated.")
+	endif()
+	if(no_format)
+		add_custom_target(format
+			COMMAND ${CMAKE_COMMAND} -E echo "[PID] WARNING: ${format_cmd_message}"
+			COMMENT "[PID] formatting the source files"
+		)
 	endif()
 
 	if(BUILD_DEPENDENT_PACKAGES AND ADDITIONNAL_DEBUG_INFO)

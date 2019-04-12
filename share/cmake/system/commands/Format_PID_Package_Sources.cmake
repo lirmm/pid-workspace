@@ -1,22 +1,28 @@
+#########################################################################################
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
+#########################################################################################
 
-function(get_All_Cpp_Sources_Absolute RESULT dir)
-file(	GLOB_RECURSE
-	RES
-	${dir}
-	"${dir}/*.c"
-	"${dir}/*.C"
-	"${dir}/*.cc"
-	"${dir}/*.cpp"
-	"${dir}/*.c++"
-	"${dir}/*.cxx"
-	"${dir}/*.h"
-	"${dir}/*.hpp"
-	"${dir}/*.h++"
-	"${dir}/*.hh"
-	"${dir}/*.hxx"
-)
-set (${RESULT} ${RES} PARENT_SCOPE)
-endfunction(get_All_Cpp_Sources_Absolute)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
+include(PID_Utils_Functions NO_POLICY_SCOPE) # to be able to interpret description of external components
 
 function(format_source_directory dir)
     # get C/C++ files based on extension matching
