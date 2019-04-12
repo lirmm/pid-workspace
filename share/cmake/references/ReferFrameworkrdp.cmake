@@ -1,0 +1,12 @@
+#### referencing framework rdp mode ####
+set(rdp_FRAMEWORK_MAIN_AUTHOR _Robin_Passama CACHE INTERNAL "")
+set(rdp_FRAMEWORK_MAIN_INSTITUTION _LIRMM CACHE INTERNAL "")
+set(rdp_FRAMEWORK_YEARS 2019 CACHE INTERNAL "")
+set(rdp_FRAMEWORK_CONTACT_MAIL passama@lirmm.fr CACHE INTERNAL "")
+set(rdp_FRAMEWORK_SITE http://rob-vision.lirmm.net/rob-deep-perception/rdp-framework CACHE INTERNAL "")
+set(rdp_FRAMEWORK_PROJECT_PAGE https://gite.lirmm.fr/rob-vision/rob-deep-perception/rdp-framework CACHE INTERNAL "")
+set(rdp_FRAMEWORK_DESCRIPTION RDP is a framework implementing deep learning approaches for robot perception. CACHE INTERNAL "")
+set(rdp_FRAMEWORK_LICENSE CeCILL-C CACHE INTERNAL "")
+set(rdp_FRAMEWORK_ADDRESS git@gite.lirmm.fr:rob-vision/rob-deep-perception/rdp-framework.git CACHE INTERNAL "")
+set(rdp_FRAMEWORK_AUTHORS_AND_INSTITUTIONS "_Robin_Passama(_LIRMM)" CACHE INTERNAL "")
+set(rdp_FRAMEWORK_CATEGORIES "dnn" CACHE INTERNAL "")
