@@ -12,6 +12,6 @@ set(rkcl-collision-sch_DESCRIPTION "TODO:;input;a;short;description;of;package;r
 set(rkcl-collision-sch_YEARS 2018 CACHE INTERNAL "")
 set(rkcl-collision-sch_LICENSE CeCILL CACHE INTERNAL "")
 set(rkcl-collision-sch_ADDRESS git@gitlab.com:rkcl/rkcl-collision-sch.git CACHE INTERNAL "")
-set(rkcl-collision-sch_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(rkcl-collision-sch_PUBLIC_ADDRESS https://gitlab.com/rkcl/rkcl-collision-sch.git CACHE INTERNAL "")
 set(rkcl-collision-sch_CATEGORIES CACHE INTERNAL "")
 set(rkcl-collision-sch_REFERENCES  CACHE INTERNAL "")

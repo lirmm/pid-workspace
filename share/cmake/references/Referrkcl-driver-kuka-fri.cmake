@@ -12,6 +12,6 @@ set(rkcl-driver-kuka-fri_DESCRIPTION "TODO:;input;a;short;description;of;package
 set(rkcl-driver-kuka-fri_YEARS 2019 CACHE INTERNAL "")
 set(rkcl-driver-kuka-fri_LICENSE CeCILL CACHE INTERNAL "")
 set(rkcl-driver-kuka-fri_ADDRESS git@gitlab.com:rkcl/rkcl-driver-kuka-fri.git CACHE INTERNAL "")
-set(rkcl-driver-kuka-fri_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(rkcl-driver-kuka-fri_PUBLIC_ADDRESS https://gitlab.com/rkcl/rkcl-driver-kuka-fri.git CACHE INTERNAL "")
 set(rkcl-driver-kuka-fri_CATEGORIES CACHE INTERNAL "")
 set(rkcl-driver-kuka-fri_REFERENCES  CACHE INTERNAL "")

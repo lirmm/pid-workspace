@@ -12,6 +12,6 @@ set(rkcl-driver-neobotix-mpo700_DESCRIPTION "TODO:;input;a;short;description;of;
 set(rkcl-driver-neobotix-mpo700_YEARS 2019 CACHE INTERNAL "")
 set(rkcl-driver-neobotix-mpo700_LICENSE CeCILL CACHE INTERNAL "")
 set(rkcl-driver-neobotix-mpo700_ADDRESS git@gitlab.com:rkcl/rkcl-driver-neobotix-mpo700.git CACHE INTERNAL "")
-set(rkcl-driver-neobotix-mpo700_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(rkcl-driver-neobotix-mpo700_PUBLIC_ADDRESS https://gitlab.com/rkcl/rkcl-driver-neobotix-mpo700.git CACHE INTERNAL "")
 set(rkcl-driver-neobotix-mpo700_CATEGORIES CACHE INTERNAL "")
 set(rkcl-driver-neobotix-mpo700_REFERENCES  CACHE INTERNAL "")

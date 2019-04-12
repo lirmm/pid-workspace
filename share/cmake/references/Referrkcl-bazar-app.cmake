@@ -12,6 +12,6 @@ set(rkcl-bazar-app_DESCRIPTION "TODO:;input;a;short;description;of;package;rkcl-
 set(rkcl-bazar-app_YEARS 2019 CACHE INTERNAL "")
 set(rkcl-bazar-app_LICENSE CeCILL CACHE INTERNAL "")
 set(rkcl-bazar-app_ADDRESS git@gitlab.com:rkcl/rkcl-bazar-app.git CACHE INTERNAL "")
-set(rkcl-bazar-app_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(rkcl-bazar-app_PUBLIC_ADDRESS https://gitlab.com/rkcl/rkcl-bazar-app.git CACHE INTERNAL "")
 set(rkcl-bazar-app_CATEGORIES CACHE INTERNAL "")
 set(rkcl-bazar-app_REFERENCES  CACHE INTERNAL "")
