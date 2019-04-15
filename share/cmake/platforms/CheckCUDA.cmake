@@ -46,18 +46,21 @@ endif()
 #setting general variables
 set(CUDA_Language_AVAILABLE TRUE CACHE INTERNAL "")
 #memorizing build variables
+set(CMAKE_CUDA_COMPILER CACHE FILEPATH "" FORCE)#reset the compiler variable to enable the check
+
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+  enable_language(CUDA)
+  set(CMAKE_CUDA_COMPILER ${CMAKE_CUDA_COMPILER} CACHE FILEPATH "" FORCE)
+else()#create the variable from the one created by find_package(CUDA)
+  set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE FILEPATH "" FORCE)
+endif()
+
 set(CUDA_LIBRARIES ${CUDA_LIBRARIES} CACHE INTERNAL "" FORCE)
 set(CUDA_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS} CACHE INTERNAL "" FORCE)
 set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE FILEPATH "" FORCE)
 set(CMAKE_CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER} CACHE FILEPATH "" FORCE)
 mark_as_advanced(CMAKE_CUDA_COMPILER CMAKE_CUDA_HOST_COMPILER)
-
-check_language(CUDA)
-if(CMAKE_CUDA_COMPILER)
-  enable_language(CUDA)
-else()
-  message(STATUS "No CUDA support")
-endif()
 
 set(__cuda_arch_bin)
 set(__cuda_arch_ptx)
