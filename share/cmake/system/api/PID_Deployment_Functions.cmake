@@ -2453,10 +2453,10 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
     configure_Binary_Package(RESULT_RELEASE  ${package} TRUE ${RES_VERSION} ${TARGET_PLATFORM} Release)
 
     if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
-      add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
+      add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" TRUE)
       #need to remove the package because it cannot be configured
       uninstall_Binary_Package(${package} TRUE ${RES_VERSION} ${TARGET_PLATFORM})
-      message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
+      message("[PID] ERROR : cannot configure version ${RES_VERSION} of external package ${package}.")
       set(${DEPLOYED} FALSE PARENT_SCOPE)
       return()
     endif()
