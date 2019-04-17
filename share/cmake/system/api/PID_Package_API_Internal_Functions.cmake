@@ -65,8 +65,9 @@ include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 #     :public_address: the public counterpart url to address.
 #     :description: a short description of the package.
 #     :readme_file: the path to a user-defined content of the readme file of the package.
+#     :code_style: determines which clang-format file will be used to format the source code.
 #
-macro(declare_Package author institution mail year license address public_address description readme_file)
+macro(declare_Package author institution mail year license address public_address description readme_file code_style)
 set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 manage_Current_Platform("${DIR_NAME}") #loading the current platform configuration and perform adequate actions if any changes
@@ -401,6 +402,45 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
 			COMMENT "[PID] listing dependencies of the package ${PROJECT_NAME} ..."
 			VERBATIM
+		)
+	endif()
+	set(PACKAGE_FORMAT_FOLDER ${CMAKE_SOURCE_DIR})
+	set(PACKAGE_FORMAT_FILE ${PACKAGE_FORMAT_FOLDER}/.clang-format)
+	# if a code style is provided, copy the configuration file to the package root folder
+	set(no_format TRUE)
+	if(NOT "${code_style}" STREQUAL "")
+		set(PATH_TO_STYLE ${WORKSPACE_DIR}/share/patterns/format/.clang-format.${code_style})
+		if(NOT EXISTS ${PATH_TO_STYLE})
+			message("[PID] WARNING: you use an undefined code format ${code_style}")
+			set(format_cmd_message " no format called ${code_style} found. Formatting aborted.")
+		else()
+			file(COPY ${PATH_TO_STYLE} DESTINATION ${PACKAGE_FORMAT_FOLDER})
+			file(RENAME ${PACKAGE_FORMAT_FOLDER}/.clang-format.${code_style} ${PACKAGE_FORMAT_FILE})
+			get_Clang_Format_Program(CLANG_FORMAT_EXE)
+			if(CLANG_FORMAT_EXE)
+				add_custom_target(format
+					COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
+								 -DPACKAGE_NAME=${PROJECT_NAME}
+								 -DCLANG_FORMAT_EXE=${CLANG_FORMAT_EXE}
+								 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Format_PID_Package_Sources.cmake
+					COMMENT "[PID] formatting the source files"
+				)
+				set(no_format FALSE)
+			else()
+				set(format_cmd_message " no clang formatter found. Formatting aborted.")
+			endif()
+		endif()
+	elseif(EXISTS ${PACKAGE_FORMAT_FILE})
+		# code style has been removed, removing the configuration file
+		file(REMOVE ${PACKAGE_FORMAT_FILE})
+		set(format_cmd_message "no format defined.")
+	else()
+		set(format_cmd_message "formatting not activated.")
+	endif()
+	if(no_format)
+		add_custom_target(format
+			COMMAND ${CMAKE_COMMAND} -E echo "[PID] WARNING: ${format_cmd_message}"
+			COMMENT "[PID] formatting the source files"
 		)
 	endif()
 
@@ -1441,7 +1481,7 @@ endif()
 #defining the target to build the application
 
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need to be relocatable since they are purely local
-	create_Executable_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
+	create_Executable_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_link_flags}")
 
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 	if(symlinks AND ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP")
@@ -1450,7 +1490,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need t
 		endforeach()
 	endif()
 else()
-	create_TestUnit_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${internal_link_flags}")
+	create_TestUnit_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_link_flags}")
 endif()
 register_Component_Binary(${c_name})# resgistering name of the executable
 

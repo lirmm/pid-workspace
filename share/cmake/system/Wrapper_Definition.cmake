@@ -1189,6 +1189,7 @@ endfunction(translate_Into_Options)
 #     :LIBRARY_DIRS <variable>: The variable passed as argument will be filled with all path to folders containing libraries.
 #     :C_STANDARD <variable>: The variable passed as argument will be filled with the C language standard to use for the external package version, if any specified.
 #     :CXX_STANDARD <variable>: The variable passed as argument will be filled with the CXX language standard to use for the external package version, if any specified.
+#     :RESOURCES <variable>: The variable passed as argument will be filled with the runtime resources provided by external dependencies.
 #     :FLAGS: option to get result of all preceeding arguments directly as compiler flags instead of CMake variables.
 #
 #     .. admonition:: Constraints
@@ -1278,7 +1279,7 @@ if(GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS)
       set(${GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS} "" PARENT_SCOPE)
     endif()
 	else()
-    if(${prefix}_BUILD_LIB_DIRS)
+    if(${prefix}_BUILD_DEFINITIONS)
       set(${GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS} ${${prefix}_BUILD_DEFINITIONS} PARENT_SCOPE)
     else()
       set(${GET_EXTERNAL_DEPENDENCY_INFO_DEFINITIONS} "" PARENT_SCOPE)
@@ -2420,7 +2421,6 @@ function(build_CMake_External_Project)
   endif()
 
   message("[PID] INFO : Configuring ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}...")
-
   # pre-populate the cache with the cache file of the workspace containing build infos,
   # then populate with additionnal information
   execute_process(

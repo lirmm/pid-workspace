@@ -44,7 +44,7 @@ if(cuda_architecture) # a constraint on architecture version is defined (if some
 	string(REPLACE "." "" ARCH_LIST "${cuda_architecture}")
 	foreach(arch IN LISTS ARCH_LIST)#for each arch that is checked
 		list(FIND list_of_arch ${arch} INDEX)
-		if(NOT INDEX EQUAL -1)#check if the target arch is a used arch for NVCC compiler
+		if(INDEX EQUAL -1)#check if the target arch is a used arch for NVCC compiler
 			return()
 		endif()
 	endforeach()

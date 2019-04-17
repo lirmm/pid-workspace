@@ -2128,6 +2128,7 @@ endfunction(initialize_Wrapper_Git_Repository_Push_Address)
 #
 function(update_Wrapper_Repository wrapper)
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git pull origin master OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
+execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git pull origin --tags OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
 execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper} git lfs pull origin master)#fetching master branch to get most up to date archives
 endfunction(update_Wrapper_Repository)
 

@@ -12,6 +12,6 @@ set(rkcl-core_DESCRIPTION "Core;of;the;Robot;Kinematic;Control;Library." CACHE I
 set(rkcl-core_YEARS 2018 CACHE INTERNAL "")
 set(rkcl-core_LICENSE CeCILL CACHE INTERNAL "")
 set(rkcl-core_ADDRESS git@gitlab.com:rkcl/rkcl-core.git CACHE INTERNAL "")
-set(rkcl-core_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(rkcl-core_PUBLIC_ADDRESS https://gitlab.com/rkcl/rkcl-core.git CACHE INTERNAL "")
 set(rkcl-core_CATEGORIES CACHE INTERNAL "")
 set(rkcl-core_REFERENCES  CACHE INTERNAL "")

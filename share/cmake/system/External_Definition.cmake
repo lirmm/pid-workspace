@@ -190,7 +190,7 @@ if(CHECK_EXTERNAL_PID_PLATFORM_PACKAGE
     endif()
   endforeach()
 else()
-	message("[PID] WARNING: Bad usage of function check_PID_External_Package_Platform: PACKAGE (value: ${package}), PLATFORM (value: ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM}) and CONFIGURATION (value: ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION}) keywords must be used !")
+	message("[PID] WARNING: Bad usage of function check_PID_External_Package_Platform: PACKAGE (value: ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE}), PLATFORM (value: ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM}) and CONFIGURATION (value: ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION}) keywords must be used !")
 	return() #return will exit from current Use file included (because we are in a macro)
 endif()
 endmacro(check_PID_External_Package_Platform)

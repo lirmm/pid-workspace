@@ -46,18 +46,21 @@ endif()
 #setting general variables
 set(CUDA_Language_AVAILABLE TRUE CACHE INTERNAL "")
 #memorizing build variables
+set(CMAKE_CUDA_COMPILER CACHE FILEPATH "" FORCE)#reset the compiler variable to enable the check
+
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+  enable_language(CUDA)
+  set(CMAKE_CUDA_COMPILER ${CMAKE_CUDA_COMPILER} CACHE FILEPATH "" FORCE)
+else()#create the variable from the one created by find_package(CUDA)
+  set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE FILEPATH "" FORCE)
+endif()
+
 set(CUDA_LIBRARIES ${CUDA_LIBRARIES} CACHE INTERNAL "" FORCE)
 set(CUDA_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS} CACHE INTERNAL "" FORCE)
 set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE FILEPATH "" FORCE)
 set(CMAKE_CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER} CACHE FILEPATH "" FORCE)
 mark_as_advanced(CMAKE_CUDA_COMPILER CMAKE_CUDA_HOST_COMPILER)
-
-check_language(CUDA)
-if(CMAKE_CUDA_COMPILER)
-  enable_language(CUDA)
-else()
-  message(STATUS "No CUDA support")
-endif()
 
 set(__cuda_arch_bin)
 set(__cuda_arch_ptx)
@@ -75,10 +78,10 @@ endif()
 
 # detecting current CUDA architecture on host, if any
 # goal is to set default values for used architectures
-execute_process( COMMAND "${CUDA_NVCC_EXECUTABLE}" "${WORKSPACE_DIR}/share/cmake/platforms/DetectCudaArch.cu" "--run"
+execute_process( COMMAND ${CUDA_NVCC_EXECUTABLE} --compiler-bindir ${CMAKE_CUDA_HOST_COMPILER} ${WORKSPACE_DIR}/share/cmake/platforms/DetectCudaArch.cu --run
                    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-                   RESULT_VARIABLE _nvcc_res OUTPUT_VARIABLE _nvcc_out
-                   ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+                   RESULT_VARIABLE _nvcc_res OUTPUT_VARIABLE _nvcc_out ERROR_VARIABLE _nvcc_error
+                   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 if(_nvcc_res EQUAL 0)#OK default arch has been found
   list(GET _nvcc_out 0 nb_devices)
@@ -92,10 +95,12 @@ if(_nvcc_res EQUAL 0)#OK default arch has been found
   list(GET _nvcc_out ${nb_device_managed} driver_version)
   math(EXPR nb_device_managed "${nb_device_managed}+1")
   list(GET _nvcc_out ${nb_device_managed} runtime_version)
+  # choose the default arch among those available (take the greatest version)
   set(DEFAULT_CUDA_ARCH ${using_arch} CACHE INTERNAL "")#there may have more than one arch specified if more than one CPU is used
   set(DEFAULT_CUDA_DRIVER ${driver_version} CACHE INTERNAL "")
   set(DEFAULT_CUDA_RUNTIME ${runtime_version} CACHE INTERNAL "")
-else()# choose the default arch among those available (take the greatest version)
+else()#error during nvcc compilation
+  message("[PID] WARNING: no CUDA GPU found while a CUDA compiler is installed. Error message from nvcc is : ${_nvcc_error}")
   set(DEFAULT_CUDA_ARCH CACHE INTERNAL "")#no default arch means no nvidia card installed
   set(DEFAULT_CUDA_DRIVER CACHE INTERNAL "")#no default driver means no nvidia card installed
   set(DEFAULT_CUDA_RUNTIME CACHE INTERNAL "")#no default runtime means no nvidia card installed

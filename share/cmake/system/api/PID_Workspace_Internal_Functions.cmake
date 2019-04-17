@@ -2267,7 +2267,9 @@ endif()
 get_Repository_Version_Tags(AVAILABLE_VERSION_TAGS ${package})
 normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSION_TAGS}")
 if(NOT VERSION_NUMBERS)
-	message("[PID] ERROR : malformed package ${package}, no version specified !")
+	message("[PID] ERROR : malformed package ${package}, no version tag detected in ${package} repository ! This denote a bad state of your repository. Maybe this repository has been cloned by hand wthout pulling its version tags.\n
+	1) you can try doing the command `make update` into ${package} project, then try releasing again.\n
+  2) you can try solving the problem by yourself. Please go into ${package} repository and enter command `git fetch official --tags`. If no tag exists that probably means you did not create the package using the create command but by copy/pasting code of an existing one. Then create a tag v0.0.0 on your first commit and push it to your official repository: `git checkout <first commit> && git tag -a v0.0.0 -m \"first commit\" && git push official v0.0.0 && git checkout inegration`. Then try again to release your package.")
 	return()
 endif()
 foreach(version IN LISTS VERSION_NUMBERS)
@@ -2885,9 +2887,13 @@ file(APPEND ${file} "set(CMAKE_COMPILER_IS_GNUCXX \"${CMAKE_COMPILER_IS_GNUCXX}\
 file(APPEND ${file} "set(CMAKE_CXX_COMPILER_ID \"${CMAKE_CXX_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_CXX_COMPILER_VERSION \"${CMAKE_CXX_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_CXX_STANDARD_COMPUTED_DEFAULT ${CMAKE_CXX_STANDARD_COMPUTED_DEFAULT} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES \"${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES}\" CACHE INTERNAL \"\" FORCE)\n")
+
 file(APPEND ${file} "set(CMAKE_C_COMPILER_ID \"${CMAKE_C_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_C_COMPILER_VERSION \"${CMAKE_C_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_C_STANDARD_COMPUTED_DEFAULT ${CMAKE_C_STANDARD_COMPUTED_DEFAULT} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CMAKE_C_IMPLICIT_LINK_DIRECTORIES \"${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}\" CACHE INTERNAL \"\" FORCE)\n")
+
 if(Fortran_Language_AVAILABLE)
 	file(APPEND ${file} "set(CMAKE_Fortran_COMPILER_ID \"${CMAKE_Fortran_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_Fortran_COMPILER_VERSION \"${CMAKE_Fortran_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")

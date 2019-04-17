@@ -1497,6 +1497,43 @@ endfunction(get_All_Sources_Absolute)
 #
 # .. ifmode:: internal
 #
+#  .. |get_All_Cpp_Sources_Absolute| replace:: ``get_All_Cpp_Sources_Absolute``
+#  .. _get_All_Cpp_Sources_Absolute:
+#
+#  get_All_Cpp_Sources_Absolute
+#  ------------------------
+#
+#   .. command:: get_All_Cpp_Sources_Absolute(RESULT dir)
+#
+#    Get the absolute path of all the C/C++ source files found in a folder (and subfolders).
+#
+#     :dir: the path to the folder
+#
+#     :RESULT: the output variable that contains all source files path.
+#
+function(get_All_Cpp_Sources_Absolute RESULT dir)
+file(	GLOB_RECURSE
+	RES
+	${dir}
+	"${dir}/*.c"
+	"${dir}/*.C"
+	"${dir}/*.cc"
+	"${dir}/*.cpp"
+	"${dir}/*.c++"
+	"${dir}/*.cxx"
+	"${dir}/*.h"
+	"${dir}/*.hpp"
+	"${dir}/*.h++"
+	"${dir}/*.hh"
+	"${dir}/*.hxx"
+)
+set (${RESULT} ${RES} PARENT_SCOPE)
+endfunction(get_All_Cpp_Sources_Absolute)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |get_All_Sources_Absolute_From| replace:: ``get_All_Sources_Absolute_From``
 #  .. _get_All_Sources_Absolute_From:
 #
@@ -3984,5 +4021,12 @@ function(get_GNU_Make_Program MAKE_EXE project_name)
     else()
         set(${MAKE_EXE} PARENT_SCOPE)
         message(FATAL_ERROR "[PID] CRITICAL ERROR : GNU make is required to build ${project_name} but cannot be found. Please install it and try again.")
+    endif()
+endfunction()
+
+function(get_Clang_Format_Program CLANG_FORMAT_EXE)
+    find_program(CLANG_FORMAT_PATH clang-format)
+    if(CLANG_FORMAT_PATH)
+        set(${CLANG_FORMAT_EXE} ${CLANG_FORMAT_PATH} PARENT_SCOPE)
     endif()
 endfunction()

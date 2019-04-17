@@ -12,6 +12,6 @@ set(rkcl-ati-force-sensor-driver_DESCRIPTION "TODO:;input;a;short;description;of
 set(rkcl-ati-force-sensor-driver_YEARS 2019 CACHE INTERNAL "")
 set(rkcl-ati-force-sensor-driver_LICENSE CeCILL CACHE INTERNAL "")
 set(rkcl-ati-force-sensor-driver_ADDRESS git@gitlab.com:rkcl/rkcl-ati-force-sensor-driver.git CACHE INTERNAL "")
-set(rkcl-ati-force-sensor-driver_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(rkcl-ati-force-sensor-driver_PUBLIC_ADDRESS https://gitlab.com/rkcl/rkcl-ati-force-sensor-driver.git CACHE INTERNAL "")
 set(rkcl-ati-force-sensor-driver_CATEGORIES CACHE INTERNAL "")
 set(rkcl-ati-force-sensor-driver_REFERENCES  CACHE INTERNAL "")

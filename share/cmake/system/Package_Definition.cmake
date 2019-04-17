@@ -64,6 +64,7 @@ include(CMakeParseArguments)
 #     :ADDRESS <url>: url of the package's official repository. Must be set once the package is published.
 #     :PUBLIC_ADDRESS <url>: provide a public counterpart to the repository `ADDRESS`
 #     :README <path relative to share folder>: Used to define a user-defined README file for the package.
+#     :CODE_STYLE <code style>: Select the given code style for the project. If clang-format is available, the ``format`` command will be provided to format the source files.
 #     :VERSION (major minor [patch] | major.minor.patch): current version of the project either as a list of digits or as a version number with dotted expression.
 #
 #     .. admonition:: Constraints
@@ -96,7 +97,7 @@ macro(PID_Package)
 endmacro(PID_Package)
 
 macro(declare_PID_Package)
-set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README)
+set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README CODE_STYLE)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION VERSION)
 cmake_parse_arguments(DECLARE_PID_PACKAGE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_PACKAGE_AUTHOR)
@@ -123,7 +124,7 @@ endif()
 declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${DECLARE_PID_PACKAGE_MAIL}"
 			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}"
 			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_PUBLIC_ADDRESS}"
-		"${DECLARE_PID_PACKAGE_DESCRIPTION}" "${DECLARE_PID_PACKAGE_README}")
+		"${DECLARE_PID_PACKAGE_DESCRIPTION}" "${DECLARE_PID_PACKAGE_README}" "${DECLARE_PID_PACKAGE_CODE_STYLE}")
 
 if(DECLARE_PID_PACKAGE_VERSION) #version directly declared in the declaration (NEW WAY to specify version)
   set_PID_Package_Version(${DECLARE_PID_PACKAGE_VERSION})#simply pass the list to the "final" function
@@ -1042,7 +1043,7 @@ set(internal_link_flags "")
 if(DECLARE_PID_COMPONENT_INTERNAL)
 	if(DECLARE_PID_COMPONENT_INTERNAL STREQUAL "")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, INTERNAL keyword must be followed by at least one DEFINITION OR INCLUDE_DIR OR LINK keyword and related arguments.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, INTERNAL keyword must be followed by at least DEFINITIONS or INCLUDE_DIRS or LINKS or COMPILER_OPTIONS keywords and related arguments.")
 	endif()
 	set(internal_multiValueArgs DEFINITIONS INCLUDE_DIRS LINKS COMPILER_OPTIONS)
 	cmake_parse_arguments(DECLARE_PID_COMPONENT_INTERNAL "" "" "${internal_multiValueArgs}" ${DECLARE_PID_COMPONENT_INTERNAL} )

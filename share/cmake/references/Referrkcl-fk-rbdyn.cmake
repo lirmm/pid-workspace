@@ -12,6 +12,6 @@ set(rkcl-fk-rbdyn_DESCRIPTION "TODO:;input;a;short;description;of;package;rkcl-f
 set(rkcl-fk-rbdyn_YEARS 2018 CACHE INTERNAL "")
 set(rkcl-fk-rbdyn_LICENSE CeCILL CACHE INTERNAL "")
 set(rkcl-fk-rbdyn_ADDRESS git@gitlab.com:rkcl/rkcl-fk-rbdyn.git CACHE INTERNAL "")
-set(rkcl-fk-rbdyn_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(rkcl-fk-rbdyn_PUBLIC_ADDRESS https://gitlab.com/rkcl/rkcl-fk-rbdyn.git CACHE INTERNAL "")
 set(rkcl-fk-rbdyn_CATEGORIES CACHE INTERNAL "")
 set(rkcl-fk-rbdyn_REFERENCES  CACHE INTERNAL "")

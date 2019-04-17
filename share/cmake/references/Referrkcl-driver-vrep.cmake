@@ -12,6 +12,6 @@ set(rkcl-driver-vrep_DESCRIPTION "TODO:;input;a;short;description;of;package;rkc
 set(rkcl-driver-vrep_YEARS 2018 CACHE INTERNAL "")
 set(rkcl-driver-vrep_LICENSE CeCILL CACHE INTERNAL "")
 set(rkcl-driver-vrep_ADDRESS git@gitlab.com:rkcl/rkcl-driver-vrep.git CACHE INTERNAL "")
-set(rkcl-driver-vrep_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(rkcl-driver-vrep_PUBLIC_ADDRESS https://gitlab.com/rkcl/rkcl-driver-vrep.git CACHE INTERNAL "")
 set(rkcl-driver-vrep_CATEGORIES CACHE INTERNAL "")
 set(rkcl-driver-vrep_REFERENCES  CACHE INTERNAL "")

@@ -12,6 +12,6 @@ set(rkcl-app-utility_DESCRIPTION "Utility;to;ease;the;creation;of;applications;b
 set(rkcl-app-utility_YEARS 2019 CACHE INTERNAL "")
 set(rkcl-app-utility_LICENSE CeCILL CACHE INTERNAL "")
 set(rkcl-app-utility_ADDRESS git@gitlab.com:rkcl/rkcl-app-utility.git CACHE INTERNAL "")
-set(rkcl-app-utility_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(rkcl-app-utility_PUBLIC_ADDRESS https://gitlab.com/rkcl/rkcl-app-utility.git CACHE INTERNAL "")
 set(rkcl-app-utility_CATEGORIES CACHE INTERNAL "")
 set(rkcl-app-utility_REFERENCES  CACHE INTERNAL "")

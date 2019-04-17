@@ -12,6 +12,6 @@ set(rkcl-otg-reflexxes_DESCRIPTION "TODO:;input;a;short;description;of;package;r
 set(rkcl-otg-reflexxes_YEARS 2019 CACHE INTERNAL "")
 set(rkcl-otg-reflexxes_LICENSE CeCILL CACHE INTERNAL "")
 set(rkcl-otg-reflexxes_ADDRESS git@gitlab.com:rkcl/rkcl-otg-reflexxes.git CACHE INTERNAL "")
-set(rkcl-otg-reflexxes_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(rkcl-otg-reflexxes_PUBLIC_ADDRESS https://gitlab.com/rkcl/rkcl-otg-reflexxes.git CACHE INTERNAL "")
 set(rkcl-otg-reflexxes_CATEGORIES CACHE INTERNAL "")
 set(rkcl-otg-reflexxes_REFERENCES  CACHE INTERNAL "")

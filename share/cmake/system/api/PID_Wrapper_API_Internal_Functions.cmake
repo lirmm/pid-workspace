@@ -2043,9 +2043,9 @@ foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VA
 endforeach()
 
 #dealing with dependent package (do the recursion)
-foreach(dep_package IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	foreach(dep_component IN LISTS ${package}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-		agregate_All_Build_Info_For_Component(${dep_package} ${dep_component}
+foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+		agregate_All_Build_Info_For_Component(${dep_package} ${dep_component} ${mode}
 			INTERN_INCS INTERN_LIB_DIRS INTERN_DEFS INTERN_OPTS INTERN_STD_C INTERN_STD_CXX INTERN_LINKS INTERN_RESOURCES)
 
 		list(APPEND all_links ${INTERN_LINKS})
@@ -2228,7 +2228,7 @@ function(set_Build_Info_For_Component package component version)
 			set_Build_Info_For_Component(${package} ${dep_component} ${version})#compute the variable for dependencies then put it in cache
 		endif()#no need to resolve
 		#use the collected build information from dependencies and add it
-	list(APPEND links ${${prefix}_COMPONENT_${dep_component}_BUILD_LINKS})
+		list(APPEND links ${${prefix}_COMPONENT_${dep_component}_BUILD_LINKS})
 		list(APPEND includes ${${prefix}_COMPONENT_${dep_component}_BUILD_INCLUDES})
 		list(APPEND lib_dirs ${${prefix}_COMPONENT_${dep_component}_BUILD_LIB_DIRS})
 		list(APPEND defs ${${prefix}_COMPONENT_${dep_component}_BUILD_DEFINITIONS})
@@ -2413,6 +2413,7 @@ function(resolve_Wrapper_Configuration CONFIGURED package version)
 			set(${config}_AVAILABLE FALSE CACHE INTERNAL "")
 		else()
 			set(${config}_AVAILABLE TRUE CACHE INTERNAL "")
+			set(${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS ${BINARY_CONSTRAINTS} CACHE INTERNAL "")#reset argument to keep only those required in binary
 		endif()
 	endforeach()
 	set(${CONFIGURED} ${IS_CONFIGURED} PARENT_SCOPE)
