@@ -902,6 +902,7 @@ endmacro(build_PID_Package)
 #   :INSTALL_SYMLINKS: Specify folders where to install symlinks pointing to the component binary.
 #   :DEPEND ...: Specify a list of components that the current component depends on. These components are not exported.
 #   :EXPORT ...: Specify a list of components that the current component depends on and exports.
+#   :LOGGABLE: specifies that the component generate logs using the pid-log system.
 #
 #   The following options are supported by the ``INTERNAL`` and ``EXPORTED`` commands:
 #
@@ -937,7 +938,7 @@ macro(PID_Component)
 endmacro(PID_Component)
 
 macro(declare_PID_Component)
-set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON)
+set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON LOGGABLE)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES INSTALL_SYMLINKS DEPEND EXPORT)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -1040,6 +1041,7 @@ endif()
 set(internal_defs "")
 set(internal_inc_dirs "")
 set(internal_link_flags "")
+set(internal_compiler_options "")
 if(DECLARE_PID_COMPONENT_INTERNAL)
 	if(DECLARE_PID_COMPONENT_INTERNAL STREQUAL "")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1096,6 +1098,17 @@ if(DECLARE_PID_COMPONENT_RUNTIME_RESOURCES)
 	set(runtime_resources ${DECLARE_PID_COMPONENT_RUNTIME_RESOURCES})
 endif()
 
+if(DECLARE_PID_COMPONENT_LOGGABLE)
+  # check that pid-log is a dependency of the package
+  is_Package_Dependency(IS_DEPENDENCY "pid-log")
+  if(NOT IS_DEPENDENCY AND NOT PROJECT_NAME STREQUAL "pid-log")#avoid special case of component used to test logging system inside pid-log
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : ${DECLARE_PID_COMPONENT_NAME} is declared as loggable, but its containing package ${PROJECT_NAME} does not depends on pid-log package. Please add pid-log as a dependency of your package.")
+	endif()
+  if(IS_DEPENDENCY AND pid-log_VERSION_STRING VERSION_LESS 3.0)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : ${DECLARE_PID_COMPONENT_NAME} is declared as loggable, but its containing package ${PROJECT_NAME} depends on a too old version of pid-log package. Please add pid-log version 3.0 or more as a dependency of your package.")
+  endif()
+endif()
+
 if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME}
 					${DECLARE_PID_COMPONENT_DIRECTORY}
@@ -1108,7 +1121,8 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 					"${internal_link_flags}"
 					"${runtime_resources}"
           "${DECLARE_PID_COMPONENT_AUXILIARY_SOURCES}"
-          "${DECLARE_PID_COMPONENT_INSTALL_SYMLINKS}")
+          "${DECLARE_PID_COMPONENT_INSTALL_SYMLINKS}"
+          "${DECLARE_PID_COMPONENT_LOGGABLE}")
 elseif(type MATCHES "PYTHON")#declare a python package
 	declare_Python_Component(${DECLARE_PID_COMPONENT_NAME} ${DECLARE_PID_COMPONENT_DIRECTORY})
 else() #it is a library
@@ -1127,7 +1141,8 @@ else() #it is a library
 					"${runtime_resources}"
           "${DECLARE_PID_COMPONENT_SPECIAL_HEADERS}"
           "${DECLARE_PID_COMPONENT_AUXILIARY_SOURCES}"
-          "${DECLARE_PID_COMPONENT_INSTALL_SYMLINKS}")
+          "${DECLARE_PID_COMPONENT_INSTALL_SYMLINKS}"
+          "${DECLARE_PID_COMPONENT_LOGGABLE}")
 endif()
 if(DECLARE_PID_COMPONENT_DESCRIPTION)
 	init_Component_Description(${DECLARE_PID_COMPONENT_NAME} "${DECLARE_PID_COMPONENT_DESCRIPTION}" "${DECLARE_PID_COMPONENT_USAGE}")
@@ -1156,6 +1171,13 @@ if(DECLARE_PID_COMPONENT_DEPEND)#non exported dependencies
     endif()
     declare_PID_Component_Dependency(COMPONENT ${DECLARE_PID_COMPONENT_NAME} DEPEND ${COMPONENT_NAME} ${PACKAGE_ARG})
     endforeach()
+endif()
+
+if(DECLARE_PID_COMPONENT_LOGGABLE)#need to deal with dependency to pid-log if not explicitly managed
+  list(FIND ${PROJECT_NAME}_${DECLARE_PID_COMPONENT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} pid-log INDEX)
+  if(INDEX EQUAL -1)#pid-log is not already a dependency
+    declare_PID_Component_Dependency(COMPONENT ${DECLARE_PID_COMPONENT_NAME} EXPORT pid-log PACKAGE pid-log)
+  endif()
 endif()
 endmacro(declare_PID_Component)
 

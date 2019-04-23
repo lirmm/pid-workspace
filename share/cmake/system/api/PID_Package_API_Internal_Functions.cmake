@@ -1219,10 +1219,13 @@ endmacro(build_Package)
 #
 #     :symlink_folders: list of path to folders where to install symlinks.
 #
+#     :is_loggable: if TRUE the componnet can be uniquely identified by the logging system.
+#
 function(declare_Library_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs
                                    internal_compiler_options exported_defs exported_compiler_options
 																   internal_links exported_links runtime_resources more_headers more_sources
-															 		 symlink_folders)
+															 		 symlink_folders is_loggable)
+
 #indicating that the component has been declared and need to be completed
 is_Library_Type(RES "${type}")
 if(RES)
@@ -1264,6 +1267,18 @@ if(STD_CXX_OPT)
 	is_CXX_Version_Less(IS_LESS "${cxx_standard_used}" "${STD_CXX_OPT}")
 	if(IS_LESS)
 		set(cxx_standard_used ${STD_CXX_OPT})
+	endif()
+endif()
+
+
+#manage generation of specific headers used by the logging system
+if(is_loggable)
+	if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
+		generate_Loggable_File(PATH_TO_FILE NAME_FOR_PREPROC ${c_name} ${CMAKE_SOURCE_DIR}/include/${dirname} TRUE)
+		list(APPEND exported_defs ${NAME_FOR_PREPROC})
+	else()
+		generate_Loggable_File(PATH_TO_FILE NAME_FOR_PREPROC ${c_name} ${CMAKE_SOURCE_DIR}/src/${dirname} FALSE)
+		list(APPEND internal_defs ${NAME_FOR_PREPROC})
 	endif()
 endif()
 
@@ -1386,7 +1401,7 @@ endfunction(declare_Library_Component)
 #  declare_Application_Component
 #  -----------------------------
 #
-#   .. command:: declare_Application_Component(c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options internal_link_flags runtime_resources)
+#   .. command:: declare_Application_Component(c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options internal_link_flags runtime_resources more_sources symlink_folders is_loggable)
 #
 #     Declare an  application (executable) in the currently defined package.
 #
@@ -1414,8 +1429,10 @@ endfunction(declare_Library_Component)
 #
 #     :symlink_folders: list of path to folders where to install symlinks.
 #
+#     :is_loggable: if TRUE the componnet can be uniquely identified by the logging system.
+#
 function(declare_Application_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs
-internal_compiler_options internal_link_flags runtime_resources more_sources symlinks)
+internal_compiler_options internal_link_flags runtime_resources more_sources symlinks is_loggable)
 
 is_Application_Type(RES "${type}")#double check, for internal use only (purpose: simplify PID code debugging)
 if(RES)
@@ -1425,6 +1442,7 @@ else() #a simple application by default
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : you have to set a type name (TEST, APP, EXAMPLE) for the application component ${c_name}")
 	return()
 endif()
+
 
 # manage options and eventually adjust language standard in use
 set(c_standard_used ${c_standard})
@@ -1451,6 +1469,12 @@ if(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP"
 	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/apps/${dirname} CACHE INTERNAL "")
 elseif(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
 	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/test/${dirname} CACHE INTERNAL "")
+endif()
+
+#manage generation of specific headers used by the logging system
+if(is_loggable)
+	generate_Loggable_File(PATH_TO_FILE NAME_FOR_PREPROC ${c_name} ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR} FALSE)
+	list(APPEND internal_defs ${NAME_FOR_PREPROC})
 endif()
 
 # specifically managing examples
@@ -1514,6 +1538,8 @@ append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS ${c_name})
 append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS_APPS ${c_name})
 # global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
 mark_As_Declared(${c_name})
+
+
 endfunction(declare_Application_Component)
 
 #.rst:

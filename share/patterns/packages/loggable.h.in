@@ -1,0 +1,15 @@
+#pragma once
+
+#ifdef @PREPROC_GUARD_NAME@
+
+#include <pid/log.h>
+
+#undef PID_LOG_FRAMEWORK_NAME
+#undef PID_LOG_PACKAGE_NAME
+#undef PID_LOG_COMPONENT_NAME
+
+#define PID_LOG_FRAMEWORK_NAME "@FRAMEWORK_NAME@"
+#define PID_LOG_PACKAGE_NAME "@PROJECT_NAME@"
+#define PID_LOG_COMPONENT_NAME "@COMPONENT_NAME@"
+
+#endif

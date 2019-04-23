@@ -2348,3 +2348,47 @@ if(${PROJECT_NAME}_ALL_USED_PACKAGES)
 endif()
 
 endmacro(generate_Dependencies_File)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Loggable_File| replace:: ``generate_Loggable_File``
+#  .. _generate_Loggable_File:
+#
+#  generate_Loggable_File
+#  -----------------------
+#
+#   .. command:: generate_Loggable_File()
+#
+#   Generate the header file used by the logging system to identify components generating logs.
+#
+#     :component: the name of the component.
+#
+#     :target_folder: the path to target_folder to write in.
+#
+#     :in_include: if true target_folder targets a public include dir, oitherwise it targets a source dir.
+#
+#     :GENERATED_FILE: the output variable containing the path to the generated header file.
+#
+#     :PREPROC_VAR_NAME: the output variable containing the name of the preprocessor variable used to guard the use of a given loggable component.
+#
+function(generate_Loggable_File GENERATED_FILE PREPROC_VAR_NAME component target_folder in_include)
+  set(FRAMEWORK_NAME ${${PROJECT_NAME}_FRAMEWORK})
+  set(COMPONENT_NAME ${component})
+
+	string(REPLACE "-" "_" PREPROC_GUARD_PACKAGE_NAME ${PROJECT_NAME})
+	string(REPLACE "-" "_" PREPROC_GUARD_NAME ${component})#to avoid problem with preprocessor tokens extraction
+  set(PREPROC_GUARD_NAME "LOG_${PREPROC_GUARD_PACKAGE_NAME}_${PREPROC_GUARD_NAME}")
+  if(in_include)
+    set(prefix ${target_folder}/pid/log)
+  else()
+    set(prefix ${target_folder})
+  endif()
+  set(gen_file "${prefix}/${PROJECT_NAME}_${component}.h")
+  configure_file("${WORKSPACE_DIR}/share/patterns/packages/loggable.h.in"
+  ${gen_file} @ONLY)
+  set(${GENERATED_FILE} ${gen_file} PARENT_SCOPE)
+  set(${PREPROC_VAR_NAME} ${PREPROC_GUARD_NAME} PARENT_SCOPE)
+endfunction(generate_Loggable_File)
