@@ -1501,7 +1501,7 @@ endfunction(get_All_Sources_Absolute)
 #  .. _get_All_Cpp_Sources_Absolute:
 #
 #  get_All_Cpp_Sources_Absolute
-#  ------------------------
+#  ----------------------------
 #
 #   .. command:: get_All_Cpp_Sources_Absolute(RESULT dir)
 #
