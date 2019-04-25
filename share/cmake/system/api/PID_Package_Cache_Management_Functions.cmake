@@ -2381,12 +2381,7 @@ function(generate_Loggable_File GENERATED_FILE PREPROC_VAR_NAME component target
 	string(REPLACE "-" "_" PREPROC_GUARD_PACKAGE_NAME ${PROJECT_NAME})
 	string(REPLACE "-" "_" PREPROC_GUARD_NAME ${component})#to avoid problem with preprocessor tokens extraction
   set(PREPROC_GUARD_NAME "LOG_${PREPROC_GUARD_PACKAGE_NAME}_${PREPROC_GUARD_NAME}")
-  if(in_include)
-    set(prefix ${target_folder}/pid/log)
-  else()
-    set(prefix ${target_folder})
-  endif()
-  set(gen_file "${prefix}/${PROJECT_NAME}_${component}.h")
+  set(gen_file "${target_folder}/pid/log/${PROJECT_NAME}_${component}.h")
   configure_file("${WORKSPACE_DIR}/share/patterns/packages/loggable.h.in"
   ${gen_file} @ONLY)
   set(${GENERATED_FILE} ${gen_file} PARENT_SCOPE)
