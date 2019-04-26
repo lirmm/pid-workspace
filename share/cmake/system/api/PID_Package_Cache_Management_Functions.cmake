@@ -1840,7 +1840,7 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 	file(APPEND ${file} "set(${package}_PROJECT_PAGE ${${package}_PROJECT_PAGE} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_SITE_ROOT_PAGE ${${package}_SITE_ROOT_PAGE} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_SITE_GIT_ADDRESS ${${package}_SITE_GIT_ADDRESS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package}_SITE_INTRODUCTION ${${package}_SITE_INTRODUCTION} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_SITE_INTRODUCTION \"${${package}_SITE_INTRODUCTION}\" CACHE INTERNAL \"\")\n")
 
 	file(APPEND ${file} "######### declaration of package development info ########\n")
 	get_Repository_Current_Branch(RES_BRANCH ${WORKSPACE_DIR}/packages/${package})
