@@ -172,6 +172,9 @@ function(add_Static_Check component is_library)
 		list(APPEND ALL_SETTINGS $<$<BOOL:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>, -I>>)
 		list(APPEND ALL_SETTINGS $<$<BOOL:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>>:-I$<JOIN:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>, -I>>)
 	endif()
+  #filtering sources to keep only C/C++ sources
+  filter_All_Sources(SOURCES_TO_CHECK)
+  message(SOURCES_TO_CHECK=${SOURCES_TO_CHECK})
 
 	# getting specific settings of the target (using generator expression to make it robust)
 
@@ -183,7 +186,8 @@ function(add_Static_Check component is_library)
 
 	set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")
   set(CPPCHECK_LANGUAGE --language=c++)#always using c++ language
-	if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
+	message("COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM")
+  if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
 		add_test(NAME ${component}_staticcheck
     COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
 		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: ")
@@ -191,9 +195,9 @@ function(add_Static_Check component is_library)
 
 	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
 	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions)
-		set(CPPCHECK_ARGS --enable=style –inconclusive)
+		set(CPPCHECK_ARGS --enable=style --inconclusive)
 	else()
-		set(CPPCHECK_ARGS --enable=all –inconclusive)
+		set(CPPCHECK_ARGS --enable=all --inconclusive)
 	endif()
 
 	#adding a target to print all issues for the given target, this is used to generate a report
