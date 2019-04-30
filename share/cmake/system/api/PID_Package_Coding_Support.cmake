@@ -186,7 +186,6 @@ function(add_Static_Check component is_library)
 
 	set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")
   set(CPPCHECK_LANGUAGE --language=c++)#always using c++ language
-	message("COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM")
   if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
 		add_test(NAME ${component}_staticcheck
     COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
