@@ -518,14 +518,14 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
 
     # finding artifacts to fulfill system configuration
     find_Configuration(${config_name})
-    set(${config_name}_CONFIG_AVAILABLE TRUE)
+    set(${config_name}_AVAILABLE TRUE CACHE INTERNAL "")
     if(NOT ${config_name}_CONFIG_FOUND)
     	install_Configuration(${config_name})
     	if(NOT ${config_name}_INSTALLED)
-        set(${config_name}_CONFIG_AVAILABLE FALSE)
+        set(${config_name}_AVAILABLE FALSE CACHE INTERNAL "")
       endif()
     endif()
-    if(NOT ${config_name}_CONFIG_AVAILABLE)#configuration is available so we can generate output variables
+    if(NOT ${config_name}_AVAILABLE)#configuration is not available so we cannot generate output variables
       return()
     endif()
 
