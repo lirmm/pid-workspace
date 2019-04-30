@@ -174,7 +174,6 @@ function(add_Static_Check component is_library)
 	endif()
   #filtering sources to keep only C/C++ sources
   filter_All_Sources(SOURCES_TO_CHECK)
-  message(SOURCES_TO_CHECK=${SOURCES_TO_CHECK})
 
 	# getting specific settings of the target (using generator expression to make it robust)
 
