@@ -1414,6 +1414,36 @@ endmacro(activate_Adequate_Languages)
 #
 # .. ifmode:: internal
 #
+#  .. |filter_All_Sources| replace:: ``filter_All_Sources``
+#  .. _filter_All_Sources:
+#
+#  filter_All_Sources
+#  -------------------
+#
+#   .. command:: filter_All_Sources(LIST_TO_FILTER)
+#
+#    Filter the input list by keeping only c/c++ source files.
+#
+#     :LIST_TO_FILTER: the input and output variable that contains all source files path.
+#
+function(filter_All_Sources LIST_TO_FILTER)
+  set(temp_sources_to_check)
+  if(LIST_TO_FILTER AND ${LIST_TO_FILTER})
+    foreach(source IN LISTS ${LIST_TO_FILTER})
+      if(source MATCHES "^.+\\.(c|C|cc|cpp|cxx|c\\+\\+|h|hh|hpp|hxx)$" # a file with specific C/C++ extension
+          OR source MATCHES "^[^.]+$" )# a file without extension
+        list(APPEND temp_sources_to_check ${source})
+      endif()
+    endforeach()
+  endif()
+set (${LIST_TO_FILTER} ${temp_sources_to_check} PARENT_SCOPE)
+endfunction(filter_All_Sources)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |get_All_Sources_Relative| replace:: ``get_All_Sources_Relative``
 #  .. _get_All_Sources_Relative:
 #

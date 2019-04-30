@@ -724,7 +724,7 @@ if(CHECK_PID_PLATFORM_NAME)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint cannot be satisfied !")
 	endif()
 else()
-	if(NOT CHECK_PID_PLATFORM_CONFIGURATION AND NOT OPTIONAL)
+	if(NOT CHECK_PID_PLATFORM_CONFIGURATION AND NOT CHECK_PID_PLATFORM_OPTIONAL)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must use the keyword CONFIGURATION or OPTIONAL to describe the set of configuration constraints that apply to the current platform.")
 	endif()
@@ -1463,8 +1463,9 @@ endfunction(used_PID_Package_Dependency)
 #   .. rubric:: Second signature
 #
 #   :[EXTERNAL <package>]: Name of the external package that component depends upon.
-#   :INCLUDE_DIRS <dirs>: Specify include directories for this dependency. For external packages, these paths must be relative to the package root dir (using ``<package>``). This should not be used for system packages as include directories should be in the default system folders.
-#   :RUNTIME_RESOURCES <paths>: Specify where to find runtime resources. For external package, these paths must be relative to the package root dir (using ``<package>``). This should not be used for system packages as shared resources should be in standard locations.
+#   :INCLUDE_DIRS <dirs>: Specify include directories for this dependency. For external packages, these paths must be relative to the package root dir (using ``<package>``).
+#   :LIBRARY_DIRS <path>: Specify library search directories for this dependency. For external packages, these paths must be relative to the package root dir (using ``<package>``).
+#   :RUNTIME_RESOURCES <paths>: Specify where to find runtime resources. For external package, these paths must be relative to the package root dir (using ``<package>``).
 #   :COMPILER_OPTIONS: Compiler options that are not definitions.
 #   :LINKS STATIC|SHARED <links>:
 #     - ``STATIC <links>``: static libraries. For system libraries, system referencing must be used (e.g. -lm for libm.a). For external packages, complete path (relative to the package root dir) must be used.
