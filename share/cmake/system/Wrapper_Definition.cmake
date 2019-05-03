@@ -992,6 +992,22 @@ endmacro(declare_PID_Wrapper_Component)
 #
 #     :DEFINITIONS <definitions>:  List of definitions exported by the component. These definitions are supposed to be managed in the dependency's heaedr files, but are set by current component.
 #
+#     :INCLUDES <list of path>:  List of path to system include folders.
+#
+#     :LIBRARY_DIRS  <list of path>:   List of path to system libraries folders.
+#
+#     :SHARED_LINKS <list of link>:  List of shared system links.
+#
+#     :STATIC_LINKS  <list of link>:  List of static system links.
+#
+#     :OPTIONS  <list of options>:  List of compiler options to use when using a system library.
+#
+#     :RUNTIME_RESOURCES  <list of path>:  List of path to system runtime resource such as program for instance.
+#
+#     :C_STANDARD  <std number>: the C standard used by the dependency.
+#
+#     :CXX_STANDARD  <std number>: the C++ standard used by the dependency.
+#
 #     .. admonition:: Constraints
 #        :class: warning
 #
