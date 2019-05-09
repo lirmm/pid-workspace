@@ -19,7 +19,7 @@
 
 include(Configuration_Definition NO_POLICY_SCOPE)
 
-found_PID_Configuration(glibs FALSE)
+found_PID_Configuration(google_libs FALSE)
 
 # finding gflags
 # Search user-installed locations first, so that we prefer user installs
@@ -89,11 +89,11 @@ else()
 endif()
 
 if(GLOG_LIBRARY AND GLOG_INCLUDE_DIR)
-  set(GLIBS_INCLUDE_DIRS ${GLOG_INCLUDE_DIR} ${GFLAGS_INCLUDE_DIRS})
+  set(GOOGLE_LIBS_INCLUDE_DIRS ${GLOG_INCLUDE_DIR} ${GFLAGS_INCLUDE_DIRS})
 	unset(GLOG_INCLUDE_DIR CACHE)
-  set(GLIBS_LIBRARIES ${GLOG_LIBRARY} ${GFLAGS_LIBRARIES})
+  set(GOOGLE_LIBS_LIBRARIES ${GLOG_LIBRARY} ${GFLAGS_LIBRARIES})
 	unset(GLOG_LIBRARY CACHE)
-	convert_PID_Libraries_Into_System_Links(GLIBS_LIBRARIES GLIBS_LINKS)#getting good system links (with -l)
-	convert_PID_Libraries_Into_Library_Directories(GLIBS_LIBRARIES GLIBS_LIBDIR)
-	found_PID_Configuration(glibs TRUE)
+	convert_PID_Libraries_Into_System_Links(GOOGLE_LIBS_LIBRARIES GOOGLE_LIBS_LINKS)#getting good system links (with -l)
+	convert_PID_Libraries_Into_Library_Directories(GOOGLE_LIBS_LIBRARIES GOOGLE_LIBS_LIBDIR)
+	found_PID_Configuration(google_libs TRUE)
 endif()

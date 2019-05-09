@@ -1,6 +1,6 @@
 #########################################################################################
 #       This file is part of the program PID                                            #
-#       Program description : build system supporting the PID methodology              	#
+#       Program description : build system supportting the PID methodology              #
 #       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
 #       et de Microelectronique de Montpellier). All Right reserved.                    #
 #                                                                                       #
@@ -19,11 +19,10 @@
 
 include(Configuration_Definition NO_POLICY_SCOPE)
 
-
-# returned variables
-PID_Configuration_Variables(glibs
-			VARIABLES LINK_OPTIONS	LIBRARY_DIRS 		RPATH   			  INCLUDE_DIRS
-			VALUES 		GLIBS_LINKS		GLIBS_LIBDIR		GLIBS_LIBRARIES GLIBS_INCLUDE_DIRS)
-
-# dependencies
-PID_Configuration_Dependencies(nccl DEPEND posix)#for thread library
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian
+	OR CURRENT_DISTRIBUTION STREQUAL arch)
+	installable_PID_Configuration(google_libs TRUE)
+else()
+	installable_PID_Configuration(google_libs FALSE)
+endif()
