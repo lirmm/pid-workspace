@@ -20,4 +20,6 @@
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 		OR CURRENT_DISTRIBUTION STREQUAL debian)
 	execute_OS_Configuration_Command(apt install libgoogle-glog-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
+	execute_OS_Configuration_Command(pacman -S google-glog gflags --noconfirm)
 endif()

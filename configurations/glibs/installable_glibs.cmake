@@ -20,7 +20,8 @@
 include(Configuration_Definition NO_POLICY_SCOPE)
 
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	OR CURRENT_DISTRIBUTION STREQUAL debian
+	OR CURRENT_DISTRIBUTION STREQUAL arch)
 	installable_PID_Configuration(glibs TRUE)
 else()
 	installable_PID_Configuration(glibs FALSE)
