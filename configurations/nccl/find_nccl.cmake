@@ -58,7 +58,9 @@ if (NCCL_INCLUDE_DIR AND NCCL_LIBRARY)
   string(REGEX REPLACE "define NCCL_PATCH * +([0-9]+)" "\\1"
     NCCL_PATCH_VERSION "${NCCL_PATCH_VERSION}")
   set(NCCL_VERSION ${NCCL_MAJOR_VERSION}.${NCCL_MINOR_VERSION})
-endif ()
+else()
+  return()
+endif()
 
 if(nccl_version)# a version constraint is defined (if code works only with a given version)
 	if(NCCL_VERSION VERSION_LESS nccl_version)#if the CUDA version is known and a nvcc compiler has been defined
