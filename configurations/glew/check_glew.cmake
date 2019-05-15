@@ -27,3 +27,6 @@ PID_Configuration_Variables(glew
 # constraints
 PID_Configuration_Constraints(glew	IN_BINARY version
 																		VALUE			GLEW_VERSION)
+
+# dependencies
+PID_Configuration_Dependencies(glew DEPEND opengl)

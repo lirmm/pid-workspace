@@ -30,20 +30,14 @@ if (UNIX)
 	find_path(DOUBLECONVERSION_INCLUDE_PATH double-conversion.h PATH_SUFFIXES double-conversion)
 	find_library(DOUBLECONVERSION_LIB NAMES double-conversion libdouble-conversion)
 
-	set(IS_FOUND TRUE)
 	if(DOUBLECONVERSION_INCLUDE_PATH AND DOUBLECONVERSION_LIB)
 
 	  set(DOUBLECONVERSION_VERSION "NO-VERSION-FOUND")
 		convert_PID_Libraries_Into_System_Links(DOUBLECONVERSION_LIB DOUBLECONVERSION_LINKS)#getting good system links (with -l)
 		convert_PID_Libraries_Into_Library_Directories(DOUBLECONVERSION_LIB DOUBLECONVERSION_LIBDIRS)
+
+		found_PID_Configuration(doubleconversion TRUE)
 	else()
 		message("[PID] ERROR : cannot find double-conversion library.")
-		set(IS_FOUND FALSE)
 	endif()
-
-	if(IS_FOUND)
-		found_PID_Configuration(doubleconversion TRUE)
-	endif ()
-
-	unset(IS_FOUND)
 endif ()

@@ -44,11 +44,17 @@ endif()
 if(OpenMP_FOUND)
 	if(OpenMP_C_FOUND AND OpenMP_CXX_FOUND)
 		list(APPEND OpenMP_LIB_NAMES ${OpenMP_C_LIB_NAMES} ${OpenMP_CXX_LIB_NAMES})
-	  list(REMOVE_DUPLICATES OpenMP_LIB_NAMES)
+    if(OpenMP_LIB_NAMES)
+	     list(REMOVE_DUPLICATES OpenMP_LIB_NAMES)
+    endif()
 		list(APPEND OpenMP_RPATH ${OpenMP_C_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
-	  list(REMOVE_DUPLICATES OpenMP_RPATH)
+    if(OpenMP_LIB_NAMES)
+      list(REMOVE_DUPLICATES OpenMP_RPATH)
+    endif()
 		list(APPEND OpenMP_COMPILER_OPTIONS ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS})
-		list(REMOVE_DUPLICATES OpenMP_COMPILER_OPTIONS)
+    if(OpenMP_LIB_NAMES)
+	     list(REMOVE_DUPLICATES OpenMP_COMPILER_OPTIONS)
+    endif()
 		convert_PID_Libraries_Into_System_Links(OpenMP_RPATH OpenMP_LINKS)#getting good system links (with -l)
 		convert_PID_Libraries_Into_Library_Directories(OpenMP_RPATH OpenMP_LIBDIRS)
 
@@ -97,42 +103,3 @@ if(OpenMP_FOUND)
 
 	found_PID_Configuration(openmp TRUE)
 endif()
-
-
-
-# message("OpenMP_COMPILER_OPTIONS=${OpenMP_COMPILER_OPTIONS}")
-# message("OpenMP_LIBDIRS=${OpenMP_LIBDIRS}")
-# message("OpenMP_RPATH=${OpenMP_RPATH}")
-# message("OpenMP_LINKS=${OpenMP_LINKS}")
-# message("OpenMP_LIB_NAMES=${OpenMP_LIB_NAMES}")
-#
-# message("OpenMP_C_LIB_NAMES=${OpenMP_C_LIB_NAMES}")
-# message("OpenMP_C_COMPILER_OPTIONS=${OpenMP_C_FLAGS}")
-# message("OpenMP_C_RPATH=${OpenMP_C_LIBRARIES}")
-# message("OpenMP_C_LINKS=${OpenMP_C_LINKS}")
-# message("OpenMP_C_LIBDIRS=${OpenMP_C_LIBDIRS}")
-#
-# message("OpenMP_CXX_LIB_NAMES=${OpenMP_CXX_LIB_NAMES}")
-# message("OpenMP_CXX_COMPILER_OPTIONS=${OpenMP_CXX_FLAGS}")
-# message("OpenMP_CXX_RPATH=${OpenMP_CXX_LIBRARIES}")
-# message("OpenMP_CXX_LINKS=${OpenMP_CXX_LINKS}")
-# message("OpenMP_CXX_LIBDIRS=${OpenMP_CXX_LIBDIRS}")
-
-
-# message("OpenMP_FOUND=${OpenMP_FOUND}")
-# message("OpenMP_VERSION=${OpenMP_VERSION}")
-# message("OpenMP_C_FOUND=${OpenMP_C_FOUND}")
-# message("OpenMP_C_VERSION=${OpenMP_C_VERSION}")
-
-# message("OpenMP_C_FLAGS=${OpenMP_C_FLAGS}")
-# message("OpenMP_C_LIB_NAMES=${OpenMP_C_LIB_NAMES}")
-# message("OpenMP_C_LIBRARIES=${OpenMP_C_LIBRARIES}")
-
-# message("OpenMP_CXX_FOUND=${OpenMP_CXX_FOUND}")
-# message("OpenMP_CXX_VERSION=${OpenMP_CXX_VERSION}")
-# message("OpenMP_CXX_FLAGS=${OpenMP_CXX_FLAGS}")
-# message("OpenMP_CXX_LIB_NAMES=${OpenMP_CXX_LIB_NAMES}")
-# message("OpenMP_CXX_LIBRARIES=${OpenMP_CXX_LIBRARIES}")
-
-# message("OpenMP_GOMP_LIBRARY=${OpenMP_GOMP_LIBRARY}")
-# message("OpenMP_PTHREAD_LIBRARY=${OpenMP_PTHREAD_LIBRARY}")

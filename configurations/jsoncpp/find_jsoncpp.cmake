@@ -30,9 +30,7 @@ if (UNIX)
 	find_path(JSONCPP_INCLUDE_PATH json/json.h PATH_SUFFIXES jsoncpp)
 	find_library(JSONCPP_LIB NAMES jsoncpp libjsoncpp)
 
-	set(IS_FOUND TRUE)
 	if(JSONCPP_INCLUDE_PATH AND JSONCPP_LIB)
-
 		#need to extract jsoncpp version in file
 		if( EXISTS "${JSONCPP_INCLUDE_PATH}/json/version.h")
 		  file(READ ${JSONCPP_INCLUDE_PATH}/json/version.h JSONCPP_VERSION_FILE_CONTENTS)
@@ -55,14 +53,9 @@ if (UNIX)
 
 		convert_PID_Libraries_Into_System_Links(JSONCPP_LIB JSONCPP_LINKS)#getting good system links (with -l)
 		convert_PID_Libraries_Into_Library_Directories(JSONCPP_LIB JSONCPP_LIBDIRS)
+		found_PID_Configuration(jsoncpp TRUE)
 	else()
 		message("[PID] ERROR : cannot find jsoncpp library.")
-		set(IS_FOUND FALSE)
 	endif()
 
-	if(IS_FOUND)
-		found_PID_Configuration(jsoncpp TRUE)
-	endif ()
-
-	unset(IS_FOUND)
 endif ()
