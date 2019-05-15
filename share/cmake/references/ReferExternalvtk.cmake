@@ -10,7 +10,7 @@ set(vtk_PID_WRAPPER_AUTHORS_AND_INSTITUTIONS "_Arnaud_Meline(_CNRS_/_LIRMM:_Labo
 set(vtk_PID_WRAPPER_YEARS 2019 CACHE INTERNAL "")
 set(vtk_PID_WRAPPER_LICENSE BSD CACHE INTERNAL "")
 set(vtk_PID_WRAPPER_ADDRESS git@gite.lirmm.fr:rob-vision/msvf/wrappers/vtk.git CACHE INTERNAL "")
-set(vtk_PID_WRAPPER_PUBLIC_ADDRESS  CACHE INTERNAL "")
+set(vtk_PID_WRAPPER_PUBLIC_ADDRESS https://gite.lirmm.fr/rob-vision/msvf/wrappers/vtk.git CACHE INTERNAL "")
 set(vtk_DESCRIPTION "PID;wrapper;for;Visualization;Toolkit;(;vtk;);external;project" CACHE INTERNAL "")
 set(vtk_FRAMEWORK  CACHE INTERNAL "")
 set(vtk_CATEGORIES CACHE INTERNAL "")
