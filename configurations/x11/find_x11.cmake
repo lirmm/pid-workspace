@@ -96,7 +96,7 @@ if (UNIX)
 	find_library(x11_Xft_LIB Xft )
 	find_path(x11_Xft_INCLUDE_PATH X11/Xft/Xft.h )
 	if(x11_Xft_LIB AND x11_Xft_INCLUDE_PATH)
-		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xt_LIB})
+		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xft_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xft_INCLUDE_PATH})
 	endif ()
 	unset(x11_Xft_LIB CACHE)#remove from cache

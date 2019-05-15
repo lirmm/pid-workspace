@@ -19,13 +19,30 @@
 
 include(Configuration_Definition NO_POLICY_SCOPE)
 
-# returned variables
-PID_Configuration_Variables(openmp
-				VARIABLES VERSION  				COMPILER_OPTIONS				LIBRARY_DIRS		RPATH					LINK_OPTIONS	LIB_NAMES					GOMP_LIBRARY					PTHREAD_LIBRARY				C_COMPILER_OPTIONS	C_RPATH							C_LINK_OPTIONS	C_LIBRARY_DIRS		C_LIB_NAMES					CXX_COMPILER_OPTIONS	CXX_RPATH							CXX_LINK_OPTIONS	CXX_LIBRARY_DIRS		CXX_LIB_NAMES
-				VALUES 		OpenMP_VERSION  OpenMP_COMPILER_OPTIONS	OpenMP_LIBDIRS 	OpenMP_RPATH 	OpenMP_LINKS	OpenMP_LIB_NAMES  OpenMP_GOMP_LIBRARY		OpenMP_PTHREAD_LIBRARY	OpenMP_C_FLAGS			OpenMP_C_LIBRARIES	OpenMP_C_LINKS	OpenMP_C_LIBDIRS	OpenMP_C_LIB_NAMES	OpenMP_CXX_FLAGS			OpenMP_CXX_LIBRARIES	OpenMP_CXX_LINKS	OpenMP_CXX_LIBDIRS	OpenMP_CXX_LIB_NAMES	)
+found_PID_Configuration(netcdf FALSE)
 
+# - Find netcdf installation
+# Try to find libraries for netcdf on UNIX systems. The following values are defined
+#  NETCDF_FOUND        - True if netcdf is available
+#  NETCDF_LIBRARIES    - link against these to use netcdf library
+if (UNIX)
 
+	find_path(NETCDF_INCLUDE_PATH netcdf.h)
+	find_library(NETCDF_LIB NAMES netcdf libnetcdf)
 
-# constraints
-PID_Configuration_Constraints(openmp		IN_BINARY version
-																				VALUE			OpenMP_VERSION)
+	set(IS_FOUND TRUE)
+	if(NETCDF_INCLUDE_PATH AND NETCDF_LIB)
+		set(NETCDF_VERSION "NO-VERSION-FOUND")
+		convert_PID_Libraries_Into_System_Links(NETCDF_LIB NETCDF_LINKS)#getting good system links (with -l)
+		convert_PID_Libraries_Into_Library_Directories(NETCDF_LIB NETCDF_LIBDIRS)
+	else()
+		message("[PID] ERROR : cannot find netcdf library.")
+		set(IS_FOUND FALSE)
+	endif()
+
+	if(IS_FOUND)
+		found_PID_Configuration(netcdf TRUE)
+	endif ()
+
+	unset(IS_FOUND)
+endif ()

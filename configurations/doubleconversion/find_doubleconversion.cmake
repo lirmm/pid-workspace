@@ -19,13 +19,31 @@
 
 include(Configuration_Definition NO_POLICY_SCOPE)
 
-# returned variables
-PID_Configuration_Variables(openmp
-				VARIABLES VERSION  				COMPILER_OPTIONS				LIBRARY_DIRS		RPATH					LINK_OPTIONS	LIB_NAMES					GOMP_LIBRARY					PTHREAD_LIBRARY				C_COMPILER_OPTIONS	C_RPATH							C_LINK_OPTIONS	C_LIBRARY_DIRS		C_LIB_NAMES					CXX_COMPILER_OPTIONS	CXX_RPATH							CXX_LINK_OPTIONS	CXX_LIBRARY_DIRS		CXX_LIB_NAMES
-				VALUES 		OpenMP_VERSION  OpenMP_COMPILER_OPTIONS	OpenMP_LIBDIRS 	OpenMP_RPATH 	OpenMP_LINKS	OpenMP_LIB_NAMES  OpenMP_GOMP_LIBRARY		OpenMP_PTHREAD_LIBRARY	OpenMP_C_FLAGS			OpenMP_C_LIBRARIES	OpenMP_C_LINKS	OpenMP_C_LIBDIRS	OpenMP_C_LIB_NAMES	OpenMP_CXX_FLAGS			OpenMP_CXX_LIBRARIES	OpenMP_CXX_LINKS	OpenMP_CXX_LIBDIRS	OpenMP_CXX_LIB_NAMES	)
+found_PID_Configuration(doubleconversion FALSE)
 
+# - Find doubleconversion installation
+# Try to find libraries for doubleconversion on UNIX systems. The following values are defined
+#  DOUBLECONVERSION_FOUND        - True if doubleconversion is available
+#  DOUBLECONVERSION_LIBRARIES    - link against these to use doubleconversion library
+if (UNIX)
 
+	find_path(DOUBLECONVERSION_INCLUDE_PATH double-conversion.h PATH_SUFFIXES double-conversion)
+	find_library(DOUBLECONVERSION_LIB NAMES double-conversion libdouble-conversion)
 
-# constraints
-PID_Configuration_Constraints(openmp		IN_BINARY version
-																				VALUE			OpenMP_VERSION)
+	set(IS_FOUND TRUE)
+	if(DOUBLECONVERSION_INCLUDE_PATH AND DOUBLECONVERSION_LIB)
+
+	  set(DOUBLECONVERSION_VERSION "NO-VERSION-FOUND")
+		convert_PID_Libraries_Into_System_Links(DOUBLECONVERSION_LIB DOUBLECONVERSION_LINKS)#getting good system links (with -l)
+		convert_PID_Libraries_Into_Library_Directories(DOUBLECONVERSION_LIB DOUBLECONVERSION_LIBDIRS)
+	else()
+		message("[PID] ERROR : cannot find double-conversion library.")
+		set(IS_FOUND FALSE)
+	endif()
+
+	if(IS_FOUND)
+		found_PID_Configuration(doubleconversion TRUE)
+	endif ()
+
+	unset(IS_FOUND)
+endif ()
