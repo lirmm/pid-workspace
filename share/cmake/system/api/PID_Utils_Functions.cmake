@@ -1797,24 +1797,24 @@ function(is_Shared_Lib_With_Path SHARED input_link)
 set(${SHARED} FALSE PARENT_SCOPE)
 get_filename_component(LIB_TYPE ${input_link} EXT)
 if(LIB_TYPE)
-        if(APPLE)
-            if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
-			        set(${SHARED} TRUE PARENT_SCOPE)
-		        endif()
-	      elseif(UNIX)
-            if(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib
-			        set(${SHARED} TRUE PARENT_SCOPE)
-		        endif()
-        elseif(WIN32)
-           if(LIB_TYPE MATCHES "^\\.dll(\\.[0-9]+)*$")#found shared lib
-              set(${SHARED} TRUE PARENT_SCOPE)
-	         endif()
-        endif()
+  if(APPLE)
+      if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
+        set(${SHARED} TRUE PARENT_SCOPE)
+      endif()
+  elseif(UNIX)
+      if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.so(\\.[0-9]+)*$")#found shared lib
+        set(${SHARED} TRUE PARENT_SCOPE)
+      endif()
+  elseif(WIN32)
+     if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dll(\\.[0-9]+)*$")#found shared lib
+        set(${SHARED} TRUE PARENT_SCOPE)
+     endif()
+  endif()
 else()
-	# no extenion may be possible with MACOSX frameworks
-        if(APPLE)
-		       set(${SHARED} TRUE PARENT_SCOPE)
-	      endif()
+   # no extenion may be possible with MACOSX frameworks
+  if(APPLE)
+     set(${SHARED} TRUE PARENT_SCOPE)
+  endif()
 endif()
 endfunction(is_Shared_Lib_With_Path)
 

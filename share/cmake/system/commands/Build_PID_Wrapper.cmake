@@ -111,8 +111,10 @@ if(NOT EXISTS ${package_version_build_dir})#create the directory for building th
 	file(MAKE_DIRECTORY ${package_version_build_dir})
 endif()
 
-if(EXISTS ${package_version_install_dir})#clean the install folder
-  file(REMOVE_RECURSE ${package_version_install_dir})
+if(use_os_variant OR (NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true))#when executing script or installing OS variant clean the install folder
+	if(EXISTS ${package_version_install_dir})#clean the install folder
+	  file(REMOVE_RECURSE ${package_version_install_dir})
+	endif()
 endif()
 
 set(TARGET_INSTALL_DIR ${package_version_install_dir})

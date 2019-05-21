@@ -21,9 +21,13 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(tiff
-				VARIABLES VERSION 						LINK_OPTIONS	LIBRARY_DIRS 	RPATH   				INCLUDE_DIRS
-				VALUES 		TIFF_VERSION_STRING TIFF_LIBRARY	TIFF_LIBDIRS	TIFF_LIBRARIES 	TIFF_INCLUDE_DIRS)
+				VARIABLES VERSION 						LINK_OPTIONS	LIBRARY_DIRS 	RPATH   			INCLUDE_DIRS
+				VALUES 		TIFF_VERSION_STRING TIFF_LINKS		TIFF_LIBDIRS	TIFF_LIBRARY 	TIFF_INCLUDE_DIR)
 
 
 # dependencies
 PID_Configuration_Dependencies(tiff DEPEND libjpeg)
+
+# constraints
+PID_Configuration_Constraints(tiff	IN_BINARY version
+																		VALUE			TIFF_VERSION_STRING)
