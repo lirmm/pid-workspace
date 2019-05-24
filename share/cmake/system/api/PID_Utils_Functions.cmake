@@ -4060,3 +4060,64 @@ function(get_Clang_Format_Program CLANG_FORMAT_EXE)
         set(${CLANG_FORMAT_EXE} ${CLANG_FORMAT_PATH} PARENT_SCOPE)
     endif()
 endfunction()
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Join_Generator_Expression| replace:: ``get_Join_Generator_Expression``
+#  .. _get_Join_Generator_Expression:
+#
+#  get_Join_Generator_Expression
+#  -----------------------------
+#
+#   .. command:: get_Join_Generator_Expression(EXPR_VAR join_list join_flag)
+#
+#    Create a JOIN generator expression equivalent to the list given in argument.
+#
+#     :EXPR_VAR: the output variable containing the resulting generator expression.
+#
+#     :join_list: the list of lements to join in expression.
+#
+#     :join_flag: the flag to append before any element of the list (may be empty string).
+#
+function(get_Join_Generator_Expression EXPR_VAR join_list join_flag)
+  list(LENGTH join_list SIZE)
+  if(SIZE EQUAL 0)
+    set(${EXPR_VAR} "$<0:notuseful>" PARENT_SCOPE)#produces nothing
+  else()
+    list(REMOVE_DUPLICATES join_list)
+    set(res "")
+    foreach(element IN LISTS join_list)
+      set(res "${res}${join_flag}${element} ")
+    endforeach()
+    string(STRIP "${res}" res)
+    set(${EXPR_VAR} "$<1:${res}>" PARENT_SCOPE)#produces the content of the right side of the generator expression
+  endif()
+endfunction(get_Join_Generator_Expression)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |append_Join_Generator_Expressions| replace:: ``append_Join_Generator_Expressions``
+#  .. _append_Join_Generator_Expressions:
+#
+#  append_Join_Generator_Expressions
+#  ---------------------------------
+#
+#   .. command:: append_Join_Generator_Expressions(inout_expr input_expr)
+#
+#    Create a JOIN generator expression equivalent for two generator expressions.
+#
+#     :inout_expr: the input/output variable containing the resulting generator expression, whose content is used as first element in result.
+#
+#     :input_expr: input variable containing the second expression to join
+#
+function(append_Join_Generator_Expressions inout_expr input_expr)
+  if(${inout_expr})
+    set(${inout_expr} "$<JOIN:${${inout_expr}}, ${input_expr}>" PARENT_SCOPE)
+  else()
+    set(${inout_expr} "${input_expr}" PARENT_SCOPE)
+  endif()
+endfunction(append_Join_Generator_Expressions)

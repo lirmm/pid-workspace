@@ -155,11 +155,13 @@ function(add_Static_Check component is_library)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target name ${component} when trying to cppcheck !")
 	endif()
+
   # getting include automatically search by the compiler => this allow also to be robust to cross compilation requests
-  set(ALL_SETTING ${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES} ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-  if(ALL_SETTING)
-    list(REMOVE_DUPLICATES ALL_SETTING)
-  endif()
+  set(CPP_CHECK_SETTING_EXPR)
+
+  set(SYSTEM_INCLUDES ${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES} ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+  get_Join_Generator_Expression(CPP_CHECK_SETTING_EXPR "${SYSTEM_INCLUDES}" "-I")
+
   if(${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#header targets have no sources => list them by hand
 		set(SOURCES_TO_CHECK)
@@ -169,24 +171,25 @@ function(add_Static_Check component is_library)
 	else()
 		#getting sources of the target
 		get_target_property(SOURCES_TO_CHECK ${component} SOURCES)
-		list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>, -I>>")
-		list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>, -D>>")
+    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>, -I>>")
+    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>, -D>>")
 	endif()
+
   #filtering sources to keep only C/C++ sources
   filter_All_Sources(SOURCES_TO_CHECK)
 
 	# getting specific settings of the target (using generator expression to make it robust)
 	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})
-	if(NOT IS_HF)
-		list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>")
-		list(APPEND ALL_SETTINGS "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>, -D>>")
+	if(NOT IS_HF)#component has a public interface
+    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>")
+    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>, -D>>")
 	endif()
 
 	set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")
   set(CPPCHECK_LANGUAGE --language=c++)#always using c++ language
   if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
 		add_test(NAME ${component}_staticcheck
-    COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${PARALLEL_JOBS_FLAG} ${ALL_SETTINGS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
+    COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${PARALLEL_JOBS_FLAG} ${CPP_CHECK_SETTING_EXPR} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
 		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: ")
 	endif()#TODO also manage the language standard here (option -std=)!! necessary ?
 
@@ -200,7 +203,7 @@ function(add_Static_Check component is_library)
 	#adding a target to print all issues for the given target, this is used to generate a report
 	add_custom_command(TARGET staticchecks PRE_BUILD
 		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
-		COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${ALL_SETTINGS} ${CPPCHECK_ARGS} --xml-version=2 ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
+		COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${CPP_CHECK_SETTING_EXPR} ${CPPCHECK_ARGS} --xml-version=2 ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
 		VERBATIM)
