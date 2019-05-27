@@ -27,11 +27,11 @@ set(CURRENT_PLATFORM_INSTANCE ${PID_USE_INSTANCE_NAME} CACHE INTERNAL "")#reset 
 #test of the os is based on the compiler used  (APPLE and UNIX variables) AND on system variables affected by crosscompilation (CMAKE_SYSTEM_NAME)
 #So it adapts to the current development environment in use
 
-if(UNIX AND APPLE AND CMAKE_SYSTEM_NAME STREQUAL Darwin) #darwin = kernel name for macosx systems
-	set(CURRENT_OS macosx  CACHE INTERNAL "")
+if(UNIX AND APPLE AND CMAKE_SYSTEM_NAME STREQUAL Darwin) #darwin = kernel name for macos systems
+	set(CURRENT_OS macos  CACHE INTERNAL "")
 	set(CURRENT_PACKAGE_STRING "Darwin" CACHE INTERNAL "")
 	if(NOT PID_CROSSCOMPILATION)
-		set(CURRENT_DISTRIBUTION "macosx" CACHE INTERNAL "")
+		set(CURRENT_DISTRIBUTION "macos" CACHE INTERNAL "")
 	else()
 		set(CURRENT_DISTRIBUTION "" CACHE INTERNAL "")
 	endif()

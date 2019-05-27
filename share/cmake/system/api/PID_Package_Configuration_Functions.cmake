@@ -954,7 +954,7 @@ if(	${package}_${component}_TYPE STREQUAL "SHARED"
 		# getting path to internal targets dependecies that produce a runtime code (not used for rpath but required for python modules)
 
 		#cannot use the generator expression due to generator expression not evaluated in install(CODE) -> CMake BUG
-		if(CURRENT_PLATFORM_OS STREQUAL "macosx")
+		if(CURRENT_PLATFORM_OS STREQUAL "macos")
 	    set(suffix_ext .dylib)
     elseif(CURRENT_PLATFORM_OS STREQUAL "windows")
         set(suffix_ext .dll)
@@ -1136,7 +1136,7 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 		# getting path to internal targets dependecies that produce a runtime code (not used for rpath but required for python modules)
 
 		#cannot use the generator expression due to generator expression not evaluated in install(CODE) -> CMake BUG
-		if(CURRENT_PLATFORM_OS STREQUAL "macosx")
+		if(CURRENT_PLATFORM_OS STREQUAL "macos")
 		    set(suffix_ext .dylib)
         elseif(CURRENT_PLATFORM_OS STREQUAL "windows")
             set(suffix_ext .dll)

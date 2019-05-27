@@ -1975,7 +1975,7 @@ function(build_B2_External_Project)
   # configure current platform
   set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} address-model=${CURRENT_PLATFORM_ARCH}")#address model is specified the same way in PID and b2
   set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} architecture=${CURRENT_PLATFORM_TYPE}")#processor architecture supported are "x86" and "arm" so PID uses same names than b2
-  if(CURRENT_PLATFORM_OS STREQUAL macosx)#we use a specific identifier in PID only for macos otherwise thay are the same than b2
+  if(CURRENT_PLATFORM_OS STREQUAL macos)#we use a specific identifier in PID only for macos otherwise thay are the same than b2
     set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} target-os=darwin")#processor architecture
   else()
     set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} target-os=${CURRENT_PLATFORM_OS}")#processor architecture

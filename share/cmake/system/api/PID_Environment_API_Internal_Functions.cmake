@@ -223,7 +223,7 @@ endmacro(declare_Environment)
 #
 #      :arch_constraint: constraint on processor architecture (16, 32, 64)
 #
-#      :os_constraint: constraint on operating system (linux, macosx, windows).
+#      :os_constraint: constraint on operating system (linux, macos, windows).
 #
 #      :abi_constraint: constraint on abi in use (98 or 11).
 #
@@ -1251,7 +1251,7 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
     #configuring OS
     if(use_os STREQUAL "linux")
       set(os_name Linux)
-    elseif(use_os STREQUAL "macosx")
+    elseif(use_os STREQUAL "macos")
       set(os_name Darwin)
     elseif(use_os STREQUAL "windows")
       set(os_name Windows)

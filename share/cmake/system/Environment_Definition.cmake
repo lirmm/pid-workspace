@@ -721,7 +721,7 @@ endmacro(return_Environment_Configured)
 #     :DISTRIB_VERSION <var>: the ouput variable containing the version of the distribution.
 #     :TYPE <var>: the ouput variable containing the type of processor (x86, arm).
 #     :ARCH <var>: the ouput variable containing the architecture for TYPE (16, 32 or 64).
-#     :OS <var>: the ouput variable containing the operating system name (linux, macosx).
+#     :OS <var>: the ouput variable containing the operating system name (linux, macos).
 #     :ABI <var>: the ouput variable containing the C++ ABI used (98 or 11).
 #     :CONFIGURATION <var>: the ouput variable containing the list of configurations of the platform.
 #
@@ -810,7 +810,7 @@ endfunction(get_Environment_Target_Platform)
 #     :DISTRIB_VERSION <var>: the ouput variable containing the version of the distribution.
 #     :TYPE <var>: the ouput variable containing the type of processor (x86, arm).
 #     :ARCH <var>: the ouput variable containing the processor architecture for TYPE (16, 32 or 64).
-#     :OS <var>: the ouput variable containing the operating system name (linux, macosx).
+#     :OS <var>: the ouput variable containing the operating system name (linux, macos).
 #     :ABI <var>: the ouput variable containing the C++ ABI used (98 or 11).
 #
 #     .. admonition:: Constraints
