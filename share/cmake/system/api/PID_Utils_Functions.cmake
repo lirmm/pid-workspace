@@ -1963,7 +1963,7 @@ function(convert_Library_Path_To_Default_System_Library_Link RESULTING_LINK libr
   elseif(UNIX)
     string(REGEX REPLACE "^(.+)\\.(so(\\.[0-9]+)*|l?a)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
   else()
-    string(REGEX REPLACE "^(.+)\\.(dll(\\.[0-9]+)*|l?a)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+    string(REGEX REPLACE "^(.+)\\.(dll(\\.[0-9]+)*|lib)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
   endif()
 
   set(${RESULTING_LINK} "-l${LIB_NAME}" PARENT_SCOPE)
