@@ -19,8 +19,10 @@
 
 include(Configuration_Definition NO_POLICY_SCOPE)
 
-
 # returned variables
-PID_Configuration_Variables(libjpeg
-				VARIABLES VERSION 			LINK_OPTIONS			LIBRARY_DIRS 		RPATH   			INCLUDE_DIRS
-				VALUES 		JPEG_VERSION 	LIBJPEG_LINKS			LIBJPEG_LIBDIR	JPEG_LIBRARY 	JPEG_INCLUDE)
+PID_Configuration_Variables(libjasper
+		VARIABLES VERSION 							LINK_OPTIONS		LIBRARY_DIRS 	 RPATH   					INCLUDE_DIRS
+		VALUES 		JASPER_VERSION_STRING JAPSER_LINKS		JAPSER_LIBDIR	JAPSER_LIBRARIES 	JASPER_INCLUDE_DIRS)
+
+# dependencies
+PID_Configuration_Dependencies(libjasper DEPEND libjpeg)

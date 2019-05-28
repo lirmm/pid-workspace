@@ -21,26 +21,36 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 found_PID_Configuration(libjpeg FALSE)
 
-# - Find libjpeg installation
-# Try to find libraries for libjpeg on UNIX systems. The following values are defined
-#  libjpeg_FOUND        - True if libjpeg is available
-if (UNIX)
+find_path(JPEG_INCLUDE_DIR jpeglib.h)
+if(JPEG_INCLUDE_DIR AND EXISTS "${JPEG_INCLUDE_DIR}/jpeglib.h")
+  file(STRINGS "${JPEG_INCLUDE_DIR}/jpeglib.h"
+    jpeg_lib_version REGEX "^#define[\t ]+JPEG_LIB_VERSION[\t ]+.*")
 
-	find_path(libjpeg_INCLUDE_PATH jpeglib.h)
-	find_library(libjpeg_LIB jpeg)
+  if (NOT jpeg_lib_version)
+    # libjpeg-turbo sticks JPEG_LIB_VERSION in jconfig.h
+    find_path(jconfig_dir jconfig.h)
+    if (jconfig_dir)
+      file(STRINGS "${jconfig_dir}/jconfig.h"
+        jpeg_lib_version REGEX "^#define[\t ]+JPEG_LIB_VERSION[\t ]+.*")
+    endif()
+    unset(jconfig_dir)
+  endif()
 
-	set(IS_FOUND TRUE)
-	if(libjpeg_INCLUDE_PATH AND libjpeg_LIB)
-		convert_PID_Libraries_Into_System_Links(libjpeg_LIB LIBJPEG_LINKS)#getting good system links (with -l)
-    convert_PID_Libraries_Into_Library_Directories(libjpeg_LIB LIBJPEG_LIBDIR)
-	else()
-		message("[PID] ERROR : cannot find jpeg library.")
-		set(IS_FOUND FALSE)
-	endif()
+  string(REGEX REPLACE "^#define[\t ]+JPEG_LIB_VERSION[\t ]+([0-9]+).*"
+    "\\1" JPEG_VERSION "${jpeg_lib_version}")
+  unset(jpeg_lib_version)
+endif()
 
-	if(IS_FOUND)
-		found_PID_Configuration(libjpeg TRUE)
-	endif ()
+find_library(JPEG_LIB jpeg)
+set(JPEG_INCLUDE ${JPEG_INCLUDE_DIR})
+set(JPEG_LIBRARY ${JPEG_LIB})
+unset(JPEG_INCLUDE_DIR CACHE)
+unset(JPEG_LIB CACHE)
 
-	unset(IS_FOUND)
-endif ()
+if(JPEG_INCLUDE AND JPEG_LIBRARY)
+	convert_PID_Libraries_Into_System_Links(JPEG_LIBRARY LIBJPEG_LINKS)#getting good system links (with -l)
+  convert_PID_Libraries_Into_Library_Directories(JPEG_LIBRARY LIBJPEG_LIBDIR)
+	found_PID_Configuration(libjpeg TRUE)
+else()
+	message("[PID] WARNING : cannot find jpeg library.")
+endif()

@@ -1,6 +1,6 @@
 #########################################################################################
 #       This file is part of the program PID                                            #
-#       Program description : build system supporting the PID methodology              	#
+#       Program description : build system supportting the PID methodology              #
 #       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
 #       et de Microelectronique de Montpellier). All Right reserved.                    #
 #                                                                                       #
@@ -19,8 +19,9 @@
 
 include(Configuration_Definition NO_POLICY_SCOPE)
 
-
-# returned variables
-PID_Configuration_Variables(libjpeg
-				VARIABLES VERSION 			LINK_OPTIONS			LIBRARY_DIRS 		RPATH   			INCLUDE_DIRS
-				VALUES 		JPEG_VERSION 	LIBJPEG_LINKS			LIBJPEG_LIBDIR	JPEG_LIBRARY 	JPEG_INCLUDE)
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
+	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	installable_PID_Configuration(libjasper TRUE)
+else()
+	installable_PID_Configuration(libjasper FALSE)
+endif()

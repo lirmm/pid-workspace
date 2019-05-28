@@ -376,7 +376,7 @@ macro(build_Environment_Project)
     message("[PID] INFO: evaluating environment ${PROJECT_NAME} ...")
   endif()
 
-  set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)
+  set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)#reset so that new cmake run will not be an evaluation run
   detect_Current_Platform()
   evaluate_Environment_Constraints() #get the parameters passed to the environment
   evaluate_Generator()

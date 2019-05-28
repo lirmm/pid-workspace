@@ -261,7 +261,10 @@ else()#getting more specific contraint on platform
 endif()
 
 define_Build_Environment_Platform("${type_constraint}" "${arch_constraint}" "${os_constraint}" "${abi_constraint}" "${DECLARE_PID_ENV_PLATFORM_DISTRIBUTION}" "${DECLARE_PID_ENV_PLATFORM_DISTRIB_VERSION}" "${DECLARE_PID_ENV_PLATFORM_CONFIGURATION}" "${DECLARE_PID_ENV_PLATFORM_CHECK}")
-
+unset(arch_constraint)
+unset(type_constraint)
+unset(os_constraint)
+unset(abi_constraint)
 endmacro(declare_PID_Environment_Platform)
 
 #.rst:
@@ -375,7 +378,6 @@ macro(declare_PID_Environment_Solution)
   set(monoValueArgs CONFIGURE DISTRIBUTION DISTRIB_VERSION PLATFORM ARCH TYPE OS ABI)
   set(multiValueArgs DEPENDENCIES)
   cmake_parse_arguments(DECLARE_PID_ENV_SOLUTION "" "${monoValueArgs}" "${multiValueArgs}" ${ARGN})
-
   if(DECLARE_PID_ENV_SOLUTION_PLATFORM)# a complete platform is specified
     if(DECLARE_PID_ENV_SOLUTION_ARCH
       OR DECLARE_PID_ENV_SOLUTION_TYPE
@@ -409,6 +411,10 @@ macro(declare_PID_Environment_Solution)
   define_Environment_Solution_Procedure("${type_constraint}" "${arch_constraint}" "${os_constraint}" "${abi_constraint}"
                                        "${DECLARE_PID_ENV_SOLUTION_DISTRIBUTION}" "${DECLARE_PID_ENV_SOLUTION_DISTRIB_VERSION}"
                                        "${DECLARE_PID_ENV_SOLUTION_CONFIGURE}" "${DECLARE_PID_ENV_SOLUTION_DEPENDENCIES}")
+  unset(arch_constraint)
+  unset(type_constraint)
+  unset(os_constraint)
+  unset(abi_constraint)
 endmacro(declare_PID_Environment_Solution)
 
 #.rst:

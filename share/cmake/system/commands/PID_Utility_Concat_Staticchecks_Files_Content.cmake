@@ -22,35 +22,32 @@ set(OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml)
 function(cat in_file out_file)
 	file(STRINGS ${in_file} ALL_LINES) #getting global info on the package
 	foreach(line IN LISTS ALL_LINES)
-		string(REGEX MATCH "^[ \t]*<(/?results|/?errors|\\?xml|cppcheck).*$" BEGINEND_TAG ${line}) #if it is an error then report it
-		if(NOT BEGINEND_TAG)
+		if(NOT line MATCHES "^[ \t]*<(/?results|/?errors|\\?xml|cppcheck).*$")#if not a begin or end tag
 			file(APPEND ${out_file} "${line}\n")
 		endif()
 	endforeach()
-endfunction()
+endfunction(cat)
 
 function(extract_Header in_file out_file)
 	set(to_append)
 	file(STRINGS ${in_file} ALL_LINES) #getting global info on the package
 	foreach(line IN LISTS ALL_LINES)
-		string(REGEX MATCH "^[ \t]*<(/results|/errors)>.*$" END_TAG ${line}) #if it is an error then report it
-		if(NOT END_TAG)
+		if(NOT line MATCHES "^[ \t]*<(/results|/errors)>.*$")#if it is NOT and end tag
 			file(APPEND ${out_file} "${line}\n")
 		endif()
 	endforeach()
-endfunction()
+endfunction(extract_Header)
 
 # Prepare a temporary file to "cat" to:
 file(WRITE ${OUTPUT_FILE} "") #reset output
 file(GLOB LIST_OF_FILES "${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_*.xml")
-
 
 # concatenating the content of xml files
 set(FIRST_FILE TRUE)
 foreach(in_file IN LISTS LIST_OF_FILES)
 	if(FIRST_FILE)
 		extract_Header(${in_file} ${OUTPUT_FILE})
-  		set(FIRST_FILE FALSE)
+		set(FIRST_FILE FALSE)
 	else()
 		cat(${in_file} ${OUTPUT_FILE})
 	endif()
