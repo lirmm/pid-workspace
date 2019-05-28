@@ -1876,16 +1876,23 @@ endfunction(get_Library_Dirs_For_Links)
 #     :RES_EXT: the output variable containing the resulting extension to use for shared objects, depending on platform.
 #
 function(create_Shared_Lib_Extension RES_EXT platform soname)
-	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
+    extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
 	if(RES_OS STREQUAL macos)
-		set(${RES_EXT} ".dylib" PARENT_SCOPE)
+    if(soname)
+      if(soname MATCHES "^\\.[0-9].*$")
+        set(${RES_EXT} "${soname}.dylib" PARENT_SCOPE)
+      else()
+        set(${RES_EXT} ".${soname}.dylib" PARENT_SCOPE)
+      endif()
+    else()
+      set(${RES_EXT} ".dylib" PARENT_SCOPE)
+    endif()
 	elseif(RES_OS STREQUAL windows)
 		set(${RES_EXT} ".dll" PARENT_SCOPE)
 	else()# Linux or any other standard UNIX system
 		if(soname)
-			string(REGEX MATCH "^\\.[0-9].*$" MATCHED ${soname})
-			if(MATCHED)#MATCH: the expression start with a dot
-				set(${RES_EXT} ".so${MATCHED}" PARENT_SCOPE)
+			if(soname MATCHES "^\\.[0-9].*$")#MATCH: the soname expression start with a dot
+				set(${RES_EXT} ".so${soname}" PARENT_SCOPE)
 			else()#the expression starts with a number, simply add the dot
 				set(${RES_EXT} ".so.${soname}" PARENT_SCOPE)
 			endif()
@@ -1894,6 +1901,7 @@ function(create_Shared_Lib_Extension RES_EXT platform soname)
 		endif()
 	endif()
 endfunction(create_Shared_Lib_Extension)
+
 
 #.rst:
 #
@@ -1917,19 +1925,23 @@ endfunction(create_Shared_Lib_Extension)
 #
 function(shared_Library_Needs_Soname NEEDS_SONAME library_path platform)
   set(${NEEDS_SONAME} FALSE PARENT_SCOPE)
+  if(library_path MATCHES "^-l.*$")#OS dependency using standard library path => no need of soname extension
+    return()
+  endif()
 	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
-	if(RES_OS STREQUAL "macos" OR RES_OS STREQUAL "windows")
-    return()
+  get_filename_component(EXTENSION ${library_path} EXT)#get the longest extension of the file
+	if(RES_OS STREQUAL "macosx")
+    set(target_extension "\\.dylib")
+  elseif(RES_OS STREQUAL "windows")
+    set(target_extension "\\.dll")
+  else()
+    set(target_extension "\\.so(\\.[0-9]+)*")
   endif()
-  if(library_path MATCHES "^-l.*$")#OS dependency using standard library path
-    return()
-  endif()
-	get_filename_component(EXTENSION ${library_path} EXT)#get the longest extension of the file
-  if(EXTENSION MATCHES "^(\\.[^\\.]+)*\\.so(\\.[0-9]+)*$")#there is already a .so extension
+  if(EXTENSION MATCHES "^(\\.[^\\.]+)*${target_extension}$")#there is already a .so|.dylib|.dll extension
     # this check is here to ensure that a library name ending with a dot followed by any characters
     # will not be considered as a library extension (e.g. example libusb-1.0)
-		return()
-	endif()
+    return()
+  endif()
   set(${NEEDS_SONAME} TRUE PARENT_SCOPE)
 endfunction(shared_Library_Needs_Soname)
 
