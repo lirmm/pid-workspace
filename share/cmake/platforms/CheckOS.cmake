@@ -71,9 +71,10 @@ elseif(UNIX)
 			set(CURRENT_DISTRIBUTION "" CACHE INTERNAL "")
 			set(CURRENT_DISTRIBUTION_VERSION "" CACHE INTERNAL "")
 		endif()
-	else()# when cross compiling we cannot use distribution info
-		set(CURRENT_DISTRIBUTION "" CACHE INTERNAL "")
-		set(CURRENT_DISTRIBUTION_VERSION "" CACHE INTERNAL "")
+	else()# when cross compiling we cannot deduce distribution info
+		#but we can still use information coming from environment description
+		set(CURRENT_DISTRIBUTION "${PID_USE_DISTRIBUTION}" CACHE INTERNAL "")
+		set(CURRENT_DISTRIBUTION_VERSION "${PID_USE_DISTRIB_VERSION}" CACHE INTERNAL "")
 	endif()
 elseif(WIN32)
 	set(CURRENT_OS windows  CACHE INTERNAL "")

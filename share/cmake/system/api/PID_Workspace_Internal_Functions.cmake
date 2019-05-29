@@ -3050,6 +3050,19 @@ else()
 	message("[PID] INFO: development environment in use is the host default environment (based on ${CMAKE_CXX_COMPILER_ID} build toolchain).")
 endif()
 
+if(PID_CROSSCOMPILATION)
+	#when cross compiling all artefacts must be found in sysroot including programs
+	#those programs like compiler or interpreters that are not in sysroot must have been defined by environment in use
+  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY)
+  set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+  set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+  set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+else()
+  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+  set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
+  set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER)
+  set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE NEVER)
+endif()
 # detecting which platform is in use according to environment description
 detect_Current_Platform()
 

@@ -23,7 +23,7 @@ if(ALL_FILES)
 	foreach(a_file IN LISTS ALL_FILES)
 		if(IS_DIRECTORY ${a_file})
 			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${a_file})
-		elseif(NOT ${a_file} STREQUAL "${workspace}/pid/.gitignore")
+		elseif(NOT a_file STREQUAL "${workspace}/pid/.gitignore")
 			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${a_file})
 		endif()
 	endforeach()
@@ -168,7 +168,7 @@ else() #we need to change the environment
 										${WORKSPACE_DIR}
 									WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 
-	else()
+	else()#no tollchain file required
 		file(	COPY ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Description.cmake
 					DESTINATION ${WORKSPACE_DIR}/pid)
 

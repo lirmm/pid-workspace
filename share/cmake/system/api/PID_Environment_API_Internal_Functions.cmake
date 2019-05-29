@@ -1653,12 +1653,6 @@ function(generate_Environment_Toolchain_File index)
   endif()
 
   if(${PROJECT_NAME}_CROSSCOMPILATION)
-    # when crosscompiling do not search from programis is sysroot but search for other artefacts
-    file(APPEND ${description_file} "set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER CACHE INTERNAL \"\" FORCE)\n")
-    file(APPEND ${description_file} "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY CACHE INTERNAL \"\" FORCE)\n")
-    file(APPEND ${description_file} "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY CACHE INTERNAL \"\" FORCE)\n")
-    file(APPEND ${description_file} "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY CACHE INTERNAL \"\" FORCE)\n")
-
     if(NOT CMAKE_VERSION VERSION_LESS 3.6)#CMAKE_TRY_COMPILE_TARGET_TYPE available since version 3.6 of CMake
       # avoid problem with try_compile when cross compiling
       file(APPEND ${description_file} "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE INTERNAL \"\" FORCE)\n")
@@ -1690,6 +1684,8 @@ set(ENVIRONMENT_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION})
 set(ENVIRONMENT_CROSSCOMPILATION ${${PROJECT_NAME}_CROSSCOMPILATION})
 set(ENVIRONMENT_INSTANCE ${PROJECT_NAME})
 set(ENVIRONMENT_CI ${IN_CI_PROCESS})
+set(ENVIRONMENT_DISTRIBUTION ${${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT})
+set(ENVIRONMENT_DISTRIB_VERSION ${${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT})
 
 configure_file(${input_file} ${description_file} @ONLY)
 endfunction(generate_Environment_Description_File)
