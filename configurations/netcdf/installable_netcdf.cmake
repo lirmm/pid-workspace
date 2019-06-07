@@ -20,7 +20,10 @@
 include(Configuration_Definition NO_POLICY_SCOPE)
 
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
-	OR CURRENT_DISTRIBUTION STREQUAL debian)
+	OR CURRENT_DISTRIBUTION STREQUAL debian
+	OR CURRENT_DISTRIBUTION STREQUAL arch
+	OR CURRENT_DISTRIBUTION STREQUAL antergos
+	OR CURRENT_DISTRIBUTION STREQUAL manjaro)
 	installable_PID_Configuration(netcdf TRUE)
 else()
 	installable_PID_Configuration(netcdf FALSE)
