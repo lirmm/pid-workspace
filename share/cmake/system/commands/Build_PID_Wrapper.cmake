@@ -103,7 +103,7 @@ if(${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS) #check that the target version exi
   endif()
 else()
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
-  message(FATAL_ERROR "[PID] CRITICAL ERROR : wrapper of ${TARGET_EXTERNAL_PACKAGE} does not define any version !!! Build aborted ...")
+  message(FATAL_ERROR "[PID] CRITICAL ERROR : wrapper of ${TARGET_EXTERNAL_PACKAGE} does not define any version (no version subfolder found in src folder of the wrapper, each name of version folder following the pattern major.minor.patch) !!! Build aborted ...")
   return()
 endif()
 
