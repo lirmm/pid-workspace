@@ -52,7 +52,8 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 ###############################################################
 # 1) checking constraints on platform configuration DEBUG mode
 foreach(config IN LISTS ${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS_DEBUG)#if empty no configuration for this platform is supposed to be necessary
-	check_System_Configuration_With_Arguments(RESULT_OK BINARY_ARGS ${config} ${PACKAGE_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS_DEBUG)
+	parse_Configuration_Arguments_From_Binaries(args_as_list ${PACKAGE_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS_DEBUG)
+  check_System_Configuration_With_Arguments(RESULT_OK BINARY_ARGS ${config} args_as_list)
 	if(NOT RESULT_OK)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : Cannot satisfy platform configuration constraint ${config}. Please contact the administrator of package ${PACKAGE_NAME}.")
@@ -62,7 +63,8 @@ endforeach()
 
 # 2) checking constraints on platform configuration RELEASE mode
 foreach(config IN LISTS ${PACKAGE_NAME}_PLATFORM_CONFIGURATIONS)#if empty no configuration for this platform is supposed to be necessary
-	check_System_Configuration_With_Arguments(RESULT_OK BINARY_ARGS ${config} ${PACKAGE_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS)
+	parse_Configuration_Arguments_From_Binaries(args_as_list ${PACKAGE_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS)
+  check_System_Configuration_With_Arguments(RESULT_OK BINARY_ARGS ${config} args_as_list)
 	if(NOT RESULT_OK)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : Cannot satisfy platform configuration constraint ${config}. Please contact the administrator of package ${PACKAGE_NAME}.")

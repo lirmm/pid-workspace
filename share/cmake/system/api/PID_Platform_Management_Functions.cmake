@@ -317,7 +317,7 @@ endfunction(is_Compatible_With_Current_ABI)
 # .. ifmode:: internal
 #
 #  .. |parse_System_Check_Constraints| replace:: ``parse_System_Check_Constraints``
-#  .. _parse_Configuration_Constraints:
+#  .. _parse_System_Check_Constraints:
 #
 #  parse_System_Check_Constraints
 #  -------------------------------
@@ -335,25 +335,18 @@ endfunction(is_Compatible_With_Current_ABI)
 function(parse_System_Check_Constraints NAME ARGS constraint)
   string(REPLACE " " "" constraint ${constraint})#remove the spaces if any
   string(REPLACE "\t" "" constraint ${constraint})#remove the tabulations if any
-  set(result)
   if(constraint MATCHES "^([^[]+)\\[([^]]+)\\]$")#it matches !! => there are arguments passed to the configuration
     set(THE_NAME ${CMAKE_MATCH_1})
     set(THE_ARGS ${CMAKE_MATCH_2})
     set(${ARGS} PARENT_SCOPE)
     set(${NAME} PARENT_SCOPE)
     if(NOT THE_ARGS)
-      return()
+      return()#this is a ill formed description of a system check
     endif()
     string(REPLACE ":" ";" ARGS_LIST "${THE_ARGS}")
-    foreach(arg IN LISTS ARGS_LIST)
-      string(REGEX REPLACE "^([^=]+)=(.+)$" "\\1;\\2" ARG_VAL "${arg}")#argument format :  arg_name=first,second,third OR arg_name=val
-      if(ARG_VAL STREQUAL arg)#no match => ill formed argument
-        return()
-      endif()
-      list(APPEND result ${ARG_VAL})
-    endforeach()
-      set(${ARGS} ${result} PARENT_SCOPE)
-      set(${NAME} ${THE_NAME} PARENT_SCOPE)
+    parse_Configuration_Arguments_From_Binaries(result ARGS_LIST)#here parsing is the same as from binary package use files
+    set(${ARGS} ${result} PARENT_SCOPE)
+    set(${NAME} ${THE_NAME} PARENT_SCOPE)
   else()#this is a configuration constraint without arguments
     set(${ARGS} PARENT_SCOPE)
     set(${NAME} ${constraint} PARENT_SCOPE)
@@ -449,7 +442,7 @@ endfunction(generate_Configuration_Constraints)
 #
 #   .. command:: check_System_Configuration(RESULT NAME CONSTRAINTS config)
 #
-#    Check whether the given configuration constraint (= configruation name + arguments) conforms to target platform.
+#    Check whether the given configuration constraint (= configruation name + arguments) conforms to target platform. This function is used in source scripts.
 #
 #     :config: the configuration expression (may contain arguments).
 #
@@ -475,6 +468,35 @@ function(check_System_Configuration RESULT NAME CONSTRAINTS config)
   generate_Configuration_Parameters(LIST_OF_CONSTRAINTS ${CONFIG_NAME} "${BINARY_CONSTRAINTS}")
   set(${CONSTRAINTS} ${LIST_OF_CONSTRAINTS} PARENT_SCOPE)
 endfunction(check_System_Configuration)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |parse_Configuration_Arguments_From_Binaries| replace:: ``parse_Configuration_Arguments_From_Binaries``
+#  .. _parse_Configuration_Arguments_From_Binaries:
+#
+#  parse_Configuration_Arguments_From_Binaries
+#  -------------------------------------------
+#
+#   .. command:: parse_Configuration_Arguments_From_Binaries(RESULT_VARIABLE config_args_var)
+#
+#    Parse the configruation arguments when they come from the use file of a binary package
+#
+#     :config_args_var: the list of arguments coming from a native packag euse file. They the pattern variable=value with list value separated by ,.
+#
+#     :RESULT_VARIABLE: the output variable that contains the list of parsed arguments. Elements come two by two in the list, first being the variable name and the second being the value (unchanged from input).
+#
+function(parse_Configuration_Arguments_From_Binaries RESULT_VARIABLE config_args_var)
+set(result)
+foreach(arg IN LISTS ${config_args_var})
+  if(arg MATCHES "^([^=]+)=(.+)$")
+    list(APPEND result ${CMAKE_MATCH_1} ${CMAKE_MATCH_2})#simply append both arguments
+  endif()
+endforeach()
+set(${RESULT_VARIABLE} ${result} PARENT_SCOPE)
+endfunction(parse_Configuration_Arguments_From_Binaries)
 
 #.rst:
 #

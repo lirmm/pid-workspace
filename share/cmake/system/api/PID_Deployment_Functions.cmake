@@ -191,7 +191,8 @@ function(resolve_Package_Dependencies package mode first_time)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 ################## management of configuration : for both external and native packages ##################
 foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}) ## all configuration constraints must be satisfied
-  check_System_Configuration_With_Arguments(SYSCHECK_RESULT BINARY_CONTRAINTS ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+  parse_Configuration_Arguments_From_Binaries(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+  check_System_Configuration_With_Arguments(SYSCHECK_RESULT BINARY_CONTRAINTS ${config} args_as_list)
   if(NOT SYSCHECK_RESULT)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to resolve configuration ${config} required by package ${package}.")
@@ -2809,7 +2810,8 @@ endif()
 
 # 2) checking constraints on configuration
 foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this platform is supposed to be necessary
-  check_System_Configuration_With_Arguments(RESULT_OK BINARY_CONSTRAINTS ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+  parse_Configuration_Arguments_From_Binaries(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+  check_System_Configuration_With_Arguments(RESULT_OK BINARY_CONSTRAINTS ${config} args_as_list)
   if(RESULT_OK)
     message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
   else()
