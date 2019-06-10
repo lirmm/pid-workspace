@@ -52,7 +52,7 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 #
 function(reconfigure_Wrapper_Build package)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
+execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER})
 endfunction(reconfigure_Wrapper_Build)
 
 #.rst:

@@ -448,18 +448,20 @@ elseif(DIR_NAME STREQUAL "build")
 	endif()
 
 	if(NOT EXISTS ${CMAKE_BINARY_DIR}/debug OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory debug WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+		file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
 	endif()
 	if(NOT EXISTS ${CMAKE_BINARY_DIR}/release OR NOT IS_DIRECTORY ${CMAKE_BINARY_DIR}/release)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E  make_directory release WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+		file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/release)
 	endif()
 
 	#getting global options (those set by the user)
 	set_Mode_Specific_Options_From_Global()
 
 	#calling cmake for each build mode (continue package configuration for Release and Debug Modes
-	execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
-	execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
+	execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR}
+									WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
+	execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR}
+									WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
 
 	#now getting options specific to debug and release modes
 	set_Global_Options_From_Mode_Specific()

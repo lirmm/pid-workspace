@@ -2484,7 +2484,8 @@ function(build_CMake_External_Project)
                             -C ${WORKSPACE_DIR}/pid/Workspace_Build_Info.cmake
                             ${COMMAND_ARGS_AS_LIST}
                             ..
-    WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
+    WORKING_DIRECTORY ${project_build_dir}
+    ${OUTPUT_MODE}
     RESULT_VARIABLE result)
   if(NOT result EQUAL 0)#error at configuration time
     message("[PID] ERROR : cannot configure CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")

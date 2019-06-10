@@ -69,8 +69,10 @@ if(NOT IS_INITIALIZED)#repository must be initialized first
 		set(${SUCCESS} FALSE PARENT_SCOPE)
 		return()
 	endif()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/package ${WORKSPACE_DIR}/sites/packages/${package})#create the folder containing the site from the pattern folder
-	set(PACKAGE_NAME ${package})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/package ${WORKSPACE_DIR}/sites/packages/${package}
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)#create the folder containing the site from the pattern folder
+
+  set(PACKAGE_NAME ${package})
 	set(PACKAGE_PROJECT_URL ${package_url})
 	set(PACKAGE_SITE_URL ${site_url})
 	configure_file(${WORKSPACE_DIR}/share/patterns/static_sites/CMakeLists.txt.in ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt @ONLY)#adding the cmake project file to the static site project
@@ -165,11 +167,15 @@ endfunction(static_Site_Project_Exists)
 #
 function (build_Package_Static_Site package framework)
 if(framework)
-	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/frameworks/${framework} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
-	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/frameworks/${framework}
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 else()
-	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/packages/${package} WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
-	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
+	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/packages/${package}
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
+	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
 endif()
 endfunction(build_Package_Static_Site)
 
@@ -260,7 +266,8 @@ function(check_Framework_Exists CHECK_OK framework)
 	else()
 		framework_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${framework})
 		if(FOLDER_EXISTS)#generate the reference file on demand
-			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 			framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
 			if(REF_EXIST)
 				include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)
@@ -303,7 +310,8 @@ function(load_Framework LOADED framework)
 		message("[PID] INFO: updating framework ${framework} (this may take a long time)")
 		update_Framework_Repository(${framework}) #update the repository to be sure to work on last version
 		if(NOT REF_EXIST) #if reference file does not exist we use the project present in the workspace. This way we may force it to generate references
-			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 			framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
 			if(REF_EXIST)
 				include(${WORKSPACE_DIR}/share/cmake/references/ReferFramework${framework}.cmake)

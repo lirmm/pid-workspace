@@ -874,7 +874,11 @@ function(build_And_Install_Source DEPLOYED package version branch run_tests)
     # Configure the project twice to properly set then use all workspace variables (e.g. generator)
     foreach(_ RANGE 1)
         execute_process(
-            COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=${TESTS_ARE_USED} -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF -D ADDITIONNAL_DEBUG_INFO:BOOL=${ADDITIONNAL_DEBUG_INFO} ..
+            COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D BUILD_RELEASE_ONLY:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF
+            -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF -D BUILD_AND_RUN_TESTS:BOOL=${TESTS_ARE_USED}
+            -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF
+            -D ADDITIONNAL_DEBUG_INFO:BOOL=${ADDITIONNAL_DEBUG_INFO}
+            ..
             WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
             RESULT_VARIABLE CONFIG_RES
         )
@@ -1759,11 +1763,13 @@ endif()
 
 execute_process(
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${target_install_folder}
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   ${output_mode_rel}
 )
 if(NOT MISSING_DEBUG_VERSION)  #no debug archive to manage
   execute_process(
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${target_install_folder}
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     ${output_mode_deb}
   )
 endif()
@@ -1772,11 +1778,13 @@ if (NOT EXISTS ${target_install_folder}/${version}/share/Use${package}-${version
 	#try again
   execute_process(
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${target_install_folder}
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     ${output_mode_rel}
   )
   if(NOT MISSING_DEBUG_VERSION)  #no debug archive to manage
     execute_process(
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${target_install_folder}
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
       ${output_mode_deb}
     )
   endif()
@@ -2203,7 +2211,7 @@ set(version ${${package}_VERSION_STRING})
 get_Platform_Variables(BASENAME platform_str)
 set(path_to_install_dir ${WORKSPACE_DIR}/external/${platform_str}/${package}/${version})
 if(EXISTS ${path_to_install_dir} AND IS_DIRECTORY ${path_to_install_dir})
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory  ${path_to_install_dir}) #delete the external package version folder
+  file(REMOVE_RECURSE ${path_to_install_dir}) #delete the external package version folder
 endif()
 endfunction(uninstall_External_Package)
 
@@ -2605,9 +2613,7 @@ set(FOLDER_BINARY "")
 generate_Binary_Package_Name(${package} ${version} ${platform_str} Release FILE_BINARY FOLDER_BINARY)
 set(download_url ${${package}_REFERENCE_${version}_${platform}_URL})#mechanism: "platform" in the name of download url variable contains the instance extension, if any
 set(FOLDER_BINARY ${${package}_REFERENCE_${version}_${platform}_FOLDER})#mechanism: "platform" in the name of archive folder variable contains the instance extension, if any
-execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory release
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_QUIET OUTPUT_QUIET)
+file(MAKE_DIRECTORY  ${CMAKE_BINARY_DIR}/share/release)
 file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
@@ -2623,9 +2629,7 @@ if(EXISTS ${package}_REFERENCE_${version}_${platform}_URL_DEBUG)
 	generate_Binary_Package_Name(${package} ${version} ${platform_str} Debug FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
 	set(download_url_dbg ${${package}_REFERENCE_${version}_${platform}_URL_DEBUG})#mechanism: "platform" in the name of download url variable contains the instance extension, if any
 	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${version}_${platform}_FOLDER_DEBUG})#mechanism: "platform" in the name of archive folder variable contains the instance extension, if any
-	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory debug
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
-			ERROR_QUIET OUTPUT_QUIET)
+  file(MAKE_DIRECTORY  ${CMAKE_BINARY_DIR}/share/debug)
 	file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
 	list(GET res-dbg 0 numeric_error_dbg)
 	list(GET res-dbg 1 status_dbg)
@@ -2683,11 +2687,13 @@ set(error_res_debug "")
 if(EXISTS download_url_dbg)
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${target_install_folder}/
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     ERROR_VARIABLE error_res_debug OUTPUT_QUIET)
 endif()
 
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${target_install_folder}/
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	ERROR_VARIABLE error_res OUTPUT_QUIET)
 
 if (error_res OR error_res_debug)
@@ -2697,14 +2703,9 @@ if (error_res OR error_res_debug)
 endif()
 # 4) removing generated artifacts
 if(EXISTS download_url_dbg)
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/debug
-		ERROR_QUIET OUTPUT_QUIET)
+  file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/share/debug)
 endif()
-
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/share/release
-	ERROR_QUIET OUTPUT_QUIET)
+file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/share/release)
 
 set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_External_Package)

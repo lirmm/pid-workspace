@@ -50,16 +50,17 @@ endif()
 
 #clean them first
 foreach(package IN LISTS LIST_OF_TARGETS)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} clean)
+	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} clean WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
 endforeach()
 #then build them
 foreach(package IN LISTS LIST_OF_TARGETS)
 	target_Options_Passed_Via_Environment(use_env)
 	if(${use_env})
 		SET(ENV{force} true)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build)
+		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
 	else()
-		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} build force=true)
+		#TODO pass the force option as an environment variable to be compatible with any Make program
+		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build force=true WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
 	endif()
 endforeach()
 

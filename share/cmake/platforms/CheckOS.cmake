@@ -46,7 +46,8 @@ elseif(UNIX)
 	endif()
 	# now check for distribution (shoud not influence contraints but only the way to install required constraints)
 	if(NOT PID_CROSSCOMPILATION)
-		execute_process(COMMAND lsb_release -i OUTPUT_VARIABLE DISTRIB_STR RESULT_VARIABLE lsb_res ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID
+		execute_process(COMMAND lsb_release -i
+										OUTPUT_VARIABLE DISTRIB_STR RESULT_VARIABLE lsb_res ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID
 		if(NOT lsb_res EQUAL 0)
 			# lsb_release is not available
 			# checking for archlinux
@@ -59,7 +60,8 @@ elseif(UNIX)
 		if(NOT RES STREQUAL "${DISTRIB_STR}")#match
 			string(TOLOWER "${RES}" DISTRIB_ID)
 			set(CURRENT_DISTRIBUTION "${DISTRIB_ID}" CACHE INTERNAL "")
-			execute_process(COMMAND lsb_release -r OUTPUT_VARIABLE VERSION_STR ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID
+			execute_process(COMMAND lsb_release -r
+											OUTPUT_VARIABLE VERSION_STR ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID
 			string(REGEX REPLACE "^[^:]+:[ \t\r]*([\\.0-9]+)[ \t\r\n]*$" "\\1" RES "${VERSION_STR}")
 			if(NOT RES STREQUAL "${VERSION_STR}")#match
 				string(TOLOWER "${RES}" VERSION_NUMBER)

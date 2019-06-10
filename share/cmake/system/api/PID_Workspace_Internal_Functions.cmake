@@ -1223,7 +1223,9 @@ endfunction(print_Environment_Info)
 #
 function(create_PID_Environment environment author institution license)
 	#copying the pattern folder into the package folder and renaming it
-	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/environments/environment ${WORKSPACE_DIR}/environments/${environment} OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/environments/environment ${WORKSPACE_DIR}/environments/${environment}
+									WORKING_DIRECTORY ${WORKSPACE_DIR}/pid
+									OUTPUT_QUIET ERROR_QUIET)
 
 	#setting variables
 	set(ENVIRONMENT_NAME ${environment})
@@ -1276,7 +1278,9 @@ endfunction(create_PID_Environment)
 #
 function(create_PID_Wrapper wrapper author institution license)
 #copying the pattern folder into the package folder and renaming it
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/wrappers/package ${WORKSPACE_DIR}/wrappers/${wrapper} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/wrappers/package ${WORKSPACE_DIR}/wrappers/${wrapper}
+								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid
+								OUTPUT_QUIET ERROR_QUIET)
 
 #setting variables
 set(WRAPPER_NAME ${wrapper})
@@ -1331,7 +1335,9 @@ endfunction(create_PID_Wrapper)
 #
 function(create_PID_Framework framework author institution license site)
 #copying the pattern folder into the package folder and renaming it
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/frameworks/framework ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/frameworks/framework ${WORKSPACE_DIR}/sites/frameworks/${framework}
+								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid
+								OUTPUT_QUIET ERROR_QUIET)
 
 #setting variables
 set(FRAMEWORK_NAME ${framework})
@@ -1389,7 +1395,9 @@ endfunction(create_PID_Framework)
 #
 function(create_PID_Package package author institution license)
 #copying the pattern folder into the package folder and renaming it
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/packages/package ${WORKSPACE_DIR}/packages/${package} OUTPUT_QUIET ERROR_QUIET)
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/packages/package ${WORKSPACE_DIR}/packages/${package}
+								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid
+								OUTPUT_QUIET ERROR_QUIET)
 
 #setting variables
 set(PACKAGE_NAME ${package})
@@ -1966,12 +1974,12 @@ set(${RESULT} TRUE PARENT_SCOPE)
 if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
 
 	if( EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version}
-	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version})
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version})
+		file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version})
 	else()
 		if( EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${package}/${version}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform_name}/${package}/${version})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${platform_name}/${package}/${version})
+			AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform_name}/${package}/${version})
+			file(REMOVE_RECURSE ${WORKSPACE_DIR}/external/${platform_name}/${package}/${version})
 		else()
 			message("[PID] ERROR : package ${package} version ${version} does not resides in workspace install directory.")
 			set(${RESULT} FALSE PARENT_SCOPE)
@@ -1979,12 +1987,12 @@ if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
 	endif()
 elseif(version MATCHES "all")#all versions targetted (including own versions and installers folder)
 	if( EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package}
-	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${platform_name}/${package})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${platform_name}/${package})
+		AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${platform_name}/${package})
+		file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${platform_name}/${package})
 	else()
 		if( EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${package}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform_name}/${package})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/external/${platform_name}/${package})
+			AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform_name}/${package})
+			file(REMOVE_RECURSE ${WORKSPACE_DIR}/external/${platform_name}/${package})
 		else()
 			message("[PID] ERROR : package ${package} is not installed in workspace.")
 			set(${RESULT} FALSE PARENT_SCOPE)
@@ -2019,7 +2027,7 @@ if(	EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package})
 	clear_PID_Package(RES ${package} all)
 endif()
 #clearing source folder
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/packages/${package})
+file(REMOVE_RECURSE ${WORKSPACE_DIR}/packages/${package})
 endfunction(remove_PID_Package)
 
 #.rst:
@@ -2045,8 +2053,7 @@ function(remove_PID_Wrapper wrapper)
 		clear_PID_Package(RES ${wrapper} all)
 	endif()
 	#clearing source folder
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/wrappers/${wrapper})
-
+	file(REMOVE_RECURSE ${WORKSPACE_DIR}/wrappers/${wrapper})
 endfunction(remove_PID_Wrapper)
 
 #.rst:
@@ -2066,7 +2073,7 @@ endfunction(remove_PID_Wrapper)
 #      :framework: the name of the framework.
 #
 function(remove_PID_Framework framework)
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/frameworks/${framework})
+file(REMOVE_RECURSE ${WORKSPACE_DIR}/sites/frameworks/${framework})
 endfunction(remove_PID_Framework)
 
 
@@ -2087,7 +2094,7 @@ endfunction(remove_PID_Framework)
 #      :environment: the name of the environment.
 #
 function(remove_PID_Environment environment)
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/environments/${environment})
+file(REMOVE_RECURSE ${WORKSPACE_DIR}/environments/${environment})
 endfunction(remove_PID_Environment)
 
 ##################################################
@@ -2112,8 +2119,8 @@ endfunction(remove_PID_Environment)
 #
 function(register_PID_Package package)
 go_To_Workspace_Master()
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} install)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build ${CMAKE_MAKE_PROGRAM} referencing)
+execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} install WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
+execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
 publish_Package_References_In_Workspace_Repository(${package})
 endfunction(register_PID_Package)
 
@@ -2135,8 +2142,7 @@ endfunction(register_PID_Package)
 #
 function(register_PID_Wrapper wrapper)
 	go_To_Workspace_Master()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper}/build ${CMAKE_MAKE_PROGRAM} install)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/wrappers/${wrapper}/build ${CMAKE_MAKE_PROGRAM} referencing)
+	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper}/build)
 	publish_Wrapper_References_In_Workspace_Repository(${wrapper})
 endfunction(register_PID_Wrapper)
 
@@ -2158,8 +2164,8 @@ endfunction(register_PID_Wrapper)
 #
 function(register_PID_Framework framework)
 go_To_Workspace_Master()
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework}/build ${CMAKE_MAKE_PROGRAM} build)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks/${framework}/build ${CMAKE_MAKE_PROGRAM} referencing)
+execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 publish_Framework_References_In_Workspace_Repository(${framework})
 endfunction(register_PID_Framework)
 
@@ -2181,7 +2187,7 @@ endfunction(register_PID_Framework)
 #
 function(register_PID_Environment environment)
 go_To_Workspace_Master()
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/environments/${environment}/build ${CMAKE_MAKE_PROGRAM} referencing)
+execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment}/build)
 publish_Environment_References_In_Workspace_Repository(${environment})
 endfunction(register_PID_Environment)
 

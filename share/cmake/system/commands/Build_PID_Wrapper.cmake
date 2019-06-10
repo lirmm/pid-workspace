@@ -225,9 +225,10 @@ if(NOT use_os_variant)# perform specific operations at the end of the install pr
 	  file(COPY ${TARGET_INSTALL_DIR}/ DESTINATION ${path_to_installer_content})
 
 	  #generate archive
+		#TODO check
 	  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_DIR}/installer ${CMAKE_COMMAND} -E tar cvf ${installer_archive_name} ${name_of_archive_folder}
 				WORKING_DIRECTORY ${TARGET_BUILD_DIR}/installer
-	    )
+	   )
 
 	  # immediate cleaning to avoid keeping unecessary data in build tree
 	  if(EXISTS ${path_to_installer_content} AND IS_DIRECTORY ${path_to_installer_content})

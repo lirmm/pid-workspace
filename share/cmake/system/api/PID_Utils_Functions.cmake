@@ -515,9 +515,7 @@ function(create_Symlink path_to_old path_to_new)
 
     if(EXISTS ${OPT_WORKING_DIR}/${path_to_new} AND IS_SYMLINK ${OPT_WORKING_DIR}/${path_to_new})
         #remove the existing symlink
-        execute_process(
-            COMMAND ${CMAKE_COMMAND} -E remove -f ${OPT_WORKING_DIR}/${path_to_new}
-        )
+        file(REMOVE ${OPT_WORKING_DIR}/${path_to_new})
     endif()
 
     #1) first create the folder containing symlinks if it does not exist
@@ -2822,7 +2820,9 @@ endfunction(package_Already_Built)
 function(test_Modified_Components package build_tool RESULT)
 set(${RESULT} FALSE PARENT_SCOPE)
 if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")#rule to check if any modification is generated only by makefiles
-  execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/packages/${package}/build/release ${build_tool} cmake_check_build_system OUTPUT_VARIABLE NEED_UPDATE)
+  execute_process(COMMAND ${build_tool} cmake_check_build_system
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build/release
+                  OUTPUT_VARIABLE NEED_UPDATE)
   if(NOT NEED_UPDATE STREQUAL "")
   	set(${RESULT} TRUE PARENT_SCOPE)
   endif()
@@ -3076,13 +3076,9 @@ endfunction(is_Binary_Package_Version_In_Development)
 function(hard_Clean_Build_Folder path_to_folder)
   file(GLOB thefiles RELATIVE ${path_to_folder} ${path_to_folder}/*)
   foreach(a_file IN LISTS thefiles)
-  if(NOT a_file STREQUAL ".gitignore")
-  	if(IS_DIRECTORY ${path_to_folder}/${a_file})
-  		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${path_to_folder}/${a_file})
-  	else()#it is a regular file or symlink
-  		execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${path_to_folder}/${a_file})
-  	endif()
-  endif()
+    if(NOT a_file STREQUAL ".gitignore")
+      file(REMOVE_RECURSE ${path_to_folder}/${a_file})
+    endif()
   endforeach()
 endfunction(hard_Clean_Build_Folder)
 
@@ -3182,7 +3178,7 @@ endfunction(hard_Clean_Package_Release)
 #
 function(reconfigure_Package_Build package)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} -DBUILD_RELEASE_ONLY:BOOL=OFF ..)
+execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_RELEASE_ONLY:BOOL=OFF .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER} )
 endfunction(reconfigure_Package_Build)
 
 #.rst:
@@ -3203,7 +3199,7 @@ endfunction(reconfigure_Package_Build)
 #
 function(reconfigure_Package_Build_Debug package)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
+execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER} )
 endfunction(reconfigure_Package_Build_Debug)
 
 #.rst:
@@ -3224,7 +3220,7 @@ endfunction(reconfigure_Package_Build_Debug)
 #
 function(reconfigure_Package_Build_Release package)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${TARGET_BUILD_FOLDER} ${CMAKE_COMMAND} ..)
+execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER} )
 endfunction(reconfigure_Package_Build_Release)
 
 #.rst:
@@ -3337,11 +3333,7 @@ set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${wrapper}/build)
 file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
 foreach(a_file IN LISTS thefiles)
 	if(NOT a_file STREQUAL ".gitignore")
-		if(IS_DIRECTORY ${TARGET_BUILD_FOLDER}/${a_file})
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TARGET_BUILD_FOLDER}/${a_file})
-		else()#it is a regular file or symlink
-			execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${TARGET_BUILD_FOLDER}/${a_file})
-		endif()
+    file(REMOVE_RECURSE ${TARGET_BUILD_FOLDER}/${a_file})
 	endif()
 endforeach()
 endfunction(hard_Clean_Wrapper)

@@ -653,7 +653,8 @@ if(distrib_version)
 endif()
 
 # 2.2 reconfigure the environment with new definitions (user and specific variables) and evalutae it againts host
-execute_process(COMMAND ${CMAKE_COMMAND} -DEVALUATION_RUN=TRUE ${list_of_defs} .. WORKING_DIRECTORY ${environment_build_folder})
+execute_process(COMMAND ${CMAKE_COMMAND} -DEVALUATION_RUN=TRUE ${list_of_defs} ..
+                WORKING_DIRECTORY ${environment_build_folder})
 
 # 1.2 import variable description file
 if(res OR NOT EXISTS ${environment_build_folder}/PID_Environment_Description.cmake)
@@ -690,13 +691,13 @@ function(evaluate_Environment EVAL_OK environment)
 parse_System_Check_Constraints(ENV_NAME ENV_ARGS ${environment}) #get environment name from environment expression (extract arguments and base name)
 set(env_build_folder ${WORKSPACE_DIR}/environments/${ENV_NAME}/build)
 #clean the build folder cache
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove CMakeCache.txt PID_Toolchain.cmake PID_Environment_Description.cmake PID_Environment_Solution_Info.cmake
-                WORKING_DIRECTORY ${env_build_folder})
+file(REMOVE ${env_build_folder}/CMakeCache.txt ${env_build_folder}/PID_Toolchain.cmake ${env_build_folder}/PID_Environment_Description.cmake ${env_build_folder}/PID_Environment_Solution_Info.cmake)
 
 #build the list of variables that will be passed to configuration process
 prepare_Environment_Arguments(LIST_OF_DEFS_ARGS ${ENV_NAME} ENV_ARGS)
 prepare_Platform_Constraints_Definitions(${ENV_NAME} LIST_OF_DEFS_PLATFORM)
-execute_process(COMMAND ${CMAKE_COMMAND} -DEVALUATION_RUN=TRUE ${LIST_OF_DEFS_ARGS} ${LIST_OF_DEFS_PLATFORM} ..  WORKING_DIRECTORY ${env_build_folder})#configure, then build
+execute_process(COMMAND ${CMAKE_COMMAND} -DEVALUATION_RUN=TRUE ${LIST_OF_DEFS_ARGS} ${LIST_OF_DEFS_PLATFORM} ..
+                WORKING_DIRECTORY ${env_build_folder})#configure, then build
 
 # 2) => it should produce a resulting solution info file => including this file locally to get all definitions then apply them to local variables (overwritting).
 # locally we manage thoses variables at configuration time. VAR_<name> is the variable for <name> argument.

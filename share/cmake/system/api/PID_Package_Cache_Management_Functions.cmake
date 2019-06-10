@@ -110,7 +110,9 @@ endmacro(manage_Parrallel_Build_Option)
 #   Generate the cache file containing build options from cache of the current project global cache.
 #
 function(set_Mode_Specific_Options_From_Global)
-	execute_process(COMMAND ${CMAKE_COMMAND} -L -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR} OUTPUT_FILE ${CMAKE_BINARY_DIR}/options.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -L -N
+                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                  OUTPUT_FILE ${CMAKE_BINARY_DIR}/options.txt)
 	#parsing option file and generating a load cache cmake script
 	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES)
 	set(CACHE_OK FALSE)
@@ -342,9 +344,9 @@ function(set_Global_Options_From_Mode_Specific)
 	endforeach()
 
 	#removing temporary files containing cache entries
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/options.txt)
+  file(REMOVE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+  file(REMOVE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+  file(REMOVE ${CMAKE_BINARY_DIR}/options.txt)
 endfunction(set_Global_Options_From_Mode_Specific)
 
 #.rst:

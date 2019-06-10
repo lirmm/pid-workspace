@@ -101,7 +101,8 @@ if(EXISTS ${CMAKE_BINARY_DIR}/to_generate)
 endif()
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/to_generate)
 
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/static ${CMAKE_BINARY_DIR}/to_generate)
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/static_sites/static ${CMAKE_BINARY_DIR}/to_generate
+								WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 #2) generating the global configuration file for package site
 if(${PROJECT_NAME}_SITE_PAGE)
@@ -209,6 +210,7 @@ if(DIR_NAME STREQUAL "build")
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
 						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Package_Site.cmake
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		COMMENT "[PID] Building package site ..."
 		VERBATIM
 	)
@@ -219,6 +221,7 @@ if(DIR_NAME STREQUAL "build")
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
 						-DSITE_BASE_URL=${STATIC_SITE_BASEURL}
 						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Serve_PID_Package_Site.cmake
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		COMMENT "[PID] Serving the static site of the package ..."
 		VERBATIM
 	)
@@ -311,6 +314,7 @@ if(DIR_NAME STREQUAL "build")
 						-DTARGET_FRAMEWORK=${PROJECT_NAME}
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
 						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Build_PID_Framework.cmake
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		COMMENT "[PID] Building framework ${PROJECT_NAME} ..."
 		VERBATIM
 	)
@@ -321,6 +325,7 @@ if(DIR_NAME STREQUAL "build")
 						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
 						-DFRAMEWORK_BASE_URL=${STATIC_SITE_BASEURL}
 						-P ${WORKSPACE_DIR}/share/cmake/system/commands/Serve_PID_Framework.cmake
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		COMMENT "[PID] Serving the static site of the framework ${PROJECT_NAME} ..."
 		VERBATIM
 	)
@@ -521,8 +526,8 @@ if(EXISTS ${CMAKE_BINARY_DIR}/to_generate)
 endif()
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/to_generate)
 
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/frameworks/static ${CMAKE_BINARY_DIR}/to_generate
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/to_generate/_data)
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/share/patterns/frameworks/static ${CMAKE_BINARY_DIR}/to_generate)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/to_generate/_data)
 
 # 2) generate the data file containing general information about the framework (generated from a CMake pattern file)
 set(FRAMEWORK_NAME ${PROJECT_NAME})
