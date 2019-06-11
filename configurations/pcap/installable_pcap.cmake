@@ -17,19 +17,10 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-execute_OS_Configuration_Command(apt update)
-execute_OS_Configuration_Command(apt-get install -y xorg openbox libx11-dev)
+include(Configuration_Definition NO_POLICY_SCOPE)
 
-if(x11_extensions)
-  foreach(x11_ext_needed IN LISTS x11_extensions)# for each extensions needed
-    string(TOLOWER ${x11_ext_needed} x11_ext_needed) # convert to lower case to match with X11_EXT_FOUND_NAMES
-    message("[PID] INFO : installing/updating configuration x11 ${x11_ext_needed} extension...")
-    if (x11_ext_needed MATCHES "xkb")
-      execute_OS_Configuration_Command(apt-get install -y libxkbfile-dev)
-    else()
-      execute_OS_Configuration_Command(apt-get install -y lib${x11_ext_needed}-dev)
-    endif()
-  endforeach()
+if(	CURRENT_DISTRIBUTION STREQUAL ubuntu)
+	installable_PID_Configuration(pcap TRUE)
 else()
-  execute_OS_Configuration_Command(apt-get install -y libxt-dev libxft-dev libxv-dev libxau-dev libxdmcp-dev libxpm-dev libxcomposite-dev libxdamage-dev libxtst-dev libxi-dev libxinerama-dev libxfixes-dev libxrender-dev libxres-dev libxrandr-dev libxxf86vm-dev libxcursor-dev libxss-dev libxmu-dev libxkbfile-dev)
+	installable_PID_Configuration(pcap FALSE)
 endif()
