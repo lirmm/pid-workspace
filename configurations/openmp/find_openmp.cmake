@@ -48,11 +48,11 @@ if(OpenMP_FOUND)
 	     list(REMOVE_DUPLICATES OpenMP_LIB_NAMES)
     endif()
 		list(APPEND OpenMP_RPATH ${OpenMP_C_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
-    if(OpenMP_LIB_NAMES)
+    if(OpenMP_RPATH)
       list(REMOVE_DUPLICATES OpenMP_RPATH)
     endif()
 		list(APPEND OpenMP_COMPILER_OPTIONS ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS})
-    if(OpenMP_LIB_NAMES)
+    if(OpenMP_COMPILER_OPTIONS)
 	     list(REMOVE_DUPLICATES OpenMP_COMPILER_OPTIONS)
     endif()
 		convert_PID_Libraries_Into_System_Links(OpenMP_RPATH OpenMP_LINKS)#getting good system links (with -l)
@@ -65,12 +65,13 @@ if(OpenMP_FOUND)
 		convert_PID_Libraries_Into_Library_Directories(OpenMP_CXX_LIBRARIES OpenMP_CXX_LIBDIRS)
 
 		#Check OpenMP less version
-		if(OpenMP_C_VERSION LESS_EQUAL OpenMP_CXX_VERSION)
-			set(OpenMP_VERSION ${OpenMP_C_VERSION})
-		else()
-			set(OpenMP_VERSION ${OpenMP_CXX_VERSION})
-		endif()
-
+    if (OpenMP_C_VERSION AND OpenMP_CXX_VERSION) # check if version is set (cmake version <3.9 is not set)
+      if(OpenMP_C_VERSION LESS_EQUAL OpenMP_CXX_VERSION)
+        set(OpenMP_VERSION ${OpenMP_C_VERSION})
+      else()
+        set(OpenMP_VERSION ${OpenMP_CXX_VERSION})
+      endif()
+    endif()
 
 	elseif(OpenMP_C_FOUND AND NOT OpenMP_CXX_FOUND)
 	# If only C is found
@@ -95,6 +96,37 @@ if(OpenMP_FOUND)
 
 		convert_PID_Libraries_Into_System_Links(OpenMP_CXX_LIBRARIES OpenMP_CXX_LINKS)#getting good system links (with -l)
 		convert_PID_Libraries_Into_Library_Directories(OpenMP_CXX_LIBRARIES OpenMP_CXX_LIBDIRS)
+
+  elseif(NOT OpenMP_C_FOUND AND NOT OpenMP_CXX_FOUND )
+  # If older version of cmake is used => OpenMP_<lang>_FOUND not exist
+    list(APPEND OpenMP_COMPILER_OPTIONS ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS})
+    if(OpenMP_COMPILER_OPTIONS)
+      list(REMOVE_DUPLICATES OpenMP_COMPILER_OPTIONS)
+    endif()
+
+    find_library(OpenMP_GOMP_LIBRARY NAMES libgomp gomp)
+    find_library(OpenMP_PTHREAD_LIBRARY NAMES libpthread pthread)
+
+    if (OpenMP_GOMP_LIBRARY)
+      set(OpenMP_GOMP_NAME "gomp")
+    endif()
+    if (OpenMP_PTHREAD_LIBRARY)
+      set(OpenMP_PTHREAD_NAME "pthread")
+    endif()
+    set(OpenMP_LIB_NAMES ${OpenMP_GOMP_NAME} ${OpenMP_PTHREAD_NAME})
+
+
+    set(OpenMP_RPATH ${OpenMP_PTHREAD_LIBRARY} ${OpenMP_GOMP_LIBRARY})
+    if(OpenMP_RPATH)
+      list(REMOVE_DUPLICATES OpenMP_RPATH)
+    endif()
+
+    convert_PID_Libraries_Into_System_Links(OpenMP_RPATH OpenMP_LINKS)#getting good system links (with -l)
+    convert_PID_Libraries_Into_Library_Directories(OpenMP_RPATH OpenMP_LIBDIRS)
+
+    unset(OpenMP_PTHREAD_NAME)
+    unset(OpenMP_GOMP_NAME)
+
 
 	else()
 		message("[PID] ERROR : cannot find OpenMP library.")
