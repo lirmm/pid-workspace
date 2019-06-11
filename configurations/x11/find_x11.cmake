@@ -82,12 +82,16 @@ if (UNIX)
 	### now searching extension libraries they may be present or not ###
 	set(X11_EXT_LIBRARIES) # start with empty list
 	set(X11_EXT_INCLUDES) # start with empty list
+	set(X11_EXT_FOUND_NAMES) # start with empty list
+
 	#Xt
 	find_path(x11_Xt_INCLUDE_PATH X11/Intrinsic.h)
 	find_library(x11_Xt_LIB Xt )
 	if(x11_Xt_LIB AND x11_Xt_INCLUDE_PATH)
 		set(X11_EXT_LIBRARIES ${x11_Xt_LIB})
 		set(X11_EXT_INCLUDES ${x11_Xt_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xt")
+
 	endif ()
 	unset(x11_Xt_LIB CACHE)#remove from cache
 	unset(x11_Xt_INCLUDE_PATH CACHE)#remove from cache
@@ -98,6 +102,7 @@ if (UNIX)
 	if(x11_Xft_LIB AND x11_Xft_INCLUDE_PATH)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xft_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xft_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xft")
 	endif ()
 	unset(x11_Xft_LIB CACHE)#remove from cache
 	unset(x11_Xft_INCLUDE_PATH CACHE)#remove from cache
@@ -108,6 +113,7 @@ if (UNIX)
 	if(x11_Xv_LIB AND x11_Xv_INCLUDE_PATH)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xv_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xv_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xv")
 	endif ()
 	unset(x11_Xv_LIB CACHE)#remove from cache
 	unset(x11_Xv_INCLUDE_PATH CACHE)#remove from cache
@@ -118,6 +124,7 @@ if (UNIX)
 	if (x11_Xau_LIB AND x11_Xau_INCLUDE_PATH)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xau_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xau_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xau")
 	endif ()
 	unset(x11_Xau_LIB CACHE)#remove from cache
 	unset(x11_Xau_INCLUDE_PATH CACHE)#remove from cache
@@ -128,6 +135,7 @@ if (UNIX)
 	if (x11_Xdmcp_INCLUDE_PATH AND x11_Xdmcp_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xdmcp_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xdmcp_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xdmcp")
 	endif ()
 	unset(x11_Xdmcp_LIB CACHE)#remove from cache
 	unset(x11_Xdmcp_INCLUDE_PATH CACHE)#remove from cache
@@ -138,6 +146,7 @@ if (UNIX)
 	if (x11_Xpm_INCLUDE_PATH AND x11_Xpm_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xpm_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xpm_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xpm")
 	else()
 		unset(x11_Xpm_LIB CACHE)#remove from cache
 	endif ()
@@ -150,6 +159,7 @@ if (UNIX)
 	if (x11_Xcomposite_INCLUDE_PATH AND x11_Xcomposite_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xcomposite_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xcomposite_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xcomposite")
 	endif ()
 	unset(x11_Xcomposite_LIB CACHE)#remove from cache
 	unset(x11_Xcomposite_INCLUDE_PATH CACHE)#remove from cache
@@ -160,6 +170,7 @@ if (UNIX)
 	if (x11_Xdamage_INCLUDE_PATH AND x11_Xdamage_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xdamage_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xdamage_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xdamage")
 	endif ()
 	unset(x11_Xdamage_LIB CACHE)#remove from cache
 	unset(x11_Xdamage_INCLUDE_PATH CACHE)#remove from cache
@@ -170,6 +181,7 @@ if (UNIX)
 	if (x11_XTest_INCLUDE_PATH AND x11_XTest_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_XTest_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_XTest_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xtst")
 	endif ()
 	unset(x11_XTest_LIB CACHE)#remove from cache
 	unset(x11_XTest_INCLUDE_PATH CACHE)#remove from cache
@@ -181,6 +193,7 @@ if (UNIX)
 	if (x11_Xinput_INCLUDE_PATH AND x11_Xinput_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xinput_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xinput_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xi")
 	endif ()
 	unset(x11_Xinput_LIB CACHE)#remove from cache
 	unset(x11_Xinput_INCLUDE_PATH CACHE)#remove from cache
@@ -191,6 +204,7 @@ if (UNIX)
 	if (x11_Xinerama_INCLUDE_PATH AND x11_Xinerama_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xinerama_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xinerama_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xinerama")
 	endif ()
 	unset(x11_Xinerama_LIB CACHE)#remove from cache
 	unset(x11_Xinerama_INCLUDE_PATH CACHE)#remove from cache
@@ -201,6 +215,7 @@ if (UNIX)
 	if (x11_Xfixes_INCLUDE_PATH AND x11_Xfixes_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xfixes_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xfixes_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xfixes")
 	endif ()
 	unset(x11_Xfixes_LIB CACHE)#remove from cache
 	unset(x11_Xfixes_INCLUDE_PATH CACHE)#remove from cache
@@ -211,6 +226,7 @@ if (UNIX)
 	if (x11_Xrender_INCLUDE_PATH AND x11_Xrender_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xrender_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xrender_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xrender")
 	endif ()
 	unset(x11_Xrender_LIB CACHE)#remove from cache
 	unset(x11_Xrender_INCLUDE_PATH CACHE)#remove from cache
@@ -222,6 +238,7 @@ if (UNIX)
 	if (x11_XRes_INCLUDE_PATH AND x11_XRes_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_XRes_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_XRes_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xres")
 	endif ()
 	unset(x11_XRes_LIB CACHE)#remove from cache
 	unset(x11_XRes_INCLUDE_PATH CACHE)#remove from cache
@@ -232,6 +249,7 @@ if (UNIX)
 	if (x11_Xrandr_INCLUDE_PATH AND x11_Xrandr_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xrandr_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xrandr_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xrandr")
 	endif ()
 	unset(x11_Xrandr_LIB CACHE)#remove from cache
 	unset(x11_Xrandr_INCLUDE_PATH CACHE)#remove from cache
@@ -242,6 +260,7 @@ if (UNIX)
 	if (x11_xf86misc_INCLUDE_PATH AND x11_Xxf86misc_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xxf86misc_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_xf86misc_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xxf86misc")
 	endif ()
 	unset(x11_Xxf86misc_LIB CACHE)#remove from cache
 	unset(x11_xf86misc_INCLUDE_PATH CACHE)#remove from cache
@@ -252,6 +271,7 @@ if (UNIX)
 	if (x11_xf86vmode_INCLUDE_PATH AND x11_Xxf86vm_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xxf86vm_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_xf86vmode_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xxf86vm")
 	endif ()
 	unset(x11_Xxf86vm_LIB CACHE)#remove from cache
 	unset(x11_xf86vmode_INCLUDE_PATH CACHE)
@@ -262,6 +282,7 @@ if (UNIX)
 	if (x11_Xcursor_INCLUDE_PATH AND x11_Xcursor_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xcursor_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xcursor_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xcursor")
 	endif ()
 	unset(x11_Xcursor_LIB CACHE)#remove from cache
 	unset(x11_Xcursor_INCLUDE_PATH CACHE)
@@ -272,9 +293,21 @@ if (UNIX)
 	if (x11_Xscreensaver_INCLUDE_PATH AND x11_Xscreensaver_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xscreensaver_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xscreensaver_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xss")
 	endif ()
 	unset(x11_Xscreensaver_LIB CACHE)#remove from cache
 	unset(x11_Xscreensaver_INCLUDE_PATH CACHE)
+
+	#Xmu
+	find_path(x11_Xmu_INCLUDE_PATH X11/Xmu/Xmu.h )
+	find_library(x11_Xmu_LIB Xmu)
+	if (x11_Xmu_INCLUDE_PATH AND x11_Xmu_LIB)
+		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xmu_LIB})
+		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xmu_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xmu")
+	endif ()
+	unset(x11_Xmu_LIB CACHE)#remove from cache
+	unset(x11_Xmu_INCLUDE_PATH CACHE)
 
 	#Xkb
 	find_path(x11_Xkb_INCLUDE_PATH X11/extensions/XKB.h )
@@ -284,27 +317,65 @@ if (UNIX)
 	if (x11_Xkb_INCLUDE_PATH AND x11_Xkbfile_INCLUDE_PATH AND x11_Xkblib_INCLUDE_PATH AND x11_Xkbfile_LIB)
 		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xkbfile_LIB})
 		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xkb_INCLUDE_PATH} ${x11_Xkbfile_INCLUDE_PATH} ${x11_Xkblib_INCLUDE_PATH})
+		list(APPEND X11_EXT_FOUND_NAMES "xkb")
 	endif ()
 	unset(x11_Xkbfile_LIB CACHE)#remove from cache
 	unset(x11_Xkblib_INCLUDE_PATH CACHE)
 	unset(x11_Xkb_INCLUDE_PATH CACHE)#remove from cache
 	unset(x11_Xkbfile_INCLUDE_PATH CACHE)
 
-	#Xmu
-	find_path(x11_Xmu_INCLUDE_PATH X11/Xmu/Xmu.h )
-	find_library(x11_Xmu_LIB Xmu)
-	if (x11_Xmu_INCLUDE_PATH AND x11_Xmu_LIB)
-		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES} ${x11_Xmu_LIB})
-		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES} ${x11_Xmu_INCLUDE_PATH})
-	endif ()
-	unset(x11_Xmu_LIB CACHE)#remove from cache
-	unset(x11_Xmu_INCLUDE_PATH CACHE)
 
+
+	if(IS_FOUND AND x11_extensions)
+		foreach(x11_ext_needed IN LISTS x11_extensions)# for each extensions needed
+			string(TOLOWER ${x11_ext_needed} x11_ext_needed) # convert to lower case to match with X11_EXT_FOUND_NAMES
+
+			list(FIND X11_EXT_FOUND_NAMES ${x11_ext_needed} INDEX) # search index of extension desired in extensions found on system
+
+			if(NOT INDEX EQUAL -1 ) #extention found
+				if(${x11_ext_needed} MATCHES "xkb")
+					# xkb specific with 3 includes path xkb,xkbfile, xkblib
+					set(x11_xkb_names "xkb" "xkbfile" "xkblib" )
+					set(INDEX_lib ${INDEX})
+					set(INDEX_include ${INDEX})
+					foreach(xkb_name IN LISTS x11_xkb_names)
+						list(GET X11_EXT_LIBRARIES ${INDEX_lib} X11_${xkb_name}_LIBRARIES)
+						list(APPEND X11_EXT_LIBRARIES_TEMP ${X11_${xkb_name}_LIBRARIES})
+						list(GET X11_EXT_INCLUDES ${INDEX_include} X11_${xkb_name}_INCLUDES)
+						list(APPEND X11_EXT_INCLUDES_TEMP ${X11_${xkb_name}_INCLUDES})
+						math(EXPR INDEX_include "${INDEX_include}+1")#increment to use it in list(GET) for the 3 includes path
+						list(APPEND X11_EXT_NAMES ${xkb_name})
+						unset(X11_${xkb_name}_LIBRARIES CACHE)
+						unset(X11_${xkb_name}_INCLUDES CACHE)
+					endforeach()
+				else()  # General case
+					list(GET X11_EXT_LIBRARIES ${INDEX} X11_${x11_ext_needed}_LIBRARIES)
+					list(APPEND X11_EXT_LIBRARIES_TEMP ${X11_${x11_ext_needed}_LIBRARIES})
+					list(GET X11_EXT_INCLUDES ${INDEX} X11_${x11_ext_needed}_INCLUDES)
+					list(APPEND X11_EXT_INCLUDES_TEMP ${X11_${x11_ext_needed}_INCLUDES})
+					list(APPEND X11_EXT_NAMES ${x11_ext_needed})
+					unset(X11_${x11_ext_needed}_LIBRARIES CACHE)
+					unset(X11_${x11_ext_needed}_INCLUDES CACHE)
+				endif()
+
+			else() #extention not found
+				message("[PID] ERROR : when finding x11 framework, cannot find ${x11_ext_needed} extension library.")
+				list(APPEND X11_EXT_MISSING ${x11_ext_needed})
+				found_PID_Configuration(x11 FALSE)
+			endif()
+
+		endforeach()
+		set(X11_EXT_LIBRARIES ${X11_EXT_LIBRARIES_TEMP})
+		set(X11_EXT_INCLUDES ${X11_EXT_INCLUDES_TEMP})
+		# unset localy variable used for extensions
+		unset(X11_EXT_LIBRARIES_TEMP CACHE)
+		unset(X11_EXT_INCLUDES_TEMP CACHE)
+	endif()
 
 	if(IS_FOUND)
 		convert_PID_Libraries_Into_System_Links(X11_EXT_LIBRARIES X11_EXT_LINKS)#getting good system links (with -l)
 		convert_PID_Libraries_Into_Library_Directories(X11_EXT_LIBRARIES X11_EXT_LIBDIR)
-	endif ()
+	endif()
 
 	# variable to select extension libraries
 	unset(IS_FOUND)
