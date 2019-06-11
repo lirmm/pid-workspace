@@ -19,8 +19,9 @@
 
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian)
-	execute_OS_Configuration_Command(apt-get install -y libnetcdf-dev)
-elseif(	CURRENT_DISTRIBUTION STREQUAL arch 
+	execute_OS_Configuration_Command(apt update)
+	execute_OS_Configuration_Command(apt install -y libnetcdf-dev)
+elseif(	CURRENT_DISTRIBUTION STREQUAL arch
         OR CURRENT_DISTRIBUTION STREQUAL antergos
         OR CURRENT_DISTRIBUTION STREQUAL manjaro)
 	execute_OS_Configuration_Command(pacman -S netcdf --noconfirm)
