@@ -1891,6 +1891,8 @@ endif()
 
 if(NOT PID_CROSSCOMPILATION)
 	set(PROJECT_RUN_TESTS TRUE CACHE INTERNAL "")
+elseif(BUILD_AND_RUN_TESTS)
+  message("[PID] INFO : cannot run tests because project is currently compiled for another target than host !")
 endif()
 
 if(RUN_PID_TEST_PRIVILEGED)

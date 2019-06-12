@@ -313,7 +313,6 @@ elseif(DIR_NAME STREQUAL "build")
 		VERBATIM
 	)
 
-
 	# site target (generation of a static site documenting the project)
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} site
@@ -330,20 +329,20 @@ elseif(DIR_NAME STREQUAL "build")
 				COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
 				VERBATIM
 			)
+			if(BUILD_COVERAGE_REPORT)#coverage requires tests to be run in debug mode
+				add_custom_target(coverage
+					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES}${CMAKE_MAKE_PROGRAM} coverage
+					COMMENT "[PID] Generating coverage report for tests of ${PROJECT_NAME} ..."
+					VERBATIM
+				)
+				add_dependencies(site coverage) #when the site is built with such options activated it means that the coverage report must be built first
+			endif()
 		else()
 			add_custom_target(test
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
 				VERBATIM
 			)
-		endif()
-		if(BUILD_COVERAGE_REPORT)
-			add_custom_target(coverage
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES}${CMAKE_MAKE_PROGRAM} coverage
-				COMMENT "[PID] Generating coverage report for tests of ${PROJECT_NAME} ..."
-				VERBATIM
-			)
-			add_dependencies(site coverage)
 		endif()
 	endif()
 
