@@ -27,8 +27,13 @@ found_PID_Configuration(doubleconversion FALSE)
 #  DOUBLECONVERSION_LIBRARIES    - link against these to use doubleconversion library
 if (UNIX)
 
-	find_path(DOUBLECONVERSION_INCLUDE_PATH double-conversion.h PATH_SUFFIXES double-conversion)
-	find_library(DOUBLECONVERSION_LIB NAMES double-conversion libdouble-conversion)
+	find_path(DOUBLECONVERSION_INCLUDE_DIR double-conversion.h PATH_SUFFIXES double-conversion)
+	find_library(DOUBLECONVERSION_LIBRARY NAMES double-conversion libdouble-conversion)
+
+	set(DOUBLECONVERSION_INCLUDE_PATH ${DOUBLECONVERSION_INCLUDE_DIR})
+	set(DOUBLECONVERSION_LIB ${DOUBLECONVERSION_LIBRARY})
+	unset(DOUBLECONVERSION_INCLUDE_DIR CACHE)
+	unset(DOUBLECONVERSION_LIBRARY CACHE)
 
 	if(DOUBLECONVERSION_INCLUDE_PATH AND DOUBLECONVERSION_LIB)
 

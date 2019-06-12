@@ -27,21 +27,20 @@ found_PID_Configuration(zlib FALSE)
 #  zlib_LIBRARIES    - link against these to use zlib library
 if (UNIX)
 
-	find_path(zlib_INCLUDE_PATH zlib.h)
-	find_library(zlib_LIB z)
+	find_path(zlib_INCLUDE_DIR zlib.h)
+	find_library(zlib_LIBRARY z)
 
-	set(IS_FOUND TRUE)
+	set(zlib_INCLUDE_PATH ${zlib_INCLUDE_DIR})
+	set(zlib_LIB ${zlib_LIBRARY})
+	unset(zlib_INCLUDE_DIR CACHE)
+	unset(zlib_LIBRARY CACHE)
+
 	if(zlib_INCLUDE_PATH AND zlib_LIB)
 		convert_PID_Libraries_Into_System_Links(zlib_LIB ZLIB_LINKS)#getting good system links (with -l)
 		convert_PID_Libraries_Into_Library_Directories(zlib_LIB ZLIB_LIBDIRS)
+
+		found_PID_Configuration(zlib TRUE)
 	else()
 		message("[PID] ERROR : cannot find zlib library.")
-		set(IS_FOUND FALSE)
 	endif()
-
-	if(IS_FOUND)
-		found_PID_Configuration(zlib TRUE)
-	endif ()
-
-	unset(IS_FOUND)
 endif ()

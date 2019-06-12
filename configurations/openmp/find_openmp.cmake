@@ -104,8 +104,13 @@ if(OpenMP_FOUND)
       list(REMOVE_DUPLICATES OpenMP_COMPILER_OPTIONS)
     endif()
 
-    find_library(OpenMP_GOMP_LIBRARY NAMES libgomp gomp)
-    find_library(OpenMP_PTHREAD_LIBRARY NAMES libpthread pthread)
+    find_library(OpenMP_GOMP_LIB NAMES libgomp gomp)
+    find_library(OpenMP_PTHREAD_LIB NAMES libpthread pthread)
+
+    set(OpenMP_GOMP_LIBRARY ${OpenMP_GOMP_LIB})
+  	set(OpenMP_PTHREAD_LIBRARY ${OpenMP_PTHREAD_LIB})
+  	unset(OpenMP_GOMP_LIB CACHE)
+  	unset(OpenMP_PTHREAD_LIB CACHE)
 
     if (OpenMP_GOMP_LIBRARY)
       set(OpenMP_GOMP_NAME "gomp")

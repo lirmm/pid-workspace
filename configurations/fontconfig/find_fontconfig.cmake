@@ -30,7 +30,7 @@ if (UNIX)
 	find_library(fontconfig_LIB fontconfig)
 	set(FONTCONFIG_INCLUDE ${fontconfig_INCLUDE_PATH})
 	set(FONTCONFIG_LIBRARY ${fontconfig_LIB})
-	#unset cache variables to avoid troubles when system configuration changes 
+	#unset cache variables to avoid troubles when system configuration changes
 	unset(fontconfig_LIB CACHE)
 	unset(fontconfig_INCLUDE_PATH CACHE)
 	if(FONTCONFIG_INCLUDE AND FONTCONFIG_LIBRARY)

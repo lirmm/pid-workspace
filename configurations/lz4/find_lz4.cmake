@@ -27,10 +27,14 @@ found_PID_Configuration(lz4 FALSE)
 #  LZ4_LIBRARIES    - link against these to use lz4 library
 if (UNIX)
 
-	find_path(LZ4_INCLUDE_PATH lz4.h)
-	find_library(LZ4_LIB NAMES lz4 liblz4)
+	find_path(LZ4_INCLUDE_DIR lz4.h)
+	find_library(LZ4_LIBRARY NAMES lz4 liblz4)
 
-	set(IS_FOUND TRUE)
+	set(LZ4_INCLUDE_PATH ${LZ4_INCLUDE_DIR})
+	set(LZ4_LIB ${LZ4_LIBRARY})
+	unset(LZ4_INCLUDE_DIR CACHE)
+	unset(LZ4_LIBRARY CACHE)
+
 	if(LZ4_INCLUDE_PATH AND LZ4_LIB)
 
 		#need to extract lz4 version in file
@@ -55,14 +59,9 @@ if (UNIX)
 
 		convert_PID_Libraries_Into_System_Links(LZ4_LIB LZ4_LINKS)#getting good system links (with -l)
 		convert_PID_Libraries_Into_Library_Directories(LZ4_LIB LZ4_LIBDIRS)
+
+		found_PID_Configuration(lz4 TRUE)
 	else()
 		message("[PID] ERROR : cannot find lz4 library.")
-		set(IS_FOUND FALSE)
 	endif()
-
-	if(IS_FOUND)
-		found_PID_Configuration(lz4 TRUE)
-	endif ()
-
-	unset(IS_FOUND)
 endif ()

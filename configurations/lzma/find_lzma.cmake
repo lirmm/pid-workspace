@@ -27,10 +27,14 @@ found_PID_Configuration(lzma FALSE)
 #  LZMA_LIBRARIES    - link against these to use lzma library
 if (UNIX)
 
-	find_path(LZMA_INCLUDE_PATH lzma.h)
-	find_library(LZMA_LIB NAMES lzma liblzma)
+	find_path(LZMA_INCLUDE_DIR lzma.h)
+	find_library(LZMA_LIBRARY NAMES lzma liblzma)
 
-	set(IS_FOUND TRUE)
+	set(LZMA_INCLUDE_PATH ${LZMA_INCLUDE_DIR})
+	set(LZMA_LIB ${LZMA_LIBRARY})
+	unset(LZMA_INCLUDE_DIR CACHE)
+	unset(LZMA_LIBRARY CACHE)
+
 	if(LZMA_INCLUDE_PATH AND LZMA_LIB)
 
 		#need to extract lzma version in file
@@ -53,17 +57,11 @@ if (UNIX)
 			set(LZMA_VERSION "NO-VERSION-FOUND")
 		endif()
 
-
 		convert_PID_Libraries_Into_System_Links(LZMA_LIB LZMA_LINKS)#getting good system links (with -l)
 		convert_PID_Libraries_Into_Library_Directories(LZMA_LIB LZMA_LIBDIRS)
+
+		found_PID_Configuration(lzma TRUE)
 	else()
 		message("[PID] ERROR : cannot find lzma library.")
-		set(IS_FOUND FALSE)
 	endif()
-
-	if(IS_FOUND)
-		found_PID_Configuration(lzma TRUE)
-	endif ()
-
-	unset(IS_FOUND)
 endif ()

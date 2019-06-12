@@ -30,12 +30,16 @@ if (UNIX)
 	find_path(PCAP_INCLUDE_PATH NAMES pcap.h PATH_SUFFIXES pcap)
 	find_library(PCAP_LIB NAMES pcap libpcap)
 
-	set(IS_FOUND TRUE)
-	if(PCAP_INCLUDE_PATH AND PCAP_LIB)
+	set(PCAP_INCLUDE_DIR ${PCAP_INCLUDE_PATH})
+	set(PCAP_LIBRARY ${PCAP_LIB})
+	unset(PCAP_INCLUDE_PATH CACHE)
+	unset(PCAP_LIB CACHE)
+
+	if(PCAP_INCLUDE_DIR AND PCAP_LIBRARY)
 
 		#need to extract pcap version in file
-		if( EXISTS "${PCAP_INCLUDE_PATH}/pcap.h")
-		  file(READ ${PCAP_INCLUDE_PATH}/pcap.h PCAP_VERSION_FILE_CONTENTS)
+		if( EXISTS "${PCAP_INCLUDE_DIR}/pcap.h")
+		  file(READ ${PCAP_INCLUDE_DIR}/pcap.h PCAP_VERSION_FILE_CONTENTS)
 		  string(REGEX MATCH "define PCAP_VERSION_MAJOR * +([0-9]+)"
 		        PCAP_VERSION_MAJOR "${PCAP_VERSION_FILE_CONTENTS}")
 		  string(REGEX REPLACE "define PCAP_VERSION_MAJOR * +([0-9]+)" "\\1"
@@ -49,16 +53,11 @@ if (UNIX)
 			set(PCAP_VERSION "NO-VERSION-FOUND")
 		endif()
 
-		convert_PID_Libraries_Into_System_Links(PCAP_LIB PCAP_LINKS)#getting good system links (with -l)
-		convert_PID_Libraries_Into_Library_Directories(PCAP_LIB PCAP_LIBDIRS)
+		convert_PID_Libraries_Into_System_Links(PCAP_LIBRARY PCAP_LINKS)#getting good system links (with -l)
+		convert_PID_Libraries_Into_Library_Directories(PCAP_LIBRARY PCAP_LIBDIRS)
+
+		found_PID_Configuration(pcap TRUE)
 	else()
 		message("[PID] ERROR : cannot find pcap library.")
-		set(IS_FOUND FALSE)
 	endif()
-
-	if(IS_FOUND)
-		found_PID_Configuration(pcap TRUE)
-	endif ()
-
-	unset(IS_FOUND)
 endif ()
