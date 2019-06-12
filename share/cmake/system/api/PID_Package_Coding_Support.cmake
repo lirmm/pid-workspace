@@ -96,6 +96,7 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 		set(coverage_cleaned "${CMAKE_BINARY_DIR}/${PROJECT_NAME}_coverage")
 		set(coverage_dir "${CMAKE_BINARY_DIR}/share/coverage_report")
 
+    message("[PID] INFO : Allowing coverage checks ...")
 		# Setup coverage target
 		add_custom_target(coverage
 
@@ -270,7 +271,8 @@ if(BUILD_STATIC_CODE_CHECKING_REPORT)
 			endif()
 		endforeach()
 	endif()
-	add_custom_command(TARGET staticchecks POST_BUILD
+  message("[PID] INFO : Allowing static code checks ...")
+  add_custom_command(TARGET staticchecks POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
 		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml
