@@ -393,7 +393,7 @@ function(declare_PID_Configuration_Constraints)
       list(LENGTH PID_CONFIGURATION_CONSTRAINTS_IN_BINARY SIZE_VARS)
       list(LENGTH PID_CONFIGURATION_CONSTRAINTS_VALUE SIZE_VALS)
       if(NOT SIZE_VARS EQUAL SIZE_VALS)
-        message("[PID] WARNING: Bad usage of function declare_PID_Configuration_Constraints, you must give the a value (the name of the variable holding the value to set) for each variable defined using IN_BINARY keyword. ")
+        message("[PID] WARNING: Bad usage of function PID_Configuration_Constraints (or declare_PID_Configuration_Constraints), you must give the a value (the name of the variable holding the value to set) for each variable defined using IN_BINARY keyword. ")
       else()
         set(${name}_IN_BINARY_CONSTRAINTS ${PID_CONFIGURATION_CONSTRAINTS_IN_BINARY} CACHE INTERNAL "")#the value of the variable is not the real value but the name of the variable
         foreach(constraint IN LISTS PID_CONFIGURATION_CONSTRAINTS_IN_BINARY)

@@ -867,8 +867,12 @@ function(prepare_Configuration_Arguments config arguments)
     list(GET argument_couples 0 name)
     list(GET argument_couples 1 value)
     list(REMOVE_AT argument_couples 0 1)#update the list of arguments in parent scope
-    string(REPLACE " " "" VAL_LIST "${value}")#remove the spaces in the string if any
-    string(REPLACE "," ";" VAL_LIST "${VAL_LIST}")#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
+    if(value AND NOT value STREQUAL \"\")#special case of an empty list (represented with \"\") must be avoided
+      string(REPLACE " " "" VAL_LIST ${value})#remove the spaces in the string if any
+      string(REPLACE "," ";" VAL_LIST ${VAL_LIST})#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
+    else()
+      set(VAL_LIST)
+    endif()
     list(FIND ${config}_REQUIRED_CONSTRAINTS ${name} INDEX)
     set(GENERATE_VAR FALSE)
     if(NOT INDEX EQUAL -1)# it is a required constraint
