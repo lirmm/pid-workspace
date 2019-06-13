@@ -239,6 +239,29 @@ endfunction(extract_Info_From_Platform)
 #
 # .. ifmode:: internal
 #
+#  .. |escape_Guillemet_From_String| replace:: ``escape_Guillemet_From_String``
+#  .. _escape_Guillemet_From_String:
+#
+#  escape_Guillemet_From_String
+#  ----------------------------
+#
+#   .. command:: escape_Guillemet_From_String(str_var)
+#
+#    Update the input string in such a way that escaped guillemets are preserved if the value of the string is evaluated
+#
+#     :str_var: the input/output string variable that may contain guillemet characters to escape.
+#
+function(escape_Guillemet_From_String str_var)
+  if(${str_var})
+    string(REPLACE "\"" "\\\"" ret_str ${${str_var}})
+    set(${str_var} ${ret_str} PARENT_SCOPE)
+  endif()
+endfunction(escape_Guillemet_From_String)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |extract_Component_And_Package_From_Dependency_String| replace:: ``extract_Component_And_Package_From_Dependency_String``
 #  .. _extract_Component_And_Package_From_Dependency_String:
 #
