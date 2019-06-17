@@ -26,22 +26,18 @@ found_PID_Configuration(fontconfig FALSE)
 #  fontconfig_FOUND        - True if fontconfig is available
 #  fontconfig_LIBRARIES    - link against these to use fontconfig library
 if (UNIX)
-
 	find_path(fontconfig_INCLUDE_PATH fontconfig/fontconfig.h)
 	find_library(fontconfig_LIB fontconfig)
-
-	set(IS_FOUND TRUE)
-	if(fontconfig_INCLUDE_PATH AND fontconfig_LIB)
-		convert_PID_Libraries_Into_System_Links(fontconfig_LIB FONTCONF_LINKS)#getting good system links (with -l)
-		convert_PID_Libraries_Into_Library_Directories(fontconfig_LIB FONTCONF_LIBDIR)
+	set(FONTCONFIG_INCLUDE ${fontconfig_INCLUDE_PATH})
+	set(FONTCONFIG_LIBRARY ${fontconfig_LIB})
+	#unset cache variables to avoid troubles when system configuration changes 
+	unset(fontconfig_LIB CACHE)
+	unset(fontconfig_INCLUDE_PATH CACHE)
+	if(FONTCONFIG_INCLUDE AND FONTCONFIG_LIBRARY)
+		convert_PID_Libraries_Into_System_Links(FONTCONFIG_LIBRARY FONTCONF_LINKS)#getting good system links (with -l)
+		convert_PID_Libraries_Into_Library_Directories(FONTCONFIG_LIBRARY FONTCONF_LIBDIR)
+		found_PID_Configuration(fontconfig TRUE)
 	else()
 		message("[PID] ERROR : cannot find fontconfig library.")
-		set(IS_FOUND FALSE)
 	endif()
-
-	if(IS_FOUND)
-		found_PID_Configuration(fontconfig TRUE)
-	endif ()
-
-	unset(IS_FOUND)
 endif ()
