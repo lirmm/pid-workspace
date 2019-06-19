@@ -22,8 +22,8 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(google_libs
-			VARIABLES LINK_OPTIONS	LIBRARY_DIRS 		RPATH   			  INCLUDE_DIRS
+			VARIABLES LINK_OPTIONS				LIBRARY_DIRS 					RPATH   			  			INCLUDE_DIRS
 			VALUES 		GOOGLE_LIBS_LINKS		GOOGLE_LIBS_LIBDIR		GOOGLE_LIBS_LIBRARIES GOOGLE_LIBS_INCLUDE_DIRS)
 
 # dependencies
-PID_Configuration_Dependencies(nccl DEPEND posix)#for thread library
+PID_Configuration_Dependencies(google_libs DEPEND posix)#for thread library

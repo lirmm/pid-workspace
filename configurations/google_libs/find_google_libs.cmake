@@ -30,6 +30,7 @@ list(APPEND GFLAGS_CHECK_INCLUDE_DIRS
 	/opt/local/var/macports/software # Mac OS X.
 	/opt/local/include
 	/usr/include)
+
 list(APPEND GFLAGS_CHECK_PATH_SUFFIXES
 	gflags/include # Windows (for C:/Program Files prefix).
 	gflags/Include ) # Windows (for C:/Program Files prefix).
@@ -49,8 +50,12 @@ find_path(GFLAGS_INCLUDE_DIR
 	PATHS ${GFLAGS_INCLUDE_DIR_HINTS}
 	${GFLAGS_CHECK_INCLUDE_DIRS}
 	PATH_SUFFIXES ${GFLAGS_CHECK_PATH_SUFFIXES})
-if (NOT GFLAGS_INCLUDE_DIR OR
-		NOT EXISTS ${GFLAGS_INCLUDE_DIR})
+
+#remove the cache variable
+set(GFLAGS_INCLUDE_DIRS ${GFLAGS_INCLUDE_DIR})
+unset(GFLAGS_INCLUDE_DIR CACHE)
+
+if (NOT GFLAGS_INCLUDE_DIRS)
 		return()
 endif ()
 
@@ -58,8 +63,12 @@ find_library(GFLAGS_LIBRARY NAMES gflags
 	PATHS ${GFLAGS_LIBRARY_DIR_HINTS}
 	${GFLAGS_CHECK_LIBRARY_DIRS}
 	PATH_SUFFIXES ${GFLAGS_CHECK_LIBRARY_SUFFIXES})
-if (NOT GFLAGS_LIBRARY OR
-		NOT EXISTS ${GFLAGS_LIBRARY})
+
+#remove the cache variable
+set(GFLAGS_LIBRARIES ${GFLAGS_LIBRARY})
+unset(GFLAGS_LIBRARY CACHE)
+
+if (NOT GFLAGS_LIBRARIES)
 		return()
 endif ()
 
@@ -72,6 +81,13 @@ else()
         PATHS ${GLOG_ROOT_DIR})
 endif()
 
+set(GLOG_INCLUDE_DIRS ${GLOG_INCLUDE_DIR})
+unset(GLOG_INCLUDE_DIR CACHE)
+
+if(NOT GLOG_INCLUDE_DIRS)
+		return()
+endif ()
+
 if(MSVC)
     find_library(GLOG_LIBRARY_RELEASE libglog_static
         PATHS ${GLOG_ROOT_DIR}
@@ -81,19 +97,30 @@ if(MSVC)
         PATHS ${GLOG_ROOT_DIR}
         PATH_SUFFIXES Debug)
 
-    set(GLOG_LIBRARY optimized ${GLOG_LIBRARY_RELEASE} debug ${GLOG_LIBRARY_DEBUG})
+		if(GLOG_LIBRARY_RELEASE)
+    	set(GLOG_LIBRARIES ${GLOG_LIBRARY_RELEASE})
+		else()
+			set(GLOG_LIBRARIES ${GLOG_LIBRARY_DEBUG})
+		endif()
+		unset(GLOG_LIBRARY_RELEASE CACHE)
+		unset(GLOG_LIBRARY_DEBUG CACHE)
+
 else()
     find_library(GLOG_LIBRARY glog
         PATHS ${GLOG_ROOT_DIR}
         PATH_SUFFIXES lib lib64)
+		set(GLOG_LIBRARIES ${GLOG_LIBRARY})
+		unset(GLOG_LIBRARY CACHE)
 endif()
 
-if(GLOG_LIBRARY AND GLOG_INCLUDE_DIR)
-  set(GOOGLE_LIBS_INCLUDE_DIRS ${GLOG_INCLUDE_DIR} ${GFLAGS_INCLUDE_DIRS})
-	unset(GLOG_INCLUDE_DIR CACHE)
-  set(GOOGLE_LIBS_LIBRARIES ${GLOG_LIBRARY} ${GFLAGS_LIBRARIES})
-	unset(GLOG_LIBRARY CACHE)
-	convert_PID_Libraries_Into_System_Links(GOOGLE_LIBS_LIBRARIES GOOGLE_LIBS_LINKS)#getting good system links (with -l)
-	convert_PID_Libraries_Into_Library_Directories(GOOGLE_LIBS_LIBRARIES GOOGLE_LIBS_LIBDIR)
-	found_PID_Configuration(google_libs TRUE)
-endif()
+
+if(NOT GLOG_LIBRARIES)
+		return()
+endif ()
+
+set(GOOGLE_LIBS_INCLUDE_DIRS ${GLOG_INCLUDE_DIRS} ${GFLAGS_INCLUDE_DIRS})
+set(GOOGLE_LIBS_LIBRARIES ${GLOG_LIBRARIES} ${GFLAGS_LIBRARIES})
+
+convert_PID_Libraries_Into_System_Links(GOOGLE_LIBS_LIBRARIES GOOGLE_LIBS_LINKS)#getting good system links (with -l)
+convert_PID_Libraries_Into_Library_Directories(GOOGLE_LIBS_LIBRARIES GOOGLE_LIBS_LIBDIR)
+found_PID_Configuration(google_libs TRUE)
