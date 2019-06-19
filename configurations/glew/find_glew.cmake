@@ -27,10 +27,14 @@ found_PID_Configuration(glew FALSE)
 #  GLEW_LIBRARIES    - link against these to use glew library
 if (UNIX)
 
-	find_path(GLEW_INCLUDE_PATH GL/glew.h)
-	find_library(GLEW_LIB NAMES glew libglew GLEW libGLEW)
+	find_path(GLEW_INCLUDE_DIR GL/glew.h)
+	find_library(GLEW_LIBRARY NAMES glew libglew GLEW libGLEW)
 
-	set(IS_FOUND TRUE)
+	set(GLEW_INCLUDE_PATH ${GLEW_INCLUDE_DIR})
+	set(GLEW_LIB ${GLEW_LIBRARY})
+	unset(GLEW_INCLUDE_DIR CACHE)
+	unset(GLEW_LIBRARY CACHE)
+
 	if(GLEW_INCLUDE_PATH AND GLEW_LIB)
 
 		#need to extract glew version in file
@@ -51,14 +55,9 @@ if (UNIX)
 
 		convert_PID_Libraries_Into_System_Links(GLEW_LIB GLEW_LINKS)#getting good system links (with -l)
 		convert_PID_Libraries_Into_Library_Directories(GLEW_LIB GLEW_LIBDIRS)
+
+		found_PID_Configuration(glew TRUE)
 	else()
 		message("[PID] ERROR : cannot find glew library.")
-		set(IS_FOUND FALSE)
 	endif()
-
-	if(IS_FOUND)
-		found_PID_Configuration(glew TRUE)
-	endif ()
-
-	unset(IS_FOUND)
 endif ()

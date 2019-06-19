@@ -23,7 +23,3 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 PID_Configuration_Variables(netcdf
 			VARIABLES VERSION					LINK_OPTIONS	LIBRARY_DIRS 		RPATH 	  		  INCLUDE_DIRS
 			VALUES 		NETCDF_VERSION	NETCDF_LINKS	NETCDF_LIBDIRS	NETCDF_LIBRARY 	NETCDF_INCLUDE_DIR)
-
-# constraints
-PID_Configuration_Constraints(netcdf	IN_BINARY version
-																			VALUE			NETCDF_VERSION)

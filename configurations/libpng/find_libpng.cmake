@@ -27,20 +27,20 @@ found_PID_Configuration(libpng FALSE)
 #  libpng_LIBRARIES    - link against these to use libpng library
 if (UNIX)
 
-	find_path(libpng_INCLUDE_PATH png.h)
-	find_library(libpng_LIB png)
+	find_path(libpng_INCLUDE_DIR png.h)
+	find_library(libpng_LIBRARY png)
 
-	set(IS_FOUND TRUE)
+	set(libpng_INCLUDE_PATH ${libpng_INCLUDE_DIR})
+	set(libpng_LIB ${libpng_LIBRARY})
+	unset(libpng_INCLUDE_DIR CACHE)
+	unset(libpng_LIBRARY CACHE)
+
 	if(libpng_INCLUDE_PATH AND libpng_LIB)
 		convert_PID_Libraries_Into_System_Links(libpng_LIB LIBJPNG_LINKS)#getting good system links (with -l)
     convert_PID_Libraries_Into_Library_Directories(libpng_LIB LIBPNG_LIBDIR)
-	else()
-		set(IS_FOUND FALSE)
-	endif()
 
-	if(IS_FOUND)
 		found_PID_Configuration(libpng TRUE)
-	endif ()
-
-	unset(IS_FOUND)
+	else()
+		message("[PID] ERROR : cannot find libpng library.")
+	endif()
 endif ()

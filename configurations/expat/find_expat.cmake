@@ -27,10 +27,14 @@ found_PID_Configuration(expat FALSE)
 #  EXPAT_LIBRARIES    - link against these to use expat library
 if (UNIX)
 
-	find_path(EXPAT_INCLUDE_PATH expat.h)
-	find_library(EXPAT_LIB NAMES expat libexpat)
+	find_path(EXPAT_INCLUDE_DIR expat.h)
+	find_library(EXPAT_LIBRARY NAMES expat libexpat)
 
-	set(IS_FOUND TRUE)
+	set(EXPAT_INCLUDE_PATH ${EXPAT_INCLUDE_DIR})
+	set(EXPAT_LIB ${EXPAT_LIBRARY})
+	unset(EXPAT_INCLUDE_DIR CACHE)
+	unset(EXPAT_LIBRARY CACHE)
+
 	if(EXPAT_INCLUDE_PATH AND EXPAT_LIB)
 
 		#need to extract expat version in file
@@ -51,14 +55,9 @@ if (UNIX)
 
 		convert_PID_Libraries_Into_System_Links(EXPAT_LIB EXPAT_LINKS)#getting good system links (with -l)
 		convert_PID_Libraries_Into_Library_Directories(EXPAT_LIB EXPAT_LIBDIRS)
+
+		found_PID_Configuration(expat TRUE)
 	else()
 		message("[PID] ERROR : cannot find expat library.")
-		set(IS_FOUND FALSE)
 	endif()
-
-	if(IS_FOUND)
-		found_PID_Configuration(expat TRUE)
-	endif ()
-
-	unset(IS_FOUND)
 endif ()

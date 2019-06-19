@@ -23,7 +23,3 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 PID_Configuration_Variables(doubleconversion
 				VARIABLES VERSION										LINK_OPTIONS							LIBRARY_DIRS 							RPATH   							INCLUDE_DIRS
 				VALUES 		DOUBLECONVERSION_VERSION	DOUBLECONVERSION_LINKS		DOUBLECONVERSION_LIBDIRS	DOUBLECONVERSION_LIB 	DOUBLECONVERSION_INCLUDE_PATH)
-
-# constraints
-PID_Configuration_Constraints(doubleconversion	IN_BINARY version
-																								VALUE			DOUBLECONVERSION_VERSION)

@@ -27,8 +27,13 @@ found_PID_Configuration(jsoncpp FALSE)
 #  JSONCPP_LIBRARIES    - link against these to use jsoncpp library
 if (UNIX)
 
-	find_path(JSONCPP_INCLUDE_PATH json/json.h PATH_SUFFIXES jsoncpp)
-	find_library(JSONCPP_LIB NAMES jsoncpp libjsoncpp)
+	find_path(JSONCPP_INCLUDE_DIR json/json.h PATH_SUFFIXES jsoncpp)
+	find_library(JSONCPP_LIBRARY NAMES jsoncpp libjsoncpp)
+
+	set(JSONCPP_INCLUDE_PATH ${JSONCPP_INCLUDE_DIR})
+	set(JSONCPP_LIB ${JSONCPP_LIBRARY})
+	unset(JSONCPP_INCLUDE_DIR CACHE)
+	unset(JSONCPP_LIBRARY CACHE)
 
 	if(JSONCPP_INCLUDE_PATH AND JSONCPP_LIB)
 		#need to extract jsoncpp version in file

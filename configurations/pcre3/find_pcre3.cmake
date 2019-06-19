@@ -26,21 +26,20 @@ found_PID_Configuration(pcre3 FALSE)
 #  pcre3_FOUND        - True if pcre3 is available
 #  pcre3_LIBRARIES    - link against these to use pcre3 library
 if (UNIX)
-	find_path(pcre3_INCLUDE_PATH pcre.h)
-	find_library(pcre3_LIB pcre)
+	find_path(pcre3_INCLUDE_DIR pcre.h)
+	find_library(pcre3_LIBRARY pcre)
 
-	set(IS_FOUND TRUE)
+	set(pcre3_INCLUDE_PATH ${pcre3_INCLUDE_DIR})
+	set(pcre3_LIB ${pcre3_LIBRARY})
+	unset(pcre3_INCLUDE_DIR CACHE)
+	unset(pcre3_LIBRARY CACHE)
+
 	if(pcre3_INCLUDE_PATH AND pcre3_LIB)
 		convert_PID_Libraries_Into_System_Links(pcre3_LIB PCRE3_LINKS)#getting good system links (with -l)
 		convert_PID_Libraries_Into_Library_Directories(pcre3_LIB PCRE3_LIBDIRS)
+
+		found_PID_Configuration(pcre3 TRUE)
 	else()
 		message("[PID] ERROR : cannot find pcre3 library.")
-		set(IS_FOUND FALSE)
 	endif()
-
-	if(IS_FOUND)
-		found_PID_Configuration(pcre3 TRUE)
-	endif ()
-
-	unset(IS_FOUND)
 endif ()

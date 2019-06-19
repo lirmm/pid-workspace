@@ -1,6 +1,6 @@
 #########################################################################################
 #       This file is part of the program PID                                            #
-#       Program description : build system supportting the PID methodology              #
+#       Program description : build system supporting the PID methodology              	#
 #       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
 #       et de Microelectronique de Montpellier). All Right reserved.                    #
 #                                                                                       #
@@ -19,28 +19,11 @@
 
 include(Configuration_Definition NO_POLICY_SCOPE)
 
-found_PID_Configuration(zlib FALSE)
+# returned variables
+PID_Configuration_Variables(flann
+				VARIABLES VERSION				LINK_OPTIONS	LIBRARY_DIRS 	RPATH  				INCLUDE_DIRS				C_LINK_OPTIONS	C_LIBRARY_DIRS 	C_RPATH  					C_INCLUDE_DIRS			CPP_LINK_OPTIONS	CPP_LIBRARY_DIRS 	CPP_RPATH  				CPP_INCLUDE_DIRS
+				VALUES 		FLANN_VERSION	FLANN_LINKS		FLANN_LIBDIRS	FLANN_LIBRARY FLANN_INCLUDE_DIR		FLANN_C_LINKS		FLANN_C_LIBDIRS	FLANN_C_LIBRARY 	FLANN_C_INCLUDE_DIR	FLANN_CPP_LINKS		FLANN_CPP_LIBDIRS	FLANN_CPP_LIBRARY FLANN_CPP_INCLUDE_DIR)
 
-# - Find zlib installation
-# Try to find libraries for zlib on UNIX systems. The following values are defined
-#  zlib_FOUND        - True if zlib is available
-#  zlib_LIBRARIES    - link against these to use zlib library
-if (UNIX)
-
-	find_path(zlib_INCLUDE_DIR zlib.h)
-	find_library(zlib_LIBRARY z)
-
-	set(zlib_INCLUDE_PATH ${zlib_INCLUDE_DIR})
-	set(zlib_LIB ${zlib_LIBRARY})
-	unset(zlib_INCLUDE_DIR CACHE)
-	unset(zlib_LIBRARY CACHE)
-
-	if(zlib_INCLUDE_PATH AND zlib_LIB)
-		convert_PID_Libraries_Into_System_Links(zlib_LIB ZLIB_LINKS)#getting good system links (with -l)
-		convert_PID_Libraries_Into_Library_Directories(zlib_LIB ZLIB_LIBDIRS)
-
-		found_PID_Configuration(zlib TRUE)
-	else()
-		message("[PID] ERROR : cannot find zlib library.")
-	endif()
-endif ()
+# constraints
+PID_Configuration_Constraints(flann	IN_BINARY version
+																		VALUE			FLANN_VERSION)
