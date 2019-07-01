@@ -1152,7 +1152,7 @@ macro(_MPI_create_imported_target LANG)
   endif()
 
   # When this is consumed for compiling CUDA, use '-Xcompiler' to wrap '-pthread'.
-  if(CMAKE_VERSION VERSION_LESS_EQUAL 3.9)
+  if(CMAKE_VERSION VERSION_LESS 3.11)
     set(_MPI_${LANG}_COMPILE_OPTIONS "${MPI_${LANG}_COMPILE_OPTIONS}")
   else()
     string(REPLACE "-pthread" "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler >-pthread"
@@ -1713,7 +1713,7 @@ foreach(LANG IN ITEMS C CXX Fortran)
     set(MPI_${LANG}_INCLUDE_PATH "${MPI_${LANG}_INCLUDE_DIRS}")
     unset(MPI_${LANG}_COMPILE_FLAGS)
     if(MPI_${LANG}_COMPILE_OPTIONS)
-      if(CMAKE_VERSION VERSION_LESS_EQUAL 3.12)
+      if(CMAKE_VERSION VERSION_LESS 3.13)
         set(MPI_${LANG}_COMPILE_OPTIONS " ")
       else()
         list(JOIN MPI_${LANG}_COMPILE_FLAGS " " MPI_${LANG}_COMPILE_OPTIONS)
