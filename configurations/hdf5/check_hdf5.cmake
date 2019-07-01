@@ -27,3 +27,6 @@ PID_Configuration_Variables(hdf5
 # constraints
 PID_Configuration_Constraints(hdf5			IN_BINARY version
 																				VALUE			HDF5_VERSION)
+
+# dependencies
+PID_Configuration_Dependencies(hdf5 DEPEND fortran)

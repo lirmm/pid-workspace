@@ -120,7 +120,6 @@ else()
   set(HDF5_LANGUAGE_BINDINGS)
   # add the extra specified components, ensuring that they are valid.
   set(FIND_HL OFF)
-  message("HDF5_FIND_COMPONENTS=${HDF5_FIND_COMPONENTS}")
   foreach(component IN LISTS HDF5_FIND_COMPONENTS)
     list(FIND HDF5_VALID_LANGUAGE_BINDINGS ${component} component_location)
     if(NOT component_location EQUAL -1)

@@ -31,8 +31,10 @@ set(path_test_hdf5 ${WORKSPACE_DIR}/configurations/hdf5/test_hdf5/build)
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${path_test_hdf5}
 								WORKING_DIRECTORY  ${WORKSPACE_DIR}/pid OUTPUT_QUIET)
 file(WRITE ${path_test_hdf5}/.gitignore "*\n")
+
+message("[PID] INFO : performing tests for HDF5 ...")
 execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/configurations/hdf5/test_hdf5/
-								WORKING_DIRECTORY ${path_test_hdf5} OUTPUT_QUIET)
+								WORKING_DIRECTORY ${path_test_hdf5})
 
 # Extract datas from hdf5i_config_vars.cmake
 set(path_hdf5_config_vars ${path_test_hdf5}/hdf5_config_vars.cmake )
@@ -43,13 +45,7 @@ else()
 endif()
 
 if(HDF5_FOUND)
-
-	list(APPEND OpenMP_COMPILER_OPTIONS ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS})
-  if(OpenMP_COMPILER_OPTIONS)
-     list(REMOVE_DUPLICATES OpenMP_COMPILER_OPTIONS)
-  endif()
 	convert_PID_Libraries_Into_System_Links(HDF5_LIBRARIES HDF5_LINKS)#getting good system links (with -l)
 	convert_PID_Libraries_Into_Library_Directories(HDF5_LIBRARIES HDF5_LIBDIRS)
-
 	found_PID_Configuration(hdf5 TRUE)
 endif()
