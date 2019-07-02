@@ -2908,7 +2908,7 @@ if(CUDA_Language_AVAILABLE)
 	file(APPEND ${file} "set(CMAKE_CUDA_STANDARD_COMPUTED_DEFAULT ${CMAKE_CUDA_STANDARD_COMPUTED_DEFAULT} CACHE INTERNAL \"\" FORCE)\n")
 endif()
 
-# Finnally defining variables related to crosscompilation
+# Finally defining variables related to crosscompilation
 file(APPEND ${file} "set(PID_CROSSCOMPILATION ${PID_CROSSCOMPILATION} CACHE INTERNAL \"\" FORCE)\n")
 if(PID_CROSSCOMPILATION) #only write these information if we are trully cross compiling
 	file(APPEND ${file} "set(CMAKE_CROSSCOMPILING \"${CMAKE_CROSSCOMPILING}\" CACHE INTERNAL \"\" FORCE)\n")
