@@ -21,20 +21,23 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 found_PID_Configuration(python FALSE)
 
-if(python_version VERSION_LESS 3.0)#python 2 required
-	if(NOT CURRENT_PYTHON VERSION_LESS python_version
-		AND CURRENT_PYTHON VERSION_LESS 3.0)#OK version match
-		set(PIP_NAME pip2)
-	else()
+if(python_version)#version argument given
+	if(CURRENT_PYTHON VERSION_LESS python_version)
 		return()
 	endif()
-else() #python 3 required
-	if(NOT CURRENT_PYTHON VERSION_LESS python_version
-		AND NOT CURRENT_PYTHON VERSION_LESS 3.0)#OK version match
-		set(PIP_NAME pip3)
-	else()
-		return()
+	if(python_version VERSION_LESS 3.0 #python 2 required
+			AND NOT CURRENT_PYTHON VERSION_LESS 3.0)# current pyton is >= 3.0
+			return()
 	endif()
+endif()
+
+convert_PID_Libraries_Into_System_Links(PYTHON_LIBRARY PYTHON_LINKS)#getting good system links (with -l)
+convert_PID_Libraries_Into_Library_Directories(PYTHON_LIBRARY PYTHON_LIB_DIRS)
+
+if(CURRENT_PYTHON VERSION_LESS 3.0)
+	set(PIP_NAME pip2)
+else()
+	set(PIP_NAME pip3)
 endif()
 
 foreach(pack IN LISTS python_packages)
@@ -46,5 +49,6 @@ foreach(pack IN LISTS python_packages)
 	endif()
 endforeach()
 
+set(BIN_PACKAGES ${python_packages})
 #now report interesting variables to make them available in configuartion user
 found_PID_Configuration(python TRUE)

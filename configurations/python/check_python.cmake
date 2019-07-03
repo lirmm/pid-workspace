@@ -21,8 +21,9 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(python
-		VARIABLES 	VERSION 			 INCLUDE_DIRS 	RPATH  			LIBRARY_DIRS  	LINK_OPTIONS
-		VALUES 			CURRENT_PYTHON PYTHON_INCS		PYTHON_LIBS	PYTHON_LIB_DIRS	PYTHON_LINKS)
+		VARIABLES 	VERSION 			 INCLUDE_DIRS 				RPATH  					LIBRARY_DIRS  	LINK_OPTIONS
+		VALUES 			CURRENT_PYTHON PYTHON_INCLUDE_DIR		PYTHON_LIBRARY	PYTHON_LIB_DIRS	PYTHON_LINKS)
 
 # constraints
-PID_Configuration_Constraints(python REQUIRED version packages)
+PID_Configuration_Constraints(python IN_BINARY version 					packages
+                                     VALUE     CURRENT_PYTHON 	BIN_PACKAGES)

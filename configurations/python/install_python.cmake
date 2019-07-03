@@ -17,17 +17,9 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-if(python_version VERSION_LESS 3.0)
-	if(CURRENT_PYTHON VERSION_LESS python_version
-	OR NOT CURRENT_PYTHON VERSION_LESS 3.0)
-		return() #problem in version specification, cannot do mush more
-	endif()
+if(CURRENT_PYTHON VERSION_LESS 3.0)
 	set(PIP_TOOl pip2)
 else()
-	if(CURRENT_PYTHON VERSION_LESS python_version
-		OR CURRENT_PYTHON VERSION_LESS 3.0)#OK version match
-		return()
-	endif()
 	set(PIP_TOOl pip3)
 endif()
 
