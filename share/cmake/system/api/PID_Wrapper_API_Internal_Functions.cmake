@@ -141,6 +141,8 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH CACHE INTERNAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT CACHE INTERNAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT CACHE INTERNAL "")
+
 endforeach()
 set(${PROJECT_NAME}_KNOWN_VERSIONS CACHE INTERNAL "")
 
@@ -524,6 +526,7 @@ file(WRITE ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}
 foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME} CACHE INTERNAL \"\")\n")
 
@@ -764,9 +767,11 @@ endfunction(belongs_To_Known_Versions)
 #
 #      :so_name: the soname to use by default for all shared libraries of the version (may be empty of no soname used).
 #
-#      :post_install_script: the path to the post install script that must be executed anytime the given version is deployed, relative to this version folder.
+#      :post_install_script: the path to the post install script that must be executed anytime the given version is deployed, relative to this version folder in source tree.
 #
-function(add_Known_Version version deploy_file_name compatible_with_version so_name post_install_script)
+#      :pre_use_script: the path to the pre use script that is executed anytime the given version is used by another package to perform additional configuration, relative to this version folder in source tree.
+#
+function(add_Known_Version version deploy_file_name compatible_with_version so_name post_install_script pre_use_script)
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
@@ -781,6 +786,7 @@ endif()
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${version})
 set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT ${deploy_file_name} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${post_install_script} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT ${post_install_script} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${so_name} CACHE INTERNAL "")
 if(compatible_with_version AND NOT compatible_with_version STREQUAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${compatible_with_version} CACHE INTERNAL "")
@@ -1410,6 +1416,18 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	foreach(symbol IN LISTS CXX_STD_SYMBOLS)
 		file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
 	endforeach()
+
+	file(APPEND ${file_for_version} "############# ${package} (version ${version}) specific scripts for deployment #############\n")
+	set(post_install_file_name)
+	if(${package}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT)
+		get_filename_component(post_install_file_name ${WORKSPACE_DIR}/wrappers/${package}/src/${version}/${${package}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT} NAME)
+	endif()
+	file(APPEND ${file_for_version} "set(${package}_SCRIPT_POST_INSTALL ${post_install_file_name} CACHE INTERNAL \"\")\n")#name of script, relative to share/cmake_script in install tree
+	set(pre_use_file_name)
+	if(${package}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT)
+		get_filename_component(pre_use_file_name ${WORKSPACE_DIR}/wrappers/${package}/src/${version}/${${package}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT} NAME)
+	endif()
+	file(APPEND ${file_for_version} "set(${package}_SCRIPT_PRE_USE ${pre_use_file_name} CACHE INTERNAL \"\")\n")#name of script, relative to share/cmake_script in install tree
 
 	file(APPEND ${file_for_version} "############# description of ${package} content (version ${version}) #############\n")
 	file(APPEND ${file_for_version} "declare_PID_External_Package(PACKAGE ${package})\n")

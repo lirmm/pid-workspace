@@ -154,6 +154,7 @@ else()#by default build the given package version using external project specifi
 	set(TARGET_SOURCE_DIR ${package_version_src_dir})
 
 	set(post_install_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT})
+	set(pre_use_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT})
 
 	#checking for system configurations
 	resolve_Wrapper_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
@@ -198,10 +199,16 @@ install_External_Find_File_For_Version(${TARGET_EXTERNAL_PACKAGE})
 
 if(NOT use_os_variant)# perform specific operations at the end of the install process, if any specified and if external package is not the OS_variant
 	if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install_script_file})
-	  file(COPY ${package_version_src_dir}/${post_install_script_file} DESTINATION  ${TARGET_INSTALL_DIR}/share)
-	  message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/share/${post_install_script_file} ...")
-		set(${TARGET_EXTERNAL_PACKAGE}_VERSION_STRING ${version})#only variable that is not defined yet is the versio string of current project
-		include(${TARGET_INSTALL_DIR}/share/${post_install_script_file} NO_POLICY_SCOPE)#execute the script
+	  file(COPY ${package_version_src_dir}/${post_install_script_file} DESTINATION  ${TARGET_INSTALL_DIR}/share/cmake_script)
+	  message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/share/cmake_script/${post_install_script_file} ...")
+		set(${TARGET_EXTERNAL_PACKAGE}_VERSION_STRING ${version})#only variable that is not defined yet is the version string of current project
+		get_filename_component(post_install_filename ${package_version_src_dir}/${post_install_script_file} NAME)
+		include(${TARGET_INSTALL_DIR}/share/cmake_script/${post_install_filename} NO_POLICY_SCOPE)#execute the script
+	endif()
+
+	if(pre_use_script_file AND EXISTS ${package_version_src_dir}/${pre_use_script_file})
+		file(COPY ${package_version_src_dir}/${pre_use_script_file} DESTINATION  ${TARGET_INSTALL_DIR}/share/cmake_script)
+		#simply copy the file, the script will be executed later (at user package install time)
 	endif()
 
 	# create a relocatable binary archive, on demand.

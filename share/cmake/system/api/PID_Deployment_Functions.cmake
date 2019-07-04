@@ -2837,7 +2837,13 @@ foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check 
   endif()
 endforeach()
 
-if(NOT external)
+if(external)#external packages may be provided with specific script to use when deploying binaries
+  if(${package}_SCRIPT_POST_INSTALL)
+    set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/external/${platform_base}/${package}/${version})
+    message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/share/cmake_script/${${package}_SCRIPT_POST_INSTALL} ...")
+    include(${TARGET_INSTALL_DIR}/share/cmake_script/${${package}_SCRIPT_POST_INSTALL} NO_POLICY_SCOPE)#execute the script
+  endif()
+else()
   # Manage native package dependencies => need to check direct native dependencies
 	foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
     if(${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
