@@ -110,7 +110,7 @@ endmacro(manage_Parrallel_Build_Option)
 #   Generate the cache file containing build options from cache of the current project global cache.
 #
 function(set_Mode_Specific_Options_From_Global)
-	execute_process(COMMAND ${CMAKE_COMMAND} -L -N
+	execute_process(COMMAND ${CMAKE_COMMAND} -L -N ..
                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                   OUTPUT_FILE ${CMAKE_BINARY_DIR}/options.txt)
 	#parsing option file and generating a load cache cmake script
@@ -279,8 +279,10 @@ endfunction(get_Option_Value_From_List)
 function(set_Global_Options_From_Mode_Specific)
 	# GOAL: copying new cache entries in the global build cache
   #first get cache entries from debug and release mode
-  execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
-  execute_process(COMMAND ${CMAKE_COMMAND} -LH -N WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
+  execute_process(COMMAND ${CMAKE_COMMAND} -LH -N ..
+                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+  execute_process(COMMAND ${CMAKE_COMMAND} -LH -N ..
+                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
 	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES_GLOBAL)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
