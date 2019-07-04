@@ -1940,7 +1940,7 @@ function(build_B2_External_Project)
     return()
   endif()
   set(options QUIET) #used to define the context
-  set(oneValueArgs PROJECT FOLDER MODE COMMENT)
+  set(oneValueArgs PROJECT FOLDER MODE COMMENT USER_JOBS)
   set(multiValueArgs DEFINITIONS INCLUDES LINKS)
   cmake_parse_arguments(BUILD_B2_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   if(NOT BUILD_B2_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_B2_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_B2_EXTERNAL_PROJECT_MODE)
@@ -2047,7 +2047,14 @@ function(build_B2_External_Project)
                   ${jamfile}
                   @ONLY)
 
-  get_Environment_Info(JOBS jobs)
+
+  if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
+    get_Environment_Info(JOBS jobs)#get jobs flags from environment
+    if(BUILD_B2_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
+      set(jobs -j${BUILD_B2_EXTERNAL_PROJECT_USER_JOBS})
+    endif()
+  endif()
+
   message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
   execute_process(COMMAND ${project_dir}/b2 install ${jobs} --prefix=${TARGET_INSTALL_DIR} --user-config=${jamfile} ${COMMAND_ARGS_AS_LIST}
   WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result ERROR_VARIABLE varerr)
@@ -2107,7 +2114,7 @@ function(build_Autotools_External_Project)
     return()
   endif()
   set(options QUIET) #used to define the context
-  set(oneValueArgs PROJECT FOLDER MODE COMMENT)
+  set(oneValueArgs PROJECT FOLDER MODE COMMENT USER_JOBS)
   set(multiValueArgs C_FLAGS CXX_FLAGS LD_FLAGS CPP_FLAGS OPTIONS)
   cmake_parse_arguments(BUILD_AUTOTOOLS_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   if(NOT BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_AUTOTOOLS_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_AUTOTOOLS_EXTERNAL_PROJECT_MODE)
@@ -2211,7 +2218,14 @@ function(build_Autotools_External_Project)
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
-  get_Environment_Info(JOBS jobs)
+
+  if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
+    get_Environment_Info(JOBS jobs)#get jobs flags from environment
+    if(BUILD_AUTOTOOLS_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
+      set(jobs -j${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_USER_JOBS})
+    endif()
+  endif()
+
   message("[PID] INFO : Building ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
   execute_process(COMMAND ${MAKE_EXE} ${jobs} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result)#build
   if(NOT result EQUAL 0)#error at configuration time
@@ -2275,7 +2289,7 @@ function(build_Waf_External_Project)
     return()
   endif()
   set(options QUIET) #used to define the context
-  set(oneValueArgs PROJECT FOLDER MODE COMMENT)
+  set(oneValueArgs PROJECT FOLDER MODE COMMENT USER_JOBS)
   set(multiValueArgs C_FLAGS CXX_FLAGS LD_FLAGS OPTIONS)
   cmake_parse_arguments(BUILD_WAF_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   if(NOT BUILD_WAF_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_WAF_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_WAF_EXTERNAL_PROJECT_MODE)
@@ -2346,7 +2360,13 @@ function(build_Waf_External_Project)
   set(ENV{CXX} "${cxx_compiler}")
   set(ENV{LD} "${ld_tool}")
 
-  get_Environment_Info(JOBS jobs)
+  # Use user-defined number of jobs if defined
+  if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
+    get_Environment_Info(JOBS jobs)#get jobs flags from environment
+    if(BUILD_WAF_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
+      set(jobs -j${BUILD_WAF_EXTERNAL_PROJECT_USER_JOBS})
+    endif()
+  endif()
   execute_process(COMMAND ${CURRENT_PYTHON_EXECUTABLE} waf distclean configure build install ${BUILD_WAF_EXTERNAL_PROJECT_OPTIONS} ${jobs} --prefix=${TARGET_INSTALL_DIR} ..
                   WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
                   RESULT_VARIABLE result)
@@ -2494,12 +2514,16 @@ function(build_CMake_External_Project)
   endif()
   #once configure, build it
   # Use user-defined number of jobs if defined
-  get_Environment_Info(MAKE make_program JOBS jobs)
-  if(BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS)
-    set(jobs -j${BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS})
+  get_Environment_Info(MAKE make_program)#get jobs flags from environment
+  set(jnumber 1)
+  if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
+    get_Environment_Info(JOBS jobs JOBS_NUMBER jnumber)
+    if(BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
+      set(jobs -j${BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS})
+    endif()
   endif()
   message("[PID] INFO : Building ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
-  message("[PID] INFO : Building using ${jobs} jobs ...")
+  message("[PID] INFO : Building using ${jnumber} jobs ...")
   execute_process(
     COMMAND ${make_program} ${jobs} WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
     RESULT_VARIABLE result
@@ -2575,7 +2599,7 @@ function(build_Bazel_External_Project)
     return()
   endif()
   set(options QUIET) #used to define the context
-  set(oneValueArgs PROJECT FOLDER MODE COMMENT MIN_VERSION MAX_VERSION INSTALL_PATH TARGET)
+  set(oneValueArgs PROJECT FOLDER MODE COMMENT MIN_VERSION MAX_VERSION INSTALL_PATH TARGET USER_JOBS)
   set(multiValueArgs DEFINITIONS)
   cmake_parse_arguments(BUILD_BAZEL_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   if(NOT BUILD_BAZEL_EXTERNAL_PROJECT_PROJECT
@@ -2657,11 +2681,16 @@ function(build_Bazel_External_Project)
   # list(APPEND bazel_arguments )
   # TODO look at possible available arguments to the bazel tool see https://docs.bazel.build/versions/master/user-manual.html
 
-  # everythng related
-  get_Environment_Info(JOBS_NUMBER jobs)
-  if(NOT jobs EQUAL 0)
-    set(jobs_opt "--jobs=${jobs}")
+  if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
+    get_Environment_Info(JOBS_NUMBER jobs)#get jobs number from environment
+    if(BUILD_BAZEL_EXTERNAL_PROJECT_USER_JOBS)#the user may have set directly the number of jobs
+      set(jobs ${BUILD_BAZEL_EXTERNAL_PROJECT_USER_JOBS})
+    endif()
+    if(NOT jobs EQUAL 0)
+      set(jobs_opt "--jobs=${jobs}")
+    endif()
   endif()
+
   if(NOT OUTPUT_MODE STREQUAL OUTPUT_QUIET)
     set(failure_report "--verbose_failures")
   endif()

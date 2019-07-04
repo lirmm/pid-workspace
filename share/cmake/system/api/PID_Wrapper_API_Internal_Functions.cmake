@@ -283,6 +283,7 @@ if(DIR_NAME STREQUAL "build")
   ######## Initializing cache variables ###########
   #################################################
   reset_Wrapper_Description_Cached_Variables()
+	declare_Wrapper_Global_Cache_Options()
 	reset_Documentation_Info()
 	reset_CI_Variables()
 	reset_Packages_Finding_Variables()
@@ -312,6 +313,7 @@ endmacro(declare_Wrapper)
 #
 macro(declare_Wrapper_Global_Cache_Options)
 option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
+option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
 endmacro(declare_Wrapper_Global_Cache_Options)
 
 #.rst:
@@ -596,12 +598,17 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	endforeach()
 endforeach()
 
+#writing options that can be useful to control the build process
+file(APPEND ${path_to_file} "set(ENABLE_PARALLEL_BUILD ${ENABLE_PARALLEL_BUILD} CACHE INTERNAL \"\")\n")
+file(APPEND ${path_to_file} "set(ADDITIONNAL_DEBUG_INFO ${ADDITIONNAL_DEBUG_INFO} CACHE INTERNAL \"\")\n")
+
 #write version about user options
 file(APPEND ${path_to_file} "set(${PROJECT_NAME}_USER_OPTIONS ${${PROJECT_NAME}_USER_OPTIONS} CACHE INTERNAL \"\")\n")
 foreach(opt IN LISTS ${PROJECT_NAME}_USER_OPTIONS)
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_USER_OPTION_${opt}_TYPE ${${PROJECT_NAME}_USER_OPTION_${opt}_TYPE} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_USER_OPTION_${opt}_VALUE ${${PROJECT_NAME}_USER_OPTION_${opt}_VALUE} CACHE INTERNAL \"\")\n")
 endforeach()
+
 endfunction(generate_Wrapper_Build_File)
 
 #.rst:
