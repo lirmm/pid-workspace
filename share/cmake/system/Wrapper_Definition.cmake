@@ -2519,6 +2519,10 @@ function(build_CMake_External_Project)
                             -DCMAKE_INSTALL_PREFIX=${TARGET_INSTALL_DIR}
                             -DCMAKE_SKIP_INSTALL_RPATH=OFF
                             -DCMAKE_SKIP_RPATH=OFF
+                            -DCMAKE_INSTALL_LIBDIR=lib
+                            -DCMAKE_INSTALL_BINDIR=bin
+                            -DCMAKE_INSTALL_INCLUDEDIR=include
+                            -DDATAROOTDIR=share
                             -C ${WORKSPACE_DIR}/pid/Workspace_Build_Info.cmake
                             ${COMMAND_ARGS_AS_LIST}
                             ..
