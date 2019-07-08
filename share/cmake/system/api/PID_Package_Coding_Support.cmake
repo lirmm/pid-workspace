@@ -100,10 +100,10 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 		# Setup coverage target
 		add_custom_target(coverage
 
-			COMMAND ${LCOV_PATH} --directory ${CMAKE_BINARY_DIR} --zerocounters #prepare coverage generation
+			COMMAND ${LCOV_PATH} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --zerocounters #prepare coverage generation
 			COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests
 
-			COMMAND ${LCOV_PATH} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info}
+			COMMAND ${LCOV_PATH} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info}
 			COMMAND ${LCOV_PATH} --remove ${coverage_info} 'test/*' '/usr/*' 'external/*' 'install/*' --output-file ${coverage_cleaned} #configure the filter of output (remove everything that is not related to
 			COMMAND ${GENHTML_PATH} -o ${coverage_dir} ${coverage_cleaned} #generating output
 			COMMAND ${CMAKE_COMMAND} -E remove ${coverage_info} ${coverage_cleaned} #cleanup lcov files
@@ -112,7 +112,7 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 			COMMENT "Generating code coverage report."
 		)
 		### installing coverage report ###
-		install(DIRECTORY ${CMAKE_BINARY_DIR}/share/coverage_report DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+		install(DIRECTORY ${coverage_dir} DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 	endif()
 
 else() #no coverage wanted or possible (no test defined), create a do nothing rule for coverage

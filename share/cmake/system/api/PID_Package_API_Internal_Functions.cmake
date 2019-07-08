@@ -323,12 +323,6 @@ elseif(DIR_NAME STREQUAL "build")
 	if(BUILD_AND_RUN_TESTS AND NOT PID_CROSSCOMPILATION)
 		# test target (launch test units, redefinition of tests)
 		if(BUILD_TESTS_IN_DEBUG)
-			add_custom_target(test
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
-				COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
-				VERBATIM
-			)
 			if(BUILD_COVERAGE_REPORT)#coverage requires tests to be run in debug mode
 				add_custom_target(coverage
 					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES}${CMAKE_MAKE_PROGRAM} coverage
@@ -336,6 +330,19 @@ elseif(DIR_NAME STREQUAL "build")
 					VERBATIM
 				)
 				add_dependencies(site coverage) #when the site is built with such options activated it means that the coverage report must be built first
+
+				add_custom_target(test #basic tests only in release 
+					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
+					COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
+					VERBATIM
+				)
+			else()
+				add_custom_target(test
+					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
+					COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
+					VERBATIM
+				)
 			endif()
 		else()
 			add_custom_target(test
