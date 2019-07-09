@@ -2082,6 +2082,12 @@ function(build_B2_External_Project)
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
+
+  # Build systems may install libraries in a lib64 folder on some platforms
+	# If it's the case, rename the folder to lib in order to have a unique wrapper description
+	if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
+    file(RENAME ${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
+  endif()
 endfunction(build_B2_External_Project)
 
 
@@ -2258,6 +2264,11 @@ function(build_Autotools_External_Project)
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
+  # Build systems may install libraries in a lib64 folder on some platforms
+	# If it's the case, rename the folder to lib in order to have a unique wrapper description
+	if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
+    file(RENAME ${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
+  endif()
 endfunction(build_Autotools_External_Project)
 
 #.rst:
@@ -2400,6 +2411,12 @@ function(build_Waf_External_Project)
     message("[PID] ERROR : cannot configure/build/install Waf project ${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
+  endif()
+
+  # Build systems may install libraries in a lib64 folder on some platforms
+	# If it's the case, rename the folder to lib in order to have a unique wrapper description
+	if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
+    file(RENAME ${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
   endif()
 endfunction(build_Waf_External_Project)
 
@@ -2755,4 +2772,9 @@ function(build_Bazel_External_Project)
     endif()
   endif()
 
+  # Build systems may install libraries in a lib64 folder on some platforms
+	# If it's the case, rename the folder to lib in order to have a unique wrapper description
+	if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
+    file(RENAME ${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
+  endif()
 endfunction(build_Bazel_External_Project)

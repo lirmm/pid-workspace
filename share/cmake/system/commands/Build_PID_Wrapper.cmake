@@ -185,12 +185,6 @@ else()#by default build the given package version using external project specifi
 	    return()
 	  endif()
 	endif()
-
-	# Build systems may install libraries in a lib64 folder on some platforms
-	# If it's the case, rename the folder to lib in order to have a unique wrapper description
-	if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
-		file(RENAME ${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
-	endif()
 endif()
 
 # generate and install the use file for binary installed version
