@@ -1936,6 +1936,8 @@ endfunction(return_External_Project_Error)
 #     :QUIET: if used then the output of this command will be silent.
 #     :COMMENT <string>: A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.
 #     :DEFINITIONS <list of definitions>: the CMake definitions you need to provide to the cmake build script.
+#     :WITH <list of libraries>: Libraries to be included in the build
+#     :WITHOUT <list of libraries>: Libraries to be excluded from the build
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -1959,7 +1961,7 @@ function(build_B2_External_Project)
   endif()
   set(options QUIET) #used to define the context
   set(oneValueArgs PROJECT FOLDER MODE COMMENT USER_JOBS)
-  set(multiValueArgs DEFINITIONS INCLUDES LINKS)
+  set(multiValueArgs DEFINITIONS INCLUDES LINKS WITH WITHOUT)
   cmake_parse_arguments(BUILD_B2_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   if(NOT BUILD_B2_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_B2_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_B2_EXTERNAL_PROJECT_MODE)
     message(FATAL_ERROR "[PID] CRITICAL ERROR : PROJECT, FOLDER and MODE arguments are mandatory when calling build_B2_External_Project.")
@@ -2037,6 +2039,16 @@ function(build_B2_External_Project)
   if(BUILD_B2_EXTERNAL_PROJECT_INCLUDES)
     foreach(inc IN LISTS BUILD_B2_EXTERNAL_PROJECT_INCLUDES)#specific includes (to manage dependencies)
       set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} include=${inc}")
+    endforeach()
+  endif()
+  if(BUILD_B2_EXTERNAL_PROJECT_WITH)
+    foreach(lib IN LISTS BUILD_B2_EXTERNAL_PROJECT_WITH)#libraries to build
+      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} --with-${lib}")
+    endforeach()
+  endif()
+  if(BUILD_B2_EXTERNAL_PROJECT_WITHOUT)
+    foreach(lib IN LISTS BUILD_B2_EXTERNAL_PROJECT_WITHOUT)#libraries to exclude from build
+      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} --without-${lib}")
     endforeach()
   endif()
 
