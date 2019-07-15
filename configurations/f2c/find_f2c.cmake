@@ -23,6 +23,7 @@ found_PID_Configuration(f2c FALSE)
 
 find_program(F2C_EXECUTABLE NAMES f2c)
 if(NOT F2C_EXECUTABLE)#no f2c compiler found => no need to continue
+	message("[PID] WARNING : no f2c executable found...")
 	return()
 endif()
 
@@ -49,6 +50,14 @@ if(F2C_LIBRARY AND F2C_INCLUDE_DIR)
 	found_PID_Configuration(f2c TRUE)
 	convert_PID_Libraries_Into_System_Links(F2C_LIBRARIES f2C_LINKS)#getting good system links (with -l)
 	convert_PID_Libraries_Into_Library_Directories(F2C_LIBRARIES f2C_LIBDIR)#getting good system libraries folders (to be used with -L)
+else()
+	if(F2C_LIBRARY)
+		message("[PID] WARNING : no headers found for f2c library (${F2C_LIBRARY})")
+	elseif(F2C_INCLUDE_DIR)
+		message("[PID] WARNING : no binary found for f2c library with headers (${F2C_INCLUDE_DIR})")
+	else()
+		message("[PID] WARNING : no binary or headers found for f2c library")
+	endif()
 endif()
 
 unset(F2C_INCLUDE_DIR CACHE)
