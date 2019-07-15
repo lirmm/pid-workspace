@@ -27,20 +27,21 @@ if(NOT F2C_EXECUTABLE)#no f2c compiler found => no need to continue
 	return()
 endif()
 
-find_path(F2C_INCLUDE_DIR f2c.h /sw/include )
-set(F2C_NAMES ${F2C_NAMES} f2c.a libf2c.a f2c.lib)
+find_path(F2C_INCLUDE_DIR NAMES f2c.h
+					PATH /sw/include /usr/sw/include /usr/local/sw/include)
 # Use FIND_FILE instead of FIND_LIBRARY because we need the
 # static version of libf2c. The shared library produces linker
 # errors.
-find_file(F2C_LIBRARY NAMES ${F2C_NAMES}
-	PATHS /usr/lib /usr/local/lib /opt /sw/lib/
+set(F2C_NAMES f2c.a libf2c.a f2c.lib)
+find_library(F2C_LIBRARY NAMES ${F2C_NAMES}
+					PATHS /usr/lib /usr/local/lib /opt /sw/lib/
 )
 
-# Look for libg2c as fallback. libg2c is part of the
-# compat-g77 package.
+# Look for libg2c as fallback. libg2c is part of the compat-g77 package.
 if(NOT F2C_LIBRARY)
-	set(G2C_NAMES ${G2C_NAMES} g2c libg2c)
-	find_library(F2C_LIBRARY NAMES ${G2C_NAMES})
+	set(G2C_NAMES g2c.a libg2c.a)
+	find_library(F2C_LIBRARY NAMES ${G2C_NAMES}
+						PATHS /usr/lib /usr/local/lib /opt)
 endif()
 
 if(F2C_LIBRARY AND F2C_INCLUDE_DIR)
@@ -48,13 +49,13 @@ if(F2C_LIBRARY AND F2C_INCLUDE_DIR)
 	set(F2C_INCLUDE_DIRS ${F2C_INCLUDE_DIR})
 	set(F2C_COMPILER ${F2C_EXECUTABLE})
 	found_PID_Configuration(f2c TRUE)
-	convert_PID_Libraries_Into_System_Links(F2C_LIBRARIES f2C_LINKS)#getting good system links (with -l)
-	convert_PID_Libraries_Into_Library_Directories(F2C_LIBRARIES f2C_LIBDIR)#getting good system libraries folders (to be used with -L)
+	convert_PID_Libraries_Into_System_Links(F2C_LIBRARIES F2C_LINKS)#getting good system links (with -l)
+	convert_PID_Libraries_Into_Library_Directories(F2C_LIBRARIES F2C_LIBDIR)#getting good system libraries folders (to be used with -L)
 else()
 	if(F2C_LIBRARY)
 		message("[PID] WARNING : no headers found for f2c library (${F2C_LIBRARY})")
 	elseif(F2C_INCLUDE_DIR)
-		message("[PID] WARNING : no binary found for f2c library with headers (${F2C_INCLUDE_DIR})")
+		message("[PID] WARNING : no binary found for f2c library with headers found in include directory (${F2C_INCLUDE_DIR})")
 	else()
 		message("[PID] WARNING : no binary or headers found for f2c library")
 	endif()
