@@ -6,7 +6,7 @@ BreakBeforeBraces: Attach
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 AllowShortFunctionsOnASingleLine: false
 SortIncludes:    false
-ColumnLimit:     -1
+ColumnLimit:     0
 IndentWidth:     4
 AccessModifierOffset: -4
 TabWidth:        4
