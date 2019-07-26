@@ -331,7 +331,7 @@ elseif(DIR_NAME STREQUAL "build")
 				)
 				add_dependencies(site coverage) #when the site is built with such options activated it means that the coverage report must be built first
 
-				add_custom_target(test #basic tests only in release 
+				add_custom_target(test #basic tests only in release
 					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 					COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
 					VERBATIM
@@ -1341,10 +1341,12 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 
 	get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 	if(more_sources)
-		get_All_Sources_Absolute_From(SOURCES INCLUDES ${CMAKE_SOURCE_DIR}/src "${more_sources}")
-		list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${SOURCES})
-		if(INCLUDES)
-			list(APPEND use_includes ${INCLUDES})
+		set(MORE_SOURCES)
+		set(MORE_INCLUDES)
+		get_All_Sources_Absolute_From(MORE_SOURCES MORE_INCLUDES ${CMAKE_SOURCE_DIR} "${more_sources}")
+		list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${MORE_SOURCES})
+		if(MORE_INCLUDES)
+			list(APPEND use_includes ${MORE_INCLUDES})
 		endif()
 	endif()
 	list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_ALL_HEADERS})
@@ -1504,10 +1506,12 @@ will_be_Installed(COMP_WILL_BE_INSTALLED ${c_name})
 set(use_includes ${internal_inc_dirs})
 get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 if(more_sources)
-	get_All_Sources_Absolute_From(SOURCES INCLUDES ${CMAKE_SOURCE_DIR}/apps "${more_sources}")
-	list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${SOURCES})
-	if(INCLUDES)
-		list(APPEND use_includes ${INCLUDES})
+	set(MORE_SOURCES)
+	set(MORE_INCLUDES)
+	get_All_Sources_Absolute_From(MORE_SOURCES MORE_INCLUDES ${CMAKE_SOURCE_DIR} "${more_sources}")
+	list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${MORE_SOURCES})
+	if(MORE_INCLUDES)
+		list(APPEND use_includes ${MORE_INCLUDES})
 	endif()
 endif()
 #defining the target to build the application

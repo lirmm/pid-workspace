@@ -898,7 +898,7 @@ endmacro(build_PID_Package)
 #   :INTERNAL: This flag is used to introduce compilation options that are only used by this component.
 #   :EXPORTED: This flag is used to export compilation options. Meaning, components that later refer to this component will be using these options.
 #   :SPECIAL_HEADERS: Specify specific files to export from the include folder of the component. Used for instance to export file without explicit header extension.
-#   :AUXILIARY_SOURCES: Specify auxiliary source folder or files ti use when building the component. Used for instance to share private code between component of the project.
+#   :AUXILIARY_SOURCES: Specify auxiliary source folder or files to use when building the component. Used for instance to share private code between component of the project. May contain a list of path relative to project root dir.
 #   :INSTALL_SYMLINKS: Specify folders where to install symlinks pointing to the component binary.
 #   :DEPEND ...: Specify a list of components that the current component depends on. These components are not exported.
 #   :EXPORT ...: Specify a list of components that the current component depends on and exports.
