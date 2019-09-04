@@ -1338,12 +1338,11 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 	endif()
 	## 2) collect sources for build process
 	set(use_includes ${internal_inc_dirs})
-
 	get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 	if(more_sources)
 		set(MORE_SOURCES)
 		set(MORE_INCLUDES)
-		get_All_Sources_Absolute_From(MORE_SOURCES MORE_INCLUDES ${CMAKE_SOURCE_DIR} "${more_sources}")
+		get_All_Sources_Absolute_From(MORE_SOURCES MORE_INCLUDES ${CMAKE_SOURCE_DIR}/src "${more_sources}")
 		list(APPEND ${PROJECT_NAME}_${c_name}_ALL_SOURCES ${MORE_SOURCES})
 		if(MORE_INCLUDES)
 			list(APPEND use_includes ${MORE_INCLUDES})
