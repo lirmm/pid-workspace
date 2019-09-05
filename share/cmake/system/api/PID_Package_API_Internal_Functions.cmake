@@ -617,7 +617,7 @@ endfunction(set_Current_Version)
 #  check_Platform_Constraints
 #  --------------------------
 #
-#   .. command:: check_Platform_Constraints(RESULT IS_CURRENT type arch os abi constraints)
+#   .. command:: check_Platform_Constraints(RESULT IS_CURRENT type arch os abi constraints optional build_only)
 #
 #     Check that the platform constraints provided match the current platform configuration. Constraints are checked only if the current platform matches platform filters provided.
 #
@@ -629,11 +629,17 @@ endfunction(set_Current_Version)
 #
 #     :abi: the target abi type used as a filter (may be empty string if no filter).
 #
+#     :constraints: configurations checks to perform.
+#
+#     :optional: if configurations are optional.
+#
+#     :build_only: if configurations are used only at build time.
+#
 #     :RESULT: the output variable that is TRUE if constraints are satisfied or if no constraint appliesdu to filters, FALSE if any constraint cannot be satisfied.
 #
 #     :IS_CURRENT: the output variable that contains the current platform identifier if current platform matches all filters.
 #
-function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints optional)
+function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints optional build_only)
 set(SKIP FALSE)
 #The check of compatibility between the target platform and the constraints is immediate using platform configuration information (platform files) + additionnal global information (distribution for instance) coming from the workspace
 
@@ -665,7 +671,7 @@ endif()
 #2) testing configuration constraints if the platform currently in use satisfies conditions
 #
 set(${RESULT} TRUE PARENT_SCOPE)
-if(SKIP)
+if(SKIP)#if the check is skipped then it means that current platform does not satisfy platform constraints
 	set(${IS_CURRENT} PARENT_SCOPE)
 else()
 	set(${IS_CURRENT} ${CURRENT_PLATFORM} PARENT_SCOPE)
@@ -675,7 +681,7 @@ if(NOT SKIP AND constraints)
 	foreach(config IN LISTS constraints) ## all configuration constraints must be satisfied
 		check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${config}")
 		if(NOT RESULT_OK)
-			set(${RESULT} FALSE PARENT_SCOPE)
+			set(${RESULT} FALSE PARENT_SCOPE)#returns false as soon as one config check fails
 		endif()
 		if(RESULT_OK OR NOT optional)#if the result if FALSE and the configuration was optional then skip it
 			list(APPEND configurations_to_memorize ${CONFIG_NAME})#memorize name of the configuration
@@ -686,18 +692,15 @@ if(NOT SKIP AND constraints)
 
 	#registering all configurations wether they are satisfied or not, except non satisfied optional ones
 	append_Unique_In_Cache(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} "${configurations_to_memorize}")
-
 	foreach(config IN LISTS configurations_to_memorize)
+		if(build_only)#memorize that this configuration is build only (will not be written in use files)
+			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_BUILD_ONLY${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
+		endif()
 		if(${config}_constraints_to_memorize)#there are paremeters for that configuration, they need to be registered
 			list(REMOVE_DUPLICATES ${config}_constraints_to_memorize)
 			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} "${${config}_constraints_to_memorize}" CACHE INTERNAL "")
 		endif()
 	endforeach()
-
-	add_Platform_Constraint_Set("${type}" "${arch}" "${os}" "${abi}" "${constraints_to_memorize}")
-else()
-	# whatever the result the constraint is registered
-	add_Platform_Constraint_Set("${type}" "${arch}" "${os}" "${abi}" "${constraints}")
 endif()
 
 endfunction(check_Platform_Constraints)

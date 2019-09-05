@@ -590,47 +590,6 @@ set (${PROJECT_NAME}_VERSION_PATCH CACHE INTERNAL "" )
 set (${PROJECT_NAME}_VERSION CACHE INTERNAL "" )
 endfunction(reset_Version_Cache_Variables)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |add_Platform_Constraint_Set| replace:: ``add_Platform_Constraint_Set``
-#  .. _add_Platform_Constraint_Set:
-#
-#  add_Platform_Constraint_Set
-#  ---------------------------
-#
-#   .. command:: add_Platform_Constraint_Set(type arch os abi constraints)
-#
-#   Define a new set of configuration constraints that applies to all platforms matching all conditions imposed by filters used.
-#
-#     :type: the type of processor architecture (e.g. x86) used as a filter.
-#
-#     :arch: the bits of the processor architecture (e.g. 64) used as a filter.
-#
-#     :os: the operating system kernel (e.g. linux) used as a filter.
-#
-#     :abi: the compiler abi (abi98 or abi11) used as a filter.
-#
-#     :constraints: the list of configuration to check if current platform matches all the filters.
-#
-function(add_Platform_Constraint_Set type arch os abi constraints)
-	if(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX})
-		set(CURRENT_INDEX ${${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX}}) #current index is the current number of all constraint sets
-	else()
-		set(CURRENT_INDEX 0) #current index is the current number of all constraint sets
-	endif()
-	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_TYPE${USE_MODE_SUFFIX} ${type} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ARCH${USE_MODE_SUFFIX} ${arch} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_OS${USE_MODE_SUFFIX} ${os} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONDITION_ABI${USE_MODE_SUFFIX} ${abi} CACHE INTERNAL "")
-	# the configuration constraint is written here and applies as soon as all conditions are satisfied
-	set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_${CURRENT_INDEX}_CONFIGURATION${USE_MODE_SUFFIX} ${constraints} CACHE INTERNAL "")
-
-	math(EXPR NEW_SET_SIZE "${CURRENT_INDEX}+1")
-	set(${PROJECT_NAME}_ALL_PLATFORMS_CONSTRAINTS${USE_MODE_SUFFIX} ${NEW_SET_SIZE} CACHE INTERNAL "")
-endfunction(add_Platform_Constraint_Set)
-
 
 #############################################################################################
 ############### API functions for setting components related cache variables ################
@@ -1926,12 +1885,17 @@ get_Platform_Variables(BASENAME curr_platform_name)
 # 0) platforms configuration constraints
 file(APPEND ${file} "#### declaration of platform dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 file(APPEND ${file} "set(${package}_PLATFORM${MODE_SUFFIX} ${curr_platform_name} CACHE INTERNAL \"\")\n") # not really usefull since a use file is bound to a given platform, but may be usefull for debug
-file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+
+set(memorized_configs)
 foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX})
-  if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX})
-    file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+  if(NOT ${package}_PLATFORM_CONFIGURATION_${config}_BUILD_ONLY${MODE_SUFFIX})# a config appears in use file only if it is not specified as "build only" configuration
+    list(APPEND memorized_configs ${config})
+    if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX})
+      file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+    endif()
   endif()
 endforeach()
+file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${memorized_configs} CACHE INTERNAL \"\")\n")
 
 #Use file generation process needs to integrate undirect required package dependencies that becomes direct due to transitivity in components
 #NB: this is mandatory to resolve conflicting dependencies versions in binary packages
