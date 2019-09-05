@@ -130,7 +130,7 @@ endfunction(list_Public_Includes)
 #  list_Public_Links
 #  -----------------
 #
-#   .. command:: list_Public_Links(LINKS package component mode)
+#   .. command:: list_Public_Links(LINKS STATIC_LINKS package component mode)
 #
 #   List all public links of a component.
 #
@@ -142,12 +142,18 @@ endfunction(list_Public_Includes)
 #
 #     :LINKS: the output variable that contains the list of public links.
 #
-function(list_Public_Links LINKS package component mode)
+#     :STATIC_LINKS: the output variable that contains the list of public system links specified as STATIC.
+#
+function(list_Public_Links LINKS STATIC_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #provided additionnal ld flags (exported external/system libraries and ldflags)
 if(${package}_${component}_LINKS${VAR_SUFFIX})
 	resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})
-set(${LINKS} "${RES_LINKS}" PARENT_SCOPE)
+  set(${LINKS} "${RES_LINKS}" PARENT_SCOPE)
+endif()
+if(${package}_${component}_SYSTEM_STATIC_LINKS${VAR_SUFFIX})
+	resolve_External_Libs_Path(RES_ST_LINKS "${${package}_${component}_SYSTEM_STATIC_LINKS${VAR_SUFFIX}}" ${mode})
+  set(${STATIC_LINKS} "${RES_ST_LINKS}" PARENT_SCOPE)
 endif()
 endfunction(list_Public_Links)
 
@@ -659,7 +665,7 @@ if(NOT is_direct) #otherwise external dependencies are direct dependencies so th
 		endforeach()
 	endif()
 endif()
-
+#Remark: no need to search in SYSTEM_STATIC LINKS since they are static by definition
 # 1-bis) searching private external dependencies
 if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
 	resolve_External_Libs_Path(RES_PRIVATE_LINKS "${${package}_${component}_PRIVATE_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
@@ -1383,7 +1389,7 @@ function(locate_External_Package_Used_In_Component USE_PACKAGE package component
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   # consists in searching for the <${external_package}> in flags used by the component
   set(${USE_PACKAGE} FALSE PARENT_SCOPE)
-  set(all_flags "${${package}_${component}_INC_DIRS${VAR_SUFFIX}};${${package}_${component}_LINKS${VAR_SUFFIX}};${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}};${${package}_${component}_LIB_DIRS${VAR_SUFFIX}};${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}")
+  set(all_flags "${${package}_${component}_INC_DIRS${VAR_SUFFIX}};${${package}_${component}_LINKS${VAR_SUFFIX}};${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}};${${package}_${component}_SYSTEM_STATIC_LINKS${VAR_SUFFIX}};${${package}_${component}_LIB_DIRS${VAR_SUFFIX}};${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}")
   string(FIND "${all_flags}" "<${external_package}>" INDEX)#simply find the pattern specifying the path to installed package version folder
   if(INDEX GREATER -1)
     set(${USE_PACKAGE} TRUE PARENT_SCOPE)

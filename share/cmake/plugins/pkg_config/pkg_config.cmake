@@ -217,6 +217,12 @@ macro(setup_Pkg_Config_Variables package platform version library_name mode)
       endif()
     endforeach()
   endif()
+  
+  if(${package}_${library_name}_SYSTEM_STATIC_LINKS${VAR_SUFFIX})
+    foreach(link IN LISTS ${package}_${library_name}_SYSTEM_STATIC_LINKS${VAR_SUFFIX})#links are defined "the OS way" in this variable
+      set(_PKG_CONFIG_COMPONENT_LIBS_ "${_PKG_CONFIG_COMPONENT_LIBS_} ${link}")
+    endforeach()
+  endif()
 
   #preparing to decide if libs will be generated as public or private
   if( ${package}_${library_name}_TYPE STREQUAL "HEADER" #header and static libraries always export all their dependencies

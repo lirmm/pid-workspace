@@ -1216,7 +1216,7 @@ endfunction(fill_Component_Target_With_Package_Dependency)
 #  fill_Component_Target_With_External_Dependency
 #  ----------------------------------------------
 #
-#   .. command:: fill_Component_Target_With_External_Dependency(component export comp_defs comp_exp_defs dep_defs)
+#   .. command:: fill_Component_Target_With_External_Dependency(component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_lib_dirs ext_links_shared ext_links_static c_standard cxx_standard)
 #
 #     Configure a component target to link with external content (from external packages or operating system).
 #
@@ -1234,28 +1234,48 @@ endfunction(fill_Component_Target_With_Package_Dependency)
 #
 #     :ext_lib_dirs: list of path, either absolute or relative to external packages, to folders that contain libraries to use at build time.
 #
-#     :ext_links: list of path to libraries, either absolute or relative to external packages, or linker options.
+#     :ext_links_shared: list of path to shared libraries, either absolute or relative to external packages, or linker options.
+#
+#     :ext_links_static: list of path to static libraries, either absolute or relative to external packages, or linker options.
 #
 #     :c_standard: C language standard to use when using these dependencies.
 #
 #     :cxx_standard: C++ language standard to use when using these dependencies.
 #
-function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_lib_dirs ext_links c_standard cxx_standard)
-if(ext_links)
-  evaluate_Variables_In_List(EVAL_LNKS ext_links) #first evaluate element of the list => if they are variables they are evaluated
-	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${EVAL_LNKS}" ${CMAKE_BUILD_TYPE})
-	if(COMPLETE_LINKS_PATH)
-		foreach(link IN LISTS COMPLETE_LINKS_PATH)
-			create_External_Dependency_Target(EXT_TARGET_NAME ${link} ${CMAKE_BUILD_TYPE})
-			if(EXT_TARGET_NAME)
-				list(APPEND EXT_LINKS_TARGETS ${EXT_TARGET_NAME})
+function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_lib_dirs ext_links_shared ext_links_static c_standard cxx_standard)
+if(ext_links_shared)
+  evaluate_Variables_In_List(EVAL_SH_LINKS ext_links_shared) #first evaluate element of the list => if they are variables they are evaluated
+	resolve_External_Libs_Path(COMPLETE_SH_LINKS_PATH "${EVAL_SH_LINKS}" ${CMAKE_BUILD_TYPE})
+  if(COMPLETE_SH_LINKS_PATH)
+		foreach(link IN LISTS COMPLETE_SH_LINKS_PATH)
+			create_External_Dependency_Target(EXT_SH_TARGET_NAME ${link} "" ${CMAKE_BUILD_TYPE})#do not force SHARED type as some options may be linker options coming from configurations
+			if(EXT_SH_TARGET_NAME)
+				list(APPEND EXT_SH_LINKS_TARGETS ${EXT_SH_TARGET_NAME})
 			else()
-				list(APPEND EXT_LINKS_OPTIONS ${link})
+				list(APPEND EXT_SH_LINKS_OPTIONS ${link})
 			endif()
 		endforeach()
 	endif()
-	list(APPEND EXT_LINKS ${EXT_LINKS_TARGETS} ${EXT_LINKS_OPTIONS})
+	list(APPEND EXT_SH_LINKS ${EXT_SH_LINKS_TARGETS} ${EXT_SH_LINKS_OPTIONS})
+  list(APPEND EXT_LINKS ${EXT_SH_LINKS})
 endif()
+if(ext_links_static)
+  evaluate_Variables_In_List(EVAL_ST_LINKS ext_links_static) #first evaluate element of the list => if they are variables they are evaluated
+	resolve_External_Libs_Path(COMPLETE_ST_LINKS_PATH "${EVAL_ST_LINKS}" ${CMAKE_BUILD_TYPE})
+  if(COMPLETE_ST_LINKS_PATH)
+		foreach(link IN LISTS COMPLETE_ST_LINKS_PATH)
+			create_External_Dependency_Target(EXT_ST_TARGET_NAME ${link} STATIC ${CMAKE_BUILD_TYPE})
+			if(EXT_ST_TARGET_NAME)
+				list(APPEND EXT_ST_LINKS_TARGETS ${EXT_ST_TARGET_NAME})
+			else()
+				list(APPEND EXT_ST_LINKS_OPTIONS ${link})
+			endif()
+		endforeach()
+	endif()
+	list(APPEND EXT_ST_LINKS ${EXT_ST_LINKS_TARGETS} ${EXT_ST_LINKS_OPTIONS})
+  list(APPEND EXT_LINKS ${EXT_ST_LINKS})
+endif()
+
 if(ext_inc_dirs)
   evaluate_Variables_In_List(EVAL_INCS ext_inc_dirs)#first evaluate element of the list => if they are variables they are evaluated
 	resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${EVAL_INCS}" ${CMAKE_BUILD_TYPE})
@@ -1341,36 +1361,88 @@ endfunction(create_All_Imported_Dependency_Targets)
 #  create_External_Dependency_Target
 #  ---------------------------------
 #
-#   .. command:: create_External_Dependency_Target(EXT_TARGET_NAME link mode)
+#   .. command:: create_External_Dependency_Target(EXT_TARGET_NAME link type mode)
 #
 #     Create an imported target for an external dependency (external components or OS dependencies).
 #
 #     :link: the name of the link option. If this is a real linker option and not a library then no target is created.
 #
+#     :type: SHARED or STATIC depending on expected type of the link, or empty string if type is unknown.
+#
 #     :mode: the build mode for the imported target.
 #
 #     :EXT_TARGET_NAME: the output variable that contains the created target name.
 #
-function (create_External_Dependency_Target EXT_TARGET_NAME link mode)
+function (create_External_Dependency_Target EXT_TARGET_NAME link type mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 get_Link_Type(RES_TYPE ${link})
-if(RES_TYPE STREQUAL OPTION) #for options there is no need to define a target (options also include -l options)
-	set(${EXT_TARGET_NAME} PARENT_SCOPE)
-elseif(RES_TYPE STREQUAL SHARED)
-	get_filename_component(LIB_NAME ${link} NAME)
-	if(NOT TARGET ext-${LIB_NAME}${TARGET_SUFFIX})#target does not exist
-		add_library(ext-${LIB_NAME}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)
-		set_target_properties(ext-${LIB_NAME}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${link}")
-	endif()
-	set(${EXT_TARGET_NAME} ext-${LIB_NAME}${TARGET_SUFFIX} PARENT_SCOPE)
-else(RES_TYPE STREQUAL STATIC)
-	get_filename_component(LIB_NAME ${link} NAME)
-	if(NOT TARGET ext-${LIB_NAME}${TARGET_SUFFIX})#target does not exist
-		add_library(ext-${LIB_NAME}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL)
-		set_target_properties(ext-${LIB_NAME}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${link}")
-	endif()
-	set(${EXT_TARGET_NAME} ext-${LIB_NAME}${TARGET_SUFFIX} PARENT_SCOPE)
+if(type STREQUAL "STATIC")
+  if(RES_TYPE STREQUAL "SHARED")#not consistent !!
+    message(SEND_ERROR "[PID] ERROR: ${link} specified as STATIC while it is a SHARED library !")
+  else()#OK we will build a target
+    if(RES_TYPE STREQUAL OPTION)#for options specified as static create a specific target that points to the path of the static library
+      set(target_name ext${link}${TARGET_SUFFIX})
+      if(NOT TARGET ${target_name})#target does not exist
+        add_library(${target_name} INTERFACE)#need to use an interface library to give the linker flag
+        if(WIN32)
+          string(REGEX REPLACE "^-l(.+)$" "\\1.lib" link_name ${link})
+        else()
+          string(REGEX REPLACE "^-l(.+)$" "lib\\1.a" link_name ${link})
+        endif()
+        target_link_libraries(${target_name} INTERFACE ${link_name})
+      endif()
+    else()#path to a static library
+      get_filename_component(LIB_NAME ${link} NAME)
+      set(target_name ext-${LIB_NAME}${TARGET_SUFFIX})
+      if(NOT TARGET ${target_name})#target does not exist
+        message("building a static library target : ${target_name} with path : ${link}")
+        add_library(${target_name} STATIC IMPORTED GLOBAL)
+        set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
+      endif()
+    endif()
+    set(${EXT_TARGET_NAME} ${target_name} PARENT_SCOPE)
+
+  endif()
+elseif(type STREQUAL "SHARED")#this is a shared library
+  if(RES_TYPE STREQUAL STATIC) #not consistent !!
+    message(SEND_ERROR "[PID] ERROR: ${link} specified as SHARED while it is a STATIC library !")
+  else()
+    if(RES_TYPE STREQUAL OPTION)#for options specified as static create a specific target
+      set(target_name ext${link}${TARGET_SUFFIX})
+      if(NOT TARGET ${target_name})#target does not exist
+        add_library(${target_name} INTERFACE)#need to use an interface library to give the linker flag
+        target_link_libraries(${target_name} INTERFACE ${link})
+      endif()
+    else()#path to a shared library
+      get_filename_component(LIB_NAME ${link} NAME)
+      set(target_name ext-${LIB_NAME}${TARGET_SUFFIX})
+      if(NOT TARGET ${target_name})#target does not exist
+        add_library(${target_name} SHARED IMPORTED GLOBAL)
+        set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
+      endif()
+    endif()
+    set(${EXT_TARGET_NAME} ${target_name} PARENT_SCOPE)
+  endif()
+else()#type is unknown
+  if(RES_TYPE STREQUAL OPTION) #for options there is no need to define a target (options also include -l options)
+  	set(${EXT_TARGET_NAME} PARENT_SCOPE)
+  elseif(RES_TYPE STREQUAL SHARED)
+  	get_filename_component(LIB_NAME ${link} NAME)
+  	if(NOT TARGET ext-${LIB_NAME}${TARGET_SUFFIX})#target does not exist
+  		add_library(ext-${LIB_NAME}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)
+  		set_target_properties(ext-${LIB_NAME}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${link}")
+  	endif()
+  	set(${EXT_TARGET_NAME} ext-${LIB_NAME}${TARGET_SUFFIX} PARENT_SCOPE)
+  else(RES_TYPE STREQUAL STATIC)
+  	get_filename_component(LIB_NAME ${link} NAME)
+  	if(NOT TARGET ext-${LIB_NAME}${TARGET_SUFFIX})#target does not exist
+  		add_library(ext-${LIB_NAME}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL)
+  		set_target_properties(ext-${LIB_NAME}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${link}")
+  	endif()
+  	set(${EXT_TARGET_NAME} ext-${LIB_NAME}${TARGET_SUFFIX} PARENT_SCOPE)
+  endif()
 endif()
+
 endfunction(create_External_Dependency_Target)
 
 #.rst:
@@ -1423,7 +1495,7 @@ endfunction(create_Dependency_Target)
 #  manage_Additional_Imported_Component_Flags
 #  ------------------------------------------
 #
-#   .. command:: manage_Additional_Imported_Component_Flags(package component mode inc_dirs defs options public_links private_links)
+#   .. command:: manage_Additional_Imported_Component_Flags(package component mode inc_dirs defs options public_links private_links system_static_links)
 #
 #     Setting the build properties of an imported target of a component. This may ends up in creating new targets if the component has external dependencies.
 #
@@ -1443,7 +1515,9 @@ endfunction(create_Dependency_Target)
 #
 #     :private_links: the list of path to linked libraries that are internal to component, or internal linker options.
 #
-function(manage_Additional_Imported_Component_Flags package component mode inc_dirs defs options public_links private_links)
+#     :system_static_links: the list of path to linked system libraries that are specified as static.
+#
+function(manage_Additional_Imported_Component_Flags package component mode inc_dirs defs options public_links private_links system_static_links)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 # managing include folders (-I<path>)
 foreach(dir IN LISTS inc_dirs)
@@ -1478,9 +1552,9 @@ foreach(opt IN LISTS options)
 	endif()
 endforeach()
 
-# managing link time flags (public links are always put in the interface
+# managing public link time flags (public links are always put in the interface)
 foreach(link IN LISTS public_links)
-	create_External_Dependency_Target(EXT_TARGET_NAME ${link} ${mode})
+	create_External_Dependency_Target(EXT_TARGET_NAME ${link} "" ${mode})#public links may be path to shared or static libs or linker options (considered as shared by default)
 	if(EXT_TARGET_NAME) #this is a library
 		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${EXT_TARGET_NAME})
 	else()#this is an option => simply pass it to the link interface
@@ -1488,14 +1562,20 @@ foreach(link IN LISTS public_links)
 	endif()
 endforeach()
 
-# managing link time flags (public links are always put in the interface
+# managing private link time flags (private links are never put in the interface)#TODO check that
 foreach(link IN LISTS private_links)
-	create_External_Dependency_Target(EXT_TARGET_NAME ${link} ${mode})
-	if(EXT_TARGET_NAME) #this is a library
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${EXT_TARGET_NAME})
-	else() #this is an option => simply pass it to the link interface
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${link})
+	create_External_Dependency_Target(EXT_TARGET_NAME ${link} "" ${mode})#private links are path to shared libraries used by a shared library
+  if(EXT_TARGET_NAME) #this is a library
+		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${EXT_TARGET_NAME})
+	else()#this is a linker option => simply pass it to the link interface
+		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${link})
 	endif()
+endforeach()
+
+# managing system link time flags (system static links are always put in the interface)
+foreach(link IN LISTS system_static_links)
+	create_External_Dependency_Target(EXT_TARGET_NAME ${link} STATIC ${mode})# system static links are system liniking flags (-l<name>) pointing to a static library
+  set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${EXT_TARGET_NAME})
 endforeach()
 endfunction(manage_Additional_Imported_Component_Flags)
 
@@ -1558,10 +1638,10 @@ function(create_Imported_Header_Library_Target package component mode) #header l
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
 	add_library(${package}-${component}${TARGET_SUFFIX} INTERFACE IMPORTED GLOBAL)#suffix used only for target name
 	list_Public_Includes(INCLUDES ${package} ${component} ${mode})
-	list_Public_Links(LINKS ${package} ${component} ${mode})
+	list_Public_Links(LINKS SYSTEM_STATIC ${package} ${component} ${mode})
 	list_Public_Definitions(DEFS ${package} ${component} ${mode})
 	list_Public_Options(OPTS ${package} ${component} ${mode})
-	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "")
+	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "" "${SYSTEM_STATIC}")
 	# check that C/C++ languages are defined or set them to default
 	manage_Language_Standards(${package} ${component} ${mode})
 endfunction(create_Imported_Header_Library_Target)
@@ -1598,12 +1678,12 @@ function(create_Imported_Static_Library_Target package component mode)
 	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
 
 	list_Public_Includes(INCLUDES ${package} ${component} ${MODE_TO_IMPORT})
-	list_Public_Links(LINKS ${package} ${component} ${MODE_TO_IMPORT})
+	list_Public_Links(LINKS SYSTEM_STATIC ${package} ${component} ${MODE_TO_IMPORT})
 	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Public_Definitions(DEFS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Public_Options(OPTS ${package} ${component} ${MODE_TO_IMPORT})
 
-	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}")
+	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}" "${SYSTEM_STATIC}")
 	# check that C/C++ languages are defined or defult them
 	manage_Language_Standards(${package} ${component} ${mode})
 endfunction(create_Imported_Static_Library_Target)
@@ -1650,11 +1730,11 @@ function(create_Imported_Shared_Library_Target package component mode)
   endif()
 
 	list_Public_Includes(INCLUDES ${package} ${component} ${MODE_TO_IMPORT})
-	list_Public_Links(LINKS ${package} ${component} ${MODE_TO_IMPORT})
+	list_Public_Links(LINKS SYSTEM_STATIC ${package} ${component} ${MODE_TO_IMPORT})
 	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Public_Definitions(DEFS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Public_Options(OPTS ${package} ${component} ${MODE_TO_IMPORT})
-	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}")
+	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}" "${SYSTEM_STATIC}")
 
 	# check that C/C++ languages are defined or default them
 	manage_Language_Standards(${package} ${component} ${mode})
