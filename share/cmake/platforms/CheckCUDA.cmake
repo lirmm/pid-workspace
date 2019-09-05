@@ -45,20 +45,18 @@ endif()
 
 #setting general variables
 set(CUDA_Language_AVAILABLE TRUE CACHE INTERNAL "")
+set(CUDA_USER_FLAGS CACHE STRING "")
 #memorizing build variables
-set(CMAKE_CUDA_COMPILER CACHE FILEPATH "" FORCE)#reset the compiler variable to enable the check
 
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
   enable_language(CUDA)
-  set(CMAKE_CUDA_COMPILER ${CMAKE_CUDA_COMPILER} CACHE FILEPATH "" FORCE)
 else()#create the variable from the one created by find_package(CUDA)
   set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE FILEPATH "" FORCE)
 endif()
 
 set(CUDA_LIBRARIES ${CUDA_LIBRARIES} CACHE INTERNAL "" FORCE)
 set(CUDA_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS} CACHE INTERNAL "" FORCE)
-set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE FILEPATH "" FORCE)
 set(CMAKE_CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER} CACHE FILEPATH "" FORCE)
 mark_as_advanced(CMAKE_CUDA_COMPILER CMAKE_CUDA_HOST_COMPILER)
 
@@ -137,9 +135,13 @@ if(NOT list_of_arch)#flags for arch have not been configured yet
       foreach(arch IN LISTS ARCH_LIST)#generate flags for those archs
         set(NVCC_FLAGS_EXTRA "${NVCC_FLAGS_EXTRA} -gencode arch=compute_${arch},code=sm_${arch}")
       endforeach()
-      set(NVCC_FLAGS_EXTRA "${NVCC_FLAGS_EXTRA} -D_FORCE_INLINES")
-      set(CUDA_NVCC_FLAGS ${NVCC_FLAGS_EXTRA} CACHE INTERNAL "" FORCE)
-      set(CMAKE_CUDA_FLAGS ${NVCC_FLAGS_EXTRA} CACHE INTERNAL "" FORCE)
+      if(CUDA_USER_FLAGS)
+        set(NVCC_FLAGS_EXTRA "${CUDA_USER_FLAGS} ${NVCC_FLAGS_EXTRA} -D_FORCE_INLINES")
+      else()
+        set(NVCC_FLAGS_EXTRA "${NVCC_FLAGS_EXTRA} -D_FORCE_INLINES")
+      endif()
+      set(CUDA_NVCC_FLAGS ${NVCC_FLAGS_EXTRA} CACHE STRING "" FORCE)
+      set(CMAKE_CUDA_FLAGS ${NVCC_FLAGS_EXTRA} CACHE STRING "" FORCE)
     endif()
   endif()
 endif()
