@@ -780,7 +780,13 @@ if(export) # if dependancy library is exported then we need to register its dep_
     append_Unique_In_Cache(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${shared_links}")
 	endif()
 	if(static_links)
-    append_Unique_In_Cache(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${static_links}")
+    foreach(link IN LISTS static_links)
+      if(link MATCHES "^-(.+)$")#special case : an OS link that is specifically specified as a static link
+        append_Unique_In_Cache(${PROJECT_NAME}_${component}_SYSTEM_STATIC_LINKS${USE_MODE_SUFFIX} ${link})
+      else()
+        append_Unique_In_Cache(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} ${link})
+      endif()
+    endforeach()
 	endif()
 
 else() # otherwise no need to register them since no more useful
@@ -792,7 +798,13 @@ else() # otherwise no need to register them since no more useful
 		if (	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER"
 			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
 		)
-      append_Unique_In_Cache(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${static_links}")
+      foreach(link IN LISTS static_links)
+        if(link MATCHES "^-(.+)$")#special case : an OS link that is specifically specified as a static link
+          append_Unique_In_Cache(${PROJECT_NAME}_${component}_SYSTEM_STATIC_LINKS${USE_MODE_SUFFIX} ${link})
+        else()
+          append_Unique_In_Cache(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} ${link})
+        endif()
+      endforeach()
 		endif()
 	endif()
 	if(shared_links)#private links are shared "non exported" libraries -> these links are used to process executables linking
@@ -959,6 +971,7 @@ set(${package}_${component}_DEFS${VAR_SUFFIX} CACHE INTERNAL "")
 set(${package}_${component}_OPTS${VAR_SUFFIX} CACHE INTERNAL "")
 set(${package}_${component}_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
 set(${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
+set(${package}_${component}_SYSTEM_STATIC_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
 set(${package}_${component}_INC_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
 set(${package}_${component}_LIB_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
 set(${package}_${component}_SOURCE_CODE CACHE INTERNAL "")
@@ -1727,7 +1740,8 @@ set(${RESULT} FALSE PARENT_SCOPE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 #scanning external dependencies
-if(${package}_${component}_LINKS${VAR_SUFFIX}) #only exported links here
+if(${package}_${component}_LINKS${VAR_SUFFIX}
+    OR ${package}_${component}_SYSTEM_STATIC_LINKS${VAR_SUFFIX}) #only exported links here
 	set(${RESULT} TRUE PARENT_SCOPE)
 	return()
 endif()
@@ -1997,6 +2011,7 @@ foreach(a_component IN LISTS ${package}_COMPONENTS)
 		file(APPEND ${file} "set(${package}_${a_component}_DEFS${MODE_SUFFIX} \"${${package}_${a_component}_DEFS${MODE_SUFFIX}}\" CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_LINKS${MODE_SUFFIX} ${${package}_${a_component}_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX} ${${package}_${a_component}_PRIVATE_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${package}_${a_component}_SYSTEM_STATIC_LINKS${MODE_SUFFIX} ${${package}_${a_component}_SYSTEM_STATIC_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_C_STANDARD${MODE_SUFFIX} ${${package}_${a_component}_C_STANDARD${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_CXX_STANDARD${MODE_SUFFIX} ${${package}_${a_component}_CXX_STANDARD${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
