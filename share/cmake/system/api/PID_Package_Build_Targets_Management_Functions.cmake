@@ -1395,7 +1395,6 @@ if(type STREQUAL "STATIC")
       get_filename_component(LIB_NAME ${link} NAME)
       set(target_name ext-${LIB_NAME}${TARGET_SUFFIX})
       if(NOT TARGET ${target_name})#target does not exist
-        message("building a static library target : ${target_name} with path : ${link}")
         add_library(${target_name} STATIC IMPORTED GLOBAL)
         set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
       endif()
