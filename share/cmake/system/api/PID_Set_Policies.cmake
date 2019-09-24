@@ -71,3 +71,11 @@ endif()
 if(POLICY CMP0064)
 	cmake_policy(SET CMP0064 NEW) #do not warn when a Keyword between guillemet "" is used in an if expression
 endif()
+
+if(POLICY CMP0057)
+  cmake_policy(SET CMP0057 NEW)#allow for if(... IN_LIST ...)  commands
+endif()
+
+if(POLICY CMP0002)
+  cmake_policy(SET CMP0002 NEW)#allow multiple targets with same name
+endif()
