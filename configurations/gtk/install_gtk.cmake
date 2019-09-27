@@ -17,18 +17,26 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-
+function(install_GTK_Version version)
 if(	CURRENT_DISTRIBUTION STREQUAL ubuntu
 	OR CURRENT_DISTRIBUTION STREQUAL debian)
-	if(gtk_version EQUAL 2)
+	if(version EQUAL 2)
 		execute_OS_Configuration_Command(apt-get install -y libgtk2.0-dev libgtkmm-2.4-dev)
-	elseif(gtk_version EQUAL 3)
+	elseif(version EQUAL 3)
 		execute_OS_Configuration_Command(apt-get install -y libgtkmm-3.0-dev)
 	endif()
 elseif(	CURRENT_DISTRIBUTION STREQUAL arch)
-	if(gtk_version EQUAL 2)
+	if(version EQUAL 2)
 		execute_OS_Configuration_Command(pacman -S gtk2 gtkmm --noconfirm)
-	elseif(gtk_version EQUAL 3)
+	elseif(version EQUAL 3)
 		execute_OS_Configuration_Command(pacman -S gtkmm3 --noconfirm)
 	endif()
+endif()
+endfunction(install_GTK_Version)
+
+if(gtk_version)
+		install_GTK_Version(${gtk_version})
+elseif(gtk_preferred)
+		list(GET gtk_preferred 0 best_version)
+		install_GTK_Version(${best_version})
 endif()
