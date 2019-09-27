@@ -110,7 +110,12 @@ macro(declare_PID_External_Package)
 			set(${package}_${comp}_C_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
 			set(${package}_${comp}_CXX_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
 			set(${package}_${comp}_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE INTERNAL "")
-			set(${package}_${comp}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
+
+      foreach(dep_comp IN LISTS ${package}_${comp}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+        set(${package}_${comp}_INTERNAL_EXPORT_${dep_comp}${VAR_SUFFIX} CACHE INTERNAL "")
+      endforeach()
+      set(${package}_${comp}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
+
 			foreach(dep_pack IN LISTS ${package}_${comp}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 				foreach(dep_comp IN LISTS ${package}_${comp}_EXTERNAL_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
 					set(${package}_${comp}_EXTERNAL_EXPORT_${dep_pack}_${dep_comp}${VAR_SUFFIX} CACHE INTERNAL "")

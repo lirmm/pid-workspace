@@ -1330,6 +1330,50 @@ endfunction(reset_Declared)
 #
 # .. ifmode:: internal
 #
+#  .. |export_External_Component| replace:: ``export_External_Component``
+#  .. _export_External_Component:
+#
+#  export_External_Component
+#  -------------------------
+#
+#   .. command:: export_External_Component(IS_EXPORTING package component dep_package dep_component mode)
+#
+#   Check whether a component exports another component.
+#
+#     :package: the name of the package containing the exporting component.
+#
+#     :component: the name of the exporting component.
+#
+#     :dep_package: the name of the package containing the exported component.
+#
+#     :dep_component: the name of the exported component.
+#
+#     :mode: the build mode to consider (Debug or Release)
+#
+#     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise.
+#
+function(export_External_Component IS_EXPORTING package component dep_package dep_component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+
+if(package STREQUAL "${dep_package}")# both components belong to smae external package
+	if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
+		set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+	else()
+		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
+	endif()
+else()
+	if(${package}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX})
+		set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+	else()
+		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
+	endif()
+endif()
+endfunction(export_External_Component)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |export_Component| replace:: ``export_Component``
 #  .. _export_Component:
 #
@@ -1980,6 +2024,19 @@ foreach(a_component IN LISTS ${package}_COMPONENTS)
 		file(APPEND ${file} "set(${package}_${a_component}_CXX_STANDARD${MODE_SUFFIX} ${${package}_${a_component}_CXX_STANDARD${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
 	file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX} ${${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+
+  #component are only defined for direct dependencies, if any defined for such a dependency
+  file(APPEND ${file} "set(${package}_${a_component}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+  foreach(dep_ext_pack IN LISTS ${package}_${a_component}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX})
+    file(APPEND ${file} "set(${package}_${a_component}_EXTERNAL_DEPENDENCY_${dep_ext_pack}_COMPONENTS${MODE_SUFFIX} ${${package}_${a_component}_EXTERNAL_DEPENDENCY_${dep_ext_pack}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+    foreach(dep_component IN LISTS ${package}_${a_component}_EXTERNAL_DEPENDENCY_${dep_ext_pack}_COMPONENTS${MODE_SUFFIX})
+      if(${package}_${a_component}_EXTERNAL_EXPORT_${dep_ext_pack}_${dep_component})
+        file(APPEND ${file} "set(${package}_${a_component}_EXTERNAL_EXPORT_${dep_ext_pack}_${dep_component}${MODE_SUFFIX} TRUE CACHE INTERNAL \"\")\n")
+      else()
+        file(APPEND ${file} "set(${package}_${a_component}_EXTERNAL_EXPORT_${dep_ext_pack}_${dep_component}${MODE_SUFFIX} FALSE CACHE INTERNAL \"\")\n")
+      endif()
+    endforeach()
+  endforeach()
 endforeach()
 
 # 4) package internal component dependencies

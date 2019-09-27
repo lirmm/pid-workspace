@@ -936,7 +936,6 @@ foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 		resolve_Source_Component_Linktime_Dependencies(${component} ${CMAKE_BUILD_TYPE} ${component}_THIRD_PARTY_LINKS)
 	endif()
 endforeach()
-
 #resolving runtime dependencies for install tree
 foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 	will_be_Built(RES ${component})
@@ -2084,9 +2083,7 @@ else()
 endif()
 # include directories and links do not require to be added
 # declare the internal dependency
-set(	${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}
-	${${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}} ${dep_component}
-	CACHE INTERNAL "")
+append_Unique_In_Cache(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_component})
 endfunction(declare_Internal_Component_Dependency)
 
 #.rst:
@@ -2166,8 +2163,6 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 		configure_Install_Variables(${component} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
-
-		#fill_Component_Target_With_Package_Dependency(${component} ${dep_package} ${dep_component} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 	endif()
 else()
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
@@ -2175,15 +2170,121 @@ else()
 endif()
 
 #links and include directories do not require to be added (will be found automatically)
-set(	${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}
-	${${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX}}
-	${dep_package}
-	CACHE INTERNAL "")
-set(	${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}
-	${${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX}}
-	${dep_component}
-	CACHE INTERNAL "")
+append_Unique_In_Cache(${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+append_Unique_In_Cache(${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${dep_component})
 endfunction(declare_Package_Component_Dependency)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_External_Component_Dependency| replace:: ``declare_External_Component_Dependency``
+#  .. _declare_External_Component_Dependency:
+#
+#  declare_External_Component_Dependency
+#  -------------------------------------
+#
+#   .. command:: declare_External_Component_Dependency(component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
+#
+#     Specify a dependency between a component of the currently defined native package and a component belonging to an external package.
+#
+#     :component: the name of the component that have a dependency.
+#
+#     :dep_package: the name of the external package that contains the dependency.
+#
+#     :dep_component: the name of the external component that IS the dependency, which belongs to dep_package.
+#
+#     :export: if TRUE component exports dep_component (i.e. public headers of component include public headers of dep_component)
+#
+#     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of dep_component (may be an empty string). These definitions are not exported by component.
+#
+#     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of dep_component (may be an empty string). These definitions are exported by component.
+#
+#     :dep_defs: preprocessor definitions used in the interface of dep_component, that are set when component uses dep_component (may be an empty string). These definitions are exported if dep_component is exported by component.
+#
+function(declare_External_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
+
+will_be_Built(COMP_WILL_BE_BUILT ${component})
+if(NOT COMP_WILL_BE_BUILT)
+	return()
+endif()
+
+
+if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} is not defined !")
+endif()
+
+if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
+	message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
+	install_External_Package(INSTALL_OK ${dep_package} TRUE FALSE)#force the reinstall of binary
+	if(NOT INSTALL_OK)
+		message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot redeploy package binary archive !")
+		return()
+	endif()
+
+	find_package(#configure again the package to get its description
+		${dep_package}
+		${${dep_package}_VERSION_STRING} #use the version already in use
+		EXACT
+		MODULE
+		REQUIRED
+	)
+	if(NOT ${dep_package}_HAS_DESCRIPTION)
+		#description still unavailable => fatal error
+		message (FATAL_ERROR "[PID] CRITICAL ERROR after reinstalling package ${dep_package} in ${PROJECT_NAME} : the project has no description of its content !")
+		return()
+	endif()
+	message ("[PID] INFO when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} now provides content description.")
+endif()
+
+will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
+#guarding depending on type of involved components
+is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
+is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+
+set(RES_STD_C)
+set(RES_STD_CXX)
+set(RES_RESOURCES)
+
+if (IS_HF_COMP) #a component without headers
+	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}" RES_STD_C RES_STD_CXX RES_RESOURCES)
+	configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "" "" "" "${RES_RESOURCES}")
+	# if(${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")#specific case of python components
+	# 	list(APPEND ALL_WRAPPED_FILES ${RES_LINKS_SH} ${RES_RUNTIME})
+	# 	create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
+	# else()
+	# 	if(COMP_WILL_BE_INSTALLED)
+	# 		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${RES_LINKS_SH}" "" "" "${RES_RUNTIME}")
+	# 	endif()
+	# 	# setting compile definitions for the target
+	# 	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
+	# endif()
+elseif(IS_BUILT_COMP) #a component that is built by the build procedure
+	# setting compile definitions for configuring the target
+	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" RES_STD_C RES_STD_CXX RES_RESOURCES)
+	if(export)#prepare the dependancy export
+		set(${PROJECT_NAME}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "")
+		# for install variables do the same as for native package => external info will be deduced from external component description
+		configure_Install_Variables(${component} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "${RES_STD_C}" "${RES_STD_CXX}" "${RES_RESOURCES}")
+	else()
+		# for install variables do the same as for native package => external info will be deduced from external component description
+		configure_Install_Variables(${component} ${export} "" "" "" "${comp_exp_defs}" "" "" "" "${RES_STD_C}" "${RES_STD_CXX}" "${RES_RESOURCES}")
+	endif()
+
+elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER") #a pure header component
+	# setting compile definitions for configuring the target
+	#prepare the dependancy export
+	set(${PROJECT_NAME}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
+	#prepare the dependancy export
+	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}" RES_STD_C RES_STD_CXX RES_RESOURCES)
+	configure_Install_Variables(${component} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "${RES_STD_C}" "${RES_STD_CXX}" "${RES_RESOURCES}")
+else()
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
+endif()
+#links and include directories do not require to be added (will be found automatically)
+append_Unique_In_Cache(${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+append_Unique_In_Cache(${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${dep_component})
+endfunction(declare_External_Component_Dependency)
 
 #.rst:
 #
@@ -2349,103 +2450,6 @@ else()
 	endif()
 endif()
 endfunction(declare_External_Package_Component_Dependency)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |declare_External_Component_Dependency| replace:: ``declare_External_Component_Dependency``
-#  .. _declare_External_Component_Dependency:
-#
-#  declare_External_Component_Dependency
-#  -------------------------------------
-#
-#   .. command:: declare_External_Component_Dependency(component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
-#
-#     Specify a dependency between a component of the currently defined native package and a component belonging to an external package.
-#
-#     :component: the name of the component that have a dependency.
-#
-#     :dep_package: the name of the external package that contains the dependency.
-#
-#     :dep_component: the name of the external component that IS the dependency, which belongs to dep_package.
-#
-#     :export: if TRUE component exports dep_component (i.e. public headers of component include public headers of dep_component)
-#
-#     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of dep_component (may be an empty string). These definitions are not exported by component.
-#
-#     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of dep_component (may be an empty string). These definitions are exported by component.
-#
-#     :dep_defs: preprocessor definitions used in the interface of dep_component, that are set when component uses dep_component (may be an empty string). These definitions are exported if dep_component is exported by component.
-#
-function(declare_External_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
-
-will_be_Built(COMP_WILL_BE_BUILT ${component})
-if(NOT COMP_WILL_BE_BUILT)
-	return()
-endif()
-
-if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
-	message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
-	install_External_Package(INSTALL_OK ${dep_package} TRUE FALSE)#force the reinstall of binary
-	if(NOT INSTALL_OK)
-		message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot redeploy package binary archive !")
-		return()
-	endif()
-
-	find_package(#configure again the package to get its description
-		${dep_package}
-		${${dep_package}_VERSION_STRING} #use the version already in use
-		EXACT
-		MODULE
-		REQUIRED
-	)
-	if(NOT ${dep_package}_HAS_DESCRIPTION)
-		#description still unavailable => fatal error
-		message (FATAL_ERROR "[PID] CRITICAL ERROR after reinstalling package ${dep_package} in ${PROJECT_NAME} : the project has no description of its content !")
-		return()
-	endif()
-	message ("[PID] INFO when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} now provides content description.")
-endif()
-
-will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
-#guarding depending on type of involved components
-is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
-is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
-
-#I need first to collect (recursively) all links and flags using the adequate variables (same as for native or close).
-collect_Links_And_Flags_For_External_Component(${dep_package} ${dep_component}
-RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_ST RES_LINKS_SH RES_STD_C RES_STD_CXX RES_RUNTIME)
-set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
-
-if (IS_HF_COMP) #a component withour headers
-	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")#specific case of python components
-		list(APPEND ALL_WRAPPED_FILES ${RES_LINKS_SH} ${RES_RUNTIME})
-		create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
-	else()
-		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${RES_LINKS_SH}" "" "" "${RES_RUNTIME}")
-		endif()
-		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LIB_DIRS}" "${RES_LINKS_SH}" "${RES_LINKS_ST}" "${RES_STD_C}" "${RES_STD_CXX}")
-	endif()
-elseif(IS_BUILT_COMP) #a component that is built by the build procedure
-	#prepare the dependancy export
-	set(EXTERNAL_DEFS ${dep_defs} ${RES_DEFS})
-	configure_Install_Variables(${component} ${export} "${RES_INCS}" "${RES_LIB_DIRS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${RES_STD_C}" "${RES_STD_CXX}" "${RES_RUNTIME}")
-
-	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LIB_DIRS}" "${RES_LINKS_SH}" "${RES_LINKS_ST}" "${RES_STD_C}" "${RES_STD_CXX}")
-elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER") #a pure header component
-	#prepare the dependancy export
-	configure_Install_Variables(${component} TRUE "${RES_INCS}" "${RES_LIB_DIRS}" "${EXTERNAL_DEFS}" "${comp_exp_defs}" "${RES_OPTS}" "${RES_LINKS_ST}" "${RES_LINKS_SH}" "${RES_STD_C}" "${RES_STD_CXX}" "${RES_RUNTIME}") #export is necessarily true for a pure header library
-
-	# setting compile definitions for the "fake" target
-	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${EXTERNAL_DEFS}" "${RES_INCS}" "${RES_LIB_DIRS}" "${RES_LINKS_SH}" "${RES_LINKS_ST}" "${RES_STD_C}" "${RES_STD_CXX}")
-else()
-	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
-endif()
-endfunction(declare_External_Component_Dependency)
 
 #.rst:
 #

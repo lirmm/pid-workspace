@@ -3772,12 +3772,12 @@ endfunction(translate_Standard_Into_Option)
 #     :IS_LESS: the output variable that is TRUE if first is an older standard than second.
 #
 function(is_CXX_Version_Less IS_LESS first second)
-if(NOT second OR second STREQUAL "")#second is not set so false anytime
-	set(${IS_LESS} FALSE PARENT_SCOPE)
-	return()
+if(NOT first) #first is not set so true anytime
+  set(${IS_LESS} TRUE PARENT_SCOPE)
+  return()
 endif()
-if(NOT first OR first STREQUAL "") #first is not set so true anytime
-	set(${IS_LESS} TRUE PARENT_SCOPE)
+if(NOT second)#second is not set so false anytime
+	set(${IS_LESS} FALSE PARENT_SCOPE)
 	return()
 endif()
 if(first EQUAL 98)
@@ -3820,12 +3820,12 @@ endfunction(is_CXX_Version_Less)
 #     :IS_LESS: the output variable that is TRUE if first is an older standard than second.
 #
 function(is_C_Version_Less IS_LESS first second)
-if(NOT second OR second STREQUAL "") #second is not set so false anytime
-	set(${IS_LESS} FALSE PARENT_SCOPE)
+if(NOT first) #first is not set so true anytime
+	set(${IS_LESS} TRUE PARENT_SCOPE)
 	return()
 endif()
-if(NOT first OR first STREQUAL "") #first is not set so true anytime
-	set(${IS_LESS} TRUE PARENT_SCOPE)
+if(NOT second) #second is not set so false anytime
+	set(${IS_LESS} FALSE PARENT_SCOPE)
 	return()
 endif()
 if(first EQUAL 11)#last version is 11 so never less

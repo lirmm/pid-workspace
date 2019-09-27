@@ -368,6 +368,58 @@ endfunction(manage_Language_Standards)
 #
 # .. ifmode:: internal
 #
+#  .. |get_External_Component_Runtime_Resources_Dependencies| replace:: ``get_External_Component_Runtime_Resources_Dependencies``
+#  .. _get_External_Component_Runtime_Resources_Dependencies:
+#
+#  get_External_Component_Runtime_Resources_Dependencies
+#  -------------------------------------------------------
+#
+#   .. command:: get_External_Component_Runtime_Resources_Dependencies(RES_RESOURCES package component mode)
+#
+#   Get list of path to all resources (executables, modules, files and folders) directly used by an external component at runtime.
+#
+#     :package: the name of the external package containing the component.
+#
+#     :component: the name of the external component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
+#
+function(get_External_Component_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(result)
+if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
+	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
+  list(APPEND result ${COMPLETE_RESOURCES_PATH})#the direct path to the dependency (absolute) : will be the case anytime for external packages
+endif()
+
+#check for tuntime resources in external component internal dependencies
+foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  #recursion to get runtime resources
+  get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${package} ${dep_component} ${mode})
+  if(DEP_RESOURCES)
+    list(APPEND result ${DEP_RESOURCES})
+  endif()
+endforeach()
+
+#then check for runtime resources in external component dependencies
+foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    #recursion to get runtime resources
+    get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${dep_package} ${dep_component} ${mode})
+    if(DEP_RESOURCES)
+      list(APPEND result ${DEP_RESOURCES})
+    endif()
+  endforeach()
+endforeach()
+set(${RES_RESOURCES} ${result} PARENT_SCOPE)
+endfunction(get_External_Component_Runtime_Resources_Dependencies)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |get_Bin_Component_Direct_Runtime_Resources_Dependencies| replace:: ``get_Bin_Component_Direct_Runtime_Resources_Dependencies``
 #  .. _get_Bin_Component_Direct_Runtime_Resources_Dependencies:
 #
@@ -377,6 +429,7 @@ endfunction(manage_Language_Standards)
 #   .. command:: get_Bin_Component_Direct_Runtime_Resources_Dependencies(RES_RESOURCES package component mode)
 #
 #   Get list of path to all resources (executables, modules, files and folders) directly used by a component (from another package than currenlty defined one) at runtime.
+#   Note: this function can be used also with external components as native and external component share same description variables for runtime resources.
 #
 #     :package: the name of the package containing the component.
 #
@@ -395,10 +448,21 @@ if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported
 		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
 			list(APPEND result ${${package}_ROOT_DIR}/share/resources/${path})#the path contained by the link
 		else() #absolute resource path coming from external or system dependencies
-			list(APPEND result ${path})#the direct path to the dependency (absolute)
+			list(APPEND result ${path})#the direct path to the dependency (absolute) : will be the case anytime for external packages
 		endif()
 	endforeach()
 endif()
+
+#then check for runtime resources in external component dependencies
+foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    #recursion to get runtime resources
+    get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${dep_package} ${dep_component} ${mode})
+    if(DEP_RESOURCES)
+      list(APPEND result ${DEP_RESOURCES})
+    endif()
+  endforeach()
+endforeach()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_Resources_Dependencies)
 
@@ -443,7 +507,6 @@ foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
 			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
 		endif()
-
 	endforeach()
 endforeach()
 
@@ -508,6 +571,72 @@ endfunction(get_Bin_Component_Direct_Internal_Runtime_Dependencies)
 #
 # .. ifmode:: internal
 #
+#  .. |get_External_Component_Runtime_Links_Dependencies| replace:: ``get_External_Component_Runtime_Links_Dependencies``
+#  .. _get_External_Component_Runtime_Links_Dependencies:
+#
+#  get_External_Component_Runtime_Links_Dependencies
+#  ---------------------------------------------------
+#
+#   .. command:: get_External_Component_Runtime_Links_Dependencies(RES_LINKS package component mode)
+#
+#   Get list of all public shared links directly used by an external component at runtime.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :RES_LINKS: the output variable that contains the list of shared links used by component at runtime.
+#
+
+function(get_External_Component_Runtime_Links_Dependencies RES_LINKS package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(result)
+#directly adding shared links owned by the component
+if(${package}_${component}_SHARED_LINKS${VAR_SUFFIX})#if the component defines public shared links
+  resolve_External_Libs_Path(RES_SHARED "${${package}_${component}_SHARED_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+  foreach(lib IN LISTS RES_SHARED)
+    is_Shared_Lib_With_Path(IS_SHARED ${lib})
+    if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
+      list(APPEND result ${lib})
+    endif()
+  endforeach()
+endif()
+
+#then check for shared links in external component internal dependencies
+foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  # if the current component export another internal one, then its shared libs will be part of the final runtime links dependencies
+  if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
+    #recursion to get runtime resources
+    get_External_Component_Runtime_Links_Dependencies(DEP_LINKS ${package} ${dep_component} ${mode})
+    if(DEP_LINKS)
+      list(APPEND result ${DEP_LINKS})
+    endif()
+  endif()
+endforeach()
+
+#then check for shared links in external component external dependencies
+foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    # if the current component export another external component, then shared libs of this dependency will be part of the final runtime links dependencies
+    if(${package}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX})
+      #recursion to get runtime resources
+      get_External_Component_Runtime_Links_Dependencies(DEP_LINKS ${dep_package} ${dep_component} ${mode})
+      if(DEP_LINKS)
+        list(APPEND result ${DEP_LINKS})
+      endif()
+    endif()
+  endforeach()
+endforeach()
+
+set(${RES_LINKS} ${result} PARENT_SCOPE)
+endfunction(get_External_Component_Runtime_Links_Dependencies)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |get_Bin_Component_Direct_Runtime_Links_Dependencies| replace:: ``get_Bin_Component_Direct_Runtime_Links_Dependencies``
 #  .. _get_Bin_Component_Direct_Runtime_Links_Dependencies:
 #
@@ -538,6 +667,15 @@ if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
 		endif()
 	endforeach()
 endif()
+foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    #shared links of direct dependency will be needed if native component depends on the external dependency
+    get_External_Component_Runtime_Links_Dependencies(DEP_LINKS ${dep_package} ${dep_component} ${mode})
+    if(DEP_LINKS)
+      list(APPEND result ${DEP_LINKS})
+    endif()
+  endforeach()
+endforeach()
 set(${RES_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_Links_Dependencies)
 
@@ -566,7 +704,7 @@ endfunction(get_Bin_Component_Direct_Runtime_Links_Dependencies)
 #
 function(get_Bin_Component_Runtime_Dependencies ALL_RUNTIME_RESOURCES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(result "")
+set(result)
 
 # 1) adding directly used external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
 
@@ -614,9 +752,11 @@ foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFF
 endforeach()
 
 # 4) adequately removing first duplicates in the list
-list(REVERSE result)
-list(REMOVE_DUPLICATES result)
-list(REVERSE result)
+if(result)
+  list(REVERSE result)
+  list(REMOVE_DUPLICATES result)
+  list(REVERSE result)
+endif()
 set(${ALL_RUNTIME_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Runtime_Dependencies)
 
@@ -676,6 +816,22 @@ if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
 		endif()
 	endforeach()
 endif()
+
+#also need to check in external packages explicit components
+foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${mode_var_suffix})
+  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${mode_var_suffix})
+    set(RES_PRIVATE_LINKS)
+
+    if(${package}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component}${mode_var_suffix})#if exported then this is not a private shared link (but its dependencies may be)
+      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${dep_package} ${dep_component} FALSE ${mode})
+    else()#if not exported, then all shraed libraries are private
+      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${dep_package} ${dep_component} TRUE ${mode})
+    endif()
+    if(RES_PRIVATE_LINKS)
+      list(APPEND undirect_list ${RES_PRIVATE_LINKS})
+    endif()
+  endforeach()
+endforeach()
 
 # 2) searching in dependent packages
 foreach(dep_package IN LISTS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
@@ -761,6 +917,85 @@ endfunction(find_Dependent_Private_Shared_Libraries)
 #
 # .. ifmode:: internal
 #
+#  .. |get_External_Component_Runtime_PrivateLinks_Dependencies| replace:: ``get_External_Component_Runtime_PrivateLinks_Dependencies``
+#  .. _get_External_Component_Runtime_PrivateLinks_Dependencies:
+#
+#  get_External_Component_Runtime_PrivateLinks_Dependencies
+#  ----------------------------------------------------------
+#
+#   .. command:: get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS package component mode)
+#
+#   Get list of all private shared links used by an external component at runtime.
+#
+#     :package: the name of the external package containing the component.
+#
+#     :component: the name of the external component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :all: if true return all symlinks otherwise return only private ones.
+#
+#     :RES_PRIVATE_LINKS: the output variable that contains the list of private shared links used by component at runtime.
+#
+function(get_External_Component_Runtime_PrivateLinks_Dependencies RES_PRIVATE_LINKS package component all mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(result)
+if(all)#all symlinks returned so returning shared links provided by the external component (they will be also considered as private in caller context)
+  if(${package}_${component}_SHARED_LINKS${VAR_SUFFIX})#if there are private links
+  	resolve_External_Libs_Path(RES_PRIVATE "${${package}_${component}_SHARED_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+    foreach(lib IN LISTS RES_PRIVATE)
+  		is_Shared_Lib_With_Path(IS_SHARED ${lib})
+  		if(IS_SHARED)
+        list(APPEND result ${lib})
+  		endif()
+  	endforeach()
+  endif()
+endif()
+
+#also need to check in external packages explicit internal components dependencies
+foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  set(RES_PRIVATE)
+  if(all)#i.e. all shared links are considered as private (since not exported at higher level)
+    get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${package} ${dep_component} TRUE ${mode})
+  else()#returning only private links (i.e. current component is exported)
+    if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})#management of transitivity => getting private links of the dependency
+      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${package} ${dep_component} FALSE ${mode})
+    else()#if the dependency is not exported then all its shared links are private by definition
+      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${package} ${dep_component} TRUE ${mode})
+    endif()
+  endif()
+  if(RES_PRIVATE)
+    list(APPEND result ${RES_PRIVATE})
+  endif()
+endforeach()
+
+#also need to check in external packages explicit components
+foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    set(RES_PRIVATE)
+    if(all)#i.e. all shared links are considered as private (since not exported at higher level)
+      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+    else()#returning only private links (i.e. current component is exported)
+      if(${package}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX})#management of transitivity => getting private links of the dependency
+        get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} FALSE ${mode})
+      else()#if the dependency is not exported then all its shared links are private by definition
+        get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+      endif()
+    endif()
+    if(RES_PRIVATE)
+      list(APPEND result ${RES_PRIVATE})
+    endif()
+  endforeach()
+endforeach()
+
+set(${RES_PRIVATE_LINKS} ${result} PARENT_SCOPE)
+endfunction(get_External_Component_Runtime_PrivateLinks_Dependencies)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies| replace:: ``get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies``
 #  .. _get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies:
 #
@@ -792,6 +1027,22 @@ if(${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX})#if there are private link
 		endif()
 	endforeach()
 endif()
+
+#also need to check in external packages explicit components
+foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    set(RES_PRIVATE)
+    if(${package}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component})#if exported then this is not a private shared link (but its dependencies may be)
+      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} FALSE ${mode})
+    else()#if not exported, then all shraed libraries are private
+      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+    endif()
+    if(RES_PRIVATE)
+      list(APPEND result ${RES_PRIVATE})
+    endif()
+  endforeach()
+endforeach()
+
 set(${RES_PRIVATE_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies)
 
@@ -828,16 +1079,30 @@ is_Runtime_Component(COMP_IS_RUNTIME ${PROJECT_NAME} ${component})
 if(NOT COMP_IS_RUNTIME)
 	return()
 endif()
-
 set(undirect_deps)
 # 0) no need to search for system libraries as they are installed and found automatically by the OS binding mechanism, idem for external dependencies since they are always direct dependencies for the currenlty build component
+
+foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    set(RES_PRIVATE)
+    if(${PROJECT_NAME}_${component}_EXTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})#management of transitivity => getting private links of the dependency
+      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} FALSE ${mode})
+    else()#if the dependency is not exported then all its shared links are private by definition
+      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+    endif()
+    if(RES_PRIVATE)
+      list(APPEND undirect_deps ${RES_PRIVATE})
+    endif()
+  endforeach()
+endforeach()
+
 
 # 1) searching each direct dependency in other packages
 foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
 		set(LIST_OF_DEP_SHARED)
 		is_HeaderFree_Component(IS_HF ${dep_package} ${dep_component})
-		if(NOT IS_HF)
+		if(NOT IS_HF)#if no header then no symbol exported at link time (module or executable)
 			find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${dep_package} ${dep_component} TRUE ${CMAKE_BUILD_TYPE})
 			if(LIST_OF_DEP_SHARED)
 				list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
@@ -850,7 +1115,8 @@ endforeach()
 foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	set(LIST_OF_DEP_SHARED)
 	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${dep_component})
-	if(NOT IS_HF)
+	if(NOT IS_HF)#if no header then no symbol exported at link time (module or executable)
+    #otherwise find private shared libs for internal dependencies
 		find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${PROJECT_NAME} ${dep_component} TRUE ${CMAKE_BUILD_TYPE})
 		if(LIST_OF_DEP_SHARED)
 			list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
@@ -954,7 +1220,8 @@ if(	${package}_${component}_TYPE STREQUAL "SHARED"
 	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${package} ${component} ${mode})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
 	create_Bin_Component_Symlinks(${package} ${component} ${mode} "${ALL_RUNTIME_DEPS}")
-	if(${package}_${component}_TYPE STREQUAL "MODULE"
+
+  if(${package}_${component}_TYPE STREQUAL "MODULE"
 			AND ${package}_${component}_HAS_PYTHON_WRAPPER #this is a python wrapper => python needs additionnal configuration to work properly
 			AND CURRENT_PYTHON)#python is activated
 		# getting path to internal targets dependecies that produce a runtime code (not used for rpath but required for python modules)
@@ -1087,11 +1354,11 @@ endfunction(create_Source_Component_Python_Symlinks)
 #
 #     :mode: the build mode (Release or Debug) for the component.
 #
-#     :resources: the list of path to runtime resources that need to be symlinked.
+#     :resources_var: the variable containing the list of path to runtime resources that need to be symlinked.
 #
-function(create_Source_Component_Symlinks component mode resources)
+function(create_Source_Component_Symlinks component mode resources_var)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-foreach(resource IN LISTS resources)
+foreach(resource IN LISTS ${resources_var})
 	install_Runtime_Symlink(${resource} "${${PROJECT_NAME}_DEPLOY_PATH}/.rpath" ${component}${TARGET_SUFFIX})
 endforeach()
 endfunction(create_Source_Component_Symlinks)
@@ -1134,8 +1401,10 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
   if(third_party_libs)
 		list(APPEND ALL_RUNTIME_DEPS ${third_party_libs})
   endif()
-
-	create_Source_Component_Symlinks(${component} ${CMAKE_BUILD_TYPE} "${ALL_RUNTIME_DEPS}")
+  if(ALL_RUNTIME_DEPS)
+    list(REMOVE_DUPLICATES ALL_RUNTIME_DEPS)
+  endif()
+	create_Source_Component_Symlinks(${component} ${CMAKE_BUILD_TYPE} ALL_RUNTIME_DEPS)
 	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE"
 			AND ${PROJECT_NAME}_${component}_HAS_PYTHON_WRAPPER #this is a python wrapper => python needs additionnal configuration to work properly
 			AND CURRENT_PYTHON)#python is activated
@@ -1195,6 +1464,16 @@ if(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exp
 	endforeach()
 endif()
 
+#then check for runtime resources in explicit external component dependencies
+foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    #recursion to get runtime resources
+    get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${dep_package} ${dep_component} ${mode})
+    if(DEP_RESOURCES)
+      list(APPEND result ${DEP_RESOURCES})
+    endif()
+  endforeach()
+endforeach()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
 endfunction(get_Source_Component_Direct_Runtime_Resources_Dependencies)
 
@@ -1393,6 +1672,25 @@ function(locate_External_Package_Used_In_Component USE_PACKAGE package component
   string(FIND "${all_flags}" "<${external_package}>" INDEX)#simply find the pattern specifying the path to installed package version folder
   if(INDEX GREATER -1)
     set(${USE_PACKAGE} TRUE PARENT_SCOPE)
+  endif()
+
+  # check in explicit description od external component dependencies
+  if(${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})#simply check that the package is used in component
+    list(FIND ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${external_package} INDEX)
+    if(NOT INDEX EQUAL -1)
+      set(${USE_PACKAGE} TRUE PARENT_SCOPE)
+      return()
+    endif()
+    #otherwise search in dependencies of component dependencies
+    foreach(dep_ext_pack IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+      foreach(dep_ext_comp IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_ext_pack}${VAR_SUFFIX})
+        #do recursion (possible since native and external packages share same structure for external dependencies)
+        locate_External_Package_Used_In_Component(PACK_USED ${dep_ext_pack} ${dep_ext_comp} ${external_package})
+        if(PACK_USED)
+          set(${USE_PACKAGE} TRUE PARENT_SCOPE)
+        endif()
+      endforeach()
+    endforeach()
   endif()
 endfunction(locate_External_Package_Used_In_Component)
 
