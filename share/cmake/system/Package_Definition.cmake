@@ -898,6 +898,7 @@ endmacro(build_PID_Package)
 #
 #   :DESCRIPTION <text>: Provides a description of the component. This will be used in generated documentation.
 #   :USAGE <list of headers to include>: This should be used to list useful includes to put in client code. This is used for documentation purpose.
+#   :DOCUMENTATION: specifies a file (markdown) used to generate an online documentaion for the component.
 #   :C_STANDARD <90|99|11>: C language standard used to build the component. Defaults to ``90`` (i.e. ANSI-C)
 #   :CXX_STANDARD <98|11|14|17>: C++ language standard used to build the component. Defaults to ``98``.
 #   :RUNTIME_RESOURCES <files>: ``<files>`` is a list of files and folders relative to the ``share/resources`` folder. These files will be installed automatically and should be accessed in a PID component using the `pid-rpath <http://pid.lirmm.net/pid-framework/packages/pid-rpath>`_ package.
@@ -945,7 +946,7 @@ endmacro(PID_Component)
 
 macro(declare_PID_Component)
 set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON LOGGABLE)
-set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD)
+set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD DOCUMENTATION)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES INSTALL_SYMLINKS DEPEND EXPORT)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
@@ -1184,6 +1185,10 @@ if(DECLARE_PID_COMPONENT_LOGGABLE)#need to deal with dependency to pid-log if no
   if(INDEX EQUAL -1)#pid-log is not already a dependency
     declare_PID_Component_Dependency(COMPONENT ${DECLARE_PID_COMPONENT_NAME} EXPORT pid-log PACKAGE pid-log)
   endif()
+endif()
+
+if(DECLARE_PID_COMPONENT_DOCUMENTATION)
+  declare_PID_Component_Documentation(COMPONENT ${DECLARE_PID_COMPONENT_NAME} FILE ${DECLARE_PID_COMPONENT_DOCUMENTATION})
 endif()
 endmacro(declare_PID_Component)
 
