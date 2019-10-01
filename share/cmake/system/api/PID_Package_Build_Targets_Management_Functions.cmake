@@ -738,7 +738,7 @@ endfunction(create_TestUnit_Target)
 #  collect_Links_And_Flags_For_External_Component
 #  ----------------------------------------------
 #
-#   .. command:: collect_Links_And_Flags_For_External_Component(dep_package dep_component RES_INCS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_C_STANDARD RES_CXX_STANDARD RES_RUNTIME)
+#   .. command:: collect_Links_And_Flags_For_External_Component(dep_package dep_component RES_INCS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED)
 #
 #     Get all required options needed to use an external component.
 #
@@ -758,27 +758,10 @@ endfunction(create_TestUnit_Target)
 #
 #     :RES_LINKS_SHARED: output variable containing the list of path to shared libraries and linker options to use when using dep_component.
 #
-#     :RES_C_STANDARD: output variable containing the C language standard to use when using dep_component.
-#
-#     :RES_CXX_STANDARD: output variable containing the C++ language standard to use when using dep_component.
-#
-#     :RES_RUNTIME: output variable containing the list of path to files or folder used at runtime by dep_component.
-#
 function(collect_Links_And_Flags_For_External_Component dep_package dep_component mode
-RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_C_STANDARD RES_CXX_STANDARD RES_RUNTIME)
+RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED)
 
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-
-if(${dep_package}_${dep_component}_C_STANDARD${VAR_SUFFIX})#initialize with current value
-	set(C_STD_RESULT ${${dep_package}_${dep_component}_C_STANDARD${VAR_SUFFIX}})
-else()
-	set(C_STD_RESULT 90)#take lowest value
-endif()
-if(${dep_package}_${dep_component}_CXX_STANDARD${VAR_SUFFIX})#initialize with current value
-	set(CXX_STD_RESULT ${${dep_package}_${dep_component}_CXX_STANDARD${VAR_SUFFIX}})
-else()
-	set(CXX_STD_RESULT 98)#take lowest value
-endif()
 
 #simply return all properties of the external component
 set(${RES_INCS} ${${dep_package}_${dep_component}_INC_DIRS${VAR_SUFFIX}} PARENT_SCOPE)
@@ -787,9 +770,6 @@ set(${RES_DEFS} ${${dep_package}_${dep_component}_DEFS${VAR_SUFFIX}} PARENT_SCOP
 set(${RES_OPTS} ${${dep_package}_${dep_component}_OPTS${VAR_SUFFIX}} PARENT_SCOPE)
 set(${RES_LINKS_STATIC} ${${dep_package}_${dep_component}_STATIC_LINKS${VAR_SUFFIX}} PARENT_SCOPE)
 set(${RES_LINKS_SHARED} ${${dep_package}_${dep_component}_SHARED_LINKS${VAR_SUFFIX}} PARENT_SCOPE)
-set(${RES_RUNTIME} ${${dep_package}_${dep_component}_RUNTIME_RESOURCES${VAR_SUFFIX}} PARENT_SCOPE)
-set(${RES_C_STANDARD} ${C_STD_RESULT} PARENT_SCOPE)
-set(${RES_CXX_STANDARD} ${CXX_STD_RESULT} PARENT_SCOPE)
 endfunction(collect_Links_And_Flags_For_External_Component)
 
 #.rst:
@@ -1009,7 +989,7 @@ endfunction(manage_Additional_Component_Inherited_Flags)
 #  fill_Component_Target_With_External_Component_Dependency
 #  --------------------------------------------------------
 #
-#   .. command:: fill_Component_Target_With_External_Component_Dependency(component export comp_defs comp_exp_defs ext_defs RES_STD_C RES_STD_CXX RES_RESOURCES)
+#   .. command:: fill_Component_Target_With_External_Component_Dependency(component export comp_defs comp_exp_defs ext_defs)
 #
 #     Configure a component target to link with external content (from external packages or operating system).
 #
@@ -1029,19 +1009,10 @@ endfunction(manage_Additional_Component_Inherited_Flags)
 #
 #     :dep_defs: preprocessor definitions used in interface of dep_component but defined by implementation of component.
 #
-#     :RES_STD_C: output variable containing the C standard to use in target.
-#
-#     :RES_STD_CXX: output variable containing the CXX standard to use in target.
-#
-#     :RES_RESOURCES: output variable containing the list of runtime resource of dependencies.
-#
-function(fill_Component_Target_With_External_Component_Dependency component dep_package dep_component mode export comp_defs comp_exp_defs ext_defs RES_STD_C RES_STD_CXX RES_RESOURCES)
-  create_External_Component_Dependency_Target(CREATED ${dep_package} ${dep_component} ${mode} COMP_STD_C COMP_STD_CXX COMP_RESOURCES)
+function(fill_Component_Target_With_External_Component_Dependency component dep_package dep_component mode export comp_defs comp_exp_defs ext_defs)
+  create_External_Component_Dependency_Target(${dep_package} ${dep_component} ${mode})
   #no need to check for target created, always bind !
   bind_Target(${component} ${dep_package} ${dep_component} ${mode} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
-  set(${RES_STD_C} ${COMP_STD_C} PARENT_SCOPE)
-  set(${RES_STD_CXX} ${COMP_STD_CXX} PARENT_SCOPE)
-  set(${RES_RESOURCES} ${COMP_RESOURCES} PARENT_SCOPE)
 endfunction(fill_Component_Target_With_External_Component_Dependency)
 
 #.rst:
@@ -1172,76 +1143,23 @@ endfunction(fill_Component_Target_With_External_Dependency)
 #
 #     :mode: the build mode for the imported target.
 #
-#     :RESULT_STD_C: the output variable containing the C standard to use when using this compoennt.
-#
-#     :RESULT_STD_CXX: the output variable containing the CXX standard to use when using this compoennt.
-#
-#     :RESULT_RESOURCES: the output variable containing the list of runtime resources to use when using this compoennt.
-#
-function (create_All_Imported_External_Component_Dependency_Targets package component mode RESULT_STD_C RESULT_STD_CXX RESULT_RESOURCES)
+function (create_All_Imported_External_Component_Dependency_Targets package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #collect only the package dependencies, not the internal ones
-set(CURR_STD_C)
-set(CURR_STD_CXX)
-set(CURR_RESOURCES)
-
 foreach(a_dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-  set(COMP_STD_C)
-  set(COMP_STD_CXX)
-  set(COMP_RESOURCES)
   #for all direct internal dependencies
-	create_External_Component_Dependency_Target(CREATED ${package} ${a_dep_component} ${mode} COMP_STD_C COMP_STD_CXX COMP_RESOURCES)
-  if(CREATED)#bind only if target not already exists
-    bind_Imported_External_Component_Target(${package} ${component} ${package} ${a_dep_component} ${mode})
-  endif()
-  #resolve things not manage (well) by CMake
-  if(COMP_RESOURCES)
-    list(APPEND CURR_RESOURCES ${COMP_RESOURCES})
-  endif()
-  is_C_Version_Less(IS_C_LESS "${CURR_STD_C}" "${COMP_STD_C}")
-  if(IS_C_LESS)
-    set(CURR_STD_C ${COMP_STD_C})
-  endif()
-  is_CXX_Version_Less(IS_CXX_LESS "${CURR_STD_CXX}" "${COMP_STD_CXX}")
-  if(IS_CXX_LESS)
-    set(CURR_STD_CXX ${COMP_STD_CXX})
-  endif()
-
+	create_External_Component_Dependency_Target(${package} ${a_dep_component} ${mode})
+  bind_Imported_External_Component_Target(${package} ${component} ${package} ${a_dep_component} ${mode})
 endforeach()
+
 foreach(a_dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	foreach(a_dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${a_dep_package}_COMPONENTS${VAR_SUFFIX})
-    set(COMP_STD_C)
-    set(COMP_STD_CXX)
-    set(COMP_RESOURCES)
     #for all direct package dependencies
-		create_External_Component_Dependency_Target(CREATED ${a_dep_package} ${a_dep_component} ${mode} COMP_STD_C COMP_STD_CXX COMP_RESOURCES)
-    if(CREATED)#bind only if target not already exists
-      bind_Imported_External_Component_Target(${package} ${component} ${a_dep_package} ${a_dep_component} ${mode})
-    endif()
-    #resolve things not manage (well) by CMake
-    if(COMP_RESOURCES)
-      list(APPEND CURR_RESOURCES ${COMP_RESOURCES})
-    endif()
-    is_C_Version_Less(IS_C_LESS "${CURR_STD_C}" "${COMP_STD_C}")
-    if(IS_C_LESS)
-      set(CURR_STD_C ${COMP_STD_C})
-    endif()
-    is_CXX_Version_Less(IS_CXX_LESS "${CURR_STD_CXX}" "${COMP_STD_CXX}")
-    if(IS_CXX_LESS)
-      set(CURR_STD_CXX ${COMP_STD_CXX})
-    endif()
+		create_External_Component_Dependency_Target(${a_dep_package} ${a_dep_component} ${mode})
+    bind_Imported_External_Component_Target(${package} ${component} ${a_dep_package} ${a_dep_component} ${mode})
   endforeach()
 endforeach()
 
-#set returned values
-if(COMP_RESOURCES)
-  list(REMOVE_DUPLICATES COMP_RESOURCES)
-  set(${RESULT_RESOURCES} ${COMP_RESOURCES} PARENT_SCOPE)
-else()
-  set(${RESULT_RESOURCES} PARENT_SCOPE)
-endif()
-set(RESULT_STD_C ${CURR_STD_C} PARENT_SCOPE)
-set(RESULT_STD_CXX ${CURR_STD_CXX} PARENT_SCOPE)
 endfunction(create_All_Imported_External_Component_Dependency_Targets)
 
 #.rst:
@@ -1266,12 +1184,24 @@ endfunction(create_All_Imported_External_Component_Dependency_Targets)
 #
 function (create_All_Imported_Dependency_Targets package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-#collect only the package dependencies, not the internal ones
+
+#dealing with explicit external dependencies
+foreach(a_dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  foreach(a_dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${a_dep_package}_COMPONENTS${VAR_SUFFIX})
+    #for all direct package dependencies
+    create_External_Component_Dependency_Target(${a_dep_package} ${a_dep_component} ${mode})
+    bind_Imported_External_Target(${package} ${component} ${a_dep_package} ${a_dep_component} ${mode})
+  endforeach()
+endforeach()
+
+#dealing with internal dependencies
 foreach(a_dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	#for all direct internal dependencies
 	create_Dependency_Target(${package} ${a_dep_component} ${mode})
 	bind_Imported_Target(${package} ${component} ${package} ${a_dep_component} ${mode})
 endforeach()
+
+#dealing with package dependencies
 foreach(a_dep_package IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 	foreach(a_dep_component IN LISTS ${package}_${component}_DEPENDENCY_${a_dep_package}_COMPONENTS${VAR_SUFFIX})
 		#for all direct package dependencies
@@ -1428,11 +1358,9 @@ endfunction(create_Dependency_Target)
 #  create_External_Component_Dependency_Target
 #  -------------------------------------------
 #
-#   .. command:: create_External_Component_Dependency_Target(TARGET_CREATED dep_package dep_component mode RESULT_STD_C RESULT_STD_CXX RESULT_RESOURCES)
+#   .. command:: create_External_Component_Dependency_Target(dep_package dep_component mode)
 #
 #     Create an imported target for a dependency that is an external component. This ends up in creating all targets required by this dependency if it has dependencies (recursion).
-#
-#     :TARGET_CREATED: output variable that is TRUE if target has been created, FALSE otherwise (already exist).
 #
 #     :dep_package: the name of the external package that contains the dependency.
 #
@@ -1440,27 +1368,19 @@ endfunction(create_Dependency_Target)
 #
 #     :mode: the build mode for the imported target.
 #
-#     :RESULT_STD_C: the output variable containing the C standard to use when using this compoennt.
-#
-#     :RESULT_STD_CXX: the output variable containing the CXX standard to use when using this compoennt.
-#
-#     :RESULT_RESOURCES: the output variable containing the list of runtime resources to use when using this compoennt.
-#
-function(create_External_Component_Dependency_Target TARGET_CREATED dep_package dep_component mode RESULT_STD_C RESULT_STD_CXX RESULT_RESOURCES)
+function(create_External_Component_Dependency_Target dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(EXT_SH_LINKS)
 set(EXT_ST_LINKS)
-set(${TARGET_CREATED} FALSE PARENT_SCOPE)
 #contrarily to native dependencies we do not know the nature of the component
-#getting all know properties of the external component
-collect_Links_And_Flags_For_External_Component(${dep_package} ${dep_component} ${mode}
-  RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED RES_C_STANDARD RES_CXX_STANDARD RES_RUNTIME)
 set(target_name ${dep_package}-${dep_component}${TARGET_SUFFIX})
 if(NOT TARGET ${target_name})#check that this target does not exist, otherwise naming conflict
+  #getting all know properties of the external component
+  collect_Links_And_Flags_For_External_Component(${dep_package} ${dep_component} ${mode}
+              RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_STATIC RES_LINKS_SHARED)
+
   # 0) create an imported target for the component
   add_library(${target_name} INTERFACE IMPORTED GLOBAL)#need to use an interface library to export all other proêrties of the component
-  set(${TARGET_CREATED} TRUE PARENT_SCOPE)
-
   # 1) create dependent targets for each binary (also allow same global management of links as for legacy package dependencies)
   if(RES_LINKS_SHARED)
     evaluate_Variables_In_List(EVAL_SH_LINKS RES_LINKS_SHARED) #first evaluate element of the list => if they are variables they are evaluated
@@ -1472,7 +1392,7 @@ if(NOT TARGET ${target_name})#check that this target does not exist, otherwise n
   				list(APPEND EXT_SH_LINKS_OPTIONS ${link})
         else()#target created (not a linker option), link it
           target_link_libraries(${target_name} INTERFACE ${EXT_SH_TARGET_NAME})# targets with binaries are just proxies for the global external componeht target (an external component may define many binaries)
-  			endif()
+        endif()
   		endforeach()
   	endif()
     list(APPEND EXT_LINKS ${EXT_SH_LINKS_OPTIONS})
@@ -1487,7 +1407,7 @@ if(NOT TARGET ${target_name})#check that this target does not exist, otherwise n
   				list(APPEND EXT_ST_LINKS_OPTIONS ${link})
         else()#target created (not a linker option), link it
           target_link_libraries(${target_name} INTERFACE ${EXT_ST_TARGET_NAME})# targets with binaries are just proxies for the global external componeht target (an external component may define many binaries)
-  			endif()
+        endif()
   		endforeach()
   	endif()
     list(APPEND EXT_LINKS ${EXT_ST_LINKS_OPTIONS})
@@ -1514,38 +1434,8 @@ if(NOT TARGET ${target_name})#check that this target does not exist, otherwise n
                                               "${EVAL_DEFS}"
                                               "${RES_OPTS}"
                                               "${EXT_LINKS}")
-endif()
-# here manage specific properties of component that cannot be set into imported targets
-# need to do this anytime the target is used because different components with no relations may need these informations
-if(RES_C_STANDARD)
-  evaluate_Variables_In_List(EVAL_CSTD RES_C_STANDARD)
-endif()
-if(RES_CXX_STANDARD)
-  evaluate_Variables_In_List(EVAL_CXXSTD RES_CXX_STANDARD)
-endif()
-if(RES_RUNTIME)
-  evaluate_Variables_In_List(EVAL_RESOURCES RES_RUNTIME)
-endif()
-#do this again
-create_All_Imported_External_Component_Dependency_Targets(${dep_package} ${dep_component} ${mode} IMP_STD_C IMP_STD_CXX IMP_RESOURCES)
-set(EVAL_RESOURCES ${EVAL_RESOURCES} ${IMP_RESOURCES})
-if(EVAL_RESOURCES)
-  list(REMOVE_DUPLICATES EVAL_RESOURCES)
-  set(${RESULT_RESOURCES} ${EVAL_RESOURCES} PARENT_SCOPE)
-else()
-  set(${RESULT_RESOURCES} PARENT_SCOPE)
-endif()
-is_C_Version_Less(IS_C_LESS "${EVAL_CSTD}" "${IMP_STD_C}")
-if(IS_C_LESS)
-  set(${RESULT_STD_C} ${IMP_STD_C} PARENT_SCOPE)
-else()
-  set(${RESULT_STD_C} ${EVAL_CSTD} PARENT_SCOPE)
-endif()
-is_CXX_Version_Less(IS_CXX_LESS "${EVAL_CXXSTD}" "${IMP_STD_CXX}")
-if(IS_CXX_LESS)
-  set(${RESULT_STD_CXX} ${IMP_STD_CXX} PARENT_SCOPE)
-else()
-  set(${RESULT_STD_CXX} ${EVAL_CXXSTD} PARENT_SCOPE)
+
+  create_All_Imported_External_Component_Dependency_Targets(${dep_package} ${dep_component} ${mode})
 endif()
 endfunction(create_External_Component_Dependency_Target)
 
@@ -1775,11 +1665,11 @@ endfunction(create_Imported_Static_Library_Target)
 #
 function(create_Imported_Shared_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
-    if(WIN32)
-        add_library(${package}-${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL)#create the target for the imported library
-    else()
-    	add_library(${package}-${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)#create the target for the imported library
-    endif()
+  if(WIN32)
+    add_library(${package}-${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL)#create the target for the imported library
+  else()
+  	add_library(${package}-${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)#create the target for the imported library
+  endif()
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})#find the binary to use depending on build mode
 	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
 	if(NOT MODE_TO_IMPORT MATCHES mode)
@@ -1909,7 +1799,7 @@ get_Language_Standards(DEP_STD_C DEP_STD_CXX ${dep_package} ${dep_component} ${m
 is_C_Version_Less(IS_LESS "${STD_C}" "${DEP_STD_C}")
 if( IS_LESS )#dependency has greater or equal level of standard required
 	set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${DEP_STD_C} CACHE INTERNAL "")
-	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
+	if(configure_build AND DEP_STD_C)# the build property is set for a target that is built locally (otherwise would produce errors)
 		set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES PID_C_STANDARD ${DEP_STD_C}) #the minimal value in use file is set adequately
 	endif()
 endif()
@@ -1917,7 +1807,7 @@ endif()
 is_CXX_Version_Less(IS_LESS "${STD_CXX}" "${DEP_STD_CXX}")
 if( IS_LESS )#dependency has greater or equal level of standard required
 	set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${DEP_STD_CXX} CACHE INTERNAL "")#the minimal value in use file is set adequately
-	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
+	if(configure_build AND DEP_STD_CXX)# the build property is set for a target that is built locally (otherwise would produce errors)
 		set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES PID_CXX_STANDARD ${DEP_STD_CXX})
 	endif()
 endif()
@@ -2196,6 +2086,60 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 endif()	#else, it is an application or a module => runtime dependency declaration only (build recursion is stopped)
 endfunction(bind_Imported_Target)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |bind_Imported_External_Target| replace:: ``bind_Imported_External_Target``
+#  .. _bind_Imported_External_Target:
+#
+#  bind_Imported_External_Target
+#  -----------------------------
+#
+#   .. command:: bind_Imported_External_Target(package component dep_package dep_component mode)
+#
+#   Bind a native imported target with an external target.
+#
+#     :package: the name of the native package that contains the component whose target depends on another imported external target.
+#
+#     :component: the name of the native component whose target depends on another imported target.
+#
+#     :dep_package: the name of the external package that contains the dependency.
+#
+#     :dep_component: the name of the external component that IS the dependency.
+#
+#     :mode: the build mode for the targets.
+#
+function(bind_Imported_External_Target package component dep_package dep_component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+export_External_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${mode})
+if(IS_EXPORTING)
+	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
+	)
+	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
+	)
+	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
+	)
+	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+	)
+else()
+	if(NOT ${package}_${component}_TYPE STREQUAL "SHARED")#static OR header lib always export links
+		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+		)
+	endif()
+endif()#exporting the linked libraries in any case
+
+# set adequately language standard for component depending on the value of dep_component
+resolve_Standard_Before_Linking(${package} ${component} ${dep_package} ${dep_component} ${mode} FALSE)
+endfunction(bind_Imported_External_Target)
+
+#
 
 #.rst:
 #

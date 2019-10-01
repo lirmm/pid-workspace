@@ -1338,7 +1338,7 @@ endfunction(reset_Declared)
 #
 #   .. command:: export_External_Component(IS_EXPORTING package component dep_package dep_component mode)
 #
-#   Check whether a component exports another component.
+#   Check whether a native or external component exports another external component.
 #
 #     :package: the name of the package containing the exporting component.
 #

@@ -2153,7 +2153,7 @@ elseif(IS_BUILT_COMP)
 
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		# setting compile definitions for configuring the target
-	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
+	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency => no export possible
 		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
 		configure_Install_Variables(${component} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
@@ -2242,26 +2242,22 @@ will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
 is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 
-set(RES_STD_C)
-set(RES_STD_CXX)
-set(RES_RESOURCES)
-
 if (IS_HF_COMP) #a component without headers
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}" RES_STD_C RES_STD_CXX RES_RESOURCES)
+	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
 	if(COMP_WILL_BE_INSTALLED)
-		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "" "" "" "${RES_RESOURCES}")#standard is not propagated in this situation (no symbols exported in binaries)
+		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "" "" "" "")#standard is not propagated in this situation (no symbols exported in binaries)
 	endif()
 elseif(IS_BUILT_COMP) #a component that is built by the build procedure
 	# setting compile definitions for configuring the target
-	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" RES_STD_C RES_STD_CXX RES_RESOURCES)
+	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 	if(export)#prepare the dependancy export
 		set(${PROJECT_NAME}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "")
 		# for install variables do the same as for native package => external info will be deduced from external component description
-		configure_Install_Variables(${component} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "${RES_STD_C}" "${RES_STD_CXX}" "${RES_RESOURCES}")
+		configure_Install_Variables(${component} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 	else()
 		# for install variables do the same as for native package => external info will be deduced from external component description
-		configure_Install_Variables(${component} ${export} "" "" "" "${comp_exp_defs}" "" "" "" "${RES_STD_C}" "${RES_STD_CXX}" "${RES_RESOURCES}")
+		configure_Install_Variables(${component} ${export} "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
 	endif()
 
 elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER") #a pure header component
@@ -2269,8 +2265,8 @@ elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER") #a pure header comp
 	#prepare the dependancy export
 	set(${PROJECT_NAME}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 	#prepare the dependancy export
-	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}" RES_STD_C RES_STD_CXX RES_RESOURCES)
-	configure_Install_Variables(${component} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "${RES_STD_C}" "${RES_STD_CXX}" "${RES_RESOURCES}")
+	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
+	configure_Install_Variables(${component} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 else()
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()
