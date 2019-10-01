@@ -96,7 +96,7 @@ endfunction(is_Closed_Source_Dependency_Package)
 #  list_Public_Includes
 #  --------------------
 #
-#   .. command:: list_Public_Includes(INCLUDES package component mode)
+#   .. command:: list_Public_Includes(INCLUDES package component mode self)
 #
 #   List all public include path of a component.
 #
@@ -106,15 +106,21 @@ endfunction(is_Closed_Source_Dependency_Package)
 #
 #     :mode: the build mode (Release or Debug) for the component.
 #
+#     :self: if TRUE the component returns its own header dir (for native only).
+#
 #     :INCLUDES: the output variable that contains the list of public include path.
 #
-function(list_Public_Includes INCLUDES package component mode)
+function(list_Public_Includes INCLUDES package component mode self)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-
-set(RES "${${package}_ROOT_DIR}/include/${${package}_${component}_HEADER_DIR_NAME}")
+if(self)
+  set(RES "${${package}_ROOT_DIR}/include/${${package}_${component}_HEADER_DIR_NAME}")
+else()
+  set(RES)
+endif()
 #additionally provided include dirs (cflags -I<path>) (external/system exported include dirs)
-if(${package}_${component}_INC_DIRS${mode_suffix})
-	resolve_External_Includes_Path(RES_INCLUDES "${${package}_${component}_INC_DIRS${VAR_SUFFIX}}" ${mode})
+if(${package}_${component}_INC_DIRS${VAR_SUFFIX})
+  evaluate_Variables_In_List(EVAL_INCS ${package}_${component}_INC_DIRS${VAR_SUFFIX})#first evaluate element of the list => if they are variables they are evaluated
+  resolve_External_Includes_Path(RES_INCLUDES "${EVAL_INCS}" ${mode})
 	list(APPEND RES ${RES_INCLUDES})
 endif()
 set(${INCLUDES} ${RES} PARENT_SCOPE)
@@ -146,16 +152,98 @@ endfunction(list_Public_Includes)
 #
 function(list_Public_Links LINKS STATIC_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+
 #provided additionnal ld flags (exported external/system libraries and ldflags)
 if(${package}_${component}_LINKS${VAR_SUFFIX})
-	resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})
+  evaluate_Variables_In_List(EVAL_SH_LINKS ${package}_${component}_LINKS${VAR_SUFFIX}) #first evaluate element of the list => if they are variables they are evaluated
+	resolve_External_Libs_Path(RES_LINKS "${EVAL_SH_LINKS}" ${mode})
   set(${LINKS} "${RES_LINKS}" PARENT_SCOPE)
 endif()
 if(${package}_${component}_SYSTEM_STATIC_LINKS${VAR_SUFFIX})
-	resolve_External_Libs_Path(RES_ST_LINKS "${${package}_${component}_SYSTEM_STATIC_LINKS${VAR_SUFFIX}}" ${mode})
-  set(${STATIC_LINKS} "${RES_ST_LINKS}" PARENT_SCOPE)
+  evaluate_Variables_In_List(EVAL_ST_LINKS ${package}_${component}_SYSTEM_STATIC_LINKS${VAR_SUFFIX}) #first evaluate element of the list => if they are variables they are evaluated
+	resolve_External_Libs_Path(RES_ST_LINKS "${EVAL_ST_LINKS}" ${mode})
+  set(${STATIC_LINKS} ${RES_ST_LINKS} PARENT_SCOPE)
 endif()
 endfunction(list_Public_Links)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_External_Links| replace:: ``list_External_Links``
+#  .. _list_External_Links:
+#
+#  list_External_Links
+#  -------------------
+#
+#   .. command:: list_External_Links(SHARED_LINKS STATIC_LINKS package component mode)
+#
+#   List all public links of a component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :LINKS: the output variable that contains the list of public links.
+#
+#     :STATIC_LINKS: the output variable that contains the list of links to static libraries.
+#
+#     :STATIC_LINKS: the output variable that contains the list of links to shared libraries.
+#
+function(list_External_Links SHARED_LINKS STATIC_LINKS package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(${STATIC_LINKS} PARENT_SCOPE)
+set(${SHARED_LINKS} PARENT_SCOPE)
+#provided additionnal ld flags (exported external/system libraries and ldflags)
+if(${package}_${component}_STATIC_LINKS${VAR_SUFFIX})
+  evaluate_Variables_In_List(EVAL_ST_LINKS ${package}_${component}_STATIC_LINKS${VAR_SUFFIX}) #first evaluate element of the list => if they are variables they are evaluated
+	resolve_External_Libs_Path(RES_ST_LINKS "${EVAL_ST_LINKS}" ${mode})
+  set(${STATIC_LINKS} ${RES_ST_LINKS} PARENT_SCOPE)
+endif()
+if(${package}_${component}_SHARED_LINKS${VAR_SUFFIX})
+  evaluate_Variables_In_List(EVAL_SH_LINKS ${package}_${component}_SHARED_LINKS${VAR_SUFFIX}) #first evaluate element of the list => if they are variables they are evaluated
+	resolve_External_Libs_Path(RES_SH_LINKS "${EVAL_SH_LINKS}" ${mode})
+  set(${SHARED_LINKS} ${RES_SH_LINKS} PARENT_SCOPE)
+endif()
+endfunction(list_External_Links)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Public_Lib_Dirs| replace:: ``list_Public_Lib_Dirs``
+#  .. _list_Public_Lib_Dirs:
+#
+#  list_Public_Lib_Dirs
+#  --------------------
+#
+#   .. command:: list_Public_Lib_Dirs(DIRS package component mode)
+#
+#   List all public library directories of a component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :DIRS: the output variable that contains the list of public library directories.
+#
+function(list_Public_Lib_Dirs DIRS package component mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+#provided additionnal ld flags (exported external/system libraries and ldflags)
+if(${package}_${component}_LIB_DIRS${VAR_SUFFIX})
+  #evaluate variable that may come from system configurations
+  evaluate_Variables_In_List(EVAL_LDIRS ${package}_${component}_LIB_DIRS${VAR_SUFFIX})
+  #then resolve complete path to external packages
+  resolve_External_Libs_Path(RES_DIRS "${EVAL_LDIRS}" ${mode})
+  set(${DIRS} ${RES_DIRS} PARENT_SCOPE)
+else()
+  set(${DIRS} PARENT_SCOPE)
+endif()
+endfunction(list_Public_Lib_Dirs)
 
 #.rst:
 #
@@ -182,7 +270,9 @@ endfunction(list_Public_Links)
 function(list_Public_Definitions DEFS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${package}_${component}_DEFS${VAR_SUFFIX})
-	set(${DEFS} ${${package}_${component}_DEFS${VAR_SUFFIX}} PARENT_SCOPE)
+  #evaluate variables that may come from system configurations
+  evaluate_Variables_In_List(EVAL_INCS ${package}_${component}_DEFS${VAR_SUFFIX})
+	set(${DEFS} ${EVAL_INCS} PARENT_SCOPE)
 endif()
 endfunction(list_Public_Definitions)
 
@@ -213,28 +303,31 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #checking that no compiler option is used directly to set the standard
 #remove the option and set the standard adequately instead
 set(FILTERED_OPTS)
-foreach(opt IN LISTS ${package}_${component}_OPTS${VAR_SUFFIX})
-	#checking for CXX_STANDARD
-	is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
-	if(STANDARD_NUMBER)
-		message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c++${STANDARD_NUMBER} or -std=gnu++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
-		is_CXX_Version_Less(IS_LESS ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
-		if(IS_LESS)
-			set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
-		endif()
-	else()#checking for C_STANDARD
-		is_C_Standard_Option(STANDARD_NUMBER ${opt})
-		if(STANDARD_NUMBER)
-			message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c${STANDARD_NUMBER} or -std=gnu${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
-			is_C_Version_Less(IS_LESS ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
-			if(IS_LESS)
-				set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
-			endif()
-		else()
-			list(APPEND FILTERED_OPTS ${opt})#keep the option unchanged
-		endif()
-	endif()
-endforeach()
+if(${package}_${component}_OPTS${VAR_SUFFIX})
+  evaluate_Variables_In_List(EVAL_OPTS ${package}_${component}_OPTS${VAR_SUFFIX})
+  foreach(opt IN LISTS EVAL_OPTS)
+  	#checking for CXX_STANDARD
+  	is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
+  	if(STANDARD_NUMBER)
+  		message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c++${STANDARD_NUMBER} or -std=gnu++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+  		is_CXX_Version_Less(IS_LESS ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
+  		if(IS_LESS)
+  			set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+  		endif()
+  	else()#checking for C_STANDARD
+  		is_C_Standard_Option(STANDARD_NUMBER ${opt})
+  		if(STANDARD_NUMBER)
+  			message("[PID] WARNING: in component ${component} of package ${package}, directly using option -std=c${STANDARD_NUMBER} or -std=gnu${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+  			is_C_Version_Less(IS_LESS ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} ${STANDARD_NUMBER})
+  			if(IS_LESS)
+  				set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
+  			endif()
+  		else()
+  			list(APPEND FILTERED_OPTS ${opt})#keep the option unchanged
+  		endif()
+  	endif()
+  endforeach()
+endif()
 set(${OPTS} ${FILTERED_OPTS} PARENT_SCOPE)
 endfunction(list_Public_Options)
 

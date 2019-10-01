@@ -767,6 +767,7 @@ else() # otherwise no need to register them since no more useful
 		endif()
 	endif()
 	if(shared_links)#private links are shared "non exported" libraries -> these links are used to process executables linking
+    #should be used in very rare cases for system libraries at specific places OR only to manage legacy binary packages OR to manage private links to external package content 
     append_Unique_In_Cache(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} "${shared_links}")
 	endif()
 endif()
