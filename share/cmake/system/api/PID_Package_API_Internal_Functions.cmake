@@ -2247,18 +2247,11 @@ set(RES_STD_CXX)
 set(RES_RESOURCES)
 
 if (IS_HF_COMP) #a component without headers
+	# setting compile definitions for the target
 	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}" RES_STD_C RES_STD_CXX RES_RESOURCES)
-	configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "" "" "" "${RES_RESOURCES}")
-	# if(${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")#specific case of python components
-	# 	list(APPEND ALL_WRAPPED_FILES ${RES_LINKS_SH} ${RES_RUNTIME})
-	# 	create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
-	# else()
-	# 	if(COMP_WILL_BE_INSTALLED)
-	# 		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${RES_LINKS_SH}" "" "" "${RES_RUNTIME}")
-	# 	endif()
-	# 	# setting compile definitions for the target
-	# 	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} FALSE "${comp_defs}" "" "${dep_defs}")
-	# endif()
+	if(COMP_WILL_BE_INSTALLED)
+		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "" "" "" "${RES_RESOURCES}")#standard is not propagated in this situation (no symbols exported in binaries)
+	endif()
 elseif(IS_BUILT_COMP) #a component that is built by the build procedure
 	# setting compile definitions for configuring the target
 	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" RES_STD_C RES_STD_CXX RES_RESOURCES)
@@ -2340,16 +2333,11 @@ is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 
 if (IS_HF_COMP) #no header to the component
-	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")#specific case of python components
-		list(APPEND ALL_WRAPPED_FILES ${shared_links} ${runtime_resources})
-		create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
-	else()
-		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "" "" "" "${runtime_resources}")
-		endif()
-		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+	if(COMP_WILL_BE_INSTALLED)
+		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "" "" "" "${runtime_resources}")
 	endif()
+	# setting compile definitions for the target
+	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
 	configure_Install_Variables(${component} ${export} "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
@@ -2424,16 +2412,11 @@ else()
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
 
 	if (IS_HF_COMP)
-		if(${PROJECT_NAME}_${component}_TYPE STREQUAL "PYTHON")#specific case of python components
-			list(APPEND ALL_WRAPPED_FILES ${shared_links} ${runtime_resources})
-			create_Python_Wrapper_To_Files(${component} "${ALL_WRAPPED_FILES}")
-		else()
-			if(COMP_WILL_BE_INSTALLED)
-				configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${shared_links}" "" "" "${runtime_resources}")
-			endif()
-			# setting compile definitions for the target
-			fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+		if(COMP_WILL_BE_INSTALLED)
+			configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${shared_links}" "" "" "${runtime_resources}")
 		endif()
+		# setting compile definitions for the target
+		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
 		configure_Install_Variables(${component} ${export} "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
