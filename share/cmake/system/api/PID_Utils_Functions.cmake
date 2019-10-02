@@ -253,7 +253,7 @@ endfunction(extract_Info_From_Platform)
 #
 function(escape_Guillemet_From_String str_var)
   if(${str_var})
-    string(REPLACE "\"" "\\\"" ret_str ${${str_var}})
+    string(REPLACE "\"" "\\\"" ret_str "${${str_var}}")
     set(${str_var} ${ret_str} PARENT_SCOPE)
   endif()
 endfunction(escape_Guillemet_From_String)
