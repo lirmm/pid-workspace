@@ -1897,9 +1897,9 @@ endfunction(get_Library_Dirs_For_Links)
 #     :RES_EXT: the output variable containing the resulting extension to use for shared objects, depending on platform.
 #
 function(create_Shared_Lib_Extension RES_EXT platform soname)
-    extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
-	if(RES_OS STREQUAL macos)
-    if(soname)
+  extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
+  if(RES_OS STREQUAL macos)
+    if(soname OR soname EQUAL 0)
       if(soname MATCHES "^\\.[0-9].*$")
         set(${RES_EXT} "${soname}.dylib" PARENT_SCOPE)
       else()
@@ -1911,7 +1911,7 @@ function(create_Shared_Lib_Extension RES_EXT platform soname)
 	elseif(RES_OS STREQUAL windows)
 		set(${RES_EXT} ".dll" PARENT_SCOPE)
 	else()# Linux or any other standard UNIX system
-		if(soname)
+		if(soname OR soname EQUAL 0)
 			if(soname MATCHES "^\\.[0-9].*$")#MATCH: the soname expression start with a dot
 				set(${RES_EXT} ".so${soname}" PARENT_SCOPE)
 			else()#the expression starts with a number, simply add the dot
