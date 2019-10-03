@@ -1649,15 +1649,13 @@ endfunction(get_Source_Component_Runtime_Resources_Dependencies)
 #
 #     :mode: the build mode (Release or Debug) for the component.
 #
-#     :resources: the list of path to runtime resources that need to be symlinked.
+#     :var_resources: the parent scope variable containing the list of path to runtime resources that need to be symlinked.
 #
-function(create_Source_Component_Symlinks_Build_Tree component mode resources)
+function(create_Source_Component_Symlinks_Build_Tree component mode var_resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(resources)
-	foreach(resource IN LISTS resources)
-		create_Runtime_Symlink(${resource} ${CMAKE_BINARY_DIR}/.rpath ${component}${TARGET_SUFFIX})
-	endforeach()
-endif()
+foreach(resource IN LISTS ${var_resources})
+	create_Runtime_Symlink(${resource} ${CMAKE_BINARY_DIR}/.rpath ${component}${TARGET_SUFFIX})
+endforeach()
 endfunction(create_Source_Component_Symlinks_Build_Tree)
 
 #.rst:
@@ -1688,7 +1686,10 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 
 	# getting direct and undirect runtime resources dependencies
 	get_Source_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${component} ${CMAKE_BUILD_TYPE})#resolving dependencies according to local links
-	create_Source_Component_Symlinks_Build_Tree(${component} ${CMAKE_BUILD_TYPE} "${RES_RESOURCES}")
+  if(RES_RESOURCES)
+    list(REMOVE_DUPLICATES RES_RESOURCES)
+    create_Source_Component_Symlinks_Build_Tree(${component} ${CMAKE_BUILD_TYPE} RES_RESOURCES)
+  endif()
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies_Build_Tree)
 
