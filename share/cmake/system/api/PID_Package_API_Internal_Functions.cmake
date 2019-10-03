@@ -952,6 +952,15 @@ foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 	endif()
 endforeach()
 
+#resetting temporary variables used in optimization of configruation process
+foreach(comp IN LISTS TEMP_VARS)
+	unset(TEMP_${comp}_PRIVATE_LINKS_COMPLETE CACHE)
+	unset(TEMP_${comp}_PRIVATE_LINKS_PARTIAL CACHE)
+	unset(TEMP_${comp}_PUBLIC_LINKS CACHE)
+	unset(TEMP_${comp}_RUNTIME_RESOURCES CACHE)
+endforeach()
+unset(TEMP_VARS CACHE)
+
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############
 #################################################

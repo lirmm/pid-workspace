@@ -482,6 +482,13 @@ endfunction(manage_Language_Standards)
 function(get_External_Component_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
+
+#optimization (compute things only one time)
+if(DEFINED TEMP_${package}_${component}_RUNTIME_RESOURCES)
+  set(${RES_RESOURCES} ${TEMP_${package}_${component}_RUNTIME_RESOURCES} PARENT_SCOPE)
+  return()
+endif()
+
 if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
 	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
   list(APPEND result ${COMPLETE_RESOURCES_PATH})#the direct path to the dependency (absolute) : will be the case anytime for external packages
@@ -506,7 +513,15 @@ foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_
     endif()
   endforeach()
 endforeach()
+
+if(result)
+  list(REMOVE_DUPLICATES result)
+endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
+
+append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+set(TEMP_${package}_${component}_RUNTIME_RESOURCES "${result}" CACHE INTERNAL "")
+
 endfunction(get_External_Component_Runtime_Resources_Dependencies)
 
 #.rst:
@@ -584,6 +599,13 @@ endfunction(get_Bin_Component_Direct_Runtime_Resources_Dependencies)
 function(get_Bin_Component_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
+#optimization (compute things only one time)
+if(DEFINED TEMP_${package}_${component}_RUNTIME_RESOURCES)
+  set(${RES_RESOURCES} ${TEMP_${package}_${component}_RUNTIME_RESOURCES} PARENT_SCOPE)
+  return()
+endif()
+
+
 get_Bin_Component_Direct_Runtime_Resources_Dependencies(DIRECT_RESOURCES ${package} ${component} ${mode})
 list(APPEND result ${DIRECT_RESOURCES})
 
@@ -618,7 +640,13 @@ foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFF
 	endif()
 endforeach()
 
+if(result)
+  list(REMOVE_DUPLICATES result)
+endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
+
+append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+set(TEMP_${package}_${component}_RUNTIME_RESOURCES "${result}" CACHE INTERNAL "")
 endfunction(get_Bin_Component_Runtime_Resources_Dependencies)
 
 
@@ -686,6 +714,11 @@ endfunction(get_Bin_Component_Direct_Internal_Runtime_Dependencies)
 function(get_External_Component_Runtime_Links_Dependencies RES_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
+if(DEFINED TEMP_${package}_${component}_PUBLIC_LINKS)
+  set(${RES_LINKS} ${TEMP_${package}_${component}_PUBLIC_LINKS} PARENT_SCOPE)
+  return()
+endif()
+
 #directly adding shared links owned by the component
 if(${package}_${component}_SHARED_LINKS${VAR_SUFFIX})#if the component defines public shared links
   resolve_External_Libs_Path(RES_SHARED "${${package}_${component}_SHARED_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
@@ -723,7 +756,13 @@ foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_
   endforeach()
 endforeach()
 
+if(result)
+  list(REMOVE_DUPLICATES result)
+endif()
 set(${RES_LINKS} ${result} PARENT_SCOPE)
+
+append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+set(TEMP_${package}_${component}_PUBLIC_LINKS "${result}" CACHE INTERNAL "")
 endfunction(get_External_Component_Runtime_Links_Dependencies)
 
 #.rst:
@@ -751,6 +790,7 @@ endfunction(get_External_Component_Runtime_Links_Dependencies)
 function(get_Bin_Component_Direct_Runtime_Links_Dependencies RES_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
+
 if(${package}_${component}_LINKS${VAR_SUFFIX})#if there are exported links
   resolve_External_Libs_Path(RES "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
 	foreach(lib IN LISTS RES)
@@ -769,6 +809,10 @@ foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_
     endif()
   endforeach()
 endforeach()
+
+if(result)
+  list(REMOVE_DUPLICATES result)
+endif()
 set(${RES_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_Links_Dependencies)
 
@@ -798,6 +842,12 @@ endfunction(get_Bin_Component_Direct_Runtime_Links_Dependencies)
 function(get_Bin_Component_Runtime_Dependencies ALL_RUNTIME_RESOURCES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
+
+#optimize
+if(DEFINED TEMP_${package}_${component}_PUBLIC_LINKS)
+  set(${ALL_RUNTIME_RESOURCES} ${TEMP_${package}_${component}_PUBLIC_LINKS} PARENT_SCOPE)
+  return()
+endif()
 
 # 1) adding directly used external dependencies (only those bound to external package are interesting, system dependencies do not need a specific traetment)
 
@@ -846,11 +896,13 @@ endforeach()
 
 # 4) adequately removing first duplicates in the list
 if(result)
-  list(REVERSE result)
   list(REMOVE_DUPLICATES result)
-  list(REVERSE result)
 endif()
 set(${ALL_RUNTIME_RESOURCES} ${result} PARENT_SCOPE)
+
+append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+set(TEMP_${package}_${component}_PUBLIC_LINKS "${result}" CACHE INTERNAL "")
+
 endfunction(get_Bin_Component_Runtime_Dependencies)
 
 ##################################################################################
@@ -884,6 +936,19 @@ endfunction(get_Bin_Component_Runtime_Dependencies)
 function(find_Dependent_Private_Shared_Libraries LIST_OF_UNDIRECT_DEPS package component is_direct mode)
 set(undirect_list)
 get_Mode_Variables(mode_binary_suffix mode_var_suffix ${mode})
+#optimization check => test if already performed
+if(is_direct)
+  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL)
+    set(${LIST_OF_UNDIRECT_DEPS} ${TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL} PARENT_SCOPE)
+    return()
+  endif()
+else()
+  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE)
+    set(${LIST_OF_UNDIRECT_DEPS} ${TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE} PARENT_SCOPE)
+    return()
+  endif()
+endif()
+
 # 0) no need to search for systems dependencies as they can be found automatically using OS shared libraries binding mechanism
 
 # 1) searching public external dependencies
@@ -1002,7 +1067,14 @@ endforeach()
 
 if(undirect_list) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
 	list(REMOVE_DUPLICATES undirect_list)
-	set(${LIST_OF_UNDIRECT_DEPS} "${undirect_list}" PARENT_SCOPE)
+endif()
+set(${LIST_OF_UNDIRECT_DEPS} "${undirect_list}" PARENT_SCOPE)
+
+append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+if(NOT is_direct)
+  set(TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE "${undirect_list}" CACHE INTERNAL "")
+else()
+  set(TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL "${undirect_list}" CACHE INTERNAL "")
 endif()
 endfunction(find_Dependent_Private_Shared_Libraries)
 
@@ -1033,6 +1105,18 @@ endfunction(find_Dependent_Private_Shared_Libraries)
 function(get_External_Component_Runtime_PrivateLinks_Dependencies RES_PRIVATE_LINKS package component all mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
+if(all)#same operation has already been performed no need to compute again
+  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE)
+    set(${RES_PRIVATE_LINKS} ${TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE} PARENT_SCOPE)
+    return()
+  endif()
+else()
+  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL)
+    set(${RES_PRIVATE_LINKS} ${TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL} PARENT_SCOPE)
+    return()
+  endif()
+endif()
+
 if(all)#all symlinks returned so returning shared links provided by the external component (they will be also considered as private in caller context)
   if(${package}_${component}_SHARED_LINKS${VAR_SUFFIX})#if there are private links
   	resolve_External_Libs_Path(RES_PRIVATE "${${package}_${component}_SHARED_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
@@ -1081,6 +1165,15 @@ foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_
   endforeach()
 endforeach()
 
+if(result)
+  list(REMOVE_DUPLICATES result)#optimize a bit the size of output
+endif()
+append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+if(all)
+  set(TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE "${result}" CACHE INTERNAL "")
+else()
+  set(TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL "${result}" CACHE INTERNAL "")
+endif()
 set(${RES_PRIVATE_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_External_Component_Runtime_PrivateLinks_Dependencies)
 
@@ -1135,6 +1228,10 @@ foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_
     endif()
   endforeach()
 endforeach()
+
+if(result)
+  list(REMOVE_DUPLICATES result)
+endif()
 
 set(${RES_PRIVATE_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies)
@@ -1506,8 +1603,8 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 		#cannot use the generator expression due to generator expression not evaluated in install(CODE) -> CMake BUG
 		if(CURRENT_PLATFORM_OS STREQUAL "macos")
 		    set(suffix_ext .dylib)
-        elseif(CURRENT_PLATFORM_OS STREQUAL "windows")
-            set(suffix_ext .dll)
+    elseif(CURRENT_PLATFORM_OS STREQUAL "windows")
+        set(suffix_ext .dll)
 		else()
 		    set(suffix_ext .so)
 		endif()
@@ -1593,6 +1690,11 @@ endfunction(get_Source_Component_Direct_Runtime_Resources_Dependencies)
 function(get_Source_Component_Runtime_Resources_Dependencies RES_RESOURCES component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
+#optimization (compute things only one time)
+if(DEFINED TEMP_${PROJECT_NAME}_${component}_RUNTIME_RESOURCES)
+  set(${RES_RESOURCES} ${TEMP_${PROJECT_NAME}_${component}_RUNTIME_RESOURCES} PARENT_SCOPE)
+  return()
+endif()
 
 get_Source_Component_Direct_Runtime_Resources_Dependencies(DIRECT_RESOURCES ${component} ${mode})
 list(APPEND result ${DIRECT_RESOURCES})
@@ -1628,7 +1730,15 @@ foreach(int_dep IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR
 		list(APPEND result ${CMAKE_BINARY_DIR}/apps/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
 	endif()
 endforeach()
+
+if(result)
+  list(REMOVE_DUPLICATES result)
+endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
+
+append_Unique_In_Cache(TEMP_VARS ${PROJECT_NAME}_${component})
+set(TEMP_${PROJECT_NAME}_${component}_RUNTIME_RESOURCES "${result}" CACHE INTERNAL "")
+
 endfunction(get_Source_Component_Runtime_Resources_Dependencies)
 
 #.rst:
