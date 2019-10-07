@@ -316,7 +316,7 @@ macro(_Boost_ADJUST_LIB_VARS basename)
     endif()
 
     # If the debug & release library ends up being the same, omit the keywords
-    if("${Boost_${basename}_LIBRARY_RELEASE}" STREQUAL "${Boost_${basename}_LIBRARY_DEBUG}")
+    if(Boost_${basename}_LIBRARY_RELEASE STREQUAL Boost_${basename}_LIBRARY_DEBUG)
       set(Boost_${basename}_LIBRARY   ${Boost_${basename}_LIBRARY_RELEASE} )
       set(Boost_${basename}_LIBRARIES ${Boost_${basename}_LIBRARY_RELEASE} )
     endif()

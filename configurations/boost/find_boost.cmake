@@ -20,46 +20,45 @@
 include(Configuration_Definition NO_POLICY_SCOPE)
 
 found_PID_Configuration(boost FALSE)
-set(Boost_NO_BOOST_CMAKE ON)#avoid using CMake boost configuration file
 set(components_to_search system filesystem ${boost_libraries})#boost_libraries used to check that components that user wants trully exist
 list(REMOVE_DUPLICATES components_to_search)#using system and filesystem as these two libraries exist since early versions of boost
-set(CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations/boost ${CMAKE_MODULE_PATH})
 
+set(calling_defs "-DBOOST_COMPONENTS_TO_SEARCH=${components_to_search}")
 if(boost_version)
-	find_package(Boost ${boost_version} EXACT QUIET COMPONENTS ${components_to_search})
+	set(calling_defs "-DBOOST_VERSION_TO_SEARCH=${boost_version} ${calling_defs}")
+endif()
+if(CMAKE_HOST_WIN32)#on a window host path must be resolved
+	separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${calling_defs}")
+else()#if not on wondows use a UNIX like command syntac
+	separate_arguments(COMMAND_ARGS_AS_LIST UNIX_COMMAND "${calling_defs}")#always from host perpective
+endif()
+
+# execute separate project to extract datas
+set(path_test_boost ${WORKSPACE_DIR}/configurations/boost/test_boost/build)
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${path_test_boost}
+								WORKING_DIRECTORY  ${WORKSPACE_DIR}/pid OUTPUT_QUIET)
+file(WRITE ${path_test_boost}/.gitignore "*\n")
+
+message("[PID] INFO : performing tests for Boost ...")
+execute_process(COMMAND ${CMAKE_COMMAND} ${COMMAND_ARGS_AS_LIST} ${WORKSPACE_DIR}/configurations/boost/test_boost/
+								WORKING_DIRECTORY ${path_test_boost} OUTPUT_QUIET)
+
+# Extract datas from hdf5i_config_vars.cmake
+set(path_boost_config_vars ${path_test_boost}/boost_config_vars.cmake )
+if(EXISTS ${path_boost_config_vars} )
+  include(${path_boost_config_vars})
 else()
-	find_package(Boost QUIET COMPONENTS ${components_to_search})
-endif()
-if(NOT Boost_FOUND OR NOT Boost_LIBRARIES OR NOT Boost_LIBRARY_DIRS)#check failed : due to missing searched component !!
-	unset(Boost_FOUND)
-	return()
+	message("[PID] WARNING : tests for Boost failed !")
+  return()
 endif()
 
-#Boost_LIBRARIES only contains libraries that have been queried, which is not sufficient to manage external package as SYSTEM in a clean way
-#Need to get all binary libraries depending on the version, anytime boost is found ! Search them from location Boost_LIBRARY_DIRS
-
-foreach(dir IN LISTS Boost_LIBRARY_DIRS)
-	file(GLOB libs RELATIVE ${dir} "${dir}/libboost_*")
-	if(libs)
-		list(APPEND ALL_LIBS ${libs})
-	endif()
-endforeach()
-set(ALL_COMPS)
-foreach(lib IN LISTS ALL_LIBS)
-	if(lib MATCHES "^libboost_([^.]+)\\..*$")
-		list(APPEND ALL_COMPS ${CMAKE_MATCH_1})
-	endif()
-endforeach()
-list(REMOVE_DUPLICATES ALL_COMPS)
-set(BOOST_VERSION ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}) #version has been detected
-#Now relaunch the find script with the given components, to populate variables
-find_package(Boost ${BOOST_VERSION} EXACT QUIET COMPONENTS ${ALL_COMPS})
-if(NOT Boost_FOUND OR NOT Boost_LIBRARIES OR NOT Boost_LIBRARY_DIRS)#check failed : due to missing searched component !!
+if(NOT Boost_FOUND)#check failed : due to missing searched component !!
+	message("[PID] WARNING : tests for Boost not successfull !")
 	unset(Boost_FOUND)
 	return()
 endif()
 convert_PID_Libraries_Into_System_Links(Boost_LIBRARIES BOOST_LINKS)#getting good system links (with -l)
 convert_PID_Libraries_Into_Library_Directories(Boost_LIBRARIES BOOST_LIBRARY_DIRS)
-set(BOOST_COMPONENTS "${ALL_COMPS}")
+message("[PID] INFO : OS configured with Boost !")
 found_PID_Configuration(boost TRUE)
 unset(Boost_FOUND)
