@@ -767,7 +767,7 @@ else() # otherwise no need to register them since no more useful
 		endif()
 	endif()
 	if(shared_links)#private links are shared "non exported" libraries -> these links are used to process executables linking
-    #should be used in very rare cases for system libraries at specific places OR only to manage legacy binary packages OR to manage private links to external package content 
+    #should be used in very rare cases for system libraries at specific places OR only to manage legacy binary packages OR to manage private links to external package content
     append_Unique_In_Cache(${PROJECT_NAME}_${component}_PRIVATE_LINKS${USE_MODE_SUFFIX} "${shared_links}")
 	endif()
 endif()
@@ -2429,3 +2429,270 @@ function(generate_Loggable_File GENERATED_FILE PREPROC_VAR_NAME component target
   set(${GENERATED_FILE} ${gen_file} PARENT_SCOPE)
   set(${PREPROC_VAR_NAME} ${PREPROC_GUARD_NAME} PARENT_SCOPE)
 endfunction(generate_Loggable_File)
+
+
+#############################################################################################
+############### management of temporary variables used to optimize the build process ########
+#############################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Temporary_Optimization_Variables| replace:: ``reset_Temporary_Optimization_Variables``
+#  .. _reset_Temporary_Optimization_Variables:
+#
+#  reset_Temporary_Optimization_Variables
+#  --------------------------------------
+#
+#   .. command:: reset_Temporary_Optimization_Variables()
+#
+#   Clean the cache from temporary variables used to optimize the configuration process
+#
+function(reset_Temporary_Optimization_Variables)
+  foreach(comp IN LISTS TEMP_VARS)
+  	unset(TEMP_${comp}_PRIVATE_LINKS_COMPLETE CACHE)
+  	unset(TEMP_${comp}_PRIVATE_LINKS_PARTIAL CACHE)
+  	unset(TEMP_${comp}_PUBLIC_LINKS CACHE)
+  	unset(TEMP_${comp}_RUNTIME_RESOURCES CACHE)
+  endforeach()
+  unset(TEMP_VARS CACHE)
+  foreach(config IN LISTS TEMP_CONFIGS)
+  	unset(TEMP_CONFIG_${config}_CHECK CACHE)
+  	unset(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS CACHE)
+  endforeach()
+  unset(TEMP_CONFIGS CACHE)
+endfunction(reset_Temporary_Optimization_Variables)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Configuration_Temporary_Optimization_Variables| replace:: ``set_Configuration_Temporary_Optimization_Variables``
+#  .. _set_Configuration_Temporary_Optimization_Variables:
+#
+#  set_Configuration_Temporary_Optimization_Variables
+#  --------------------------------------------------
+#
+#   .. command:: set_Configuration_Temporary_Optimization_Variables(config test_ok binary_constraints)
+#
+#   set optimization variables used to check configurations
+#
+#     :config: the name of the configuration.
+#
+#     :test_ok: set to TRUE or FALSE the result of the check.
+#
+#     :binary_constraints: the list of binary constraints to memorize.
+#
+function(set_Configuration_Temporary_Optimization_Variables config test_ok binary_constraints)
+  set(TEMP_CONFIG_${config}_CHECK ${test_ok} CACHE INTERNAL "")
+  set(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS ${binary_constraints} CACHE INTERNAL "")
+  append_Unique_In_Cache(TEMP_CONFIGS ${config})
+endfunction(set_Configuration_Temporary_Optimization_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Configuration_Temporary_Optimization_Variables| replace:: ``check_Configuration_Temporary_Optimization_Variables``
+#  .. _check_Configuration_Temporary_Optimization_Variables:
+#
+#  check_Configuration_Temporary_Optimization_Variables
+#  ----------------------------------------------------
+#
+#   .. command:: check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS config)
+#
+#   check whether a configuration has already been checked.
+#
+#     :config: the name of the configuration.
+#
+#     :RES_CHECK: the output variable that contains the variable containing the previous check result, or that is empty if no previous check.
+#
+#     :RES_CONSTRAINTS: the output variable that contains the variable containing the previous check resulting binary constraints, or that is empty if no previous check.
+#
+function(check_Configuration_Temporary_Optimization_Variables RES_CHECK RES_CONSTRAINTS config)
+  if(DEFINED TEMP_CONFIG_${config}_CHECK)
+    set(${RES_CHECK} TEMP_CONFIG_${config}_CHECK PARENT_SCOPE)
+    set(${RES_CONSTRAINTS} TEMP_CONFIG_${config}_BINARY_CONSTRAINTS PARENT_SCOPE)
+    return()
+  endif()
+  set(${RES_CHECK} PARENT_SCOPE)
+  set(${RES_CONSTRAINTS} PARENT_SCOPE)
+endfunction(check_Configuration_Temporary_Optimization_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Private_Link_Temporary_Optimization_Variables| replace:: ``set_Private_Link_Temporary_Optimization_Variables``
+#  .. _set_Private_Link_Temporary_Optimization_Variables:
+#
+#  set_Private_Link_Temporary_Optimization_Variables
+#  --------------------------------------------------
+#
+#   .. command:: set_Private_Link_Temporary_Optimization_Variables(package component complete list_of_links)
+#
+#   set optimization variables used to check private links of a component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :complete: if TRUE then the complete list of shared links of component is memorized, otherwise only its private links.
+#
+#     :list_of_links: the list of links to memorize.
+#
+function(set_Private_Link_Temporary_Optimization_Variables package component complete list_of_links)
+  append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+  if(complete)
+    set(TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE "${list_of_links}" CACHE INTERNAL "")
+  else()
+    set(TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL "${list_of_links}" CACHE INTERNAL "")
+  endif()
+endfunction(set_Private_Link_Temporary_Optimization_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Private_Link_Temporary_Optimization_Variables| replace:: ``check_Private_Link_Temporary_Optimization_Variables``
+#  .. _check_Private_Link_Temporary_Optimization_Variables:
+#
+#  check_Private_Link_Temporary_Optimization_Variables
+#  ----------------------------------------------------
+#
+#   .. command:: check_Private_Link_Temporary_Optimization_Variables(LINKS package component complete)
+#
+#   check whether private links of a component have already been computed.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :complete: if TRUE then the complete list of shared links of component is checked, otherwise only its private links.
+#
+#     :LINKS: the output variable that contains the variable containing the previous check resulting private links, or that is empty if no previous check.
+#
+function(check_Private_Link_Temporary_Optimization_Variables LINKS package component complete)
+  if(complete)#same operation has already been performed no need to compute again
+    if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE)
+      set(${LINKS} TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE PARENT_SCOPE)
+      return()
+    endif()
+  else()
+    if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL)
+      set(${LINKS} TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+  set(${LINKS} PARENT_SCOPE)
+endfunction(check_Private_Link_Temporary_Optimization_Variables)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Public_Links_Temporary_Optimization_Variables| replace:: ``set_Public_Links_Temporary_Optimization_Variables``
+#  .. _set_Public_Links_Temporary_Optimization_Variables:
+#
+#  set_Public_Links_Temporary_Optimization_Variables
+#  --------------------------------------------------
+#
+#   .. command:: set_Public_Links_Temporary_Optimization_Variables(package component list_of_links)
+#
+#   set optimization variables used to check public links of a component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :list_of_links: the list of links to memorize.
+#
+function(set_Public_Links_Temporary_Optimization_Variables package component list_of_links)
+  append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+  set(TEMP_${package}_${component}_PUBLIC_LINKS "${list_of_links}" CACHE INTERNAL "")
+endfunction(set_Public_Links_Temporary_Optimization_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Public_Link_Temporary_Optimization_Variables| replace:: ``check_Public_Link_Temporary_Optimization_Variables``
+#  .. _check_Public_Link_Temporary_Optimization_Variables:
+#
+#  check_Public_Link_Temporary_Optimization_Variables
+#  --------------------------------------------------
+#
+#   .. command:: check_Public_Link_Temporary_Optimization_Variables(LINKS package component)
+#
+#   check whether public links of a component have already been computed.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :LINKS: the output variable that contains the variable containing the previous check resulting public links, or that is empty if no previous check.
+#
+function(check_Public_Link_Temporary_Optimization_Variables LINKS package component)
+  if(DEFINED TEMP_${package}_${component}_PUBLIC_LINKS)
+    set(${LINKS} TEMP_${package}_${component}_PUBLIC_LINKS PARENT_SCOPE)
+    return()
+  endif()
+  set(${LINKS} PARENT_SCOPE)
+endfunction(check_Public_Link_Temporary_Optimization_Variables)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Resources_Temporary_Optimization_Variables| replace:: ``set_Resources_Temporary_Optimization_Variables``
+#  .. _set_Resources_Temporary_Optimization_Variables:
+#
+#  set_Resources_Temporary_Optimization_Variables
+#  ----------------------------------------------
+#
+#   .. command:: set_Resources_Temporary_Optimization_Variables(package component list_of_resources)
+#
+#   set optimization variables used to check runtime resources of a component.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :list_of_resources: the list of runtime resources to memorize.
+#
+function(set_Resources_Temporary_Optimization_Variables package component list_of_resources)
+  append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+  set(TEMP_${package}_${component}_RUNTIME_RESOURCES "${list_of_resources}" CACHE INTERNAL "")
+endfunction(set_Resources_Temporary_Optimization_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Resource_Temporary_Optimization_Variables| replace:: ``check_Resource_Temporary_Optimization_Variables``
+#  .. _check_Resource_Temporary_Optimization_Variables:
+#
+#  check_Resource_Temporary_Optimization_Variables
+#  -----------------------------------------------
+#
+#   .. command:: check_Resource_Temporary_Optimization_Variables(RESOURCES package component)
+#
+#   check whether runtime resources of a component have already been computed.
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :RESOURCES: the output variable that contains the variable containing the previous check resulting runtime resources, or that is empty if no previous check.
+#
+function(check_Resource_Temporary_Optimization_Variables RESOURCES package component)
+  if(DEFINED TEMP_${package}_${component}_RUNTIME_RESOURCES)
+    set(${RESOURCES} TEMP_${package}_${component}_RUNTIME_RESOURCES PARENT_SCOPE)
+    return()
+  endif()
+  set(${RESOURCES} PARENT_SCOPE)
+endfunction(check_Resource_Temporary_Optimization_Variables)

@@ -484,6 +484,84 @@ endforeach()
 set(${RESULT_VARIABLE} ${result} PARENT_SCOPE)
 endfunction(parse_Configuration_Arguments_From_Binaries)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Configuration_Arguments_Included_In_Constraints| replace:: ``check_Configuration_Arguments_Included_In_Constraints``
+#  .. check_Configuration_Arguments_Included_In_Constraints:
+#
+#  check_Configuration_Arguments_Included_In_Constraints
+#  -----------------------------------------------------
+#
+#   .. command:: check_Configuration_Arguments_Included_In_Constraints(INCLUDED arguments_var constraints_var)
+#
+#    Check whether a set of arguments of a configuration have already been checked in the current configuration process
+#
+#     :arguments_var: the variable containing the list of arguments to check.
+#
+#     :constraints_var: the variable containing the list of constraints already checked.
+#
+#     :INCLUDED: the output variable that is true if al arguments have already been checked.
+#
+function(check_Configuration_Arguments_Included_In_Constraints INCLUDED arguments_var constraints_var)
+set(${INCLUDED} FALSE PARENT_SCOPE)
+
+set(argument_couples ${${arguments_var}})
+while(argument_couples)
+  list(GET argument_couples 0 arg_name)
+  list(GET argument_couples 1 arg_value)
+  list(REMOVE_AT argument_couples 0 1)#update the list of arguments
+  #from here we get a constraint name and a value
+  set(is_arg_found FALSE)
+  #evaluate values of the argument so that we can compare it
+  if(arg_value AND NOT arg_value STREQUAL \"\")#special case of an empty list (represented with \"\") must be avoided
+    string(REPLACE " " "" ARG_VAL_LIST ${arg_value})#remove the spaces in the string if any
+    string(REPLACE "," ";" ARG_VAL_LIST ${ARG_VAL_LIST})#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
+  else()
+    set(ARG_VAL_LIST)
+  endif()
+
+  set(constraints_couples ${${constraints_var}})
+  while(constraints_couples)
+    list(GET constraints_couples 0 constraint_name)
+    list(GET constraints_couples 1 constraint_value)
+    list(REMOVE_AT constraints_couples 0 1)#update the list of arguments
+    if(constraint_name STREQUAL arg_name)#argument found in constraints
+      set(is_arg_found TRUE)
+      #OK we need to check the value
+      if(constraint_value AND NOT constraint_value STREQUAL \"\")#special case of an empty list (represented with \"\") must be avoided
+        string(REPLACE " " "" CONSTRAINT_VAL_LIST ${constraint_value})#remove the spaces in the string if any
+        string(REPLACE "," ";" CONSTRAINT_VAL_LIST ${CONSTRAINT_VAL_LIST})#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
+      else()
+        set(CONSTRAINT_VAL_LIST)
+      endif()
+      #second : do the comparison
+      foreach(arg_list_val IN LISTS ARG_VAL_LIST)
+        set(val_found FALSE)
+        foreach(ct_list_val IN LISTS CONSTRAINT_VAL_LIST)
+          if(ct_list_val STREQUAL arg_list_val)
+            set(val_found TRUE)
+            break()
+          endif()
+        endforeach()
+        if(NOT val_found)
+          #we can immediately return => not included
+          return()
+        endif()
+      endforeach()
+      break()#exit the loop if argument has been found
+    endif()
+  endwhile()
+  if(NOT is_arg_found)
+    #if argument not found in constraint we can conclude that it is not included in constraints
+    return()
+  endif()
+endwhile()
+set(${INCLUDED} TRUE PARENT_SCOPE)
+endfunction(check_Configuration_Arguments_Included_In_Constraints)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -510,7 +588,23 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
   set(${BINARY_CONTRAINTS} PARENT_SCOPE)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
   if(EXISTS ${WORKSPACE_DIR}/configurations/${config_name}/check_${config_name}.cmake)
-
+    #check if the configuration has already been checked
+    check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS ${config_name})
+    if(RES_CHECK)
+      if(${config_args})#testing if the variable containing arguments is not empty
+        #if this situation we need to check if all args match constraints
+        check_Configuration_Arguments_Included_In_Constraints(INCLUDED ${config_args} ${RES_CONSTRAINTS})
+        if(INCLUDED)#no need to evaluate again
+          set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
+          set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
+          return()
+        endif()
+      else()#we may not need to reevaluate as there is no argument (so they will not change)
+        set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
+        set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
+        return()
+      endif()
+    endif()
     reset_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
     include(${WORKSPACE_DIR}/configurations/${config_name}/check_${config_name}.cmake)#get the description of the configuration check
     #now preparing args passed to the configruation (generate cmake variables)
@@ -534,6 +628,7 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
       endif()
     endif()
     if(NOT ${config_name}_AVAILABLE)#configuration is not available so we cannot generate output variables
+      set_Configuration_Temporary_Optimization_Variables(${config_name} FALSE "")
       return()
     endif()
 
@@ -542,6 +637,7 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
       check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${check})#check that dependencies are OK
       if(NOT RESULT_OK)
         message("[PID] WARNING : when checking configuration of current platform, configuration ${check}, used by ${config_name} cannot be satisfied.")
+        set_Configuration_Temporary_Optimization_Variables(${config_name} FALSE "")
         return()
       endif()
     endforeach()
@@ -551,12 +647,12 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
 
     #return the complete set of binary contraints
     get_Configuration_Resulting_Constraints(ALL_CONSTRAINTS ${config_name})
-
     set(${BINARY_CONTRAINTS} ${ALL_CONSTRAINTS} PARENT_SCOPE)#automatic appending constraints generated by the configuration itself for the given binary package generated
     set(${CHECK_OK} TRUE PARENT_SCOPE)
+    set_Configuration_Temporary_Optimization_Variables(${config_name} TRUE "${ALL_CONSTRAINTS}")
     return()
   else()
-    message("[PID] WARNING : when checking constraints on current platform, configuration information for ${config_name} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${config_name}.cmake in ${WORKSPACE_DIR}/configurations/${config_name} to manage this configuration.")
+    message("[PID] WARNING : when checking constraints on current platform, configuration information for ${config_name} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${config_name}.cmake in ${WORKSPACE_DIR}/configurations/${config_name} to manage this configuration. You can also try to update your workspace to get updates on available configurations.")
     return()
   endif()
 endfunction(check_System_Configuration_With_Arguments)
@@ -911,7 +1007,7 @@ function(get_Configuration_Resulting_Constraints BINARY_CONSTRAINTS config)
 
 #updating all constraints to apply in binary package, they correspond to variable that will be outputed
 foreach(constraint IN LISTS ${config}_REQUIRED_CONSTRAINTS)
-  set(VAL_LIST ${${config}_${constraint}})
+  set(VAL_LIST ${${config}_${constraint}})#get the value of the variable corresponding to the configuration constraint
   string(REPLACE " " "" VAL_LIST "${VAL_LIST}")#remove the spaces in the string if any
   string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate a configuration argument list (with "," as delimiter) from an argument list (with "," delimiter)
   list(APPEND all_constraints ${constraint} "${VAL_LIST}")#use guillemet to set exactly one element

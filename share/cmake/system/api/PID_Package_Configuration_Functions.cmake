@@ -484,8 +484,9 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 
 #optimization (compute things only one time)
-if(DEFINED TEMP_${package}_${component}_RUNTIME_RESOURCES)
-  set(${RES_RESOURCES} ${TEMP_${package}_${component}_RUNTIME_RESOURCES} PARENT_SCOPE)
+check_Resource_Temporary_Optimization_Variables(RESOURCES_VAR ${package} ${component})
+if(RESOURCES_VAR)
+  set(${RES_RESOURCES} ${${RESOURCES_VAR}} PARENT_SCOPE)
   return()
 endif()
 
@@ -518,10 +519,7 @@ if(result)
   list(REMOVE_DUPLICATES result)
 endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
-
-append_Unique_In_Cache(TEMP_VARS ${package}_${component})
-set(TEMP_${package}_${component}_RUNTIME_RESOURCES "${result}" CACHE INTERNAL "")
-
+set_Resources_Temporary_Optimization_Variables(${package} ${component} "${result}")
 endfunction(get_External_Component_Runtime_Resources_Dependencies)
 
 #.rst:
@@ -600,8 +598,9 @@ function(get_Bin_Component_Runtime_Resources_Dependencies RES_RESOURCES package 
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 #optimization (compute things only one time)
-if(DEFINED TEMP_${package}_${component}_RUNTIME_RESOURCES)
-  set(${RES_RESOURCES} ${TEMP_${package}_${component}_RUNTIME_RESOURCES} PARENT_SCOPE)
+check_Resource_Temporary_Optimization_Variables(RESOURCES_VAR ${package} ${component})
+if(RESOURCES_VAR)
+  set(${RES_RESOURCES} ${${RESOURCES_VAR}} PARENT_SCOPE)
   return()
 endif()
 
@@ -644,9 +643,7 @@ if(result)
   list(REMOVE_DUPLICATES result)
 endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
-
-append_Unique_In_Cache(TEMP_VARS ${package}_${component})
-set(TEMP_${package}_${component}_RUNTIME_RESOURCES "${result}" CACHE INTERNAL "")
+set_Resources_Temporary_Optimization_Variables(${package} ${component} "${result}")
 endfunction(get_Bin_Component_Runtime_Resources_Dependencies)
 
 
@@ -714,8 +711,9 @@ endfunction(get_Bin_Component_Direct_Internal_Runtime_Dependencies)
 function(get_External_Component_Runtime_Links_Dependencies RES_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
-if(DEFINED TEMP_${package}_${component}_PUBLIC_LINKS)
-  set(${RES_LINKS} ${TEMP_${package}_${component}_PUBLIC_LINKS} PARENT_SCOPE)
+check_Public_Link_Temporary_Optimization_Variables(LINKS_VAR ${package} ${component})
+if(LINKS_VAR)
+  set(${RES_LINKS} ${${LINKS_VAR}} PARENT_SCOPE)
   return()
 endif()
 
@@ -760,9 +758,7 @@ if(result)
   list(REMOVE_DUPLICATES result)
 endif()
 set(${RES_LINKS} ${result} PARENT_SCOPE)
-
-append_Unique_In_Cache(TEMP_VARS ${package}_${component})
-set(TEMP_${package}_${component}_PUBLIC_LINKS "${result}" CACHE INTERNAL "")
+set_Public_Links_Temporary_Optimization_Variables(${package} ${component} "${result}")
 endfunction(get_External_Component_Runtime_Links_Dependencies)
 
 #.rst:
@@ -843,9 +839,10 @@ function(get_Bin_Component_Runtime_Dependencies ALL_RUNTIME_RESOURCES package co
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 
-#optimize
-if(DEFINED TEMP_${package}_${component}_PUBLIC_LINKS)
-  set(${ALL_RUNTIME_RESOURCES} ${TEMP_${package}_${component}_PUBLIC_LINKS} PARENT_SCOPE)
+#optimization
+check_Public_Link_Temporary_Optimization_Variables(LINKS_VAR ${package} ${component})
+if(LINKS_VAR)
+  set(${ALL_RUNTIME_RESOURCES} ${${LINKS_VAR}} PARENT_SCOPE)
   return()
 endif()
 
@@ -899,9 +896,7 @@ if(result)
   list(REMOVE_DUPLICATES result)
 endif()
 set(${ALL_RUNTIME_RESOURCES} ${result} PARENT_SCOPE)
-
-append_Unique_In_Cache(TEMP_VARS ${package}_${component})
-set(TEMP_${package}_${component}_PUBLIC_LINKS "${result}" CACHE INTERNAL "")
+set_Public_Links_Temporary_Optimization_Variables(${package} ${component} "${result}")
 
 endfunction(get_Bin_Component_Runtime_Dependencies)
 
@@ -942,16 +937,10 @@ if(IS_HF)#if no header then no symbol exported at link time (module or executabl
 endif()
 
 #optimization check => test if already performed
-if(all)
-  if(DEFINED TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_COMPLETE)
-    set(${RES_PRIVATE_LINKS} ${TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_COMPLETE} PARENT_SCOPE)
-    return()
-  endif()
-else()
-  if(DEFINED TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_PARTIAL)
-    set(${RES_PRIVATE_LINKS} ${TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_PARTIAL} PARENT_SCOPE)
-    return()
-  endif()
+check_Private_Link_Temporary_Optimization_Variables(RES_PRIVATE_VAR ${PROJECT_NAME} ${component} ${all})
+if(RES_PRIVATE_VAR)
+  set(${RES_PRIVATE_LINKS} ${${RES_PRIVATE_VAR}} PARENT_SCOPE)
+  return()
 endif()
 
 # 1) searching public external dependencies
@@ -1047,13 +1036,7 @@ if(undirect_list) #if true we need to be sure that the rpath-link does not conta
 	list(REMOVE_DUPLICATES undirect_list)
 endif()
 set(${RES_PRIVATE_LINKS} "${undirect_list}" PARENT_SCOPE)
-
-append_Unique_In_Cache(TEMP_VARS ${PROJECT_NAME}_${component})
-if(NOT is_direct)
-  set(TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_COMPLETE "${undirect_list}" CACHE INTERNAL "")
-else()
-  set(TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_PARTIAL "${undirect_list}" CACHE INTERNAL "")
-endif()
+set_Private_Link_Temporary_Optimization_Variables(${PROJECT_NAME} ${component} ${all} "${undirect_list}")
 endfunction(get_Source_Component_Runtime_PrivateLinks_Dependencies)
 
 #.rst:
@@ -1083,16 +1066,11 @@ endfunction(get_Source_Component_Runtime_PrivateLinks_Dependencies)
 function(get_External_Component_Runtime_PrivateLinks_Dependencies RES_PRIVATE_LINKS package component all mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
-if(all)#same operation has already been performed no need to compute again
-  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE)
-    set(${RES_PRIVATE_LINKS} ${TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE} PARENT_SCOPE)
-    return()
-  endif()
-else()
-  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL)
-    set(${RES_PRIVATE_LINKS} ${TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL} PARENT_SCOPE)
-    return()
-  endif()
+
+check_Private_Link_Temporary_Optimization_Variables(RES_PRIVATE_VAR ${package} ${component} ${all})
+if(RES_PRIVATE_VAR)
+  set(${RES_PRIVATE_LINKS} ${${RES_PRIVATE_VAR}} PARENT_SCOPE)
+  return()
 endif()
 
 if(all)#all symlinks returned so returning shared links provided by the external component (they will be also considered as private in caller context)
@@ -1146,15 +1124,9 @@ endforeach()
 if(result)
   list(REMOVE_DUPLICATES result)#optimize a bit the size of output
 endif()
-append_Unique_In_Cache(TEMP_VARS ${package}_${component})
-if(all)
-  set(TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE "${result}" CACHE INTERNAL "")
-else()
-  set(TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL "${result}" CACHE INTERNAL "")
-endif()
+set_Private_Link_Temporary_Optimization_Variables(${package} ${component} ${all} "${result}")
 set(${RES_PRIVATE_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_External_Component_Runtime_PrivateLinks_Dependencies)
-
 
 #.rst:
 #
@@ -1190,16 +1162,10 @@ if(IS_HF)#if no header then no symbol exported at link time (module or executabl
   return()
 endif()
 
-if(all)#same operation has already been performed no need to compute again
-  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE)
-    set(${RES_PRIVATE_LINKS} ${TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE} PARENT_SCOPE)
-    return()
-  endif()
-else()
-  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL)
-    set(${RES_PRIVATE_LINKS} ${TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL} PARENT_SCOPE)
-    return()
-  endif()
+check_Private_Link_Temporary_Optimization_Variables(RES_PRIVATE_VAR ${package} ${component} ${all})
+if(RES_PRIVATE_VAR)
+  set(${RES_PRIVATE_LINKS} ${${RES_PRIVATE_VAR}} PARENT_SCOPE)
+  return()
 endif()
 
 # 1) searching public external dependencies, no need to search for systems dependencies as they can be found automatically using OS shared libraries binding mechanism
@@ -1298,12 +1264,7 @@ endforeach()
 if(result)
   list(REMOVE_DUPLICATES result)#optimize a bit the size of output
 endif()
-append_Unique_In_Cache(TEMP_VARS ${package}_${component})
-if(all)
-  set(TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE "${result}" CACHE INTERNAL "")
-else()
-  set(TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL "${result}" CACHE INTERNAL "")
-endif()
+set_Private_Link_Temporary_Optimization_Variables(${package} ${component} ${all} "${result}")
 set(${RES_PRIVATE_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Native_Component_Runtime_PrivateLinks_Dependencies)
 
@@ -1816,8 +1777,9 @@ function(get_Source_Component_Runtime_Resources_Dependencies RES_RESOURCES compo
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 #optimization (compute things only one time)
-if(DEFINED TEMP_${PROJECT_NAME}_${component}_RUNTIME_RESOURCES)
-  set(${RES_RESOURCES} ${TEMP_${PROJECT_NAME}_${component}_RUNTIME_RESOURCES} PARENT_SCOPE)
+check_Resource_Temporary_Optimization_Variables(RESOURCES_VAR ${PROJECT_NAME} ${component})
+if(RESOURCES_VAR)
+  set(${RES_RESOURCES} ${${RESOURCES_VAR}} PARENT_SCOPE)
   return()
 endif()
 
@@ -1860,10 +1822,7 @@ if(result)
   list(REMOVE_DUPLICATES result)
 endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
-
-append_Unique_In_Cache(TEMP_VARS ${PROJECT_NAME}_${component})
-set(TEMP_${PROJECT_NAME}_${component}_RUNTIME_RESOURCES "${result}" CACHE INTERNAL "")
-
+set_Resources_Temporary_Optimization_Variables(${PROJECT_NAME} ${component} "${result}")
 endfunction(get_Source_Component_Runtime_Resources_Dependencies)
 
 #.rst:

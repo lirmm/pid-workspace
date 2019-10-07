@@ -490,6 +490,7 @@ reset_Packages_Finding_Variables()
 init_PID_Version_Variable()
 init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
 reset_Version_Cache_Variables()
+reset_Temporary_Optimization_Variables() #resetting temporary variables used in optimization of configruation process
 check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")
 init_Standard_Path_Cache_Variables()
 begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
@@ -952,14 +953,6 @@ foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 	endif()
 endforeach()
 
-#resetting temporary variables used in optimization of configruation process
-foreach(comp IN LISTS TEMP_VARS)
-	unset(TEMP_${comp}_PRIVATE_LINKS_COMPLETE CACHE)
-	unset(TEMP_${comp}_PRIVATE_LINKS_PARTIAL CACHE)
-	unset(TEMP_${comp}_PUBLIC_LINKS CACHE)
-	unset(TEMP_${comp}_RUNTIME_RESOURCES CACHE)
-endforeach()
-unset(TEMP_VARS CACHE)
 
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############
