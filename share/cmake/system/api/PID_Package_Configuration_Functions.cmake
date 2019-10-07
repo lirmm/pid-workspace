@@ -913,61 +913,68 @@ endfunction(get_Bin_Component_Runtime_Dependencies)
 #
 # .. ifmode:: internal
 #
-#  .. |find_Dependent_Private_Shared_Libraries| replace:: ``find_Dependent_Private_Shared_Libraries``
-#  .. _find_Dependent_Private_Shared_Libraries:
+#  .. |get_Source_Component_Runtime_PrivateLinks_Dependencies| replace:: ``get_Source_Component_Runtime_PrivateLinks_Dependencies``
+#  .. _get_Source_Component_Runtime_PrivateLinks_Dependencies:
 #
-#  find_Dependent_Private_Shared_Libraries
-#  ---------------------------------------
+#  get_Source_Component_Runtime_PrivateLinks_Dependencies
+#  ------------------------------------------------------
 #
-#   .. command:: find_Dependent_Private_Shared_Libraries(LIST_OF_UNDIRECT_DEPS package component is_direct mode)
+#   .. command:: get_Source_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS component all mode)
 #
 #   Get the list of all private shared libraries that are undirect dependencies of a given component.
 #
-#     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
 #
-#     :is_direct: if TRUE then links to external libraries of the component are not taken into account.
+#     :all: if TRUE then all shared links of the component are considered as private.
 #
 #     :mode: the build mode (Release or Debug) for the component.
 #
-#     :LIST_OF_UNDIRECT_DEPS: the output variable that is the list of undirect shared libraries used by component.
+#     :RES_PRIVATE_LINKS: the output variable that is the list of private shared libraries used by component.
 #
-function(find_Dependent_Private_Shared_Libraries LIST_OF_UNDIRECT_DEPS package component is_direct mode)
+function(get_Source_Component_Runtime_PrivateLinks_Dependencies RES_PRIVATE_LINKS component all mode)
 set(undirect_list)
-get_Mode_Variables(mode_binary_suffix mode_var_suffix ${mode})
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+
+is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})#header free component do not export private links at link time
+if(IS_HF)#if no header then no symbol exported at link time (module or executable)
+  set(${RES_PRIVATE_LINKS} PARENT_SCOPE)
+  return()
+endif()
+
 #optimization check => test if already performed
-if(is_direct)
-  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL)
-    set(${LIST_OF_UNDIRECT_DEPS} ${TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL} PARENT_SCOPE)
+if(all)
+  if(DEFINED TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_COMPLETE)
+    set(${RES_PRIVATE_LINKS} ${TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_COMPLETE} PARENT_SCOPE)
     return()
   endif()
 else()
-  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE)
-    set(${LIST_OF_UNDIRECT_DEPS} ${TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE} PARENT_SCOPE)
+  if(DEFINED TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_PARTIAL)
+    set(${RES_PRIVATE_LINKS} ${TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_PARTIAL} PARENT_SCOPE)
     return()
   endif()
 endif()
 
-# 0) no need to search for systems dependencies as they can be found automatically using OS shared libraries binding mechanism
-
 # 1) searching public external dependencies
-if(NOT is_direct) #otherwise external dependencies are direct dependencies so their LINKS (i.e. exported links) are already taken into account (not private)
-	if(${package}_${component}_LINKS${mode_var_suffix})
-		resolve_External_Libs_Path(RES_LINKS "${${package}_${component}_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
-		foreach(ext_dep IN LISTS RES_LINKS)
+if(all) #otherwise external dependencies are direct dependencies so their LINKS (i.e. exported links) are already taken into account (not private)
+	if(${PROJECT_NAME}_${component}_LINKS${VAR_SUFFIX})
+    set(RES_PRIVATE)
+    resolve_External_Libs_Path(RES_PRIVATE "${${PROJECT_NAME}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+		foreach(ext_dep IN LISTS RES_PRIVATE)
 			is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
 			if(IS_SHARED)
 				list(APPEND undirect_list ${ext_dep})
 			endif()
 		endforeach()
 	endif()
+  # in this case the private library is a shared library built locally => simply use its target
+  list(APPEND undirect_list "${component}${TARGET_SUFFIX}")
 endif()
 #Remark: no need to search in SYSTEM_STATIC LINKS since they are static by definition
 # 1-bis) searching private external dependencies
-if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
-	resolve_External_Libs_Path(RES_PRIVATE_LINKS "${${package}_${component}_PRIVATE_LINKS${mode_var_suffix}}" ${mode})#resolving libraries path against external packages path
-	foreach(ext_dep IN LISTS RES_PRIVATE_LINKS)
+if(${PROJECT_NAME}_${component}_PRIVATE_LINKS${VAR_SUFFIX})
+  set(RES_PRIVATE)
+	resolve_External_Libs_Path(RES_PRIVATE "${${PROJECT_NAME}_${component}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+	foreach(ext_dep IN LISTS RES_PRIVATE)
 		is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
 		if(IS_SHARED)
 			list(APPEND undirect_list ${ext_dep})
@@ -976,107 +983,78 @@ if(${package}_${component}_PRIVATE_LINKS${mode_var_suffix})
 endif()
 
 #also need to check in external packages explicit components
-foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${mode_var_suffix})
-  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${mode_var_suffix})
-    set(RES_PRIVATE_LINKS)
-
-    if(${package}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component}${mode_var_suffix})#if exported then this is not a private shared link (but its dependencies may be)
-      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${dep_package} ${dep_component} FALSE ${mode})
-    else()#if not exported, then all shraed libraries are private
-      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${dep_package} ${dep_component} TRUE ${mode})
+foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    set(RES_PRIVATE)
+    if(all)#i.e. all shared links are considered as private (since not exported at higher level)
+      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+    else()#returning only private links (i.e. current component is exported)
+      if(${PROJECT_NAME}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX}
+        OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
+        OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")#management of transitivity => getting private links of the dependency
+        get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} FALSE ${mode})
+      elseif(${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported (all its dependent shared libs are private by definition)
+        get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+      endif()
     endif()
-    if(RES_PRIVATE_LINKS)
-      list(APPEND undirect_list ${RES_PRIVATE_LINKS})
+    if(RES_PRIVATE)
+      list(APPEND undirect_list ${RES_PRIVATE})
     endif()
   endforeach()
 endforeach()
 
-# 2) searching in dependent packages
-foreach(dep_package IN LISTS ${package}_${component}_DEPENDENCIES${mode_var_suffix})
-	foreach(dep_component IN LISTS ${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${mode_var_suffix})
-		set(UNDIRECT)
-		if(is_direct) # current component is a direct dependency of the application
-			if(	${dep_package}_${dep_component}_TYPE STREQUAL "STATIC"
-				OR ${dep_package}_${dep_component}_TYPE STREQUAL "HEADER"
-				OR ${package}_${component}_EXPORTS_${dep_package}_${dep_component}${mode_var_suffix})
-				 #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application
-				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} TRUE ${mode})
-			elseif(${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported
-				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application
-				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")
-			endif()
-		else() #current component is NOT a direct dependency of the application
-			if(	${dep_package}_${dep_component}_TYPE STREQUAL "STATIC"
-				OR ${dep_package}_${dep_component}_TYPE STREQUAL "HEADER")
-				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode})
-			elseif(${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported
-				find_Dependent_Private_Shared_Libraries(UNDIRECT ${dep_package} ${dep_component} FALSE ${mode}) #the shared lib dependency is a direct dependency of the application
-				list(APPEND undirect_list "${${dep_package}_ROOT_DIR}/lib/${${dep_package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")
-			endif()
-		endif()
-
-		if(UNDIRECT)
-			list(APPEND undirect_list ${UNDIRECT})
-		endif()
-	endforeach()
+#finaly need to check in components dependencies to other packages
+foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    set(RES_PRIVATE)
+    if(all)#i.e. all shared links are considered as private (since not exported at higher level)
+      get_Native_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+    else()#returning only private links (i.e. current component is exported)
+      if(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX}
+        OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
+				OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")#management of transitivity => getting private links of the dependency
+        #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application
+        get_Native_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} FALSE ${mode})
+      elseif(${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported (all its dependent shared libs are private by definition)
+        get_Native_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+      endif()
+    endif()
+    if(RES_PRIVATE)
+      list(APPEND undirect_list ${RES_PRIVATE})
+    endif()
+  endforeach()
 endforeach()
 
 # 3) searching in current package
-foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${mode_var_suffix})
-	set(UNDIRECT)
-	if(is_direct) # current component is a direct dependency of the application
-		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
-			OR ${package}_${dep_component}_TYPE STREQUAL "HEADER"
-			OR ${package}_${component}_INTERNAL_EXPORTS_${dep_component}${mode_var_suffix})
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} TRUE ${mode}) #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application
-		elseif(${package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application
-			#adding this shared lib to the links of the application
-			if(${package} STREQUAL ${PROJECT_NAME})
-				#special case => the currenlty built package is the target package (may be not the case on recursion on another package)
-				# we cannot target the lib folder as it does not exist at build time in the build tree
-				# we simply target the corresponding build "target"
-				list(APPEND undirect_list "${dep_component}${mode_binary_suffix}")
-			else()
-				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")
-			endif()
-		endif()
-	else() #current component is NOT a direct dependency of the application
-		if(	${package}_${dep_component}_TYPE STREQUAL "STATIC"
-			OR ${package}_${dep_component}_TYPE STREQUAL "HEADER")
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode})
-		elseif(${package}_${dep_component}_TYPE STREQUAL "SHARED")#it is a shared lib that is exported or NOT
-			find_Dependent_Private_Shared_Libraries(UNDIRECT ${package} ${dep_component} FALSE ${mode}) #the shared lib dependency is NOT a direct dependency of the application in all cases
-
-			#adding this shared lib to the links of the application
-			if(${package} STREQUAL ${PROJECT_NAME})
-				#special case => the currenlty built package is the target package (may be not the case on recursion on another package)
-				# we cannot target the lib folder as it does not exist at build time in the build tree
-				# we simply target the corresponding build "target"
-				list(APPEND undirect_list "${dep_component}${mode_binary_suffix}")
-			else()
-				list(APPEND undirect_list "${${package}_ROOT_DIR}/lib/${${package}_${dep_component}_BINARY_NAME${mode_var_suffix}}")
-			endif()
-		endif()
+foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	set(RES_PRIVATE)
+	if(all) # current component is a direct dependency of the application
+    get_Source_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_component} TRUE ${mode})
+  elseif(${PROJECT_NAME}_${component}_TYPE STREQUAL "STATIC"
+			OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER"
+			OR ${PROJECT_NAME}_${component}_INTERNAL_EXPORTS_${dep_component}${VAR_SUFFIX})
+		get_Source_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_component} FALSE ${mode}) #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application
+	elseif(${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported
+		get_Source_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_component} TRUE ${mode}) #the shared lib dependency is NOT a direct dependency of the application
 	endif()
 
-	if(UNDIRECT)
-		list(APPEND undirect_list ${UNDIRECT})
-	endif()
+  if(RES_PRIVATE)
+    list(APPEND undirect_list ${RES_PRIVATE})
+  endif()
 endforeach()
 
 if(undirect_list) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
 	list(REMOVE_DUPLICATES undirect_list)
 endif()
-set(${LIST_OF_UNDIRECT_DEPS} "${undirect_list}" PARENT_SCOPE)
+set(${RES_PRIVATE_LINKS} "${undirect_list}" PARENT_SCOPE)
 
-append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+append_Unique_In_Cache(TEMP_VARS ${PROJECT_NAME}_${component})
 if(NOT is_direct)
-  set(TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE "${undirect_list}" CACHE INTERNAL "")
+  set(TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_COMPLETE "${undirect_list}" CACHE INTERNAL "")
 else()
-  set(TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL "${undirect_list}" CACHE INTERNAL "")
+  set(TEMP_${PROJECT_NAME}_${component}_PRIVATE_LINKS_PARTIAL "${undirect_list}" CACHE INTERNAL "")
 endif()
-endfunction(find_Dependent_Private_Shared_Libraries)
+endfunction(get_Source_Component_Runtime_PrivateLinks_Dependencies)
 
 #.rst:
 #
@@ -1182,6 +1160,157 @@ endfunction(get_External_Component_Runtime_PrivateLinks_Dependencies)
 #
 # .. ifmode:: internal
 #
+#  .. |get_Native_Component_Runtime_PrivateLinks_Dependencies| replace:: ``get_Native_Component_Runtime_PrivateLinks_Dependencies``
+#  .. get_Native_Component_Runtime_PrivateLinks_Dependencies:
+#
+#  get_Native_Component_Runtime_PrivateLinks_Dependencies
+#  -------------------------------------------------------
+#
+#   .. command:: get_Native_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS package component all mode)
+#
+#   Get list of all private shared links used by an external component at runtime.
+#
+#     :package: the name of the external package containing the component.
+#
+#     :component: the name of the external component.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+#     :all: if true return all symlinks otherwise return only private ones.
+#
+#     :RES_PRIVATE_LINKS: the output variable that contains the list of private shared links used by component at runtime.
+#
+function(get_Native_Component_Runtime_PrivateLinks_Dependencies RES_PRIVATE_LINKS package component all mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(result)
+
+is_HeaderFree_Component(IS_HF ${package} ${component})#header free component do not export private links at link time
+if(IS_HF)#if no header then no symbol exported at link time (module or executable)
+  set(${RES_PRIVATE_LINKS} PARENT_SCOPE)
+  return()
+endif()
+
+if(all)#same operation has already been performed no need to compute again
+  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE)
+    set(${RES_PRIVATE_LINKS} ${TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE} PARENT_SCOPE)
+    return()
+  endif()
+else()
+  if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL)
+    set(${RES_PRIVATE_LINKS} ${TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL} PARENT_SCOPE)
+    return()
+  endif()
+endif()
+
+# 1) searching public external dependencies, no need to search for systems dependencies as they can be found automatically using OS shared libraries binding mechanism
+if(all) #otherwise external dependencies are direct dependencies so their LINKS (i.e. exported links) are already taken into account (not private)
+	if(${package}_${component}_LINKS${VAR_SUFFIX})
+    set(RES_PRIVATE)
+		resolve_External_Libs_Path(RES_PRIVATE "${${package}_${component}_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+		foreach(ext_dep IN LISTS RES_PRIVATE)
+			is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
+			if(IS_SHARED)
+				list(APPEND result ${ext_dep})
+			endif()
+		endforeach()
+	endif()
+  #we also need to add the binary of the native component itself because it is considered as a non direct dependency
+  if(${package}_${component}_TYPE STREQUAL "SHARED")#can be private only if shared
+    list(APPEND result "${${package}_ROOT_DIR}/lib/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}}")
+  endif()
+endif()
+#Remark: no need to search in SYSTEM_STATIC LINKS since they are static by definition
+# 1-bis) searching private external dependencies
+if(${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX})
+  set(RES_PRIVATE)
+	resolve_External_Libs_Path(RES_PRIVATE "${${package}_${component}_PRIVATE_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+	foreach(ext_dep IN LISTS RES_PRIVATE)
+		is_Shared_Lib_With_Path(IS_SHARED ${ext_dep})
+		if(IS_SHARED)
+			list(APPEND result ${ext_dep})
+		endif()
+	endforeach()
+endif()
+
+
+#also need to check in external packages explicit components
+foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    set(RES_PRIVATE)
+    if(all)#i.e. all shared links are considered as private (since not exported at higher level)
+      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+    else()#returning only private links (i.e. current component is exported)
+      if(${package}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX}
+        OR ${package}_${component}_TYPE STREQUAL "STATIC"
+        OR ${package}_${component}_TYPE STREQUAL "HEADER")#management of transitivity => getting private links of the dependency
+        get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} FALSE ${mode})
+      else()#if the dependency is not exported then all its shared links are private by definition
+        get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+      endif()
+    endif()
+    if(RES_PRIVATE)
+      list(APPEND result ${RES_PRIVATE})
+    endif()
+  endforeach()
+endforeach()
+
+#also need to check in package internal components dependencies
+foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  set(RES_PRIVATE)
+  if(all)#i.e. all shared links are considered as private (since not exported at higher level)
+    get_Native_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${package} ${dep_component} TRUE ${mode})
+  else()#returning only private links (i.e. current component is exported)
+    if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX}
+      OR ${package}_${component}_TYPE STREQUAL "STATIC"
+      OR ${package}_${component}_TYPE STREQUAL "HEADER")#management of transitivity => getting private links of the dependency
+      get_Native_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${package} ${dep_component} FALSE ${mode})
+    elseif(${package}_${component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported (all its dependent shared libs are private by definition)
+      get_Native_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${package} ${dep_component} TRUE ${mode})
+    endif()
+  endif()
+  if(RES_PRIVATE)
+    list(APPEND result ${RES_PRIVATE})
+  endif()
+endforeach()
+
+#finaly need to check in components dependencies to other packages
+foreach(dep_package IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+	foreach(dep_component IN LISTS ${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    set(RES_PRIVATE)
+    if(all)#i.e. all shared links are considered as private (since not exported at higher level)
+      get_Native_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+    else()#returning only private links (i.e. current component is exported)
+      if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX}
+        OR ${package}_${component}_TYPE STREQUAL "STATIC"
+				OR ${package}_${component}_TYPE STREQUAL "HEADER")#management of transitivity => getting private links of the dependency
+        #the potential shared lib dependencies of the header or static lib will be direct dependencies of the application OR the shared lib dependency is a direct dependency of the application
+        get_Native_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} FALSE ${mode})
+      elseif(${package}_${component}_TYPE STREQUAL "SHARED")#it is a shared lib that is not exported (all its dependent shared libs are private by definition)
+        get_Native_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
+      endif()
+    endif()
+    if(RES_PRIVATE)
+      list(APPEND result ${RES_PRIVATE})
+    endif()
+  endforeach()
+endforeach()
+
+if(result)
+  list(REMOVE_DUPLICATES result)#optimize a bit the size of output
+endif()
+append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+if(all)
+  set(TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE "${result}" CACHE INTERNAL "")
+else()
+  set(TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL "${result}" CACHE INTERNAL "")
+endif()
+set(${RES_PRIVATE_LINKS} ${result} PARENT_SCOPE)
+endfunction(get_Native_Component_Runtime_PrivateLinks_Dependencies)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies| replace:: ``get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies``
 #  .. _get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies:
 #
@@ -1248,7 +1377,9 @@ endfunction(get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies)
 #
 #   .. command:: resolve_Source_Component_Linktime_Dependencies(component mode THIRD_PARTY_LINKS)
 #
-#   Resolve required symbols for building an executable component contained in currently defined package. This consists in finding undirect shared libraries that are theorically unknown in the context of the component but that are required in order to globally resolve symbols when linking the executable.
+#   Resolve required symbols for building an executable component contained in currently defined package.
+#   This consists in finding undirect shared libraries that are theorically unknown in the context of the component
+#   but that are required in order to globally resolve symbols when linking the executable.
 #
 #     :component: the name of the component.
 #
@@ -1270,48 +1401,41 @@ if(NOT COMP_IS_RUNTIME)
 	return()
 endif()
 set(undirect_deps)
-# 0) no need to search for system libraries as they are installed and found automatically by the OS binding mechanism, idem for external dependencies since they are always direct dependencies for the currenlty build component
 
+# 0) no need to search for system libraries as they are installed and found automatically by the OS binding mechanism, idem for external dependencies since they are always direct dependencies for the currenlty build component
+#searching in direct external dependencies
 foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     set(RES_PRIVATE)
-    if(${PROJECT_NAME}_${component}_EXTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})#management of transitivity => getting private links of the dependency
-      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} FALSE ${mode})
-    else()#if the dependency is not exported then all its shared links are private by definition
-      get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} TRUE ${mode})
-    endif()
+    #since these dependencies are direct they are not private locally (they are linked into source component target)
+    get_External_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} FALSE ${mode})
     if(RES_PRIVATE)
       list(APPEND undirect_deps ${RES_PRIVATE})
     endif()
   endforeach()
 endforeach()
 
+# 2) searching each direct dependency in current package (no problem with undirect internal dependencies since undirect path only target install path which is not a problem for build)
+foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	set(RES_PRIVATE)
+  #since these dependencies are direct they are not private locally (they are linked into source component target)
+  get_Source_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_component} FALSE ${mode})
+	if(RES_PRIVATE)
+		list(APPEND undirect_deps ${RES_PRIVATE})
+	endif()
+endforeach()
+
 
 # 1) searching each direct dependency in other packages
 foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-		set(LIST_OF_DEP_SHARED)
-		is_HeaderFree_Component(IS_HF ${dep_package} ${dep_component})
-		if(NOT IS_HF)#if no header then no symbol exported at link time (module or executable)
-			find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${dep_package} ${dep_component} TRUE ${CMAKE_BUILD_TYPE})
-			if(LIST_OF_DEP_SHARED)
-				list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
-			endif()
-		endif()
+    set(RES_PRIVATE)
+    #direct dependencies are never local private links
+    get_Native_Component_Runtime_PrivateLinks_Dependencies(RES_PRIVATE ${dep_package} ${dep_component} FALSE ${mode})
+    if(RES_PRIVATE)
+      list(APPEND undirect_deps ${RES_PRIVATE})
+    endif()
 	endforeach()
-endforeach()
-
-# 2) searching each direct dependency in current package (no problem with undirect internal dependencies since undirect path only target install path which is not a problem for build)
-foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	set(LIST_OF_DEP_SHARED)
-	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${dep_component})
-	if(NOT IS_HF)#if no header then no symbol exported at link time (module or executable)
-    #otherwise find private shared libs for internal dependencies
-		find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${PROJECT_NAME} ${dep_component} TRUE ${CMAKE_BUILD_TYPE})
-		if(LIST_OF_DEP_SHARED)
-			list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
-		endif()
-	endif()
 endforeach()
 
 if(undirect_deps) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
@@ -1384,7 +1508,8 @@ endfunction(resolve_Package_Runtime_Dependencies)
 #
 #   .. command:: resolve_Bin_Component_Runtime_Dependencies(package component mode)
 #
-#   Resolve runtime dependencies for a component contained in another package than currenlty defined one (a binary component). Resolution consists in creating adequate symlinks for shared libraries used by component.
+#   Resolve runtime dependencies for a component contained in another package than currently defined one (a binary component).
+#   Resolution consists in creating adequate symlinks for shared libraries used by component.
 #
 #     :package: the name of the package that contains the component.
 #
