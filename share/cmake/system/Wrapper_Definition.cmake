@@ -960,7 +960,7 @@ if(DECLARE_PID_WRAPPER_COMPONENT_EXPORT)#exported dependencies
     else()
       set(COMP_ARGS ${RES_COMP})
     endif()
-    declare_PID_Wrapper_Component_Dependency(COMPONENT ${component_name} EXPORT EXTERNAL ${COMP_ARGS})
+    declare_PID_Wrapper_Component_Dependency(COMPONENT ${component_name} EXPORT ${COMP_ARGS})
   endforeach()
 endif()
 
@@ -972,7 +972,7 @@ if(DECLARE_PID_WRAPPER_COMPONENT_DEPEND)#non exported dependencies
     else()
       set(COMP_ARGS ${RES_COMP})
     endif()
-    declare_PID_Wrapper_Component_Dependency(COMPONENT ${component_name} DEPEND EXTERNAL ${COMP_ARGS})
+    declare_PID_Wrapper_Component_Dependency(COMPONENT ${component_name} DEPEND ${COMP_ARGS})
     endforeach()
 endif()
 
@@ -1047,6 +1047,8 @@ macro(PID_Wrapper_Component_Dependency)
 endmacro(PID_Wrapper_Component_Dependency)
 
 macro(declare_PID_Wrapper_Component_Dependency)
+set(target_component)
+set(component_name)
 set(options EXPORT DEPEND)
 set(oneValueArgs COMPONENT EXTERNAL PACKAGE C_STANDARD CXX_STANDARD)
 set(multiValueArgs INCLUDES LIBRARY_DIRS SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES)
@@ -1118,7 +1120,7 @@ if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE) #this is a dependency to an
     endif()
 	endif()
 else()#this is a dependency to another component defined in the same external package OR a dependency to system libraries
-	if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL) #if the signature contains
+	if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL) #if the signature contains EXTERNAL
     set(target_component ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXTERNAL})
   else()
     if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS

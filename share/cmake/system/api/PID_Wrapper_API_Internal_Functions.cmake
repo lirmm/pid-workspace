@@ -528,7 +528,7 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH} CACHE INTERNAL \"\")\n")
-	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME \"${${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME}\" CACHE INTERNAL \"\")\n")
 
 	#manage platform configuration description
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
@@ -787,7 +787,7 @@ append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${version})
 set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT ${deploy_file_name} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${post_install_script} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT ${post_install_script} CACHE INTERNAL "")
-set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${so_name} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME "${so_name}" CACHE INTERNAL "")
 if(compatible_with_version AND NOT compatible_with_version STREQUAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${compatible_with_version} CACHE INTERNAL "")
 endif()
@@ -1777,10 +1777,11 @@ function(generate_Description_For_External_Component file_for_version package pl
 	file(APPEND ${file_for_version} "#component ${component}\n")
 	set(options_str "")
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
-		if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME)#the component SONAME has priority over package SONAME
-			set(USE_SONAME ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME})
+		if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME
+				OR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME EQUAL 0)#the component SONAME has priority over package SONAME
+			set(USE_SONAME "${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME}")
 		else()
-			set(USE_SONAME ${${package}_KNOWN_VERSION_${version}_SONAME})
+			set(USE_SONAME "${${package}_KNOWN_VERSION_${version}_SONAME}")
 		endif()
 		create_Shared_Lib_Extension(RES_EXT ${platform} "${USE_SONAME}")#create the soname extension
 		set(final_list_of_shared)#add the adequate extension name depending on the platform
