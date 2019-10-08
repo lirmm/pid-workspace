@@ -16,7 +16,6 @@ if(NOT Boost_FOUND OR NOT Boost_LIBRARIES OR NOT Boost_LIBRARY_DIRS)#check faile
 	return()
 endif()
 
-
 #Boost_LIBRARIES only contains libraries that have been queried, which is not sufficient to manage external package as SYSTEM in a clean way
 #Need to get all binary libraries depending on the version, anytime boost is found ! Search them from location Boost_LIBRARY_DIRS
 foreach(dir IN LISTS Boost_LIBRARY_DIRS)
