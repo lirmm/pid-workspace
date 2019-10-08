@@ -100,9 +100,9 @@ endfunction(Find_Unique_Auxiliary_Elements)
 
 if(EXISTS ${SOURCE_PACKAGE_CONTENT}) #the package has already been configured
 	include(${SOURCE_PACKAGE_CONTENT}) #import source code meta-information (which files for each component)
-else()
-	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/checksources "")
-	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/rebuilt "")
+else()#first time after a cleaning: need to reconfigure
+	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/share/checksources "")
+	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/share/rebuilt "")
 	return()
 endif()
 
@@ -240,5 +240,5 @@ if(REMOVED_FILES OR ADDED_FILES)#try make rebuild_cache
 		message("[PID] INFO : there are files that have been added to source tree : ${ADDED_FILES}")
 	endif()
 
-	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/checksources "")
+	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/share/checksources "")
 endif()

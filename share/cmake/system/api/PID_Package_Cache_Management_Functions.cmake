@@ -2106,11 +2106,13 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once
 		file(APPEND ${file} "${DEBUG_CONTENT}")
 	endif()
 	#removing debug files
-	file(REMOVE ${CMAKE_BINARY_DIR}/../debug/share/UseDebugGen)
 	file(REMOVE ${CMAKE_BINARY_DIR}/../debug/share/UseDebugTemp)
-	file (GENERATE OUTPUT ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake INPUT ${file})
+	#generating use file, using file(GENERATE) is required to generate info containing generator expression
+	file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake
+        INPUT ${file})
 else() #this step is required to generate info containing generator expression
-	file (GENERATE OUTPUT ${CMAKE_BINARY_DIR}/share/UseDebugGen INPUT ${file})
+	file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/share/UseDebugGen
+        INPUT ${file})
 endif()
 endfunction(create_Use_File)
 
@@ -2134,7 +2136,7 @@ endfunction(create_Use_File)
 #
 function(generate_Info_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release) #mode independent info written only once in the release mode
-	set(file ${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake)
+	set(file ${CMAKE_BINARY_DIR}/../share/Info${PROJECT_NAME}.cmake)
 	file(WRITE ${file} "")#resetting the file content
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${PROJECT_NAME}_COMPONENTS ${${PROJECT_NAME}_COMPONENTS} CACHE INTERNAL \"\")\n")

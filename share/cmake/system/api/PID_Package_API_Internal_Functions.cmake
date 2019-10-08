@@ -118,8 +118,8 @@ elseif(DIR_NAME STREQUAL "build/debug")
 elseif(DIR_NAME STREQUAL "build")
 	declare_Native_Global_Cache_Options() #first of all declaring global options so that the package is preconfigured with default options values and adequate comments for each variable
 
-	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources "")
-	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt "")
+	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/checksources "")
+	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/rebuilt "")
 
 	################################################################################################
 	################################ General purpose targets #######################################
@@ -128,10 +128,10 @@ elseif(DIR_NAME STREQUAL "build")
 	# target to check if source tree need to be rebuilt
 	if(NOT CMAKE_VERSION VERSION_LESS 3.2.3) #version of CMake is >= 3.2.3 => BYPRODUCTS argument can be used to configure Ninja
 		add_custom_target(checksources
-				BYPRODUCTS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources
+				BYPRODUCTS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/checksources
 				COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 							 -DPACKAGE_NAME=${PROJECT_NAME}
-							 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/release/share/Info${PROJECT_NAME}.cmake
+							 -DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake
 							 -P ${WORKSPACE_DIR}/share/cmake/system/commands/Check_PID_Package_Modification.cmake
 				COMMENT "[PID] Checking for modified source tree ..."
 	    	)
@@ -139,20 +139,20 @@ elseif(DIR_NAME STREQUAL "build")
 		 add_custom_target(checksources
 				 COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 								-DPACKAGE_NAME=${PROJECT_NAME}
-								-DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/release/share/Info${PROJECT_NAME}.cmake
+								-DSOURCE_PACKAGE_CONTENT=${CMAKE_BINARY_DIR}/share/Info${PROJECT_NAME}.cmake
 								-P ${WORKSPACE_DIR}/share/cmake/system/commands/Check_PID_Package_Modification.cmake
 				 COMMENT "[PID] Checking for modified source tree ..."
 				 )
 	 endif()
 	# target to reconfigure the project
-	add_custom_command(OUTPUT ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
+	add_custom_command(OUTPUT ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/rebuilt
 			COMMAND ${CMAKE_MAKE_PROGRAM} rebuild_cache
-			COMMAND ${CMAKE_COMMAND} -E touch ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
-			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/checksources
+			COMMAND ${CMAKE_COMMAND} -E touch ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/rebuilt
+			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/checksources
 			COMMENT "[PID] Reconfiguring the package ..."
     	)
 	add_custom_target(reconfigure
-			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/release/share/rebuilt
+			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/rebuilt
     	)
 
 	add_dependencies(reconfigure checksources)
@@ -236,6 +236,7 @@ elseif(DIR_NAME STREQUAL "build")
 		#mode specific build commands
 		add_custom_target(build_release
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
 			COMMENT "[PID] Release build of package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
@@ -243,10 +244,11 @@ elseif(DIR_NAME STREQUAL "build")
 		add_dependencies(build_release sync-version)#checking if PID version synchronizing needed before build
 		add_dependencies(build_release check-branch)#checking if not built on master branch or released tag
 		if(${PROJECT_NAME}_ADDRESS)
-		add_dependencies(build_release check-repository) #checking if remote addrr needs to be changed
+			add_dependencies(build_release check-repository) #checking if remote addrr needs to be changed
 		endif()
 		add_custom_target(build_debug
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
 			COMMENT "[PID] Debug build of package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
@@ -1647,10 +1649,10 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 	### 1) setting user cache variable. The goal is to given users the control "by-hand" on the version used for a given dependency ###
 	#1.A) preparing message coming with this user cache variable
 	if(NOT list_of_possible_versions) # no version constraint specified
-		set(message_str "Select version of dependency ${dep_package} to be used by entering either keyword ANY or a valid version number.")
+		set(message_str "Input a valid version of dependency ${dep_package} or use ANY.")
 	else()#there are version specified
 		fill_String_From_List(list_of_possible_versions available_versions) #get available version as a string (used to print them)
-		set(message_str "Select the version of dependency ${dep_package} to be used among versions: ${available_versions}.")
+		set(message_str "Input a valid version of dependency ${dep_package} among versions: ${available_versions}.")
 	endif()
 	if(optional) #message for the optional dependency includes the possiiblity to input NONE
 		set(message_str "${message_str} Or use NONE to avoid using this dependency.")
@@ -1825,10 +1827,10 @@ set_Dependency_Complete_Description(${dep_package} TRUE list_of_possible_version
 ### 1) setting user cache variable. The goal is to given users the control "by-hand" on the version used for a given dependency ###
 #1.A) preparing message coming with this user cache variable
 if(NOT list_of_possible_versions) # no version constraint specified
-	set(message_str "Select version of dependency ${dep_package} to be used by entering either keyword ANY or a valid version number.")
+	set(message_str "Input version of dependency ${dep_package} or use ANY.")
 else()#there are version specified
 	fill_String_From_List(list_of_possible_versions available_versions) #get available version as a string (used to print them)
-	set(message_str "Select the version of dependency ${dep_package} to be used among versions: ${available_versions}.")
+	set(message_str "Input version of dependency ${dep_package} among: ${available_versions}.")
 	list(LENGTH list_of_possible_versions SIZE)
 	list(GET list_of_possible_versions 0 default_version) #by defaut this is the first element in the list that is taken
 endif()
@@ -1952,7 +1954,7 @@ elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")#the system ver
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
 		return()
 	endif()
-	add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION}" ${USE_EXACT} TRUE "${list_of_components}") #set the dependency
+	add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION}" TRUE TRUE "${list_of_components}") #set the dependency
 elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")# any version can be used so for now no contraint
 	add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE FALSE "${list_of_components}")
 else()#a version is specified by the user OR the dependent build process has automatically set it

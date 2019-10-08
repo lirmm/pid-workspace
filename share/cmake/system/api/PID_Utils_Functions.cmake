@@ -2821,7 +2821,7 @@ function(test_Modified_Components package build_tool RESULT)
 set(${RESULT} FALSE PARENT_SCOPE)
 if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")#rule to check if any modification is generated only by makefiles
   execute_process(COMMAND ${build_tool} cmake_check_build_system
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build/release
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
                   OUTPUT_VARIABLE NEED_UPDATE)
   if(NOT NEED_UPDATE STREQUAL "")
   	set(${RESULT} TRUE PARENT_SCOPE)
