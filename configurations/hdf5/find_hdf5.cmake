@@ -27,25 +27,51 @@ found_PID_Configuration(hdf5 FALSE)
 # Then read this file in our context.
 
 # execute separate project to extract datas
-set(path_test_hdf5 ${WORKSPACE_DIR}/configurations/hdf5/test_hdf5/build)
-execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${path_test_hdf5}
-								WORKING_DIRECTORY  ${WORKSPACE_DIR}/pid OUTPUT_QUIET)
-file(WRITE ${path_test_hdf5}/.gitignore "*\n")
+set(path_test_hdf5 ${WORKSPACE_DIR}/configurations/hdf5/test_hdf5/build/${CURRENT_PLATFORM})
+set(path_hdf5_config_vars ${path_test_hdf5}/hdf5_config_vars.cmake )
+
+if(EXISTS ${path_hdf5_config_vars})#file already computed
+	include(${path_hdf5_config_vars}) #just to check that same version is required
+	if(HDF5_FOUND)#optimization only possible if hdf5 has been found
+		if(NOT hdf5_version #no specific version to search for
+			OR hdf5_version VERSION_EQUAL HDF5_VERSION)# or same version required and already found no need to regenerate
+			convert_PID_Libraries_Into_System_Links(HDF5_LIBRARIES HDF5_LINKS)#getting good system links (with -l)
+			convert_PID_Libraries_Into_Library_Directories(HDF5_LIBRARIES HDF5_LIBDIRS)
+			found_PID_Configuration(hdf5 TRUE)
+			return()#exit without regenerating (avoid regenerating between debug and release builds due to generated file timestamp change)
+			#also an optimization avoid launching again and again boost config for each package build in debug and release modes (which is widely used)
+		endif()
+	endif()
+endif()
+
+if(NOT EXISTS ${path_test_hdf5})
+	file(MAKE_DIRECTORY ${path_test_hdf5})
+endif()
 
 message("[PID] INFO : performing tests for HDF5 ...")
-execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/configurations/hdf5/test_hdf5/
-								WORKING_DIRECTORY ${path_test_hdf5})
+execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/configurations/hdf5/test_hdf5
+                WORKING_DIRECTORY ${path_test_hdf5} OUTPUT QUIET)
 
 # Extract datas from hdf5i_config_vars.cmake
-set(path_hdf5_config_vars ${path_test_hdf5}/hdf5_config_vars.cmake )
 if(EXISTS ${path_hdf5_config_vars} )
   include(${path_hdf5_config_vars})
 else()
+	if(ADDITIONNAL_DEBUG_INFO)
+		message("[PID] WARNING : cannot execute tests for HDF5 !")
+	endif()
   return()
 endif()
 
 if(HDF5_FOUND)
-	convert_PID_Libraries_Into_System_Links(HDF5_LIBRARIES HDF5_LINKS)#getting good system links (with -l)
-	convert_PID_Libraries_Into_Library_Directories(HDF5_LIBRARIES HDF5_LIBDIRS)
-	found_PID_Configuration(hdf5 TRUE)
+	if(NOT hdf5_version #no specific version to search for
+		OR hdf5_version VERSION_EQUAL HDF5_VERSION)# or same version required and already found no need to regenerate
+		convert_PID_Libraries_Into_System_Links(HDF5_LIBRARIES HDF5_LINKS)#getting good system links (with -l)
+		convert_PID_Libraries_Into_Library_Directories(HDF5_LIBRARIES HDF5_LIBDIRS)
+		found_PID_Configuration(hdf5 TRUE)
+		return()
+	endif()
+endif()
+
+if(ADDITIONNAL_DEBUG_INFO)
+	message("[PID] WARNING : tests for HDF5 failed !")
 endif()
