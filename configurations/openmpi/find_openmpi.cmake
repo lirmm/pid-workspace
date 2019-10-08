@@ -132,9 +132,14 @@ else()
 endif()
 
 if(MPI_C_FOUND AND MPI_CXX_FOUND)
-  set_openmpi_variables()
   set_openmpi_version()
-	found_PID_Configuration(openmpi TRUE)
-else()
-	message("[PID] ERROR : cannot find OpenMPI library.")
+  if(NOT openmpi_version #no specific version to search for
+    OR openmpi_version VERSION_EQUAL OMPI_VERSION)# or same version required and already found no need to regenerate
+    set_openmpi_variables()
+  	found_PID_Configuration(openmpi TRUE)
+    return()
+  endif()
+endif()
+if(ADDITIONNAL_DEBUG_INFO)
+  message("[PID] WARNING : cannot find OpenMPI library !")
 endif()

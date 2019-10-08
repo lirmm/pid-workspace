@@ -129,9 +129,9 @@ set(path_openmp_config_vars ${path_test_openmp}/openmp_config_vars.cmake )
 if(EXISTS ${path_openmp_config_vars})#file already computed
 	include(${path_openmp_config_vars}) #just to check that same version is required
 	if(OpenMP_FOUND)#optimization only possible if openMP has been found
+    set_openmp_variables()
 		if(NOT openmp_version #no specific version to search for
 			OR openmp_version VERSION_EQUAL OpenMP_VERSION)# or same version required and already found no need to regenerate
-        set_openmp_variables()
       	found_PID_Configuration(openmp TRUE)
       return()#exit without regenerating (avoid regenerating between debug and release builds due to generated file timestamp change)
 			#also an optimization avoid launching again and again boost config for each package build in debug and release modes (which is widely used)
@@ -159,5 +159,14 @@ endif()
 
 if(OpenMP_FOUND)
   set_openmp_variables()
-	found_PID_Configuration(openmp TRUE)
+  if(NOT openmp_version #no specific version to search for
+    OR openmp_version VERSION_EQUAL OpenMP_VERSION)# or same version required and already found no need to regenerate
+
+    found_PID_Configuration(openmp TRUE)
+    return()#exit without regenerating (avoid regenerating between debug and release builds due to generated file timestamp change)
+    #also an optimization avoid launching again and again boost config for each package build in debug and release modes (which is widely used)
+  endif()
+endif()
+if(ADDITIONNAL_DEBUG_INFO)
+  message("[PID] WARNING : cannot find  OpenMP !")
 endif()

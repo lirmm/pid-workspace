@@ -50,7 +50,7 @@ endif()
 
 message("[PID] INFO : performing tests for HDF5 ...")
 execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/configurations/hdf5/test_hdf5
-                WORKING_DIRECTORY ${path_test_hdf5} OUTPUT QUIET)
+                WORKING_DIRECTORY ${path_test_hdf5} OUTPUT_QUIET)
 
 # Extract datas from hdf5i_config_vars.cmake
 if(EXISTS ${path_hdf5_config_vars} )
