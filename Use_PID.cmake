@@ -49,17 +49,54 @@ include(CMakeParseArguments)
 #      set(PATH_TO_PID_WORKSPACE /opt/pid/pid-workspace CACHE PATH "")
 #      import_PID_Workspace(PATH_TO_PID_WORKSPACE)
 #
-macro(import_PID_Workspace path)
-if(${path} STREQUAL "")
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a path must be given to import_PID_Workspace.")
+macro(import_PID_Workspace)
+#interpret user arguments
+set(oneValueArgs PATH MODE)
+cmake_parse_arguments(IMPORT_PID_WORKSPACE "" "${oneValueArgs}" "" ${ARGN})
+if(ARGC EQUAL 0)
+	set(path)
+elseif(ARGC EQUAL 1)
+	set(path "${ARGV0}")
+else()#there are arguments specified in CMake style
+	if(IMPORT_PID_WORKSPACE_PATH)
+		set(path "${IMPORT_PID_WORKSPACE_PATH}")
+	else()
+		set(path)
+	endif()
+	if(IMPORT_PID_WORKSPACE_MODE)
+		set(mode "${IMPORT_PID_WORKSPACE_MODE}")
+	else()
+		if(CMAKE_BUILD_TYPE)
+			set(mode ${CMAKE_BUILD_TYPE})
+		else()
+			message("[PID] WARNING : when calling import_PID_Workspace, no known build type defined by project (Release or Debug) ${PROJECT_NAME} and none specified : the Release build is selected by default.")
+			set(mode Release)
+		endif()
+	endif()
+endif()
+
+if(NOT path)
+	#test if teh workspace has been deployed has a submodule directly inside the external project
+	if(EXISTS ${CMAKE_SOURCE_DIR}/pid-workspace AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/pid-workspace)
+		set(workspace_path ${CMAKE_SOURCE_DIR}/pid-workspace)
+	else()
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling import_PID_Workspace, a path must be given to import_PID_Workspace OR you can directly deploy the pid-workspace at the root of your project.")
+	endif()
+else()
+	if(NOT EXISTS ${path})
+		if(EXISTS ${CMAKE_SOURCE_DIR}/pid-workspace AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/pid-workspace)
+			set(workspace_path ${CMAKE_SOURCE_DIR}/pid-workspace)
+		else()
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling import_PID_Workspace, the path to the PID workspace ${path} does not exist.")
+		endif()
+	else()#otherwise use the user provided path
+		set(workspace_path ${path})
+	endif()
 endif()
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1)#just to ensure that version of CMake tool used in external projects if high enough (supports language standards)
 
-if(NOT EXISTS ${path})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : the path to the PID workspace ${path} does not exist.")
-endif()
-set(WORKSPACE_DIR ${path} CACHE INTERNAL "")
-
+set(WORKSPACE_DIR ${workspace_path} CACHE INTERNAL "")
+set(WORKSPACE_MODE ${mode} CACHE INTERNAL "")
 ########################################################################
 ############ all PID system path are put into the cmake path ###########
 ########################################################################
@@ -94,17 +131,14 @@ include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake) #loading the
 ########################################################################
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "") #do not manage automatic install since outside from a PID workspace
 set(GLOBAL_PROGRESS_VAR TRUE)
-if(NOT CMAKE_BUILD_TYPE)
-	message("[PID] WARNING : when calling import_PID_Workspace, no known build type defined (Release or Debug) : the Release build is selected by default.")
-	set(CMAKE_BUILD_TYPE Release)
-endif()
+
 #need to reset the variables used to describe dependencies
 foreach(dep_package IN LISTS ${PROJECT_NAME}_PID_PACKAGES)
 	get_Package_Type(${dep_package} PACK_TYPE)
 	if(PACK_TYPE STREQUAL "EXTERNAL")
-		reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${CMAKE_BUILD_TYPE})
+		reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE})
 	else()
-		reset_Native_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${CMAKE_BUILD_TYPE})
+		reset_Native_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE})
 	endif()
 endforeach()
 set(${PROJECT_NAME}_PID_PACKAGES CACHE INTERNAL "")#reset list of packages
@@ -171,7 +205,7 @@ endif()
 if(NOT ${IMPORT_PID_PACKAGE_PACKAGE}_FOUND)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling import_PID_Package, the package ${IMPORT_PID_PACKAGE_PACKAGE} cannot be found (any version or required version not found).")
 endif()
-resolve_Package_Dependencies(${IMPORT_PID_PACKAGE_PACKAGE} ${CMAKE_BUILD_TYPE} TRUE)#TODO from here ERROR due to bad dependency (maybe a BUG in version resolution)
+resolve_Package_Dependencies(${IMPORT_PID_PACKAGE_PACKAGE} ${WORKSPACE_MODE} TRUE)#TODO from here ERROR due to bad dependency (maybe a BUG in version resolution)
 set(${IMPORT_PID_PACKAGE_PACKAGE}_RPATH ${${IMPORT_PID_PACKAGE_PACKAGE}_ROOT_DIR}/.rpath CACHE INTERNAL "")
 endfunction(import_PID_Package)
 
@@ -245,11 +279,9 @@ function(bind_PID_Components)
 	endif()
 
 	#for the given component memorize its pid dependencies
-	set(temp_list ${${name}_PID_DEPENDENCIES} ${BIND_PID_COMPONENTS_COMPONENTS})
-	list(REMOVE_DUPLICATES temp_list)
-	set(${name}_PID_DEPENDENCIES ${temp_list} CACHE INTERNAL "")
+	append_Unique_In_Cache(${name}_PID_DEPENDENCIES ${BIND_PID_COMPONENTS_COMPONENTS})
 
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${WORKSPACE_MODE})
 	foreach(dep IN LISTS BIND_PID_COMPONENTS_COMPONENTS)
 	  extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
 	  if(NOT RES_PACK)
@@ -269,10 +301,10 @@ function(bind_PID_Components)
 			set(ALL_LINKS ${RES_LINKS_ST} ${RES_LINKS_SH})
 			if(ALL_LINKS)
 			  evaluate_Variables_In_List(EVAL_LNKS ALL_LINKS) #first evaluate element of the list => if they are variables they are evaluated
-				resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${EVAL_LNKS}" ${CMAKE_BUILD_TYPE})
+				resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${EVAL_LNKS}" ${WORKSPACE_MODE})
 				if(COMPLETE_LINKS_PATH)
 					foreach(link IN LISTS COMPLETE_LINKS_PATH)
-						create_External_Dependency_Target(EXT_TARGET_NAME ${link} ${CMAKE_BUILD_TYPE})
+						create_External_Dependency_Target(EXT_TARGET_NAME ${link} ${WORKSPACE_MODE})
 						if(EXT_TARGET_NAME)
 							list(APPEND EXT_LINKS_TARGETS ${EXT_TARGET_NAME})
 						else()
@@ -284,14 +316,14 @@ function(bind_PID_Components)
 			endif()
 			if(RES_INCS)
 			  evaluate_Variables_In_List(EVAL_INCS RES_INCS)#first evaluate element of the list => if they are variables they are evaluated
-				resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${EVAL_INCS}" ${CMAKE_BUILD_TYPE})
+				resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${EVAL_INCS}" ${WORKSPACE_MODE})
 			endif()
 			if(RES_OPTS)
 				evaluate_Variables_In_List(EVAL_OPTS RES_OPTS)#first evaluate element of the list => if they are variables they are evaluated
 			endif()
 			if(RES_LIB_DIRS)
 			  evaluate_Variables_In_List(EVAL_LDIRS RES_LIB_DIRS)
-				resolve_External_Libs_Path(COMPLETE_LIB_DIRS_PATH "${EVAL_LDIRS}" ${CMAKE_BUILD_TYPE})
+				resolve_External_Libs_Path(COMPLETE_LIB_DIRS_PATH "${EVAL_LDIRS}" ${WORKSPACE_MODE})
 			endif()
 			if(RES_DEFS)
 			  evaluate_Variables_In_List(EVAL_DEFS RES_DEFS)#first evaluate element of the list => if they are variables they are evaluated
@@ -348,7 +380,7 @@ function(bind_PID_Components)
 			endif()
 
 		else()
-			create_Dependency_Target(${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE}) #create the fake target for component
+			create_Dependency_Target(${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #create the fake target for component
 			is_HeaderFree_Component(DEP_IS_HF ${RES_PACK} ${COMPONENT_NAME})
 			if(NOT DEP_IS_HF) #link that target (only possible with non runtime libraries)#TODO not sure this is consistent since a header lib may have undirect binaries !!
 				target_link_libraries(${name} PUBLIC ${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX})
@@ -394,7 +426,7 @@ function(bind_PID_Components)
 			#need to resolve all symbols before linking executable so need to find undirect symbols => same as for native packages
 			# 1) searching each direct dependency in other packages
 			set(undirect_deps)
-			find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} TRUE ${CMAKE_BUILD_TYPE})
+			find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} TRUE ${WORKSPACE_MODE})
 			if(LIST_OF_DEP_SHARED)
 				set(undirect_deps ${LIST_OF_DEP_SHARED})
 			endif()
@@ -411,21 +443,21 @@ function(bind_PID_Components)
 			### STEP A: create symlinks in install tree
 			set(to_symlink ${undirect_deps}) # in case of an executable component add third party (undirect) links
 
-			get_Binary_Location(LOCATION_RES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE})
+			get_Binary_Location(LOCATION_RES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
 			list(APPEND to_symlink ${LOCATION_RES})
 
 			#1) getting public shared links
-			get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
+			get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
 			if(INT_DEP_RUNTIME_RESOURCES)
 				list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
 			endif()
 			#2) getting private shared links (undirect by definition)
-			get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE})
+			get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
 			if(RES_PRIVATE_LINKS)
 				list(APPEND to_symlink ${RES_PRIVATE_LINKS})
 			endif()
 			#3) getting direct and undirect runtime resources dependencies
-			get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE})
+			get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
 			if(RES_RESOURCES)
 				list(APPEND to_symlink ${RES_RESOURCES})
 			endif()
@@ -441,7 +473,7 @@ function(bind_PID_Components)
 			set(to_symlink) # in case of an executable component add third party (undirect) links
 			#no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
 			#1) getting runtime resources of the component dependency
-			get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE}) #resolve external runtime resources
+			get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #resolve external runtime resources
 			if(INT_DEP_RUNTIME_RESOURCES)
 				list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
 			endif()
@@ -554,7 +586,7 @@ function(get_Local_Private_Shared_Libraries LIBS local_component)
 	#then direct dependencies to PID components
 	foreach(dep IN LISTS ${local_component}_PID_DEPENDENCIES)
 		extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
-		find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} TRUE ${CMAKE_BUILD_TYPE})
+		find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} TRUE ${WORKSPACE_MODE})
 		if(LIST_OF_DEP_SHARED)
 			list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
 		endif()
@@ -580,21 +612,21 @@ function(generate_Local_Component_Symlinks local_component local_dependency undi
 		### STEP A: create symlinks in install tree
 		set(to_symlink ${undirect_deps}) # in case of an executable component add third party (undirect) links
 
-		get_Binary_Location(LOCATION_RES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE})
+		get_Binary_Location(LOCATION_RES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
 		list(APPEND to_symlink ${LOCATION_RES})
 
 		#1) getting public shared links
-		get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
+		get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
 		if(INT_DEP_RUNTIME_RESOURCES)
 			list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
 		endif()
 		#2) getting private shared links (undirect by definition)
-		get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE})
+		get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
 		if(RES_PRIVATE_LINKS)
 			list(APPEND to_symlink ${RES_PRIVATE_LINKS})
 		endif()
 		#3) getting direct and undirect runtime resources dependencies
-		get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE})
+		get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
 		if(RES_RESOURCES)
 			list(APPEND to_symlink ${RES_RESOURCES})
 		endif()
@@ -610,7 +642,7 @@ function(generate_Local_Component_Symlinks local_component local_dependency undi
 		set(to_symlink) # in case of an executable component add third party (undirect) links
 		#no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
 		#1) getting runtime resources of the component dependency
-		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${CMAKE_BUILD_TYPE}) #resolve external runtime resources
+		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #resolve external runtime resources
 		if(INT_DEP_RUNTIME_RESOURCES)
 			list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
 		endif()
