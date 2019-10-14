@@ -143,6 +143,7 @@ foreach(dep_package IN LISTS ${PROJECT_NAME}_PID_PACKAGES)
 endforeach()
 set(${PROJECT_NAME}_PID_PACKAGES CACHE INTERNAL "")#reset list of packages
 reset_Packages_Finding_Variables()
+reset_Temporary_Optimization_Variables()
 #resetting specific variables used to manage components defined locally
 foreach(comp IN LISTS DECLARED_LOCAL_COMPONENTS)
 	set(${comp}_LOCAL_DEPENDENCIES CACHE INTERNAL "")
@@ -262,7 +263,7 @@ function(bind_PID_Components)
 	#prepare component to be able to manage PID runtime path
 	if(BIND_PID_COMPONENTS_EXE OR BIND_PID_COMPONENTS_LIB)
 		if(APPLE)
-			set_target_properties(${name} PROPERTIES INSTALL_RPATH "@loader_path/../lib;@loader_path;;@loader_path/.rpath/${name};@loader_path/../.rpath/${name}") #the library targets a specific folder that contains symbolic links to used shared libraries
+			set_target_properties(${name} PROPERTIES INSTALL_RPATH "@loader_path/../lib;@loader_path;@loader_path/.rpath/${name};@loader_path/../.rpath/${name}") #the library targets a specific folder that contains symbolic links to used shared libraries
 		elseif(UNIX)
 			set_target_properties(${name} PROPERTIES INSTALL_RPATH "\$ORIGIN/../lib;\$ORIGIN;\$ORIGIN/.rpath/${name};\$ORIGIN/../.rpath/${name}") #the library targets a specific folder that contains symbolic links to used shared libraries
 		endif()
@@ -426,7 +427,7 @@ function(bind_PID_Components)
 			#need to resolve all symbols before linking executable so need to find undirect symbols => same as for native packages
 			# 1) searching each direct dependency in other packages
 			set(undirect_deps)
-			find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} TRUE ${WORKSPACE_MODE})
+			get_Native_Component_Runtime_PrivateLinks_Dependencies(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} FALSE ${WORKSPACE_MODE})
 			if(LIST_OF_DEP_SHARED)
 				set(undirect_deps ${LIST_OF_DEP_SHARED})
 			endif()
@@ -586,7 +587,7 @@ function(get_Local_Private_Shared_Libraries LIBS local_component)
 	#then direct dependencies to PID components
 	foreach(dep IN LISTS ${local_component}_PID_DEPENDENCIES)
 		extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
-		find_Dependent_Private_Shared_Libraries(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} TRUE ${WORKSPACE_MODE})
+		get_Native_Component_Runtime_PrivateLinks_Dependencies(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} FALSE ${WORKSPACE_MODE})
 		if(LIST_OF_DEP_SHARED)
 			list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
 		endif()
