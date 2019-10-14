@@ -296,129 +296,42 @@ function(bind_PID_Components)
 		#create the imported target for that component
 		get_Package_Type(${RES_PACK} PACK_TYPE)
 		if(PACK_TYPE STREQUAL "EXTERNAL")
-			#for direct external packages dependencies we need to do differently
-			collect_Links_And_Flags_For_External_Component(${RES_PACK} ${COMPONENT_NAME}
-						RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_LINKS_ST RES_LINKS_SH RES_STD_C RES_STD_CXX RES_RUNTIME)
-			set(ALL_LINKS ${RES_LINKS_ST} ${RES_LINKS_SH})
-			if(ALL_LINKS)
-			  evaluate_Variables_In_List(EVAL_LNKS ALL_LINKS) #first evaluate element of the list => if they are variables they are evaluated
-				resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${EVAL_LNKS}" ${WORKSPACE_MODE})
-				if(COMPLETE_LINKS_PATH)
-					foreach(link IN LISTS COMPLETE_LINKS_PATH)
-						create_External_Dependency_Target(EXT_TARGET_NAME ${link} ${WORKSPACE_MODE})
-						if(EXT_TARGET_NAME)
-							list(APPEND EXT_LINKS_TARGETS ${EXT_TARGET_NAME})
-						else()
-							list(APPEND EXT_LINKS_OPTIONS ${link})
-						endif()
-					endforeach()
-				endif()
-				list(APPEND EXT_LINKS ${EXT_LINKS_TARGETS} ${EXT_LINKS_OPTIONS})
-			endif()
-			if(RES_INCS)
-			  evaluate_Variables_In_List(EVAL_INCS RES_INCS)#first evaluate element of the list => if they are variables they are evaluated
-				resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${EVAL_INCS}" ${WORKSPACE_MODE})
-			endif()
-			if(RES_OPTS)
-				evaluate_Variables_In_List(EVAL_OPTS RES_OPTS)#first evaluate element of the list => if they are variables they are evaluated
-			endif()
-			if(RES_LIB_DIRS)
-			  evaluate_Variables_In_List(EVAL_LDIRS RES_LIB_DIRS)
-				resolve_External_Libs_Path(COMPLETE_LIB_DIRS_PATH "${EVAL_LDIRS}" ${WORKSPACE_MODE})
-			endif()
-			if(RES_DEFS)
-			  evaluate_Variables_In_List(EVAL_DEFS RES_DEFS)#first evaluate element of the list => if they are variables they are evaluated
-			endif()
-			if(RES_STD_C)
-			  evaluate_Variables_In_List(EVAL_CSTD RES_STD_C)
-			endif()
-			if(RES_STD_CXX)
-			  evaluate_Variables_In_List(EVAL_CXXSTD RES_STD_CXX)
-			endif()
-
-			# managing compile time flags
-			foreach(dir IN LISTS COMPLETE_INCLUDES_PATH)
-				target_include_directories(${name} PUBLIC "${dir}")
-			endforeach()
-
-			foreach(def IN LISTS RES_DEFS)
-				target_compile_definitions(${name} PUBLIC "${def}")
-			endforeach()
-
-			foreach(opt IN LISTS RES_OPTS)
-				target_compile_options(${name} PUBLIC "${opt}")
-			endforeach()
-
-			# managing link time flags
-			foreach(link IN LISTS EXT_LINKS)
-				target_link_libraries(${name} PUBLIC ${link})
-			endforeach()
-
-			foreach(dir IN LISTS COMPLETE_LIB_DIRS_PATH)
-			  target_link_libraries(${name} PUBLIC "-L${dir}")#generate -L linker flags for library dirs
-			endforeach()
-
-			# manage C/C++ language standards
-			if(RES_STD_C)#the std C is let optional as using a standard may cause error with posix includes
-				get_target_property(CURR_STD_C ${name} C_STANDARD)
-				is_C_Version_Less(IS_LESS ${CURR_STD_C} ${RES_STD_C})
-				if(IS_LESS)
-					set_target_properties(${name} PROPERTIES
-							C_STANDARD ${RES_STD_C}
-							C_STANDARD_REQUIRED YES
-							C_EXTENSIONS NO
-					)#setting the standard in use locally
-				endif()
-			endif()
-			get_target_property(CURR_STD_CXX ${name} CXX_STANDARD)
-			is_CXX_Version_Less(IS_LESS ${CURR_STD_CXX} ${RES_STD_CXX})
-			if(IS_LESS)
-				set_target_properties(${name} PROPERTIES
-					CXX_STANDARD ${RES_STD_CXX}
-					CXX_STANDARD_REQUIRED YES
-					CXX_EXTENSIONS NO
-					)#setting the standard in use locally
-			endif()
-
-		else()
+			create_External_Component_Dependency_Target(${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
+		else()#native component target
 			create_Dependency_Target(${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #create the fake target for component
-			is_HeaderFree_Component(DEP_IS_HF ${RES_PACK} ${COMPONENT_NAME})
-			if(NOT DEP_IS_HF) #link that target (only possible with non runtime libraries)#TODO not sure this is consistent since a header lib may have undirect binaries !!
-				target_link_libraries(${name} PUBLIC ${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX})
-			endif()
+		endif()
+		target_link_libraries(${name} PUBLIC ${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX})
 
-			target_include_directories(${name} PUBLIC
-			$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+		target_include_directories(${name} PUBLIC
+		$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
 
-			target_compile_definitions(${name} PUBLIC
-			$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+		target_compile_definitions(${name} PUBLIC
+		$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
-			target_compile_options(${name} PUBLIC
-			$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
+		target_compile_options(${name} PUBLIC
+		$<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
 
-			# manage C/C++ language standards
-			if(${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX})#the std C is let optional as using a standard may cause error with posix includes
-				get_target_property(CURR_STD_C ${name} C_STANDARD)
-				is_C_Version_Less(IS_LESS ${CURR_STD_C} ${${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX}})
-				if(IS_LESS)
-					set_target_properties(${name} PROPERTIES
-							C_STANDARD ${${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX}}
-							C_STANDARD_REQUIRED YES
-							C_EXTENSIONS NO
-					)#setting the standard in use locally
-				endif()
-			endif()
-			get_target_property(CURR_STD_CXX ${name} CXX_STANDARD)
-			is_CXX_Version_Less(IS_LESS ${CURR_STD_CXX} ${${RES_PACK}_${COMPONENT_NAME}_CXX_STANDARD${VAR_SUFFIX}})
+		# manage C/C++ language standards
+		if(${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX})#the std C is let optional as using a standard may cause error with posix includes
+			get_target_property(CURR_STD_C ${name} C_STANDARD)
+			is_C_Version_Less(IS_LESS ${CURR_STD_C} ${${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX}})
 			if(IS_LESS)
 				set_target_properties(${name} PROPERTIES
-					CXX_STANDARD ${${RES_PACK}_${COMPONENT_NAME}_CXX_STANDARD${VAR_SUFFIX}}
-					CXX_STANDARD_REQUIRED YES
-					CXX_EXTENSIONS NO
-					)#setting the standard in use locally
+						C_STANDARD ${${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX}}
+						C_STANDARD_REQUIRED YES
+						C_EXTENSIONS NO
+				)#setting the standard in use locally
 			endif()
 		endif()
-
+		get_target_property(CURR_STD_CXX ${name} CXX_STANDARD)
+		is_CXX_Version_Less(IS_LESS ${CURR_STD_CXX} ${${RES_PACK}_${COMPONENT_NAME}_CXX_STANDARD${VAR_SUFFIX}})
+		if(IS_LESS)
+			set_target_properties(${name} PROPERTIES
+				CXX_STANDARD ${${RES_PACK}_${COMPONENT_NAME}_CXX_STANDARD${VAR_SUFFIX}}
+				CXX_STANDARD_REQUIRED YES
+				CXX_EXTENSIONS NO
+				)#setting the standard in use locally
+		endif()
 		#Note: there is no resolution of dependenct binary packages runtime dependencies (as for native package build) because resolution has already taken place after deployment of dependent packages.
 
 		#For executable we need to resolve everything before linking so that there is no more unresolved symbols
