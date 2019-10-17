@@ -47,11 +47,14 @@ endif()
 set(CUDA_Language_AVAILABLE TRUE CACHE INTERNAL "")
 set(CUDA_USER_FLAGS CACHE STRING "")
 #memorizing build variables
-
-check_language(CUDA)
-if(CMAKE_CUDA_COMPILER)
-  enable_language(CUDA)
-else()#create the variable from the one created by find_package(CUDA)
+if(NOT CMAKE_VERSION VERSION_LESS 3.8)#if version < 3.8 CUDA language is not natively supported by CMake
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+  else()#create the variable from the one created by find_package(CUDA)
+    set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE FILEPATH "" FORCE)
+  endif()
+else()
   set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE FILEPATH "" FORCE)
 endif()
 
