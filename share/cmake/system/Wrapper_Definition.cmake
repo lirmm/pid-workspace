@@ -1875,7 +1875,7 @@ macro(execute_OS_Command)
 if(IN_CI_PROCESS)
   execute_process(COMMAND ${ARGN})
 else()
-  execute_process(COMMAND sudo ${ARGN})#need to have super user privileges except in CI where suding sudi is forbidden
+  execute_process(COMMAND sudo ${ARGN})#need to have super user privileges except in CI where sudo is forbidden
 endif()
 endmacro(execute_OS_Command)
 

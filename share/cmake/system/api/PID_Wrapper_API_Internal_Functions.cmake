@@ -645,6 +645,7 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DIN_CI_PROCESS=${IN_CI_PROCESS}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DKNOWN_VERSIONS="${${PROJECT_NAME}_KNOWN_VERSIONS}"
 						-DTARGET_PLATFORM=${curr_platform_str}
@@ -661,6 +662,7 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done with a framework
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DIN_CI_PROCESS=${IN_CI_PROCESS}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DKNOWN_VERSIONS="${${PROJECT_NAME}_KNOWN_VERSIONS}"
 						-DTARGET_PLATFORM=${curr_platform_str}
