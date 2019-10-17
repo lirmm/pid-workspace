@@ -124,6 +124,9 @@ include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE)
 
+execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR} -B ${WORKSPACE_DIR}/pid
+								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+
 include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
 
 ########################################################################
