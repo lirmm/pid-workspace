@@ -1897,37 +1897,56 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 		#agregate all includes for all components
 		list(APPEND all_includes ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES})
 	endforeach()
-	if(all_includes)#do something only if there are includes
+	if(all_includes)#do something only if there are includes specified in external package description
 		list(REMOVE_DUPLICATES all_includes)
 		list(LENGTH all_includes NB_INCLUDES_DESCRIPTION)
-		if(NB_INCLUDES_DESCRIPTION GREATER 1)
-			message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for include folder as they are more than one include folder defined in PID description of ${package}.")
-			return()
-		endif()
+
 		if(${package}_INCLUDE_DIRS)
-			list(REMOVE_DUPLICATES ${package}_INCLUDE_DIRS)
-			list(LENGTH ${package}_INCLUDE_DIRS NB_INCLUDES_OS)
-			#checking that generating symlinks to OS include folders is feasible
-			if(NB_INCLUDES_OS GREATER NB_INCLUDES_DESCRIPTION)#no solution about that
-				list(GET ${package}_INCLUDE_DIRS 0 default_include)
-				foreach(inc IN LISTS ${package}_INCLUDE_DIRS)
-					list(FIND CMAKE_SYSTEM_INCLUDE_PATH ${inc} INDEX)
-					if(INDEX EQUAL -1)#not a system include path
-						list(APPEND os_includes_used ${inc})#no other choice than generating a symlink to it
-					endif()
-				endforeach()
-				list(LENGTH os_includes_used NB_INCLUDES_OS)
-				if(NB_INCLUDES_OS GREATER NB_INCLUDES_DESCRIPTION)#no solution about that I have no enough "slots" in description to target all system include folders
-					message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for include as they are too many include folders to target in operating system.")
-					return()
-				elseif(NB_INCLUDES_OS LESS 1)
-					set()
+			foreach(inc IN LISTS ${package}_INCLUDE_DIRS)
+				list(FIND CMAKE_SYSTEM_INCLUDE_PATH ${inc} INDEX)
+				if(INDEX EQUAL -1)#not a system include path
+					list(APPEND os_includes_used ${inc})#no other choice than generating a symlink to it
 				endif()
-				set(os_includes_used ${default_include})#if all includes are system include then generate a symlink for first found
-			else()
-				set(os_includes_used ${${package}_INCLUDE_DIRS})
+			endforeach()
+			if(os_includes_used)#there are non system path in configuration variable
+				list(REMOVE_DUPLICATES os_includes_used)
+			else()#there are only system path, generate a symlink for first found
+				list(GET ${package}_INCLUDE_DIRS 0 os_includes_used)
 			endif()
-			create_Symlink(${os_includes_used} ${install_dir}/${all_includes})
+
+			list(LENGTH os_includes_used NB_INCLUDES_OS)#Note: NB_INCLUDES_OS >=1
+			#checking that generating symlinks to OS include folders is feasible
+			if(NB_INCLUDES_OS GREATER NB_INCLUDES_DESCRIPTION)#no solution about that I have no enough "slots" in description to target all system include folders
+				message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for include as they are too many include folders to target in operating system.")
+				return()
+			elseif(NB_INCLUDES_DESCRIPTION GREATER NB_INCLUDES_OS)
+				message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for include as they are too many include folders defined in package description compared to those declared in operating system.")
+				return()
+			else()#they are equal
+				if(NB_INCLUDES_DESCRIPTION GREATER 1)
+					#problem => how to map adequately the each include folder from the description with the adequate one in system folder ?
+					#only solution is to use their filename to match them
+					foreach(descr_inc IN LISTS all_includes)
+						set(match_found FALSE)
+						get_filename_component(DESCR_NAME ${descr_inc} NAME)
+						foreach(os_inc IN LISTS os_includes_used)
+							get_filename_component(OS_NAME ${os_inc} NAME)
+							if(DESCR_NAME STREQUAL OS_NAME)
+								create_Symlink(${os_inc} ${install_dir}/${descr_inc})
+								list(REMOVE_ITEM os_includes_used ${os_inc})#this include is no more usable
+								set(match_found TRUE)
+								break()
+							endif()
+						endforeach()
+						if(NOT match_found)
+							message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for include ${descr_inc} as there is no folder with same name in operating system.")
+							return()
+						endif()
+					endforeach()
+				else()#==1
+					create_Symlink(${os_includes_used} ${install_dir}/${all_includes})
+				endif()
+			endif()
 		else()
 			message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for ${package} OS system as the ${package} configuration provides no OS include folders !")
 			return()
