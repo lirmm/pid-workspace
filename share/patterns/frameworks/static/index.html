@@ -16,7 +16,20 @@ layout: default
 
 {{site.data.framework.framework_description}}
 
-<br><br><br><br>
+<br><br>
+
+{% if site.data.framework.framework_welcome != "" %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script>
+   $(document).ready(function(){
+      $('#welcome').load("{{ site.baseurl }}/pages/{{site.data.framework.framework_welcome}}");
+   });
+</script>
+
+<div id="welcome"></div>
+{% endif %}
+
+<br><br>
 
 <h2>First steps</h2>
 

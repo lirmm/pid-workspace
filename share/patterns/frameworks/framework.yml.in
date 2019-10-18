@@ -6,4 +6,4 @@ framework_contact_mail: "@FRAMEWORK_MAINTAINER_MAIL@"
 framework_description: "@FRAMEWORK_DESCRIPTION@"
 framework_banner_image: "@FRAMEWORK_BANNER@"
 framework_logo: "@FRAMEWORK_LOGO@"
-
+framework_welcome: "@FRAMEWORK_WELCOME@"
