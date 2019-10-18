@@ -33,9 +33,13 @@ include(CMakeParseArguments)
 #
 #     Import a PID workspace into current non PID CMake project.
 #
-#   .. rubric:: Required parameters
+#   .. rubric:: Optional parameters
 #
-#   :<path>: the path to the target workspace root folder.
+#   :PATH <path>: the path to the target workspace root folder. If you only want to set the path you can omit the PATH keyword.
+#
+#   :MODE <mode>: the build mode (Release or Debug) you want to use for PID libraries.
+#
+#   :SYSTEM_DEPENDENCIES <list of external dependencies>: the list of OS dependencies to use. Will force all external dependencies of PID packages to be system dependencies.
 #
 #   .. admonition:: Effects
 #     :class: important
@@ -47,12 +51,17 @@ include(CMakeParseArguments)
 #   .. code-block:: cmake
 #
 #      set(PATH_TO_PID_WORKSPACE /opt/pid/pid-workspace CACHE PATH "")
-#      import_PID_Workspace(PATH_TO_PID_WORKSPACE)
+#      import_PID_Workspace(PATH ${PATH_TO_PID_WORKSPACE})
+#
+#   .. code-block:: cmake
+#
+#      import_PID_Workspace(MODE Release SYSTEM_DEPENDENCIES eigen boost)
 #
 macro(import_PID_Workspace)
 #interpret user arguments
 set(oneValueArgs PATH MODE)
-cmake_parse_arguments(IMPORT_PID_WORKSPACE "" "${oneValueArgs}" "" ${ARGN})
+set(multiValueArgs SYSTEM_DEPENDENCIES)
+cmake_parse_arguments(IMPORT_PID_WORKSPACE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 if(ARGC EQUAL 0)
 	set(path)
 elseif(ARGC EQUAL 1)
@@ -76,7 +85,7 @@ else()#there are arguments specified in CMake style
 endif()
 
 if(NOT path)
-	#test if teh workspace has been deployed has a submodule directly inside the external project
+	#test if the workspace has been deployed has a submodule directly inside the external project
 	if(EXISTS ${CMAKE_SOURCE_DIR}/pid-workspace AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/pid-workspace)
 		set(workspace_path ${CMAKE_SOURCE_DIR}/pid-workspace)
 	else()
@@ -93,10 +102,9 @@ else()
 		set(workspace_path ${path})
 	endif()
 endif()
+
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1)#just to ensure that version of CMake tool used in external projects if high enough (supports language standards)
 
-set(WORKSPACE_DIR ${workspace_path} CACHE INTERNAL "")
-set(WORKSPACE_MODE ${mode} CACHE INTERNAL "")
 ########################################################################
 ############ all PID system path are put into the cmake path ###########
 ########################################################################
@@ -112,47 +120,24 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations)
 ############ inclusion of required macros and functions ################
 ########################################################################
 include(PID_Set_Policies NO_POLICY_SCOPE)
-include(PID_Utils_Functions NO_POLICY_SCOPE)
-include(PID_Git_Functions NO_POLICY_SCOPE)
-include(PID_Finding_Functions NO_POLICY_SCOPE)
-include(PID_Version_Management_Functions NO_POLICY_SCOPE)
-include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
-include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
-include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
-include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
-include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
-include(PID_Deployment_Functions NO_POLICY_SCOPE)
-include(External_Definition NO_POLICY_SCOPE)
+include(PID_External_Use_Internal_Functions NO_POLICY_SCOPE)
 
 execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR} -B ${WORKSPACE_DIR}/pid
-								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
 
 include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
 
-########################################################################
-############ default value for PID cache variables #####################
-########################################################################
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "") #do not manage automatic install since outside from a PID workspace
-set(GLOBAL_PROGRESS_VAR TRUE)
-
 #need to reset the variables used to describe dependencies
-foreach(dep_package IN LISTS ${PROJECT_NAME}_PID_PACKAGES)
-	get_Package_Type(${dep_package} PACK_TYPE)
-	if(PACK_TYPE STREQUAL "EXTERNAL")
-		reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE})
-	else()
-		reset_Native_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE})
+reset_Local_Components_Info(${workspace_path} ${mode})
+#enforce constraints before finding packages
+begin_Progress(workspace GLOBAL_PROGRESS_VAR)
+if(IMPORT_PID_WORKSPACE_SYSTEM_DEPENDENCIES)
+	enforce_System_Dependencies(NOT_ENFORCED "${IMPORT_PID_WORKSPACE_SYSTEM_DEPENDENCIES}")
+	if(NOT_ENFORCED)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : System dependencies ${NOT_ENFORCED} cannot be found.")
 	endif()
-endforeach()
-set(${PROJECT_NAME}_PID_PACKAGES CACHE INTERNAL "")#reset list of packages
-reset_Packages_Finding_Variables()
-reset_Temporary_Optimization_Variables()
-#resetting specific variables used to manage components defined locally
-foreach(comp IN LISTS DECLARED_LOCAL_COMPONENTS)
-	set(${comp}_LOCAL_DEPENDENCIES CACHE INTERNAL "")
-	set(${comp}_PID_DEPENDENCIES CACHE INTERNAL "")
-endforeach()
-set(DECLARED_LOCAL_COMPONENTS CACHE INTERNAL "")
+endif()
 endmacro(import_PID_Workspace)
 
 #.rst:
@@ -197,20 +182,16 @@ set(oneValueArgs PACKAGE VERSION)
 set(multiValueArgs)
 cmake_parse_arguments(IMPORT_PID_PACKAGE "" "${oneValueArgs}" "" ${ARGN})
 if(NOT IMPORT_PID_PACKAGE_PACKAGE)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a package name must be given to using NAME keyword.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments passed to import_PID_Package, a package name must be given to using NAME keyword.")
 endif()
-append_Unique_In_Cache(${PROJECT_NAME}_PID_PACKAGES ${IMPORT_PID_PACKAGE_PACKAGE})#reset list of packages
 if(NOT IMPORT_PID_PACKAGE_VERSION)
-	message("[PID] WARNING : no version given to import_PID_Package, last available version of ${IMPORT_PID_PACKAGE_PACKAGE} will be used.")
-	find_package(${IMPORT_PID_PACKAGE_PACKAGE} REQUIRED)
-else()
-	find_package(${IMPORT_PID_PACKAGE_PACKAGE} ${IMPORT_PID_PACKAGE_VERSION} EXACT REQUIRED)
+	message("[PID] WARNING : no version given to import_PID_Package, last available version of ${package} will be used.")
 endif()
-if(NOT ${IMPORT_PID_PACKAGE_PACKAGE}_FOUND)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling import_PID_Package, the package ${IMPORT_PID_PACKAGE_PACKAGE} cannot be found (any version or required version not found).")
+manage_Dependent_PID_Package(DEPLOYED ${IMPORT_PID_PACKAGE_PACKAGE} "${IMPORT_PID_PACKAGE_VERSION}")
+if(NOT DEPLOYED)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling import_PID_Package, the package ${IMPORT_PID_PACKAGE_PACKAGE} cannot be found and deployed.")
+	return()
 endif()
-resolve_Package_Dependencies(${IMPORT_PID_PACKAGE_PACKAGE} ${WORKSPACE_MODE} TRUE)#TODO from here ERROR due to bad dependency (maybe a BUG in version resolution)
-set(${IMPORT_PID_PACKAGE_PACKAGE}_RPATH ${${IMPORT_PID_PACKAGE_PACKAGE}_ROOT_DIR}/.rpath CACHE INTERNAL "")
 endfunction(import_PID_Package)
 
 #.rst:
@@ -248,6 +229,7 @@ endfunction(import_PID_Package)
 #      bind_PID_Components(NAME my-target COMPONENTS pid-rpath/rpathlib)
 #
 function(bind_PID_Components)
+	finish_Progress(${GLOBAL_PROGRESS_VAR})#force finishing progress from first call of bind_PID_Components
 	set(oneValueArgs EXE LIB AR)
 	set(multiValueArgs COMPONENTS)
 	cmake_parse_arguments(BIND_PID_COMPONENTS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -266,9 +248,9 @@ function(bind_PID_Components)
 	#prepare component to be able to manage PID runtime path
 	if(BIND_PID_COMPONENTS_EXE OR BIND_PID_COMPONENTS_LIB)
 		if(APPLE)
-			set_target_properties(${name} PROPERTIES INSTALL_RPATH "@loader_path/../lib;@loader_path;@loader_path/.rpath/${name};@loader_path/../.rpath/${name}") #the library targets a specific folder that contains symbolic links to used shared libraries
+			set_property(TARGET ${name} APPEND_STRING PROPERTY INSTALL_RPATH "@loader_path/../lib;@loader_path;@loader_path/.rpath/${name};@loader_path/../.rpath/${name}") #the library targets a specific folder that contains symbolic links to used shared libraries
 		elseif(UNIX)
-			set_target_properties(${name} PROPERTIES INSTALL_RPATH "\$ORIGIN/../lib;\$ORIGIN;\$ORIGIN/.rpath/${name};\$ORIGIN/../.rpath/${name}") #the library targets a specific folder that contains symbolic links to used shared libraries
+			set_property(TARGET ${name} APPEND_STRING PROPERTY INSTALL_RPATH "\$ORIGIN/../lib;\$ORIGIN;\$ORIGIN/.rpath/${name};\$ORIGIN/../.rpath/${name}") #the library targets a specific folder that contains symbolic links to used shared libraries
 		endif()
 	endif()
 
@@ -488,94 +470,3 @@ function(bind_Local_Component)
 		generate_Local_Component_Symlinks(${component} ${dependency} "${LIBS}")
 	endif()
 endfunction(bind_Local_Component)
-
-function(get_Local_Private_Shared_Libraries LIBS local_component)
-	set(${LIBS} PARENT_SCOPE)
-	set(undirect_deps)
-	#recursion on local components first
-	foreach(dep IN LISTS ${local_component}_LOCAL_DEPENDENCIES)
-		get_Local_Private_Shared_Libraries(DEP_LIBS ${dep})
-		if(DEP_LIBS)
-			list(APPEND undirect_deps ${DEP_LIBS})
-		endif()
-	endforeach()
-
-	#then direct dependencies to PID components
-	foreach(dep IN LISTS ${local_component}_PID_DEPENDENCIES)
-		extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
-		get_Native_Component_Runtime_PrivateLinks_Dependencies(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} FALSE ${WORKSPACE_MODE})
-		if(LIST_OF_DEP_SHARED)
-			list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
-		endif()
-	endforeach()
-
-	if(undirect_deps)
-		list(REMOVE_DUPLICATES undirect_deps)
-	endif()
-	set(${LIBS} ${undirect_deps} PARENT_SCOPE)
-endfunction(get_Local_Private_Shared_Libraries)
-
-function(generate_Local_Component_Symlinks local_component local_dependency undirect_deps)
-	#recursion on local components first
-	foreach(dep IN LISTS ${local_dependency}_LOCAL_DEPENDENCIES)
-		generate_Local_Component_Symlinks(${local_component} ${dep} "")
-	endforeach()
-
-	foreach(dep IN LISTS ${local_dependency}_PID_DEPENDENCIES)
-		extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
-
-		#now generating symlinks in install tree of the component (for exe and shared libs)
-		#equivalent of resolve_Source_Component_Runtime_Dependencies in native packages
-		### STEP A: create symlinks in install tree
-		set(to_symlink ${undirect_deps}) # in case of an executable component add third party (undirect) links
-
-		get_Binary_Location(LOCATION_RES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
-		list(APPEND to_symlink ${LOCATION_RES})
-
-		#1) getting public shared links
-		get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
-		if(INT_DEP_RUNTIME_RESOURCES)
-			list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
-		endif()
-		#2) getting private shared links (undirect by definition)
-		get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
-		if(RES_PRIVATE_LINKS)
-			list(APPEND to_symlink ${RES_PRIVATE_LINKS})
-		endif()
-		#3) getting direct and undirect runtime resources dependencies
-		get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
-		if(RES_RESOURCES)
-			list(APPEND to_symlink ${RES_RESOURCES})
-		endif()
-		#finally create install rule for the symlinks
-		if(to_symlink)
-			list(REMOVE_DUPLICATES to_symlink)
-		endif()
-		foreach(resource IN LISTS to_symlink)
-			install_Runtime_Symlink(${resource} "${CMAKE_INSTALL_PREFIX}/.rpath" ${local_component})
-		endforeach()
-
-		### STEP B: create symlinks in build tree (to allow the runtime resources PID mechanism to work at runtime)
-		set(to_symlink) # in case of an executable component add third party (undirect) links
-		#no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
-		#1) getting runtime resources of the component dependency
-		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #resolve external runtime resources
-		if(INT_DEP_RUNTIME_RESOURCES)
-			list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
-		endif()
-		#2) getting component as runtime ressources if it a pure runtime entity (dynamically loaded library)
-		if(${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "MODULE")
-			list(APPEND to_symlink ${${RES_PACK}_ROOT_DIR}/lib/${${RES_PACK}_${COMPONENT_NAME}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-		elseif(${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "APP" OR ${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "EXAMPLE")
-			list(APPEND to_symlink ${${RES_PACK}_ROOT_DIR}/bin/${${RES_PACK}_${COMPONENT_NAME}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-		endif()
-		#finally create install rule for the symlinks
-		if(to_symlink)
-			list(REMOVE_DUPLICATES to_symlink)
-		endif()
-		foreach(resource IN LISTS to_symlink)
-			create_Runtime_Symlink(${resource} "${CMAKE_BINARY_DIR}/.rpath" ${local_component})
-		endforeach()
-	endforeach()
-
-endfunction(generate_Local_Component_Symlinks)

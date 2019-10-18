@@ -65,16 +65,18 @@ if(NOT NO_SOURCE AND DEFINED ENV{no_source})
 	set(NO_SOURCE $ENV{no_source} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT FORCE_REDEPLOY AND DEFINED ENV{force})
-	set(FORCE_REDEPLOY $ENV{force} CACHE INTERNAL "" FORCE)
-endif()
-
 if(NOT USE_BRANCH AND DEFINED ENV{branch})
 	set(USE_BRANCH $ENV{branch} CACHE INTERNAL "" FORCE)
 endif()
 
 if(NOT RUN_TESTS AND DEFINED ENV{test})
 	set(RUN_TESTS $ENV{test} CACHE INTERNAL "" FORCE)
+endif()
+
+if(DEFINED ENV{manage_progress})
+	set(MANAGE_PROGRESS $ENV{manage_progress})
+else()
+	set(MANAGE_PROGRESS TRUE)
 endif()
 
 #checking TARGET_VERSION value
@@ -228,8 +230,11 @@ else()# a package deployment is required
 		####################################################################
 
 	## start package deployment process
-	remove_Progress_File() #reset the build progress information (sanity action)
-	begin_Progress(workspace NEED_REMOVE)
+	if(MANAGE_PROGRESS)#conditionate the progress management to allow an external CMake project to preconfigure some constraints on external packages
+		remove_Progress_File() #reset the build progress information (sanity action)
+		begin_Progress(workspace NEED_REMOVE)
+	endif()
+
 
 	if(TARGET_VERSION)
 		if(is_external)#external package is deployed
@@ -272,9 +277,11 @@ else()# a package deployment is required
 	endif()
 
 	## global management of the process
-	message("--------------------------------------------")
-	message("All packages deployed during this process : ")
-	print_Managed_Packages()
-	finish_Progress(TRUE) #reset the build progress information
-	message("--------------------------------------------")
+	if(MANAGE_PROGRESS)
+		message("--------------------------------------------")
+		message("All packages deployed during this process : ")
+		print_Managed_Packages()
+		message("--------------------------------------------")
+		finish_Progress(TRUE) #reset the build progress information
+	endif()
 endif()
