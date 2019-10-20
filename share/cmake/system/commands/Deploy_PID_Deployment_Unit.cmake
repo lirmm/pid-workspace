@@ -21,6 +21,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 include(Package_Definition NO_POLICY_SCOPE) # to be able to interpret description of external components
@@ -157,14 +158,8 @@ else()# a package deployment is required
 
 	# check if redeployment asked
 	if(TARGET_VERSION AND NOT TARGET_VERSION STREQUAL "SYSTEM") # a specific version is targetted
-		if(is_external AND EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION}
-			AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION})
-			if(NOT redeploy)
-				message("[PID] WARNING : ${TARGET_PACKAGE} binary version ${TARGET_VERSION} already resides in the workspace. Use force=true to force the redeployment.")
-				return()
-			endif()
-		elseif( NOT is_external AND	EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION}
-			AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION})
+		package_Binary_Exists_In_Workspace(RETURNED_PATH ${TARGET_PACKAGE} ${TARGET_VERSION} ${CURRENT_PLATFORM})
+		if(RETURNED_PATH)#binary version already exists
 			if(NOT redeploy)
 				message("[PID] WARNING : ${TARGET_PACKAGE} binary version ${TARGET_VERSION} already resides in the workspace. Use force=true to force the redeployment.")
 				return()
@@ -232,7 +227,7 @@ else()# a package deployment is required
 	## start package deployment process
 	if(MANAGE_PROGRESS)#conditionate the progress management to allow an external CMake project to preconfigure some constraints on external packages
 		remove_Progress_File() #reset the build progress information (sanity action)
-		begin_Progress(workspace NEED_REMOVE)
+		begin_Progress(workspace GLOBAL_PROGRESS_VAR)
 	endif()
 
 
@@ -240,7 +235,6 @@ else()# a package deployment is required
 		if(is_external)#external package is deployed
 			set(message_to_print "[PID] INFO : deploying external package ${TARGET_PACKAGE} (version ${TARGET_VERSION}) in the workspace ...")
 		else()#native package is deployed
-			message("")
 			set(message_to_print "[PID] INFO : deploying native PID package ${TARGET_PACKAGE} (version ${TARGET_VERSION}) in the workspace ...")
 		endif()
 		#from here the operation can be theorically realized
@@ -264,18 +258,18 @@ else()# a package deployment is required
 		endif()
 	endif()
 
-	if(NOT references_loaded)# now load the binary references of the package
-		load_Package_Binary_References(REFERENCES_OK ${TARGET_PACKAGE})
-	endif()
-
 	message("${message_to_print}")
 	# now do the deployment
 	if(is_external)#external package is deployed
-		deploy_PID_External_Package(${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} ${redeploy})
+		deploy_PID_External_Package(PACK_DEPLOYED ${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} ${redeploy})
 	else()#native package is deployed
-		deploy_PID_Native_Package(${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} "${branch}" ${run_tests})
+		deploy_PID_Native_Package(PACK_DEPLOYED ${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} "${branch}" ${run_tests})
 	endif()
-
+	if(NOT PACK_DEPLOYED)
+		message("[PID] CRITICAL ERROR : there were errors during deployment of ${TARGET_PACKAGE}")
+	else()
+			bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${TARGET_PACKAGE} ${TARGET_VERSION})
+	endif()
 	## global management of the process
 	if(MANAGE_PROGRESS)
 		message("--------------------------------------------")

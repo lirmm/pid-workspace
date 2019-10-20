@@ -484,7 +484,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 
 #optimization (compute things only one time)
-check_Resource_Temporary_Optimization_Variables(RESOURCES_VAR ${package} ${component})
+check_Resource_Temporary_Optimization_Variables(RESOURCES_VAR ${package} ${component} ${mode})
 if(RESOURCES_VAR)
   set(${RES_RESOURCES} ${${RESOURCES_VAR}} PARENT_SCOPE)
   return()
@@ -519,7 +519,7 @@ if(result)
   list(REMOVE_DUPLICATES result)
 endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
-set_Resources_Temporary_Optimization_Variables(${package} ${component} "${result}")
+set_Resources_Temporary_Optimization_Variables(${package} ${component} ${mode} "${result}")
 endfunction(get_External_Component_Runtime_Resources_Dependencies)
 
 #.rst:
@@ -598,7 +598,7 @@ function(get_Bin_Component_Runtime_Resources_Dependencies RES_RESOURCES package 
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 #optimization (compute things only one time)
-check_Resource_Temporary_Optimization_Variables(RESOURCES_VAR ${package} ${component})
+check_Resource_Temporary_Optimization_Variables(RESOURCES_VAR ${package} ${component} ${mode})
 if(RESOURCES_VAR)
   set(${RES_RESOURCES} ${${RESOURCES_VAR}} PARENT_SCOPE)
   return()
@@ -643,7 +643,7 @@ if(result)
   list(REMOVE_DUPLICATES result)
 endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
-set_Resources_Temporary_Optimization_Variables(${package} ${component} "${result}")
+set_Resources_Temporary_Optimization_Variables(${package} ${component} ${mode} "${result}")
 endfunction(get_Bin_Component_Runtime_Resources_Dependencies)
 
 
@@ -711,7 +711,7 @@ endfunction(get_Bin_Component_Direct_Internal_Runtime_Dependencies)
 function(get_External_Component_Runtime_Links_Dependencies RES_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
-check_Public_Link_Temporary_Optimization_Variables(LINKS_VAR ${package} ${component})
+check_Public_Link_Temporary_Optimization_Variables(LINKS_VAR ${package} ${component} ${mode})
 if(LINKS_VAR)
   set(${RES_LINKS} ${${LINKS_VAR}} PARENT_SCOPE)
   return()
@@ -758,7 +758,7 @@ if(result)
   list(REMOVE_DUPLICATES result)
 endif()
 set(${RES_LINKS} ${result} PARENT_SCOPE)
-set_Public_Links_Temporary_Optimization_Variables(${package} ${component} "${result}")
+set_Public_Links_Temporary_Optimization_Variables(${package} ${component} ${mode} "${result}")
 endfunction(get_External_Component_Runtime_Links_Dependencies)
 
 #.rst:
@@ -840,7 +840,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 
 #optimization
-check_Public_Link_Temporary_Optimization_Variables(LINKS_VAR ${package} ${component})
+check_Public_Link_Temporary_Optimization_Variables(LINKS_VAR ${package} ${component} ${mode})
 if(LINKS_VAR)
   set(${ALL_RUNTIME_RESOURCES} ${${LINKS_VAR}} PARENT_SCOPE)
   return()
@@ -896,7 +896,7 @@ if(result)
   list(REMOVE_DUPLICATES result)
 endif()
 set(${ALL_RUNTIME_RESOURCES} ${result} PARENT_SCOPE)
-set_Public_Links_Temporary_Optimization_Variables(${package} ${component} "${result}")
+set_Public_Links_Temporary_Optimization_Variables(${package} ${component} ${mode} "${result}")
 
 endfunction(get_Bin_Component_Runtime_Dependencies)
 
@@ -937,7 +937,7 @@ if(IS_HF)#if no header then no symbol exported at link time (module or executabl
 endif()
 
 #optimization check => test if already performed
-check_Private_Link_Temporary_Optimization_Variables(RES_PRIVATE_VAR ${PROJECT_NAME} ${component} ${all})
+check_Private_Link_Temporary_Optimization_Variables(RES_PRIVATE_VAR ${PROJECT_NAME} ${component} ${mode} ${all})
 if(RES_PRIVATE_VAR)
   set(${RES_PRIVATE_LINKS} ${${RES_PRIVATE_VAR}} PARENT_SCOPE)
   return()
@@ -1035,7 +1035,7 @@ if(undirect_list) #if true we need to be sure that the rpath-link does not conta
 	list(REMOVE_DUPLICATES undirect_list)
 endif()
 set(${RES_PRIVATE_LINKS} "${undirect_list}" PARENT_SCOPE)
-set_Private_Link_Temporary_Optimization_Variables(${PROJECT_NAME} ${component} ${all} "${undirect_list}")
+set_Private_Link_Temporary_Optimization_Variables(${PROJECT_NAME} ${component} ${mode} ${all} "${undirect_list}")
 endfunction(get_Source_Component_Runtime_PrivateLinks_Dependencies)
 
 #.rst:
@@ -1066,7 +1066,7 @@ function(get_External_Component_Runtime_PrivateLinks_Dependencies RES_PRIVATE_LI
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 
-check_Private_Link_Temporary_Optimization_Variables(RES_PRIVATE_VAR ${package} ${component} ${all})
+check_Private_Link_Temporary_Optimization_Variables(RES_PRIVATE_VAR ${package} ${component} ${mode} ${all})
 if(RES_PRIVATE_VAR)
   set(${RES_PRIVATE_LINKS} ${${RES_PRIVATE_VAR}} PARENT_SCOPE)
   return()
@@ -1123,7 +1123,7 @@ endforeach()
 if(result)
   list(REMOVE_DUPLICATES result)#optimize a bit the size of output
 endif()
-set_Private_Link_Temporary_Optimization_Variables(${package} ${component} ${all} "${result}")
+set_Private_Link_Temporary_Optimization_Variables(${package} ${component} ${mode} ${all} "${result}")
 set(${RES_PRIVATE_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_External_Component_Runtime_PrivateLinks_Dependencies)
 
@@ -1161,7 +1161,7 @@ if(IS_HF)#if no header then no symbol exported at link time (module or executabl
   return()
 endif()
 
-check_Private_Link_Temporary_Optimization_Variables(RES_PRIVATE_VAR ${package} ${component} ${all})
+check_Private_Link_Temporary_Optimization_Variables(RES_PRIVATE_VAR ${package} ${component} ${mode} ${all})
 if(RES_PRIVATE_VAR)
   set(${RES_PRIVATE_LINKS} ${${RES_PRIVATE_VAR}} PARENT_SCOPE)
   return()
@@ -1263,7 +1263,7 @@ endforeach()
 if(result)
   list(REMOVE_DUPLICATES result)#optimize a bit the size of output
 endif()
-set_Private_Link_Temporary_Optimization_Variables(${package} ${component} ${all} "${result}")
+set_Private_Link_Temporary_Optimization_Variables(${package} ${component} ${mode} ${all} "${result}")
 set(${RES_PRIVATE_LINKS} ${result} PARENT_SCOPE)
 endfunction(get_Native_Component_Runtime_PrivateLinks_Dependencies)
 
@@ -1430,17 +1430,17 @@ endfunction(resolve_Source_Component_Linktime_Dependencies)
 #     :mode: the build mode (Release or Debug) for the package.
 #
 function(resolve_Package_Runtime_Dependencies package mode)
-if(${package}_PREPARE_RUNTIME)#this is a guard to limit recursion -> the runtime has already been prepared
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+if(${package}_PREPARE_RUNTIME${VAR_SUFFIX})#this is a guard to limit recursion -> the runtime has already been prepared
 	return()
 endif()
 
-if(${package}_DURING_PREPARE_RUNTIME)
+if(${package}_DURING_PREPARE_RUNTIME${VAR_SUFFIX})
   finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : cyclic dependencies between packages found : Package ${package} is undirectly requiring itself !")
 	return()
 endif()
-set(${package}_DURING_PREPARE_RUNTIME TRUE)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(${package}_DURING_PREPARE_RUNTIME${VAR_SUFFIX} TRUE)
 
 # 1) resolving runtime dependencies by recursion (resolving dependancy packages' components first)
 if(${package}_DEPENDENCIES${VAR_SUFFIX})
@@ -1452,8 +1452,8 @@ endif()
 foreach(component IN LISTS ${package}_COMPONENTS)
 	resolve_Bin_Component_Runtime_Dependencies(${package} ${component} ${mode})
 endforeach()
-set(${package}_DURING_PREPARE_RUNTIME FALSE)
-set(${package}_PREPARE_RUNTIME TRUE)
+set(${package}_DURING_PREPARE_RUNTIME${VAR_SUFFIX} FALSE)
+set(${package}_PREPARE_RUNTIME${VAR_SUFFIX} TRUE)
 endfunction(resolve_Package_Runtime_Dependencies)
 
 #.rst:
@@ -1776,7 +1776,7 @@ function(get_Source_Component_Runtime_Resources_Dependencies RES_RESOURCES compo
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 #optimization (compute things only one time)
-check_Source_Resource_Temporary_Optimization_Variables(RESOURCES_VAR ${component})
+check_Source_Resource_Temporary_Optimization_Variables(RESOURCES_VAR ${component} ${mode})
 if(RESOURCES_VAR)
   set(${RES_RESOURCES} ${${RESOURCES_VAR}} PARENT_SCOPE)
 return()
@@ -1820,7 +1820,7 @@ if(result)
   list(REMOVE_DUPLICATES result)
 endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
-set_Source_Resources_Temporary_Optimization_Variables(${component} "${result}")
+set_Source_Resources_Temporary_Optimization_Variables(${component} ${mode} "${result}")
 endfunction(get_Source_Component_Runtime_Resources_Dependencies)
 
 #.rst:

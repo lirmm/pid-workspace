@@ -41,7 +41,7 @@ if(NOT DEFINED ENV{ROS_DISTRO})
 	return()
 endif()
 
-if(ros_distribution) 
+if(ros_distribution)
 	set(ROS_DISTRIBUTION ${ros_distribution})
 else()
 	if(ros_preferred_distributions)
@@ -73,11 +73,10 @@ set(ROS_PATH "/opt/ros/${ROS_DISTRIBUTION}")
 set(ROS_ROOT_PATH "${ROS_PATH}" CACHE STRING "")
 
 # find packages
+list(APPEND ros_packages roscpp)
 list(REMOVE_DUPLICATES ros_packages)
 set(ROS_PACKAGES ${ros_packages})
 
-list(APPEND ros_packages roscpp)
-list(REMOVE_DUPLICATES ros_packages)
 set(CATKIN_BUILD_BINARY_PACKAGE TRUE)#before finding avoid the deployment of ROS env into install folder
 set(CATKIN_INSTALL_INTO_PREFIX_ROOT)
 find_package(catkin REQUIRED COMPONENTS ${ros_packages})

@@ -354,7 +354,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
       resolve_Package_Dependencies(${package} ${mode} FALSE)#resolving again the dependencies on same package
     else()# cannot do much more about that !!
       finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has conflicting dependencies and the target version ${${package}_VERSION_STRING} cannot be rebuit !")
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has conflicting dependencies and the target version ${${package}_VERSION_STRING} cannot be rebuilt !")
     return()
     endif()
   endif()
@@ -551,6 +551,42 @@ endfunction(package_Source_Exists_In_Workspace)
 #
 # .. ifmode:: internal
 #
+#  .. |package_Binary_Exists_In_Workspace| replace:: ``package_Binary_Exists_In_Workspace``
+#  .. _package_Binary_Exists_In_Workspace:
+#
+#  package_Binary_Exists_In_Workspace
+#  ----------------------------------
+#
+#   .. command:: package_Binary_Exists_In_Workspace(RETURNED_PATH package)
+#
+#     Check wether the repository of a package already lies in the workspace.
+#
+#      :package: The name of target package.
+#
+#      :version: The version of target package.
+#
+#      :platform: The paltform for which the binary package has been built for.
+#
+#      :RETURNED_PATH: the output variable that contains the path to the binary package version on filesystem, or empty of not existing.
+#
+function(package_Binary_Exists_In_Workspace RETURNED_PATH package version platform)
+get_Package_Type(${package} PACK_TYPE)
+if(PACK_TYPE STREQUAL "EXTERNAL")
+  set(PATH_TO_CHECK ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
+elseif(PACK_TYPE STREQUAL "NATIVE")
+  set(PATH_TO_CHECK ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
+endif()
+if(PATH_TO_CHECK AND EXISTS ${PATH_TO_CHECK} AND IS_DIRECTORY ${PATH_TO_CHECK})
+  set(${RETURNED_PATH} ${PATH_TO_CHECK} PARENT_SCOPE)
+else()
+  set(${RETURNED_PATH} PARENT_SCOPE)
+endif()
+endfunction(package_Binary_Exists_In_Workspace)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |package_Reference_Exists_In_Workspace| replace:: ``package_Reference_Exists_In_Workspace``
 #  .. _package_Reference_Exists_In_Workspace:
 #
@@ -563,13 +599,20 @@ endfunction(package_Source_Exists_In_Workspace)
 #
 #      :package: The name of target package.
 #
-#      :EXIST: the output variable that is TRUE if reference file exists, FALSE otherwise.
+#      :EXIST: the output variable that contains EXTERNAL or NATIVE dependening on package nature if reference file has been found, empty otherwise.
 #
 function(package_Reference_Exists_In_Workspace EXIST package)
-set(res FALSE)
-if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
-  set(res TRUE)
-endif()
+set(res)
+get_Package_Type(${package} PACK_TYPE)
+if(PACK_TYPE STREQUAL "EXTERNAL")
+  if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${package}.cmake)
+    set(res "EXTERNAL")
+  endif()
+elseif(PACK_TYPE STREQUAL "NATIVE")#native package
+  if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
+    set(res "NATIVE")
+  endif()
+endif()#if unknown it means that there is no reference file in workspace
 set(${EXIST} ${res} PARENT_SCOPE)
 endfunction(package_Reference_Exists_In_Workspace)
 
@@ -601,7 +644,7 @@ package_Source_Exists_In_Workspace(IS_EXISTING PATH_TO_SOURCE ${package})
 if(IS_EXISTING)
 	set(USE_SOURCES TRUE)
   set(REPOSITORY_EXISTS TRUE)
-else()
+elseif(NOT reinstall)#no need to check for binaries, if reinstall is required then we will build from sources
   set(REPOSITORY_EXISTS FALSE)
 	package_Reference_Exists_In_Workspace(IS_EXISTING ${package})
 	if(IS_EXISTING)
@@ -2219,39 +2262,43 @@ endfunction(uninstall_External_Package)
 #
 # .. ifmode:: internal
 #
-#  .. |memorize_External_Binary_References| replace:: ``memorize_External_Binary_References``
-#  .. _memorize_External_Binary_References:
+#  .. |memorize_Binary_References| replace:: ``memorize_Binary_References``
+#  .. _memorize_Binary_References:
 #
-#  memorize_External_Binary_References
+#  memorize_Binary_References
 #  -----------------------------------
 #
-#   .. command:: memorize_External_Binary_References(REFERENCES_FOUND package)
+#   .. command:: memorize_Binary_References(REFERENCES_FOUND package)
 #
-#     Put into memory of current build process the references to binary archives for the given external package.
+#     Put into memory of current build process the references to binary archives for the given package.
 #
-#      :package: The name of the external package.
+#      :package: The name of the external or native package.
 #
-#      :REFERENCES_FOUND: The output variable that is TRUE if binary references for external package have been found.
+#      :REFERENCES_FOUND: The output variable that is TRUE if binary references for package have been found.
 #
-function(memorize_External_Binary_References REFERENCES_FOUND package)
-set(IS_EXISTING FALSE)
-package_Reference_Exists_In_Workspace(IS_EXISTING External${package})
+function(memorize_Binary_References REFERENCES_FOUND package)
+set(IS_EXISTING)
+
+package_Reference_Exists_In_Workspace(IS_EXISTING ${package})
 if(NOT IS_EXISTING)
 	set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
-	message("[PID] WARNING : unknown external package ${package} : cannot find any reference of this package in the workspace. Cannot install this package.")
+	message("[PID] WARNING : unknown package ${package} : cannot find any reference of this package in the workspace. Cannot install this package.")
 	return()
 endif()
-
-include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
+if(IS_EXISTING STREQUAL "NATIVE")
+  include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
+else()
+  include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
+endif()
 if(${refer_path} STREQUAL NOTFOUND)
 	set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
-	message("[PID] WARNING : reference file not found for external package ${package}!! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
+	message("[PID] WARNING : reference file not found for package ${package}!! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
 	return()
 endif()
 
 load_Package_Binary_References(RES ${package}) #getting the references (address of sites) where to download binaries for that package
 set(${REFERENCES_FOUND} ${RES} PARENT_SCOPE) #returns wether refernces have been found or not
-endfunction(memorize_External_Binary_References)
+endfunction(memorize_Binary_References)
 
 #.rst:
 #
@@ -2282,7 +2329,7 @@ set(SELECTED)
 set(IS_EXACT FALSE)
 
 # test if some binaries for this external package exists in the workspace
-memorize_External_Binary_References(RES ${package})
+memorize_Binary_References(RES ${package})
 if(NOT RES)# no binary reference found...
 	set(USE_SOURCES TRUE)#...means we need to build this package from sources, if any available
 endif()

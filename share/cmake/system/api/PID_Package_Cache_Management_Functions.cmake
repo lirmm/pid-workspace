@@ -2461,18 +2461,21 @@ endfunction(generate_Loggable_File)
 #
 #   Clean the cache from temporary variables used to optimize the configuration process
 #
-function(reset_Temporary_Optimization_Variables)
-  foreach(comp IN LISTS TEMP_VARS)
-  	unset(TEMP_${comp}_PRIVATE_LINKS_COMPLETE CACHE)
-  	unset(TEMP_${comp}_PRIVATE_LINKS_PARTIAL CACHE)
-  	unset(TEMP_${comp}_PUBLIC_LINKS CACHE)
-  	unset(TEMP_${comp}_RUNTIME_RESOURCES CACHE)
-  	unset(TEMP_${comp}_SOURCE_RUNTIME_RESOURCES CACHE)
+#     :mode: the current buid mode.
+#
+function(reset_Temporary_Optimization_Variables mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  foreach(comp IN LISTS TEMP_VARS${VAR_SUFFIX})
+  	unset(TEMP_${comp}_PRIVATE_LINKS_COMPLETE${VAR_SUFFIX} CACHE)
+  	unset(TEMP_${comp}_PRIVATE_LINKS_PARTIAL${VAR_SUFFIX} CACHE)
+  	unset(TEMP_${comp}_PUBLIC_LINKS${VAR_SUFFIX} CACHE)
+  	unset(TEMP_${comp}_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE)
+  	unset(TEMP_${comp}_SOURCE_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE)
   endforeach()
   unset(TEMP_VARS CACHE)
-  foreach(config IN LISTS TEMP_CONFIGS)
-  	unset(TEMP_CONFIG_${config}_CHECK CACHE)
-  	unset(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS CACHE)
+  foreach(config IN LISTS TEMP_CONFIGS${VAR_SUFFIX})
+  	unset(TEMP_CONFIG_${config}_CHECK${VAR_SUFFIX} CACHE)
+  	unset(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS${VAR_SUFFIX} CACHE)
   endforeach()
   unset(TEMP_CONFIGS CACHE)
 endfunction(reset_Temporary_Optimization_Variables)
@@ -2488,20 +2491,23 @@ endfunction(reset_Temporary_Optimization_Variables)
 #  set_Configuration_Temporary_Optimization_Variables
 #  --------------------------------------------------
 #
-#   .. command:: set_Configuration_Temporary_Optimization_Variables(config test_ok binary_constraints)
+#   .. command:: set_Configuration_Temporary_Optimization_Variables(config mode test_ok binary_constraints)
 #
 #   set optimization variables used to check configurations
 #
 #     :config: the name of the configuration.
 #
+#     :mode: the current buid mode.
+#
 #     :test_ok: set to TRUE or FALSE the result of the check.
 #
 #     :binary_constraints: the list of binary constraints to memorize.
 #
-function(set_Configuration_Temporary_Optimization_Variables config test_ok binary_constraints)
-  set(TEMP_CONFIG_${config}_CHECK ${test_ok} CACHE INTERNAL "")
-  set(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS ${binary_constraints} CACHE INTERNAL "")
-  append_Unique_In_Cache(TEMP_CONFIGS ${config})
+function(set_Configuration_Temporary_Optimization_Variables config mode test_ok binary_constraints)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  set(TEMP_CONFIG_${config}_CHECK${VAR_SUFFIX} ${test_ok} CACHE INTERNAL "")
+  set(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS${VAR_SUFFIX} ${binary_constraints} CACHE INTERNAL "")
+  append_Unique_In_Cache(TEMP_CONFIGS${VAR_SUFFIX} ${config})
 endfunction(set_Configuration_Temporary_Optimization_Variables)
 
 #.rst:
@@ -2514,20 +2520,23 @@ endfunction(set_Configuration_Temporary_Optimization_Variables)
 #  check_Configuration_Temporary_Optimization_Variables
 #  ----------------------------------------------------
 #
-#   .. command:: check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS config)
+#   .. command:: check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS config mode)
 #
 #   check whether a configuration has already been checked.
 #
 #     :config: the name of the configuration.
 #
+#     :mode: the current buid mode.
+#
 #     :RES_CHECK: the output variable that contains the variable containing the previous check result, or that is empty if no previous check.
 #
 #     :RES_CONSTRAINTS: the output variable that contains the variable containing the previous check resulting binary constraints, or that is empty if no previous check.
 #
-function(check_Configuration_Temporary_Optimization_Variables RES_CHECK RES_CONSTRAINTS config)
-  if(DEFINED TEMP_CONFIG_${config}_CHECK)
-    set(${RES_CHECK} TEMP_CONFIG_${config}_CHECK PARENT_SCOPE)
-    set(${RES_CONSTRAINTS} TEMP_CONFIG_${config}_BINARY_CONSTRAINTS PARENT_SCOPE)
+function(check_Configuration_Temporary_Optimization_Variables RES_CHECK RES_CONSTRAINTS config mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  if(DEFINED TEMP_CONFIG_${config}_CHECK${VAR_SUFFIX})
+    set(${RES_CHECK} TEMP_CONFIG_${config}_CHECK${VAR_SUFFIX} PARENT_SCOPE)
+    set(${RES_CONSTRAINTS} TEMP_CONFIG_${config}_BINARY_CONSTRAINTS${VAR_SUFFIX} PARENT_SCOPE)
     return()
   endif()
   set(${RES_CHECK} PARENT_SCOPE)
@@ -2544,7 +2553,7 @@ endfunction(check_Configuration_Temporary_Optimization_Variables)
 #  set_Private_Link_Temporary_Optimization_Variables
 #  --------------------------------------------------
 #
-#   .. command:: set_Private_Link_Temporary_Optimization_Variables(package component complete list_of_links)
+#   .. command:: set_Private_Link_Temporary_Optimization_Variables(package component mode complete list_of_links)
 #
 #   set optimization variables used to check private links of a component.
 #
@@ -2552,16 +2561,19 @@ endfunction(check_Configuration_Temporary_Optimization_Variables)
 #
 #     :component: the name of the component.
 #
+#     :mode: the current buid mode.
+#
 #     :complete: if TRUE then the complete list of shared links of component is memorized, otherwise only its private links.
 #
 #     :list_of_links: the list of links to memorize.
 #
-function(set_Private_Link_Temporary_Optimization_Variables package component complete list_of_links)
-  append_Unique_In_Cache(TEMP_VARS ${package}_${component})
+function(set_Private_Link_Temporary_Optimization_Variables package component mode complete list_of_links)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  append_Unique_In_Cache(TEMP_VARS${VAR_SUFFIX} ${package}_${component})
   if(complete)
-    set(TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE "${list_of_links}" CACHE INTERNAL "")
+    set(TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE${VAR_SUFFIX} "${list_of_links}" CACHE INTERNAL "")
   else()
-    set(TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL "${list_of_links}" CACHE INTERNAL "")
+    set(TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL${VAR_SUFFIX} "${list_of_links}" CACHE INTERNAL "")
   endif()
 endfunction(set_Private_Link_Temporary_Optimization_Variables)
 
@@ -2575,7 +2587,7 @@ endfunction(set_Private_Link_Temporary_Optimization_Variables)
 #  check_Private_Link_Temporary_Optimization_Variables
 #  ----------------------------------------------------
 #
-#   .. command:: check_Private_Link_Temporary_Optimization_Variables(LINKS package component complete)
+#   .. command:: check_Private_Link_Temporary_Optimization_Variables(LINKS package component mode complete)
 #
 #   check whether private links of a component have already been computed.
 #
@@ -2583,19 +2595,22 @@ endfunction(set_Private_Link_Temporary_Optimization_Variables)
 #
 #     :component: the name of the component.
 #
+#     :mode: the current buid mode.
+#
 #     :complete: if TRUE then the complete list of shared links of component is checked, otherwise only its private links.
 #
 #     :LINKS: the output variable that contains the variable containing the previous check resulting private links, or that is empty if no previous check.
 #
-function(check_Private_Link_Temporary_Optimization_Variables LINKS package component complete)
+function(check_Private_Link_Temporary_Optimization_Variables LINKS package component mode complete)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   if(complete)#same operation has already been performed no need to compute again
-    if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE)
-      set(${LINKS} TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE PARENT_SCOPE)
+    if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE${VAR_SUFFIX})
+      set(${LINKS} TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE${VAR_SUFFIX} PARENT_SCOPE)
       return()
     endif()
   else()
-    if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL)
-      set(${LINKS} TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL PARENT_SCOPE)
+    if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL${VAR_SUFFIX})
+      set(${LINKS} TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL${VAR_SUFFIX} PARENT_SCOPE)
       return()
     endif()
   endif()
@@ -2613,7 +2628,7 @@ endfunction(check_Private_Link_Temporary_Optimization_Variables)
 #  set_Public_Links_Temporary_Optimization_Variables
 #  --------------------------------------------------
 #
-#   .. command:: set_Public_Links_Temporary_Optimization_Variables(package component list_of_links)
+#   .. command:: set_Public_Links_Temporary_Optimization_Variables(package component mode list_of_links)
 #
 #   set optimization variables used to check public links of a component.
 #
@@ -2621,11 +2636,14 @@ endfunction(check_Private_Link_Temporary_Optimization_Variables)
 #
 #     :component: the name of the component.
 #
+#     :mode: the build mode.
+#
 #     :list_of_links: the list of links to memorize.
 #
-function(set_Public_Links_Temporary_Optimization_Variables package component list_of_links)
-  append_Unique_In_Cache(TEMP_VARS ${package}_${component})
-  set(TEMP_${package}_${component}_PUBLIC_LINKS "${list_of_links}" CACHE INTERNAL "")
+function(set_Public_Links_Temporary_Optimization_Variables package component mode list_of_links)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  append_Unique_In_Cache(TEMP_VARS${VAR_SUFFIX} ${package}_${component})
+  set(TEMP_${package}_${component}_PUBLIC_LINKS${VAR_SUFFIX} "${list_of_links}" CACHE INTERNAL "")
 endfunction(set_Public_Links_Temporary_Optimization_Variables)
 
 #.rst:
@@ -2638,7 +2656,7 @@ endfunction(set_Public_Links_Temporary_Optimization_Variables)
 #  check_Public_Link_Temporary_Optimization_Variables
 #  --------------------------------------------------
 #
-#   .. command:: check_Public_Link_Temporary_Optimization_Variables(LINKS package component)
+#   .. command:: check_Public_Link_Temporary_Optimization_Variables(LINKS package component mode)
 #
 #   check whether public links of a component have already been computed.
 #
@@ -2646,11 +2664,14 @@ endfunction(set_Public_Links_Temporary_Optimization_Variables)
 #
 #     :component: the name of the component.
 #
+#     :mode: the build mode.
+#
 #     :LINKS: the output variable that contains the variable containing the previous check resulting public links, or that is empty if no previous check.
 #
-function(check_Public_Link_Temporary_Optimization_Variables LINKS package component)
-  if(DEFINED TEMP_${package}_${component}_PUBLIC_LINKS)
-    set(${LINKS} TEMP_${package}_${component}_PUBLIC_LINKS PARENT_SCOPE)
+function(check_Public_Link_Temporary_Optimization_Variables LINKS package component mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  if(DEFINED TEMP_${package}_${component}_PUBLIC_LINKS${VAR_SUFFIX})
+    set(${LINKS} TEMP_${package}_${component}_PUBLIC_LINKS${VAR_SUFFIX} PARENT_SCOPE)
     return()
   endif()
   set(${LINKS} PARENT_SCOPE)
@@ -2667,7 +2688,7 @@ endfunction(check_Public_Link_Temporary_Optimization_Variables)
 #  set_Resources_Temporary_Optimization_Variables
 #  ----------------------------------------------
 #
-#   .. command:: set_Resources_Temporary_Optimization_Variables(package component list_of_resources)
+#   .. command:: set_Resources_Temporary_Optimization_Variables(package component mode list_of_resources)
 #
 #   set optimization variables used to check runtime resources of a component.
 #
@@ -2675,11 +2696,14 @@ endfunction(check_Public_Link_Temporary_Optimization_Variables)
 #
 #     :component: the name of the component.
 #
+#     :mode: the build mode.
+#
 #     :list_of_resources: the list of runtime resources to memorize.
 #
-function(set_Resources_Temporary_Optimization_Variables package component list_of_resources)
-  append_Unique_In_Cache(TEMP_VARS ${package}_${component})
-  set(TEMP_${package}_${component}_RUNTIME_RESOURCES "${list_of_resources}" CACHE INTERNAL "")
+function(set_Resources_Temporary_Optimization_Variables package component mode list_of_resources)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  append_Unique_In_Cache(TEMP_VARS${VAR_SUFFIX} ${package}_${component})
+  set(TEMP_${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX} "${list_of_resources}" CACHE INTERNAL "")
 endfunction(set_Resources_Temporary_Optimization_Variables)
 
 #.rst:
@@ -2692,7 +2716,7 @@ endfunction(set_Resources_Temporary_Optimization_Variables)
 #  check_Resource_Temporary_Optimization_Variables
 #  -----------------------------------------------
 #
-#   .. command:: check_Resource_Temporary_Optimization_Variables(RESOURCES package component)
+#   .. command:: check_Resource_Temporary_Optimization_Variables(RESOURCES package component mode)
 #
 #   check whether runtime resources of a component have already been computed.
 #
@@ -2700,11 +2724,14 @@ endfunction(set_Resources_Temporary_Optimization_Variables)
 #
 #     :component: the name of the component.
 #
+#     :mode: the build mode.
+#
 #     :RESOURCES: the output variable that contains the variable containing the previous check resulting runtime resources, or that is empty if no previous check.
 #
-function(check_Resource_Temporary_Optimization_Variables RESOURCES package component)
-  if(DEFINED TEMP_${package}_${component}_RUNTIME_RESOURCES)
-    set(${RESOURCES} TEMP_${package}_${component}_RUNTIME_RESOURCES PARENT_SCOPE)
+function(check_Resource_Temporary_Optimization_Variables RESOURCES package component mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  if(DEFINED TEMP_${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})
+    set(${RESOURCES} TEMP_${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX} PARENT_SCOPE)
     return()
   endif()
   set(${RESOURCES} PARENT_SCOPE)
@@ -2721,17 +2748,20 @@ endfunction(check_Resource_Temporary_Optimization_Variables)
 #  set_Source_Resources_Temporary_Optimization_Variables
 #  -----------------------------------------------------
 #
-#   .. command:: set_Source_Resources_Temporary_Optimization_Variables(package component list_of_resources)
+#   .. command:: set_Source_Resources_Temporary_Optimization_Variables(component mode list_of_resources)
 #
 #   set optimization variables used to check runtime resources in source/build tree for a given source component.
 #
 #     :component: the name of the component.
 #
+#     :mode: the build mode.
+#
 #     :list_of_resources: the list of runtime resources to memorize.
 #
-function(set_Source_Resources_Temporary_Optimization_Variables component list_of_resources)
-  append_Unique_In_Cache(TEMP_VARS ${PROJECT_NAME}_${component})
-  set(TEMP_${PROJECT_NAME}_${component}_SOURCE_RUNTIME_RESOURCES "${list_of_resources}" CACHE INTERNAL "")
+function(set_Source_Resources_Temporary_Optimization_Variables component mode list_of_resources)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  append_Unique_In_Cache(TEMP_VARS${VAR_SUFFIX} ${PROJECT_NAME}_${component})
+  set(TEMP_${PROJECT_NAME}_${component}_SOURCE_RUNTIME_RESOURCES${VAR_SUFFIX} "${list_of_resources}" CACHE INTERNAL "")
 endfunction(set_Source_Resources_Temporary_Optimization_Variables)
 
 #.rst:
@@ -2744,17 +2774,20 @@ endfunction(set_Source_Resources_Temporary_Optimization_Variables)
 #  check_Source_Resource_Temporary_Optimization_Variables
 #  ------------------------------------------------------
 #
-#   .. command:: check_Source_Resource_Temporary_Optimization_Variables(RESOURCES package component)
+#   .. command:: check_Source_Resource_Temporary_Optimization_Variables(RESOURCES component mode)
 #
 #   check whether path to runtime resources in Build tree for a given component have already been computed .
 #
 #     :component: the name of the source component.
 #
+#     :mode: the build mode.
+#
 #     :RESOURCES: the output variable that contains the variable containing the previous check resulting runtime resources, or that is empty if no previous check.
 #
-function(check_Source_Resource_Temporary_Optimization_Variables RESOURCES component)
-  if(DEFINED TEMP_${PROJECT_NAME}_${component}_SOURCE_RUNTIME_RESOURCES)
-    set(${RESOURCES} TEMP_${PROJECT_NAME}_${component}_SOURCE_RUNTIME_RESOURCES PARENT_SCOPE)
+function(check_Source_Resource_Temporary_Optimization_Variables RESOURCES component mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  if(DEFINED TEMP_${PROJECT_NAME}_${component}_SOURCE_RUNTIME_RESOURCES${VAR_SUFFIX})
+    set(${RESOURCES} TEMP_${PROJECT_NAME}_${component}_SOURCE_RUNTIME_RESOURCES${VAR_SUFFIX} PARENT_SCOPE)
     return()
   endif()
   set(${RESOURCES} PARENT_SCOPE)

@@ -21,7 +21,16 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 found_PID_Configuration(fortran FALSE)
 if(NOT CMAKE_Fortran_COMPILER)
-	return()#if fortran compiler not found, well fortran is not found
+	#the script may be called from an exetrnal project that does not load workspace
+	#description => need to check this in an isoltaed project
+	execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
+									${WORKSPACE_DIR}/configurations/fortran/test_fortran
+									WORKING_DIRECTORY ${WORKSPACE_DIR}/configurations/fortran/test_fortran/build
+									OUTPUT_QUIET
+									RESULT_VARIABLE RES)
+  if(NOT RES EQUAL 0)
+		return()#if fortran compiler not found, well ... fortran is not found
+	endif()
 endif()
 
 found_PID_Configuration(fortran TRUE)

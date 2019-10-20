@@ -21,10 +21,12 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/references)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/find) # using common find modules of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
+set(CMAKE_BUILD_TYPE Release)
 
 # needed to parse adequately CMAKe variables passed to the script
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)
@@ -53,15 +55,16 @@ if(TARGET_PACKAGE AND TARGET_VERSION)
 		message("[PID] ERROR : binary package version ${TARGET_VERSION} is not installed on the system.")
 		return()
 	endif()
-	set(PACKAGE_NAME ${TARGET_PACKAGE})
-	set(PROJECT_NAME ${TARGET_PACKAGE})
-	set(PACKAGE_VERSION ${TARGET_VERSION})
-	set(PLATFORM_NAME ${CURRENT_PLATFORM})
-	set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)
-	include(${WORKSPACE_DIR}/share/cmake/system/commands/Bind_PID_Package.cmake)
-	if(NOT ${PACKAGE_NAME}_BINDED_AND_INSTALLED)
+	remove_Progress_File() #reset the build progress information (sanity action)
+	begin_Progress(workspace GLOBAL_PROGRESS_VAR)
+
+	bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${TARGET_PACKAGE} ${TARGET_VERSION})
+	if(NOT BOUND)
 		message("[PID] ERROR : cannot configure runtime dependencies for installed version ${TARGET_VERSION} of package ${TARGET_PACKAGE}.")
+	else()
+		message("[PID] INFO : runtime dependencies for installed version ${TARGET_VERSION} of package ${TARGET_PACKAGE} have been regenerated.")
 	endif()
+	finish_Progress(TRUE) #reset the build progress information
 else()
 	message("[PID] ERROR : you must specify (1) a package using argument name=<name of package>, (2) a package version using argument version=<version number>.")
 	return()
