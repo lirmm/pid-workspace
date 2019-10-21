@@ -2457,6 +2457,7 @@ function(reset_Temporary_Optimization_Variables)
   	unset(TEMP_${comp}_PRIVATE_LINKS_PARTIAL CACHE)
   	unset(TEMP_${comp}_PUBLIC_LINKS CACHE)
   	unset(TEMP_${comp}_RUNTIME_RESOURCES CACHE)
+  	unset(TEMP_${comp}_SOURCE_RUNTIME_RESOURCES CACHE)
   endforeach()
   unset(TEMP_VARS CACHE)
   foreach(config IN LISTS TEMP_CONFIGS)
@@ -2698,3 +2699,53 @@ function(check_Resource_Temporary_Optimization_Variables RESOURCES package compo
   endif()
   set(${RESOURCES} PARENT_SCOPE)
 endfunction(check_Resource_Temporary_Optimization_Variables)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Source_Resources_Temporary_Optimization_Variables| replace:: ``set_Source_Resources_Temporary_Optimization_Variables``
+#  .. _set_Source_Resources_Temporary_Optimization_Variables:
+#
+#  set_Source_Resources_Temporary_Optimization_Variables
+#  -----------------------------------------------------
+#
+#   .. command:: set_Source_Resources_Temporary_Optimization_Variables(package component list_of_resources)
+#
+#   set optimization variables used to check runtime resources in source/build tree for a given source component.
+#
+#     :component: the name of the component.
+#
+#     :list_of_resources: the list of runtime resources to memorize.
+#
+function(set_Source_Resources_Temporary_Optimization_Variables component list_of_resources)
+  append_Unique_In_Cache(TEMP_VARS ${PROJECT_NAME}_${component})
+  set(TEMP_${PROJECT_NAME}_${component}_SOURCE_RUNTIME_RESOURCES "${list_of_resources}" CACHE INTERNAL "")
+endfunction(set_Source_Resources_Temporary_Optimization_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Source_Resource_Temporary_Optimization_Variables| replace:: ``check_Source_Resource_Temporary_Optimization_Variables``
+#  .. _check_Source_Resource_Temporary_Optimization_Variables:
+#
+#  check_Source_Resource_Temporary_Optimization_Variables
+#  ------------------------------------------------------
+#
+#   .. command:: check_Source_Resource_Temporary_Optimization_Variables(RESOURCES package component)
+#
+#   check whether path to runtime resources in Build tree for a given component have already been computed .
+#
+#     :component: the name of the source component.
+#
+#     :RESOURCES: the output variable that contains the variable containing the previous check resulting runtime resources, or that is empty if no previous check.
+#
+function(check_Source_Resource_Temporary_Optimization_Variables RESOURCES component)
+  if(DEFINED TEMP_${PROJECT_NAME}_${component}_SOURCE_RUNTIME_RESOURCES)
+    set(${RESOURCES} TEMP_${PROJECT_NAME}_${component}_SOURCE_RUNTIME_RESOURCES PARENT_SCOPE)
+    return()
+  endif()
+  set(${RESOURCES} PARENT_SCOPE)
+endfunction(check_Source_Resource_Temporary_Optimization_Variables)

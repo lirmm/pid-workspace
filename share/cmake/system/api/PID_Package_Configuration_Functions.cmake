@@ -1777,12 +1777,11 @@ function(get_Source_Component_Runtime_Resources_Dependencies RES_RESOURCES compo
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 #optimization (compute things only one time)
-check_Resource_Temporary_Optimization_Variables(RESOURCES_VAR ${PROJECT_NAME} ${component})
+check_Source_Resource_Temporary_Optimization_Variables(RESOURCES_VAR ${component})
 if(RESOURCES_VAR)
   set(${RES_RESOURCES} ${${RESOURCES_VAR}} PARENT_SCOPE)
-  return()
+return()
 endif()
-
 get_Source_Component_Direct_Runtime_Resources_Dependencies(DIRECT_RESOURCES ${component} ${mode})
 list(APPEND result ${DIRECT_RESOURCES})
 
@@ -1822,7 +1821,7 @@ if(result)
   list(REMOVE_DUPLICATES result)
 endif()
 set(${RES_RESOURCES} ${result} PARENT_SCOPE)
-set_Resources_Temporary_Optimization_Variables(${PROJECT_NAME} ${component} "${result}")
+set_Source_Resources_Temporary_Optimization_Variables(${component} "${result}")
 endfunction(get_Source_Component_Runtime_Resources_Dependencies)
 
 #.rst:
