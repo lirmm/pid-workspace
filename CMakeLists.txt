@@ -148,7 +148,7 @@ add_custom_target(rebuild
 
 ## resolving runtime dependencies of an already installed package
 add_custom_target(resolve
-	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
+	COMMAND ${CMAKE_COMMAND} 	-DRESOLVED_PACKAGE=\${package}
 					-DTARGET_VERSION=\${version}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Resolve_PID_Package.cmake

@@ -496,9 +496,9 @@ function(create_Module_Lib_Target c_name c_standard cxx_standard sources interna
 	)
 	#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
 	if(APPLE)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	elseif(UNIX)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	endif()
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 endfunction(create_Module_Lib_Target)
@@ -552,9 +552,9 @@ function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exporte
     endif()
 	#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
 	if(APPLE)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	elseif(UNIX)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	endif()
 	set(INC_DIRS ${internal_inc_dirs} ${exported_inc_dirs})
 	set(DEFS ${internal_defs} ${exported_defs})
@@ -684,9 +684,9 @@ function(create_Executable_Target c_name c_standard cxx_standard sources interna
 	)
 	#setting the default rpath for the target
 	if(APPLE)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
 	elseif(UNIX)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX}") #the application targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
     elseif(WIN32)
         install(FILES ${WORKSPACE_DIR}/share/patterns/packages/run.bat DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH})
 	endif()

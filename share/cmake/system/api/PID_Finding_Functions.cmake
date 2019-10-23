@@ -673,7 +673,7 @@ endfunction(check_Component_Elements_Exist)
 #  all_Components
 #  --------------
 #
-#   .. command:: all_Components(package version search_path)
+#   .. command:: all_Components(FILE_NOTFOUND package version search_path)
 #
 #    Check all components of a given package, to verify that all their elements (header, binary) exist.
 #
@@ -683,12 +683,14 @@ endfunction(check_Component_Elements_Exist)
 #
 #     :search_path: the path to package install folder.
 #
-function (all_Components package version search_path)
-set(USE_FILE_NOTFOUND FALSE PARENT_SCOPE)
+#     :FILE_NOTFOUND: the output variable that is TRUE if the use file of package version has not been found.
+#
+function (all_Components FILE_NOTFOUND package version search_path)
+set(${FILE_NOTFOUND} FALSE PARENT_SCOPE)
 include(${search_path}/share/Use${package}-${version}.cmake  OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
 if(	${res} STREQUAL NOTFOUND
 	OR NOT DEFINED ${package}_COMPONENTS) #if there is no component defined for the package there is an error
-	set(USE_FILE_NOTFOUND TRUE PARENT_SCOPE)
+	set(${FILE_NOTFOUND} TRUE PARENT_SCOPE)
 	return()
 endif()
 foreach(a_component IN LISTS ${package}_COMPONENTS)
@@ -710,7 +712,7 @@ endfunction(all_Components)
 #  select_Components
 #  -----------------
 #
-#   .. command:: select_Components(package version search_path list_of_components)
+#   .. command:: select_Components(FILE_NOTFOUND ALL_COMPONENTS_FOUND package version search_path list_of_components)
 #
 #    Check that the given components of a given package. It verifies that all their elements (header, binary) exist.
 #
@@ -722,27 +724,31 @@ endfunction(all_Components)
 #
 #     :list_of_components: the list of components to specifically check.
 #
-function (select_Components package version search_path list_of_components)
-set(USE_FILE_NOTFOUND FALSE PARENT_SCOPE)
+#     :FILE_NOTFOUND: the output variable that is TRUE if the use file of package version has not been found.
+#
+#     :ALL_COMPONENTS_FOUND: the output variable that is TRUE if all required components have been found.
+#
+function (select_Components FILE_NOTFOUND ALL_COMPONENTS_FOUND package version search_path list_of_components)
+set(${FILE_NOTFOUND} FALSE PARENT_SCOPE)
+set(${ALL_COMPONENTS_FOUND} TRUE PARENT_SCOPE)
 include(${search_path}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
 if(${res} STREQUAL NOTFOUND)
-	set(USE_FILE_NOTFOUND TRUE PARENT_SCOPE)
+	set(${FILE_NOTFOUND} TRUE PARENT_SCOPE)
 	return()
 endif()
 
 if(NOT DEFINED ${package}_COMPONENTS)#if there is no component defined for the package there is an error
-	set(USE_FILE_NOTFOUND TRUE PARENT_SCOPE)
+	set(${FILE_NOTFOUND} TRUE PARENT_SCOPE)
 	return()
 endif()
 
 #checking that all requested components trully exist for this version
-set(ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND TRUE PARENT_SCOPE)
 foreach(requested_component IN LISTS list_of_components)
 	list(FIND ${package}_COMPONENTS ${requested_component} idx)
 	if(idx EQUAL -1)#component has not been found
 		set(${package}_${requested_component}_FOUND FALSE  CACHE INTERNAL "")
 		if(${${package}_FIND_REQUIRED_${requested_component}})
-			set(ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND FALSE PARENT_SCOPE)
+			set(${ALL_COMPONENTS_FOUND} FALSE PARENT_SCOPE)
 		endif()
 	else()#component found
 		check_Component_Elements_Exist(COMPONENT_ELEMENT_NOTFOUND ${search_path} ${package} ${requested_component})
@@ -1457,8 +1463,10 @@ endfunction(reset_To_Install_External_Packages)
 #    Reset all external packages variables used during find process.
 #
 function(reset_Found_External_Packages)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+
 foreach(a_used_package IN LISTS ${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES)
-	set(${a_used_package}_FOUND CACHE INTERNAL "")
+	set(${a_used_package}_FOUND${VAR_SUFFIX} CACHE INTERNAL "")
 	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
 	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
 	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
@@ -1482,8 +1490,9 @@ endfunction(reset_Found_External_Packages)
 #    Reset all native packages variables used during find process.
 #
 function(reset_Found_Native_Packages)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 foreach(a_used_package IN LISTS ${PROJECT_NAME}_ALL_USED_PACKAGES)
-	set(${a_used_package}_FOUND CACHE INTERNAL "")
+	set(${a_used_package}_FOUND${VAR_SUFFIX} CACHE INTERNAL "")
 	set(${a_used_package}_ROOT_DIR CACHE INTERNAL "")
 	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
 	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
@@ -1600,7 +1609,7 @@ endfunction(reset_Packages_Finding_Variables)
 function(resolve_Native_Package_Dependency COMPATIBLE package dependency mode)
 set(${COMPATIBLE} TRUE PARENT_SCOPE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(${dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
+if(${dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
 	if(${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}) # a specific version is required
 	 	if( ${package}_DEPENDENCY_${dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version is required
 
@@ -1645,7 +1654,7 @@ if(${dependency}_FOUND) #the dependency has already been found (previously found
 			endif()
 		endif()
 	else()
-		return()#by default the version is compatible (no constraints) so return
+    return()#by default the version is compatible (no constraints) so return
 	endif()
 else()#the dependency has not been already found
 	if(${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX})
@@ -1679,7 +1688,7 @@ else()#the dependency has not been already found
 	endif()
 endif()
 #last step : check STD C++ ABI compatibility
-if(${dependency}_FOUND)
+if(${dependency}_FOUND${VAR_SUFFIX})
   is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${dependency})
   if(NOT IS_ABI_COMPATIBLE)
     set(${COMPATIBLE} FALSE PARENT_SCOPE)
@@ -1714,7 +1723,7 @@ endfunction(resolve_Native_Package_Dependency)
 function(resolve_External_Package_Dependency COMPATIBLE package external_dependency mode)
 set(${COMPATIBLE} TRUE PARENT_SCOPE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(${external_dependency}_FOUND) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
+if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
   if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}) # a specific version is required
     if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version is required
       is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND
@@ -1802,7 +1811,7 @@ else()#the dependency has not been already found
 	endif()
 endif()
 #last step : check STD C++ ABI compatibility
-if(${external_dependency}_FOUND)
+if(${external_dependency}_FOUND${VAR_SUFFIX})
   is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${external_dependency})
   if(NOT IS_ABI_COMPATIBLE)
     set(${COMPATIBLE} FALSE PARENT_SCOPE)
@@ -1863,7 +1872,9 @@ endmacro(exitFindScript)
 #     :package: the name of the package.
 #
 macro(finding_Package package)
-set(${package}_FOUND FALSE CACHE INTERNAL "")
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+
+set(${package}_FOUND${VAR_SUFFIX} FALSE CACHE INTERNAL "")
 
 #workspace dir must be defined for each package build
 set(PACKAGE_${package}_SEARCH_PATH
@@ -1890,7 +1901,7 @@ if(EXIST)
 		set(PATH_TO_PACKAGE_VERSION ${PACKAGE_${package}_SEARCH_PATH}/${${package}_VERSION_RELATIVE_PATH})
 		if(${package}_FIND_COMPONENTS) #specific components must be checked, taking only selected components
 
-			select_Components(${package} ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} "${${package}_FIND_COMPONENTS}")
+			select_Components(USE_FILE_NOTFOUND ALL_REQUIRED_COMPONENTS_HAVE_BEEN_FOUND ${package} ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION} "${${package}_FIND_COMPONENTS}")
 			if(USE_FILE_NOTFOUND)
 				exitFindScript(${package} "[PID] CRITICAL ERROR  when configuring ${PROJECT_NAME} : the selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted")
 			endif()
@@ -1901,14 +1912,14 @@ if(EXIST)
 
 		else()#no component check, register all of them
 
-			all_Components("${package}" ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION})
+			all_Components(USE_FILE_NOTFOUND "${package}" ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION})
 			if(USE_FILE_NOTFOUND)
 				exitFindScript(${package} "[PID] CRITICAL ERROR when configuring ${PROJECT_NAME} : the  selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted.")
 			endif()
 		endif()
 
 		#here everything has been found => setting global standard CMake find process variables to adequate values
-		set(${package}_FOUND TRUE CACHE INTERNAL "")
+		set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
 		set(${package}_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
     append_Unique_In_Cache(${PROJECT_NAME}_ALL_USED_PACKAGES ${package})
 
@@ -2001,7 +2012,8 @@ macro(finding_External_Package package)
 if(DO_NOT_FIND_${package})#variable used to avoid finding package (if we only want to include the find file to get compatibility info between known versions)
   return()
 endif()
-set(${package}_FOUND FALSE CACHE INTERNAL "")
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+set(${package}_FOUND${VAR_SUFFIX} FALSE CACHE INTERNAL "")
 #workspace dir must be defined for each package build
 set(EXTERNAL_PACKAGE_${package}_SEARCH_PATH
     ${EXTERNAL_PACKAGE_BINARY_INSTALL_DIR}/${package}
@@ -2048,7 +2060,7 @@ if(EXIST)
         exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the required NON OS variant version(${VERSION_TO_USE}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
       endif()
     endif()
-		set(${package}_FOUND TRUE CACHE INTERNAL "")
+		set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
 		#add the undirectly used packages as well
     append_Unique_In_Cache(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES ${package})
 		if(${package}_FIND_VERSION)

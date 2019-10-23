@@ -207,7 +207,7 @@ set(list_of_conflicting_dependencies)
 foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	# 1) resolving direct dependencies
 	resolve_External_Package_Dependency(IS_COMPATIBLE ${package} ${dep_ext_pack} ${mode})
-	if(NOT ${dep_ext_pack}_FOUND)#not found in local workspace => need to install them
+	if(NOT ${dep_ext_pack}_FOUND${VAR_SUFFIX})#not found in local workspace => need to install them
 		# list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
     if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #download or clone of dependencies is automatic
       install_External_Package(INSTALL_OK ${dep_ext_pack} FALSE FALSE)
@@ -217,7 +217,7 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   			return()
   		endif()
       resolve_External_Package_Dependency(IS_COMPATIBLE ${package} ${dep_ext_pack} ${mode})#launch again the resolution
-      if(NOT ${dep_ext_pack}_FOUND)#this time the package must be found since installed => internal BUG in PID
+      if(NOT ${dep_ext_pack}_FOUND${VAR_SUFFIX})#this time the package must be found since installed => internal BUG in PID
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_ext_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
         return()
@@ -253,7 +253,7 @@ endforeach()
 foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
 	# 1) resolving direct dependencies
 	resolve_Native_Package_Dependency(IS_COMPATIBLE ${package} ${dep_pack} ${mode})
-	if(NOT ${dep_pack}_FOUND)# package is not found => need to install it
+	if(NOT ${dep_pack}_FOUND${VAR_SUFFIX})# package is not found => need to install it
     if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #download or clone of dependencies is automatic
       install_Native_Package(INSTALL_OK ${dep_pack} FALSE)
       if(NOT INSTALL_OK)
@@ -262,7 +262,7 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
 				return()
   		endif()
       resolve_Native_Package_Dependency(IS_COMPATIBLE ${package} ${dep_pack} ${mode})#launch again the resolution
-      if(NOT ${dep_pack}_FOUND)#this time the package must be found since installed => internak BUG in PID
+      if(NOT ${dep_pack}_FOUND${VAR_SUFFIX})#this time the package must be found since installed => internak BUG in PID
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed native package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_pack}.")
         return()
@@ -343,7 +343,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
       endif()
       find_package(${package} ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
       #TODO maybe use the ${package}_FIND_VERSION_EXACT variable instead of directly EXACT ?
-      if(NOT ${package}_FOUND)
+      if(NOT ${package}_FOUND${VAR_SUFFIX})
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         if(${package}_REQUIRED_VERSION_SYSTEM)
           set(os_str "OS ")

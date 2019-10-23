@@ -480,6 +480,36 @@ endfunction(normalize_Version_String)
 #
 # .. ifmode:: internal
 #
+#  .. |make_Empty_Folder| replace:: ``make_Empty_Folder``
+#  .. _make_Empty_Folder:
+#
+#  make_Empty_Folder
+#  -----------------
+#
+#   .. command:: make_Empty_Folder(path)
+#
+#    clear the content of an existing folder of create it.
+#
+#     :path: the path to the folder
+#
+function(make_Empty_Folder path)
+if(path)
+  if(EXISTS ${path} AND IS_DIRECTORY ${path})
+    file(GLOB DIR_CONTENT "${path}/*")
+    if(DIR_CONTENT)#not already empty
+      file(REMOVE_RECURSE ${path})
+      file(MAKE_DIRECTORY ${path})
+    endif()
+  else()
+    file(MAKE_DIRECTORY ${path})
+  endif()
+endif()
+endfunction(make_Empty_Folder)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |create_Symlink| replace:: ``create_Symlink``
 #  .. _create_Symlink:
 #
@@ -574,7 +604,6 @@ endfunction(create_Symlink)
 function(create_Runtime_Symlink path_to_target path_to_container_folder rpath_sub_folder)
 #first creating the path where to put symlinks if it does not exist
 set(RUNTIME_DIR ${path_to_container_folder}/${rpath_sub_folder})
-file(MAKE_DIRECTORY ${RUNTIME_DIR})
 get_filename_component(A_FILE ${path_to_target} NAME)
 #second creating the symlink
 create_Symlink(${path_to_target} ${RUNTIME_DIR}/${A_FILE})
@@ -2253,17 +2282,20 @@ endfunction(get_Package_Type)
 #  is_External_Package_Defined
 #  ---------------------------
 #
-#   .. command:: is_External_Package_Defined(ext_package RES_PATH_TO_PACKAGE)
+#   .. command:: is_External_Package_Defined(ext_package mode RES_PATH_TO_PACKAGE)
 #
 #    Get the path to the target external package install folder.
 #
 #     :ext_package: the name of external package
 #
+#     :mode: the considered build mode
+#
 #     :RES_PATH_TO_PACKAGE: the output variable that contains the path to the external package install folder or NOTFOUND if package cannot be found in workspace.
 #
-function(is_External_Package_Defined ext_package RES_PATH_TO_PACKAGE)
+function(is_External_Package_Defined ext_package mode RES_PATH_TO_PACKAGE)
 get_Platform_Variables(BASENAME curr_platform_str)
-if(${ext_package}_FOUND)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+if(${ext_package}_FOUND${VAR_SUFFIX})
 	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/external/${curr_platform_str}/${ext_package}/${${ext_package}_VERSION_STRING} PARENT_SCOPE)
 else()
 	set(${RES_PATH_TO_PACKAGE} PARENT_SCOPE)
@@ -2389,7 +2421,7 @@ foreach(link IN LISTS ext_links)
     #otherwise this is a variable that must simply be omitted
   elseif(link MATCHES "^<([^>]+)>(.*)$")# a replacement has taken place => this is a full path to a library
     set(ext_package_name ${CMAKE_MATCH_1})
-		is_External_Package_Defined(${ext_package_name} PATHTO)
+		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
 		if(NOT PATHTO)
       if(GLOBAL_PROGRESS_VAR)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -2401,7 +2433,7 @@ foreach(link IN LISTS ext_links)
 	elseif(link MATCHES "^([^<]+)<([^>]+)>(.*)")# this may be a link with a prefix (like -L<path>) that need replacement
 		set(link_prefix ${CMAKE_MATCH_1})
     set(ext_package_name ${CMAKE_MATCH_2})
-		is_External_Package_Defined(${ext_package_name} PATHTO)
+		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
 		if(NOT PATHTO)
       if(GLOBAL_PROGRESS_VAR)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -2450,7 +2482,7 @@ foreach(include_dir IN LISTS ext_inc_dirs)
     #otherwise this is a variable that must simply be omitted
   elseif(include_dir MATCHES "^<([^>]+)>(.*)$")# a replacement has taken place => this is a full path to an incude dir of an external package
 		set(ext_package_name ${CMAKE_MATCH_1})
-		is_External_Package_Defined(${ext_package_name} PATHTO)
+		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
 		if(NOT PATHTO)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
@@ -2458,7 +2490,7 @@ foreach(include_dir IN LISTS ext_inc_dirs)
 		list(APPEND res_includes ${PATHTO}${CMAKE_MATCH_2})
 	elseif(include_dir MATCHES "^-I<([^>]+)>(.*)$")# this may be an include dir with a prefix (-I<path>) that need replacement
 		set(ext_package_name ${CMAKE_MATCH_1})
-		is_External_Package_Defined(${ext_package_name} PATHTO)
+		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
 		if(NOT PATHTO)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
@@ -2500,7 +2532,7 @@ foreach(resource IN LISTS ext_resources)
   set(CMAKE_MATCH_2)
 	if(resource MATCHES "^<([^>]+)>(.*)")# a replacement has taken place => this is a relative path to an external package resource
 		set(ext_package_name ${CMAKE_MATCH_1})
-		is_External_Package_Defined(${ext_package_name} PATHTO)
+		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
 		if(NOT PATHTO)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for resource ${resource}!! Please set the path to this external package.")

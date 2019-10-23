@@ -185,9 +185,9 @@ function(prepare_Local_Target_Configuration local_target target_type)
     get_property(therpath TARGET ${local_target} PROPERTY INSTALL_RPATH)
     if(NOT (thepath MATCHES "^.*\\.rpath/${local_target}"))#if the rpath has not already been set for this local component
       if(APPLE)
-        set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "@loader_path/../lib;@loader_path;@loader_path/.rpath/${local_target};@loader_path/../.rpath/${local_target}") #the library targets a specific folder that contains symbolic links to used shared libraries
+        set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "@loader_path/.rpath/${local_target};@loader_path/../.rpath/${local_target};@loader_path/../lib;@loader_path") #the library targets a specific folder that contains symbolic links to used shared libraries
       elseif(UNIX)
-        set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "\$ORIGIN/../lib;\$ORIGIN;\$ORIGIN/.rpath/${local_target};\$ORIGIN/../.rpath/${local_target}") #the library targets a specific folder that contains symbolic links to used shared libraries
+        set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "\$ORIGIN/.rpath/${local_target};\$ORIGIN/../.rpath/${local_target};\$ORIGIN/../lib;\$ORIGIN") #the library targets a specific folder that contains symbolic links to used shared libraries
       endif()
     endif()
   endif()
@@ -223,9 +223,9 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   if(target_type STREQUAL "EXE" OR target_type STREQUAL "LIB")
     if(APPLE)
-      set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "@loader_path/../lib;@loader_path;@loader_path/.rpath/${local_target};@loader_path/../.rpath/${local_target}") #the library targets a specific folder that contains symbolic links to used shared libraries
+      set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "@loader_path/.rpath/${local_target};@loader_path/../.rpath/${local_target};@loader_path/../lib;@loader_path") #the library targets a specific folder that contains symbolic links to used shared libraries
     elseif(UNIX)
-      set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "\$ORIGIN/../lib;\$ORIGIN;\$ORIGIN/.rpath/${local_target};\$ORIGIN/../.rpath/${local_target}") #the library targets a specific folder that contains symbolic links to used shared libraries
+      set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "\$ORIGIN/.rpath/${local_target};\$ORIGIN/../.rpath/${local_target};\$ORIGIN/../lib;\$ORIGIN") #the library targets a specific folder that contains symbolic links to used shared libraries
     endif()
   endif()
 
@@ -570,12 +570,13 @@ function(manage_Dependent_PID_Package DEPLOYED package version)
   append_Unique_In_Cache(${PROJECT_NAME}_PID_PACKAGES ${package})#reset list of packages
   set(previous_mode ${CMAKE_BUILD_TYPE})
   set(CMAKE_BUILD_TYPE ${WORKSPACE_MODE})
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
   if(NOT version)
   	find_package(${package})
   else()
   	find_package(${package} ${version} EXACT)
   endif()
-  if(NOT ${package}_FOUND)
+  if(NOT ${package}_FOUND${VAR_SUFFIX})
     #TODO deploy from workspace
     set(ENV{manage_progress} FALSE)
     if(version)
@@ -594,7 +595,7 @@ function(manage_Dependent_PID_Package DEPLOYED package version)
     endif()
   endif()
 
-  if(${package}_FOUND)
+  if(${package}_FOUND${VAR_SUFFIX})
     set(${DEPLOYED} TRUE PARENT_SCOPE)
     resolve_Package_Dependencies(${package} ${WORKSPACE_MODE} TRUE)
     set(${package}_RPATH ${${package}_ROOT_DIR}/.rpath CACHE INTERNAL "")

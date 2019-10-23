@@ -26,7 +26,6 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/licenses)
 
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
-set(CMAKE_BUILD_TYPE Release)
 
 # needed to parse adequately CMAKe variables passed to the script
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)
@@ -41,16 +40,14 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 if(NOT TARGET_VERSION AND DEFINED ENV{version})
 	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
 endif()
-if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
-	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
+if(NOT RESOLVED_PACKAGE AND DEFINED ENV{package})
+	set(RESOLVED_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
 
-if(TARGET_PACKAGE AND TARGET_VERSION)
-	if(	NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}
-		OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}
-		OR NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION}
-		OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION}
+if(RESOLVED_PACKAGE AND TARGET_VERSION)
+	if(	 NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${RESOLVED_PACKAGE}/${TARGET_VERSION}
+		OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${RESOLVED_PACKAGE}/${TARGET_VERSION}
 	)
 		message("[PID] ERROR : binary package version ${TARGET_VERSION} is not installed on the system.")
 		return()
@@ -58,11 +55,11 @@ if(TARGET_PACKAGE AND TARGET_VERSION)
 	remove_Progress_File() #reset the build progress information (sanity action)
 	begin_Progress(workspace GLOBAL_PROGRESS_VAR)
 
-	bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${TARGET_PACKAGE} ${TARGET_VERSION})
+	bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${RESOLVED_PACKAGE} ${TARGET_VERSION})
 	if(NOT BOUND)
-		message("[PID] ERROR : cannot configure runtime dependencies for installed version ${TARGET_VERSION} of package ${TARGET_PACKAGE}.")
+		message("[PID] ERROR : cannot configure runtime dependencies for installed version ${TARGET_VERSION} of package ${RESOLVED_PACKAGE}.")
 	else()
-		message("[PID] INFO : runtime dependencies for installed version ${TARGET_VERSION} of package ${TARGET_PACKAGE} have been regenerated.")
+		message("[PID] INFO : runtime dependencies for installed version ${TARGET_VERSION} of package ${RESOLVED_PACKAGE} have been regenerated.")
 	endif()
 	finish_Progress(TRUE) #reset the build progress information
 else()

@@ -1538,16 +1538,17 @@ function(bind_Installed_Package BOUND platform package version)
 
 	#set the variable to be able to use Package Internal API
 	set(${package}_ROOT_DIR ${BIN_PACKAGE_PATH} CACHE INTERNAL "")
-	set(${package}_FOUND TRUE CACHE INTERNAL "")
+
 	set(PROJECT_NAME workspace)
 	set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE)
 
-
-	set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")#to adequately interpret external packages description
+	set(CMAKE_BUILD_TYPE Debug)#to adequately interpret external packages description
+	set(${package}_FOUND_DEBUG TRUE CACHE INTERNAL "")
 	resolve_Package_Dependencies(${package} Debug TRUE) # finding all package dependencies
 	resolve_Package_Runtime_Dependencies(${package} Debug) # then resolving runtime resources to symlink
 
-	set(CMAKE_BUILD_TYPE Debug CACHE INTERNAL "")#to adequately interpret external packages description
+	set(CMAKE_BUILD_TYPE Release)#to adequately interpret external packages description
+	set(${package}_FOUND TRUE CACHE INTERNAL "")
 	resolve_Package_Dependencies(${package} Release TRUE) # finding all package dependencies
 	resolve_Package_Runtime_Dependencies(${package} Release) # then resolving runtime resources to symlink
 

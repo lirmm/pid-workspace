@@ -86,7 +86,7 @@ macro(declare_PID_External_Package)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 	set(package ${DECLARE_PID_EXTERNAL_PACKAGE_PACKAGE})
 	set(${package}_HAS_DESCRIPTION TRUE CACHE INTERNAL "")#variable to be used to test if the package is described with a wrapper (if this macro is used this is always TRUE)
-	if(NOT ${package}_DECLARED)
+	if(NOT ${package}_DECLARED${VAR_SUFFIX})
 		#reset all variables related to this external package
 		set(${package}_PLATFORM${VAR_SUFFIX} CACHE INTERNAL "")
     foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
@@ -127,7 +127,7 @@ macro(declare_PID_External_Package)
 	else()
 		return()#simply returns as the external package is already in memory
 	endif()
-	set(${package}_DECLARED TRUE)
+	set(${package}_DECLARED${VAR_SUFFIX} TRUE)
 endmacro(declare_PID_External_Package)
 
 #.rst:
@@ -173,15 +173,15 @@ set(options)
 set(oneValueArgs PLATFORM PACKAGE)
 set(multiValueArgs CONFIGURATION)
 cmake_parse_arguments(CHECK_EXTERNAL_PID_PLATFORM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 if(CHECK_EXTERNAL_PID_PLATFORM_PACKAGE
 	AND CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION
 	AND CHECK_EXTERNAL_PID_PLATFORM_PLATFORM)
   set(package ${CHECK_EXTERNAL_PID_PLATFORM_PACKAGE})
-	if(NOT ${package}_DECLARED)
+	if(NOT ${package}_DECLARED${VAR_SUFFIX})
 		message("[PID] WARNING: Bad usage of function check_PID_External_Package_Platform: package ${package} is unknown. Use macro declare_PID_External_Package to declare it")
 		return() #return will exit from current Use file included (because we are in a macro)
 	endif()
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 	set(${package}_PLATFORM${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM} CACHE INTERNAL "")
 
   foreach(config IN LISTS CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION)
@@ -244,16 +244,16 @@ macro(declare_PID_External_Package_Dependency)
 	set(options EXACT)
 	set(oneValueArgs PACKAGE EXTERNAL VERSION)
 	cmake_parse_arguments(DECLARE_PID_EXTERNAL_DEPENDENCY "${options}" "${oneValueArgs}" "" ${ARGN} )
-	if(DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE
+	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+  if(DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE
 		AND DECLARE_PID_EXTERNAL_DEPENDENCY_EXTERNAL) #if all keyword used
-		if(NOT ${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE}_DECLARED)#target external package has not been declared as a dependency
+		if(NOT ${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE}_DECLARED${VAR_SUFFIX})#target external package has not been declared as a dependency
 			message("[PID] WARNING: Bad usage of function declare_PID_External_Package_Dependency: package ${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE} is unknown. Use macro declare_PID_External_Package to declare it")
 			return() #return will exit from current Use file included (because we are in a macro)
 		endif()
 		set(package ${DECLARE_PID_EXTERNAL_DEPENDENCY_PACKAGE})
 		set(dependency ${DECLARE_PID_EXTERNAL_DEPENDENCY_EXTERNAL})
 
-		get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 		set(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}} ${dependency} CACHE INTERNAL "")
 
 		if(NOT DECLARE_PID_EXTERNAL_DEPENDENCY_VERSION)
@@ -334,13 +334,14 @@ macro(declare_PID_External_Component)
 	set(options)
 	set(oneValueArgs PACKAGE COMPONENT C_STANDARD CXX_STANDARD)
 	set(multiValueArgs INCLUDES STATIC_LINKS SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 
 	cmake_parse_arguments(DECLARE_PID_EXTERNAL_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 	if(NOT DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE OR NOT DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT)
 		message("[PID] WARNING: Bad usage of function declare_PID_External_Component: you must define the PACKAGE (value: ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}) and the name of the component using COMPONENT keyword (value: ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT}).")
 		return()#return will exit from current Use file included (because we are in a macro)
 	endif()
-	if(NOT ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_DECLARED)
+	if(NOT ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE}_DECLARED${VAR_SUFFIX})
 		message("[PID] WARNING: Bad usage of function declare_PID_External_Component: package ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE} is unknown. Use macro declare_PID_External_Package to declare it")
 		return() #return will exit from current Use file included (because we are in a macro)
 	endif()
@@ -348,7 +349,6 @@ macro(declare_PID_External_Component)
 	set(curr_ext_comp ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT})
 	set(comps_list ${${curr_ext_package}_COMPONENTS${VAR_SUFFIX}} ${curr_ext_comp})
 	list(REMOVE_DUPLICATES comps_list)
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 	set(${curr_ext_package}_COMPONENTS${VAR_SUFFIX} ${comps_list} CACHE INTERNAL "")
 
 	#manage include folders
@@ -415,7 +415,6 @@ macro(declare_PID_External_Component)
 		list(REMOVE_DUPLICATES links)
 		set(${curr_ext_package}_${curr_ext_comp}_SHARED_LINKS${VAR_SUFFIX} ${links} CACHE INTERNAL "")
 	endif()
-
 
 	#manage runtime resources
 	set(resources)
@@ -490,11 +489,12 @@ macro(declare_PID_External_Component_Dependency)
 	set(oneValueArgs PACKAGE COMPONENT EXTERNAL EXPORT USE)
 	set(multiValueArgs INCLUDES LIBRARY_DIRS STATIC_LINKS SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
 	cmake_parse_arguments(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 	if(NOT DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE OR NOT DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT)
 		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: you must define the PACKAGE (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}) and the name of the component using COMPONENT keyword (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT}).")
 		return()
 	endif()
-	if(NOT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}_DECLARED)
+	if(NOT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}_DECLARED${VAR_SUFFIX})
 		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: package ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE} is unknown. Use macro declare_PID_External_Package to declare it")
 		return() #return will exit from current Use file included (because we are in a macro)
 	endif()
@@ -503,7 +503,6 @@ macro(declare_PID_External_Component_Dependency)
 	set(TARGET_COMPONENT)
 	set(EXPORT_TARGET FALSE)
 
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 	#checking that the component is defined locally
 	list(FIND ${LOCAL_PACKAGE}_COMPONENTS${VAR_SUFFIX} ${LOCAL_COMPONENT} INDEX)
 	if(INDEX EQUAL -1)
@@ -548,25 +547,17 @@ macro(declare_PID_External_Component_Dependency)
 	# more checks
 	if(TARGET_COMPONENT)
 		if(NOT TARGET_PACKAGE)
-			set(list_of_comps ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}} ${TARGET_COMPONENT})
-			list(REMOVE_DUPLICATES list_of_comps)
-			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} ${list_of_comps} CACHE INTERNAL "")
+      append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} ${TARGET_COMPONENT})
 			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_EXPORT_${TARGET_COMPONENT}${VAR_SUFFIX} ${EXPORT_TARGET} CACHE INTERNAL "")
 		else()
-			set(list_of_deps ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}} ${TARGET_PACKAGE})
-			list(REMOVE_DUPLICATES list_of_deps)
-			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${list_of_deps} CACHE INTERNAL "")
-			set(list_of_comps ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCY_${TARGET_PACKAGE}_COMPONENTS${VAR_SUFFIX}} ${TARGET_COMPONENT})
-			list(REMOVE_DUPLICATES list_of_comps)
-			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCY_${TARGET_PACKAGE}_COMPONENTS${VAR_SUFFIX} ${list_of_comps} CACHE INTERNAL "")
+      append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${TARGET_PACKAGE})
+      append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCY_${TARGET_PACKAGE}_COMPONENTS${VAR_SUFFIX} ${TARGET_COMPONENT})
 			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_EXPORT_${TARGET_PACKAGE}_${TARGET_COMPONENT}${VAR_SUFFIX} ${EXPORT_TARGET} CACHE INTERNAL "")
 		endif()
 	else() #otherwise this is a direct reference to external package content
     if(TARGET_PACKAGE) #check that we really target an external package
-      set(list_of_deps ${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}} ${TARGET_PACKAGE})
-	    list(REMOVE_DUPLICATES list_of_deps)
-      set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${list_of_deps} CACHE INTERNAL "")
-		   #this previous line is used to tell the system that path inside this component's variables have to be resolved again that external package
+      append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${TARGET_PACKAGE})
+		   #this previous line is used to tell the system that path inside this component's variables have to be resolved against that external package
 		endif()
 	endif()
 
@@ -634,7 +625,7 @@ if(TARGET_PACKAGE AND NOT TARGET_COMPONENT) #if a target package is specified bu
 	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX} "${resources}")
 
 elseif(NOT TARGET_PACKAGE AND NOT TARGET_COMPONENT)#this is a system dependency -> there is no relative path inside so no need to manage path specifically
-	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES}")
+  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES}")
   append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPILER_OPTIONS}")
 	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_DEFINITIONS}")
   append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_STATIC_LINKS}")

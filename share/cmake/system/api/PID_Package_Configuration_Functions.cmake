@@ -1546,6 +1546,7 @@ endfunction(resolve_Bin_Component_Runtime_Dependencies)
 function(create_Bin_Component_Symlinks package component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #creatings symbolic links
+make_Empty_Folder(${${package}_ROOT_DIR}/.rpath/${component}${TARGET_SUFFIX})
 foreach(resource IN LISTS resources)
 	create_Runtime_Symlink("${resource}" "${${package}_ROOT_DIR}/.rpath" ${component}${TARGET_SUFFIX})
 endforeach()
@@ -1575,6 +1576,7 @@ endfunction(create_Bin_Component_Symlinks)
 #
 function(create_Bin_Component_Python_Symlinks package component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+make_Empty_Folder(${${package}_ROOT_DIR}/share/script/${component})
 foreach(resource IN LISTS resources)
 	create_Runtime_Symlink("${resource}" "${${package}_ROOT_DIR}/share/script" ${component})#installing Debug and Release modes links in the same script folder
 endforeach()
@@ -1845,6 +1847,8 @@ endfunction(get_Source_Component_Runtime_Resources_Dependencies)
 #
 function(create_Source_Component_Symlinks_Build_Tree component mode var_resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+make_Empty_Folder(${CMAKE_BINARY_DIR}/.rpath/${component}${TARGET_SUFFIX})
+
 foreach(resource IN LISTS ${var_resources})
 	create_Runtime_Symlink(${resource} ${CMAKE_BINARY_DIR}/.rpath ${component}${TARGET_SUFFIX})
 endforeach()

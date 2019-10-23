@@ -783,7 +783,7 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX
 			return()
 		endif()
 		resolve_External_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
-		if(NOT ${dep_pack}_FOUND)#this time the package must be found since installed => internal BUG in PID
+		if(NOT ${dep_pack}_FOUND${USE_MODE_SUFFIX})#this time the package must be found since installed => internal BUG in PID
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
 			return()
@@ -794,18 +794,18 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX
 			else()
 				set(mess_str "Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}")
 			endif()
-			if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})
-				if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX})
-					set(local_version "exact version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}")
+			if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${USE_MODE_SUFFIX})
+				if(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${USE_MODE_SUFFIX})
+					set(local_version "exact version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${USE_MODE_SUFFIX}}")
 				else()
-					set(local_version "version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}")
+					set(local_version "version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${USE_MODE_SUFFIX}}")
 				endif()
 			endif()
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy ${local_version} coming from package ${PROJECT_NAME}. ${mess_str}.")
 			return()
 		else()#OK resolution took place !!
 			add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
-			if(${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
+			if(${dep_pack}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #are there any dependency (external only) for this external package
 				resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)#recursion : resolving dependencies for each external package dependency
 			endif()
 		endif()
@@ -827,7 +827,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 				return()
 			endif()
 			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
-			if(NOT ${dep_pack}_FOUND)#this time the package must be found since installed => internak BUG in PID
+			if(NOT ${dep_pack}_FOUND${USE_MODE_SUFFIX})#this time the package must be found since installed => internak BUG in PID
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed native package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_pack}.")
 				return()
@@ -837,7 +837,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 				return()
 			else()#OK resolution took place !!
 				add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
-				if(${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
+				if(${dep_pack}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #are there any dependency (external only) for this external package
 					resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)#recursion : resolving dependencies for each external package dependency
 				endif()
 			endif()
@@ -1765,7 +1765,7 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 
 	# 4) resolve the package dependency according to memorized internal variables
 	if(NOT unused) #if the dependency is really used (in case it were optional and unselected by user)
-		if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
+		if(NOT ${dep_package}_FOUND${USE_MODE_SUFFIX})#testing if the package has been previously found or not
 			#package has never been found by a direct call to find_package in root CMakeLists.txt
 			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
 			if(NOT IS_COMPATIBLE)
@@ -1778,7 +1778,7 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 				endif()
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} coming from package ${PROJECT_NAME}. ${message_versions}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
 				return()
-			elseif(${dep_package}_FOUND)
+			elseif(${dep_package}_FOUND${USE_MODE_SUFFIX})
 				add_Chosen_Package_Version_In_Current_Process(${dep_package})
 			endif()
 		else()#if was found prior to this call
@@ -1964,7 +1964,7 @@ endif()
 # 4) resolve the package dependency according to memorized internal variables
 if(NOT unused) #if the dependency is really used (in case it were optional and unselected by user)
 	# try to find the adequate package version => it is necessarily required
-	if(NOT ${dep_package}_FOUND)#testing if the package has been previously found or not
+	if(NOT ${dep_package}_FOUND${USE_MODE_SUFFIX})#testing if the package has been previously found or not
 		#package has never been found by a direct call to find_package in root CMakeLists.txt
 		resolve_External_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
 		if(NOT IS_COMPATIBLE)
@@ -1981,7 +1981,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 			endif()
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} coming from package ${PROJECT_NAME}. ${message_versions}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
 			return()
-		elseif(${dep_package}_FOUND)#dependency has been found in workspace after resolution
+		elseif(${dep_package}_FOUND${USE_MODE_SUFFIX})#dependency has been found in workspace after resolution
 			add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
 		endif()
 	else()#if was found prior to this call
