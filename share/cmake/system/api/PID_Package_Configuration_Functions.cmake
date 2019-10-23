@@ -955,8 +955,7 @@ if(all) #otherwise external dependencies are direct dependencies so their LINKS 
 			endif()
 		endforeach()
 	endif()
-  # in this case the private library is a shared library built locally => simply use its target
-  list(APPEND undirect_list "${component}${TARGET_SUFFIX}")
+  # in this case the private library is a shared libr built locally => its target is already well configured to manage that
 endif()
 #Remark: no need to search in SYSTEM_STATIC LINKS since they are static by definition
 # 1-bis) searching private external dependencies
