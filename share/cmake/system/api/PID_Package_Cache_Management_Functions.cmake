@@ -1750,6 +1750,16 @@ if(${package}_${component}_LINKS${VAR_SUFFIX}
 	return()
 endif()
 
+# scanning external dependencies
+foreach(dep_pack IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	foreach(ext_dep IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
+		if(${package}_${component}_EXTERNAL_EXPORT_${dep_pack}_${ext_dep}${VAR_SUFFIX})
+			set(${RESULT} TRUE PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
+endforeach()
+
 # scanning internal dependencies
 foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	if(${package}_${component}_INTERNAL_EXPORT_${int_dep}${VAR_SUFFIX})
