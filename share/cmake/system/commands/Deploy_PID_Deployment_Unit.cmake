@@ -228,6 +228,8 @@ else()# a package deployment is required
 	if(MANAGE_PROGRESS)#conditionate the progress management to allow an external CMake project to preconfigure some constraints on external packages
 		remove_Progress_File() #reset the build progress information (sanity action)
 		begin_Progress(workspace GLOBAL_PROGRESS_VAR)
+  else()
+		set(GLOBAL_PROGRESS_VAR FALSE)#to avoid troubles when progres managed from an external project
 	endif()
 
 
@@ -267,8 +269,6 @@ else()# a package deployment is required
 	endif()
 	if(NOT PACK_DEPLOYED)
 		message("[PID] CRITICAL ERROR : there were errors during deployment of ${DEPLOYED_PACKAGE}")
-	elseif(NOT is_external AND PACK_DEPLOYED STREQUAL "BINARY")#need to rebind the binary package only if for native
-			bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${DEPLOYED_PACKAGE} ${TARGET_VERSION})
 	endif()
 	## global management of the process
 	if(MANAGE_PROGRESS)

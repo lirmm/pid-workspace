@@ -1516,9 +1516,11 @@ endfunction(deploy_PID_Environment)
 #
 #      :version: the version to bind
 #
+#      :only_resolve: if TRUE only resolve do not redeploy if required by binding
+#
 #      :BOUND: the output variable that is true of binding process succeede, FALSE otherwise
 #
-function(bind_Installed_Package BOUND platform package version)
+function(bind_Installed_Package BOUND platform package version only_resolve)
 	set(${BOUND} FALSE PARENT_SCOPE)
 	set(BIN_PACKAGE_PATH ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
 	include(${BIN_PACKAGE_PATH}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
@@ -1540,7 +1542,11 @@ function(bind_Installed_Package BOUND platform package version)
 	set(${package}_ROOT_DIR ${BIN_PACKAGE_PATH} CACHE INTERNAL "")
 
 	set(PROJECT_NAME workspace)
-	set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE)
+	if(only_resolve)
+		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE)
+	else()
+		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)
+	endif()
 
 	set(CMAKE_BUILD_TYPE Debug)#to adequately interpret external packages description
 	set(${package}_FOUND_DEBUG TRUE CACHE INTERNAL "")
@@ -1554,90 +1560,6 @@ function(bind_Installed_Package BOUND platform package version)
 
 	set(${BOUND} TRUE PARENT_SCOPE)
 endfunction(bind_Installed_Package)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |deploy_Installed_Native_Package_Dependencies| replace:: ``deploy_Installed_Native_Package_Dependencies``
-#  .. _deploy_Installed_Native_Package_Dependencies:
-#
-#  deploy_Installed_Native_Package_Dependencies
-#  ---------------------------------------------
-#
-#   .. command:: deploy_Installed_Native_Package_Dependencies(DEPLOYED package version can_use_source)
-#
-#   Deploy dependencies of an external binary package.
-#
-#      :package: the name of the external package to deploy.
-#
-#      :version: the version to deploy (if system is used then deploy the corresponding OS version)
-#
-#      :can_use_source: if TRUE the deployment can be done from the external package wrapper (if any).
-#
-#      :DEPLOYED: the output variable that is true if depenedncies have been deployed.
-#
-function(deploy_Installed_Native_Package_Dependencies DEPLOYED package version can_use_source)
-	#dealing with external package dependencies
-	set(all_ext_dep)
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX Debug)
-	foreach(dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})#deploy packages spcifically used by Debug mode (most of time all dependencies of the package since same as with Release)
-		package_Binary_Exists_In_Workspace(RETURNED_PATH ${dep} ${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}} ${CURRENT_PLATFORM})
-		if(NOT RETURNED_PATH)
-			deploy_PID_External_Package(EXT_DEPLOYED ${dep} "${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}" FALSE ${can_use_source} FALSE)
-			if(NOT EXT_DEPLOYED)
-				set(${DEPLOYED} FALSE PARENT_SCOPE)
-				return()
-			endif()
-		endif()
-	endforeach()
-	list(APPEND all_ext_dep ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX Release)
-	set(new_package_to_manage ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-	if(all_ext_dep)
-		list(REMOVE_ITEM new_package_to_manage ${all_ext_dep})
-	endif()
-	foreach(dep IN LISTS new_package_to_manage)#deploy packages spcifically used by Release mode (most of time empty)
-		package_Binary_Exists_In_Workspace(RETURNED_PATH ${dep} ${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}} ${CURRENT_PLATFORM})
-		if(NOT RETURNED_PATH)
-			deploy_PID_External_Package(EXT_DEPLOYED ${dep} "${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}" FALSE ${can_use_source} FALSE)
-			if(NOT EXT_DEPLOYED)
-				set(${DEPLOYED} FALSE PARENT_SCOPE)
-				return()
-			endif()
-		endif()
-	endforeach()
-	#dealing with native package dependencies
-	set(all_nat_dep)
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX Debug)
-	foreach(dep IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})#deploy packages spcifically used by Debug mode (most of time all dependencies of the package since same as with Release)
-		package_Binary_Exists_In_Workspace(RETURNED_PATH ${dep} ${${package}_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}} ${CURRENT_PLATFORM})
-		if(NOT RETURNED_PATH)
-			deploy_PID_Native_Package(NAT_DEPLOYED ${dep} "${${package}_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}" FALSE ${can_use_source} "" "")
-			if(NOT NAT_DEPLOYED)
-				set(${DEPLOYED} FALSE PARENT_SCOPE)
-				return()
-			endif()
-		endif()
-	endforeach()
-	list(APPEND all_nat_dep ${${package}_DEPENDENCIES${VAR_SUFFIX}})
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX Release)
-	set(new_package_to_manage ${${package}_DEPENDENCIES${VAR_SUFFIX}})
-	if(all_nat_dep)
-		list(REMOVE_ITEM new_package_to_manage ${all_nat_dep})
-	endif()
-	foreach(dep IN LISTS new_package_to_manage)#deploy packages spcifically used by Release mode (most of time empty)
-		package_Binary_Exists_In_Workspace(RETURNED_PATH ${dep} ${${package}_DEPENDENCY${dep}_VERSION${VAR_SUFFIX}} ${CURRENT_PLATFORM})
-		if(NOT RETURNED_PATH)
-			deploy_PID_Native_Package(NAT_DEPLOYED ${dep} "${${package}_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}" FALSE ${can_use_source} "" "")
-			if(NOT NAT_DEPLOYED)
-				set(${DEPLOYED} FALSE PARENT_SCOPE)
-				return()
-			endif()
-		endif()
-	endforeach()
-	set(${DEPLOYED} TRUE PARENT_SCOPE)
-	endfunction(deploy_Installed_Native_Package_Dependencies)
 
 #.rst:
 #
@@ -1714,12 +1636,12 @@ if(NOT version)#no specific version required
 				message("[PID] ERROR : problem deploying ${package} binary archive version ${RES_VERSION}. Deployment aborted !")
 				return()
 			else()
-				message("[PID] INFO : deploying ${package} binary archive version ${RES_VERSION} success !")
-				deploy_Installed_Native_Package_Dependencies(DEP_DEPLOYED ${package} ${RES_VERSION} ${can_use_source})
-				if(NOT DEP_DEPLOYED)
-					message("[PID] ERROR : some dependencies of native package ${package} version ${version} cannot be deployed in workspace.")
-				else()
+				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${RES_VERSION} FALSE)
+				if(BOUND)
+					message("[PID] INFO : deploying ${package} binary archive version ${RES_VERSION} success !")
 					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+				else()
+					message("[PID] ERROR : package ${package} version ${RES_VERSION} cannot be deployed in workspace.")
 				endif()
 				return()
 			endif()
@@ -1739,13 +1661,12 @@ else()#deploying a specific version
 			message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
 			return()
 		else()
-			message("[PID] INFO : deploying ${package} binary archive for version ${version} succeeded !")
-			deploy_Installed_Native_Package_Dependencies(DEP_DEPLOYED ${package} ${version} ${can_use_source})
-			if(NOT DEP_DEPLOYED)
-				message("[PID] ERROR : some dependencies of native package ${package} version ${version} cannot be deployed in workspace.")
-				#in this situation the we need to abort the deployment process
-			else()
+			bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE)
+			if(BOUND)
+				message("[PID] INFO : deploying ${package} binary archive version ${version} success !")
 				set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+			else()
+				message("[PID] ERROR : cannot deploy native package ${package} version ${version}.")
 			endif()
 			return()
 		endif()
@@ -1771,62 +1692,6 @@ else()#deploying a specific version
 	endif()
 endif()
 endfunction(deploy_PID_Native_Package)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |deploy_Installed_External_Package_Dependencies| replace:: ``deploy_Installed_External_Package_Dependencies``
-#  .. _deploy_Installed_External_Package_Dependencies:
-#
-#  deploy_Installed_External_Package_Dependencies
-#  ----------------------------------------------
-#
-#   .. command:: deploy_Installed_External_Package_Dependencies(DEPLOYED package version can_use_source redeploy)
-#
-#   Deploy dependencies of an external binary package.
-#
-#      :package: the name of the external package to deploy.
-#
-#      :version: the version to deploy (if system is used then deploy the corresponding OS version)
-#
-#      :can_use_source: if TRUE the deployment can be done from the external package wrapper (if any).
-#
-#      :redeploy: if TRUE the external package version is redeployed even if it was existing before.
-#
-#      :DEPLOYED: output variable that is TRUE if all dependencies have been deployed, false otherwise.
-#
-function(deploy_Installed_External_Package_Dependencies DEPLOYED package version can_use_source redeploy)
-	set(all_ext_dep)
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX Debug)
-	foreach(dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})#deploy packages spcifically used by Debug mode (most of time all dependencies of the package since same as with Release)
-		package_Binary_Exists_In_Workspace(RETURNED_PATH ${dep} ${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}} ${CURRENT_PLATFORM})
-		if(NOT RETURNED_PATH)
-			deploy_PID_External_Package(EXT_DEPLOYED ${dep} "${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}" FALSE ${can_use_source} ${redeploy})
-			if(NOT EXT_DEPLOYED)
-				set(${DEPLOYED} FALSE PARENT_SCOPE)
-				return()
-			endif()
-		endif()
-	endforeach()
-	list(APPEND all_ext_dep ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX Release)
-	set(new_package_to_manage ${${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-	if(all_ext_dep)
-		list(REMOVE_ITEM new_package_to_manage ${all_ext_dep})
-	endif()
-	foreach(dep IN LISTS new_package_to_manage)#deploy packages spcifically used by Release mode (most of time empty)
-		package_Binary_Exists_In_Workspace(RETURNED_PATH ${dep} ${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}} ${CURRENT_PLATFORM})
-		if(NOT RETURNED_PATH)
-			deploy_PID_External_Package(EXT_DEPLOYED ${dep} "${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}" FALSE ${can_use_source} ${redeploy})
-			if(NOT EXT_DEPLOYED)
-				set(${DEPLOYED} FALSE PARENT_SCOPE)
-				return()
-			endif()
-		endif()
-	endforeach()
-	set(${DEPLOYED} TRUE PARENT_SCOPE)
-endfunction(deploy_Installed_External_Package_Dependencies)
 
 #.rst:
 #
@@ -1865,6 +1730,8 @@ memorize_Binary_References(REFERENCES_FOUND ${package})
 if(NOT REFERENCES_FOUND AND NOT can_use_source)
 	return()
 endif()
+set(PROJECT_NAME ${package})
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
 #check if the repository of the external package wrapper lies in the workspace
 set(REPOSITORY_IN_WORKSPACE FALSE)
 if(EXISTS ${WORKSPACE_DIR}/wrappers/${package})
@@ -1891,16 +1758,15 @@ if(NOT version)#deploying the latest version of the package
 			endif()
 			deploy_Binary_External_Package_Version(BIN_DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE)
 			if(NOT BIN_DEPLOYED)#an error occurred during deployment !! => Not a normal situation
-				message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive. Please contact the administrator of the package ${package}.")
+				message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive or due to no archive exists for current platform and build constraints. Please contact the administrator of the package ${package}.")
 				return()
 			else()
+				set(CMAKE_BUILD_TYPE Debug)#to adequately interpret external packages description
+				resolve_Package_Dependencies(${package} Debug TRUE) # finding all package dependencies
+				set(CMAKE_BUILD_TYPE Release)#to adequately interpret external packages description
+				resolve_Package_Dependencies(${package} Release TRUE) # finding all package dependencies
+				set(${DEPLOYED} "BINARY" PARENT_SCOPE)
 				message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} has been deployed from its binary archive.")
-				deploy_Installed_External_Package_Dependencies(DEP_DEPLOYED ${package} ${MAX_CURR_VERSION} ${can_use_source} FALSE)
-				if(NOT DEP_DEPLOYED)
-					message("[PID] ERROR : some dependencies of external package ${package} cannot be deployed in workspace.")
-				else()
-					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
-				endif()
 				return()
 			endif()
 		else()#there may be no binary version available for the target OS => not an error
@@ -1946,13 +1812,12 @@ else()#deploying a specific version of the external package
 				message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
 				return()
 			else()
+				set(CMAKE_BUILD_TYPE Debug)#to adequately interpret external packages description
+				resolve_Package_Dependencies(${package} Debug TRUE) # finding all package dependencies
+				set(CMAKE_BUILD_TYPE Release)#to adequately interpret external packages description
+				resolve_Package_Dependencies(${package} Release TRUE) # finding all package dependencies
 				message("[PID] INFO : deploying ${package} binary archive for version ${version} succeeded !")
-				deploy_Installed_External_Package_Dependencies(DEP_DEPLOYED ${package} ${version} ${can_use_source} FALSE)
-				if(NOT DEP_DEPLOYED)
-					message("[PID] ERROR : some dependencies of external package ${package} version ${version} cannot be deployed in workspace.")
-				else()
-					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
-				endif()
+				set(${DEPLOYED} "BINARY" PARENT_SCOPE)
 				return()
 			endif()
 		endif()

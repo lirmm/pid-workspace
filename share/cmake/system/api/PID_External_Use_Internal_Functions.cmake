@@ -87,11 +87,10 @@ function(reset_Local_Components_Info path mode)
   	set(${config}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
   	set(${config}_REQUIRED_VERSION_SYSTEM CACHE INTERNAL "")
   endforeach()
-    set(DECLARED_SYSTEM_DEPENDENCIES CACHE INTERNAL "")
-
-    #do not manage automatic install since outside from a PID workspace
-    #the install will be done through a global function targetting workspacz
-    set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "")
+  set(DECLARED_SYSTEM_DEPENDENCIES CACHE INTERNAL "")
+  #do not manage automatic install since outside from a PID workspace
+  #the install will be done through a global function targetting workspacz
+  set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "")
 endfunction(reset_Local_Components_Info)
 
 
@@ -118,6 +117,7 @@ function(register_System_Dependency_As_External_Package_OS_Variant system_dep)
     set(${system_dep}_REQUIRED_VERSION_EXACT TRUE CACHE INTERNAL "")
     set(${system_dep}_REQUIRED_VERSION_SYSTEM TRUE CACHE INTERNAL "")
     add_Chosen_Package_Version_In_Current_Process(${system_dep})#for the use of an os variant
+    append_Unique_In_Cache(DECLARED_SYSTEM_DEPENDENCIES ${system_dep})
   endif()
   #also check for dependencies of the configuration as they may be external package as well
   foreach(dep_dep IN LISTS ${system_dep}_CONFIGURATION_DEPENDENCIES)
@@ -579,12 +579,18 @@ function(manage_Dependent_PID_Package DEPLOYED package version)
   if(NOT ${package}_FOUND${VAR_SUFFIX})
     #TODO deploy from workspace
     set(ENV{manage_progress} FALSE)
-    if(version)
-    execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=${version}
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+    list(FIND DECLARED_SYSTEM_DEPENDENCIES ${package} INDEX)
+    if(NOT INDEX EQUAL -1)#deploying external dependency as os variant
+      execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=system
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
     else()
-    execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package}
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+      if(version)
+        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=${version}
+        WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+      else()
+        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package}
+        WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+      endif()
     endif()
     unset(ENV{manage_progress})
     #find again to see if deployment process went well
