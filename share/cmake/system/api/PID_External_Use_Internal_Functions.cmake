@@ -110,19 +110,32 @@ endfunction(reset_Local_Components_Info)
 #
 #     :system_dep: the system dependency that may be used to enforce usage of OS variant for the corresponding external package
 #
-function(register_System_Dependency_As_External_Package_OS_Variant system_dep)
-  if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${system_dep}.cmake)
+#     :NOT_VALIDATED: output variable that is empty if check of config constraint succeeded, conatins the name of teh failing configuration otherwise
+#
+function(register_System_Dependency_As_External_Package_OS_Variant NOT_VALIDATED system_dep)
+  check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${system_dep}")
+	if(NOT RESULT_OK)
+    set(${NOT_VALIDATED} ${system_dep} PARENT_SCOPE)
+		return()
+	endif()
+
+  if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${CONFIG_NAME}.cmake)
     #predefined the use of the external package version with its os variant
-    set(${system_dep}_VERSION_STRING ${${system_dep}_VERSION} CACHE INTERNAL "")
-    set(${system_dep}_REQUIRED_VERSION_EXACT TRUE CACHE INTERNAL "")
-    set(${system_dep}_REQUIRED_VERSION_SYSTEM TRUE CACHE INTERNAL "")
-    add_Chosen_Package_Version_In_Current_Process(${system_dep})#for the use of an os variant
-    append_Unique_In_Cache(DECLARED_SYSTEM_DEPENDENCIES ${system_dep})
+    set(${CONFIG_NAME}_VERSION_STRING ${${CONFIG_NAME}_VERSION} CACHE INTERNAL "")
+    set(${CONFIG_NAME}_REQUIRED_VERSION_EXACT ${${CONFIG_NAME}_VERSION} CACHE INTERNAL "")
+    set(${CONFIG_NAME}_REQUIRED_VERSION_SYSTEM TRUE CACHE INTERNAL "")
+    add_Chosen_Package_Version_In_Current_Process(${CONFIG_NAME})#for the use of an os variant
+    append_Unique_In_Cache(DECLARED_SYSTEM_DEPENDENCIES ${CONFIG_NAME})
   endif()
   #also check for dependencies of the configuration as they may be external package as well
-  foreach(dep_dep IN LISTS ${system_dep}_CONFIGURATION_DEPENDENCIES)
-    register_System_Dependency_As_External_Package_OS_Variant(${dep_dep})
+  foreach(dep_dep IN LISTS ${CONFIG_NAME}_CONFIGURATION_DEPENDENCIES)
+    register_System_Dependency_As_External_Package_OS_Variant(DEP_NOT_VALIDATED ${dep_dep})
+    if(DEP_NOT_VALIDATED)
+      set(${NOT_VALIDATED} ${DEP_NOT_VALIDATED} PARENT_SCOPE)
+      return()
+    endif()
   endforeach()
+  set(${NOT_VALIDATED} PARENT_SCOPE)
 endfunction(register_System_Dependency_As_External_Package_OS_Variant)
 
 #.rst:
@@ -145,13 +158,12 @@ endfunction(register_System_Dependency_As_External_Package_OS_Variant)
 #
 function(enforce_System_Dependencies NOT_ENFORCED list_of_os_deps)
 foreach(os_variant IN LISTS list_of_os_deps)
-	check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${os_variant}")
-	if(NOT RESULT_OK)
-    set(${NOT_ENFORCED} ${os_variant} PARENT_SCOPE)
-		return()
-	endif()
-  #check if this configuration is matching an external package defined in PID
-  register_System_Dependency_As_External_Package_OS_Variant(${CONFIG_NAME})
+	#check if this configuration is matching an external package defined in PID
+  register_System_Dependency_As_External_Package_OS_Variant(REGISTERING_NOTOK ${os_variant})
+  if(REGISTERING_NOTOK)
+    set(${NOT_ENFORCED} ${REGISTERING_NOTOK} PARENT_SCOPE)
+    return()
+  endif()
 endforeach()
 set(${NOT_ENFORCED} PARENT_SCOPE)
 endfunction(enforce_System_Dependencies)
@@ -571,16 +583,24 @@ function(manage_Dependent_PID_Package DEPLOYED package version)
   set(previous_mode ${CMAKE_BUILD_TYPE})
   set(CMAKE_BUILD_TYPE ${WORKSPACE_MODE})
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-  if(NOT version)
-  	find_package(${package})
+  list(FIND DECLARED_SYSTEM_DEPENDENCIES ${package} INDEX_IN_DECLARED_OS_DEPS)
+  if(NOT INDEX_IN_DECLARED_OS_DEPS EQUAL -1)
+    set(${package}_FIND_VERSION_SYSTEM TRUE)
+    find_package(${package} ${${package}_VERSION_STRING} EXACT)
   else()
-  	find_package(${package} ${version} EXACT)
+    set(${package}_FIND_VERSION_SYSTEM FALSE)
+    if(NOT version)
+      find_package(${package})
+    else()
+      find_package(${package} ${version} EXACT)
+    endif()
   endif()
   if(NOT ${package}_FOUND${VAR_SUFFIX})
     #TODO deploy from workspace
     set(ENV{manage_progress} FALSE)
-    list(FIND DECLARED_SYSTEM_DEPENDENCIES ${package} INDEX)
-    if(NOT INDEX EQUAL -1)#deploying external dependency as os variant
+
+    #TODO need to check this
+    if(NOT INDEX_IN_DECLARED_OS_DEPS EQUAL -1)#deploying external dependency as os variant
       execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=system
                       WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
     else()
@@ -594,6 +614,11 @@ function(manage_Dependent_PID_Package DEPLOYED package version)
     endif()
     unset(ENV{manage_progress})
     #find again to see if deployment process went well
+    if(NOT INDEX_IN_DECLARED_OS_DEPS EQUAL -1)
+      set(${package}_FIND_VERSION_SYSTEM TRUE)
+    else()
+      set(${package}_FIND_VERSION_SYSTEM FALSE)
+    endif()
     if(NOT version)
     	find_package(${package} REQUIRED)
     else()

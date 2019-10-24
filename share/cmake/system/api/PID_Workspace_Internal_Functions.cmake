@@ -1583,6 +1583,10 @@ endfunction(bind_Installed_Package)
 #
 #      :can_use_source: if TRUE the deployment can be done from the package source repository.
 #
+#      :branch: define the branch to build (may be left empty).
+#
+#      :run_tests: if TRUE built project will run tests.
+#
 #      :DEPLOYED: output variable that is set to SOURCE or BINARY depending on the nature of the deployed package, empty if package has not been deployed.
 #
 function(deploy_PID_Native_Package DEPLOYED package version verbose can_use_source branch run_tests)
@@ -1634,17 +1638,18 @@ if(NOT version)#no specific version required
 			deploy_Binary_Native_Package_Version(BIN_DEPLOYED ${package} ${RES_VERSION} TRUE "")
 			if(NOT BIN_DEPLOYED)
 				message("[PID] ERROR : problem deploying ${package} binary archive version ${RES_VERSION}. Deployment aborted !")
-				return()
-			else()
-				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${RES_VERSION} FALSE)
-				if(BOUND)
-					message("[PID] INFO : deploying ${package} binary archive version ${RES_VERSION} success !")
-					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
-				else()
-					message("[PID] ERROR : package ${package} version ${RES_VERSION} cannot be deployed in workspace.")
-				endif()
+				#if source deployment was possible then it would already have heppended in this situation
+				#so no more to do -> there is no solution
 				return()
 			endif()
+			bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${RES_VERSION} FALSE)
+			if(BOUND)
+				message("[PID] INFO : deploying ${package} binary archive version ${RES_VERSION} success !")
+				set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+			else()
+				message("[PID] ERROR : package ${package} version ${RES_VERSION} cannot be deployed in workspace.")
+			endif()
+			return()
 		else()
 			message("[PID] ERROR : no binary archive available for ${package}. Deployment aborted !")
 			return()
@@ -1658,8 +1663,7 @@ else()#deploying a specific version
 	if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
 		deploy_Binary_Native_Package_Version(BIN_DEPLOYED ${package} ${version} TRUE "")
 		if(NOT BIN_DEPLOYED)
-			message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
-			return()
+			message("[PID] WARNING : problem deploying ${package} binary archive version ${version}. This may be due to binary compatibility problems. Try building from sources...")
 		else()
 			bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE)
 			if(BOUND)
@@ -1671,7 +1675,7 @@ else()#deploying a specific version
 			return()
 		endif()
 	endif()
-	#OK so try from sources
+	#OK so try from sources (either no binary archive exists or deployment faced a problem - probably binary compatibility problem)
 	if(can_use_source)#this first step is only possible if sources can be used
 		if(NOT REPOSITORY_IN_WORKSPACE)
 			deploy_Package_Repository(REPOSITORY_DEPLOYED ${package})
@@ -1688,7 +1692,7 @@ else()#deploying a specific version
 			message("[PID] ERROR : cannot build ${package} from its repository. Deployment aborted !")
 		endif()
 	else()
-		message("[PID] ERROR : cannot install ${package} since no binary archive exist for that version. Deployment aborted !")
+		message("[PID] ERROR : cannot install ${package} since no binary archive exists for that version and no source deployment allowed. Deployment aborted !")
 	endif()
 endif()
 endfunction(deploy_PID_Native_Package)

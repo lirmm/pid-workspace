@@ -83,7 +83,7 @@ endif()
 #checking TARGET_VERSION value
 if(TARGET_VERSION)
 	if(TARGET_VERSION STREQUAL "system" OR TARGET_VERSION STREQUAL "SYSTEM" OR TARGET_VERSION STREQUAL "System")
-		set(TARGET_VERSION "SYSTEM" CACHE INTERNAL "")#prepare value for call to deploy_PID_Package
+		set(TARGET_VERSION "SYSTEM" CACHE INTERNAL "" FORCE)#prepare value for call to deploy_PID_Package
 		set(NO_SOURCE FALSE CACHE INTERNAL "")#SYSTEM version can only be installed from external package wrapper
 	endif()
 endif()
