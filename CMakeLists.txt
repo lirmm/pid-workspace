@@ -116,10 +116,10 @@ add_custom_target(info
 
 ## deploying a package (either soure repository or binary package relocatable archive)
 add_custom_target(deploy
-	COMMAND ${CMAKE_COMMAND} -DTARGET_PACKAGE=\${package}
+	COMMAND ${CMAKE_COMMAND} -DDEPLOYED_PACKAGE=\${package}
 					-DTARGET_VERSION=\${version}
-					-DTARGET_ENVIRONMENT=\${environment}
-					-DTARGET_FRAMEWORK=\${framework}
+					-DDEPLOYED_ENVIRONMENT=\${environment}
+					-DDEPLOYED_FRAMEWORK=\${framework}
 					-DVERBOSE_MODE=\${verbose}
 					-DFORCE_REDEPLOY=\${force}
 					-DNO_SOURCE=\${no_source}

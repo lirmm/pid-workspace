@@ -38,16 +38,16 @@ SEPARATE_ARGUMENTS(CMAKE_FIND_LIBRARY_SUFFIXES)
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 
 #first check that commmand parameters are not passed as environment variables
-if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
-	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
+if(NOT DEPLOYED_PACKAGE AND DEFINED ENV{package})
+	set(DEPLOYED_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
-	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
+if(NOT DEPLOYED_FRAMEWORK AND DEFINED ENV{framework})
+	set(DEPLOYED_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
 endif()
 
-if(NOT TARGET_ENVIRONMENT AND DEFINED ENV{environment})
-	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
+if(NOT DEPLOYED_ENVIRONMENT AND DEFINED ENV{environment})
+	set(DEPLOYED_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
 endif()
 
 if(NOT TARGET_VERSION AND DEFINED ENV{version})
@@ -89,36 +89,36 @@ if(TARGET_VERSION)
 endif()
 
 #including the adequate reference file
-if(TARGET_FRAMEWORK)# a framework is deployed
+if(DEPLOYED_FRAMEWORK)# a framework is deployed
 	# checks of the arguments
-	include(ReferFramework${TARGET_FRAMEWORK} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+	include(ReferFramework${DEPLOYED_FRAMEWORK} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(REQUIRED_STATUS STREQUAL NOTFOUND)
-		message("[PID] ERROR : Framework name ${TARGET_FRAMEWORK} does not refer to any known framework in the workspace.")
+		message("[PID] ERROR : Framework name ${DEPLOYED_FRAMEWORK} does not refer to any known framework in the workspace.")
 		return()
 	endif()
 	# deployment of the framework
-	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
-		message("[PID] ERROR : Source repository for framework ${TARGET_FRAMEWORK} already resides in the workspace.")
+	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${DEPLOYED_FRAMEWORK} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${DEPLOYED_FRAMEWORK})
+		message("[PID] ERROR : Source repository for framework ${DEPLOYED_FRAMEWORK} already resides in the workspace.")
 		return()
 	endif()
-	message("[PID] INFO : deploying PID framework ${TARGET_FRAMEWORK} in the workspace ...")
-	deploy_PID_Framework(${TARGET_FRAMEWORK} "${VERBOSE_MODE}") #do the job
+	message("[PID] INFO : deploying PID framework ${DEPLOYED_FRAMEWORK} in the workspace ...")
+	deploy_PID_Framework(${DEPLOYED_FRAMEWORK} "${VERBOSE_MODE}") #do the job
 	return()
 
-elseif(TARGET_ENVIRONMENT)# deployment of an environment is required
+elseif(DEPLOYED_ENVIRONMENT)# deployment of an environment is required
 	# checks of the arguments
-	include(ReferEnvironment${TARGET_ENVIRONMENT} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+	include(ReferEnvironment${DEPLOYED_ENVIRONMENT} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(REQUIRED_STATUS STREQUAL NOTFOUND)
-		message("[PID] ERROR : Environment name ${TARGET_ENVIRONMENT} does not refer to any known environment in the workspace.")
+		message("[PID] ERROR : Environment name ${DEPLOYED_ENVIRONMENT} does not refer to any known environment in the workspace.")
 		return()
 	endif()
 	# deployment of the framework
-	if(EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT} AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT})
-		message("[PID] ERROR : Source repository for environment ${TARGET_FRAMEWORK} already resides in the workspace.")
+	if(EXISTS ${WORKSPACE_DIR}/environments/${DEPLOYED_ENVIRONMENT} AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${DEPLOYED_ENVIRONMENT})
+		message("[PID] ERROR : Source repository for environment ${DEPLOYED_FRAMEWORK} already resides in the workspace.")
 		return()
 	endif()
-	message("[PID] INFO : deploying PID environment ${TARGET_ENVIRONMENT} in the workspace ...")
-	deploy_PID_Environment(${TARGET_ENVIRONMENT} "${VERBOSE_MODE}") #do the job
+	message("[PID] INFO : deploying PID environment ${DEPLOYED_ENVIRONMENT} in the workspace ...")
+	deploy_PID_Environment(${DEPLOYED_ENVIRONMENT} "${VERBOSE_MODE}") #do the job
 	return()
 else()# a package deployment is required
 
@@ -127,25 +127,25 @@ else()# a package deployment is required
 	####################################################################
 
 	#check of arguments
-	if(NOT TARGET_PACKAGE)
+	if(NOT DEPLOYED_PACKAGE)
 		message("[PID] ERROR : You must specify the project to deploy: either a native package or an external package using package=<name of package> or a framework using framework=<name of framework> argument.")
 		return()
 	endif()
 
 	#check if package is known
 	set(is_external FALSE)
-	include(Refer${TARGET_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
+	include(Refer${DEPLOYED_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
 	if(REQUIRED_STATUS STREQUAL NOTFOUND)
-		include(ReferExternal${TARGET_PACKAGE} OPTIONAL RESULT_VARIABLE EXT_REQUIRED_STATUS)
+		include(ReferExternal${DEPLOYED_PACKAGE} OPTIONAL RESULT_VARIABLE EXT_REQUIRED_STATUS)
 		if(EXT_REQUIRED_STATUS STREQUAL NOTFOUND)
-			message("[PID] ERROR : Package name ${TARGET_PACKAGE} does not refer to any known package in the workspace (either native or external).")
+			message("[PID] ERROR : Package name ${DEPLOYED_PACKAGE} does not refer to any known package in the workspace (either native or external).")
 			return()
 		else()
 			set(is_external TRUE)
 		endif()
 	else()#this is a native package
 		if(TARGET_VERSION STREQUAL "SYSTEM")
-			message("[PID] ERROR : Native package (as ${TARGET_PACKAGE}) cannot be installed as OS variants, only external packages can.")
+			message("[PID] ERROR : Native package (as ${DEPLOYED_PACKAGE}) cannot be installed as OS variants, only external packages can.")
 			return()
 		endif()
 	endif()
@@ -158,10 +158,10 @@ else()# a package deployment is required
 
 	# check if redeployment asked
 	if(TARGET_VERSION AND NOT TARGET_VERSION STREQUAL "SYSTEM") # a specific version is targetted
-		package_Binary_Exists_In_Workspace(RETURNED_PATH ${TARGET_PACKAGE} ${TARGET_VERSION} ${CURRENT_PLATFORM})
+		package_Binary_Exists_In_Workspace(RETURNED_PATH ${DEPLOYED_PACKAGE} ${TARGET_VERSION} ${CURRENT_PLATFORM})
 		if(RETURNED_PATH)#binary version already exists
 			if(NOT redeploy)
-				message("[PID] WARNING : ${TARGET_PACKAGE} binary version ${TARGET_VERSION} already resides in the workspace. Use force=true to force the redeployment.")
+				message("[PID] WARNING : ${DEPLOYED_PACKAGE} binary version ${TARGET_VERSION} already resides in the workspace. Use force=true to force the redeployment.")
 				return()
 			endif()
 		endif()
@@ -171,16 +171,16 @@ else()# a package deployment is required
 	set(references_loaded FALSE)
 	if(NO_SOURCE STREQUAL "true" OR NO_SOURCE STREQUAL "TRUE")
 		#if no source required then binary references must exist
-		load_Package_Binary_References(REFERENCES_OK ${TARGET_PACKAGE})# now load the binary references of the package
+		load_Package_Binary_References(REFERENCES_OK ${DEPLOYED_PACKAGE})# now load the binary references of the package
 		set(references_loaded TRUE)#memorize that references have been loaded
 		if(NOT REFERENCES_OK)
-			message("[PID] ERROR : Cannot find any reference to a binary version of ${TARGET_PACKAGE}. Aborting since no source deployment has been required.")
+			message("[PID] ERROR : Cannot find any reference to a binary version of ${DEPLOYED_PACKAGE}. Aborting since no source deployment has been required.")
 			return()
 		endif()
 		if(TARGET_VERSION) # a specific version is targetted
-			exact_Version_Archive_Exists(${TARGET_PACKAGE} "${TARGET_VERSION}" EXIST)
+			exact_Version_Archive_Exists(${DEPLOYED_PACKAGE} "${TARGET_VERSION}" EXIST)
 			if(NOT EXIST)
-				message("[PID] ERROR : A binary relocatable archive with version ${TARGET_VERSION} does not exist for package ${TARGET_PACKAGE}.  Aborting since no source deployment has been required.")
+				message("[PID] ERROR : A binary relocatable archive with version ${TARGET_VERSION} does not exist for package ${DEPLOYED_PACKAGE}.  Aborting since no source deployment has been required.")
 				return()
 			endif()
 		endif()
@@ -191,15 +191,15 @@ else()# a package deployment is required
 
 	if(USE_BRANCH)
 		if(is_external)
-			message("[PID] ERROR : Cannot deploy a specific branch of ${TARGET_PACKAGE} because it is an external package.")
+			message("[PID] ERROR : Cannot deploy a specific branch of ${DEPLOYED_PACKAGE} because it is an external package.")
 			return()
 		endif()
 		if(NOT can_use_source)#need to run the deployment from sources !!
-			message("[PID] ERROR : Cannot deploy a specific branch of ${TARGET_PACKAGE} if no source deployment is required (using argument no_source=true).")
+			message("[PID] ERROR : Cannot deploy a specific branch of ${DEPLOYED_PACKAGE} if no source deployment is required (using argument no_source=true).")
 			return()
 		endif()
 		if(TARGET_VERSION)
-			message("[PID] ERROR : Cannot deploy a specific branch of ${TARGET_PACKAGE} if a specific version is required (using argument version=${TARGET_VERSION}).")
+			message("[PID] ERROR : Cannot deploy a specific branch of ${DEPLOYED_PACKAGE} if a specific version is required (using argument version=${TARGET_VERSION}).")
 			return()
 		endif()
 		set(branch ${USE_BRANCH})
@@ -209,11 +209,11 @@ else()# a package deployment is required
 
 	if(RUN_TESTS STREQUAL "true" OR RUN_TESTS STREQUAL "TRUE")
 		if(is_external)
-			message("[PID] ERROR : Cannot run test during deployment of ${TARGET_PACKAGE} because it is an external package.")
+			message("[PID] ERROR : Cannot run test during deployment of ${DEPLOYED_PACKAGE} because it is an external package.")
 			return()
 		endif()
 		if(NOT can_use_source)#need to run the deployment from sources !!
-			message("[PID] ERROR : Cannot run test during deployment of ${TARGET_PACKAGE} if no source deployment is required (using argument no_source=true).")
+			message("[PID] ERROR : Cannot run test during deployment of ${DEPLOYED_PACKAGE} if no source deployment is required (using argument no_source=true).")
 			return()
 		endif()
 		set(run_tests TRUE)
@@ -233,15 +233,15 @@ else()# a package deployment is required
 
 	if(TARGET_VERSION)
 		if(is_external)#external package is deployed
-			set(message_to_print "[PID] INFO : deploying external package ${TARGET_PACKAGE} (version ${TARGET_VERSION}) in the workspace ...")
+			set(message_to_print "[PID] INFO : deploying external package ${DEPLOYED_PACKAGE} (version ${TARGET_VERSION}) in the workspace ...")
 		else()#native package is deployed
-			set(message_to_print "[PID] INFO : deploying native PID package ${TARGET_PACKAGE} (version ${TARGET_VERSION}) in the workspace ...")
+			set(message_to_print "[PID] INFO : deploying native PID package ${DEPLOYED_PACKAGE} (version ${TARGET_VERSION}) in the workspace ...")
 		endif()
 		#from here the operation can be theorically realized
 		if(redeploy)#if a redeploy has been forced then first action is to uninstall
-			clear_PID_Package(RES ${TARGET_PACKAGE} ${TARGET_VERSION})
+			clear_PID_Package(RES ${DEPLOYED_PACKAGE} ${TARGET_VERSION})
 			if(RES AND ("${VERBOSE_MODE}" STREQUAL "true" OR "${VERBOSE_MODE}" STREQUAL "TRUE"))
-				message("[PID] INFO : package ${TARGET_PACKAGE} version ${TARGET_VERSION} has been uninstalled ...")
+				message("[PID] INFO : package ${DEPLOYED_PACKAGE} version ${TARGET_VERSION} has been uninstalled ...")
 			endif()
 		endif()
 	else()#no version specified
@@ -251,24 +251,24 @@ else()# a package deployment is required
 			set(version_info "last version")
 		endif()
 		if(is_external)#external package is deployed
-			set(message_to_print "[PID] INFO : deploying external package ${TARGET_PACKAGE} (${version_info}) in the workspace ...")
+			set(message_to_print "[PID] INFO : deploying external package ${DEPLOYED_PACKAGE} (${version_info}) in the workspace ...")
 		else()#native package is deployed
 			message("")
-			set(message_to_print "[PID] INFO : deploying native package ${TARGET_PACKAGE} (${version_info}) in the workspace ...")
+			set(message_to_print "[PID] INFO : deploying native package ${DEPLOYED_PACKAGE} (${version_info}) in the workspace ...")
 		endif()
 	endif()
 
 	message("${message_to_print}")
 	# now do the deployment
 	if(is_external)#external package is deployed
-		deploy_PID_External_Package(PACK_DEPLOYED ${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} ${redeploy})
+		deploy_PID_External_Package(PACK_DEPLOYED ${DEPLOYED_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} ${redeploy})
 	else()#native package is deployed
-		deploy_PID_Native_Package(PACK_DEPLOYED ${TARGET_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} "${branch}" ${run_tests})
+		deploy_PID_Native_Package(PACK_DEPLOYED ${DEPLOYED_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} "${branch}" ${run_tests})
 	endif()
 	if(NOT PACK_DEPLOYED)
-		message("[PID] CRITICAL ERROR : there were errors during deployment of ${TARGET_PACKAGE}")
-	else()
-			bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${TARGET_PACKAGE} ${TARGET_VERSION})
+		message("[PID] CRITICAL ERROR : there were errors during deployment of ${DEPLOYED_PACKAGE}")
+	elseif(NOT is_external AND PACK_DEPLOYED STREQUAL "BINARY")#need to rebind the binary package only if for native
+			bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${DEPLOYED_PACKAGE} ${TARGET_VERSION})
 	endif()
 	## global management of the process
 	if(MANAGE_PROGRESS)

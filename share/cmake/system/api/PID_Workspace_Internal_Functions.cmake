@@ -1661,7 +1661,7 @@ function(deploy_Installed_Native_Package_Dependencies DEPLOYED package version c
 #
 #      :can_use_source: if TRUE the deployment can be done from the package source repository.
 #
-#      :DEPLOYED: output variable that is TRUE if package has been deployed, FALSE otherwise.
+#      :DEPLOYED: output variable that is set to SOURCE or BINARY depending on the nature of the deployed package, empty if package has not been deployed.
 #
 function(deploy_PID_Native_Package DEPLOYED package version verbose can_use_source branch run_tests)
 set(PROJECT_NAME ${package})
@@ -1671,7 +1671,7 @@ if(verbose)
 else()
 	set(ADDITIONNAL_DEBUG_INFO OFF)
 endif()
-set(${DEPLOYED} FALSE PARENT_SCOPE)
+set(${DEPLOYED} PARENT_SCOPE)
 
 memorize_Binary_References(REFERENCES_FOUND ${package})
 if(NOT REFERENCES_FOUND AND NOT can_use_source)
@@ -1719,7 +1719,7 @@ if(NOT version)#no specific version required
 				if(NOT DEP_DEPLOYED)
 					message("[PID] ERROR : some dependencies of native package ${package} version ${version} cannot be deployed in workspace.")
 				else()
-					set(${DEPLOYED} TRUE PARENT_SCOPE)
+					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
 				endif()
 				return()
 			endif()
@@ -1728,7 +1728,7 @@ if(NOT version)#no specific version required
 			return()
 		endif()
 	else()
-		set(${DEPLOYED} TRUE PARENT_SCOPE)
+		set(${DEPLOYED} "SOURCE" PARENT_SCOPE)
 	endif()
 else()#deploying a specific version
 	#first, try to download the archive if the binary archive for this version exists
@@ -1745,7 +1745,7 @@ else()#deploying a specific version
 				message("[PID] ERROR : some dependencies of native package ${package} version ${version} cannot be deployed in workspace.")
 				#in this situation the we need to abort the deployment process
 			else()
-				set(${DEPLOYED} TRUE PARENT_SCOPE)
+				set(${DEPLOYED} "BINARY" PARENT_SCOPE)
 			endif()
 			return()
 		endif()
@@ -1762,7 +1762,7 @@ else()#deploying a specific version
 		deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${version} TRUE "" "${run_tests}")
 		if(SOURCE_DEPLOYED)
 				message("[PID] INFO : package ${package} has been deployed from its repository.")
-				set(${DEPLOYED} TRUE PARENT_SCOPE)
+				set(${DEPLOYED} "SOURCE" PARENT_SCOPE)
 		else()
 			message("[PID] ERROR : cannot build ${package} from its repository. Deployment aborted !")
 		endif()
@@ -1794,7 +1794,7 @@ endfunction(deploy_PID_Native_Package)
 #
 #      :redeploy: if TRUE the external package version is redeployed even if it was existing before.
 #
-#      :DEPLOYED: output variable taht is TRUE if all dependencies have been deployed, false otherwise.
+#      :DEPLOYED: output variable that is TRUE if all dependencies have been deployed, false otherwise.
 #
 function(deploy_Installed_External_Package_Dependencies DEPLOYED package version can_use_source redeploy)
 	set(all_ext_dep)
@@ -1852,7 +1852,7 @@ endfunction(deploy_Installed_External_Package_Dependencies)
 #
 #      :redeploy: if TRUE the external package version is redeployed even if it was existing before.
 #
-#      :DEPLOYED: output variable taht is TRUE if the external package version as been deployed, FALSE otherwise.
+#      :DEPLOYED: output variable that is set to SOURCE or BINARY depending on the nature of the deployed package, empty if package has not been deployed.
 #
 function(deploy_PID_External_Package DEPLOYED package version verbose can_use_source redeploy)
 if(verbose)
@@ -1860,7 +1860,7 @@ if(verbose)
 else()
 	set(ADDITIONNAL_DEBUG_INFO OFF)
 endif()
-set(${DEPLOYED} FALSE PARENT_SCOPE)
+set(${DEPLOYED} PARENT_SCOPE)
 memorize_Binary_References(REFERENCES_FOUND ${package})
 if(NOT REFERENCES_FOUND AND NOT can_use_source)
 	return()
@@ -1899,7 +1899,7 @@ if(NOT version)#deploying the latest version of the package
 				if(NOT DEP_DEPLOYED)
 					message("[PID] ERROR : some dependencies of external package ${package} cannot be deployed in workspace.")
 				else()
-					set(${DEPLOYED} TRUE PARENT_SCOPE)
+					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
 				endif()
 				return()
 			endif()
@@ -1928,7 +1928,7 @@ if(NOT version)#deploying the latest version of the package
 		deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "${list_of_installed_versions}")
 		if(SOURCE_DEPLOYED)
 				message("[PID] INFO : external package ${package} has been deployed from its wrapper repository.")
-				set(${DEPLOYED} TRUE PARENT_SCOPE)
+				set(${DEPLOYED} "SOURCE" PARENT_SCOPE)
 		else()
 			message("[PID] ERROR : cannot build external package ${package} from its wrapper repository. Deployment aborted !")
 		endif()
@@ -1951,7 +1951,7 @@ else()#deploying a specific version of the external package
 				if(NOT DEP_DEPLOYED)
 					message("[PID] ERROR : some dependencies of external package ${package} version ${version} cannot be deployed in workspace.")
 				else()
-					set(${DEPLOYED} TRUE PARENT_SCOPE)
+					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
 				endif()
 				return()
 			endif()
@@ -1981,7 +1981,7 @@ else()#deploying a specific version of the external package
 		deploy_Source_External_Package_Version(BIN_DEPLOYED ${package} ${version} TRUE ${USE_SYSTEM} "")
 		if(BIN_DEPLOYED)
 				message("[PID] INFO : external package ${package} has been deployed from its wrapper repository.")
-				set(${DEPLOYED} TRUE PARENT_SCOPE)
+				set(${DEPLOYED} "SOURCE" PARENT_SCOPE)
 		else()
 			message("[PID] ERROR : cannot build external package ${package} from its wrapper repository. Deployment aborted !")
 		endif()
