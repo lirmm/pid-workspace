@@ -93,51 +93,6 @@ function(reset_Local_Components_Info path mode)
   set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "")
 endfunction(reset_Local_Components_Info)
 
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |register_System_Dependency_As_External_Package_OS_Variant| replace:: ``register_System_Dependency_As_External_Package_OS_Variant``
-#  .. _register_System_Dependency_As_External_Package_OS_Variant:
-#
-#  register_System_Dependency_As_External_Package_OS_Variant
-#  ---------------------------------------------------------
-#
-#   .. command:: register_System_Dependency_As_External_Package_OS_Variant(system_dep)
-#
-#    Register a system dependency as the OS variant of an external package, if possible.
-#
-#     :system_dep: the system dependency that may be used to enforce usage of OS variant for the corresponding external package
-#
-#     :NOT_VALIDATED: output variable that is empty if check of config constraint succeeded, conatins the name of teh failing configuration otherwise
-#
-function(register_System_Dependency_As_External_Package_OS_Variant NOT_VALIDATED system_dep)
-  check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${system_dep}" ${WORKSPACE_MODE})
-	if(NOT RESULT_OK)
-    set(${NOT_VALIDATED} ${system_dep} PARENT_SCOPE)
-		return()
-	endif()
-
-  if(EXISTS ${WORKSPACE_DIR}/share/cmake/references/ReferExternal${CONFIG_NAME}.cmake)
-    #predefined the use of the external package version with its os variant
-    set(${CONFIG_NAME}_VERSION_STRING ${${CONFIG_NAME}_VERSION} CACHE INTERNAL "")
-    set(${CONFIG_NAME}_REQUIRED_VERSION_EXACT ${${CONFIG_NAME}_VERSION} CACHE INTERNAL "")
-    set(${CONFIG_NAME}_REQUIRED_VERSION_SYSTEM TRUE CACHE INTERNAL "")
-    add_Chosen_Package_Version_In_Current_Process(${CONFIG_NAME})#for the use of an os variant
-    append_Unique_In_Cache(DECLARED_SYSTEM_DEPENDENCIES ${CONFIG_NAME})
-  endif()
-  #also check for dependencies of the configuration as they may be external package as well
-  foreach(dep_dep IN LISTS ${CONFIG_NAME}_CONFIGURATION_DEPENDENCIES)
-    register_System_Dependency_As_External_Package_OS_Variant(DEP_NOT_VALIDATED ${dep_dep})
-    if(DEP_NOT_VALIDATED)
-      set(${NOT_VALIDATED} ${DEP_NOT_VALIDATED} PARENT_SCOPE)
-      return()
-    endif()
-  endforeach()
-  set(${NOT_VALIDATED} PARENT_SCOPE)
-endfunction(register_System_Dependency_As_External_Package_OS_Variant)
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -159,9 +114,9 @@ endfunction(register_System_Dependency_As_External_Package_OS_Variant)
 function(enforce_System_Dependencies NOT_ENFORCED list_of_os_deps)
 foreach(os_variant IN LISTS list_of_os_deps)
 	#check if this configuration is matching an external package defined in PID
-  register_System_Dependency_As_External_Package_OS_Variant(REGISTERING_NOTOK ${os_variant})
-  if(REGISTERING_NOTOK)
-    set(${NOT_ENFORCED} ${REGISTERING_NOTOK} PARENT_SCOPE)
+  check_System_Configuration(CHECK_CONFIG_OK CONFIG_NAME CONFIG_CONSTRAINTS "${os_variant}" ${WORKSPACE_MODE})
+  if(NOT CHECK_CONFIG_OK)
+    set(${NOT_ENFORCED} ${os_variant} PARENT_SCOPE)
     return()
   endif()
 endforeach()
