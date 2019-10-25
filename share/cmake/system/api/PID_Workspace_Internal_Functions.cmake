@@ -1837,7 +1837,7 @@ else()#deploying a specific version of the external package
 		endif()
 		if(version STREQUAL "SYSTEM")
 			#need to determine the OS installed version first
-			check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${package}")#use the configuration to determine if a version is installed on OS
+			check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${package}" Release)#use the configuration to determine if a version is installed on OS
 			if(NOT RESULT_OK)
 				message("[PID] ERROR : cannot deploy external package ${package} in its OS installed version since no OS version of ${package} can be found in system. Deployment aborted !")
 				return()

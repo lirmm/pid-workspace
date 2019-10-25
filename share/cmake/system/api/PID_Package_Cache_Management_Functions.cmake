@@ -2477,7 +2477,7 @@ function(reset_Temporary_Optimization_Variables mode)
   	unset(TEMP_CONFIG_${config}_CHECK${VAR_SUFFIX} CACHE)
   	unset(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS${VAR_SUFFIX} CACHE)
   endforeach()
-  unset(TEMP_CONFIGS CACHE)
+  unset(TEMP_CONFIGS${VAR_SUFFIX} CACHE)
 endfunction(reset_Temporary_Optimization_Variables)
 
 

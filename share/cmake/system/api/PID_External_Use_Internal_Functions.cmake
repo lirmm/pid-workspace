@@ -113,7 +113,7 @@ endfunction(reset_Local_Components_Info)
 #     :NOT_VALIDATED: output variable that is empty if check of config constraint succeeded, conatins the name of teh failing configuration otherwise
 #
 function(register_System_Dependency_As_External_Package_OS_Variant NOT_VALIDATED system_dep)
-  check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${system_dep}")
+  check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${system_dep}" ${WORKSPACE_MODE})
 	if(NOT RESULT_OK)
     set(${NOT_VALIDATED} ${system_dep} PARENT_SCOPE)
 		return()

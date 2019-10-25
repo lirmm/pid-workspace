@@ -1389,7 +1389,7 @@ endfunction(evaluate_Environment_Solution)
 function(check_Environment_Configuration_Constraint CHECK_RESULT)
   foreach(config IN LISTS ${PROJECT_NAME}_CONFIGURATION_CONSTRAINT)
 
-    check_System_Configuration(RESULT NAME CONSTRAINTS "${config}")
+    check_System_Configuration(RESULT NAME CONSTRAINTS "${config}" Release)
     if(NOT RESULT)
       set(${CHECK_RESULT} FALSE PARENT_SCOPE)
     endif()

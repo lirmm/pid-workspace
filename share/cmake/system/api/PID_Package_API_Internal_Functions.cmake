@@ -682,7 +682,7 @@ endif()
 
 if(NOT SKIP AND constraints)
 	foreach(config IN LISTS constraints) ## all configuration constraints must be satisfied
-		check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${config}")
+		check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${config}" ${CMAKE_BUILD_TYPE})
 		if(NOT RESULT_OK)
 			set(${RESULT} FALSE PARENT_SCOPE)#returns false as soon as one config check fails
 		endif()

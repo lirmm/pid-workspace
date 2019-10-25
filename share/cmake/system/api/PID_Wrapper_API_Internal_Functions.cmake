@@ -834,7 +834,7 @@ if(platform)# if a platform constraint applies
 		if(platform STREQUAL CURRENT_PLATFORM)
 			#check that the configuration applies to the current platform if the current platform is the target of this constraint
 			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
-			check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}")
+			check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
 			if(NOT RESULT_OK)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satify configuration ${config}!")
@@ -847,7 +847,7 @@ if(platform)# if a platform constraint applies
 	#now dealing with options
 	foreach(config IN LISTS options)
 		if(platform STREQUAL CURRENT_PLATFORM)
-			check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}")
+			check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
 			if(RESULT_OK)
 				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 			else()
@@ -885,7 +885,7 @@ else()#no platform constraint applies => this platform configuration is adequate
 
 		#now check the configuration immediately because it should work with any platform
 		set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
-		check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}")
+		check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
 		if(NOT RESULT_OK)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satify configuration ${config} with current platform!")
@@ -903,7 +903,7 @@ else()#no platform constraint applies => this platform configuration is adequate
 			message(FATAL_ERROR "[PID] ERROR : configuration check ${config} is ill formed. Configuration being optional it is skipped automatically.")
 			return()
 		endif()
-		check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}")
+		check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
 		if(RESULT_OK)
 			set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 		else()
@@ -2459,7 +2459,7 @@ endfunction(configure_Wrapper_Build_Variables)
 function(resolve_Wrapper_Configuration CONFIGURED package version)
 	set(IS_CONFIGURED TRUE)
 	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-		check_System_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${config} ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS)
+		check_System_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${config} ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS Release)
 		if(NOT RESULT_WITH_ARGS)
 			set(IS_CONFIGURED FALSE)
 			set(${config}_AVAILABLE FALSE CACHE INTERNAL "")
@@ -2506,7 +2506,7 @@ if(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM" #the system version has been selected => need to perform specific actions
 			OR os_variant)#the wrapper is generating an os variant so all its dependencies are os variant too
 	#need to check the equivalent OS configuration to get the OS installed version
-	check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${dep_package}")
+	check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${dep_package}" Release)
 	if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
