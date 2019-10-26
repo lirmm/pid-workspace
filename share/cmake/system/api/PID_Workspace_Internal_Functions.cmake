@@ -1571,7 +1571,7 @@ endfunction(bind_Installed_Package)
 #  deploy_PID_Native_Package
 #  -------------------------
 #
-#   .. command:: deploy_PID_Native_Package(package version verbose can_use_source)
+#   .. command:: deploy_PID_Native_Package(DEPLOYED package version verbose can_use_source branch run_tests)
 #
 #   Deploy a native package into workspace. Finally results in installing an existing package version in the workspace install tree.
 #
