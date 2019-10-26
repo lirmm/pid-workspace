@@ -2703,6 +2703,680 @@ if(update)
 endif()
 endfunction(upgrade_Workspace)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Component_Symlinks_In_System_Tree| replace:: ``create_Component_Symlinks_In_System_Tree``
+#  .. _create_Component_Symlinks_In_System_Tree:
+#
+#  create_Component_Symlinks_In_System_Tree
+#  -----------------------------------------
+#
+#   .. command:: create_Component_Symlinks_In_System_Tree(package component resources_var)
+#
+#   Create symlinks to runtime resources that are located into a system install tree.
+#
+#     :component: the name of the component.
+#
+#     :resources_var: the name of the variable that contains the list of runtime resources for the component.
+#
+function(create_Component_Symlinks_In_System_Tree component resources_var)
+	if(${resources_var})
+		get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+		#creatings symbolic links
+		make_Empty_Folder(${CMAKE_INSTALL_PREFIX}/.rpath/${component}${TARGET_SUFFIX})
+		foreach(resource IN LISTS ${resources_var})
+			create_Runtime_Symlink("${resource}" "${CMAKE_INSTALL_PREFIX}/.rpath" ${component}${TARGET_SUFFIX})
+		endforeach()
+	endif()
+endfunction(create_Component_Symlinks_In_System_Tree)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_Component_Runtime_Symlinks_In_Folder| replace:: ``install_Component_Runtime_Symlinks_In_Folder``
+#  .. _install_Component_Runtime_Symlinks_In_Folder:
+#
+#  install_Component_Runtime_Symlinks_In_Folder
+#  ---------------------------------------------
+#
+#   .. command:: install_Component_Runtime_Symlinks_In_Folder(package component)
+#
+#   Create symlinks to runtime resources directly or undrectly used by a component of the pakage in the install tree.
+#
+#     :package: the name of the package.
+#
+#     :component: the name of the component.
+#
+function(install_Component_Runtime_Symlinks_In_Folder package component)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+is_Runtime_Component(IS_RUNTIME ${package} ${component})
+if(	IS_RUNTIME )#symlinks need to be generated only for runtime components
+	#3) getting direct and undirect runtime resources dependencies
+	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${package} ${component} ${CMAKE_BUILD_TYPE} TRUE)
+	if(RES_RESOURCES)
+    list(REMOVE_DUPLICATES RES_RESOURCES)
+		create_Component_Symlinks_In_System_Tree(${component} RES_RESOURCES)
+  endif()
+endif()
+endfunction(install_Component_Runtime_Symlinks_In_Folder)
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_CMake_Find_File_Language_Standard| replace:: ``generate_Package_CMake_Find_File_Language_Standard``
+#  .. _generate_Package_CMake_Find_File_Language_Standard:
+#
+#  generate_Package_CMake_Find_File_Language_Standard
+#  ----------------------------------------------------
+#
+#   .. command:: generate_Package_CMake_Find_File_Language_Standard(package component file_name)
+#
+#   Generate the expression managing the language standard in CMake find file for a given component
+#
+#     :package: the name of the package.
+#
+#     :component: the name of the component in package.
+#
+#     :file_name: the path to find file currenlty xritten where to append content.
+#
+function(generate_Package_CMake_Find_File_Language_Standard package component file_name)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+#Note: need to use target_compile_features to set the C and C++ standard on interface libraries => force the use of CMake 3.8 at minimum
+
+if(${package}_${component}_C_STANDARD${VAR_SUFFIX})
+	if(${package}_${component}_C_STANDARD${VAR_SUFFIX} EQUAL 90)
+		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE c_std_90)\n")
+	elseif(${package}_${component}_C_STANDARD${VAR_SUFFIX} EQUAL 99)
+		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE c_std_99)\n")
+	elseif(${package}_${component}_C_STANDARD${VAR_SUFFIX} EQUAL 11)
+		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE c_std_11)\n")
+	#else no known conversion
+	endif()
+endif()
+if(${package}_${component}_CXX_STANDARD${VAR_SUFFIX})
+	if(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} EQUAL 98)
+		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE cxx_std_98)\n")
+	elseif(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} EQUAL 11)
+		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE cxx_std_11)\n")
+	elseif(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} EQUAL 14)
+		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE cxx_std_14)\n")
+	elseif(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} EQUAL 17)
+		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE cxx_std_17)\n")
+	elseif(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} EQUAL 20)
+		file(APPEND ${file_name} "cmake_minimum_required(VERSION 3.11.4)\n")#c++ 20 known from this version
+		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE cxx_std_20)\n")
+	#else no known conversion
+	endif()
+endif()
+endfunction(generate_Package_CMake_Find_File_Language_Standard)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Package_CMake_Find_File| replace:: ``generate_Package_CMake_Find_File``
+#  .. _generate_Package_CMake_Find_File:
+#
+#  generate_Package_CMake_Find_File
+#  ---------------------------------
+#
+#   .. command:: generate_Package_CMake_Find_File(package is_external is_system)
+#
+#   Generate the CMake find file for a package
+#
+#     :package: the name of the package.
+#
+#     :is_external: if TRUE the package is considered as external.
+#
+#     :is_system: if TRUE the system variant of the external package is managed.
+#
+function(generate_Package_CMake_Find_File package is_external is_system)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+set(file_name ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_cmake/Find${package}.cmake)
+file(WRITE ${file_name} "cmake_minimum_required(VERSION 3.8.2)\n")#reset file content and start writing find procedure
+#CMake 3.8 is minimum required to get the target compile features available
+file(APPEND ${file_name} "set(${package}_VERSION_STRING ${${package}_VERSION_STRING})\n")
+file(APPEND ${file_name} "if(${package}_FOUND)\n")
+file(APPEND ${file_name} "  return()\n")
+file(APPEND ${file_name} "endif()\n")
+
+file(APPEND ${file_name} "set(${package}_FOUND FALSE)\n")
+file(APPEND ${file_name} "if(${package}_FIND_VERSION)\n")
+file(APPEND ${file_name} " if(NOT ${package}_FIND_VERSION VERSION_EQUAL ${package}_VERSION_STRING)\n")
+file(APPEND ${file_name} "  return()\n")
+file(APPEND ${file_name} " endif()\n")
+file(APPEND ${file_name} "endif()\n")
+file(APPEND ${file_name} "set(PACKAGE_SEARCH_PATH ${CMAKE_INSTALL_PREFIX})\n")
+file(APPEND ${file_name} "set(PACKAGE_LIB_SEARCH_PATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})\n")
+file(APPEND ${file_name} "set(PACKAGE_BIN_SEARCH_PATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})\n")
+file(APPEND ${file_name} "set(PACKAGE_INC_SEARCH_PATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})\n")
+
+file(APPEND ${file_name} "# searching for dependencies \n")
+foreach(ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	set(find_args_str)
+	if(${package}_EXTERNAL_DEPENDENCY_${ext_pack}_VERSION${VAR_SUFFIX})
+		if(${package}_EXTERNAL_DEPENDENCY_${ext_pack}_VERSION_EXACT${VAR_SUFFIX})
+			set(find_args_str ${${ext_pack}_VERSION_STRING} EXACT)
+		else()
+			set(find_args_str ${${ext_pack}_VERSION_STRING})
+		endif()
+	endif()
+	file(APPEND ${file_name} "find_package(${ext_pack} ${find_args_str} REQUIRED)\n")
+	file(APPEND ${file_name} "if(NOT ${ext_pack}_FOUND)\n")
+	file(APPEND ${file_name} "  return()\n")
+	file(APPEND ${file_name} "endif()\n")
+endforeach()
+foreach(nat_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
+	if(${package}_DEPENDENCY_${nat_pack}_VERSION${VAR_SUFFIX})
+		if(${package}_DEPENDENCY_${nat_pack}_VERSION_EXACT${VAR_SUFFIX})
+			set(find_args_str ${${nat_pack}_VERSION_STRING} EXACT)
+		else()
+			set(find_args_str ${${nat_pack}_VERSION_STRING})
+		endif()
+	endif()
+	file(APPEND ${file_name} "find_package(${nat_pack} ${find_args_str} REQUIRED)\n")
+	file(APPEND ${file_name} "if(NOT ${nat_pack}_FOUND)\n")
+	file(APPEND ${file_name} "  return()\n")
+	file(APPEND ${file_name} "endif()\n")
+endforeach()
+
+if(is_external)
+	foreach(component IN LISTS ${package}_COMPONENTS${VAR_SUFFIX})
+
+		file(APPEND ${file_name} "add_library(${package}::${component} INTERFACE IMPORTED GLOBAL)\n")#creating the target
+		if(NOT is_system)#if it is a system olibrary then its include is supposed to be public
+			file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES \${PACKAGE_INC_SEARCH_PATH})\n")
+		endif()
+
+		generate_Package_CMake_Find_File_Language_Standard(${package} ${component} ${file_name})
+
+		list_Public_Definitions(DEFS ${package} ${component} ${CMAKE_BUILD_TYPE})
+		list_Public_Options(OPTS ${package} ${component} ${CMAKE_BUILD_TYPE})
+	  list_External_Links(SHARED_LNKS STATIC_LNKS ${package} ${component} ${CMAKE_BUILD_TYPE})
+
+		#no need to manage library dirs as all libraries in a system install are supposed to be in folders that the loader/linker can find
+		foreach(def IN LISTS DEFS)
+			file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS \"${def}\")\n")
+		endforeach()
+		foreach(opt IN LISTS OPTS)
+			file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS \"${opt}\")\n")
+		endforeach()
+
+		foreach(link IN LISTS SHARED_LNKS)
+			get_Link_Type(RES_TYPE ${link})
+			if(RES_TYPE STREQUAL OPTION) #this is an option => simply pass it to the link interface
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${link})\n")
+			else()#this is a full path to a library
+				get_filename_component(LIB_NAME ${link} NAME)
+				if(NOT is_system)#check can only be performed with non system libraries
+					file(APPEND ${file_name} "if(NOT EXISTS \${PACKAGE_LIB_SEARCH_PATH}/${LIB_NAME})\n")
+						file(APPEND ${file_name} "  message(WARNING \"Package ${package} component ${component} : cannot find library ${LIB_NAME} in \${PACKAGE_LIB_SEARCH_PATH}\")\n")
+						file(APPEND ${file_name} "  return()\n")
+					file(APPEND ${file_name} "endif()\n")
+				endif()
+				file(APPEND ${file_name} "if(NOT TARGET ext${LIB_NAME})\n")
+				file(APPEND ${file_name} "  add_library(ext${LIB_NAME} SHARED IMPORTED GLOBAL)\n")
+				if(is_system)#if it is a system dependency wit hsimply use the library name and the system is supposed to be able to automatically find the corresponding binary
+					file(APPEND ${file_name} "  set_target_properties(ext${LIB_NAME} PROPERTIES INTERFACE_LINK_LIBRARIES ${LIB_NAME})\n")
+				else()#otherwise we can specify it
+					file(APPEND ${file_name} "  set_target_properties(ext${LIB_NAME} PROPERTIES IMPORTED_LOCATION \${PACKAGE_LIB_SEARCH_PATH}/${LIB_NAME})\n")
+				endif()
+				file(APPEND ${file_name} "endif()\n")
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ext${LIB_NAME})\n")
+			endif()
+	  endforeach()
+	  #static second
+	  foreach(link IN LISTS STATIC_LNKS)
+			get_Link_Type(RES_TYPE ${link})
+ 			if(RES_TYPE STREQUAL OPTION) #this is an option => simply pass it to the link interface
+ 				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${link})\n")
+ 			else()#this is a full path to a library
+				get_filename_component(LIB_NAME ${link} NAME)
+				if(NOT is_system)#check can only be performed with non system libraries
+					file(APPEND ${file_name} "if(NOT EXISTS \${PACKAGE_LIB_SEARCH_PATH}/${LIB_NAME})\n")
+					file(APPEND ${file_name} "  message(WARNING \"Package ${package} component ${component} : cannot find library ${LIB_NAME} in \${PACKAGE_LIB_SEARCH_PATH}\")\n")
+					file(APPEND ${file_name} "  return()\n")
+					file(APPEND ${file_name} "endif()\n")
+				endif()
+ 				file(APPEND ${file_name} "if(NOT TARGET ext${LIB_NAME})\n")
+ 				file(APPEND ${file_name} "  add_library(ext${LIB_NAME} STATIC IMPORTED GLOBAL)\n")
+				if(is_system)#if it is a system dependency wit hsimply use the library name and the system is supposed to be able to automatically find the corresponding binary
+					file(APPEND ${file_name} "  set_target_properties(ext${LIB_NAME} PROPERTIES INTERFACE_LINK_LIBRARIES ${LIB_NAME})\n")
+				else()#otherwise we can specify it
+					file(APPEND ${file_name} "  set_target_properties(ext${LIB_NAME} PROPERTIES IMPORTED_LOCATION \${PACKAGE_LIB_SEARCH_PATH}/${LIB_NAME})\n")
+				endif()
+ 				file(APPEND ${file_name} "endif()\n")
+ 				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ext${LIB_NAME})\n")
+ 			endif()
+	  endforeach()
+
+
+		# managing dependencies
+		foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+			export_External_Component(IS_EXPORTING ${package} ${component} ${package} ${dep_component} ${CMAKE_BUILD_TYPE})
+			if(IS_EXPORTING)
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_INCLUDE_DIRECTORIES>)\n")
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_COMPILE_DEFINITIONS>)\n")
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_COMPILE_OPTIONS>)\n")
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${package}::${dep_component})\n")
+			else()
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${package}::${dep_component})\n")
+			endif()#exporting the linked libraries in any case
+		endforeach()
+
+		foreach(a_dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+			foreach(a_dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${a_dep_package}_COMPONENTS${VAR_SUFFIX})
+				export_External_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE})
+  			if(IS_EXPORTING)
+  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_INCLUDE_DIRECTORIES>)\n")
+  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_DEFINITIONS>)\n")
+  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_OPTIONS>)\n")
+  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_component})\n")
+  			else()
+  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_component})\n")
+  			endif()#exporting the linked libraries in any case
+		  endforeach()
+		endforeach()
+	endforeach()
+
+else()
+	#searching elements to make sure the package is well installed
+	foreach(component IN LISTS ${package}_COMPONENTS)
+		is_Built_Component(IS_BUILT ${package} ${component})
+		if(IS_BUILT)#searching for binaries
+			is_Executable_Component(IS_EXE ${package} ${component})
+			if(IS_EXE)
+				file(APPEND ${file_name} "if(NOT EXISTS \${PACKAGE_BIN_SEARCH_PATH}/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}})\n")
+				file(APPEND ${file_name} "  message(WARNING \"Package ${package} component ${component} : cannot find executable ${${package}_${component}_BINARY_NAME${VAR_SUFFIX}} in \${PACKAGE_BIN_SEARCH_PATH}\")\n")
+				file(APPEND ${file_name} "  return()\n")
+				file(APPEND ${file_name} "endif()\n")
+			else()
+				file(APPEND ${file_name} "if(NOT EXISTS \${PACKAGE_LIB_SEARCH_PATH}/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}})\n")
+				file(APPEND ${file_name} "  message(WARNING \"Package ${package} component ${component} : cannot find library ${${package}_${component}_BINARY_NAME${VAR_SUFFIX}} in \${PACKAGE_LIB_SEARCH_PATH}\")\n")
+				file(APPEND ${file_name} "  return()\n")
+				file(APPEND ${file_name} "endif()\n")
+			endif()
+		endif()
+		is_HeaderFree_Component(IS_HF ${package} ${component})
+		if(NOT IS_HF)#searching for headers
+			foreach(header_file IN LISTS ${package}_${component}_HEADERS)
+				file(APPEND ${file_name} "if(NOT EXISTS \${PACKAGE_INC_SEARCH_PATH}/${header_file})\n")
+				file(APPEND ${file_name} "  message(WARNING \"Package ${package} component ${component} : cannot find header ${header_file} in \${PACKAGE_INC_SEARCH_PATH}\")\n")
+				file(APPEND ${file_name} "  return()\n")
+				file(APPEND ${file_name} "endif()\n")
+			endforeach()
+		endif()
+
+		#create a local target for the component (only for libraries components)
+		set(target_created FALSE)
+		if(${package}_${component}_TYPE STREQUAL "MODULE")
+			set(target_created TRUE)
+			file(APPEND ${file_name} "add_library(${package}::${component} MODULE IMPORTED GLOBAL)\n")
+			file(APPEND ${file_name} "set_target_properties(${package}::${component} PROPERTIES IMPORTED_LOCATION \"\${PACKAGE_LIB_SEARCH_PATH}/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}}\"\n")
+		elseif(${package}_${component}_TYPE STREQUAL "SHARED")
+			set(target_created TRUE)
+			if(WIN32)
+				file(APPEND ${file_name} "add_library(${package}::${component} STATIC IMPORTED GLOBAL)\n")
+				string(REPLACE ".dll" ".lib" STATIC_NAME "${${package}_${component}_BINARY_NAME${VAR_SUFFIX}}")
+				set(LOCATION_RES "\${PACKAGE_LIB_SEARCH_PATH}/${STATIC_NAME}")
+			else()
+				file(APPEND ${file_name} "add_library(${package}::${component} SHARED IMPORTED GLOBAL)\n")
+				set(LOCATION_RES "\${PACKAGE_LIB_SEARCH_PATH}/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}}")
+			endif()
+			file(APPEND ${file_name} "set_target_properties(${package}::${component} PROPERTIES IMPORTED_LOCATION \"${LOCATION_RES}\")\n")
+			file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES \${PACKAGE_INC_SEARCH_PATH})\n")
+		elseif(${package}_${component}_TYPE STREQUAL "STATIC")
+			set(target_created TRUE)
+			file(APPEND ${file_name} "add_library(${package}::${component} STATIC IMPORTED GLOBAL)\n")
+			file(APPEND ${file_name} "set_target_properties(${package}::${component} PROPERTIES IMPORTED_LOCATION \"\${PACKAGE_LIB_SEARCH_PATH}/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}}\")\n")
+			file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES \${PACKAGE_INC_SEARCH_PATH})\n")
+		elseif(${package}_${component}_TYPE STREQUAL "HEADER")
+			set(target_created TRUE)
+			file(APPEND ${file_name} "add_library(${package}::${component} INTERFACE IMPORTED GLOBAL)\n")
+			file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES \${PACKAGE_INC_SEARCH_PATH})\n")
+			endif()
+
+		if(target_created)
+
+			generate_Package_CMake_Find_File_Language_Standard(${package} ${component} ${file_name})
+
+			list_Public_Links(LINKS SYSTEM_STATIC ${package} ${component} ${CMAKE_BUILD_TYPE})
+			list_Private_Links(PRIVATE_LINKS ${package} ${component} ${CMAKE_BUILD_TYPE})
+			list_Public_Definitions(DEFS ${package} ${component} ${CMAKE_BUILD_TYPE})
+			list_Public_Options(OPTS ${package} ${component} ${CMAKE_BUILD_TYPE})
+
+			#no need to manage library dirs as all libraries in a system install are supposed to be in folders that the loader/linker can find
+			foreach(def IN LISTS DEFS)
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS \"${def}\")\n")
+			endforeach()
+			foreach(opt IN LISTS OPTS)
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS \"${opt}\")\n")
+			endforeach()
+
+			foreach(link IN LISTS LINKS)
+				get_Link_Type(RES_TYPE ${link})
+				if(RES_TYPE STREQUAL OPTION) #this is an option => simply pass it to the link interface
+					file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${link})\n")
+				else()#this is a full path to a library
+					get_filename_component(LIB_NAME ${link} NAME)
+					file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ext${LIB_NAME})\n")
+				endif()
+			endforeach()
+			# managing private link time flags (private links are never put in the interface)#TODO check that
+			foreach(link IN LISTS PRIVATE_LINKS)
+				get_Link_Type(RES_TYPE ${link})
+				get_filename_component(LIB_NAME ${link} NAME)
+				if(RES_TYPE STREQUAL OPTION) #this is an option => simply pass it to the link interface
+					file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${link})\n")
+				else()#this is a full path to a library
+					file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ext${LIB_NAME})\n")
+				endif()
+			endforeach()
+
+			foreach(link IN LISTS SYSTEM_STATIC)#force the use of a system static link
+				if(WIN32)
+          string(REGEX REPLACE "^-l(.+)$" "\\1.lib" link_name ${link})
+        else()
+          string(REGEX REPLACE "^-l(.+)$" "lib\\1.a" link_name ${link})
+        endif()
+        file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${link_name})\n")
+			endforeach()
+
+			#now dealing with dependencies
+			foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+			  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+					export_External_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE})
+					if(IS_EXPORTING)
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_INCLUDE_DIRECTORIES>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_DEFINITIONS>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_OPTIONS>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_component})\n")
+					else()
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_component})\n")
+					endif()#exporting the linked libraries in any case
+			  endforeach()
+			endforeach()
+
+			#dealing with internal dependencies
+			foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+				export_Component(IS_EXPORTING ${package} ${component} ${package} ${dep_component} ${CMAKE_BUILD_TYPE})
+				is_HeaderFree_Component(DEP_IS_HF ${package} ${dep_component})
+				if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
+					if(IS_EXPORTING)
+						#use to this to be compatible with CMake >= 3.1
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_INCLUDE_DIRECTORIES>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_COMPILE_DEFINITIONS>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_COMPILE_OPTIONS>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${package}::${dep_component})\n")
+					else()
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${package}::${dep_component})\n")
+					endif()#exporting th
+				endif()
+			endforeach()
+
+			#dealing with package dependencies
+			foreach(dep_package IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
+				foreach(dep_component IN LISTS ${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+					export_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE})
+					is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
+					if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
+						if(IS_EXPORTING)
+							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_INCLUDE_DIRECTORIES>)\n")
+							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_DEFINITIONS>)\n")
+							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_OPTIONS>)\n")
+							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_component})\n")
+						else()
+							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_component})\n")
+						endif()
+					endif()
+				endforeach()
+			endforeach()
+		endif()
+	endforeach()
+endif()
+
+file(APPEND ${file_name} "# package as been found and all targets created\n")
+file(APPEND ${file_name} "set(${package}_FOUND TRUE)\n")
+
+endfunction(generate_Package_CMake_Find_File)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_Package_Content_In_Folder| replace:: ``install_Package_Content_In_Folder``
+#  .. _install_Package_Content_In_Folder:
+#
+#  install_Package_Content_In_Folder
+#  --------------------------------
+#
+#   .. command:: install_Package_Content_In_Folder(package version mode folder)
+#
+#   Install the content of a package into a given folder.
+#   The package build mode is defined with CMAKE_BUILD_TYPE and install folder by CMAKE_INSTALL_PREFIX.
+#
+#     :package: the name of the package.
+#
+function(install_Package_Content_In_Folder package)
+set(IS_SYSTEM_DEPENDENCY_WRAPPER FALSE)
+set(GENERATE_SYMLINKS TRUE)
+get_Package_Type(${package} PACK_TYPE)
+if(PACK_TYPE STREQUAL "EXTERNAL")
+	set(is_external TRUE)
+	set(package_workspace_path ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package}/${${package}_VERSION_STRING})
+	if(${package}_BUILT_OS_VARIANT)
+		set(IS_SYSTEM_DEPENDENCY_WRAPPER TRUE)
+	endif()
+	set(GENERATE_SYMLINKS FALSE)
+else()#it is a native package
+	set(is_external FALSE)
+	set(package_workspace_path ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${${package}_VERSION_STRING})
+endif()
+
+if(NOT IS_SYSTEM_DEPENDENCY_WRAPPER)#for OS variant version of external packages simply do not do anything
+	#1) copy the content of include, bin, lib and share/resources + in adequate folders (use share/pid/resources as new root to avoid troubles in system folders)
+	if(EXISTS ${package_workspace_path}/bin AND IS_DIRECTORY ${package_workspace_path}/bin)
+		file(GLOB binaries ${package_workspace_path}/bin/*)
+		file(COPY ${binaries} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
+	endif()
+	if(EXISTS ${package_workspace_path}/include AND IS_DIRECTORY ${package_workspace_path}/include)
+		if(is_external)#there is one inclusion level less in external packages
+			file(GLOB includes ${package_workspace_path}/include/*)
+		else()
+			file(GLOB includes ${package_workspace_path}/include/*/*)
+		endif()
+		file(COPY ${includes} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+	endif()
+	if(EXISTS ${package_workspace_path}/lib AND IS_DIRECTORY ${package_workspace_path}/lib)
+		set(libs_path ${package_workspace_path}/lib)
+		file(GLOB libs ${libs_path}/*.so* ${libs_path}/*.a ${libs_path}/*.la ${libs_path}/*.dylib ${libs_path}/*.dll ${libs_path}/*.lib)
+		file(COPY ${libs} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+	endif()
+	#management of contained runtime resources
+	if(PACK_TYPE STREQUAL "EXTERNAL")#runtime resources of external packages are really specific
+		set(ext_res)
+		foreach(component IN LISTS ${package}_COMPONENTS${VAR_SUFFIX})
+			if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})
+				list(APPEND ext_res ${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}})
+			endif()
+		endforeach()
+		if(ext_res)
+			resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH "${ext_res}" ${CMAKE_BUILD_TYPE})
+			if(COMPLETE_RESOURCES_PATH)
+				file(COPY ${COMPLETE_RESOURCES_PATH} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources)#putting all runtime resource directly in the folder pid_resources
+			endif()
+		endif()
+	else()#it is a native package
+		#runtime resource definition is specific to PID packages
+		if(EXISTS ${package_workspace_path}/share/resources AND IS_DIRECTORY ${package_workspace_path}/share/resources)
+			file(GLOB runres ${package_workspace_path}/share/resources/*)
+			if(runres)
+				file(COPY ${runres} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources)#putting all runtime resource directly in the folder pid_resources
+			endif()
+		endif()
+	endif()
+
+	if(GENERATE_SYMLINKS)
+		#generate adequate symlinks for runtime resources in .rpath (only for native packages)
+		foreach(component IN LISTS ${package}_COMPONENTS)
+			install_Component_Runtime_Symlinks_In_Folder(${package} ${component})
+		endforeach()
+	endif()
+endif()
+
+generate_Package_CMake_Find_File(${package} ${is_external} ${IS_SYSTEM_DEPENDENCY_WRAPPER})
+
+endfunction(install_Package_Content_In_Folder)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_Package_In_Folder| replace:: ``install_Package_In_Folder``
+#  .. _install_Package_In_Folder:
+#
+#  install_Package_In_Folder
+#  -------------------------
+#
+#   .. command:: install_Package_In_Folder(package version mode folder)
+#
+#   Install a package and all its dependencies into a given folder.
+#   The package build mode is defined with CMAKE_BUILD_TYPE and install folder by CMAKE_INSTALL_PREFIX.
+#
+#     :package: the name of the package.
+#
+function(install_Package_In_Folder package)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+if(${package}_PREPARE_RUNTIME${VAR_SUFFIX})#this is a guard to limit recursion -> the runtime has already been prepared
+	return()
+endif()
+
+if(${package}_DURING_PREPARE_INSTALL${VAR_SUFFIX})
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : cyclic dependencies between packages found : Package ${package} is undirectly requiring itself !")
+	return()
+endif()
+set(${package}_DURING_PREPARE_INSTALL${VAR_SUFFIX} TRUE)
+
+#installing packages dependency
+foreach(dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+	install_Package_In_Folder(${dep} ${${package}_VERSION_STRING})
+endforeach()
+
+foreach(dep IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})#only for native packages
+	install_Package_In_Folder(${dep} ${${package}_VERSION_STRING})
+endforeach()
+
+# 2) installing package's own content
+install_Package_Content_In_Folder(${package})
+
+set(${package}_DURING_PREPARE_INSTALL${VAR_SUFFIX} FALSE)
+set(${package}_PREPARE_INSTALL${VAR_SUFFIX} TRUE)
+endfunction(install_Package_In_Folder)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_Package_In_System| replace:: ``install_Package_In_System``
+#  .. _install_Package_In_System:
+#
+#  install_Package_In_System
+#  -------------------------
+#
+#   .. command:: install_Package_In_System(IS_INSTALLED platform package version system_folder)
+#
+#     Install a given package into a system folder. Will end in installing all the headers and binaries of package and its dependencies
+#     into adequate subfolders of the taregt system folder.
+#     The package build mode is defined with CMAKE_BUILD_TYPE and install folder by CMAKE_INSTALL_PREFIX.
+#
+#      :package: the name of the package to install in system.
+#
+#      :version: the version of the package to install.
+#
+#      :IS_INSTALLED: the output variable that is TRUE if the install process succeeded, FALSE otherwise
+#
+#
+function(install_Package_In_System IS_INSTALLED package version)
+
+	set(${IS_INSTALLED} FALSE PARENT_SCOPE)
+	set(BIN_PACKAGE_PATH ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version})
+	include(${BIN_PACKAGE_PATH}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+	#using the generated Use<package>-<version>.cmake file to get adequate version information about components
+	if(	res STREQUAL NOTFOUND)
+		message("[PID] ERROR : The binary package ${package} (version ${version}) cannot be found from the workspace path : ${WORKSPACE_DIR}")
+		return()
+	elseif(NOT DEFINED ${package}_COMPONENTS)#if there is no component defined for the package there is an error
+		message("[PID] INFO : binary package ${package} (version ${version}) has no component defined, this denote a bad state for this package.")
+		return()
+	endif()
+	include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
+	include(GNUInstallDirs)
+	if(NOT CMAKE_INSTALL_BINDIR)
+		set(CMAKE_INSTALL_BINDIR bin)
+	endif()
+	if(NOT CMAKE_INSTALL_LIBDIR)
+		set(CMAKE_INSTALL_LIBDIR lib)
+	endif()
+	if(CMAKE_LIBRARY_ARCHITECTURE)
+		set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/${CMAKE_LIBRARY_ARCHITECTURE})
+	else()
+		set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/${CMAKE_LIBRARY_ARCHITECTURE})
+	endif()
+	if(NOT CMAKE_INSTALL_INCLUDEDIR)
+		set(CMAKE_INSTALL_INCLUDEDIR include)
+	endif()
+	if(NOT CMAKE_INSTALL_DATAROOTDIR)
+		set(CMAKE_INSTALL_DATAROOTDIR share)
+	endif()
+	##################################################################
+	############### resolving all runtime dependencies ###############
+	##################################################################
+
+	#set the variable to be able to use Package Internal API
+	set(${package}_ROOT_DIR ${BIN_PACKAGE_PATH} CACHE INTERNAL "")
+
+	set(PROJECT_NAME workspace)
+	set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE)#do not install this must be done before
+	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+	set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
+	set(${package}_VERSION_STRING ${version} CACHE INTERNAL "")
+	resolve_Package_Dependencies(${package} ${CMAKE_BUILD_TYPE} TRUE) # finding all package dependencies and loading all adequate variables locally
+
+	#prepare creation of install subfolders
+	if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
+		file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR} )
+	endif()
+	if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+		file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR} )
+	endif()
+	if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources)
+		file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources)
+	endif()
+	if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_cmake)#where generated find scripts will be put
+		file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_cmake)
+	endif()
+	if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+		file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+	endif()
+	if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/.rpath)
+		file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/.rpath )
+	endif()
+	#create adequate global symlink to manage bruntime resources the good way
+	create_Symlink(${CMAKE_INSTALL_PREFIX}/.rpath ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/.rpath)#make pid-rpath capable of finding runtime resource folder whatever the relative position is
+	create_Symlink(${CMAKE_INSTALL_PREFIX}/.rpath ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/.rpath)#make pid-rpath capable of finding runtime resource folder whatever the relative position is
+
+	#now install everything
+	install_Package_In_Folder(${package})
+	set(${IS_INSTALLED} TRUE PARENT_SCOPE)
+endfunction(install_Package_In_System)
 ########################################################################
 ######################## Licenses management ###########################
 ########################################################################

@@ -308,7 +308,7 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
         list(APPEND to_symlink ${RES_PRIVATE_LINKS})
       endif()
       #3) getting direct and undirect runtime resources dependencies
-      get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
+      get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE)
       if(RES_RESOURCES)
         list(APPEND to_symlink ${RES_RESOURCES})
       endif()
@@ -324,7 +324,7 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
       set(to_symlink) # in case of an executable component add third party (undirect) links
       #no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
       #1) getting runtime resources of the component dependency
-      get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #resolve external runtime resources
+      get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE) #resolve external runtime resources
       if(INT_DEP_RUNTIME_RESOURCES)
         list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
       endif()
@@ -489,7 +489,7 @@ function(generate_Local_Component_Symlinks local_target local_dependency undirec
 			list(APPEND to_symlink ${RES_PRIVATE_LINKS})
 		endif()
 		#3) getting direct and undirect runtime resources dependencies
-		get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
+		get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE)
 		if(RES_RESOURCES)
 			list(APPEND to_symlink ${RES_RESOURCES})
 		endif()
@@ -505,7 +505,7 @@ function(generate_Local_Component_Symlinks local_target local_dependency undirec
 		set(to_symlink) # in case of an executable component add third party (undirect) links
 		#no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
 		#1) getting runtime resources of the component dependency
-		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #resolve external runtime resources
+		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE) #resolve external runtime resources
 		if(INT_DEP_RUNTIME_RESOURCES)
 			list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
 		endif()

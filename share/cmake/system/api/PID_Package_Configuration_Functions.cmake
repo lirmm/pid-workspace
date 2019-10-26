@@ -477,9 +477,11 @@ endfunction(manage_Language_Standards)
 #
 #     :mode: the build mode (Release or Debug) for the component.
 #
+#     :insystempath: if FALSE the function returns the full path to resources in workspace otherwise it returns the relative path of the resource in its corresponding system install folder (used for system install only).
+#
 #     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
 #
-function(get_External_Component_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
+function(get_External_Component_Runtime_Resources_Dependencies RES_RESOURCES package component mode insystempath)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 
@@ -491,14 +493,25 @@ if(RESOURCES_VAR)
 endif()
 
 if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
-	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
-  list(APPEND result ${COMPLETE_RESOURCES_PATH})#the direct path to the dependency (absolute) : will be the case anytime for external packages
+  if(insystempath)
+    resolve_External_Resources_Relative_Path(RELATIVE_RESOURCES_PATH "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
+    foreach(path IN LISTS RELATIVE_RESOURCES_PATH)
+      if(IS_ABSOLUTE ${path})#path to a system folder are absolute
+        list(APPEND result ${path})#the direct path to the dependency (absolute) : will be the case anytime for external packages
+      else()
+        list(APPEND result ${CMAKE_INSTALL_DIR}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources/${path})#external project runtime resources have been put into specific share/pid_resource install folder
+      endif()
+    endforeach()
+  else()
+  	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
+    list(APPEND result ${COMPLETE_RESOURCES_PATH})#the direct path to the dependency (absolute) : will be the case anytime for external packages
+  endif()
 endif()
 
 #check for tuntime resources in external component internal dependencies
 foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
   #recursion to get runtime resources
-  get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${package} ${dep_component} ${mode})
+  get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${package} ${dep_component} ${mode} ${insystempath})
   if(DEP_RESOURCES)
     list(APPEND result ${DEP_RESOURCES})
   endif()
@@ -508,7 +521,7 @@ endforeach()
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #recursion to get runtime resources
-    get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${dep_package} ${dep_component} ${mode})
+    get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${dep_package} ${dep_component} ${mode} ${insystempath})
     if(DEP_RESOURCES)
       list(APPEND result ${DEP_RESOURCES})
     endif()
@@ -543,19 +556,25 @@ endfunction(get_External_Component_Runtime_Resources_Dependencies)
 #
 #     :mode: the build mode (Release or Debug) for the component.
 #
+#     :insystempath: if FALSE the function returns the full path to resources in workspace otherwise it returns the relative path of the resource in its corresponding system install folder (used for system install only).
+#
 #     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
 #
-function(get_Bin_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
+function(get_Bin_Component_Direct_Runtime_Resources_Dependencies RES_RESOURCES package component mode insystempath)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported resources
 	resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH "${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}}" ${mode})
 	foreach(path IN LISTS COMPLETE_RESOURCES_PATH)
 		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
-			list(APPEND result ${${package}_ROOT_DIR}/share/resources/${path})#the path contained by the link
-		else() #absolute resource path coming from external or system dependencies
-			list(APPEND result ${path})#the direct path to the dependency (absolute) : will be the case anytime for external packages
-		endif()
+      if(insystempath)
+        list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources/${path})#targetting the system install folder instead of workspace folder
+      else()
+         list(APPEND result ${${package}_ROOT_DIR}/share/resources/${path})#the path contained by the link
+      endif()
+    else() #absolute resource path coming from external or system dependencies
+      list(APPEND result ${path})#the direct path to the dependency (absolute) : will be the case anytime for external packages
+    endif()
 	endforeach()
 endif()
 
@@ -563,7 +582,7 @@ endif()
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #recursion to get runtime resources
-    get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${dep_package} ${dep_component} ${mode})
+    get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${dep_package} ${dep_component} ${mode} ${insystempath})
     if(DEP_RESOURCES)
       list(APPEND result ${DEP_RESOURCES})
     endif()
@@ -582,7 +601,7 @@ endfunction(get_Bin_Component_Direct_Runtime_Resources_Dependencies)
 #  get_Bin_Component_Runtime_Resources_Dependencies
 #  ------------------------------------------------
 #
-#   .. command:: get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES package component mode)
+#   .. command:: get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES package component mode insystempath)
 #
 #   Get list of path to all resources (executables, modules, files and folders) directly or undirectly used by a component at runtime.
 #
@@ -592,9 +611,11 @@ endfunction(get_Bin_Component_Direct_Runtime_Resources_Dependencies)
 #
 #     :mode: the build mode (Release or Debug) for the component.
 #
+#     :insystempath: if FALSE the function returns the full path to resources in workspace otherwise it returns the relative path of the resource in its corresponding system install folder (used for system install only).
+#
 #     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
 #
-function(get_Bin_Component_Runtime_Resources_Dependencies RES_RESOURCES package component mode)
+function(get_Bin_Component_Runtime_Resources_Dependencies RES_RESOURCES package component mode insystempath)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 #optimization (compute things only one time)
@@ -605,22 +626,30 @@ if(RESOURCES_VAR)
 endif()
 
 
-get_Bin_Component_Direct_Runtime_Resources_Dependencies(DIRECT_RESOURCES ${package} ${component} ${mode})
+get_Bin_Component_Direct_Runtime_Resources_Dependencies(DIRECT_RESOURCES ${package} ${component} ${mode} ${insystempath})
 list(APPEND result ${DIRECT_RESOURCES})
 
 foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
 		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
 		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
+		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode} ${insystempath}) #resolve external runtime resources
 		if(INT_DEP_RUNTIME_RESOURCES)
 			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 		endif()
 		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
-		endif()
+      if(insystempath)
+        list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+      else()
+        list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+      endif()
+    elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
+      if(insystempath)
+        list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})
+      else()
+        list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+      endif()
+    endif()
 	endforeach()
 endforeach()
 
@@ -628,14 +657,22 @@ endforeach()
 foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
 	#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-	get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode})
+	get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode} ${insystempath})
 	if(INT_DEP_RUNTIME_RESOURCES)
 		list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 	endif()
 	if(${package}_${int_dep}_TYPE STREQUAL "MODULE")
-		list(APPEND result ${${package}_ROOT_DIR}/lib/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-	elseif(${package}_${int_dep}_TYPE STREQUAL "APP" OR ${package}_${int_dep}_TYPE STREQUAL "EXAMPLE")
-		list(APPEND result ${${package}_ROOT_DIR}/bin/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+    if(insystempath)
+      list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+    else()
+      list(APPEND result ${${package}_ROOT_DIR}/lib/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+    endif()
+  elseif(${package}_${int_dep}_TYPE STREQUAL "APP" OR ${package}_${int_dep}_TYPE STREQUAL "EXAMPLE")
+    if(insystempath)
+      list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})
+    else()
+      list(APPEND result ${${package}_ROOT_DIR}/bin/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+    endif()
 	endif()
 endforeach()
 
@@ -1492,7 +1529,7 @@ if(	${package}_${component}_TYPE STREQUAL "SHARED"
 	list(APPEND ALL_RUNTIME_DEPS ${RES_PRIVATE_LINKS})
 
 	#3) getting direct and undirect runtime resources dependencies
-	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${package} ${component} ${mode})
+	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${package} ${component} ${mode} FALSE)
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
 	create_Bin_Component_Symlinks(${package} ${component} ${mode} "${ALL_RUNTIME_DEPS}")
 
@@ -1672,7 +1709,7 @@ if(	${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED"
 	get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_PRIVATE_LINKS})
 	#3) getting direct and undirect runtime resources dependencies
-	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE})
+	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE} FALSE)
 	list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
 	# 3) in case of an executable component add third party (undirect) links
   if(third_party_libs)
@@ -1745,7 +1782,7 @@ endif()
 foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #recursion to get runtime resources
-    get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${dep_package} ${dep_component} ${mode})
+    get_External_Component_Runtime_Resources_Dependencies(DEP_RESOURCES ${dep_package} ${dep_component} ${mode} FALSE)
     if(DEP_RESOURCES)
       list(APPEND result ${DEP_RESOURCES})
     endif()
@@ -1790,7 +1827,7 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX}
 	foreach(dep_comp IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
 		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location)
 		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode}) #resolve external runtime resources
+		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode} FALSE) #resolve external runtime resources
 		if(INT_DEP_RUNTIME_RESOURCES)
 			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 		endif()

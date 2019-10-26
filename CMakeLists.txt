@@ -253,6 +253,19 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_OFFICIAL=\${official}
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+## upgrading the workspace
+add_custom_target(system_install
+COMMAND ${CMAKE_COMMAND} 	-DINSTALLED_PACKAGE=\${package}
+					-DTARGET_VERSION=\${version}
+					-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+					-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+					-DINSTALL_FOLDER=\${folder}
+					-DINSTALL_MODE=\${mode}
+					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-P ${CMAKE_SOURCE_DIR}/share/cmake/system/commands/Install_PID_Package.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 ## configuring the workspace
 add_custom_target(configure
 COMMAND ${CMAKE_COMMAND} -DTARGET_ENVIRONMENT=\${environment}
