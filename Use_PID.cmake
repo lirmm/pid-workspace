@@ -110,6 +110,8 @@ endif()
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1)#just to ensure that version of CMake tool used in external projects if high enough (supports language standards)
 
+set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")
+
 ########################################################################
 ############ all PID system path are put into the cmake path ###########
 ########################################################################
