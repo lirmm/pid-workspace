@@ -60,37 +60,42 @@ include(External_Definition NO_POLICY_SCOPE)
 function(reset_Local_Components_Info path mode)
 
   set(WORKSPACE_DIR ${path} CACHE INTERNAL "")
-  set(WORKSPACE_MODE ${mode} CACHE INTERNAL "")
   ########################################################################
   ############ default value for PID cache variables #####################
   ########################################################################
-  foreach(dep_package IN LISTS ${PROJECT_NAME}_PID_PACKAGES)
-  	get_Package_Type(${dep_package} PACK_TYPE)
-  	if(PACK_TYPE STREQUAL "EXTERNAL")
-  		reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE})
-  	else()
-  		reset_Native_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE})
-  	endif()
-  endforeach()
-  set(${PROJECT_NAME}_PID_PACKAGES CACHE INTERNAL "")#reset list of packages
-  reset_Packages_Finding_Variables()
-  reset_Temporary_Optimization_Variables(${mode})
+  if(WORKSPACE_MODE) # configuration as already ran
+    foreach(dep_package IN LISTS ${PROJECT_NAME}_PID_PACKAGES)
+      get_Package_Type(${dep_package} PACK_TYPE)
+      if(PACK_TYPE STREQUAL "EXTERNAL")
+        reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE})
+      else()
+        reset_Native_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE})
+      endif()
+    endforeach()
+    set(${PROJECT_NAME}_PID_PACKAGES CACHE INTERNAL "")#reset list of packages
+    set(current_mode ${CMAKE_BUILD_TYPE})
+    set(CMAKE_BUILD_TYPE ${WORKSPACE_MODE})
+    reset_Packages_Finding_Variables()
+    reset_Temporary_Optimization_Variables(${mode})
+    set(CMAKE_BUILD_TYPE ${current_mode})
+  endif()
   #resetting specific variables used to manage components defined locally
   foreach(comp IN LISTS DECLARED_LOCAL_COMPONENTS)
-  	set(${comp}_LOCAL_DEPENDENCIES CACHE INTERNAL "")
-  	set(${comp}_PID_DEPENDENCIES CACHE INTERNAL "")
+    set(${comp}_LOCAL_DEPENDENCIES CACHE INTERNAL "")
+    set(${comp}_PID_DEPENDENCIES CACHE INTERNAL "")
   endforeach()
   set(DECLARED_LOCAL_COMPONENTS CACHE INTERNAL "")
-
+  
   foreach(config IN LISTS DECLARED_SYSTEM_DEPENDENCIES)
-  	set(${config}_VERSION_STRING CACHE INTERNAL "")
-  	set(${config}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
-  	set(${config}_REQUIRED_VERSION_SYSTEM CACHE INTERNAL "")
+    set(${config}_VERSION_STRING CACHE INTERNAL "")
+    set(${config}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
+    set(${config}_REQUIRED_VERSION_SYSTEM CACHE INTERNAL "")
   endforeach()
   set(DECLARED_SYSTEM_DEPENDENCIES CACHE INTERNAL "")
   #do not manage automatic install since outside from a PID workspace
   #the install will be done through a global function targetting workspacz
   set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "")
+  set(WORKSPACE_MODE ${mode} CACHE INTERNAL "")
 endfunction(reset_Local_Components_Info)
 
 #.rst:
