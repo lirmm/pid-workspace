@@ -333,3 +333,55 @@ function(bind_Local_Component)
 	prepare_Local_Target_Configuration(${component} ${target_type})
 	configure_Local_Target_With_Local_Component(${component} ${target_type} ${BIND_LOCAL_COMPONENT_COMPONENT} ${WORKSPACE_MODE})
 endfunction(bind_Local_Component)
+
+#.rst:
+# .. ifmode:: user
+#
+#  .. |add_Runtime_Resources| replace:: ``add_Runtime_Resources``
+#  .. _add_Runtime_Resources:
+#
+#  add_Runtime_Resources
+#  -------------------
+#
+#  .. command:: add_Runtime_Resources(TARGET ... FILES ... DIRECTORIES)
+#
+#   Make the given files and directories discoverable by pid-rpath
+#
+#   .. rubric:: Required parameters
+#
+#   :TARGET <string>: the name of the local target
+#   :FILES <list of paths>: the list of files to install
+#   :DIRECTORIES <list of paths>: the list of directories to install
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      add_Runtime_Resources(TARGET my-target FILES my_config.yaml DIRECTORIES config params)
+#
+function(add_Runtime_Resources)
+	set(oneValueArgs TARGET)
+	set(multiValueArgs FILES DIRECTORIES)
+	cmake_parse_arguments(ADD_RUNTIME_RESOURCES "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+	if(NOT ADD_RUNTIME_RESOURCES_TARGET)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling add_Runtime_Resources, the target must be specified using the TARGET keyword.")
+	elseif(NOT ADD_RUNTIME_RESOURCES_FILES AND NOT ADD_RUNTIME_RESOURCES_DIRECTORIES)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling add_Runtime_Resources, runtime resources add must specified using the FILES and/or DIRECTORIES keywords.")
+	endif()
+
+	get_target_property(TARGET_NAME ${ADD_RUNTIME_RESOURCES_TARGET} OUTPUT_NAME)
+
+	if(ADD_RUNTIME_RESOURCES_FILES)
+		install(
+			FILES ${ADD_RUNTIME_RESOURCES_FILES}
+			DESTINATION ${CMAKE_INSTALL_PREFIX}/.rpath/${TARGET_NAME}
+		)
+	endif()
+	if(ADD_RUNTIME_RESOURCES_DIRECTORIES)
+		install(
+			DIRECTORY ${ADD_RUNTIME_RESOURCES_DIRECTORIES}
+			DESTINATION ${CMAKE_INSTALL_PREFIX}/.rpath/${TARGET_NAME}
+		)
+	endif()
+endfunction(add_Runtime_Resources)
