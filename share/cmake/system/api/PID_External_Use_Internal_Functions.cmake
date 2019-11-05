@@ -154,6 +154,9 @@ function(prepare_Local_Target_Configuration local_target target_type)
 
   #a dynamic binary need management of rpath
   get_target_property(local_target_name ${local_target} OUTPUT_NAME)
+  if(NOT local_target_name)
+    set(local_target_name ${local_target})
+  endif()
   if(target_type STREQUAL "EXE" OR target_type STREQUAL "LIB")
     get_property(therpath TARGET ${local_target} PROPERTY INSTALL_RPATH)
     if(NOT (thepath MATCHES "^.*\\.rpath/${local_target}"))#if the rpath has not already been set for this local component
@@ -195,6 +198,9 @@ endfunction(prepare_Local_Target_Configuration)
 function(configure_Local_Target_With_PID_Components local_target target_type components_list mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   get_target_property(local_target_name ${local_target} OUTPUT_NAME)
+  if(NOT local_target_name)
+    set(local_target_name ${local_target})
+  endif()
   if(target_type STREQUAL "EXE" OR target_type STREQUAL "LIB")
     if(APPLE)
       set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "@loader_path/.rpath/${local_target_name};@loader_path/../.rpath/${local_target_name};@loader_path/../lib;@loader_path") #the library targets a specific folder that contains symbolic links to used shared libraries

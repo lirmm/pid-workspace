@@ -370,18 +370,16 @@ function(add_Runtime_Resources)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling add_Runtime_Resources, runtime resources add must specified using the FILES and/or DIRECTORIES keywords.")
 	endif()
 
-	get_target_property(TARGET_NAME ${ADD_RUNTIME_RESOURCES_TARGET} OUTPUT_NAME)
-
 	if(ADD_RUNTIME_RESOURCES_FILES)
 		install(
 			FILES ${ADD_RUNTIME_RESOURCES_FILES}
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/.rpath/${TARGET_NAME}
+			DESTINATION ${CMAKE_INSTALL_PREFIX}/.rpath/$<TARGET_FILE_BASE_NAME:${ADD_RUNTIME_RESOURCES_TARGET}>
 		)
 	endif()
 	if(ADD_RUNTIME_RESOURCES_DIRECTORIES)
 		install(
 			DIRECTORY ${ADD_RUNTIME_RESOURCES_DIRECTORIES}
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/.rpath/${TARGET_NAME}
+			DESTINATION ${CMAKE_INSTALL_PREFIX}/.rpath/$<TARGET_FILE_BASE_NAME:${ADD_RUNTIME_RESOURCES_TARGET}>
 		)
 	endif()
 endfunction(add_Runtime_Resources)
