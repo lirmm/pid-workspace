@@ -2453,3 +2453,50 @@ if(NOT EXISTS ${CMAKE_SOURCE_DIR}/share/install/standlone_install.sh)
 endif()
 #TODO copy .bat file also when written
 endfunction(generate_Package_Install_Script)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Sanitizer_Flags_If_Available| replace:: ``add_Sanitizer_Flags_If_Available``
+#  .. _add_Sanitizer_Flags_If_Available:
+#
+#  add_Sanitizer_Flags_If_Available
+#  -------------------------------
+#
+#   .. command:: add_Sanitizer_Flags_If_Available(sanitizer compilier_options link_flags)
+#
+#     Check if the given sanitizer is available and, if so, append the compiler options and link flags to 
+#     compilier_options and link_flags in the parent scope
+#
+function(add_Sanitizer_Flags_If_Available sanitizer compilier_options link_flags)
+	include(CheckCXXCompilerFlag)
+
+	set(extra_compiler_options)
+
+	if(sanitizer STREQUAL ADDRESS)
+		set(SAN_FLAG -fsanitize=address)
+		set(extra_compiler_options -fno-omit-frame-pointer)
+	elseif(sanitizer STREQUAL LEAK)	
+		set(SAN_FLAG -fsanitize=leak)
+	elseif(sanitizer STREQUAL UNDEFINED)
+		set(SAN_FLAG -fsanitize=undefined)
+	else()
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : Unknown satinizer ${sanitizer}. Valid options are ADDRESS, LEAK and UNDEFINED.")
+	endif()
+
+	# Need to set LDFLAGS otherwise check_cxx_compilier_flag will fail
+	set(LDFLAGS_OLD $ENV{LDFLAGS})
+	set(ENV{LDFLAGS} "$ENV{LDFLAGS} ${SAN_FLAG}")
+	check_cxx_compiler_flag("${SAN_FLAG} ${extra_compiler_options}" HAS_${sanitizer}_SANITIZER)
+	if(HAS_${sanitizer}_SANITIZER)
+		list(APPEND ${compilier_options} ${SAN_FLAG} ${extra_compiler_options})
+		set(${compilier_options} ${${compilier_options}} PARENT_SCOPE)
+
+		list(APPEND ${link_flags} ${SAN_FLAG} ${extra_compiler_options})
+		set(${link_flags} ${${link_flags}} PARENT_SCOPE)
+	else()
+		message("[PID] WARNING : ${sanitizer} sanitizer activated but your compiler doesn't support it")
+	endif()
+	set(ENV{LDFLAGS} ${LDFLAGS_OLD})
+endfunction(add_Sanitizer_Flags_If_Available)

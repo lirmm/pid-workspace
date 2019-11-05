@@ -40,7 +40,7 @@ if [ "$PACKAGE_HAS_SITE" = true ] ; then
   # 1) generating the binary archives (if necessary),this step is separate from following to avoid including in binary archive unecessary developper infos
   if [ "$PACKAGE_BINARIES_PUBLISHED" = true ]; then
     echo "[PID] CI : generating the binary archive..."
-    cmake -DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=ON -DADDITIONNAL_DEBUG_INFO=OFF -DBUILD_AND_RUN_TESTS=OFF -DENABLE_PARALLEL_BUILD=ON -DBUILD_EXAMPLES=OFF -DBUILD_API_DOC=OFF -DBUILD_STATIC_CODE_CHECKING_REPORT=OFF -DGENERATE_INSTALLER=ON ..
+    cmake -DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=ON -DADDITIONNAL_DEBUG_INFO=OFF -DBUILD_AND_RUN_TESTS=OFF -DENABLE_SANITIZERS=OFF -DENABLE_PARALLEL_BUILD=ON -DBUILD_EXAMPLES=OFF -DBUILD_API_DOC=OFF -DBUILD_STATIC_CODE_CHECKING_REPORT=OFF -DGENERATE_INSTALLER=ON ..
     #build the package to get clean binary archives (without dev info)
     force=true cmake --build . --target build
     BIN_ARCH_RES=$?

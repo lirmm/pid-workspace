@@ -58,6 +58,7 @@ option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with 
 option(BUILD_DEPENDENT_PACKAGES "the build will leads to the rebuild of its dependent package that lies in the workspace as source packages" ON)
 option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 option(BUILD_STATIC_CODE_CHECKING_REPORT "running static checks on libraries and applications, if tests are run then additionnal static code checking tests are automatically added." OFF)
+option(ENABLE_SANITIZERS "Enable the sanitizers on the package's components" OFF)
 
 # dependent options
 include(CMakeDependentOption)
@@ -65,6 +66,12 @@ CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api docu
 CMAKE_DEPENDENT_OPTION(BUILD_TESTS_IN_DEBUG "Package build and run test in debug mode also" OFF "BUILD_AND_RUN_TESTS" OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_COVERAGE_REPORT "Package build a coverage report in debug mode" ON "BUILD_AND_RUN_TESTS;BUILD_TESTS_IN_DEBUG" OFF)
 CMAKE_DEPENDENT_OPTION(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF "REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD" OFF)
+CMAKE_DEPENDENT_OPTION(SANITIZE_ADDRESS "Enable the address sanitizer" ON "ENABLE_SANITIZERS" OFF)
+CMAKE_DEPENDENT_OPTION(SANITIZE_LEAK "Enable the memory leak sanitizer" ON "ENABLE_SANITIZERS" OFF)
+CMAKE_DEPENDENT_OPTION(SANITIZE_UNDEFINED "Enable the undefined behavior sanitizer" ON "ENABLE_SANITIZERS" OFF)
+if(NOT SANITIZE_ADDRESS AND NOT SANITIZE_LEAK AND NOT SANITIZE_UNDEFINED)
+  message("[PID] WARNING : ENABLE_SANITIZERS is ON but all sanitizers are OFF")
+endif()
 endmacro(declare_Native_Global_Cache_Options)
 
 #.rst:
