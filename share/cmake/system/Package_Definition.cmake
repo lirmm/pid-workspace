@@ -1116,19 +1116,19 @@ if(DECLARE_PID_COMPONENT_LOGGABLE)
   endif()
 endif()
 
-if(ENABLE_SANITIZERS)
-	if(SANITIZE_ADDRESS)
-		add_Sanitizer_Flags_If_Available(ADDRESS internal_compiler_options internal_link_flags)
-	endif()
-	if(SANITIZE_LEAK)
-		add_Sanitizer_Flags_If_Available(LEAK internal_compiler_options internal_link_flags)
-	endif()
-	if(SANITIZE_UNDEFINED)
-		add_Sanitizer_Flags_If_Available(UNDEFINED internal_compiler_options internal_link_flags)
-	endif()
-endif()
-
 if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
+	if(ENABLE_SANITIZERS)
+		if(SANITIZE_ADDRESS)
+			add_Sanitizer_Flags_If_Available(ADDRESS internal_compiler_options internal_link_flags)
+		endif()
+		if(SANITIZE_LEAK)
+			add_Sanitizer_Flags_If_Available(LEAK internal_compiler_options internal_link_flags)
+		endif()
+		if(SANITIZE_UNDEFINED)
+			add_Sanitizer_Flags_If_Available(UNDEFINED internal_compiler_options internal_link_flags)
+		endif()
+	endif()
+
 	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME}
 					${DECLARE_PID_COMPONENT_DIRECTORY}
 					${type}
@@ -1145,6 +1145,18 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 elseif(type MATCHES "PYTHON")#declare a python package
 	declare_Python_Component(${DECLARE_PID_COMPONENT_NAME} ${DECLARE_PID_COMPONENT_DIRECTORY})
 else() #it is a library
+	if(ENABLE_SANITIZERS)
+		if(SANITIZE_ADDRESS)
+			add_Sanitizer_Flags_If_Available(ADDRESS exported_compiler_options exported_link_flags)
+		endif()
+		if(SANITIZE_LEAK)
+			add_Sanitizer_Flags_If_Available(LEAK exported_compiler_options exported_link_flags)
+		endif()
+		if(SANITIZE_UNDEFINED)
+			add_Sanitizer_Flags_If_Available(UNDEFINED exported_compiler_options exported_link_flags)
+		endif()
+	endif()
+
 	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME}
 					"${DECLARE_PID_COMPONENT_DIRECTORY}"
 					${type}
