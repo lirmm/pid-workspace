@@ -1145,13 +1145,13 @@ elseif(type MATCHES "PYTHON")#declare a python package
 else() #it is a library
 	if(ENABLE_SANITIZERS)
 		if(SANITIZE_ADDRESS)
-			add_Sanitizer_Flags_If_Available(ADDRESS exported_compiler_options exported_link_flags)
+			add_Sanitizer_Flags_If_Available(ADDRESS internal_compiler_options exported_link_flags)
 		endif()
 		if(SANITIZE_LEAK)
-			add_Sanitizer_Flags_If_Available(LEAK exported_compiler_options exported_link_flags)
+			add_Sanitizer_Flags_If_Available(LEAK internal_compiler_options exported_link_flags)
 		endif()
 		if(SANITIZE_UNDEFINED)
-			add_Sanitizer_Flags_If_Available(UNDEFINED exported_compiler_options exported_link_flags)
+			add_Sanitizer_Flags_If_Available(UNDEFINED internal_compiler_options exported_link_flags)
 		endif()
 	endif()
 
