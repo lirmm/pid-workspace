@@ -648,35 +648,6 @@ endfunction(install_Runtime_Symlink)
 #
 # .. ifmode:: internal
 #
-#  .. |install_Additional_Binary_Symlink| replace:: ``install_Additional_Binary_Symlink``
-#  .. _install_Additional_Binary_Symlink:
-#
-#  install_Additional_Binary_Symlink
-#  ---------------------------------
-#
-#   .. command:: install_Additional_Binary_Symlink(component additional_install_folder)
-#
-#    Install symlink for a given component of current project if this component generates a binary.
-#
-#     :component: the name of the component to symlink.
-#
-#     :additional_install_folder: folder where to put symlinks (if a system folder need to use sudo when building).
-#
-function(install_Additional_Binary_Symlink component additional_install_folder)
-  get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM_OS} "${${PROJECT_NAME}_${component}_TYPE}")
-  set(component_install_name ${PREFIX}${component}${INSTALL_NAME_SUFFIX}${EXTENSION})
-  set(component_install_path ${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_INSTALL_LIB_PATH}/${component_install_name})
-  install(CODE "
-                    include(${WORKSPACE_DIR}/share/cmake/system/api/PID_Utils_Functions.cmake NO_POLICY_SCOPE)
-                    message(\"-- Installing: ${additional_install_folder}/${component_install_name} source is ${component_install_path}\")
-                    create_Symlink(${component_install_path} ${additional_install_folder}/${component_install_name})
-  ")# creating links "on the fly" when installing
-endfunction(install_Additional_Binary_Symlink)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |check_Directory_Exists| replace:: ``check_Directory_Exists``
 #  .. _check_Directory_Exists:
 #

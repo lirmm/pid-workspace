@@ -906,7 +906,6 @@ endmacro(build_PID_Package)
 #   :EXPORTED: This flag is used to export compilation options. Meaning, components that later refer to this component will be using these options.
 #   :SPECIAL_HEADERS: Specify specific files to export from the include folder of the component. Used for instance to export file without explicit header extension.
 #   :AUXILIARY_SOURCES: Specify auxiliary source folder or files to use when building the component. Used for instance to share private code between component of the project. May contain a list of path relative to project root dir.
-#   :INSTALL_SYMLINKS: Specify folders where to install symlinks pointing to the component binary.
 #   :DEPEND ...: Specify a list of components that the current component depends on. These components are not exported.
 #   :EXPORT ...: Specify a list of components that the current component depends on and exports.
 #   :LOGGABLE: specifies that the component generate logs using the pid-log system.
@@ -947,7 +946,7 @@ endmacro(PID_Component)
 macro(declare_PID_Component)
 set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON LOGGABLE)
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD DOCUMENTATION)
-set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES INSTALL_SYMLINKS DEPEND EXPORT)
+set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES DEPEND EXPORT)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1140,7 +1139,6 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 					"${internal_link_flags}"
 					"${runtime_resources}"
           "${DECLARE_PID_COMPONENT_AUXILIARY_SOURCES}"
-          "${DECLARE_PID_COMPONENT_INSTALL_SYMLINKS}"
           "${DECLARE_PID_COMPONENT_LOGGABLE}")
 elseif(type MATCHES "PYTHON")#declare a python package
 	declare_Python_Component(${DECLARE_PID_COMPONENT_NAME} ${DECLARE_PID_COMPONENT_DIRECTORY})
@@ -1172,7 +1170,6 @@ else() #it is a library
 					"${runtime_resources}"
           "${DECLARE_PID_COMPONENT_SPECIAL_HEADERS}"
           "${DECLARE_PID_COMPONENT_AUXILIARY_SOURCES}"
-          "${DECLARE_PID_COMPONENT_INSTALL_SYMLINKS}"
           "${DECLARE_PID_COMPONENT_LOGGABLE}")
 endif()
 if(DECLARE_PID_COMPONENT_DESCRIPTION)
