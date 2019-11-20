@@ -548,7 +548,7 @@ function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exporte
     	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .dll
     	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .lib
     else()
-        install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH})
+      install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH})
     endif()
 	#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
 	if(APPLE)
@@ -687,8 +687,8 @@ function(create_Executable_Target c_name c_standard cxx_standard sources interna
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
 	elseif(UNIX)
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
-    elseif(WIN32)
-        install(FILES ${WORKSPACE_DIR}/share/patterns/packages/run.bat DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH})
+  elseif(WIN32)#need to install a specific run.bat script file
+    install(FILES ${WORKSPACE_DIR}/share/patterns/packages/run.bat DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH})
 	endif()
 endfunction(create_Executable_Target)
 
@@ -1838,14 +1838,10 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 		target_compile_options(${component}${TARGET_SUFFIX} INTERFACE
 			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
 
-		target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_package}-${dep_component}${TARGET_SUFFIX})
-
 	else()#the library do not export anything
 		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "" "${comp_exp_defs}" "" "")
-		if(NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED")#static OR header lib always export private links
-			target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE  ${dep_package}-${dep_component}${TARGET_SUFFIX})
-		endif()
 	endif()
+  target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_package}-${dep_component}${TARGET_SUFFIX})
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Target)
 
@@ -1922,15 +1918,11 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 		target_compile_options(${component}${TARGET_SUFFIX} INTERFACE
 			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
 
-		target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_component}${TARGET_SUFFIX})
-
 	else()
 		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "" "${comp_exp_defs}" "" "")
-		if(NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "SHARED")#static OR header lib always export links
-			target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_component}${TARGET_SUFFIX})
-		endif()
 		#else non exported shared
 	endif()
+  target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_component}${TARGET_SUFFIX})
 
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Internal_Target)
@@ -1972,11 +1964,16 @@ function(bind_Imported_External_Component_Target package component dep_package d
 		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
 			INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
 		)
+    #exporting the linked libraries in any case
+    set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
+      INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+    )
+  else()#the library that IS the dependency may be a shared library so we need to say to cmake to manage it for linking executables
+    set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
+      IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+    )
 	endif()
-  #exporting the linked libraries in any case
-  set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-    INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
-  )
+
 	# set adequately language standard for component depending on the value of dep_component
 	resolve_Standard_Before_Linking(${package} ${component} ${dep_package} ${dep_component} ${mode} FALSE)
 endfunction(bind_Imported_External_Component_Target)
@@ -2025,8 +2022,12 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 			INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
 		)
 	else()
-		if(NOT ${package}_${component}_TYPE STREQUAL "SHARED")#static OR header lib always export links
-			set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
+		if(${package}_${component}_TYPE STREQUAL "SHARED")
+      set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
+				IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+			)
+    else()#static OR header lib always export links
+    	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
 				INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
 			)
 		endif()
@@ -2080,7 +2081,11 @@ if(IS_EXPORTING)
 		INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
 	)
 else()
-	if(NOT ${package}_${component}_TYPE STREQUAL "SHARED")#static OR header lib always export links
+  if(${package}_${component}_TYPE STREQUAL "SHARED")
+    set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
+      IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+    )
+  else()#static OR header lib always export links
 		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
 			INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
 		)

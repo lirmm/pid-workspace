@@ -85,7 +85,7 @@ function(reset_Local_Components_Info path mode)
     set(${comp}_PID_DEPENDENCIES CACHE INTERNAL "")
   endforeach()
   set(DECLARED_LOCAL_COMPONENTS CACHE INTERNAL "")
-  
+
   foreach(config IN LISTS DECLARED_SYSTEM_DEPENDENCIES)
     set(${config}_VERSION_STRING CACHE INTERNAL "")
     set(${config}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
@@ -264,54 +264,22 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
           )#setting the standard in use locally
       endif()
       #Note: there is no resolution of dependenct binary packages runtime dependencies (as for native package build) because resolution has already taken place after deployment of dependent packages.
-
-      #For executable we need to resolve everything before linking so that there is no more unresolved symbols
-      #equivalent with resolve_Source_Component_Linktime_Dependencies in native packages
-      if(target_type STREQUAL "EXE")
-        #need to resolve all symbols before linking executable so need to find undirect symbols => same as for native packages
-        # 1) searching each direct dependency in other packages
-        set(undirect_deps)
-        get_Package_Type(${RES_PACK} thetype)
-        if(thetype STREQUAL "EXTERNAL")
-          get_External_Component_Runtime_PrivateLinks_Dependencies(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} FALSE ${WORKSPACE_MODE})
-        else()
-          get_Native_Component_Runtime_PrivateLinks_Dependencies(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} FALSE ${WORKSPACE_MODE})
-        endif()
-        if(LIST_OF_DEP_SHARED)
-          set(undirect_deps ${LIST_OF_DEP_SHARED})
-        endif()
-
-        if(undirect_deps) #if true we need to be sure that the rpath-link does not contain some dirs of the rpath (otherwise the executable may not run)
-          list(REMOVE_DUPLICATES undirect_deps)
-          get_target_property(thelibs ${local_target} LINK_LIBRARIES)
-          set_target_properties(${local_target} PROPERTIES LINK_LIBRARIES "${thelibs};${undirect_deps}")
-        endif()
-      endif()
     endif()
+
     #now generating symlinks in install tree of the component (for exe and shared libs)
     #equivalent of resolve_Source_Component_Runtime_Dependencies in native packages
     if(target_type STREQUAL "EXE" OR target_type STREQUAL "LIB")
       ### STEP A: create symlinks in install tree
-      set(to_symlink ${undirect_deps}) # in case of an executable component add third party (undirect) links
-
+      #1) getting component binary
+      set(to_symlink)
       get_Binary_Location(LOCATION_RES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
       list(APPEND to_symlink ${LOCATION_RES})
-
-      #1) getting public shared links
-      get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
-      if(INT_DEP_RUNTIME_RESOURCES)
-        list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
-      endif()
-      #2) getting private shared links (undirect by definition)
-      get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
-      if(RES_PRIVATE_LINKS)
-        list(APPEND to_symlink ${RES_PRIVATE_LINKS})
-      endif()
-      #3) getting direct and undirect runtime resources dependencies
-      get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE)
-      if(RES_RESOURCES)
-        list(APPEND to_symlink ${RES_RESOURCES})
-      endif()
+      #2) getting runtime links
+      get_Bin_Component_Runtime_Links(DEP_LOCAL_RUNTIME_LINKS DEP_USING_RUNTIME_LINKS ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
+      list(APPEND to_symlink ${DEP_USING_RUNTIME_LINKS})#by definition the component is outside from current project so need to get its using links
+      #3) getting runtime resources
+      get_Bin_Component_Runtime_Resources(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE)
+      list(APPEND to_symlink ${RES_RESOURCES})
       #finally create install rule for the symlinks
       if(to_symlink)
         list(REMOVE_DUPLICATES to_symlink)
@@ -321,13 +289,11 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
       endforeach()
 
       ### STEP B: create symlinks in build tree (to allow the runtime resources PID mechanism to work at runtime)
-      set(to_symlink) # in case of an executable component add third party (undirect) links
+      set(to_symlink)
       #no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
       #1) getting runtime resources of the component dependency
-      get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE) #resolve external runtime resources
-      if(INT_DEP_RUNTIME_RESOURCES)
-        list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
-      endif()
+      get_Bin_Component_Runtime_Resources(DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE) #resolve external runtime resources
+      list(APPEND to_symlink ${DEP_RUNTIME_RESOURCES})
       #2) getting component as runtime ressources if it a pure runtime entity (dynamically loaded library)
       if(${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "MODULE")
         list(APPEND to_symlink ${${RES_PACK}_ROOT_DIR}/lib/${${RES_PACK}_${COMPONENT_NAME}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
@@ -375,14 +341,6 @@ function(configure_Local_Target_With_Local_Component local_target target_type de
 	append_Unique_In_Cache(${local_target}_LOCAL_DEPENDENCIES ${dependency})
 	target_link_libraries(${local_target} PUBLIC ${dependency})#linking as usual
 
-	if(target_type STREQUAL "EXE")#resolve global linking for executables !!
-		#need to resolve all symbols before linking executable so need to find undirect symbols => same as for native packages
-		get_Local_Private_Shared_Libraries(LIBS ${dependency} ${mode})
-		if(LIBS)
-			get_target_property(thelibs ${local_target} LINK_LIBRARIES)
-			set_target_properties(${local_target} PROPERTIES LINK_LIBRARIES "${thelibs};${LIBS}")
-		endif()
-	endif()
 	#then resolve symlinks required by PID components to find their runtime resources
 	if(target_type STREQUAL "EXE"
       OR target_type STREQUAL "LIB")
@@ -390,56 +348,6 @@ function(configure_Local_Target_With_Local_Component local_target target_type de
 	endif()
 endfunction(configure_Local_Target_With_Local_Component)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |get_Local_Private_Shared_Libraries| replace:: ``get_Local_Private_Shared_Libraries``
-#  .. _get_Local_Private_Shared_Libraries:
-#
-#  get_Local_Private_Shared_Libraries
-#  -----------------------------------
-#
-#   .. command:: get_Local_Private_Shared_Libraries(LIBS local_target mode)
-#
-#    Get the shared library not exported by a given local target (that is not a PID defined component).
-#
-#     :local_target: the name of the local target
-#
-#     :mode: the build mode for PID components to use
-#
-#     :LIBS: the output variable containing path to shared libraries
-#
-function(get_Local_Private_Shared_Libraries LIBS local_target mode)
-	set(${LIBS} PARENT_SCOPE)
-	set(undirect_deps)
-	#recursion on local components first
-	foreach(dep IN LISTS ${local_target}_LOCAL_DEPENDENCIES)
-		get_Local_Private_Shared_Libraries(DEP_LIBS ${dep})
-		if(DEP_LIBS)
-			list(APPEND undirect_deps ${DEP_LIBS})
-		endif()
-	endforeach()
-
-	#then direct dependencies to PID components
-	foreach(dep IN LISTS ${local_target}_PID_DEPENDENCIES)
-		extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
-    get_Package_Type(${RES_PACK} thetype)
-    if(thetype STREQUAL "EXTERNAL")
-      get_External_Component_Runtime_PrivateLinks_Dependencies(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} FALSE ${mode})
-    else()
-      get_Native_Component_Runtime_PrivateLinks_Dependencies(LIST_OF_DEP_SHARED ${RES_PACK} ${COMPONENT_NAME} FALSE ${mode})
-    endif()
-    if(LIST_OF_DEP_SHARED)
-			list(APPEND undirect_deps ${LIST_OF_DEP_SHARED})
-		endif()
-	endforeach()
-
-	if(undirect_deps)
-		list(REMOVE_DUPLICATES undirect_deps)
-	endif()
-	set(${LIBS} ${undirect_deps} PARENT_SCOPE)
-endfunction(get_Local_Private_Shared_Libraries)
 
 #.rst:
 #
@@ -478,21 +386,12 @@ function(generate_Local_Component_Symlinks local_target local_dependency undirec
 		get_Binary_Location(LOCATION_RES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
 		list(APPEND to_symlink ${LOCATION_RES})
 
-		#1) getting public shared links
-		get_Bin_Component_Runtime_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
-		if(INT_DEP_RUNTIME_RESOURCES)
-			list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
-		endif()
-		#2) getting private shared links (undirect by definition)
-		get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies(RES_PRIVATE_LINKS ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
-		if(RES_PRIVATE_LINKS)
-			list(APPEND to_symlink ${RES_PRIVATE_LINKS})
-		endif()
-		#3) getting direct and undirect runtime resources dependencies
-		get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE)
-		if(RES_RESOURCES)
-			list(APPEND to_symlink ${RES_RESOURCES})
-		endif()
+		#1) getting all runtime links
+		get_Bin_Component_Runtime_Links(DEP_LOCAL_LINKS DEP_USING_LINKS ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
+    list(APPEND to_symlink ${DEP_USING_LINKS})#always use using links since component belong to a PID package and current project is not the same by definition
+		#2) getting direct and undirect runtime resources dependencies
+		get_Bin_Component_Runtime_Resources(DEP_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE)
+    list(APPEND to_symlink ${DEP_RESOURCES})
 		#finally create install rule for the symlinks
 		if(to_symlink)
 			list(REMOVE_DUPLICATES to_symlink)
@@ -505,10 +404,8 @@ function(generate_Local_Component_Symlinks local_target local_dependency undirec
 		set(to_symlink) # in case of an executable component add third party (undirect) links
 		#no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
 		#1) getting runtime resources of the component dependency
-		get_Bin_Component_Runtime_Resources_Dependencies(INT_DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE) #resolve external runtime resources
-		if(INT_DEP_RUNTIME_RESOURCES)
-			list(APPEND to_symlink ${INT_DEP_RUNTIME_RESOURCES})
-		endif()
+		get_Bin_Component_Runtime_Resources(DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE) #resolve external runtime resources
+    list(APPEND to_symlink ${DEP_RUNTIME_RESOURCES})
 		#2) getting component as runtime ressources if it a pure runtime entity (dynamically loaded library)
 		if(${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "MODULE")
 			list(APPEND to_symlink ${${RES_PACK}_ROOT_DIR}/lib/${${RES_PACK}_${COMPONENT_NAME}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component

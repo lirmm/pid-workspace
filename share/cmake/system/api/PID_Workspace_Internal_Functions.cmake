@@ -2745,7 +2745,7 @@ endfunction(create_Component_Symlinks_In_System_Tree)
 #
 #   .. command:: install_Component_Runtime_Symlinks_In_Folder(package component)
 #
-#   Create symlinks to runtime resources directly or undrectly used by a component of the pakage in the install tree.
+#   Create symlinks to runtime resources directly or undirectly used by a component of the pakage in the install tree.
 #
 #     :package: the name of the package.
 #
@@ -2756,7 +2756,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 is_Runtime_Component(IS_RUNTIME ${package} ${component})
 if(	IS_RUNTIME )#symlinks need to be generated only for runtime components
 	#3) getting direct and undirect runtime resources dependencies
-	get_Bin_Component_Runtime_Resources_Dependencies(RES_RESOURCES ${package} ${component} ${CMAKE_BUILD_TYPE} TRUE)
+	get_Bin_Component_Runtime_Resources(RES_RESOURCES ${package} ${component} ${CMAKE_BUILD_TYPE} TRUE)
 	if(RES_RESOURCES)
     list(REMOVE_DUPLICATES RES_RESOURCES)
 		create_Component_Symlinks_In_System_Tree(${component} RES_RESOURCES)
@@ -2788,7 +2788,8 @@ endfunction(install_Component_Runtime_Symlinks_In_Folder)
 #
 function(generate_Package_CMake_Find_File_Language_Standard package component file_name)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-#Note: need to use target_compile_features to set the C and C++ standard on interface libraries => force the use of CMake 3.8 at minimum
+# Note: need to use target_compile_features to set the C and C++ standard on interface libraries
+# => force the use of CMake 3.8 at minimum
 
 if(${package}_${component}_C_STANDARD${VAR_SUFFIX})
 	if(${package}_${component}_C_STANDARD${VAR_SUFFIX} EQUAL 90)

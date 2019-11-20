@@ -932,18 +932,11 @@ foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 	endif()
 endforeach()
 
-#resolving link time dependencies for executables and modules
-foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
-	will_be_Built(RES ${component})
-	if(RES)
-		resolve_Source_Component_Linktime_Dependencies(${component} ${CMAKE_BUILD_TYPE} ${component}_THIRD_PARTY_LINKS)
-	endif()
-endforeach()
 #resolving runtime dependencies for install tree
 foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 	will_be_Built(RES ${component})
 	if(RES)
-		resolve_Source_Component_Runtime_Dependencies(${component} ${CMAKE_BUILD_TYPE} "${${component}_THIRD_PARTY_LINKS}")
+		resolve_Source_Component_Runtime_Dependencies(${component} ${CMAKE_BUILD_TYPE})
 	endif()
 endforeach()
 

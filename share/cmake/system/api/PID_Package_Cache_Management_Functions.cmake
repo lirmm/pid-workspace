@@ -2476,9 +2476,8 @@ endfunction(generate_Loggable_File)
 function(reset_Temporary_Optimization_Variables mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   foreach(comp IN LISTS TEMP_VARS${VAR_SUFFIX})
-  	unset(TEMP_${comp}_PRIVATE_LINKS_COMPLETE${VAR_SUFFIX} CACHE)
-  	unset(TEMP_${comp}_PRIVATE_LINKS_PARTIAL${VAR_SUFFIX} CACHE)
-  	unset(TEMP_${comp}_PUBLIC_LINKS${VAR_SUFFIX} CACHE)
+  	unset(TEMP_${comp}_LOCAL_RUNTIME_LINKS${VAR_SUFFIX} CACHE)
+  	unset(TEMP_${comp}_USING_RUNTIME_LINKS${VAR_SUFFIX} CACHE)
   	unset(TEMP_${comp}_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE)
   	unset(TEMP_${comp}_SOURCE_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE)
   endforeach()
@@ -2489,6 +2488,7 @@ function(reset_Temporary_Optimization_Variables mode)
   endforeach()
   unset(TEMP_CONFIGS${VAR_SUFFIX} CACHE)
 endfunction(reset_Temporary_Optimization_Variables)
+
 
 
 #.rst:
@@ -2557,90 +2557,46 @@ endfunction(check_Configuration_Temporary_Optimization_Variables)
 #
 # .. ifmode:: internal
 #
-#  .. |set_Private_Link_Temporary_Optimization_Variables| replace:: ``set_Private_Link_Temporary_Optimization_Variables``
-#  .. _set_Private_Link_Temporary_Optimization_Variables:
+#  .. |set_Runtime_Links_Temporary_Optimization_Variables| replace:: ``set_Runtime_Links_Temporary_Optimization_Variables``
+#  .. _set_Runtime_Links_Temporary_Optimization_Variables:
 #
-#  set_Private_Link_Temporary_Optimization_Variables
+#  set_Runtime_Links_Temporary_Optimization_Variables
 #  --------------------------------------------------
 #
-#   .. command:: set_Private_Link_Temporary_Optimization_Variables(package component mode complete list_of_links)
+#   .. command:: set_Runtime_Links_Temporary_Optimization_Variables(package component mode list_of_links)
 #
-#   set optimization variables used to check private links of a component.
+#   set optimization variables used to check runtime links of a component.
 #
 #     :package: the name of the package containing the component.
 #
 #     :component: the name of the component.
 #
-#     :mode: the current buid mode.
+#     :mode: the build mode.
 #
-#     :complete: if TRUE then the complete list of shared links of component is memorized, otherwise only its private links.
+#     :list_of_local_links_var: the parent scope variable containing the list of links to use to generate symplinks for package.
 #
-#     :list_of_links: the list of links to memorize.
+#     :list_of_using_links_var: the parent scope variable containing the list of links to use to generate symplinks for another package than package.
 #
-function(set_Private_Link_Temporary_Optimization_Variables package component mode complete list_of_links)
+function(set_Runtime_Links_Temporary_Optimization_Variables package component mode list_of_local_links_var list_of_using_links_var)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   append_Unique_In_Cache(TEMP_VARS${VAR_SUFFIX} ${package}_${component})
-  if(complete)
-    set(TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE${VAR_SUFFIX} "${list_of_links}" CACHE INTERNAL "")
-  else()
-    set(TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL${VAR_SUFFIX} "${list_of_links}" CACHE INTERNAL "")
-  endif()
-endfunction(set_Private_Link_Temporary_Optimization_Variables)
+  set(TEMP_${package}_${component}_LOCAL_RUNTIME_LINKS${VAR_SUFFIX} ${${list_of_local_links_var}} CACHE INTERNAL "")
+  set(TEMP_${package}_${component}_USING_RUNTIME_LINKS${VAR_SUFFIX} ${${list_of_using_links_var}} CACHE INTERNAL "")
+endfunction(set_Runtime_Links_Temporary_Optimization_Variables)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |check_Private_Link_Temporary_Optimization_Variables| replace:: ``check_Private_Link_Temporary_Optimization_Variables``
-#  .. _check_Private_Link_Temporary_Optimization_Variables:
+#  .. |check_Runtime_Links_Temporary_Optimization_Variables| replace:: ``check_Runtime_Links_Temporary_Optimization_Variables``
+#  .. _check_Runtime_Links_Temporary_Optimization_Variables:
 #
-#  check_Private_Link_Temporary_Optimization_Variables
+#  check_Runtime_Links_Temporary_Optimization_Variables
 #  ----------------------------------------------------
 #
-#   .. command:: check_Private_Link_Temporary_Optimization_Variables(LINKS package component mode complete)
+#   .. command:: check_Runtime_Links_Temporary_Optimization_Variables(LOCAL_LINKS USING_LINKS package component mode)
 #
-#   check whether private links of a component have already been computed.
-#
-#     :package: the name of the package containing the component.
-#
-#     :component: the name of the component.
-#
-#     :mode: the current buid mode.
-#
-#     :complete: if TRUE then the complete list of shared links of component is checked, otherwise only its private links.
-#
-#     :LINKS: the output variable that contains the variable containing the previous check resulting private links, or that is empty if no previous check.
-#
-function(check_Private_Link_Temporary_Optimization_Variables LINKS package component mode complete)
-  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-  if(complete)#same operation has already been performed no need to compute again
-    if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE${VAR_SUFFIX})
-      set(${LINKS} TEMP_${package}_${component}_PRIVATE_LINKS_COMPLETE${VAR_SUFFIX} PARENT_SCOPE)
-      return()
-    endif()
-  else()
-    if(DEFINED TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL${VAR_SUFFIX})
-      set(${LINKS} TEMP_${package}_${component}_PRIVATE_LINKS_PARTIAL${VAR_SUFFIX} PARENT_SCOPE)
-      return()
-    endif()
-  endif()
-  set(${LINKS} PARENT_SCOPE)
-endfunction(check_Private_Link_Temporary_Optimization_Variables)
-
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |set_Public_Links_Temporary_Optimization_Variables| replace:: ``set_Public_Links_Temporary_Optimization_Variables``
-#  .. _set_Public_Links_Temporary_Optimization_Variables:
-#
-#  set_Public_Links_Temporary_Optimization_Variables
-#  --------------------------------------------------
-#
-#   .. command:: set_Public_Links_Temporary_Optimization_Variables(package component mode list_of_links)
-#
-#   set optimization variables used to check public links of a component.
+#   check whether runtime links of a component have already been computed.
 #
 #     :package: the name of the package containing the component.
 #
@@ -2648,44 +2604,21 @@ endfunction(check_Private_Link_Temporary_Optimization_Variables)
 #
 #     :mode: the build mode.
 #
-#     :list_of_links: the list of links to memorize.
+#     :LOCAL_LINKS: the output variable that contains the variable containing the previous check resulting runtime local links, or that is empty if no previous check.
 #
-function(set_Public_Links_Temporary_Optimization_Variables package component mode list_of_links)
+#     :USING_LINKS: the output variable that contains the variable containing the previous check resulting runtime local links, or that is empty if no previous check.
+#
+function(check_Runtime_Links_Temporary_Optimization_Variables LOCAL_LINKS USING_LINKS package component mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-  append_Unique_In_Cache(TEMP_VARS${VAR_SUFFIX} ${package}_${component})
-  set(TEMP_${package}_${component}_PUBLIC_LINKS${VAR_SUFFIX} "${list_of_links}" CACHE INTERNAL "")
-endfunction(set_Public_Links_Temporary_Optimization_Variables)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |check_Public_Link_Temporary_Optimization_Variables| replace:: ``check_Public_Link_Temporary_Optimization_Variables``
-#  .. _check_Public_Link_Temporary_Optimization_Variables:
-#
-#  check_Public_Link_Temporary_Optimization_Variables
-#  --------------------------------------------------
-#
-#   .. command:: check_Public_Link_Temporary_Optimization_Variables(LINKS package component mode)
-#
-#   check whether public links of a component have already been computed.
-#
-#     :package: the name of the package containing the component.
-#
-#     :component: the name of the component.
-#
-#     :mode: the build mode.
-#
-#     :LINKS: the output variable that contains the variable containing the previous check resulting public links, or that is empty if no previous check.
-#
-function(check_Public_Link_Temporary_Optimization_Variables LINKS package component mode)
-  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-  if(DEFINED TEMP_${package}_${component}_PUBLIC_LINKS${VAR_SUFFIX})
-    set(${LINKS} TEMP_${package}_${component}_PUBLIC_LINKS${VAR_SUFFIX} PARENT_SCOPE)
+  if(DEFINED TEMP_${package}_${component}_LOCAL_RUNTIME_LINKS${VAR_SUFFIX}
+    AND DEFINED TEMP_${package}_${component}_USING_RUNTIME_LINKS${VAR_SUFFIX})
+    set(${LOCAL_LINKS} TEMP_${package}_${component}_LOCAL_RUNTIME_LINKS${VAR_SUFFIX} PARENT_SCOPE)
+    set(${USING_LINKS} TEMP_${package}_${component}_USING_RUNTIME_LINKS${VAR_SUFFIX} PARENT_SCOPE)
     return()
   endif()
-  set(${LINKS} PARENT_SCOPE)
-endfunction(check_Public_Link_Temporary_Optimization_Variables)
+  set(${LOCAL_LINKS} PARENT_SCOPE)
+  set(${USING_LINKS} PARENT_SCOPE)
+endfunction(check_Runtime_Links_Temporary_Optimization_Variables)
 
 
 #.rst:
