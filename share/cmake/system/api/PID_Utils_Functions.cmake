@@ -779,45 +779,230 @@ endfunction(parse_Version_Argument)
 #
 #     :RES_VERSION: the output variable containing the first version constraint detected, if any.
 #
-#     :RES_EXACT: the output variable that is TRUE if the first detected version constraint expression is set to EXACT, FALSE otherwise.
+#     :RES_CONSTRAINT: the output variable that contains the constraint type on version constraint expression (EXACT, TO or FROM), or that is empty if no additionnal constraint is given.
 #
 #     :RES_UNPARSED: the output variable containing the remaining expressions after the first version constraint expression detected.
 #
-function(parse_Package_Dependency_Version_Arguments args RES_VERSION RES_EXACT RES_UNPARSED)
-set(full_string)
-string(REGEX REPLACE "^(EXACT;VERSION;[^;]+;?).*$" "\\1" RES "${args}")
-if(RES STREQUAL "${args}")
-	string(REGEX REPLACE "^(VERSION;[^;]+;?).*$" "\\1" RES "${args}")
-	if(NOT full_string STREQUAL "${args}")#there is a match => there is a version specified
-		set(full_string ${RES})
-	endif()
-else()#there is a match => there is a version specified
-	set(full_string ${RES})
+function(parse_Package_Dependency_Version_Arguments args RES_VERSION RES_CONSTRAINT RES_UNPARSED)
+set(expr_string)
+if(args MATCHES "^;?(EXACT;|FROM;|TO;)?(VERSION;[^;]+)(;.+)?$")
+  set(expr_string ${CMAKE_MATCH_1}${CMAKE_MATCH_2})
+  set(${RES_UNPARSED} ${CMAKE_MATCH_3} PARENT_SCOPE)
 endif()
-if(full_string)#version expression has been found => parse it
-	set(options EXACT)
+if(expr_string)#version expression has been found => parse it
+	set(options EXACT FROM TO)
 	set(oneValueArg VERSION)
-	cmake_parse_arguments(PARSE_PACKAGE_ARGS "${options}" "${oneValueArg}" "" ${full_string})
+	cmake_parse_arguments(PARSE_PACKAGE_ARGS "${options}" "${oneValueArg}" "" ${expr_string})
 	set(${RES_VERSION} ${PARSE_PACKAGE_ARGS_VERSION} PARENT_SCOPE)
-	set(${RES_EXACT} ${PARSE_PACKAGE_ARGS_EXACT} PARENT_SCOPE)
-
-	#now extracting unparsed
-	string(LENGTH "${full_string}" PARSED_SIZE)
-	string(LENGTH "${args}" TOTAL_SIZE)
-
-	if(PARSED_SIZE EQUAL TOTAL_SIZE)
-		set(${RES_UNPARSED} PARENT_SCOPE)
-	else()
-		string(SUBSTRING "${args}" ${PARSED_SIZE} -1 UNPARSED_STRING)
-		set(${RES_UNPARSED} ${UNPARSED_STRING} PARENT_SCOPE)
-	endif()
-
+  if(PARSE_PACKAGE_ARGS_EXACT)
+	   set(${RES_CONSTRAINT} EXACT PARENT_SCOPE)
+  elseif(PARSE_PACKAGE_ARGS_FROM)
+    set(${RES_CONSTRAINT} FROM PARENT_SCOPE)
+  elseif(PARSE_PACKAGE_ARGS_TO)
+    set(${RES_CONSTRAINT} TO PARENT_SCOPE)
+  endif()
 else()
 	set(${RES_VERSION} PARENT_SCOPE)
-	set(${RES_EXACT} PARENT_SCOPE)
+	set(${RES_CONSTRAINT} PARENT_SCOPE)
 	set(${RES_UNPARSED} "${args}" PARENT_SCOPE)
 endif()
 endfunction(parse_Package_Dependency_Version_Arguments)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Versions_In_Interval| replace:: ``get_Versions_In_Interval``
+#  .. _get_Versions_In_Interval:
+#
+#  get_Versions_In_Interval
+#  ------------------------
+#
+#   .. command:: get_Versions_In_Interval(IN_VERSIONS all_versions from_version to_version)
+#
+#   From a list of versions collect all those that are in an interval [FROM...TO].
+#
+#     :IN_VERSIONS: the output variable containing the list of versions in the interval from...to.
+#
+#     :all_versions: parent_scope variable containing the list of all versions.
+#
+#     :from_version: lower bound of the version interval.
+#
+#     :to_version: upper bound of the version interval.
+#
+function(get_Versions_In_Interval IN_VERSIONS all_versions from_version to_version)
+set(temp_list ${${all_versions}})
+set(result_list)
+  foreach(element IN LISTS temp_list)
+    if(NOT element VERSION_LESS from_version
+    AND NOT element VERSION_GREATER to_version)
+      list(APPEND result_list ${element})
+    endif()
+  endforeach()
+set(${IN_VERSIONS} ${result_list} PARENT_SCOPE)
+endfunction(get_Versions_In_Interval)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |collect_Versions_From_Constraints| replace:: ``collect_Versions_From_Constraints``
+#  .. _collect_Versions_From_Constraints:
+#
+#  collect_Versions_From_Constraints
+#  ---------------------------------
+#
+#   .. command:: collect_Versions_From_Constraints(INTERVAL_VERSIONS package from_version to_version)
+#
+#   Collect all versions of a package that are in an interval [FROM...TO].
+#
+#     :INTERVAL_VERSIONS: the output variable containing the list of version in the interval from...to.
+#
+#     :package: name of the package for which versions in interval are computed.
+#
+#     :from_version: lower bound of the version interval.
+#
+#     :to_version: upper bound of the version interval.
+#
+function(collect_Versions_From_Constraints INTERVAL_VERSIONS package from_version to_version)
+get_Package_Type(${package} PACK_TYPE)
+
+#get the official known version (those published)
+if(NOT DEFINED ${package}_PID_KNOWN_VERSION)
+  set(DO_NOT_FIND_${package} TRUE)
+  include(${WORKSPACE_DIR}/share/cmake/find/Find${package}.cmake)
+  unset(DO_NOT_FIND_${package})
+endif()
+set(ALL_VERSIONS ${package_PID_KNOWN_VERSION})
+
+#then perform additionnal actions to get version that are only local (not published yet)
+set(MORE_VERSIONS)
+if(PACK_TYPE STREQUAL "EXTERNAL")
+  load_And_Configure_Wrapper(LOADED ${package})
+  if(LOADED)#wrapper available ... use its build file (maybe more up to date than published versions)
+    get_Wrapper_Known_Versions(MORE_VERSIONS ${package})
+  endif()
+else()#native package
+  #try to get all available versions directly from package repository (maybe more up to date than published ones)
+  get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
+  if(GIT_VERSIONS)
+    normalize_Version_Tags(MORE_VERSIONS "${GIT_VERSIONS}")
+  endif()
+endif()
+list(APPEND ALL_VERSIONS ${MORE_VERSIONS})
+if(ALL_VERSIONS)
+  list(REMOVE_DUPLICATES ALL_VERSIONS)
+endif()
+#some corrective actions before calling functions to get version in interval
+if(NOT from_version)
+  set(from_version 0.0.0)
+endif()
+if(NOT to_version)
+  set(to_version 99999.99999.99999)
+endif()
+get_Versions_In_Interval(IN_VERSIONS ALL_VERSIONS ${from_version} ${to_version})
+set(${INTERVAL_VERSIONS} ${IN_VERSIONS} PARENT_SCOPE)
+endfunction(collect_Versions_From_Constraints)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |parse_Package_Dependency_All_Version_Arguments| replace:: ``parse_Package_Dependency_All_Version_Arguments``
+#  .. _parse_Package_Dependency_All_Version_Arguments:
+#
+#  parse_Package_Dependency_All_Version_Arguments
+#  ----------------------------------------------
+#
+#   .. command:: parse_Package_Dependency_All_Version_Arguments(package all_args LIST_OF_VERSIONS EXACT_VERSIONS REMAINING_TO_PARSE PARSE_RESULT)
+#
+#    Parse an expression that contains version constraints and fill corresponding output variables.
+#
+#     :package: name of the package used in the current depenency.
+#
+#     :all_args: parent scope variable containing string arguments to parse and that may contains version constraints expressions.
+#
+#     :LIST_OF_VERSIONS: the output variable containing a list of version.
+#
+#     :EXACT_VERSIONS: the output variable containing the list of exact versions.
+#
+#     :REMAINING_TO_PARSE: the output variable containing the remaining expressions after all version constraint expressions have been parsed.
+#
+#     :PARSE_RESULT: the output variable that is TRUE if parsing is OK, FALSE otherwise.
+#
+function(parse_Package_Dependency_All_Version_Arguments package all_args LIST_OF_VERSIONS EXACT_VERSIONS REMAINING_TO_PARSE PARSE_RESULT)
+  set(TO_PARSE "${${all_args}}")
+  set(${LIST_OF_VERSIONS} PARENT_SCOPE)
+  set(${EXACT_VERSIONS} PARENT_SCOPE)
+  set(${PARSE_RESULT} TRUE PARENT_SCOPE)
+  set(all_versions)
+  set(all_exact_versions)
+  set(already_from)
+  set(already_to)
+	set(RES_VERSION TRUE)#initialize to TRUE to enter the loop
+	while(TO_PARSE AND RES_VERSION)
+		parse_Package_Dependency_Version_Arguments("${TO_PARSE}" RES_VERSION ADDITIONNAL_CONSTRAINT TO_PARSE)
+    if(RES_VERSION)
+      if(ADDITIONNAL_CONSTRAINT)
+        if(ADDITIONNAL_CONSTRAINT STREQUAL "EXACT")
+          if(already_from)
+            message("[PID] ERROR : an EXACT VERSION expression cannot be used just after a FROM VERSION expression.")
+            set(${PARSE_RESULT} FALSE PARENT_SCOPE)
+            return()
+          else()
+            list(APPEND all_versions ${RES_VERSION})
+            list(APPEND all_exact_versions ${RES_VERSION})#simply adding the version to the two returned lists
+          endif()
+        elseif(ADDITIONNAL_CONSTRAINT STREQUAL "FROM")
+          if(already_from)
+            message("[PID] ERROR : a FROM VERSION expression cannot be used just after another FROM VERSION expression.")
+            set(${PARSE_RESULT} FALSE PARENT_SCOPE)
+            return()
+          else()
+            set(already_from ${RES_VERSION})
+            set(already_to)#reset to (if necessay) because a new interval is defined
+          endif()
+        elseif(ADDITIONNAL_CONSTRAINT STREQUAL "TO")
+          if(already_from)#ok we face a normal from...to... expression
+            if(already_from VERSION_LESS already_to)
+              message("[PID] ERROR : a TO VERSION expression must specify a version that is greater or equal than its preceding FROM VERSION expression.")
+              set(${PARSE_RESULT} FALSE PARENT_SCOPE)
+              return()
+            endif()
+            collect_Versions_From_Constraints(RES_INTERVAL_VERSIONS ${package} "${already_from}" "${RES_VERSION}")
+            list(APPEND all_versions ${RES_INTERVAL_VERSIONS})
+            set(already_from)#reset from... memory to be capable of defining multiple intervals
+          elseif(already_to)
+            message("[PID] ERROR : a TO VERSION expression cannot be used just after another TO VERSION expression.")
+            set(${PARSE_RESULT} FALSE PARENT_SCOPE)
+            return()
+          else()#to... without from... means "any previous version to"
+            collect_Versions_From_Constraints(RES_INTERVAL_VERSIONS ${package} "" "${RES_VERSION}")
+            list(APPEND all_versions ${RES_INTERVAL_VERSIONS})
+            set(already_to ${RES_VERSION})
+          endif()
+        endif()
+      else()#simple version constraint
+        list(APPEND all_versions ${RES_VERSION})
+			endif()
+		elseif(ADDITIONNAL_CONSTRAINT)#additionnal constraint without VERSION => error !
+      message("[PID] ERROR : you cannot use EXACT, FROM or TO keywords without using the VERSION keyword (e.g. EXACT VERSION 3.0.2).")
+      set(${PARSE_RESULT} FALSE PARENT_SCOPE)
+      return()
+    endif()
+	endwhile()
+  #need to manage the "closing" of a FROM expression
+  if(already_from)# collect all known versions from the specified one
+    collect_Versions_From_Constraints(RES_INTERVAL_VERSIONS ${package} "${already_from}" "")
+    list(APPEND all_versions ${RES_INTERVAL_VERSIONS})
+  endif()
+  #produce the reply
+  set(${REMAINING_TO_PARSE} ${TO_PARSE} PARENT_SCOPE)
+  set(${LIST_OF_VERSIONS} ${all_versions} PARENT_SCOPE)
+  set(${EXACT_VERSIONS} ${all_exact_versions} PARENT_SCOPE)
+endfunction(parse_Package_Dependency_All_Version_Arguments)
+
 
 #.rst:
 #
@@ -842,18 +1027,10 @@ endfunction(parse_Package_Dependency_Version_Arguments)
 #     :PATCH: the output variable set to the value of version patch number.
 #
 function(get_Version_String_Numbers version_string MAJOR MINOR PATCH)
-if(version_string MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)\\.?(.*)$") # version string is well formed with major.minor.patch (at least) format
+if(version_string MATCHES "^([0-9]+)(\\.([0-9]+))?(\\.([0-9]+))?\\.?(.*)$") # version string is well formed with major.minor.patch (at least) format
 	set(${MAJOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
-	set(${MINOR} ${CMAKE_MATCH_2} PARENT_SCOPE)
-	set(${PATCH} ${CMAKE_MATCH_3} PARENT_SCOPE)
-elseif(version_string MATCHES "^([0-9]+)\\.([0-9]+)$") # version string is well formed with major.minor format
-	set(${MAJOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
-	set(${MINOR} ${CMAKE_MATCH_2} PARENT_SCOPE)
-	set(${PATCH} PARENT_SCOPE)
-elseif(version_string MATCHES "^([0-9]+)$") #only a major number ??
-	set(${MAJOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
-	set(${MINOR} PARENT_SCOPE)
-	set(${PATCH} PARENT_SCOPE)
+	set(${MINOR} ${CMAKE_MATCH_3} PARENT_SCOPE)
+	set(${PATCH} ${CMAKE_MATCH_5} PARENT_SCOPE)
 else() #not even a number
   set(${MAJOR} PARENT_SCOPE)
   set(${MINOR} PARENT_SCOPE)

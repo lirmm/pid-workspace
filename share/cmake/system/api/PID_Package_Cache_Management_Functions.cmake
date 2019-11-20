@@ -2179,23 +2179,26 @@ endfunction(generate_Info_File)
 #
 # .. ifmode:: internal
 #
-#  .. |generate_Find_File| replace:: ``generate_Find_File``
-#  .. _generate_Find_File:
+#  .. |generate_Package_Find_File| replace:: ``generate_Package_Find_File``
+#  .. _generate_Package_Find_File:
 #
-#  generate_Find_File
-#  ------------------
+#  generate_Package_Find_File
+#  --------------------------
 #
-#   .. command:: generate_Find_File()
+#   .. command:: generate_Package_Find_File()
 #
 #   Create and install the find file (Find<package>.cmake) for the currenlty defined package.
 #
-function(generate_Find_File)
+function(generate_Package_Find_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	# generating/installing the generic cmake find file for the package
+  get_Repository_Version_Tags(AVAILABLE_VERSIONS ${PROJECT_NAME})
+  normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}") #getting standard version number depending on value of tags
+  set(FIND_FILE_KNOWN_VERSIONS ${VERSION_NUMBERS})#only write release versions
 	configure_file(${WORKSPACE_DIR}/share/patterns/packages/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
 	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/share/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
 endif()
-endfunction(generate_Find_File)
+endfunction(generate_Package_Find_File)
 
 #.rst:
 #

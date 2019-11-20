@@ -1872,6 +1872,9 @@ endmacro(exitFindScript)
 #     :package: the name of the package.
 #
 macro(finding_Package package)
+if(DO_NOT_FIND_${package})#variable used to avoid finding package (if we only want to include the find file to get between known versions)
+  return()
+endif()
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 
 set(${package}_FOUND${VAR_SUFFIX} FALSE CACHE INTERNAL "")

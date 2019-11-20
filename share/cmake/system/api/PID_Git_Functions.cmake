@@ -288,13 +288,17 @@ function(get_Repository_Version_Tags AVAILABLE_VERSIONS package)
 set(${AVAILABLE_VERSIONS} PARENT_SCOPE)
 get_Package_Type(${package} PACK_TYPE)
 if(PACK_TYPE STREQUAL "NATIVE")
-  execute_process(COMMAND git tag -l v*
-    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-    OUTPUT_VARIABLE res)
+  if(EXISTS ${WORKSPACE_DIR}/packages/${package})
+    execute_process(COMMAND git tag -l v*
+      WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
+      OUTPUT_VARIABLE res)
+  endif()
 elseif(PACK_TYPE STREQUAL "EXTERNAL")
-  execute_process(COMMAND git tag -l v*
-    WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}
-    OUTPUT_VARIABLE res)
+  if(EXISTS ${WORKSPACE_DIR}/wrappers/${package})
+    execute_process(COMMAND git tag -l v*
+      WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}
+      OUTPUT_VARIABLE res)
+  endif()
 endif()
 
 if(NOT res) #no version available => BUG

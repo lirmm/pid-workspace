@@ -889,7 +889,7 @@ generate_Package_Readme_Files() # generating and putting into source directory t
 generate_Package_Git_Ignore_File() # generating and putting into source directory the .gitignore file removing all unwanted artifacts
 generate_Package_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Package_Install_Script() # generating and putting into source directory the file and folder containing stand alone install scripts
-generate_Find_File() # generating/installing the generic cmake find file for the package
+generate_Package_Find_File() # generating/installing the generic cmake find file for the package
 generate_Use_File() #generating the version specific cmake "use" file and the rule to install it
 generate_API() #generating the API documentation configuration file and the rule to launch doxygen and install the doc
 generate_Info_File() #generating a cmake "info" file containing info about source code of components
