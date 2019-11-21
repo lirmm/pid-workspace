@@ -2480,6 +2480,7 @@ function(reset_Temporary_Optimization_Variables mode)
   	unset(TEMP_${comp}_USING_RUNTIME_LINKS${VAR_SUFFIX} CACHE)
   	unset(TEMP_${comp}_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE)
   	unset(TEMP_${comp}_SOURCE_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE)
+    unset(TEMP_${comp}_MANAGED_RUNTIME${VAR_SUFFIX} CACHE)
   endforeach()
   unset(TEMP_VARS CACHE)
   foreach(config IN LISTS TEMP_CONFIGS${VAR_SUFFIX})
@@ -2620,6 +2621,63 @@ function(check_Runtime_Links_Temporary_Optimization_Variables LOCAL_LINKS USING_
   set(${USING_LINKS} PARENT_SCOPE)
 endfunction(check_Runtime_Links_Temporary_Optimization_Variables)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables| replace:: ``check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables``
+#  .. _check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables:
+#
+#  check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables
+#  ----------------------------------------------------------------------
+#
+#   .. command:: check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(ALREADY_MANAGED package component mode)
+#
+#    Check whether runtime dependencies of a component have already been managed (i.e. symlinks generated).
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode.
+#
+#     :ALREADY_MANAGED: the output variable that is TRUE is component has already been managed, false otherwise.
+#
+function(check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables ALREADY_MANAGED package component mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  if(TEMP_${package}_${component}_MANAGED_RUNTIME${VAR_SUFFIX})
+    set(${ALREADY_MANAGED} TRUE PARENT_SCOPE)
+    return()
+  endif()
+  set(${ALREADY_MANAGED} FALSE PARENT_SCOPE)
+endfunction(check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables| replace:: ``set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables``
+#  .. _set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables:
+#
+#  set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables
+#  --------------------------------------------------------------------
+#
+#   .. command:: set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(package component mode)
+#
+#    Set runtime dependencies resolution of a component as "managed".
+#
+#     :package: the name of the package containing the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the build mode.
+#
+function(set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables package component mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  append_Unique_In_Cache(TEMP_VARS${VAR_SUFFIX} ${package}_${component})
+  set(TEMP_${package}_${component}_MANAGED_RUNTIME${VAR_SUFFIX} TRUE CACHE INTERNAL "")
+endfunction(set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables)
 
 #.rst:
 #

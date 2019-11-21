@@ -1283,6 +1283,10 @@ if(NOT COMP_IS_RUNTIME)
 	return()
 endif()
 
+check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(MANAGED ${package} ${component} ${mode})
+if(MANAGED)#optimization
+  return()
+endif()
 # 1) getting all shared links dependencies
 get_Bin_Component_Runtime_Links(LOCAL_LINKS USING_LINKS ${package} ${component} ${mode})#suppose that findPackage has resolved everything
 list(APPEND ALL_RUNTIME_DEPS ${LOCAL_LINKS})#the binary package own runtime dependencies is resolved to need to consider only its local links dependencies
@@ -1316,6 +1320,7 @@ if(${package}_${component}_TYPE STREQUAL "MODULE"
 	list(APPEND ALL_RUNTIME_DEPS ${LOCATION_RES})
 	create_Bin_Component_Python_Symlinks(${package} ${component} ${mode} "${ALL_RUNTIME_DEPS}")
 endif()
+set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(${package} ${component} ${mode})
 endfunction(resolve_Bin_Component_Runtime_Dependencies)
 
 #.rst:
