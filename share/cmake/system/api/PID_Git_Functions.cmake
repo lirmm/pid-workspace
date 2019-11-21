@@ -379,16 +379,16 @@ endfunction(get_Repository_Current_Branch)
 #
 #     :repo: the path to the repository on filesystem
 #
-#     :BRANCH_NAME: the output variable that contains the current commit id
+#     :COMMIT_NAME: the output variable that contains the current commit id
 #
 function(get_Repository_Current_Commit COMMIT_NAME repo)
 set(${COMMIT_NAME} PARENT_SCOPE)
-execute_process(COMMAND git log -n 1
+execute_process(COMMAND git log --oneline -n 1
 		WORKING_DIRECTORY ${repo}
 		OUTPUT_VARIABLE last_log ERROR_QUIET)
-string(REPLACE "\n" ";" LINES "${last_log}")
-string(REGEX REPLACE "^commit ([^;]+).*$" "\\1" SHA1_ID ${LINES})
-set(${COMMIT_NAME} ${SHA1_ID} PARENT_SCOPE)
+set(SHA1_ID)
+string(REGEX REPLACE "^([^ \t]+)[ \t].*$" "\\1" SHA1_ID ${last_log})
+set(${COMMIT_NAME} ${SHA1_ID} PARENT_SCOPE)
 endfunction(get_Repository_Current_Commit)
 
 #.rst:
@@ -414,8 +414,9 @@ endfunction(get_Repository_Current_Commit)
 function(save_Repository_Context INITIAL_COMMIT SAVED_CONTENT package)
 get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${package})
 if(NOT BRANCH_NAME)
-	get_Repository_Current_Commit(COMMIT_NAME ${WORKSPACE_DIR}/packages/${package})
-	set(CONTEXT ${COMMIT_NAME})
+  set(COMMIT_ID)
+	get_Repository_Current_Commit(COMMIT_ID ${WORKSPACE_DIR}/packages/${package})
+	set(CONTEXT ${COMMIT_ID})
 else()
 	set(CONTEXT ${BRANCH_NAME})
 endif()
@@ -1146,8 +1147,8 @@ if(NOT CONNECTED)#no official remote (due to old package style or due to a misus
     test_Remote_Connection(CONNECTED ${package} official) #test again connection
 
     if(NOT CONNECTED)#remote currently in use is a bad one (migration took place and for any reason the official remote has been deleted)
-      include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake OPTIONAL RESULT_VARIABLE res)
-			if(res STREQUAL NOTFOUND) #reference not found, may mean the package has been removed
+      get_Package_Reference_Info(${package} REF_FILE_EXISTS REF_ADDR REF_PUB_ADDR)
+			if(NOT REF_FILE_EXISTS) #reference not found, may mean the package has been removed
         if(verbose)
           message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable, and ${package} is not referenced into workspace ! Please check that the package still exists or try upgrading your workspace.")
         endif()
@@ -1156,15 +1157,15 @@ if(NOT CONNECTED)#no official remote (due to old package style or due to a misus
 				return()
 			endif()
 			#from here the package is known and its reference related variables have been updated
-      if(NOT ${package}_ADDRESS)#Nothing more to do
+      if(NOT REF_ADDR)#Nothing more to do
         disconnect_Repository_Remote(${package} official) #remove the remote
         if(verbose)
           message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable, and ${package} reference defines no official address ! Please check that the package still exists or try upgrading your workspace.")
         endif()
         set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
 				return()
-      elseif (${package}_PUBLIC_ADDRESS STREQUAL PUBLIC_URL
-				    OR ${package}_ADDRESS STREQUAL URL)#OK so no problem detected but cannot interact with the remote repository
+      elseif (REF_PUB_ADDR STREQUAL PUBLIC_URL
+				    OR REF_ADDR STREQUAL URL)#OK so no problem detected but cannot interact with the remote repository
         #do not remove the remote as it is supposed to be the good one !
         if(verbose)
           message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable ! Please check your network connection.")
@@ -1173,7 +1174,7 @@ if(NOT CONNECTED)#no official remote (due to old package style or due to a misus
 				return()
 			else()
         #for now only updating the official remote address so that update can occur
-        reconnect_Repository_Remote(${package} ${${package}_ADDRESS} "${${package}_PUBLIC_ADDRESS}" official)
+        reconnect_Repository_Remote(${package} ${REF_ADDR} "${REF_PUB_ADDR}" official)
         test_Remote_Connection(CONNECTED ${package} official) #test again connection
         if(NOT CONNECTED)#cannot do mush more, even the referenced address is bad
           if(verbose)
@@ -1207,8 +1208,8 @@ elseif(URL) # official package is connected and has an official repository decla
         if(NOT CONNECTED)#remote defined by description is also a bad one
           # put again original addresses
           reconnect_Repository_Remote(${package} ${RES_OFFICIAL_PUSH} "${RES_OFFICIAL_FETCH}" official)
-          include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake OPTIONAL RESULT_VARIABLE res)
-    			if(res STREQUAL NOTFOUND) #reference not found, may mean the package has been removed
+          get_Package_Reference_Info(${package} REF_FILE_EXISTS REF_ADDR REF_PUB_ADDR)
+    			if(NOT REF_FILE_EXISTS) #reference not found, may mean the package has been removed
             if(verbose)
               message("[PID] WARNING : local package ${package} lost connection with its official remote : an unreachable official remote is defined, address from its description (${URL}) is no more reachable, and ${package} is not referenced into workspace ! Please check that the package still exists or try upgrading your workspace.")
             endif()
@@ -1217,14 +1218,14 @@ elseif(URL) # official package is connected and has an official repository decla
     				return()
     			endif()
     			#from here the package is known and its reference related variables have been updated
-          if(NOT ${package}_ADDRESS)#no address bound to the package
+          if(NOT REF_ADDR)#no address bound to the package
             if(verbose)
               message("[PID] WARNING : local package ${package} lost connection with its official remote : an unreachable official remote is defined, address from its description (${URL}) is no more reachable, and ${package} reference defines no official address ! Please check that the package still exists or try upgrading your workspace.")
             endif()
             set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
     				return()
-          elseif (${package}_PUBLIC_ADDRESS STREQUAL PUBLIC_URL
-    				    OR ${package}_ADDRESS STREQUAL URL)#OK so no problem detected but cannot interact with the remote repository
+          elseif (REF_PUB_ADDR STREQUAL PUBLIC_URL
+    				    OR REF_ADDR STREQUAL URL)#OK so no problem detected but cannot interact with the remote repository
             #do not remove the remote as it is supposed to be the good one !
             if(verbose)
               message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable ! Please check your network connection.")
@@ -1252,34 +1253,43 @@ elseif(URL) # official package is connected and has an official repository decla
         endif()
       endif()# else the current official remote in use is OK, so description is bad (migration occurred since last release) !
 	else()#package remotes are consistent, but this can be an old version of the package before a migration occurred
-		test_Remote_Connection(CONNECTED ${package} official)
-		if(NOT CONNECTED) #problem if not connected a migration occurred, we have to update everything
-			include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake OPTIONAL RESULT_VARIABLE res)
-			if(res STREQUAL NOTFOUND) #reference not found, may mean the package has been removed
-				message("[PID] WARNING : local package ${package} lost connection with its official remote and is not know into workspace ! Please check that the package still exists or try upgrading your workspace.")
-				set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
-				return()
-			endif()
-			#from here the package is known and its reference related variables have been updated
-			if (${package}_PUBLIC_ADDRESS STREQUAL RES_OFFICIAL_FETCH
-				OR ${package}_ADDRESS STREQUAL RES_OFFICIAL_PUSH)#OK so no problem detected but cannot interact with the remote repository
-				message("[PID] WARNING : local package ${package} lost connection with its official remote ! Please check your network connection.")
-				set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
-				return()
-			else() #for now only updating the official remote address so that update can occur
-        reconnect_Repository_Remote(${package} ${${package}_ADDRESS} "${${package}_PUBLIC_ADDRESS}" official)
-        test_Remote_Connection(CONNECTED ${package} official)
-        if(NOT CONNECTED) #problem if not connected a migration occurred but has not been referenced
-          disconnect_Repository_Remote(${package} official) #remove the remote
-          if(verbose)
-            message("[PID] WARNING : local package ${package} lost connection with its official remote : a migration of this package probably occurred but has not been referenced into workspace ! Please check that the package still exists, or try upgrading your workspace to get an up to date reference of this package.")
-          endif()
-          set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
-          return()
+    #use the reference file (if any) to deduce if a migration occured
+    get_Package_Reference_Info(${package} REF_FILE_EXISTS REF_ADDR REF_PUB_ADDR)
+    if(NOT REF_FILE_EXISTS) #reference not found, may mean the package has been removed OR has never been referenced (for instance pid tests packages)
+      #simply considering the result is OK since we have no clue
+      set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
+      return()
+    endif()
+    if (REF_PUB_ADDR STREQUAL RES_OFFICIAL_FETCH
+        AND REF_ADDR STREQUAL RES_OFFICIAL_PUSH)#OK no change from official => nothing to do
+      set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
+      return()
+    endif()
+    #from here we can deduce that a migration may have occurred for official repository
+    #2 possibilities: either the reference is invalid or this is the local package
+    test_Remote_Connection(CONNECTED ${package} official)#testing the connection to know if local package is OK
+		if(NOT CONNECTED) # if not connected a migration probably occurred OR network connection is lost !!
+	    reconnect_Repository_Remote(${package} ${REF_ADDR} "${REF_PUB_ADDR}" official)
+      test_Remote_Connection(CONNECTED ${package} official)
+      if(NOT CONNECTED) #problem if not connected a migration occurred but has not been referenced OR network connection is lost
+        disconnect_Repository_Remote(${package} official) #remove the remote
+        reconnect_Repository_Remote(${package} ${RES_OFFICIAL_PUSH} "${RES_OFFICIAL_FETCH}" official)#put back the previous one
+        if(verbose)
+          message("[PID] WARNING : local package ${package} lost connection with its official remote:\n- either a migration of this package probably occurred but has not been referenced into workspace ! Please check that the package still exists, or try upgrading your workspace to get an up to date reference of this package.\n- or there is currenlty no possible network connection with this package for an unknown reason.")
         endif()
-				# once the update will be done the official address in description should have changed accordingly
-			endif()
-		endif()
+        set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
+        return()
+      else()
+        if(verbose)
+          message("[PID] WARNING : local package ${package} lost connection with its official remote due to a migration of this package official repository ! Official remote address has been automatically changed.")
+        endif()
+        set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
+      endif()
+			# once the update will be done the official address in description should have changed accordingly
+    else()#in this situation the local address is good BUT the reference file is supposed to be invalid
+      message("[PID] WARNING : local package ${package} is connected with its official remote that is not the same address as the one used in its reference file. Either the reference file is not up to date (solution: upgrade your workspace then relaunch configuration) OR your package is connected to an old repository that is no more the official one (solution: use workspace connect command)")
+      set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
+    endif()
 	endif()
 # else No URL defined in description : maybe the remote has been defined on integration branch after previous release
 endif()
@@ -1942,11 +1952,9 @@ else()#there is a connected remote after adjustment
     endif()
   endif()
   #updating local repository from remote one
-  execute_process(COMMAND git fetch official
-                  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git fetch official --tags
                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
-  # #now checking that there is an origin remote
+  # now checking that there is an origin remote
   is_Package_Connected(CONNECTED ${PROJECT_NAME} origin)
   if(NOT CONNECTED) #the package has no origin remote => create it and set it to the same address as official
   	execute_process(COMMAND git remote add origin ${${PROJECT_NAME}_ADDRESS}

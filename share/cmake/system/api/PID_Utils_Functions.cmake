@@ -2894,6 +2894,79 @@ function(get_Package_Repository_Address package RES_URL RES_PUBLIC_URL)
 	endif()
 endfunction(get_Package_Repository_Address)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Package_Reference_Info| replace:: ``get_Package_Reference_Info``
+#  .. _get_Package_Reference_Info:
+#
+#  get_Package_Reference_Info
+#  --------------------------
+#
+#   .. command:: get_Package_Reference_Info(package REF_EXISTS RES_URL RES_PUBLIC_URL)
+#
+#    Getting info on a package from its reference file.
+#
+#     :package: the name of the target package.
+#
+#     :REF_EXISTS: the output variable that is TRUE if reference file exists, FALSE otherwise.
+#
+#     :RES_URL: the output variable that contains the current git URL of the pakage respository.
+#
+#     :RES_PUBLIC_URL: the output variable that contains the public counterpart URL of package respotiry.
+#
+function(get_Package_Reference_Info package REF_EXISTS RES_URL RES_PUBLIC_URL)
+
+  if(NOT EXIST )
+    set(${RES_URL} PARENT_SCOPE)
+    set(${RES_PUBLIC_URL} PARENT_SCOPE)
+    set(${REF_EXISTS} FALSE PARENT_SCOPE)
+    return()
+  endif()
+  set(${REF_EXISTS} TRUE PARENT_SCOPE)
+  #saving locally defined addresses
+  set(TEMP_${package}_MAIN_AUTHOR ${${package}_MAIN_AUTHOR})
+  set(TEMP_${package}_MAIN_INSTITUTION ${${package}_MAIN_INSTITUTION})
+  set(TEMP_${package}_CONTACT_MAIL ${${package}_CONTACT_MAIL})
+  set(TEMP_${package}_FRAMEWORK ${${package}_FRAMEWORK})
+  set(TEMP_${package}_SITE_ROOT_PAGE ${${package}_SITE_ROOT_PAGE})
+  set(TEMP_${package}_PROJECT_PAGE ${${package}_PROJECT_PAGE})
+  set(TEMP_${package}_SITE_GIT_ADDRESS ${${package}_SITE_GIT_ADDRESS})
+  set(TEMP_${package}_SITE_INTRODUCTION ${${package}_SITE_INTRODUCTION})
+  set(TEMP_${package}_AUTHORS_AND_INSTITUTIONS ${${package}_AUTHORS_AND_INSTITUTIONS})
+  set(TEMP_${package}_DESCRIPTION ${${package}_DESCRIPTION})
+  set(TEMP_${package}_YEARS ${${package}_YEARS})
+  set(TEMP_${package}_LICENSE ${${package}_LICENSE})
+  set(TEMP_${package}_ADDRESS ${${package}_ADDRESS})
+  set(TEMP_${package}_PUBLIC_ADDRESS ${${package}_PUBLIC_ADDRESS})
+  set(TEMP_${package}_CATEGORIES ${${package}_CATEGORIES})
+  set(TEMP_${package}_REFERENCES ${${package}_REFERENCES})
+  #then include (will modify these cache variables) and extract adequate values
+  include(${WORKSPACE_DIR}/share/cmake/references/Refer${package}.cmake)
+  set(${RES_URL} ${${package}_ADDRESS} PARENT_SCOPE)
+  set(${RES_PUBLIC_URL} ${${package}_PUBLIC_ADDRESS} PARENT_SCOPE)
+  #finally give to the variables their initial value
+  set(${package}_MAIN_AUTHOR ${TEMP_${package}_MAIN_AUTHOR} CACHE INTERNAL "")
+  set(${package}_MAIN_INSTITUTION ${TEMP_${package}_MAIN_INSTITUTION} CACHE INTERNAL "")
+  set(${package}_CONTACT_MAIL ${TEMP_${package}_CONTACT_MAIL} CACHE INTERNAL "")
+  set(${package}_FRAMEWORK ${TEMP_${package}_FRAMEWORK} CACHE INTERNAL "")
+  set(${package}_SITE_ROOT_PAGE ${TEMP_${package}_SITE_ROOT_PAGE} CACHE INTERNAL "")
+  set(${package}_PROJECT_PAGE ${TEMP_${package}_PROJECT_PAGE} CACHE INTERNAL "")
+  set(${package}_SITE_GIT_ADDRESS ${TEMP_${package}_SITE_GIT_ADDRESS} CACHE INTERNAL "")
+  set(${package}_SITE_INTRODUCTION ${TEMP_${package}_SITE_INTRODUCTION} CACHE INTERNAL "")
+  set(${package}_AUTHORS_AND_INSTITUTIONS ${TEMP_${package}_AUTHORS_AND_INSTITUTIONS} CACHE INTERNAL "")
+  set(${package}_DESCRIPTION ${TEMP_${package}_DESCRIPTION} CACHE INTERNAL "")
+  set(${package}_YEARS ${TEMP_${package}_YEARS} CACHE INTERNAL "")
+  set(${package}_LICENSE ${TEMP_${package}_LICENSE} CACHE INTERNAL "")
+  set(${package}_ADDRESS ${TEMP_${package}_ADDRESS} CACHE INTERNAL "")
+  set(${package}_PUBLIC_ADDRESS ${TEMP_${package}_PUBLIC_ADDRESS} CACHE INTERNAL "")
+  set(${package}_CATEGORIES ${TEMP_${package}_CATEGORIES} CACHE INTERNAL "")
+  set(${package}_REFERENCES ${TEMP_${package}_REFERENCES} CACHE INTERNAL "")
+endfunction(get_Package_Reference_Info)
+
+
 #.rst:
 #
 # .. ifmode:: internal
