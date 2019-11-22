@@ -1931,7 +1931,7 @@ if(EXIST)
 				set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
 				set(${package}_REQUIRED_VERSION_EXACT "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" CACHE INTERNAL "")
 			else()
-				set(${package}_ALL_REQUIRED_VERSIONS ${${package}_ALL_REQUIRED_VERSIONS} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" CACHE INTERNAL "")
+				append_Unique_In_Cache(${package}_ALL_REQUIRED_VERSIONS "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" CACHE INTERNAL "")
 			endif()
 		endif()
 
@@ -2076,7 +2076,7 @@ if(EXIST)
           set(${package}_REQUIRED_VERSION_SYSTEM FALSE CACHE INTERNAL "")
         endif()
       else()
-				set(${package}_ALL_REQUIRED_VERSIONS ${${package}_ALL_REQUIRED_VERSIONS} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" CACHE INTERNAL "")
+				append_Unique_In_Cache(${package}_ALL_REQUIRED_VERSIONS "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}")
 			endif()
 		endif()
 	else()#no adequate version found

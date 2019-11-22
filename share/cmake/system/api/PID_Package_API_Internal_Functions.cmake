@@ -1744,7 +1744,7 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 
 	# 4) resolve the package dependency according to memorized internal variables
 	if(NOT unused) #if the dependency is really used (in case it were optional and unselected by user)
-		if(NOT ${dep_package}_FOUND${USE_MODE_SUFFIX})#testing if the package has been previously found or not
+		if(NOT ${dep_package}_FOUND${USE_MODE_SUFFIX})#testing if the package has been previously found locally or not
 			#package has never been found by a direct call to find_package in root CMakeLists.txt
 			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
 			if(NOT IS_COMPATIBLE)
@@ -1758,20 +1758,15 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} coming from package ${PROJECT_NAME}. ${message_versions}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
 				return()
 			elseif(${dep_package}_FOUND${USE_MODE_SUFFIX})
-				add_Chosen_Package_Version_In_Current_Process(${dep_package})
+				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#do not propagate choice if none made
+					add_Chosen_Package_Version_In_Current_Process(${dep_package})
+				endif()
+			endif()#if not found after resolution simply wait it to be installed automatically
+		else()#if found before this call
+			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#do not propagate choice if none made
+				add_Chosen_Package_Version_In_Current_Process(${dep_package})#FOR compatibility: report the choice made to global build process
 			endif()
-		else()#if was found prior to this call
-			add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
 		endif()#otherwise nothing more to do
-		# here the version has been resolved, we need to manage the specific case where no version constraint was specified
-		# indeed, the use file should always contain a version constraint because the binary in itselt cannot adapt to different version
-		# it can only use the version used to build it (or any other compatible version)
-		if(NOT list_of_possible_versions AND NOT REQUIRED_VERSION AND ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
-			#no choice for a given version has been made already, so now memorize this choice to write it later in use file
-			if(${dep_package}_VERSION_STRING)#simply use the version that has been found
-				add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION_STRING}" FALSE "${list_of_components}") #set the dependency
-			endif()
-		endif()
 	endif()
 endfunction(declare_Native_Package_Dependency)
 
@@ -1926,9 +1921,9 @@ endif()
 if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 	set(unused TRUE)
 elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")#the system version has been selected => need to perform specific actions
-		#need to check the equivalent OS configuration to get the OS installed version
-	check_PID_Platform(CONFIGURATION ${dep_package})
-	if(NOT ${dep_package}_VERSION)
+	#need to check the equivalent OS configuration to get the OS installed version
+	check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${dep_package}" ${CMAKE_BUILD_TYPE})
+	if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
 		return()
@@ -1961,19 +1956,13 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} coming from package ${PROJECT_NAME}. ${message_versions}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
 			return()
 		elseif(${dep_package}_FOUND${USE_MODE_SUFFIX})#dependency has been found in workspace after resolution
-			add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
+			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
+				add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
+			endif()
 		endif()
 	else()#if was found prior to this call
-		add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
-	endif()
-
-	# here the version has been resolved, we need to manage the specific case where no version constraint was specified
-	# indeed, the use file should always contain a version constraint because the binary in itselt cannot adapt to different version
-	# it can only use the version used to build it (or any other compatible version)
-	if(NOT list_of_possible_versions AND NOT REQUIRED_VERSION AND ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
-		#no choice for a given version has been made already, so now memorize this choice to write it later in use file
-		if(${dep_package}_VERSION_STRING)#simply use the version that has been found
-			add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION_STRING}" FALSE FALSE "${list_of_components}") #set the dependency
+		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
+			add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
 		endif()
 	endif()
 endif()

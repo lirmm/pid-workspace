@@ -1967,23 +1967,13 @@ collect_Local_Exported_Dependencies(NATIVE_DEPS EXTERNAL_DEPS ${package} ${build
 if(EXTERNAL_DEPS)
   file(APPEND ${file} "#### declaration of external package dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 
-  #getting the list of all direct or undirect dependencies
   foreach(a_ext_dep IN LISTS EXTERNAL_DEPS)
     string(REPLACE "," ";" dep_spec ${a_ext_dep})
     list(GET dep_spec 0 DEP_NAME)
     list(GET dep_spec 1 DEP_VERSION)
     list(GET dep_spec 2 DEP_EXACT)
     list(GET dep_spec 3 DEP_SYSTEM)
-    list(APPEND USED_DEPS ${DEP_NAME})
-  endforeach()
-  file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${USED_DEPS} CACHE INTERNAL \"\")\n")
-
-  foreach(a_ext_dep IN LISTS EXTERNAL_DEPS)
-    string(REPLACE "," ";" dep_spec ${a_ext_dep})
-    list(GET dep_spec 0 DEP_NAME)
-    list(GET dep_spec 1 DEP_VERSION)
-    list(GET dep_spec 2 DEP_EXACT)
-    list(GET dep_spec 3 DEP_SYSTEM)
+    list(APPEND USED_DEPS ${DEP_NAME})#getting the list of all direct or undirect dependencies
 
     file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_VERSION${MODE_SUFFIX} ${DEP_VERSION} CACHE INTERNAL \"\")\n")
     file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_VERSION_EXACT${MODE_SUFFIX} ${DEP_EXACT} CACHE INTERNAL \"\")\n")
@@ -1991,6 +1981,8 @@ if(EXTERNAL_DEPS)
     #component are only defined for direct dependencies, if any defined for such a dependency
     file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_COMPONENTS${MODE_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
   endforeach()
+
+  file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${USED_DEPS} CACHE INTERNAL \"\")\n")
 endif()
 
 # 2) native package dependencies
@@ -2005,21 +1997,14 @@ if(NATIVE_DEPS)
     list(GET dep_spec 2 DEP_EXACT)
     list(GET dep_spec 3 DEP_SYSTEM)
     list(APPEND USED_DEPS ${DEP_NAME})
-  endforeach()
-  file(APPEND ${file} "set(${package}_DEPENDENCIES${MODE_SUFFIX} ${USED_DEPS} CACHE INTERNAL \"\")\n")
-
-  foreach(a_nat_dep IN LISTS NATIVE_DEPS)
-    string(REPLACE "," ";" dep_spec ${a_nat_dep})
-    list(GET dep_spec 0 DEP_NAME)
-    list(GET dep_spec 1 DEP_VERSION)
-    list(GET dep_spec 2 DEP_EXACT)
-    list(GET dep_spec 3 DEP_SYSTEM)
 
   	file(APPEND ${file} "set(${package}_DEPENDENCY_${DEP_NAME}_VERSION${MODE_SUFFIX} ${DEP_VERSION} CACHE INTERNAL \"\")\n")
     file(APPEND ${file} "set(${package}_DEPENDENCY_${DEP_NAME}_VERSION_EXACT${MODE_SUFFIX} ${DEP_EXACT} CACHE INTERNAL \"\")\n")
     #component are only defined for direct dependencies, if any defined for such a dependency
   	file(APPEND ${file} "set(${package}_DEPENDENCY_${DEP_NAME}_COMPONENTS${MODE_SUFFIX} ${${package}_DEPENDENCY_${DEP_NAME}_COMPONENTS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
   endforeach()
+
+  file(APPEND ${file} "set(${package}_DEPENDENCIES${MODE_SUFFIX} ${USED_DEPS} CACHE INTERNAL \"\")\n")
 endif()
 
 # 3) internal+external components specifications
