@@ -29,8 +29,10 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/share/cmake/system/commands)
 
 include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 
 include(CMakeParseArguments)
+
 ##################################################################################################
 #################### API to ease the description of system configurations ########################
 ##################################################################################################
@@ -153,6 +155,77 @@ else()
 endif()
 endmacro(execute_OS_Configuration_Command)
 
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |find_Library_In_Linker_Order| replace:: ``find_Library_In_Linker_Order``
+#  .. _find_Library_In_Linker_Order:
+#
+#  find_Library_In_Linker_Order
+#  ----------------------------
+#
+#   .. command:: find_Library_In_Linker_Order(possible_library_names search_folders_type LIBRARY_PATH LIB_SONAME)
+#
+#      Utility function to be used in configuration find script. Try to find a library in same order as the linker.
+#
+#     .. rubric:: Required parameters
+#
+#     :<possible_library_names>: the name of possible names for the library.
+#
+#     :<search_folders_type>: if equal to "ALL" all path will be searched in. If equal to "IMPLICIT" only implicit link folders (non user install folders) will be searched in. If equal to "USER" implicit link folders are not used.
+#
+#     :<LIBRARY_PATH>: the output variable that contains the path to the library in the system.
+#
+#     :<LIB_SONAME>: the output variable that contains the SONAME of the library, if any.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function can be called in the find file provided by a configuration.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        No side effect.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        convert_PID_Libraries_Into_System_Links(BOOST_LIBRARIES BOOST_LINKS)
+#
+function(find_PID_Library_In_Linker_Order possible_library_names search_folders_type LIBRARY_PATH LIB_SONAME)
+  #1) search in implicit system folders
+  if(NOT search_folders_type STREQUAL "USER")
+    foreach(lib IN LISTS possible_library_names)
+      find_Library_In_Implicit_System_Dir(IMPLICIT_LIBRARY_PATH RET_SONAME LIB_SOVERSION ${lib})
+      if(IMPLICIT_LIBRARY_PATH)#found
+        set(${LIBRARY_PATH} ${IMPLICIT_LIBRARY_PATH} PARENT_SCOPE)
+        set(${LIB_SONAME} ${RET_SONAME} PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  endif()
+  if(NOT search_folders_type STREQUAL "IMPLICIT")
+  #2) search in cmake defined system search folders
+    find_library(RET_LIBRARY NAMES ${possible_library_names})
+    if(RET_LIBRARY)
+      set(lib_path ${RET_LIBRARY})
+      unset(RET_LIBRARY CACHE)
+      set(${LIBRARY_PATH} ${lib_path} PARENT_SCOPE)
+
+      extract_Soname_From_PID_Libraries(lib_path RET_SONAME)
+      set(${LIB_SONAME} ${RET_SONAME} PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+
+  set(${LIBRARY_PATH} PARENT_SCOPE)
+  set(${LIB_SONAME} PARENT_SCOPE)
+endfunction(find_PID_Library_In_Linker_Order)
+
 #.rst:
 #
 # .. ifmode:: user
@@ -253,6 +326,130 @@ function(convert_PID_Libraries_Into_Library_Directories list_of_libraries_var OU
   endif()
   set(${OUT_VAR} ${all_links} PARENT_SCOPE)
 endfunction(convert_PID_Libraries_Into_Library_Directories)
+
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |extract_Soname_From_PID_Libraries| replace:: ``extract_Soname_From_PID_Libraries``
+#  .. _extract_Soname_From_PID_Libraries:
+#
+#  extract_Soname_From_PID_Libraries
+#  ---------------------------------
+#
+#   .. command:: extract_Soname_From_PID_Libraries(list_of_libraries_var OUT_VAR)
+#
+#      Utility function to be used in configuration find script. Extract the libraries sonames from libraries path.
+#
+#     .. rubric:: Required parameters
+#
+#     :<list_of_libraries_var>: the name of the variable that contains the list of libraries to convert.
+#
+#     :<OUT_VAR>: the output variable that contains the list of sonames, in same order.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function can be called in the find file provided by a configuration.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        No side effect.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        extract_Soname_From_PID_Libraries(CURL_SONAMES CURL_LIB)
+#
+function(extract_Soname_From_PID_Libraries list_of_libraries_var OUT_VAR)
+  set(all_sonames)
+  if(${list_of_libraries_var})#the variable containing the list trully contains a list
+    foreach(lib IN LISTS ${list_of_libraries_var})
+      get_Binary_Description(LIB_DESCR ${lib})
+      get_filename_component(LIB_NAME ${lib} NAME_WE)
+      get_Soname(SONAME SOVERSION ${LIB_NAME} LIB_DESCR)
+      if(SONAME)
+        list(APPEND all_sonames ${SONAME})
+      endif()
+    endforeach()
+    if(all_sonames)
+      list(REMOVE_DUPLICATES all_sonames)
+    endif()
+  endif()
+  set(${OUT_VAR} ${all_sonames} PARENT_SCOPE)
+endfunction(extract_Soname_From_PID_Libraries)
+
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |extract_Symbols_From_PID_Libraries| replace:: ``extract_Symbols_From_PID_Libraries``
+#  .. _extract_Symbols_From_PID_Libraries:
+#
+#  extract_Symbols_From_PID_Libraries
+#  ----------------------------------
+#
+#   .. command:: extract_Symbols_From_PID_Libraries(list_of_libraries_var list_of_symbols OUT_LIST_OF_SYMBOL_VERSION_PAIRS)
+#
+#      Utility function to be used in configuration find script. Extract the libraries symbols from libraries path.
+#
+#     .. rubric:: Required parameters
+#
+#     :<list_of_libraries_var>: the name of the variable that contains the list of libraries to check.
+#
+#     :<list_of_symbols>: the name of the variable that contains the list of symbols to find.
+#
+#     :<OUT_LIST_OF_SYMBOL_VERSION_PAIRS>: the output variable that contains the list of pairs <symbol,max version>.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function can be called in the find file provided by a configuration.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        No side effect.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        extract_Symbols_From_PID_Libraries(OPENSSL_SYMBOLS OPENSSL_LIB "OPENSSL_")
+#
+function(extract_Symbols_From_PID_Libraries list_of_libraries_var list_of_symbols OUT_LIST_OF_SYMBOL_VERSION_PAIRS)
+  foreach(symbol IN LISTS list_of_symbols)#cleaning variable, in case of
+    unset(${symbol}_MAX_VERSION)
+  endforeach()
+  set(managed_symbols)
+  if(${list_of_libraries_var})#the variable containing the list trully contains a list
+    foreach(lib IN LISTS ${list_of_libraries_var})
+      foreach(symbol IN LISTS list_of_symbols)
+        get_Library_ELF_Symbol_Max_Version(MAX_VERSION ${lib} ${symbol})
+        if(MAX_VERSION)
+          if(${symbol}_MAX_VERSION)#a version is already known for that symbol
+            if(${symbol}_MAX_VERSION VERSION_LESS MAX_VERSION)
+              set(${symbol}_MAX_VERSION ${MAX_VERSION})
+            endif()
+          else()
+            list(APPEND managed_symbols ${symbol})
+            set(${symbol}_MAX_VERSION ${MAX_VERSION})
+          endif()
+        endif()
+      endforeach()
+    endforeach()
+  endif()
+  set(all_symbols_pair)
+  foreach(symbol IN LISTS managed_symbols)
+    list(APPEND all_symbols_pair "<${symbol}/${${symbol}_MAX_VERSION}>")
+  endforeach()
+  set(${OUT_LIST_OF_SYMBOL_VERSION_PAIRS} ${all_symbols_pair} PARENT_SCOPE)
+endfunction(extract_Symbols_From_PID_Libraries)
+
 
 #.rst:
 #

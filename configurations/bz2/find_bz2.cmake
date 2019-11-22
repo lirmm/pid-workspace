@@ -21,37 +21,25 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 found_PID_Configuration(bz2 FALSE)
 
-# - Find zlib installation
-# Try to find libraries for zlib on UNIX systems. The following values are defined
-#  zlib_FOUND        - True if zlib is available
-#  zlib_LIBRARIES    - link against these to use zlib library
-if (UNIX)
+if (WIN32)
+	set(_BZIP2_PATHS PATHS "[HKEY_LOCAL_MACHINE\\SOFTWARE\\GnuWin32\\Bzip2;InstallPath]")
+endif()
 
-	set(_BZIP2_PATHS PATHS
-	  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\GnuWin32\\Bzip2;InstallPath]"
-	  )
+find_path(BZIP2_INCLUDE_PATH bzlib.h ${_BZIP2_PATHS} PATH_SUFFIXES include)
+set(BZ2_INCLUDE_DIR ${BZIP2_INCLUDE_PATH})
+unset(BZIP2_INCLUDE_PATH CACHE)
 
-	find_path(BZIP2_INCLUDE_DIR bzlib.h ${_BZIP2_PATHS} PATH_SUFFIXES include)
-	find_library(BZIP2_LIBRARY NAMES bz2 bzip2 ${_BZIP2_PATHS} PATH_SUFFIXES lib)
+find_PID_Library_In_Linker_Order("bz2;bzip2" ALL BZ2_LIB BZ2_SONAME)
 
-	if (BZIP2_INCLUDE_DIR AND EXISTS "${BZIP2_INCLUDE_DIR}/bzlib.h")
-	    file(STRINGS "${BZIP2_INCLUDE_DIR}/bzlib.h" BZLIB_H REGEX "bzip2/libbzip2 version [0-9]+\\.[^ ]+ of [0-9]+ ")
-	    string(REGEX REPLACE ".* bzip2/libbzip2 version ([0-9]+\\.[^ ]+) of [0-9]+ .*" "\\1" BZIP2_VERSION_STRING "${BZLIB_H}")
-	endif ()
-
-	set(BZ2_INCLUDE_PATH ${BZIP2_INCLUDE_DIR})
-	set(BZ2_LIB ${BZIP2_LIBRARY})
-	set(BZ2_VERSION ${BZIP2_VERSION_STRING})
-	unset(BZIP2_INCLUDE_DIR CACHE)
-	unset(BZIP2_LIBRARY CACHE)
-	unset(BZIP2_VERSION_STRING CACHE)
-
-	if(BZ2_INCLUDE_PATH AND BZ2_LIB)
-		convert_PID_Libraries_Into_System_Links(BZ2_LIB BZ2_LINKS)#getting good system links (with -l)
-		convert_PID_Libraries_Into_Library_Directories(BZ2_LIB BZ2_LIBDIRS)
-
-		found_PID_Configuration(bz2 TRUE)
-	else()
-		message("[PID] ERROR : cannot find bz2 library.")
-	endif()
+if (BZ2_INCLUDE_DIR AND EXISTS "${BZ2_INCLUDE_DIR}/bzlib.h")
+    file(STRINGS "${BZ2_INCLUDE_DIR}/bzlib.h" BZLIB_H REGEX "bzip2/libbzip2 version [0-9]+\\.[^ ]+ of [0-9]+ ")
+    string(REGEX REPLACE ".* bzip2/libbzip2 version ([0-9]+\\.[^ ]+) of [0-9]+ .*" "\\1" BZ2_VERSION "${BZLIB_H}")
 endif ()
+
+if(BZ2_INCLUDE_DIR AND BZ2_LIB)
+	convert_PID_Libraries_Into_System_Links(BZ2_LIB BZ2_LINKS)#getting good system links (with -l)
+	convert_PID_Libraries_Into_Library_Directories(BZ2_LIB BZ2_LIBDIRS)
+	found_PID_Configuration(bz2 TRUE)
+else()
+	message("[PID] ERROR : cannot find bz2 library (found include=${BZ2_INCLUDE_DIR}, library=${BZ2_LIB}).")
+endif()

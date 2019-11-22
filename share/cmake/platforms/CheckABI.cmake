@@ -20,7 +20,7 @@
 function(check_Current_OS_Allow_CXX11_ABI ALLOWED)
 set(${ALLOWED} TRUE PARENT_SCOPE)#by default CXX11 is allowed
 
-if(CURRENT_OS STREQUAL windows)
+if(CURRENT_PLATFORM_OS STREQUAL windows)
 	set(${ALLOWED} FALSE PARENT_SCOPE)#for now windows support only legacy ABI
 	return ()
 else()#other systems
@@ -31,7 +31,7 @@ else()#other systems
 		OUTPUT_VARIABLE out)
 
 	if(NOT RES)#cannot compile for unknow reason -> use a predefined check
-		if(CURRENT_OS STREQUAL linux)
+		if(CURRENT_PLATFORM_OS STREQUAL linux)
 			if(CURRENT_DISTRIBUTION STREQUAL ubuntu)
 				if(CURRENT_DISTRIBUTION_VERSION VERSION_LESS 16.04)
 					set(${ALLOWED} FALSE PARENT_SCOPE)#ubuntu < 16.04
@@ -55,60 +55,21 @@ endfunction(check_Current_OS_Allow_CXX11_ABI)
 
 set(CURRENT_ABI CACHE INTERNAL "")
 
-function(get_Standard_Library_Symbol_Version RES_SYMBOL_VERSIONS operating_system library_name path_to_library)
-	set(${RES_SYMBOL_VERSIONS} PARENT_SCOPE)
+function(get_Standard_Library_Symbols_Version RES_SYMBOL_VERSIONS operating_system library_name path_to_library)
+	set(STD_SYMBOLS)
+	#symbols name depends on the standard library implementation...
 	if(library_name MATCHES "stdc\\+\\+")#gnu c++ library (may be named stdc++11 as well)
-
-		#managing LIBC symbol versions
-		file(STRINGS ${path_to_library} LIBC_SYMBOLS REGEX ".*GLIBC_.*")
-		set(max_version "0.0.0")
-		foreach(version IN LISTS LIBC_SYMBOLS)
-			extract_ELF_Symbol_Version(RES_VERSION "GLIBC_" ${version})
-			if(RES_VERSION VERSION_GREATER max_version)
-				set(max_version ${RES_VERSION})
-			endif()
-		endforeach()
-		if(NOT max_version VERSION_EQUAL "0.0.0")
-			list(APPEND res_symbols_version "GLIBC_" "${max_version}")
-		endif()
-
-		#managing LIBCXX symbol versions
-		file(STRINGS ${path_to_library} LIBCXX_SYMBOLS REGEX ".*GLIBCXX_.*")
-		set(max_version "0.0.0")
-		foreach(version IN LISTS LIBCXX_SYMBOLS)
-			extract_ELF_Symbol_Version(RES_VERSION "GLIBCXX_" ${version})
-			if(RES_VERSION VERSION_GREATER max_version)
-				set(max_version ${RES_VERSION})
-			endif()
-		endforeach()
-		if(NOT max_version VERSION_EQUAL "0.0.0")
-			list(APPEND res_symbols_version "GLIBCXX_" "${max_version}")
-		endif()
-
-		#managing CXXABI symbol versions
-		file(STRINGS ${path_to_library} CXXABI_SYMBOLS REGEX ".*CXXABI_.*")
-		set(max_version "0.0.0")
-		foreach(version IN LISTS CXXABI_SYMBOLS)
-			extract_ELF_Symbol_Version(RES_VERSION "CXXABI_" ${version})
-			if(RES_VERSION VERSION_GREATER max_version)
-				set(max_version ${RES_VERSION})
-			endif()
-		endforeach()
-		if(NOT max_version VERSION_EQUAL "0.0.0")
-			list(APPEND res_symbols_version "CXXABI_" "${max_version}")
-		endif()
-
-		set(${RES_SYMBOL_VERSIONS} ${res_symbols_version} PARENT_SCOPE)
+		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GLIBCXX_;CXXABI_")
 	#elseif(library_name STREQUAL "c++")#the new libc++ library
+	elseif(library_name STREQUAL "c")#gnu c library
+		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GLIBC_")
+		#what to do ??
+	elseif(library_name MATCHES "gcc")#gcc library
+		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GCC_")
 		#what to do ??
 	endif()
-endfunction(get_Standard_Library_Symbol_Version)
-
-function(usable_In_Regex RES_STR name)
-	string(REPLACE "+" "\\+" RES ${name})
-	string(REPLACE "." "\\." RES ${RES})
-	set(${RES_STR} ${RES} PARENT_SCOPE)
-endfunction(usable_In_Regex)
+	set(${RES_SYMBOL_VERSIONS} ${STD_SYMBOLS} PARENT_SCOPE)
+endfunction(get_Standard_Library_Symbols_Version)
 
 #resetting symbols to avoid any problem
 foreach(symbol IN LISTS STD_ABI_SYMBOLS)
@@ -127,49 +88,37 @@ foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
 endforeach()
 set(CXX_STANDARD_LIBRARIES CACHE INTERNAL "")
 
+set(IMPLICIT_LIBS ${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES})
+set(IMPLICIT_DIRS ${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES})
+list(REMOVE_DUPLICATES IMPLICIT_LIBS)
+list(REMOVE_DUPLICATES IMPLICIT_DIRS)
 # detect current C++ library ABI in use
-foreach(lib IN LISTS CMAKE_CXX_IMPLICIT_LINK_LIBRARIES)
+foreach(lib IN LISTS IMPLICIT_LIBS)
 	#lib is the short name of the library
-	get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_OS} "SHARED")
-  set(libname ${PREFIX}${lib}${EXTENSION})
-	foreach(dir IN LISTS CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES)#searching for library name in same order as specified by the path to ensure same resolution as the linker
-		if(EXISTS ${dir}/${libname})#there is a standard library or symlink with that name
-			#getting symbols versions from the implicit library
-			get_Standard_Library_Symbol_Version(RES_SYMBOL_VERSIONS ${CURRENT_OS} ${lib} ${dir}/${libname})
-			while(RES_SYMBOL_VERSIONS)
-				list(GET RES_SYMBOL_VERSIONS 0 symbol)
-				list(GET RES_SYMBOL_VERSIONS 1 version)
-				list(APPEND STD_ABI_SYMBOLS ${symbol})
-				if(NOT version VERSION_LESS ${symbol}_ABI_VERSION)
-					set(${symbol}_ABI_VERSION ${version})
-				endif()
-				list(REMOVE_AT RES_SYMBOL_VERSIONS 0 1)
-			endwhile()
-			if(STD_ABI_SYMBOLS)
-				list(REMOVE_DUPLICATES STD_ABI_SYMBOLS)
-			endif()
-			list(APPEND STD_LIBS ${lib})
-			get_filename_component(RES ${dir}/${libname} REALPATH)#resolving symlinks if any
-			usable_In_Regex(RES_STR ${libname})
-			set(extensions)
-			string(REGEX REPLACE "^.*${RES_STR}\\.(.+)$" "\\1" extensions ${RES})
-			if(extensions STREQUAL RES)#not match
-				set(major)
-			else()
-				get_Version_String_Numbers("${extensions}" major minor patch)
-			endif()
-			set(CXX_STD_LIB_${lib}_ABI_SOVERSION ${major} CACHE INTERNAL "")
-			break() #break the execution of the loop w
+	find_Library_In_Implicit_System_Dir(VALID_PATH LIB_SONAME LIB_SOVERSION ${lib})
+	if(VALID_PATH)
+		if(LIB_SOVERSION)
+			set(CXX_STD_LIB_${lib}_ABI_SOVERSION ${LIB_SOVERSION} CACHE INTERNAL "")
 		endif()
-	endforeach()
+		#getting symbols versions from the implicit library
+		get_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_OS} ${lib} ${VALID_PATH})
+		while(RES_SYMBOL_VERSIONS)
+			pop_ELF_Symbol_Version_From_List(SYMB VERS RES_SYMBOL_VERSIONS)
+			list(APPEND STD_ABI_SYMBOLS ${SYMB})
+			set(${SYMB}_ABI_VERSION ${VERS})
+		endwhile()
+		list(APPEND STD_LIBS ${lib})
+	endif()#otherwise simply do nothing and check with another folder
 endforeach()
 
 #memorize symbol versions
-foreach(symbol IN LISTS STD_ABI_SYMBOLS)
-	set(CXX_STD_SYMBOL_${symbol}_VERSION ${${symbol}_ABI_VERSION} CACHE INTERNAL "")
-endforeach()
+if(STD_ABI_SYMBOLS)
+	list(REMOVE_DUPLICATES STD_ABI_SYMBOLS)
+	foreach(symbol IN LISTS STD_ABI_SYMBOLS)
+		set(CXX_STD_SYMBOL_${symbol}_VERSION ${${symbol}_ABI_VERSION} CACHE INTERNAL "")
+	endforeach()
+endif()
 set(CXX_STD_SYMBOLS ${STD_ABI_SYMBOLS} CACHE INTERNAL "")
-
 set(CXX_STANDARD_LIBRARIES ${STD_LIBS} CACHE INTERNAL "")
 
 #depending on symbol versions we can detect which compiler was used to build the standard library !!

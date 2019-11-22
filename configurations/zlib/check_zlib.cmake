@@ -22,4 +22,8 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 # returned variables
 PID_Configuration_Variables(zlib
 				VARIABLES LINK_OPTIONS	LIBRARY_DIRS 	RPATH   	INCLUDE_DIRS
-				VALUES 		ZLIB_LINKS		ZLIB_LIBDIRS	zlib_LIB 	zlib_INCLUDE_PATH)
+				VALUES 		ZLIB_LINKS		ZLIB_LIBDIRS	ZLIB_LIB 	ZLIB_INCLUDE_PATH)
+
+# constraints
+PID_Configuration_Constraints(zlib IN_BINARY soname        symbols
+																	 VALUE 		 ZLIB_SONAME   ZLIB_SYMBOLS)

@@ -22,4 +22,8 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 # returned variables
 PID_Configuration_Variables(bz2
 				VARIABLES VERSION 		LINK_OPTIONS	LIBRARY_DIRS 	RPATH   	INCLUDE_DIRS
-				VALUES 		BZ2_VERSION BZ2_LINKS			BZ2_LIBDIRS		BZ2_LIB 	BZ2_INCLUDE_PATH)
+				VALUES 		BZ2_VERSION BZ2_LINKS			BZ2_LIBDIRS		BZ2_LIB 	BZ2_INCLUDE_DIR)
+
+# constraints
+PID_Configuration_Constraints(bz2  IN_BINARY soname
+																		VALUE 		BZ2_SONAME)

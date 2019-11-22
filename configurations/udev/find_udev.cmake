@@ -27,25 +27,19 @@ found_PID_Configuration(udev FALSE)
 #  libusb_LIBRARIES    - link against these to use libusb library
 if (UNIX)
 
-	find_path(UDEV_INCLUDE_DIR_FOUND libudev.h)
-	find_library(UDEV_LIBRARIES_FOUND NAMES udev libudev PATHS ${ADDITIONAL_LIBRARY_PATHS} ${UDEV_PATH_LIB})
+	find_path(UDEV_INCLUDE_PATH libudev.h)
+	set(UDEV_INCLUDE_DIR ${UDEV_INCLUDE_PATH})
+	unset(UDEV_INCLUDE_PATH CACHE)
 
-	set(IS_FOUND TRUE)
-	if (UDEV_LIBRARIES_FOUND AND UDEV_INCLUDE_DIR_FOUND)
-		set(UDEV_INCLUDE_DIR ${UDEV_INCLUDE_DIR_FOUND})
-		set(UDEV_LIBRARIES ${UDEV_LIBRARIES_FOUND})
-		convert_PID_Libraries_Into_System_Links(UDEV_LIBRARIES UDEV_LINKS)#getting good system links (with -l)
-		convert_PID_Libraries_Into_Library_Directories(UDEV_LIBRARIES UDEV_LIBDIR)
-	else()
-		message("[PID] ERROR : cannot find libudev library.")
-		set(IS_FOUND FALSE)
-	endif ()
+	#first try to find zlib in implicit system path
+	find_PID_Library_In_Linker_Order(udev IMPLICIT UDEV_LIB UDEV_SONAME)#udev is only in implicit system folders
 
-	if(IS_FOUND)
+	if (UDEV_LIB AND UDEV_INCLUDE_DIR)
+		convert_PID_Libraries_Into_System_Links(UDEV_LIB UDEV_LINKS)#getting good system links (with -l)
+		convert_PID_Libraries_Into_Library_Directories(UDEV_LIB UDEV_LIBDIR)
+		extract_Symbols_From_PID_Libraries(UDEV_LIB "LIBUDEV_" UDEV_SYMBOLS)
 		found_PID_Configuration(udev TRUE)
+	else()
+		message("[PID] ERROR : cannot find libudev library (include found = ${UDEV_INCLUDE_DIR}, library = ${UDEV_LIB}).")
 	endif ()
-
-	unset(IS_FOUND)
-	unset(UDEV_LIBRARIES_FOUND CACHE)
-	unset(UDEV_INCLUDE_DIR_FOUND CACHE)
 endif ()

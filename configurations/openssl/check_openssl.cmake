@@ -21,9 +21,9 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(openssl
-				VARIABLES VERSION              LINK_OPTIONS		LIBRARY_DIRS 		RPATH   						INCLUDE_DIRS
-			   VALUES   OPENSSL_NICE_VERSION OPENSSL_LINKS	OPENSSL_LIBDIRS	OPENSSL_LIBRARIES 	OPENSSL_INCLUDE_DIR)
+				VARIABLES VERSION              LINK_OPTIONS		LIBRARY_DIRS 		RPATH   			INCLUDE_DIRS
+			   VALUES   OPENSSL_NICE_VERSION OPENSSL_LINKS	OPENSSL_LIBDIRS	OPENSSL_LIBS 	OPENSSL_INCS)
 
 # constraints
-PID_Configuration_Constraints(openssl IN_BINARY version
-																			VALUE 		OPENSSL_NICE_VERSION)
+PID_Configuration_Constraints(openssl IN_BINARY soname         symbols
+																			VALUE 		OPENSSL_SONAME OPENSSL_SYMBOLS)

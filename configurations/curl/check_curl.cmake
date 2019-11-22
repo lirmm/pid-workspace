@@ -24,3 +24,10 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 PID_Configuration_Variables(curl
 				VARIABLES VERSION              LINK_OPTIONS	  LIBRARY_DIRS 	RPATH   	INCLUDE_DIRS
 			  VALUES 		CURL_VERSION_STRING  CURL_LINKS			CURL_LIBDIR	  CURL_LIB 	CURL_INC)
+
+# constraints (no required constraints)
+PID_Configuration_Constraints(curl IN_BINARY soname      symbols
+																	 VALUE     CURL_SONAME CURL_SYMBOLS)
+
+# dependencies
+PID_Configuration_Dependencies(curl DEPEND openssl posix zlib)

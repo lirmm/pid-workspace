@@ -27,24 +27,18 @@ found_PID_Configuration(libusb FALSE)
 #  libusb_LIBRARIES    - link against these to use libusb library
 if (UNIX)
 
-	find_path(libusb_INCLUDE_PATH libusb-1.0/libusb.h)#find the path of the library
-	find_library(libusb_LIB usb-1.0)
+	find_path(USB_INCLUDE_PATH libusb-1.0/libusb.h)#find the path of the library
+	set(LIBUSB_INCLUDE_DIR ${USB_INCLUDE_PATH})
+	unset(LIBUSB_INCLUDE_PATH CACHE)
 
-	set(libusb_LIBRARIES) # start with empty list
-	set(IS_FOUND TRUE)
-	if(libusb_INCLUDE_PATH AND libusb_LIB)
-		convert_PID_Libraries_Into_System_Links(libusb_LIB LIBUSB_LINKS)#getting good system links (with -l)
-    convert_PID_Libraries_Into_Library_Directories(libusb_LIB LIBUSB_LIBDIR)
+	#first try to find zlib in implicit system path
+	find_PID_Library_In_Linker_Order(usb-1.0 ALL USB_LIB LIBUSB_SONAME)
+	if(LIBUSB_INCLUDE_DIR AND USB_LIB)
+		convert_PID_Libraries_Into_System_Links(USB_LIB LIBUSB_LINKS)#getting good system links (with -l)
+    convert_PID_Libraries_Into_Library_Directories(USB_LIB LIBUSB_LIBDIR)
+		found_PID_Configuration(libusb TRUE)
 	else()
-		message("[PID] ERROR : cannot find usb1.0 library.")
-		set(IS_FOUND FALSE)
+		message("[PID] ERROR : cannot find usb1.0 library (found include=${LIBUSB_INCLUDE_DIR}, library=${USB_LIB}).")
 	endif()
 
-	if(IS_FOUND)
-		found_PID_Configuration(libusb TRUE)
-	endif ()
-
-	unset(IS_FOUND)
-	unset(libusb_INCLUDE_PATH CACHE)
-	unset(libusb_LIB CACHE)
 endif ()

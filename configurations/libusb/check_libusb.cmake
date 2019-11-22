@@ -21,5 +21,12 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(libusb
-				VARIABLES LINK_OPTIONS			LIBRARY_DIRS 		RPATH   			INCLUDE_DIRS
-				VALUES 		LIBUSB_LINKS			LIBUSB_LIBDIR		libusb_LIB 		libusb_INCLUDE_PATH)
+			VARIABLES LINK_OPTIONS			LIBRARY_DIRS 	  RPATH   		INCLUDE_DIRS
+			VALUES 		LIBUSB_LINKS			LIBUSB_LIBDIR		USB_LIB 		LIBUSB_INCLUDE_DIR)
+
+# constraints
+PID_Configuration_Constraints(libusb  IN_BINARY soname
+																			VALUE 		LIBUSB_SONAME)
+
+# dependencies
+PID_Configuration_Dependencies(libusb DEPEND udev)

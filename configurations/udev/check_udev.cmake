@@ -21,5 +21,11 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 
 # returned variables
 PID_Configuration_Variables(udev
-				VARIABLES LINK_OPTIONS		LIBRARY_DIRS 	RPATH   			  INCLUDE_DIRS
-				VALUES 		UDEV_LINKS			UDEV_LIBDIR		UDEV_LIBRARIES 	UDEV_INCLUDE_DIR)
+				VARIABLES LINK_OPTIONS		LIBRARY_DIRS 	RPATH   	INCLUDE_DIRS
+				VALUES 		UDEV_LINKS			UDEV_LIBDIR		UDEV_LIB 	UDEV_INCLUDE_DIR)
+
+# constraints
+PID_Configuration_Constraints(udev  IN_BINARY soname        symbols
+                                    VALUE 		UDEV_SONAME   UDEV_SYMBOLS)
+
+PID_Configuration_Dependencies(udev DEPEND posix)

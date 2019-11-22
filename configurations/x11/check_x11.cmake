@@ -25,7 +25,10 @@ PID_Configuration_Variables(x11
 				VALUES 		X11_LINKS    X11_LIBRARIES	X11_LIBDIR		X11_INCLUDES  X11_EXT_LINKS							X11_EXT_LIBRARIES 	X11_EXT_LIBDIRS 				X11_EXT_INCLUDES				X11_EXT_NAMES)
 
 # constraints
-PID_Configuration_Constraints(x11			IN_BINARY extensions
-															VALUE		X11_EXT_NAMES)
+PID_Configuration_Constraints(x11			IN_BINARY extensions     soname
+                                      VALUE     X11_EXT_NAMES  X11_SONAME)
 
 # If extensions options is required, EXTENTIONS vars are sort in EXTENSIONS_NAMES order
+
+# dependencies
+PID_Configuration_Dependencies(ros DEPEND posix)

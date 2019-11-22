@@ -23,3 +23,7 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 PID_Configuration_Variables(posix
 				VARIABLES LINK_OPTIONS		LIBRARY_DIRS 		RPATH   		INCLUDE_DIRS
 				VALUES 		POSIX_LINKS			POSIX_LIBDIRS		POSIX_LIBS 	POSIX_INCS)
+
+# constraints
+PID_Configuration_Constraints(posix IN_BINARY  soname
+																		VALUE 	   POSIX_SONAME)

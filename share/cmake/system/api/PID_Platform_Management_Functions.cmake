@@ -43,32 +43,32 @@ set(PID_PLATFORM_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 macro(detect_Current_Platform)
 	# Now detect the current platform maccording to host environemnt selection (call to script for platform detection)
 	include(CheckTYPE)
+  set(CURRENT_PLATFORM_TYPE ${CURRENT_TYPE} CACHE INTERNAL "" FORCE)
 	include(CheckARCH)
+  set(CURRENT_PLATFORM_ARCH ${CURRENT_ARCH} CACHE INTERNAL "" FORCE)
 	include(CheckOS)
+  set(CURRENT_PLATFORM_OS ${CURRENT_OS} CACHE INTERNAL "" FORCE)
 	include(CheckABI)
+  if(CURRENT_ABI STREQUAL CXX11)
+    set(CURRENT_PLATFORM_ABI abi11 CACHE INTERNAL "" FORCE)
+  else()
+    set(CURRENT_PLATFORM_ABI abi98 CACHE INTERNAL "" FORCE)
+  endif()
 	include(CheckPython)
 	include(CheckFortran)
 	include(CheckCUDA)
 	if(NOT CURRENT_DISTRIBUTION)
-		set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family = ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS}\n + compiler ABI= ${CURRENT_ABI}")
+		set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family = ${CURRENT_PLATFORM_TYPE}\n + binary architecture= ${CURRENT_PLATFORM_ARCH}\n + operating system=${CURRENT_PLATFORM_OS}\n + compiler ABI= ${CURRENT_PLATFORM_ABI}")
 	else()
 		if(NOT CURRENT_DISTRIBUTION_VERSION)
-			set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family= ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS} (${CURRENT_DISTRIBUTION})\n + compiler ABI= ${CURRENT_ABI}")
+			set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family= ${CURRENT_PLATFORM_TYPE}\n + binary architecture= ${CURRENT_PLATFORM_ARCH}\n + operating system=${CURRENT_PLATFORM_OS} (${CURRENT_DISTRIBUTION})\n + compiler ABI= ${CURRENT_PLATFORM_ABI}")
 		else()#there is a version number bound to the distribution
-			set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family= ${CURRENT_TYPE}\n + binary architecture= ${CURRENT_ARCH}\n + operating system=${CURRENT_OS} (${CURRENT_DISTRIBUTION} ${CURRENT_DISTRIBUTION_VERSION})\n + compiler ABI= ${CURRENT_ABI}")
+			set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family= ${CURRENT_PLATFORM_TYPE}\n + binary architecture= ${CURRENT_PLATFORM_ARCH}\n + operating system=${CURRENT_PLATFORM_OS} (${CURRENT_DISTRIBUTION} ${CURRENT_DISTRIBUTION_VERSION})\n + compiler ABI= ${CURRENT_PLATFORM_ABI}")
 		endif()
 	endif()
 	#simply rewriting previously defined variable to normalize their names between workspace and packages (same accessor function can then be used from any place)
 	set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL "" FORCE)
 	set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL "" FORCE)
-	set(CURRENT_PLATFORM_TYPE ${CURRENT_TYPE} CACHE INTERNAL "" FORCE)
-	set(CURRENT_PLATFORM_ARCH ${CURRENT_ARCH} CACHE INTERNAL "" FORCE)
-	set(CURRENT_PLATFORM_OS ${CURRENT_OS} CACHE INTERNAL "" FORCE)
-	if(CURRENT_ABI STREQUAL CXX11)
-		set(CURRENT_PLATFORM_ABI abi11 CACHE INTERNAL "" FORCE)
-	else()
-		set(CURRENT_PLATFORM_ABI abi98 CACHE INTERNAL "" FORCE)
-	endif()
 
 	if(CURRENT_PLATFORM_OS)#the OS is optional (for microcontrolers there is no OS)
 		set(CURRENT_PLATFORM ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_OS}_${CURRENT_PLATFORM_ABI} CACHE INTERNAL "" FORCE)
@@ -90,6 +90,320 @@ macro(detect_Current_Platform)
 		message("[PID] INFO : Fortran language may be used.")
 	endif()
 endmacro(detect_Current_Platform)
+
+
+#############################################################################################
+######################## utility functions to get info about binaries #######################
+#############################################################################################
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |extract_ELF_Symbol_Version| replace:: ``extract_ELF_Symbol_Version``
+#  .. _extract_ELF_Symbol_Version:
+#
+#  extract_ELF_Symbol_Version
+#  --------------------------
+#
+#   .. command:: extract_ELF_Symbol_Version(RES_VERSION symbol symbol_version)
+#
+#    Get the version from a (supposed to be) versionned symbol.
+#
+#     :symbol: the symbol that is supposed to have a version number. For instance symbol GLIBCXX can be used for libstdc++.so (GNU standard C++ library).
+#
+#     :symbol_version: the input symbol, for instance "GLIBCXX_2.4".
+#
+#     :RES_VERSION: the output variable that contains the version of the target symbol always with major.minor.patch structure. For istance with previous arguùents it returns "2.4.0".
+#
+function(extract_ELF_Symbol_Version RES_VERSION symbol symbol_version)
+  if(symbol_version MATCHES "^${symbol}([0-9]+(\\.[0-9]+)*)$")
+    set(${RES_VERSION} "${CMAKE_MATCH_1}" PARENT_SCOPE)
+	else()
+		set(${RES_VERSION} "0.0.0" PARENT_SCOPE)
+	endif()
+endfunction(extract_ELF_Symbol_Version)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |pop_ELF_Symbol_Version_From_List| replace:: ``pop_ELF_Symbol_Version_From_List``
+#  .. _pop_ELF_Symbol_Version_From_List:
+#
+#  pop_ELF_Symbol_Version_From_List
+#  --------------------------------
+#
+#   .. command:: pop_ELF_Symbol_Version_From_List(RES_SYMBOL RES_VERSION inout_list)
+#
+#    Get the first symbol and version from a list generated by get_Library_ELF_Symbols_Max_Versions and remove them from this list.
+#
+#     :inout_list: the input/output variable that contains the list to be updated.
+#
+#     :RES_SYMBOL: the output variable that contains the symbol name
+#
+#     :RES_VERSION: the output variable that contains the symbol version.
+#
+function(pop_ELF_Symbol_Version_From_List RES_SYMBOL RES_VERSION inout_list)
+  if(${inout_list})#if list not empty
+    list(GET ${inout_list} 0 symbol)
+    list(GET ${inout_list} 1 version)
+    list(REMOVE_AT ${inout_list} 0 1)
+    set(${inout_list} ${${inout_list}} PARENT_SCOPE)#update is only local for now so update it in parent scope
+    set(${RES_SYMBOL} ${symbol} PARENT_SCOPE)
+    set(${RES_VERSION} ${version} PARENT_SCOPE)
+  else()
+    set(${RES_SYMBOL} PARENT_SCOPE)
+    set(${RES_VERSION} PARENT_SCOPE)
+  endif()
+endfunction(pop_ELF_Symbol_Version_From_List)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Binary_Description| replace:: ``get_Binary_Description``
+#  .. _get_Binary_Description:
+#
+#  get_Binary_Description
+#  ----------------------
+#
+#   .. command:: get_Binary_Description(DESCRITION path_to_library)
+#
+#    Get the description of a runtime binary (ELF format).
+#
+#     :path_to_library: the library to inspect.
+#
+#     :DESCRITION: the output variable that contains the description of the binary object.
+#
+function(get_Binary_Description DESCRITION path_to_library)
+  execute_process(COMMAND ${CMAKE_OBJDUMP} -p ${path_to_library}
+                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                  ERROR_QUIET
+                  OUTPUT_VARIABLE OBJECT_CONTENT
+                  RESULT_VARIABLE res)
+  if(res EQUAL 0)
+    set(${DESCRITION} ${OBJECT_CONTENT} PARENT_SCOPE)
+  else()
+    set(${DESCRITION} PARENT_SCOPE)
+  endif()
+endfunction(get_Binary_Description)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Soname| replace:: ``get_Soname``
+#  .. _get_Soname:
+#
+#  get_Soname
+#  ----------
+#
+#   .. command:: get_Soname(SONAME SOVERSION library_name library_description)
+#
+#    Get the SONAME from a target library description.
+#
+#     :library_name: the name of the library (binary object name).
+#
+#     :library_description: the PARENT SCOPE variable containing the library description.
+#
+#     :SONAME: the output variable that contains the full soname, if any, empty otherwise.
+#
+#     :SOVERSION: the output variable that contains the only the soversion if any, empty otherwise (implies SONAME is not empty).
+#
+function(get_Soname SONAME SOVERSION library_name library_description)
+  set(full_soname)
+  set(so_version)
+  usable_In_Regex(libregex ${library_name})
+  if(${library_description} MATCHES ".*SONAME[ \t]+([^ \t\n]*${libregex}[^ \t\n]+)[ \t\n]*")
+    set(full_soname ${CMAKE_MATCH_1})
+    if(full_soname MATCHES "^${libregex}\\.(.+)$")#TODO check with macos
+      set(so_version ${CMAKE_MATCH_1})
+    endif()
+  endif()
+  set(${SONAME} ${full_soname} PARENT_SCOPE)#i.e. NO soname
+  set(${SOVERSION} ${so_version} PARENT_SCOPE)#i.e. NO soversion by default
+endfunction(get_Soname)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_Possible_Library_Path| replace:: ``find_Possible_Library_Path``
+#  .. _find_Possible_Library_Path:
+#
+#  find_Possible_Library_Path
+#  --------------------------
+#
+#   .. command:: find_Possible_Library_Path(FULL_PATH LINK_PATH LIB_SONAME library_name library_description)
+#
+#    Get the SONAME from a target library description.
+#
+#     :folder: the absolute path to the folder where the library can lie.
+#
+#     :library_name: the name of the library (without any prefix or postfix specific to system).
+#
+#     :REAL_PATH: the output variable that contains the full path to library with resolved symlinks, empty if no path found.
+#
+#     :LINK_PATH: the output variable that contains the path to library used at link time, empty if no path found.
+#
+#     :LIB_SONAME: the output variable that contains the only the name of the library if path has been found, empty otherwise.
+#
+function(find_Possible_Library_Path REAL_PATH LINK_PATH LIB_SONAME folder library_name)
+  set(${REAL_PATH} PARENT_SCOPE)
+  set(${LINK_PATH} PARENT_SCOPE)
+  set(${LIB_SONAME} PARENT_SCOPE)
+  get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM_OS} "SHARED")
+  set(prefixed_name ${PREFIX}${library_name})
+  file(GLOB POSSIBLE_NAMES RELATIVE ${folder} "${folder}/${PREFIX}${library_name}*" )
+  if(NOT POSSIBLE_NAMES)
+    return()
+  endif()
+  #first check for the complete name without soversion
+  set(possible_path)
+  list(FIND POSSIBLE_NAMES ${PREFIX}${library_name}${EXTENSION} INDEX)
+  if(INDEX EQUAL -1)#not found "as is"
+    usable_In_Regex(libregex ${library_name})
+    if(CURRENT_PLATFORM_OS STREQUAL linux)
+      set(pattern "^${PREFIX}${libregex}\\${EXTENSION}\\.([\\.0-9])+$")
+    elseif(CURRENT_PLATFORM_OS STREQUAL macos)
+      set(pattern "^${PREFIX}${libregex}\\.([\\.0-9])+\\${EXTENSION}$")
+    else()#uncuspported OS => no pattern for SONAMED files
+      return()#no solution
+    endif()
+    set(possible_path)
+    foreach(name IN LISTS POSSIBLE_NAMES)
+      #take the first one
+      if(name MATCHES "${pattern}")
+        set(possible_path ${folder}/${name})
+        break()
+      endif()
+    endforeach()
+  else()#it has the priority over the others
+    set(possible_path ${folder}/${PREFIX}${library_name}${EXTENSION})
+  endif()
+  if(possible_path)
+    get_filename_component(RET_PATH ${possible_path} REALPATH)
+    set(${REAL_PATH} ${RET_PATH} PARENT_SCOPE)
+    set(${LINK_PATH} ${possible_path} PARENT_SCOPE)
+    set(${LIB_SONAME} ${PREFIX}${library_name}${EXTENSION} PARENT_SCOPE)
+  endif()
+endfunction(find_Possible_Library_Path)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_Library_In_Implicit_System_Dir| replace:: ``find_Library_In_Implicit_System_Dir``
+#  .. _find_Library_In_Implicit_System_Dir:
+#
+#  find_Library_In_Implicit_System_Dir
+#  -----------------------------------
+#
+#   .. command:: find_Library_In_Implicit_System_Dir(LIBRARY_PATH LIB_SONAME LIB_SOVERSION library_name)
+#
+#    Get link info of a library that is supposed to be located in implicit system folders.
+#
+#     :library_name: the name of the library (without any prefix or postfix specific to system).
+#
+#     :LIBRARY_PATH: the output variable that contains the full path to library, empty if no path found.
+#
+#     :LIB_SONAME: the output variable that contains only the name of the library if path has been found, empty otherwise.
+#
+#     :LIB_SOVERSION: the output variable that contains only the SOVERSION of the library if LIB_SONAME has been found, empty otherwise.
+#
+function(find_Library_In_Implicit_System_Dir LIBRARY_PATH LIB_SONAME LIB_SOVERSION library_name)
+  set(IMPLICIT_DIRS ${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES})
+  foreach(dir IN LISTS IMPLICIT_DIRS)#searching for library name in same order as specified by the path to ensure same resolution as the linker
+  	find_Possible_Library_Path(REAL_PATH LINK_PATH LIBSONAME ${dir} ${library_name})
+  	if(REAL_PATH)#there is a standard library or symlink with that name
+  		get_Binary_Description(DESCRITION ${REAL_PATH})
+  		if(DESCRITION)#preceding commands says OK: means the binary is recognized as an adequate shared object
+        #getting the SONAME
+  			get_Soname(SONAME SOVERSION ${LIBSONAME} DESCRITION)
+        set(${LIBRARY_PATH} ${LINK_PATH} PARENT_SCOPE)
+        set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
+        set(${LIB_SOVERSION} ${SOVERSION} PARENT_SCOPE)
+        return()
+      endif()
+    endif()
+  endforeach()
+  set(${LIBRARY_PATH} PARENT_SCOPE)
+  set(${LIB_SONAME} PARENT_SCOPE)
+  set(${LIB_SOVERSION} PARENT_SCOPE)
+endfunction(find_Library_In_Implicit_System_Dir)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Library_ELF_Symbol_Max_Version| replace:: ``get_Library_ELF_Symbol_Max_Version``
+#  .. _get_Library_ELF_Symbol_Max_Version:
+#
+#  get_Library_ELF_Symbol_Max_Version
+#  ----------------------------------
+#
+#   .. command:: get_Library_ELF_Symbol_Max_Version(MAX_VERSION path_to_library symbol)
+#
+#    Get the max version for a (supposed to be) versionned symbol of the given library.
+#
+#     :path_to_library: the library to inspect.
+#
+#     :symbol: the symbol that is supposed to have a version number. For instance symbol GLIBCXX can be used for libstdc++.so (GNU standard C++ library).
+#
+#     :MAX_VERSION: the output variable that contains the max version of the target symbol always with major.minor.patch structure.
+#
+function(get_Library_ELF_Symbol_Max_Version MAX_VERSION path_to_library symbol)
+  set(ALL_SYMBOLS)
+  usable_In_Regex(usable_symbol ${symbol})
+  file(STRINGS ${path_to_library} ALL_SYMBOLS REGEX ".*${usable_symbol}.*")#extract ascii symbols from the library file
+  set(max_version "0.0.0")
+  foreach(version IN LISTS ALL_SYMBOLS)
+    extract_ELF_Symbol_Version(RES_VERSION "${usable_symbol}" ${version})#get the version from each found symbol
+    if(RES_VERSION VERSION_GREATER max_version)
+      set(max_version ${RES_VERSION})
+    endif()
+  endforeach()
+  if(max_version VERSION_EQUAL "0.0.0")
+    set(${MAX_VERSION} PARENT_SCOPE)#no result for that symbol
+  endif()
+  set(${MAX_VERSION} ${max_version} PARENT_SCOPE)
+endfunction(get_Library_ELF_Symbol_Max_Version)
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Library_ELF_Symbols_Max_Versions| replace:: ``get_Library_ELF_Symbols_Max_Versions``
+#  .. _get_Library_ELF_Symbols_Max_Versions:
+#
+#  get_Library_ELF_Symbols_Max_Versions
+#  -------------------------------------
+#
+#   .. command:: get_Library_ELF_Symbols_Max_Versions(LIST_OF_SYMBOLS_VERSIONS path_to_library list_of_symbols)
+#
+#    Get the list of all versions for all given symbols.
+#
+#     :path_to_library: the library to inspect.
+#
+#     :list_of_symbols: the symbols whose version must be found.
+#
+#     :LIST_OF_SYMBOLS_VERSIONS: the output variable that contains the list of pairs (symbol, version).
+#
+function(get_Library_ELF_Symbols_Max_Versions LIST_OF_SYMBOLS_VERSIONS path_to_library list_of_symbols)
+  set(res_symbols_version)
+  foreach(symbol IN LISTS list_of_symbols)
+    get_Library_ELF_Symbol_Max_Version(MAX_VERSION_FOR_SYMBOL ${path_to_library} ${symbol})
+    if(MAX_VERSION_FOR_SYMBOL)# version exists for that symbol
+			list(APPEND res_symbols_version "${symbol}" "${MAX_VERSION_FOR_SYMBOL}")
+		endif()
+  endforeach()
+  set(${LIST_OF_SYMBOLS_VERSIONS} ${res_symbols_version} PARENT_SCOPE)
+endfunction(get_Library_ELF_Symbols_Max_Versions)
 
 #############################################################################################
 ############### API functions for managing platform description variables ###################
@@ -234,6 +548,26 @@ function(reset_Package_Platforms_Variables)
 endfunction(reset_Package_Platforms_Variables)
 
 
+# function(test_Soname_Compatibility COMPATIBLE platform_libs_sonames_var package_libs_soname_var)
+#   set(${COMPATIBLE} TRUE PARENT_SCOPE)
+#
+#   foreach(lib IN LISTS ${package_libs_soname_var})
+#     foreach(platform_lib IN LISTS ${platform_libs_sonames_var})
+#       if(platform_lib )
+#       if(NOT lib STREQUAL )
+#         #so such standard librairy defined in current platform
+#         set(${COMPATIBLE} FALSE PARENT_SCOPE)
+#         return()
+#       elseif((NOT ${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION STREQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION))
+#         #soversion number must be defined for the given lib in order to be compared (if no sonumber => no restriction)
+#         set(${COMPATIBLE} FALSE PARENT_SCOPE)
+#         return()
+#       endif()
+#     endforeach()
+#   endforeach()
+#
+# endfunction(test_Soname_Compatibility)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -262,33 +596,27 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package)
   else()
     #test for standard libraries versions
     foreach(lib IN LISTS ${package}_BUILT_WITH_CXX_STD_LIBRARIES)
-      if(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION
-          AND CXX_STD_LIB_${lib}_ABI_SOVERSION
-          AND (NOT ${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION STREQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION))
+      if(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION)
+        if(NOT CXX_STD_LIB_${lib}_ABI_SOVERSION)
+          #so such standard librairy defined in current platform
+          set(${COMPATIBLE} FALSE PARENT_SCOPE)
+          return()
+        elseif((NOT ${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION STREQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION))
           #soversion number must be defined for the given lib in order to be compared (if no sonumber => no restriction)
           set(${COMPATIBLE} FALSE PARENT_SCOPE)
           return()
-      endif()
-    endforeach()
-    foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
-      if(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION
-          AND CXX_STD_LIB_${lib}_ABI_SOVERSION
-          AND (NOT ${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION STREQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION))
-          #soversion number must be defined for the given lib in order to be compared (if no sonumber => no restriction)
-          set(${COMPATIBLE} FALSE PARENT_SCOPE)
-          return()
+        endif()
       endif()
     endforeach()
 
     #test symbols versions
     foreach(symbol IN LISTS ${package}_BUILT_WITH_CXX_STD_SYMBOLS)#for each symbol used by the binary
-      if(NOT CXX_STD_SYMBOL_${symbol}_VERSION)#corresponding symbol do not exist in current environment => it is an uncompatible binary
+      if(NOT CXX_STD_SYMBOL_${symbol}_VERSION)
+        #corresponding symbol do not exist in current environment => it is an uncompatible binary
         set(${COMPATIBLE} FALSE PARENT_SCOPE)
         return()
-      endif()
-
-      #the binary has been built and linked against a newer version of standard libraries => NOT compatible
-      if(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION VERSION_GREATER CXX_STD_SYMBOL_${symbol}_VERSION)
+      elseif(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION VERSION_GREATER CXX_STD_SYMBOL_${symbol}_VERSION)
+        #the binary has been built and linked against a newer version of standard libraries => NOT compatible
         set(${COMPATIBLE} FALSE PARENT_SCOPE)
         return()
       endif()

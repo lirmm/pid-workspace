@@ -23,3 +23,10 @@ include(Configuration_Definition NO_POLICY_SCOPE)
 PID_Configuration_Variables(v4l2
 				VARIABLES LINK_OPTIONS	LIBRARY_DIRS 	RPATH   	INCLUDE_DIRS
 				VALUES 		V4L2_LINKS		V4L2_LIBDIRS	V4L2_LIBRARIES 	V4L2_INCLUDE_DIRS)
+
+# constraints
+PID_Configuration_Constraints(v4l2		IN_BINARY soname
+                                      VALUE     V4L2_SONAME)
+
+# dependencies
+PID_Configuration_Dependencies(v4l2 DEPEND posix)

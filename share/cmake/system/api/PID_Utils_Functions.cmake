@@ -2183,49 +2183,6 @@ endfunction(convert_Library_Path_To_Default_System_Library_Link)
 #
 # .. ifmode:: internal
 #
-#  .. |extract_ELF_Symbol_Version| replace:: ``extract_ELF_Symbol_Version``
-#  .. _extract_ELF_Symbol_Version:
-#
-#  extract_ELF_Symbol_Version
-#  --------------------------
-#
-#   .. command:: extract_ELF_Symbol_Version(RES_VERSION symbol symbol_version)
-#
-#    Get the version from a (supposed to be) versionned symbol.
-#
-#     :symbol: the symbol that is supposed to have a version number. For instance symbol GLIBCXX can be used for libstdc++.so (GNU standard C++ library).
-#
-#     :symbol_version: the input symbol, for instance "GLIBCXX_2.4".
-#
-#     :RES_VERSION: the output variable that contains the version of the target symbol always with major.minor.patch structure. For istance with previous arguùents it returns "2.4.0".
-#
-function(extract_ELF_Symbol_Version RES_VERSION symbol symbol_version)
-	set(parsed_version)
-	string(REGEX REPLACE "^${symbol}([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2;\\3" parsed_version ${symbol_version})
-	if(parsed_version STREQUAL symbol_version)#NO match
-		string(REGEX REPLACE "^${symbol}([0-9]+)\\.([0-9]+)$" "\\1;\\2" parsed_version ${symbol_version})
-	endif()
-	list(LENGTH parsed_version SIZE)
-	if(SIZE EQUAL 2)
-		list(GET parsed_version 0 MAJOR)
-		list(GET parsed_version 1 MINOR)
-		set(PATCH "0")
-	elseif(SIZE EQUAL 3)
-		list(GET parsed_version 0 MAJOR)
-		list(GET parsed_version 1 MINOR)
-		list(GET parsed_version 2 PATCH)
-	else()
-		set(MAJOR "0")
-		set(MINOR "0")
-		set(PATCH "0")
-	endif()
-	set(${RES_VERSION} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
-endfunction(extract_ELF_Symbol_Version)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |get_Link_Type| replace:: ``get_Link_Type``
 #  .. _get_Link_Type:
 #
@@ -4278,6 +4235,30 @@ endfunction(compare_ABIs)
 #################################################################################################
 ################################### pure CMake utilities ########################################
 #################################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |usable_In_Regex| replace:: ``usable_In_Regex``
+#  .. _usable_In_Regex:
+#
+#  usable_In_Regex
+#  ---------------
+#
+#   .. command:: usable_In_Regex(RES_STR name)
+#
+#    Prepare a string so that its content can be found in a regular expression.
+#
+#     :name: the string content that is a name we want to search in a regular expression.
+#
+#     :RES_STR: the output variable that contains the equivalent name usable in a regular expression
+#
+function(usable_In_Regex RES_STR name)
+	string(REPLACE "+" "\\+" RES ${name})
+	string(REPLACE "." "\\." RES ${RES})
+	set(${RES_STR} ${RES} PARENT_SCOPE)
+endfunction(usable_In_Regex)
 
 #.rst:
 #
