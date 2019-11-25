@@ -1689,7 +1689,7 @@ else()#the dependency has not been already found
 endif()
 #last step : check STD C++ ABI compatibility
 if(${dependency}_FOUND${VAR_SUFFIX})
-  is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${dependency})
+  is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${dependency} ${mode})
   if(NOT IS_ABI_COMPATIBLE)
     set(${COMPATIBLE} FALSE PARENT_SCOPE)
     return() #problem => the binary package has been built with an incompatible C++ ABI
@@ -1812,7 +1812,7 @@ else()#the dependency has not been already found
 endif()
 #last step : check STD C++ ABI compatibility
 if(${external_dependency}_FOUND${VAR_SUFFIX})
-  is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${external_dependency})
+  is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${external_dependency} ${mode})
   if(NOT IS_ABI_COMPATIBLE)
     set(${COMPATIBLE} FALSE PARENT_SCOPE)
     return() #problem => the binary package has been built with an incompatible C++ ABI

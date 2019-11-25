@@ -548,25 +548,221 @@ function(reset_Package_Platforms_Variables)
 endfunction(reset_Package_Platforms_Variables)
 
 
-# function(test_Soname_Compatibility COMPATIBLE platform_libs_sonames_var package_libs_soname_var)
-#   set(${COMPATIBLE} TRUE PARENT_SCOPE)
+#.rst:
 #
-#   foreach(lib IN LISTS ${package_libs_soname_var})
-#     foreach(platform_lib IN LISTS ${platform_libs_sonames_var})
-#       if(platform_lib )
-#       if(NOT lib STREQUAL )
-#         #so such standard librairy defined in current platform
-#         set(${COMPATIBLE} FALSE PARENT_SCOPE)
-#         return()
-#       elseif((NOT ${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION STREQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION))
-#         #soversion number must be defined for the given lib in order to be compared (if no sonumber => no restriction)
-#         set(${COMPATIBLE} FALSE PARENT_SCOPE)
-#         return()
-#       endif()
-#     endforeach()
-#   endforeach()
+# .. ifmode:: internal
 #
-# endfunction(test_Soname_Compatibility)
+#  .. |test_Soname_Compatibility| replace:: ``test_Soname_Compatibility``
+#  .. _test_Soname_Compatibility:
+#
+#  test_Soname_Compatibility
+#  --------------------------
+#
+#   .. command:: test_Soname_Compatibility(COMPATIBLE package_sonames_var platform_sonames_var)
+#
+#   Test whether the current platform configruation fulfills SONAMES required by a package configuration.
+#
+#     :package_sonames_var: the variable containing the list of sonames directly required by a configuration.
+#
+#     :platform_sonames_var: the variable that contains sonames provided by the platform.
+#
+#     :COMPATIBLE: the output variable that is TRUE if package configuration is satisfied by current platform.
+#
+function(test_Soname_Compatibility COMPATIBLE package_sonames_var platform_sonames_var)
+  set(${COMPATIBLE} FALSE PARENT_SCOPE)
+  #simply check that for each soname this soname exists in current platform
+  foreach(package_lib IN LISTS ${package_sonames_var})#for each library coming from the binary package
+    set(LIB_SONAME_FOUND FALSE)
+    foreach(platform_lib IN LISTS ${platform_sonames_var})#searching the corresponding library coming from current platform
+      if(platform_lib STREQUAL package_lib)#found
+          set(LIB_SONAME_FOUND TRUE)
+          break()
+      endif()
+    endforeach()
+    if(NOT LIB_SONAME_FOUND)
+      return()
+    endif()
+  endforeach()
+  set(${COMPATIBLE} TRUE PARENT_SCOPE)
+endfunction(test_Soname_Compatibility)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |serialize_Symbol| replace:: ``serialize_Symbol``
+#  .. _serialize_Symbol:
+#
+#  serialize_Symbol
+#  ----------------
+#
+#   .. command:: serialize_Symbol(RET_STR symbol version)
+#
+#   Serialize a symbol version into a string..
+#
+#     :symbol: the symbol name.
+#
+#     :version: the symbol version.
+#
+#     :RET_STR: the string output variable that contains the serialized symbol version.
+#
+function(serialize_Symbol RET_STR symbol version)
+set(${RET_STR} "<${symbol}/${version}>" PARENT_SCOPE)
+endfunction(serialize_Symbol)
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deserialize_Symbol| replace:: ``deserialize_Symbol``
+#  .. _deserialize_Symbol:
+#
+#  deserialize_Symbol
+#  ------------------
+#
+#   .. command:: deserialize_Symbol(RET_STR symbol version)
+#
+#   Deerialize a symbol name and from a string. Inverse operation of serialize_Symbol.
+#
+#     :symbol_str: the serialized symbol.
+#
+#     :RET_SYMBOL: the output variable that contains the symbol name.
+#
+#     :RET_VERSION: the output variable that contains the symbol version.
+#
+function(deserialize_Symbol RET_SYMBOL RET_VERSION symbol_str)
+  if(symbol_str MATCHES "^<([^/]+)/([^>]+)>$")
+    set(${RET_SYMBOL} ${CMAKE_MATCH_1} PARENT_SCOPE)
+    set(${RET_VERSION} ${CMAKE_MATCH_2} PARENT_SCOPE)
+  else()
+    set(${RET_SYMBOL} PARENT_SCOPE)
+    set(${RET_VERSION} PARENT_SCOPE)
+  endif()
+endfunction(deserialize_Symbol)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Platform_Provides_Compatible_Symbol| replace:: ``check_Platform_Provides_Compatible_Symbol``
+#  .. _check_Platform_Provides_Compatible_Symbol:
+#
+#  check_Platform_Provides_Compatible_Symbol
+#  -----------------------------------------
+#
+#   .. command:: check_Platform_Provides_Compatible_Symbol(COMPATIBLE package_symbol platform_symbols_var)
+#
+#   Test whether the current platform configruation provide symbols compatible with those required by a package configuration.
+#
+#     :package_sonames_var: the variable containing the list of symbols directly required by a configuration.
+#
+#     :platform_sonames_var: the variable that contains the list of symbols provided by the platform.
+#
+#     :COMPATIBLE: the output variable that is TRUE if package configuration is satisfied by current platform.
+#
+function(check_Platform_Provides_Compatible_Symbol COMPATIBLE package_symbol platform_symbols_var)
+  set(${COMPATIBLE} FALSE PARENT_SCOPE)
+  deserialize_Symbol(PACK_SYMBOL PACK_VERSION ${package_symbol})
+  set(FOUND FALSE)
+  foreach(platform_symbol IN LISTS ${platform_symbols_var})
+    deserialize_Symbol(PLAT_SYMBOL PLAT_VERSION ${platform_symbol})
+    if(PACK_SYMBOL STREQUAL PLAT_SYMBOL)# this is the symbol to check
+      if(NOT PLAT_VERSION VERSION_LESS PACK_VERSION)
+        set(${COMPATIBLE} TRUE PARENT_SCOPE)
+      endif()
+      return()
+    endif()
+  endforeach()
+endfunction(check_Platform_Provides_Compatible_Symbol)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |test_Symbols_Compatibility| replace:: ``test_Symbols_Compatibility``
+#  .. _test_Symbols_Compatibility:
+#
+#  test_Symbols_Compatibility
+#  --------------------------
+#
+#   .. command:: test_Symbols_Compatibility(COMPATIBLE package_symbols_var platform_symbols_var)
+#
+#   Test whether the current platform configruation provide symbols compatible with those required by a package configuration.
+#
+#     :package_symbols_var: the variable containing the list of symbols directly required by a configuration.
+#
+#     :platform_symbols_var: the variable that contains the list of symbols provided by the platform.
+#
+#     :COMPATIBLE: the output variable that is TRUE if package configuration is satisfied by current platform.
+#
+function(test_Symbols_Compatibility COMPATIBLE package_symbols_var platform_symbols_var)
+  set(${COMPATIBLE} FALSE PARENT_SCOPE)
+  foreach(package_symbol IN LISTS ${package_symbols_var})
+    check_Platform_Provides_Compatible_Symbol(SYMBOL_COMPATIBLE ${package_symbol} ${platform_symbols_var})
+    if(NOT SYMBOL_COMPATIBLE)
+      return()
+    endif()
+  endforeach()
+  set(${COMPATIBLE} TRUE PARENT_SCOPE)
+endfunction(test_Symbols_Compatibility)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Soname_Symbols_Values| replace:: ``get_Soname_Symbols_Values``
+#  .. _get_Soname_Symbols_Values:
+#
+#  get_Soname_Symbols_Values
+#  --------------------------
+#
+#   .. command:: get_Soname_Symbols_Values(SONAME SYMBOLS binary_config_args_var)
+#
+#   Get Sonames and symbols required by the libraries coming from a configuration.
+#
+#     :binary_config_args_var: the variable containing the list if arguments of a configuration.
+#
+#     :SONAME: the output variable that contains sonames required by the configuration.
+#
+#     :SYMBOLS: the output variable that contains symbols required by the configuration.
+#
+function(get_Soname_Symbols_Values SONAME SYMBOLS binary_config_args_var)
+  set(${SONAME} PARENT_SCOPE)
+  set(${SYMBOLS} PARENT_SCOPE)
+
+  set(var_val_pair_list ${${binary_config_args_var}})
+  #only get symbols and soname
+  set(ALREADY_DONE 0)
+  while(var_val_pair_list)
+    list(GET var_val_pair_list 0 name)
+    list(GET var_val_pair_list 1 value)
+    list(REMOVE_AT var_val_pair_list 0 1)#update the list of arguments in parent scope
+    if( name STREQUAL "soname"
+        OR name STREQUAL "symbols")#only check for soname and symbols compatibility if any
+
+      if(value AND NOT value STREQUAL \"\")#special case of an empty list (represented with \"\") must be avoided
+        string(REPLACE " " "" VAL_LIST ${value})#remove the spaces in the string if any
+        string(REPLACE "," ";" VAL_LIST ${VAL_LIST})#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
+      else()
+        set(VAL_LIST)
+      endif()
+      math(EXPR ALREADY_DONE "${ALREADY_DONE}+1")
+      if(VAL_LIST)#ensure there is a value
+        if(name STREQUAL "soname")
+          set(${SONAME} ${VAL_LIST} PARENT_SCOPE)
+        else()
+          set(${SYMBOLS} ${VAL_LIST} PARENT_SCOPE)
+        endif()
+      endif()
+    endif()
+    if(ALREADY_DONE EQUAL 2)#just to optimize a bit
+      return()
+    endif()
+  endwhile()
+endfunction(get_Soname_Symbols_Values)
 
 #.rst:
 #
@@ -584,44 +780,69 @@ endfunction(reset_Package_Platforms_Variables)
 #
 #     :package: the name of binary package to check.
 #
+#     :mode: the considered build mode.
+#
 #     :COMPATIBLE: the output variable that is TRUE if package's stdlib usage is compatible with current platform ABI, FALSE otherwise.
 #
-function(is_Compatible_With_Current_ABI COMPATIBLE package)
+function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
+  set(${COMPATIBLE} FALSE PARENT_SCOPE)
 
+  #1) testing ompiler ABI compatibility
   if((${package}_BUILT_WITH_CXX_ABI AND NOT ${package}_BUILT_WITH_CXX_ABI STREQUAL CURRENT_CXX_ABI)
     OR (${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI AND NOT ${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI STREQUAL CMAKE_INTERNAL_PLATFORM_ABI))
-    set(${COMPATIBLE} FALSE PARENT_SCOPE)
     #remark: by default we are not restructive if teh binary file does not contain sur information
     return()
-  else()
-    #test for standard libraries versions
-    foreach(lib IN LISTS ${package}_BUILT_WITH_CXX_STD_LIBRARIES)
-      if(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION)
-        if(NOT CXX_STD_LIB_${lib}_ABI_SOVERSION)
-          #so such standard librairy defined in current platform
-          set(${COMPATIBLE} FALSE PARENT_SCOPE)
-          return()
-        elseif((NOT ${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION STREQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION))
-          #soversion number must be defined for the given lib in order to be compared (if no sonumber => no restriction)
-          set(${COMPATIBLE} FALSE PARENT_SCOPE)
-          return()
-        endif()
-      endif()
-    endforeach()
-
-    #test symbols versions
-    foreach(symbol IN LISTS ${package}_BUILT_WITH_CXX_STD_SYMBOLS)#for each symbol used by the binary
-      if(NOT CXX_STD_SYMBOL_${symbol}_VERSION)
-        #corresponding symbol do not exist in current environment => it is an uncompatible binary
-        set(${COMPATIBLE} FALSE PARENT_SCOPE)
-        return()
-      elseif(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION VERSION_GREATER CXX_STD_SYMBOL_${symbol}_VERSION)
-        #the binary has been built and linked against a newer version of standard libraries => NOT compatible
-        set(${COMPATIBLE} FALSE PARENT_SCOPE)
-        return()
-      endif()
-    endforeach()
   endif()
+
+  #2) test for standard libraries SO versions
+  foreach(lib IN LISTS ${package}_BUILT_WITH_CXX_STD_LIBRARIES)
+    if(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION)
+      if(NOT CXX_STD_LIB_${lib}_ABI_SOVERSION)
+        #so such standard librairy defined in current platform
+        return()
+      elseif((NOT ${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION STREQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION))
+        #soversion number must be defined for the given lib in order to be compared (if no sonumber => no restriction)
+        return()
+      endif()
+    endif()
+  endforeach()
+
+  #3) test standard libraries symbols versions
+  foreach(symbol IN LISTS ${package}_BUILT_WITH_CXX_STD_SYMBOLS)#for each symbol used by the binary
+    if(NOT CXX_STD_SYMBOL_${symbol}_VERSION)
+      #corresponding symbol do not exist in current environment => it is an uncompatible binary
+      return()
+    elseif(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION VERSION_GREATER CXX_STD_SYMBOL_${symbol}_VERSION)
+      #the binary has been built and linked against a newer version of standard libraries => NOT compatible
+      return()
+    endif()
+  endforeach()
+
+  #4) testing sonames and symbols of libraries coming from configurations used by package
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  set(no_arg)
+  foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
+    #get SONAME and SYMBOLS coming from package configuration
+    parse_Configuration_Arguments_From_Binaries(PACKAGE_SPECS ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+    get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
+    #get SONAME and SYMBOLS coming from platform configuration
+    check_System_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${config} no_arg ${mode})
+    get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
+
+    #from here we have the value to compare with
+    if(PACKAGE_SONAME)#package defines constraints on SONAMES
+      test_Soname_Compatibility(SONAME_COMPATIBLE PACKAGE_SONAME PLATFORM_SONAME)
+      if(NOT SONAME_COMPATIBLE)
+        return()
+      endif()
+    endif()
+    if(PACKAGE_SYMBOLS)#package defines constraints on SYMBOLS
+      test_Symbols_Compatibility(SYMBOLS_COMPATIBLE PACKAGE_SYMBOLS PLATFORM_SYMBOLS)
+      if(NOT SYMBOLS_COMPATIBLE)
+        return()
+      endif()
+    endif()
+  endforeach()
   set(${COMPATIBLE} TRUE PARENT_SCOPE)
 endfunction(is_Compatible_With_Current_ABI)
 
@@ -924,7 +1145,7 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
     check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS ${config_name} ${mode})
     if(RES_CHECK)
       if(${config_args})#testing if the variable containing arguments is not empty
-        #if this situation we need to check if all args match constraints
+        #in this situation we need to check if all args match constraints
         check_Configuration_Arguments_Included_In_Constraints(INCLUDED ${config_args} ${RES_CONSTRAINTS})
         if(INCLUDED)#no need to evaluate again
           set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)

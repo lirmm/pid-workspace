@@ -2838,7 +2838,7 @@ else()
 endif()
 
 # 0) checking global ABI compatibility
-is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${package})
+is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${package} ${mode})
 if(NOT IS_ABI_COMPATIBLE)
   message("[PID] WARNING : binaries in package ${package} version ${version} are not compatible with your current platform settings.")
   set(${RESULT} FALSE PARENT_SCOPE)
