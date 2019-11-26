@@ -782,12 +782,12 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace and try to find ReferExternal${dep_pack}.cmake file in share/cmake/references folder.")
 			return()
 		endif()
-		resolve_External_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
+		resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
 		if(NOT ${dep_pack}_FOUND${USE_MODE_SUFFIX})#this time the package must be found since installed => internal BUG in PID
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
 			return()
-		elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
+		elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			if(${dep_pack}_ALL_REQUIRED_VERSIONS)
 				set(mess_str "All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}")
@@ -802,6 +802,10 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX
 				endif()
 			endif()
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy ${local_version} coming from package ${PROJECT_NAME}. ${mess_str}.")
+			return()
+		elseif(NOT IS_ABI_COMPATIBLE)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent external package ${dep_pack} with an ABI compatible with current platform. This may mean that you have no access to ${dep_pack} wrapper and no binary package for ${dep_pack} match current platform ABI")
 			return()
 		else()#OK resolution took place !!
 			add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
@@ -826,14 +830,18 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install native package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace and try to find Refer${dep_pack}.cmake file in share/cmake/references folder.")
 				return()
 			endif()
-			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
-			if(NOT ${dep_pack}_FOUND${USE_MODE_SUFFIX})#this time the package must be found since installed => internak BUG in PID
+			resolve_Native_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
+			if(NOT ${dep_pack}_FOUND${USE_MODE_SUFFIX})#this time the package must be found since installed => internal BUG in PID
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed native package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_pack}.")
 				return()
-			elseif(NOT IS_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
+			elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it theoretically already has all its dependencies compatible (otherwise there is simply no solution)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent native package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
+				return()
+			elseif(NOT IS_ABI_COMPATIBLE)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent native package ${dep_pack} with an ABI compatible with current platform. This may mean that you have no access to ${dep_pack} repository and no binary package for ${dep_pack} matches current platform ABI")
 				return()
 			else()#OK resolution took place !!
 				add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
@@ -1658,9 +1666,9 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 			endif()
 		endif()
 	endif()
-
 	### 2) check and set the value of the user cache entry dependening on constraints coming from the build context (dependent build or classical build) #####
 	# check if a version of this dependency is required by another package used in the current build process and memorize this version
+	set(USE_EXACT FALSE)
 	get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_package})
 	if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
 		if(list_of_possible_versions) #list of possible versions is constrained
@@ -1746,8 +1754,8 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 	if(NOT unused) #if the dependency is really used (in case it were optional and unselected by user)
 		if(NOT ${dep_package}_FOUND${USE_MODE_SUFFIX})#testing if the package has been previously found locally or not
 			#package has never been found by a direct call to find_package in root CMakeLists.txt
-			resolve_Native_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
-			if(NOT IS_COMPATIBLE)
+			resolve_Native_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
+			if(NOT IS_VERSION_COMPATIBLE)# version compatiblity problem => no adequate solution with constraint imposed by a dependent build
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				set(message_versions "")
 				if(${dep_package}_ALL_REQUIRED_VERSIONS)
@@ -1760,6 +1768,14 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 			elseif(${dep_package}_FOUND${USE_MODE_SUFFIX})
 				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#do not propagate choice if none made
 					add_Chosen_Package_Version_In_Current_Process(${dep_package})
+				endif()
+				if(NOT IS_ABI_COMPATIBLE)#need to reinstall the package anyway because it is not compatible with current platform
+					if(NOT REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+						message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding its ABI constraints. You can activate the option REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD to try reinstalling it.")
+						return()
+					endif()
+					#from here we can add it to versions to install to force reinstall
+					add_To_Install_Package_Specification(${dep_package} "${${dep_package}_VERSION_STRING}" ${USE_EXACT})
 				endif()
 			endif()#if not found after resolution simply wait it to be installed automatically
 		else()#if found before this call
@@ -1940,8 +1956,8 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 	# try to find the adequate package version => it is necessarily required
 	if(NOT ${dep_package}_FOUND${USE_MODE_SUFFIX})#testing if the package has been previously found or not
 		#package has never been found by a direct call to find_package in root CMakeLists.txt
-		resolve_External_Package_Dependency(IS_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
-		if(NOT IS_COMPATIBLE)
+		resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
+		if(NOT IS_VERSION_COMPATIBLE)# version compatiblity problem => no adequate solution with constraint imposed by a dependent build
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			set(message_versions "")
 			if(${dep_package}_ALL_REQUIRED_VERSIONS)
@@ -1958,6 +1974,18 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 		elseif(${dep_package}_FOUND${USE_MODE_SUFFIX})#dependency has been found in workspace after resolution
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
 				add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
+			endif()
+			if(NOT IS_ABI_COMPATIBLE)#need to reinstall the package anyway because it is not compatible with current platform
+				if(NOT REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding its ABI constraints. You can activate the option REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD to try reinstalling it.")
+					return()
+				endif()
+				#from here we can add it to versions to install to force reinstall
+				if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
+					add_To_Install_External_Package_Specification(${dep_package} "${${dep_package}_VERSION}" TRUE TRUE)
+				else()
+					add_To_Install_External_Package_Specification(${dep_package} "${${dep_package}_VERSION}" ${USE_EXACT} FALSE)
+				endif()
 			endif()
 		endif()
 	else()#if was found prior to this call

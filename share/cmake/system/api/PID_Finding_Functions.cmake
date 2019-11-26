@@ -1588,7 +1588,7 @@ endfunction(reset_Packages_Finding_Variables)
 #  resolve_Native_Package_Dependency
 #  ---------------------------------
 #
-#   .. command:: resolve_Native_Package_Dependency(COMPATIBLE package dependency mode)
+#   .. command:: resolve_Native_Package_Dependency(VERSION_COMPATIBLE ABI_COMPATIBLE package dependency mode)
 #
 #    Find the best version of a dependency for a given package (i.e. another package). It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).
 #    each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
@@ -1604,10 +1604,13 @@ endfunction(reset_Packages_Finding_Variables)
 #
 #     :mode: the build mode to consider.
 #
-#     :COMPATIBLE: the output variable that is TRUE if the dependency has a compatible version with those already defined in current build process, false otherwise.
+#     :VERSION_COMPATIBLE: the output variable that is TRUE if the dependency has a compatible version with those already defined in current build process, false otherwise.
 #
-function(resolve_Native_Package_Dependency COMPATIBLE package dependency mode)
-set(${COMPATIBLE} TRUE PARENT_SCOPE)
+#     :ABI_COMPATIBLE: the output variable that is TRUE if the dependency use a compatible ABI with the one defined by current platform, false otherwise.
+#
+function(resolve_Native_Package_Dependency VERSION_COMPATIBLE ABI_COMPATIBLE package dependency mode)
+set(${VERSION_COMPATIBLE} TRUE PARENT_SCOPE)
+set(${ABI_COMPATIBLE} TRUE PARENT_SCOPE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
 	if(${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}) # a specific version is required
@@ -1629,7 +1632,7 @@ if(${dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (pre
 				endif()
 				return()
 			else() #not compatible
-        set(${COMPATIBLE} FALSE PARENT_SCOPE)
+        set(${VERSION_COMPATIBLE} FALSE PARENT_SCOPE)
 				return()
 			endif()
 		else()#not an exact version required
@@ -1649,7 +1652,7 @@ if(${dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (pre
 					return() # nothing to do more, the current used version is compatible with everything
 				endif()
 			else()
-        set(${COMPATIBLE} FALSE PARENT_SCOPE)
+        set(${VERSION_COMPATIBLE} FALSE PARENT_SCOPE)
         return()
 			endif()
 		endif()
@@ -1687,15 +1690,11 @@ else()#the dependency has not been already found
 		)
 	endif()
 endif()
-#last step : check STD C++ ABI compatibility
+#last step : check STD C++ AND CONFIGURATION ABI compatibilities
 if(${dependency}_FOUND${VAR_SUFFIX})
   is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${dependency} ${mode})
-  if(NOT IS_ABI_COMPATIBLE)
-    set(${COMPATIBLE} FALSE PARENT_SCOPE)
-    return() #problem => the binary package has been built with an incompatible C++ ABI
-  endif()
+  set(${ABI_COMPATIBLE} ${IS_ABI_COMPATIBLE} PARENT_SCOPE)#warning => the binary package may have been built with an incompatible C++ ABI
 endif()
-
 endfunction(resolve_Native_Package_Dependency)
 
 #.rst:
@@ -1708,7 +1707,7 @@ endfunction(resolve_Native_Package_Dependency)
 #  resolve_External_Package_Dependency
 #  -----------------------------------
 #
-#   .. command:: resolve_External_Package_Dependency(COMPATIBLE package external_dependency mode)
+#   .. command:: resolve_External_Package_Dependency(VERSION_COMPATIBLE ABI_COMPATIBLE package external_dependency mode)
 #
 #    Find the best version of an external dependency for a given package. It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).
 #
@@ -1718,10 +1717,13 @@ endfunction(resolve_Native_Package_Dependency)
 #
 #     :mode: the build mode to consider.
 #
-#     :COMPATIBLE: the output variable that is TRUE if the dependency has a compatible version with those already defined in current build process, false otherwise.
+#     :VERSION_COMPATIBLE: the output variable that is TRUE if the dependency has a compatible version with those already defined in current build process, false otherwise.
 #
-function(resolve_External_Package_Dependency COMPATIBLE package external_dependency mode)
-set(${COMPATIBLE} TRUE PARENT_SCOPE)
+#     :ABI_COMPATIBLE: the output variable that is TRUE if the dependency use a compatible ABI with the one defined by current platform, false otherwise.
+#
+function(resolve_External_Package_Dependency VERSION_COMPATIBLE ABI_COMPATIBLE package external_dependency mode)
+set(${VERSION_COMPATIBLE} TRUE PARENT_SCOPE)
+set(${ABI_COMPATIBLE} TRUE PARENT_SCOPE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
   if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}) # a specific version is required
@@ -1748,7 +1750,7 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
 				endif()
 				return()
 			else() #not compatible
-        set(${COMPATIBLE} FALSE PARENT_SCOPE)
+        set(${VERSION_COMPATIBLE} FALSE PARENT_SCOPE)
 				return()
 			endif()
 		else()#not an exact version required
@@ -1768,7 +1770,7 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
 					return() # nothing to do more, the current used version is compatible with everything
 				endif()
 		  else()
-        set(${COMPATIBLE} FALSE PARENT_SCOPE)
+        set(${VERSION_COMPATIBLE} FALSE PARENT_SCOPE)
   			return()
   		endif()
 		endif()
@@ -1813,10 +1815,8 @@ endif()
 #last step : check STD C++ ABI compatibility
 if(${external_dependency}_FOUND${VAR_SUFFIX})
   is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${external_dependency} ${mode})
-  if(NOT IS_ABI_COMPATIBLE)
-    set(${COMPATIBLE} FALSE PARENT_SCOPE)
-    return() #problem => the binary package has been built with an incompatible C++ ABI
-  endif()
+  set(${ABI_COMPATIBLE} ${IS_ABI_COMPATIBLE} PARENT_SCOPE)
+  #warning => the binary package has been built with an incompatible C++ ABI
 endif()
 endfunction(resolve_External_Package_Dependency)
 
