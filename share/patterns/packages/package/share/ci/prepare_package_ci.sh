@@ -43,7 +43,7 @@ platform=${platform/" "/""}
 
 # 2 separate platform and environment names
 instance=""
-reg_expr="^(.*)__(.+)__$"
+reg_expr="^(.+)__(.+)__$"
 
 if [[ $platform =~ $reg_expr ]]; then
     instance=${BASH_REMATCH[2]}
@@ -58,7 +58,7 @@ if [  "$instance" != "" ]; then
   cd ../../..
   if [ $CONFIGURE_RES != 0 ]; then
     echo "--------------------------------------------------------------"
-    echo "----[PID] CI : configuring workspace: FAIL -------------------"
+    echo "----[PID] CI : preparing workspace: FAIL (CONFIGURING) -------"
     echo "--------------------------------------------------------------"
     exit $CONFIGURE_RES
   fi

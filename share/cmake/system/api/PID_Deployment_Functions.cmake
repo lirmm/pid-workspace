@@ -1449,8 +1449,8 @@ endfunction(get_Available_Binary_Package_Versions)
 #
 function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_FOR_PLATFORM)
 set(chosen_platform)
-get_Platform_Variables(INSTANCE instance_name)
 if(list_of_bin_with_platform)
+  get_Platform_Variables(INSTANCE instance_name)# detect the instance name used for current platform
   foreach(bin IN LISTS list_of_bin_with_platform)
     if(bin MATCHES "^${version}/(.*)$") #only select for the given version
       set(bin_platform_name ${CMAKE_MATCH_1})
@@ -1695,7 +1695,7 @@ endfunction(generate_Binary_Package_Name)
 #
 #   .. command:: download_And_Install_Binary_Native_Package(INSTALLED package version platform)
 #
-#    Download the  binary archive of target package version and then intsall it. This call install Debug and Release mode versions of the package in the same time.
+#    Download the  binary archive of target package version and then intsall it. This call installs Debug and Release mode versions of the package in the same time.
 #
 #      :package: The name of package.
 #
@@ -1711,6 +1711,7 @@ message("[PID] INFO : deploying the binary package ${package} with version ${ver
 if(ADDITIONNAL_DEBUG_INFO)
 	message("[PID] INFO : downloading the binary package ${package} version ${version} for platform ${platform}, please wait ...")
 endif()
+set(MISSING_DEBUG_VERSION FALSE)
 
 extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI instance_str platform_str ${platform})
 ###### downloading the binary package ######
