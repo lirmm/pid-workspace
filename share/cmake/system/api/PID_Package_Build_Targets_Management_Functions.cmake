@@ -1964,16 +1964,12 @@ function(bind_Imported_External_Component_Target package component dep_package d
 		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
 			INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
 		)
-    #exporting the linked libraries in any case
-    set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-      INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
-    )
-  else()#the library that IS the dependency may be a shared library so we need to say to cmake to manage it for linking executables
-    set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-      IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
-    )
 	endif()
-
+  #exporting the linked libraries in any case
+  set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
+    INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+  )
+  
 	# set adequately language standard for component depending on the value of dep_component
 	resolve_Standard_Before_Linking(${package} ${component} ${dep_package} ${dep_component} ${mode} FALSE)
 endfunction(bind_Imported_External_Component_Target)
