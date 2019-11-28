@@ -146,33 +146,49 @@ file(WRITE ${file} "# Contains references to binaries that are available for ${P
 ### reference to a downloadable binary for any platform ##########
 ##################################################################
 list_Subdirectories(ALL_VERSIONS ${dir})
+set(${PROJECT_NAME}_REFERENCES)
 foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os for which there is a reference
 	set(VERSION_REGISTERED FALSE)
 
 	list_Subdirectories(ALL_PLATFORMS ${dir}/${ref_version})
-	if(ALL_PLATFORMS)
-		foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
+	foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
 
-			extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${ref_platform})
+		extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${ref_platform})
 
-			# now referencing the binaries
-			list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
-			if(	ALL_BINARIES
-				AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)#release version must exist in any case
+		# now referencing the binaries
+		list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
+		if(	ALL_BINARIES
+			AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)#release version must exist in any case
 
-				if(NOT VERSION_REGISTERED)  # the version is registered only if there are binaries inside (sanity check)
-					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} ${ref_version} CACHE INTERNAL \"\")\n") # the version is registered
-					set(VERSION_REGISTERED TRUE)
-				endif()
-				file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} ${ref_platform} CACHE INTERNAL \"\")\n") # the platform is registered only if there are binaries inside (sanity check)
-				file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz CACHE INTERNAL \"\")\n")#reference on the release binary
-				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${RES_PLATFORM_BASE}-dbg-${ref_platform}.tar.gz)# binary versions for debug may exist
-					file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz CACHE INTERNAL \"\")\n")#reference on the debug binary
-				endif()
-				endif()
-			endforeach()
+			if(NOT VERSION_REGISTERED)  # the version is registered only if there are binaries inside (sanity check)
+				list(APPEND ${PROJECT_NAME}_REFERENCES ${ref_version})
+				set(${PROJECT_NAME}_REFERENCE_${ref_version})
+				set(VERSION_REGISTERED TRUE)
+			endif()
+			list(APPEND ${PROJECT_NAME}_REFERENCE_${ref_version} ${ref_platform})
+			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)
+			if(EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${RES_PLATFORM_BASE}-dbg-${ref_platform}.tar.gz)# binary versions for debug may exist
+				set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
+			endif()
 		endif()
 	endforeach()
+endforeach()
+if(${PROJECT_NAME}_REFERENCES)#there are registered references
+	file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} CACHE INTERNAL \"\")\n") # the version is registered
+	foreach(ref_version IN LISTS ${PROJECT_NAME}_REFERENCES)
+		list(REMOVE_DUPLICATES ${PROJECT_NAME}_REFERENCES${ref_version}) #there is at least one platform referenced so no need to test for nullity
+		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n")
+
+		foreach(ref_platform IN LISTS ${PROJECT_NAME}_REFERENCE_${ref_version})
+			#release binary referencing
+			file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL} CACHE INTERNAL \"\")\n")#reference on the release binary
+					#debug binary referencing
+			if(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG) #always true for open source native packages, may be true for external packages, never true for close source native packages
+				file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG} CACHE INTERNAL \"\")\n")#reference on the debug binary
+			endif()
+		endforeach()
+	endforeach()
+endif()
 endfunction(generate_Site_Binary_References)
 
 #.rst:
