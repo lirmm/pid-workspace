@@ -296,6 +296,45 @@ endfunction(find_Possible_Library_Path)
 #
 # .. ifmode:: internal
 #
+#  .. |extract_Library_Path_From_Linker_Script| replace:: ``extract_Library_Path_From_Linker_Script``
+#  .. _extract_Library_Path_From_Linker_Script:
+#
+#  extract_Library_Path_From_Linker_Script
+#  ---------------------------------------
+#
+#   .. command:: extract_Library_Path_From_Linker_Script(LIBRARY_PATH library path_to_linker_script)
+#
+#    From a file that is supposed to be a linker script extract real path to corresponding library.
+#
+#     :library: the name of the library (without any prefix or postfix specific to system).
+#
+#     :path_to_linker_script: the file that is possibly a linker script.
+#
+#     :LIBRARY_PATH: the output variable that contains the path to the real binary if specified in the linker script, empty otherwise.
+#
+function(extract_Library_Path_From_Linker_Script LIBRARY_PATH library path_to_linker_script)
+    set(${LIBRARY_PATH} PARENT_SCOPE)
+    get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM_OS} "SHARED")
+    set(prefixed_name ${PREFIX}${library})
+    set(pattern "^.*(GROUP|INPUT)[ \t]*\\([ \t]*([^ \t]+${prefixed_name}[^ \t]*\\${EXTENSION}[^ \t]*)[ \t]+.*$")#\\ is for adding \ at the beginning of extension (.so) so taht . will not be interpreted as a
+    file(STRINGS ${path_to_linker_script} EXTRACTED REGEX "${pattern}")
+
+    if(NOT EXTRACTED)#not a linker script or script does not contain
+      return()
+    endif()
+    #from here the implicit linker script gioves the real path to library
+    foreach(extracted IN LISTS EXTRACTED)
+      if(EXTRACTED MATCHES "${pattern}")
+        set(${LIBRARY_PATH} ${CMAKE_MATCH_2} PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+endfunction(extract_Library_Path_From_Linker_Script)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |find_Library_In_Implicit_System_Dir| replace:: ``find_Library_In_Implicit_System_Dir``
 #  .. _find_Library_In_Implicit_System_Dir:
 #
@@ -327,6 +366,19 @@ function(find_Library_In_Implicit_System_Dir LIBRARY_PATH LIB_SONAME LIB_SOVERSI
         set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
         set(${LIB_SOVERSION} ${SOVERSION} PARENT_SCOPE)
         return()
+      else()#here we can check the text content, since the file can be an implicit linker script use as an alias (and more)
+        extract_Library_Path_From_Linker_Script(LIB_PATH ${library_name} ${REAL_PATH})
+        if(LIB_PATH)
+          get_Binary_Description(DESCRITION ${LIB_PATH})
+          if(DESCRITION)#preceding commands says OK: means the binary is recognized as an adequate shared object
+            #getting the SONAME
+            get_Soname(SONAME SOVERSION ${LIBSONAME} DESCRITION)
+            set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
+            set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
+            set(${LIB_SOVERSION} ${SOVERSION} PARENT_SCOPE)
+            return()
+          endif()
+        endif()
       endif()
     endif()
   endforeach()
