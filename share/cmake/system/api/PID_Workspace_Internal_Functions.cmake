@@ -3156,7 +3156,7 @@ endfunction(generate_Package_CMake_Find_File)
 #  .. _install_Package_Content_In_Folder:
 #
 #  install_Package_Content_In_Folder
-#  --------------------------------
+#  ---------------------------------
 #
 #   .. command:: install_Package_Content_In_Folder(package version mode folder)
 #

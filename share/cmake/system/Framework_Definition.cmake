@@ -154,9 +154,9 @@ endmacro(declare_PID_Framework)
 #  PID_Framework_Author
 #  --------------------
 #
-#   .. command:: PID_Framework_Author(AUHTOR ...[INSTITUTION ...])
+#   .. command:: PID_Framework_Author(AUTHOR ...[INSTITUTION ...])
 #
-#   .. command:: add_PID_Framework_Author(AUHTOR ...[INSTITUTION ...])
+#   .. command:: add_PID_Framework_Author(AUTHOR ...[INSTITUTION ...])
 #
 #      Add an author to the list of authors of the framework.
 #

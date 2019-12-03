@@ -2458,7 +2458,7 @@ endfunction(generate_Package_Install_Script)
 #  .. _add_Sanitizer_Flags_If_Available:
 #
 #  add_Sanitizer_Flags_If_Available
-#  -------------------------------
+#  --------------------------------
 #
 #   .. command:: add_Sanitizer_Flags_If_Available(sanitizer compilier_options link_flags)
 #

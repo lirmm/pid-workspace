@@ -341,7 +341,7 @@ endfunction(bind_Local_Component)
 #  .. _add_Runtime_Resources:
 #
 #  add_Runtime_Resources
-#  -------------------
+#  ---------------------
 #
 #  .. command:: add_Runtime_Resources(TARGET ... FILES ... DIRECTORIES)
 #
