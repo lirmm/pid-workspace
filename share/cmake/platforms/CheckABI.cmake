@@ -26,7 +26,7 @@ if(CURRENT_PLATFORM_OS STREQUAL windows)
 else()#other systems
 	#from here we will look into the symbols
 	try_compile(RES ${WORKSPACE_DIR}/pid
-		SOURCES ${WORKSPACE_DIR}/share/cmake/platforms/abi_check.cpp
+		SOURCES ${WORKSPACE_DIR}/share/cmake/platforms/checks/abi_check.cpp
 		COPY_FILE abi_check
 		OUTPUT_VARIABLE out)
 
@@ -48,9 +48,6 @@ else()#other systems
 		return()
 	endif()
 endif()
-
-
-
 endfunction(check_Current_OS_Allow_CXX11_ABI)
 
 set(CURRENT_ABI CACHE INTERNAL "")
@@ -170,17 +167,15 @@ endif()
 # ABI detection is no more based on knowledge of the compiler version
 #but now we check that minumum version of the compiler are used together with ABI CXX11
 if(CURRENT_ABI STREQUAL "CXX11")#check that compiler in use supports the CXX11 ABI
-	if(CMAKE_COMPILER_IS_GNUCXX)
+	if(CURRENT_CXX_COMPILER STREQUAL "gcc")
 		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.1)#before version 5.1 of gcc the cxx11 abi is not supported
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : compiler in use (${CMAKE_CXX_COMPILER_ID} version ${CMAKE_CXX_COMPILER_VERSION}) does not support CXX11 ABI.")
 		endif()
-	elseif( CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
-					OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
-				  OR CMAKE_CXX_COMPILER_ID STREQUAL "clang")
+	elseif(CURRENT_CXX_COMPILER STREQUAL "clang")
 		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.8)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : compiler in use (${CMAKE_CXX_COMPILER_ID} version ${CMAKE_CXX_COMPILER_VERSION}) does not support CXX11 ABI.")
 		endif()
-	else()# add new support for compiler or use CMake generic mechanism to do so for instance : CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"
+	else()# add new support for compiler or use CMake generic mechanism to do so for instance : CURRENT_CXX_COMPILER STREQUAL "msvc"
 		message("[PID] WARNING : compiler in use (${CMAKE_CXX_COMPILER_ID} version ${CMAKE_CXX_COMPILER_VERSION}) ABI support is not identified in PID.")
 	endif()
 endif()

@@ -17,16 +17,32 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(CURRENT_TYPE CACHE INTERNAL "")
+#check simply ised to have a clean and standardized way to get compiler identification in PID
 
-#test of processor type is based on system variables affected by cross compilation
-#So it adapts to the current development environment in use
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86|x64|i686|i386|i486|x86_32|x86_64|amd64|AMD64")
-	set(CURRENT_TYPE x86 CACHE INTERNAL "")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM|aarch64|AARCH64")
-	set(CURRENT_TYPE arm CACHE INTERNAL "")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "powerpc64|ppc64|ppc64le|powerpc64le|ppc")
-	set(CURRENT_TYPE ppc CACHE INTERNAL "")
-else()# Note: add more check to test other processor architectures
-	message(FATAL_ERROR "[PID] CRITICAL ERROR: unsupported processor architecture")
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
+  set(CURRENT_CXX_COMPILER gcc)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|clang")
+  set(CURRENT_CXX_COMPILER clang)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  set(CURRENT_CXX_COMPILER msvc)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "icc|icl")
+  set(CURRENT_CXX_COMPILER icc)
+elseif(MAKE_CXX_COMPILER_ID MATCHES "XL|VisualAge|zOS|xlc")
+  set(CURRENT_CXX_COMPILER xlc)
+else()
+  set(CURRENT_CXX_COMPILER ${CMAKE_CXX_COMPILER_ID})
+endif()
+
+if (CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
+  set(CURRENT_C_COMPILER gcc)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|AppleClang|clang")
+  set(CURRENT_C_COMPILER clang)
+elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
+  set(CURRENT_C_COMPILER msvc)
+elseif(CMAKE_C_COMPILER_ID MATCHES "icc|icl")
+  set(CURRENT_C_COMPILER icc)
+elseif(MAKE_C_COMPILER_ID MATCHES "XL|VisualAge|zOS|xlc")
+  set(CURRENT_C_COMPILER xlc)
+else()
+  set(CURRENT_C_COMPILER ${CMAKE_C_COMPILER_ID})
 endif()
