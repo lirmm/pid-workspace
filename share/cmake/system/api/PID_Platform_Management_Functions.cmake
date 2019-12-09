@@ -596,10 +596,22 @@ endfunction(load_Current_Platform)
 #
 function(reset_Package_Platforms_Variables)
   foreach(config IN LISTS ${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX})
-    set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} CACHE INTERNAL "")#reset arguments if any
-    set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_BUILD_ONLY${USE_MODE_SUFFIX} CACHE INTERNAL "")#reset arguments if any
+    foreach(param IN LISTS ${config}_OPTIONAL_CONSTRAINTS)
+      unset(${config}_${param} CACHE)
+    endforeach()
+    unset(${config}_OPTIONAL_CONSTRAINTS CACHE)
+    foreach(param IN LISTS ${config}_REQUIRED_CONSTRAINTS)
+      unset(${config}_${param} CACHE)
+    endforeach()
+    unset(${config}_REQUIRED_CONSTRAINTS CACHE)
+    foreach(param IN LISTS ${config}_IN_BINARY_CONSTRAINTS)
+      unset(${config}_${param} CACHE)
+    endforeach()
+    unset(${config}_IN_BINARY_CONSTRAINTS CACHE)
+    unset(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} CACHE)#reset arguments if any
+    unset(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_BUILD_ONLY${USE_MODE_SUFFIX} CACHE)#reset arguments if any
   endforeach()
-	set(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	unset(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE)
 endfunction(reset_Package_Platforms_Variables)
 
 
