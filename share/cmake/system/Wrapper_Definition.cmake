@@ -1624,6 +1624,7 @@ endfunction(get_Environment_Info)
 #   :ARCH <VAR>: Output the architecture in ``VAR``
 #   :ABI <VAR>: Output the ABI in ``VAR``
 #   :DISTRIBUTION <VAR>: Output the distribution in ``VAR``
+#   :VERSION <VAR>: Output the version of the distribution in ``VAR``
 #   :PYTHON <VAR>: Output the Python version in ``VAR``
 #
 #   .. admonition:: Effects
@@ -1674,9 +1675,9 @@ if(GET_TARGET_PLATFORM_INFO_DISTRIBUTION)
 		set(OK TRUE)
 		set(${GET_TARGET_PLATFORM_INFO_DISTRIBUTION} ${CURRENT_DISTRIBUTION} PARENT_SCOPE)
 endif()
-if(GET_TARGET_PLATFORM_INFO_DISTRIBUTION_VERSION)
+if(GET_TARGET_PLATFORM_INFO_VERSION)
 		set(OK TRUE)
-		set(${GET_TARGET_PLATFORM_INFO_DISTRIBUTION_VERSION} ${CURRENT_DISTRIBUTION_VERSION} PARENT_SCOPE)
+		set(${GET_TARGET_PLATFORM_INFO_VERSION} ${CURRENT_DISTRIBUTION_VERSION} PARENT_SCOPE)
 endif()
 if(NOT OK)
 	message("[PID] ERROR : you must use one or more of the NAME, TYPE, ARCH, OS or ABI keywords together with corresponding variables that will contain the resulting property of the current platform in use.")
