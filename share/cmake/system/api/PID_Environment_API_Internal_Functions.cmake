@@ -591,7 +591,7 @@ set(${EVAL_OK} FALSE PARENT_SCOPE)
 set(environment_build_folder ${WORKSPACE_DIR}/environments/${environment}/build)
 # 1.1 configure environment
 hard_Clean_Build_Folder(${environment_build_folder}) #starting froma clean situation
-execute_process(COMMAND ${CMAKE_COMMAND} ..
+execute_process(COMMAND ${CMAKE_COMMAND} -D IN_CI_PROCESS=${IN_CI_PROCESS} ..
                 WORKING_DIRECTORY ${environment_build_folder})#simply ensure that input are generated
 # 1.2 import variable description file
 if(NOT EXISTS ${environment_build_folder}/PID_Inputs.cmake)
