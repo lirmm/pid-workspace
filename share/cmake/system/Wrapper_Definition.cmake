@@ -1693,18 +1693,21 @@ endfunction(get_Target_Platform_Info)
 #  install_External_Project
 #  ^^^^^^^^^^^^^^^^^^^^^^^^
 #
-#   .. command:: install_External_Project(URL ... ARCHIVE|GIT_CLONE_COMMIT ... FOLDER ... PATH ... [OPTIONS])
+#   .. command:: install_External_Project([URL ...] ARCHIVE|GIT_CLONE_COMMIT ... FOLDER ... PATH ... [OPTIONS])
 #
-#     Download and install the given archive and returns the path to the installed project.
+#     Install the external project into build tree. This project can be either:
+#       + downloaded as an archive from an online archive filesystem
+#       + cloned from an online git repository
+#       + extracted from a local archive provided by the wrapper
 #
 #     .. rubric:: Required parameters
 #
-#     :URL <url>: The URL from where to download the archive.
-#     :ARCHIVE|GIT_CLONE_COMMIT <string>: The name of the archive downloaded or the identifier of the commit to checkout to. Both keyword ARCHIVE and GIT_CLONE_COMMIT are exclusive.
+#     :ARCHIVE|GIT_CLONE_COMMIT <string>: The name of the archive downloaded (or its path relative to current source dir if not download) or the identifier of the commit to checkout to. Both keyword ARCHIVE and GIT_CLONE_COMMIT are exclusive.
 #     :FOLDER <string>: The folder resulting from archive extraction.
 #
 #     .. rubric:: Optional parameters
 #
+#     :URL <url>: The URL from where to download the archive.
 #     :PATH <path>: the output variable that contains the path to the installed project, empty if project cannot be installed
 #     :PROJECT <string>: the name of the project if you want to generate nice outputs about external package install process
 #     :VERSION <version string>: the version of the external project that is installed, only usefull together with PROJECT keyword.
@@ -1735,18 +1738,26 @@ function(install_External_Project)
   set(oneValueArgs PROJECT VERSION URL ARCHIVE GIT_CLONE_COMMIT FOLDER PATH)
   set(multiValueArgs)
   cmake_parse_arguments(INSTALL_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-  if(NOT INSTALL_EXTERNAL_PROJECT_URL OR (NOT INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT AND NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE) OR NOT INSTALL_EXTERNAL_PROJECT_FOLDER)
+  if((NOT INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT AND NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE)
+      OR NOT INSTALL_EXTERNAL_PROJECT_FOLDER)
+
     if(INSTALL_EXTERNAL_PROJECT_PATH)
       set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
     endif()
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : PATH, URL, ARCHIVE (or GIT_CLONE_COMMIT) and FOLDER arguments must be provided to install_External_Project.")
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : ARCHIVE (or GIT_CLONE_COMMIT) and FOLDER arguments must be provided to install_External_Project.")
     return()
   endif()
 
   if(INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT AND INSTALL_EXTERNAL_PROJECT_ARCHIVE)
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     message(FATAL_ERROR "[PID] CRITICAL ERROR : ARCHIVE and GIT_CLONE_COMMIT arguments are exclusive.")
+    return()
+  endif()
+
+  if(NOT INSTALL_EXTERNAL_PROJECT_URL AND NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE)
+    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : ARCHIVE argument must be used if you provide no URL to install_External_Project.")
     return()
   endif()
 
@@ -1761,14 +1772,29 @@ function(install_External_Project)
   endif()
 
   if(INSTALL_EXTERNAL_PROJECT_ARCHIVE)
-    if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
-      if(INSTALL_EXTERNAL_PROJECT_PROJECT)
-        message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
+    if(INSTALL_EXTERNAL_PROJECT_URL)#an url is provided so download the file
+      set(archive_name ${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
+      if(NOT EXISTS ${TARGET_BUILD_DIR}/${archive_name})#only download if necessary
+        if(INSTALL_EXTERNAL_PROJECT_PROJECT)
+          message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
+        endif()
+        file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE} SHOW_PROGRESS)
       endif()
-      file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE} SHOW_PROGRESS)
+    else()#the archive has to be found locally
+      if(NOT EXISTS ${TARGET_SOURCE_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
+        set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : ${INSTALL_EXTERNAL_PROJECT_ARCHIVE} cannot be found in source tree (check that the path os correct).")
+        return()
+      endif()
+      if(INSTALL_EXTERNAL_PROJECT_PROJECT)
+        message("[PID] INFO : Preparing extraction of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
+      endif()
+      get_filename_component(archive_name ${INSTALL_EXTERNAL_PROJECT_ARCHIVE} NAME)
+      file(COPY ${TARGET_SOURCE_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE} DESTINATION ${TARGET_BUILD_DIR})#simply copy the archive
     endif()
 
-    if(NOT EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})
+    #check if no problem appear during extraction
+    if(NOT EXISTS ${TARGET_BUILD_DIR}/${archive_name})
       if(INSTALL_EXTERNAL_PROJECT_PROJECT)
         message("[PID] ERROR : During deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot download the archive.")
       endif()
@@ -1788,7 +1814,7 @@ function(install_External_Project)
       message("[PID] INFO : Extracting ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
     endif()
     execute_process(
-      COMMAND ${CMAKE_COMMAND} -E tar xf ${INSTALL_EXTERNAL_PROJECT_ARCHIVE}
+      COMMAND ${CMAKE_COMMAND} -E tar xf ${archive_name}
       WORKING_DIRECTORY ${TARGET_BUILD_DIR}
     )
   elseif(INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT)
@@ -1826,7 +1852,7 @@ function(install_External_Project)
     return()
   endif()
 
-  #simply resturn true at the end if required by the user
+  #return the path
 if(INSTALL_EXTERNAL_PROJECT_PATH)
   set(${INSTALL_EXTERNAL_PROJECT_PATH} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER} PARENT_SCOPE)
 endif()
