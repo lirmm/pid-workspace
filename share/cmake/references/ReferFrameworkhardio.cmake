@@ -1,0 +1,12 @@
+#### referencing framework hardio mode ####
+set(hardio_FRAMEWORK_MAIN_AUTHOR _Clément_Rebut CACHE INTERNAL "")
+set(hardio_FRAMEWORK_MAIN_INSTITUTION _LIRMM / EPITA CACHE INTERNAL "")
+set(hardio_FRAMEWORK_YEARS 2019 CACHE INTERNAL "")
+set(hardio_FRAMEWORK_CONTACT_MAIL clement.rebut@epita.fr CACHE INTERNAL "")
+set(hardio_FRAMEWORK_SITE http://hardio.lirmm.net/hardio CACHE INTERNAL "")
+set(hardio_FRAMEWORK_PROJECT_PAGE https://gite.lirmm.fr/hardio/hardio CACHE INTERNAL "")
+set(hardio_FRAMEWORK_DESCRIPTION A collection of packages that allows to abstract the low level drivers with higher level, generic APIs. CACHE INTERNAL "")
+set(hardio_FRAMEWORK_LICENSE CeCILL CACHE INTERNAL "")
+set(hardio_FRAMEWORK_ADDRESS git@gite.lirmm.fr:hardio/hardio.git CACHE INTERNAL "")
+set(hardio_FRAMEWORK_AUTHORS_AND_INSTITUTIONS "_Clément_Rebut(_LIRMM / EPITA);_Charles_Villard(_LIRMM/EPITA)" CACHE INTERNAL "")
+set(hardio_FRAMEWORK_CATEGORIES CACHE INTERNAL "")
