@@ -428,13 +428,17 @@ endmacro(build_Environment_Project)
 #     :MANAGE_RESULT: the output variable that is TRUE if dependency check is OK, FALSE otherwise.
 #
 function(manage_Environment_Dependency MANAGE_RESULT environment)
-# 1) load the environment
-load_Environment(LOAD_RESULT ${environment})
+# 1) parse the environment depenedncy to get its name and args separated
+parse_System_Check_Constraints(ENV_NAME ENV_ARGS ${environment}) #get environment name from environment expression (extract arguments and base name)
+
+# 2) load the environment if required
+load_Environment(LOAD_RESULT ${ENV_NAME})
 if(NOT LOAD_RESULT)
   set(${MANAGE_RESULT} FALSE PARENT_SCOPE)
+  return()
 endif()
-#2) evaluate the dependent environment with current target platform constraints then if OK transfer its build properties to the current environment
-evaluate_Environment(GEN_RESULT ${environment})
+# 3) evaluate the dependent environment with current target platform constraints then if OK transfer its build properties to the current environment
+evaluate_Environment(GEN_RESULT ${ENV_NAME} "${ENV_ARGS}")
 set(${MANAGE_RESULT} ${GEN_RESULT} PARENT_SCOPE)
 endfunction(manage_Environment_Dependency)
 
@@ -526,10 +530,11 @@ environment_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${environment})
 if(FOLDER_EXISTS)
 	message("[PID] INFO: updating environment ${environment} (this may take a long time)")
 	update_Environment_Repository(${environment}) #update the repository to be sure to work on last version
-	if(NOT REF_EXIST) #if reference file does not exist we use the project present in the workspace. This way we may force it to generate references
+	if(NOT REF_EXIST) #if reference file does not exist we use the project present in the workspace.
+    # This way we may force it to generate references
 		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment}/build)
 		environment_Reference_Exists_In_Workspace(REF_EXIST ${environment})
-		if(REF_EXIST)
+		if(REF_EXIST)#should be the case anytime after a referencing command
 			include(${WORKSPACE_DIR}/share/cmake/references/ReferEnvironment${environment}.cmake)
 			set(${LOADED} TRUE PARENT_SCOPE)
 		endif()
@@ -601,7 +606,7 @@ foreach(var IN LISTS ${environment}_INPUTS)
     string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
     list(APPEND list_of_defs -DVAR_${var}=${VAL_LIST})
   else()
-    list(APPEND list_of_defs -DVAR_${var}=)
+    list(APPEND list_of_defs -U VAR_${var})
   endif()
 endforeach()
 # 2. reconfigure the environment
@@ -682,20 +687,21 @@ endfunction(evaluate_Environment_From_Script)
 #
 #      :environment: the name of the target environment.
 #
+#      :list_of_args: the list of arguments passed to the environment
+#
 #      :EVAL_OK: the output variable that is TRUE if the environment has been evaluated and exitted without errors.
 #
-function(evaluate_Environment EVAL_OK environment)
+function(evaluate_Environment EVAL_OK environment list_of_args)
 # 1) clean and configure the environment project with definitions coming from target (even inherited)
 # those definitions are : "user variables" (e.g. version) and current platform description (that will impose constraints)
 
-parse_System_Check_Constraints(ENV_NAME ENV_ARGS ${environment}) #get environment name from environment expression (extract arguments and base name)
-set(env_build_folder ${WORKSPACE_DIR}/environments/${ENV_NAME}/build)
+set(env_build_folder ${WORKSPACE_DIR}/environments/${environment}/build)
 #clean the build folder cache
 file(REMOVE ${env_build_folder}/CMakeCache.txt ${env_build_folder}/PID_Toolchain.cmake ${env_build_folder}/PID_Environment_Description.cmake ${env_build_folder}/PID_Environment_Solution_Info.cmake)
 
 #build the list of variables that will be passed to configuration process
-prepare_Environment_Arguments(LIST_OF_DEFS_ARGS ${ENV_NAME} ENV_ARGS)
-prepare_Platform_Constraints_Definitions(${ENV_NAME} LIST_OF_DEFS_PLATFORM)
+prepare_Environment_Arguments(LIST_OF_DEFS_ARGS ${environment} list_of_args)
+prepare_Platform_Constraints_Definitions(${environment} LIST_OF_DEFS_PLATFORM)
 execute_process(COMMAND ${CMAKE_COMMAND} -DEVALUATION_RUN=TRUE ${LIST_OF_DEFS_ARGS} ${LIST_OF_DEFS_PLATFORM} ..
                 WORKING_DIRECTORY ${env_build_folder})#configure, then build
 
@@ -708,7 +714,7 @@ if(NOT EXISTS ${env_build_folder}/PID_Environment_Solution_Info.cmake)
   return()
 endif()
 include(${env_build_folder}/PID_Environment_Solution_Info.cmake)
-set_Build_Variables_From_Environment(${ENV_NAME})
+set_Build_Variables_From_Environment(${environment})
 set(${EVAL_OK} TRUE PARENT_SCOPE)
 endfunction(evaluate_Environment)
 
@@ -1718,7 +1724,7 @@ file(APPEND ${file} "set(${PROJECT_NAME}_LIBRARY_DIRS ${${PROJECT_NAME}_LIBRARY_
 file(APPEND ${file} "set(${PROJECT_NAME}_INCLUDE_DIRS ${${PROJECT_NAME}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_PROGRAM_DIRS ${${PROJECT_NAME}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
 
-foreach(lang IN ITEMS C CXX ASM Python CUDA)
+foreach(lang IN ITEMS C CXX ASM Python Fortran CUDA)
   if(NOT lang STREQUAL Python)
     file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_COMPILER ${${PROJECT_NAME}_${lang}_COMPILER} CACHE INTERNAL \"\")\n")
     file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_COMPILER_ID ${${PROJECT_NAME}_${lang}_COMPILER_ID} CACHE INTERNAL \"\")\n")
