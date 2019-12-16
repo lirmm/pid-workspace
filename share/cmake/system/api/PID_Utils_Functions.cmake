@@ -630,7 +630,7 @@ endfunction(create_Runtime_Symlink)
 #     :rpath_sub_folder: the path to relative to the .rpath folder of the component that use the symlink to access its runtime resources.
 #
 function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
-	get_filename_component(A_FILE "${path_to_target}" NAME)
+  get_filename_component(A_FILE "${path_to_target}" NAME)
 	set(FULL_RPATH_DIR ${path_to_rpath_folder}/${rpath_sub_folder})
 	install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
   if(WIN32)

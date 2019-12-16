@@ -197,6 +197,8 @@ endfunction(prepare_Local_Target_Configuration)
 #
 function(configure_Local_Target_With_PID_Components local_target target_type components_list mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+
+  #Note: below is an hack to allow using output names that are different from CMake default ones
   get_target_property(local_target_name ${local_target} OUTPUT_NAME)
   if(NOT local_target_name)
     set(local_target_name ${local_target})
@@ -210,8 +212,6 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
   endif()
 
   #for the given component memorize its pid dependencies
-  append_Unique_In_Cache(${local_target}_PID_DEPENDENCIES "${components_list}")
-
   foreach(dep IN LISTS components_list)
     extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
     if(NOT RES_PACK)
@@ -222,43 +222,52 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
         message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling bind_PID_Components, package ${RES_PACK} has not been declare using import_PID_Package.")
       endif()
     endif()
-    is_HeaderFree_Component(IS_HF ${RES_PACK} ${COMPONENT_NAME})
-    if(NOT IS_HF)#if not header free the component can be linked
-      #create the imported target for that component
-      get_Package_Type(${RES_PACK} PACK_TYPE)
-      if(PACK_TYPE STREQUAL "EXTERNAL")
-        create_External_Component_Dependency_Target(${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
+
+    get_Package_Type(${RES_PACK} PACK_TYPE)
+    set(IS_HF)
+    if(PACK_TYPE STREQUAL "EXTERNAL")
+      rename_If_Alias(comp_name_to_use ${RES_PACK} TRUE ${COMPONENT_NAME} ${mode})
+    else()#native component target
+      rename_If_Alias(comp_name_to_use ${RES_PACK} FALSE ${COMPONENT_NAME} Release)
+      is_HeaderFree_Component(IS_HF ${RES_PACK} ${comp_name_to_use})
+    endif()
+
+    append_Unique_In_Cache(${local_target}_PID_DEPENDENCIES "${RES_PACK}/${comp_name_to_use}")#always resolve aliases before memorizing
+
+    if(PACK_TYPE STREQUAL "EXTERNAL" OR NOT IS_HF)#if not header free the component can be linked
+      if(PACK_TYPE STREQUAL "EXTERNAL")#external component target
+        create_External_Component_Dependency_Target(${RES_PACK} ${comp_name_to_use} ${mode})
       else()#native component target
-        create_Dependency_Target(${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #create the fake target for component
+        create_Dependency_Target(${RES_PACK} ${comp_name_to_use} ${mode}) #create the fake target for component
       endif()
-      target_link_libraries(${local_target} PUBLIC ${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX})
+      target_link_libraries(${local_target} PUBLIC ${RES_PACK}-${comp_name_to_use}${TARGET_SUFFIX})
 
       target_include_directories(${local_target} PUBLIC
-      $<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+      $<TARGET_PROPERTY:${RES_PACK}-${comp_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
 
       target_compile_definitions(${local_target} PUBLIC
-      $<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+      $<TARGET_PROPERTY:${RES_PACK}-${comp_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
       target_compile_options(${local_target} PUBLIC
-      $<TARGET_PROPERTY:${RES_PACK}-${COMPONENT_NAME}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
+      $<TARGET_PROPERTY:${RES_PACK}-${comp_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
 
       # manage C/C++ language standards
-      if(${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX})#the std C is let optional as using a standard may cause error with posix includes
+      if(${RES_PACK}_${comp_name_to_use}_C_STANDARD${VAR_SUFFIX})#the std C is let optional as using a standard may cause error with posix includes
         get_target_property(CURR_STD_C ${local_target} C_STANDARD)
-        is_C_Version_Less(IS_LESS ${CURR_STD_C} ${${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX}})
+        is_C_Version_Less(IS_LESS ${CURR_STD_C} ${${RES_PACK}_${comp_name_to_use}_C_STANDARD${VAR_SUFFIX}})
         if(IS_LESS)
           set_target_properties(${local_target} PROPERTIES
-              C_STANDARD ${${RES_PACK}_${COMPONENT_NAME}_C_STANDARD${VAR_SUFFIX}}
+              C_STANDARD ${${RES_PACK}_${comp_name_to_use}_C_STANDARD${VAR_SUFFIX}}
               C_STANDARD_REQUIRED YES
               C_EXTENSIONS NO
           )#setting the standard in use locally
         endif()
       endif()
       get_target_property(CURR_STD_CXX ${local_target} CXX_STANDARD)
-      is_CXX_Version_Less(IS_LESS ${CURR_STD_CXX} ${${RES_PACK}_${COMPONENT_NAME}_CXX_STANDARD${VAR_SUFFIX}})
+      is_CXX_Version_Less(IS_LESS ${CURR_STD_CXX} ${${RES_PACK}_${comp_name_to_use}_CXX_STANDARD${VAR_SUFFIX}})
       if(IS_LESS)
         set_target_properties(${local_target} PROPERTIES
-          CXX_STANDARD ${${RES_PACK}_${COMPONENT_NAME}_CXX_STANDARD${VAR_SUFFIX}}
+          CXX_STANDARD ${${RES_PACK}_${comp_name_to_use}_CXX_STANDARD${VAR_SUFFIX}}
           CXX_STANDARD_REQUIRED YES
           CXX_EXTENSIONS NO
           )#setting the standard in use locally
@@ -269,49 +278,79 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
     #now generating symlinks in install tree of the component (for exe and shared libs)
     #equivalent of resolve_Source_Component_Runtime_Dependencies in native packages
     if(target_type STREQUAL "EXE" OR target_type STREQUAL "LIB")
-      ### STEP A: create symlinks in install tree
-      #1) getting component binary
-      set(to_symlink)
-      get_Binary_Location(LOCATION_RES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
-      list(APPEND to_symlink ${LOCATION_RES})
-      #2) getting runtime links
-      get_Bin_Component_Runtime_Links(DEP_LOCAL_RUNTIME_LINKS DEP_USING_RUNTIME_LINKS ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
-      list(APPEND to_symlink ${DEP_USING_RUNTIME_LINKS})#by definition the component is outside from current project so need to get its using links
-      #3) getting runtime resources
-      get_Bin_Component_Runtime_Resources(RES_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE)
-      list(APPEND to_symlink ${RES_RESOURCES})
-      #finally create install rule for the symlinks
-      if(to_symlink)
-        list(REMOVE_DUPLICATES to_symlink)
-      endif()
-      foreach(resource IN LISTS to_symlink)
-        install_Runtime_Symlink(${resource} "${CMAKE_INSTALL_PREFIX}/.rpath" ${local_target_name})
-      endforeach()
-
-      ### STEP B: create symlinks in build tree (to allow the runtime resources PID mechanism to work at runtime)
-      set(to_symlink)
-      #no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
-      #1) getting runtime resources of the component dependency
-      get_Bin_Component_Runtime_Resources(DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE) #resolve external runtime resources
-      list(APPEND to_symlink ${DEP_RUNTIME_RESOURCES})
-      #2) getting component as runtime ressources if it a pure runtime entity (dynamically loaded library)
-      if(${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "MODULE")
-        list(APPEND to_symlink ${${RES_PACK}_ROOT_DIR}/lib/${${RES_PACK}_${COMPONENT_NAME}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-      elseif(${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "APP" OR ${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "EXAMPLE")
-        list(APPEND to_symlink ${${RES_PACK}_ROOT_DIR}/bin/${${RES_PACK}_${COMPONENT_NAME}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-      endif()
-      #finally create install rule for the symlinks
-      if(to_symlink)
-        list(REMOVE_DUPLICATES to_symlink)
-      endif()
-      foreach(resource IN LISTS to_symlink)
-        create_Runtime_Symlink(${resource} "${CMAKE_BINARY_DIR}/.rpath" ${local_target_name})
-      endforeach()
+      generate_Local_Component_Symlinks(${local_target_name} ${RES_PACK} ${comp_name_to_use} ${mode} "")
     endif()
   endforeach()
-
 endfunction(configure_Local_Target_With_PID_Components)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Local_Component_Symlinks| replace:: ``generate_Local_Component_Symlinks``
+#  .. _generate_Local_Component_Symlinks:
+#
+#  generate_Local_Component_Symlinks
+#  ----------------------------------
+#
+#   .. command:: generate_Local_Component_Symlinks(local_target_folder_name local_dependency undirect_deps)
+#
+#    Generate symlinks for runtime resources in the install tree of a non PID defined component dependning on a given PID component.
+#
+#     :local_target_folder_name: the name of the local component's folder containing its runtime resources
+#
+#     :package: the name of package containg dependency component.
+#
+#     :component: the name of the dependency component.
+#
+#     :mode: chosen build mode for the component.
+#
+#     :undirect_deps: private shared libraries for local_target_folder_name.
+#
+function(generate_Local_Component_Symlinks local_target_folder_name package component mode undirect_deps)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  #now generating symlinks in install tree of the component (for exe and shared libs)
+  #equivalent of resolve_Source_Component_Runtime_Dependencies in native packages
+  ### STEP A: create symlinks in install tree
+  set(to_symlink ${undirect_deps}) # in case of an executable component add third party (undirect) links
+
+  get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
+  list(APPEND to_symlink ${LOCATION_RES})
+
+  #1) getting all runtime links
+  get_Bin_Component_Runtime_Links(DEP_LOCAL_LINKS DEP_USING_LINKS ${package} ${component} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
+  list(APPEND to_symlink ${DEP_USING_LINKS})#always use using links since component belong to a PID package and current project is not the same by definition
+  #2) getting direct and undirect runtime resources dependencies
+  get_Bin_Component_Runtime_Resources(DEP_RESOURCES ${package} ${component} ${mode} FALSE)
+  list(APPEND to_symlink ${DEP_RESOURCES})
+  #finally create install rule for the symlinks
+  if(to_symlink)
+    list(REMOVE_DUPLICATES to_symlink)
+  endif()
+  foreach(resource IN LISTS to_symlink)
+    install_Runtime_Symlink(${resource} "${CMAKE_INSTALL_PREFIX}/.rpath" ${local_target_folder_name})
+  endforeach()
+
+  ### STEP B: create symlinks in build tree (to allow the runtime resources PID mechanism to work at runtime)
+  set(to_symlink) # in case of an executable component add third party (undirect) links
+  #no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
+  #1) getting runtime resources of the component dependency
+  get_Bin_Component_Runtime_Resources(DEP_RUNTIME_RESOURCES ${package} ${component} ${mode} FALSE) #resolve external runtime resources
+  list(APPEND to_symlink ${DEP_RUNTIME_RESOURCES})
+  #2) getting component as runtime ressources if it a pure runtime entity (dynamically loaded library)
+  if(${package}_${component}_TYPE STREQUAL "MODULE")
+    list(APPEND to_symlink ${${package}_ROOT_DIR}/lib/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+  elseif(${package}_${component}_TYPE STREQUAL "APP" OR ${package}_${component}_TYPE STREQUAL "EXAMPLE")
+    list(APPEND to_symlink ${${package}_ROOT_DIR}/bin/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+  endif()
+  #finally create install rule for the symlinks
+  if(to_symlink)
+    list(REMOVE_DUPLICATES to_symlink)
+  endif()
+  foreach(resource IN LISTS to_symlink)
+    create_Runtime_Symlink(${resource} "${CMAKE_BINARY_DIR}/.rpath" ${local_target_folder_name})
+  endforeach()
+endfunction(generate_Local_Component_Symlinks)
 
 #.rst:
 #
@@ -341,10 +380,16 @@ function(configure_Local_Target_With_Local_Component local_target target_type de
 	append_Unique_In_Cache(${local_target}_LOCAL_DEPENDENCIES ${dependency})
 	target_link_libraries(${local_target} PUBLIC ${dependency})#linking as usual
 
+  #Note: below is an hack to allow using output names that are different from CMake default ones
+  get_target_property(local_target_name ${local_target} OUTPUT_NAME)
+  if(NOT local_target_name)
+    set(local_target_name ${local_target})
+  endif()
+
 	#then resolve symlinks required by PID components to find their runtime resources
 	if(target_type STREQUAL "EXE"
       OR target_type STREQUAL "LIB")
-		generate_Local_Component_Symlinks(${local_target} ${dependency} "${LIBS}")
+		generate_Local_Dependency_Symlinks(${local_target_name} ${dependency} ${mode} "")
 	endif()
 endfunction(configure_Local_Target_With_Local_Component)
 
@@ -353,13 +398,13 @@ endfunction(configure_Local_Target_With_Local_Component)
 #
 # .. ifmode:: internal
 #
-#  .. |generate_Local_Component_Symlinks| replace:: ``generate_Local_Component_Symlinks``
-#  .. _generate_Local_Component_Symlinks:
+#  .. |generate_Local_Dependency_Symlinks| replace:: ``generate_Local_Dependency_Symlinks``
+#  .. _generate_Local_Dependency_Symlinks:
 #
-#  generate_Local_Component_Symlinks
+#  generate_Local_Dependency_Symlinks
 #  ----------------------------------
 #
-#   .. command:: generate_Local_Component_Symlinks(local_target local_dependency undirect_deps)
+#   .. command:: generate_Local_Dependency_Symlinks(local_target local_dependency undirect_deps)
 #
 #    Generate symlinks for runtime resources in the install tree of a non PID defined component.
 #
@@ -367,60 +412,21 @@ endfunction(configure_Local_Target_With_Local_Component)
 #
 #     :local_dependency: the name of a local component (a non PID defined component) that is a dependency for local_target.
 #
+#     :mode: build for for PID components.
+#
 #     :undirect_deps: private shared libraries for local_target.
 #
-function(generate_Local_Component_Symlinks local_target local_dependency undirect_deps)
+function(generate_Local_Dependency_Symlinks local_target local_dependency mode undirect_deps)
 	#recursion on local components first
 	foreach(dep IN LISTS ${local_dependency}_LOCAL_DEPENDENCIES)
-		generate_Local_Component_Symlinks(${local_target} ${dep} "")
+		generate_Local_Dependency_Symlinks(${local_target} ${dep} ${mode} "")#recursion to get all levels of local dependencies
 	endforeach()
 
-	foreach(dep IN LISTS ${local_dependency}_PID_DEPENDENCIES)
+	foreach(dep IN LISTS ${local_dependency}_PID_DEPENDENCIES)#in this list all direct aliases are already resolved
 		extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
-
-		#now generating symlinks in install tree of the component (for exe and shared libs)
-		#equivalent of resolve_Source_Component_Runtime_Dependencies in native packages
-		### STEP A: create symlinks in install tree
-		set(to_symlink ${undirect_deps}) # in case of an executable component add third party (undirect) links
-
-		get_Binary_Location(LOCATION_RES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE})
-		list(APPEND to_symlink ${LOCATION_RES})
-
-		#1) getting all runtime links
-		get_Bin_Component_Runtime_Links(DEP_LOCAL_LINKS DEP_USING_LINKS ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
-    list(APPEND to_symlink ${DEP_USING_LINKS})#always use using links since component belong to a PID package and current project is not the same by definition
-		#2) getting direct and undirect runtime resources dependencies
-		get_Bin_Component_Runtime_Resources(DEP_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE)
-    list(APPEND to_symlink ${DEP_RESOURCES})
-		#finally create install rule for the symlinks
-		if(to_symlink)
-			list(REMOVE_DUPLICATES to_symlink)
-		endif()
-		foreach(resource IN LISTS to_symlink)
-			install_Runtime_Symlink(${resource} "${CMAKE_INSTALL_PREFIX}/.rpath" ${local_target})
-		endforeach()
-
-		### STEP B: create symlinks in build tree (to allow the runtime resources PID mechanism to work at runtime)
-		set(to_symlink) # in case of an executable component add third party (undirect) links
-		#no direct runtime resource for the local target BUT it must import runtime resources defined by dependencies
-		#1) getting runtime resources of the component dependency
-		get_Bin_Component_Runtime_Resources(DEP_RUNTIME_RESOURCES ${RES_PACK} ${COMPONENT_NAME} ${WORKSPACE_MODE} FALSE) #resolve external runtime resources
-    list(APPEND to_symlink ${DEP_RUNTIME_RESOURCES})
-		#2) getting component as runtime ressources if it a pure runtime entity (dynamically loaded library)
-		if(${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "MODULE")
-			list(APPEND to_symlink ${${RES_PACK}_ROOT_DIR}/lib/${${RES_PACK}_${COMPONENT_NAME}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-		elseif(${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "APP" OR ${RES_PACK}_${COMPONENT_NAME}_TYPE STREQUAL "EXAMPLE")
-			list(APPEND to_symlink ${${RES_PACK}_ROOT_DIR}/bin/${${RES_PACK}_${COMPONENT_NAME}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-		endif()
-		#finally create install rule for the symlinks
-		if(to_symlink)
-			list(REMOVE_DUPLICATES to_symlink)
-		endif()
-		foreach(resource IN LISTS to_symlink)
-			create_Runtime_Symlink(${resource} "${CMAKE_BINARY_DIR}/.rpath" ${local_target})
-		endforeach()
+    generate_Local_Component_Symlinks(${local_target} ${RES_PACK} ${COMPONENT_NAME} ${mode} "")
 	endforeach()
-endfunction(generate_Local_Component_Symlinks)
+endfunction(generate_Local_Dependency_Symlinks)
 
 
 #.rst:

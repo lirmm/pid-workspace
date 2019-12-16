@@ -355,11 +355,12 @@ endfunction(list_Public_Options)
 #
 function(get_Binary_Location LOCATION_RES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-is_Executable_Component(IS_EXE ${package} ${component})
+rename_If_Alias(comp_name_to_use ${package} FALSE ${component} Release)
+is_Executable_Component(IS_EXE ${package} ${comp_name_to_use})
 if(IS_EXE)
-	set(${LOCATION_RES} "${${package}_ROOT_DIR}/bin/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}}" PARENT_SCOPE)
-elseif(NOT ${package}_${component}_TYPE STREQUAL "HEADER")
-	set(${LOCATION_RES} "${${package}_ROOT_DIR}/lib/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}}" PARENT_SCOPE)
+	set(${LOCATION_RES} "${${package}_ROOT_DIR}/bin/${${package}_${comp_name_to_use}_BINARY_NAME${VAR_SUFFIX}}" PARENT_SCOPE)
+elseif(NOT ${package}_${comp_name_to_use}_TYPE STREQUAL "HEADER")
+	set(${LOCATION_RES} "${${package}_ROOT_DIR}/lib/${${package}_${comp_name_to_use}_BINARY_NAME${VAR_SUFFIX}}" PARENT_SCOPE)
 endif()
 endfunction(get_Binary_Location)
 
@@ -631,7 +632,8 @@ list(APPEND result ${LOCAL_RESOURCES})
 #check for tuntime resources in external component internal dependencies
 foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
   #recursion to get runtime resources
-  get_External_Component_Runtime_Resources(DEP_RESOURCES ${package} ${dep_component} ${mode} ${insystempath})
+  rename_If_Alias(dep_comp_name ${package} TRUE ${dep_component} ${mode})
+  get_External_Component_Runtime_Resources(DEP_RESOURCES ${package} ${dep_comp_name} ${mode} ${insystempath})
   if(DEP_RESOURCES)
     list(APPEND result ${DEP_RESOURCES})
   endif()
@@ -641,7 +643,8 @@ endforeach()
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #recursion to get runtime resources
-    get_External_Component_Runtime_Resources(DEP_RESOURCES ${dep_package} ${dep_component} ${mode} ${insystempath})
+    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})
+    get_External_Component_Runtime_Resources(DEP_RESOURCES ${dep_package} ${dep_comp_name} ${mode} ${insystempath})
     if(DEP_RESOURCES)
       list(APPEND result ${DEP_RESOURCES})
     endif()
@@ -696,8 +699,9 @@ list(APPEND result ${DIRECT_RESOURCES})
 # 2) then check for runtime resources in external component dependencies
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
     #recursion to get runtime resources
-    get_External_Component_Runtime_Resources(DEP_RESOURCES ${dep_package} ${dep_component} ${mode} ${insystempath})
+    get_External_Component_Runtime_Resources(DEP_RESOURCES ${dep_package} ${dep_comp_name} ${mode} ${insystempath})
     if(DEP_RESOURCES)
       list(APPEND result ${DEP_RESOURCES})
     endif()
@@ -708,21 +712,22 @@ endforeach()
 foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
 	#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-	get_Bin_Component_Runtime_Resources(INT_DEP_RUNTIME_RESOURCES ${package} ${int_dep} ${mode} ${insystempath})
+  rename_If_Alias(dep_comp_name ${package} FALSE ${int_dep} Release)#by definition a resolved component is a native one
+  get_Bin_Component_Runtime_Resources(INT_DEP_RUNTIME_RESOURCES ${package} ${dep_comp_name} ${mode} ${insystempath})
 	if(INT_DEP_RUNTIME_RESOURCES)
 		list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 	endif()
-	if(${package}_${int_dep}_TYPE STREQUAL "MODULE")
+	if(${package}_${dep_comp_name}_TYPE STREQUAL "MODULE")
     if(insystempath)
-      list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+      list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${${package}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
     else()
-      list(APPEND result ${${package}_ROOT_DIR}/lib/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+      list(APPEND result ${${package}_ROOT_DIR}/lib/${${package}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
     endif()
-  elseif(${package}_${int_dep}_TYPE STREQUAL "APP" OR ${package}_${int_dep}_TYPE STREQUAL "EXAMPLE")
+  elseif(${package}_${dep_comp_name}_TYPE STREQUAL "APP" OR ${package}_${dep_comp_name}_TYPE STREQUAL "EXAMPLE")
     if(insystempath)
-      list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})
+      list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${${package}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})
     else()
-      list(APPEND result ${${package}_ROOT_DIR}/bin/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+      list(APPEND result ${${package}_ROOT_DIR}/bin/${${package}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
     endif()
 	endif()
 endforeach()
@@ -732,21 +737,22 @@ foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
 		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
 		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-		get_Bin_Component_Runtime_Resources(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp} ${mode} ${insystempath}) #resolve external runtime resources
+    rename_If_Alias(dep_comp_name ${dep_pack} FALSE ${dep_comp} Release)#by definition a resolved component is a native one
+    get_Bin_Component_Runtime_Resources(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp_name} ${mode} ${insystempath}) #resolve external runtime resources
 		if(INT_DEP_RUNTIME_RESOURCES)
 			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
 		endif()
-		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
+		if(${dep_pack}_${dep_comp_name}_TYPE STREQUAL "MODULE")
       if(insystempath)
-        list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+        list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${${dep_pack}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
       else()
-        list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+        list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
       endif()
-    elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
+    elseif(${dep_pack}_${dep_comp_name}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp_name}_TYPE STREQUAL "EXAMPLE")
       if(insystempath)
-        list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})
+        list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${${dep_pack}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})
       else()
-        list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+        list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
       endif()
     endif()
 	endforeach()
@@ -795,7 +801,8 @@ list(APPEND result ${DIRECT_RESOURCES})
 foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #recursion to get runtime resources
-    get_External_Component_Runtime_Resources(DEP_RESOURCES ${dep_package} ${dep_component} ${mode} FALSE)
+    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})
+    get_External_Component_Runtime_Resources(DEP_RESOURCES ${dep_package} ${dep_comp_name} ${mode} FALSE)
     list(APPEND result ${DEP_RESOURCES})
   endforeach()
 endforeach()
@@ -804,12 +811,13 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX}
 	foreach(dep_comp IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
 		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location)
 		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-		get_Bin_Component_Runtime_Resources(DEP_RESOURCES ${dep_pack} ${dep_comp} ${mode} FALSE) #resolve external runtime resources
+    rename_If_Alias(dep_comp_name ${dep_pack} FALSE ${dep_comp} Release)#by definition a resolved component is a native one
+    get_Bin_Component_Runtime_Resources(DEP_RESOURCES ${dep_pack} ${dep_comp_name} ${mode} FALSE) #resolve external runtime resources
     list(APPEND result ${DEP_RESOURCES})
-		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "MODULE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-		elseif(${dep_pack}_${dep_comp}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp}_TYPE STREQUAL "EXAMPLE")
-			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+		if(${dep_pack}_${dep_comp_name}_TYPE STREQUAL "MODULE")
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+		elseif(${dep_pack}_${dep_comp_name}_TYPE STREQUAL "APP" OR  ${dep_pack}_${dep_comp_name}_TYPE STREQUAL "EXAMPLE")
+			list(APPEND result ${${dep_pack}_ROOT_DIR}/bin/${${dep_pack}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
 		endif()
 
 	endforeach()
@@ -819,12 +827,13 @@ endforeach()
 foreach(int_dep IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
 	#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-	get_Source_Component_Runtime_Resources(DEP_RESOURCES ${int_dep} ${mode})
+  rename_If_Alias(dep_comp_name ${PROJECT_NAME} FALSE ${int_dep} Release)#by definition a resolved component is a native one
+  get_Source_Component_Runtime_Resources(DEP_RESOURCES ${dep_comp_name} ${mode})
   list(APPEND result ${DEP_RESOURCES})
-	if(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "MODULE")
-		list(APPEND result ${CMAKE_BINARY_DIR}/src/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
-	elseif(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "APP" OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "EXAMPLE")
-		list(APPEND result ${CMAKE_BINARY_DIR}/apps/${${PROJECT_NAME}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+	if(${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "MODULE")
+		list(APPEND result ${CMAKE_BINARY_DIR}/src/${${PROJECT_NAME}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+	elseif(${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "APP" OR ${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "EXAMPLE")
+		list(APPEND result ${CMAKE_BINARY_DIR}/apps/${${PROJECT_NAME}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
 	endif()
 endforeach()
 
@@ -866,9 +875,10 @@ function(get_Bin_Component_Direct_Internal_Runtime_Dependencies RES_RESOURCES pa
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(RES)
 foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	is_Runtime_Component(IS_RUNTIME ${package} ${int_dep})
+  rename_If_Alias(int_name_to_use ${package} FALSE ${int_dep} Release)#resolve alias
+	is_Runtime_Component(IS_RUNTIME ${package} ${int_name_to_use})
 	if(IS_RUNTIME)
-		list(APPEND RES ${prefix_path}${int_dep}${TARGET_SUFFIX}${suffix_ext})
+		list(APPEND RES ${prefix_path}${int_name_to_use}${TARGET_SUFFIX}${suffix_ext})#need to use the real component name as target name, never its alias
 	endif()
 endforeach()
 set(${RES_RESOURCES} ${RES} PARENT_SCOPE)
@@ -1012,7 +1022,8 @@ list(APPEND result ${LOCAL_LINKS})
 #then check for shared links in external component internal dependencies
 foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
   #recursion to get runtime resources
-  get_External_Component_Runtime_Links(DEP_LINKS ${package} ${dep_component} ${mode})
+  rename_If_Alias(dep_comp_name ${package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
+  get_External_Component_Runtime_Links(DEP_LINKS ${package} ${dep_comp_name} ${mode})
   list(APPEND result ${DEP_LINKS})
 endforeach()
 
@@ -1020,7 +1031,8 @@ endforeach()
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #recursion to get runtime resources
-    get_External_Component_Runtime_Links(DEP_LINKS ${dep_package} ${dep_component} ${mode})
+    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
+    get_External_Component_Runtime_Links(DEP_LINKS ${dep_package} ${dep_comp_name} ${mode})
     list(APPEND result ${DEP_LINKS})
   endforeach()
 endforeach()
@@ -1077,8 +1089,9 @@ list(APPEND local_package_result ${RES_LINKS})
 # 2) adding runtime links from external components
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
     #shared links of direct dependency will be needed if native component depends on the external dependency
-    get_External_Component_Runtime_Links(DEP_LINKS ${dep_package} ${dep_component} ${mode})
+    get_External_Component_Runtime_Links(DEP_LINKS ${dep_package} ${dep_comp_name} ${mode})
     list(APPEND local_package_result ${DEP_LINKS})
   endforeach()
 endforeach()
@@ -1086,13 +1099,15 @@ endforeach()
 # 3) adding package components dependencies
 foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
-		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER"
-      OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC"
-      OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED")
-			get_Bin_Component_Runtime_Links(LOCAL_DEP_LINKS USING_DEP_LINKS ${dep_pack} ${dep_comp} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
+
+    rename_If_Alias(dep_comp_name ${dep_pack} FALSE ${dep_comp} Release)#by definition a resolved component is a native one
+    if(${dep_pack}_${dep_comp_name}_TYPE STREQUAL "HEADER"
+      OR ${dep_pack}_${dep_comp_name}_TYPE STREQUAL "STATIC"
+      OR ${dep_pack}_${dep_comp_name}_TYPE STREQUAL "SHARED")
+			get_Bin_Component_Runtime_Links(LOCAL_DEP_LINKS USING_DEP_LINKS ${dep_pack} ${dep_comp_name} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
       list(APPEND local_package_result ${USING_DEP_LINKS})#as the component belongs to another package we always use using links
       if(${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED")#shared libraries need to be added
-        list(APPEND local_package_result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the shared library is a direct dependency of the component
+        list(APPEND local_package_result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the shared library is a direct dependency of the component
       endif()
 		endif()
 	endforeach()
@@ -1100,15 +1115,16 @@ endforeach()
 
 # 4) adding internal components dependencies
 foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	if(${package}_${int_dep}_TYPE STREQUAL "HEADER"
-    OR ${package}_${int_dep}_TYPE STREQUAL "STATIC"
-    OR ${package}_${int_dep}_TYPE STREQUAL "SHARED")
-		get_Bin_Component_Runtime_Links(LOCAL_DEP_LINKS USING_DEP_LINKS ${package} ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
+  rename_If_Alias(dep_comp_name ${package} FALSE ${int_dep} Release)#by definition a resolved component is a native one
+  if(${package}_${dep_comp_name}_TYPE STREQUAL "HEADER"
+    OR ${package}_${dep_comp_name}_TYPE STREQUAL "STATIC"
+    OR ${package}_${dep_comp_name}_TYPE STREQUAL "SHARED")
+		get_Bin_Component_Runtime_Links(LOCAL_DEP_LINKS USING_DEP_LINKS ${package} ${dep_comp_name} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
     list(APPEND local_package_result ${LOCAL_DEP_LINKS})
     list(APPEND using_package_result ${USING_DEP_LINKS})
-    if(${package}_${int_dep}_TYPE STREQUAL "SHARED")
+    if(${package}_${dep_comp_name}_TYPE STREQUAL "SHARED")
       #shared libraries used internally to the current package must be registered to be accesible to using packages
-      list(APPEND using_package_result ${${package}_ROOT_DIR}/lib/${${package}_${int_dep}_BINARY_NAME${VAR_SUFFIX}})#the shared library is a direct dependency of the component
+      list(APPEND using_package_result ${${package}_ROOT_DIR}/lib/${${package}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the shared library is a direct dependency of the component
     endif()
 	endif()
 endforeach()
@@ -1167,7 +1183,8 @@ list(APPEND result ${RES_LINKS})
 foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #shared links of direct dependency will be needed if native component depends on the external dependency
-    get_External_Component_Runtime_Links(DEP_LINKS ${dep_package} ${dep_component} ${mode})
+    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
+    get_External_Component_Runtime_Links(DEP_LINKS ${dep_package} ${dep_comp_name} ${mode})
     list(APPEND result ${DEP_LINKS})
   endforeach()
 endforeach()
@@ -1175,13 +1192,14 @@ endforeach()
 # 3) adding package components dependencies
 foreach(dep_pack IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_comp IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
-		if(${dep_pack}_${dep_comp}_TYPE STREQUAL "HEADER"
-      OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "STATIC"
-      OR ${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED")
-			get_Bin_Component_Runtime_Links(LOCAL_DEP_LINKS USING_DEP_LINKS ${dep_pack} ${dep_comp} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
+    rename_If_Alias(dep_comp_name ${dep_pack} FALSE ${dep_comp} Release)#by definition a resolved component is a native one
+    if(${dep_pack}_${dep_comp_name}_TYPE STREQUAL "HEADER"
+      OR ${dep_pack}_${dep_comp_name}_TYPE STREQUAL "STATIC"
+      OR ${dep_pack}_${dep_comp_name}_TYPE STREQUAL "SHARED")
+			get_Bin_Component_Runtime_Links(LOCAL_DEP_LINKS USING_DEP_LINKS ${dep_pack} ${dep_comp_name} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries) + resolve external runtime resources
       list(APPEND result ${USING_DEP_LINKS})#depenedncy belongs to another package so always using links are used
-      if(${dep_pack}_${dep_comp}_TYPE STREQUAL "SHARED")#shared libraries need to be added anytime
-        list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp}_BINARY_NAME${VAR_SUFFIX}})#the shared library is a direct dependency of the component
+      if(${dep_pack}_${dep_comp_name}_TYPE STREQUAL "SHARED")#shared libraries need to be added anytime
+        list(APPEND result ${${dep_pack}_ROOT_DIR}/lib/${${dep_pack}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the shared library is a direct dependency of the component
       endif()
 		endif()
 	endforeach()
@@ -1189,10 +1207,11 @@ endforeach()
 
 # 4) adding internal components dependencies
 foreach(int_dep IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	if(${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "HEADER"
-    OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "STATIC"
-    OR ${PROJECT_NAME}_${int_dep}_TYPE STREQUAL "SHARED")
-		get_Source_Component_Runtime_Links(DEP_LINKS ${int_dep} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
+  rename_If_Alias(dep_comp_name ${PROJECT_NAME} FALSE ${int_dep} Release)#by definition a resolved component is a native one
+  if(${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "HEADER"
+    OR ${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "STATIC"
+    OR ${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "SHARED")
+		get_Source_Component_Runtime_Links(DEP_LINKS ${dep_comp_name} ${mode}) #need to resolve external symbols whether the component is exported or not (it may have unresolved symbols coming from shared libraries)
     list(APPEND result ${DEP_LINKS})
 	endif()# no need to link internal dependencies with symbolic links (they will be found automatically in current pakage install tree)
 endforeach()
@@ -1278,28 +1297,29 @@ endfunction(resolve_Package_Runtime_Dependencies)
 function(resolve_Bin_Component_Runtime_Dependencies package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-is_Runtime_Component(COMP_IS_RUNTIME ${package} ${component})
+rename_If_Alias(real_comp_name ${package} FALSE ${component} Release)#resolve alias (by definition in this function always a native component)
+is_Runtime_Component(COMP_IS_RUNTIME ${package} ${real_comp_name})
 if(NOT COMP_IS_RUNTIME)
 	return()
 endif()
 
-check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(MANAGED ${package} ${component} ${mode})
+check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(MANAGED ${package} ${real_comp_name} ${mode})
 if(MANAGED)#optimization
   return()
 endif()
 # 1) getting all shared links dependencies
-get_Bin_Component_Runtime_Links(LOCAL_LINKS USING_LINKS ${package} ${component} ${mode})#suppose that findPackage has resolved everything
+get_Bin_Component_Runtime_Links(LOCAL_LINKS USING_LINKS ${package} ${real_comp_name} ${mode})#suppose that findPackage has resolved everything
 list(APPEND ALL_RUNTIME_DEPS ${LOCAL_LINKS})#the binary package own runtime dependencies is resolved to need to consider only its local links dependencies
 #2) getting direct and undirect runtime resources dependencies
-get_Bin_Component_Runtime_Resources(RES_RESOURCES ${package} ${component} ${mode} FALSE)
+get_Bin_Component_Runtime_Resources(RES_RESOURCES ${package} ${real_comp_name} ${mode} FALSE)
 list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
 if(ALL_RUNTIME_DEPS)
   list(REMOVE_DUPLICATES ALL_RUNTIME_DEPS)
 endif()
-create_Bin_Component_Symlinks(${package} ${component} ${mode} "${ALL_RUNTIME_DEPS}")
+create_Bin_Component_Symlinks(${package} ${real_comp_name} ${mode} "${ALL_RUNTIME_DEPS}")
 
-if(${package}_${component}_TYPE STREQUAL "MODULE"
-		AND ${package}_${component}_HAS_PYTHON_WRAPPER #this is a python wrapper => python needs additionnal configuration to work properly
+if(${package}_${real_comp_name}_TYPE STREQUAL "MODULE"
+		AND ${package}_${real_comp_name}_HAS_PYTHON_WRAPPER #this is a python wrapper => python needs additionnal configuration to work properly
 		AND CURRENT_PYTHON)#python is activated
 	# getting path to internal targets dependecies that produce a runtime code (not used for rpath but required for python modules)
 
@@ -1313,14 +1333,14 @@ if(${package}_${component}_TYPE STREQUAL "MODULE"
 	endif()
 	#we need to reference also internal libraries for creating adequate symlinks for python
 	set(prefix_path ${${package}_ROOT_DIR}/lib/lib)
-	get_Bin_Component_Direct_Internal_Runtime_Dependencies(RES_DEPS ${package} ${component} ${mode} ${prefix_path} ${suffix_ext})
+	get_Bin_Component_Direct_Internal_Runtime_Dependencies(RES_DEPS ${package} ${real_comp_name} ${mode} ${prefix_path} ${suffix_ext})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_DEPS})
 	#finally we need to reference also the module binary itself
-	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
+	get_Binary_Location(LOCATION_RES ${package} ${real_comp_name} ${mode})
 	list(APPEND ALL_RUNTIME_DEPS ${LOCATION_RES})
-	create_Bin_Component_Python_Symlinks(${package} ${component} ${mode} "${ALL_RUNTIME_DEPS}")
+	create_Bin_Component_Python_Symlinks(${package} ${real_comp_name} ${mode} "${ALL_RUNTIME_DEPS}")
 endif()
-set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(${package} ${component} ${mode})
+set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(${package} ${real_comp_name} ${mode})
 endfunction(resolve_Bin_Component_Runtime_Dependencies)
 
 #.rst:
@@ -1463,28 +1483,30 @@ endfunction(create_Source_Component_Symlinks)
 function(resolve_Source_Component_Runtime_Dependencies component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-will_be_Built(COMP_WILL_BE_BUILT ${component})
+rename_If_Alias(real_comp_name ${PROJECT_NAME} FALSE ${component} Release)
+
+will_be_Built(COMP_WILL_BE_BUILT ${real_comp_name})
 if(NOT COMP_WILL_BE_BUILT)#special case for executables that need rpath link to be specified (due to system shared libraries linking system)-> the linker must resolve all target links (even shared libs) transitively
 	return()
 endif()
 
-is_Runtime_Component(COMP_IS_RUNTIME ${PROJECT_NAME} ${component})
+is_Runtime_Component(COMP_IS_RUNTIME ${PROJECT_NAME} ${real_comp_name})
 if(NOT COMP_IS_RUNTIME)
 	return()
 endif()
 
 # 1) getting all public runtime dependencies
-get_Source_Component_Runtime_Links(ALL_RUNTIME_DEPS ${component} ${CMAKE_BUILD_TYPE})
+get_Source_Component_Runtime_Links(ALL_RUNTIME_DEPS ${real_comp_name} ${CMAKE_BUILD_TYPE})
 # 2) getting direct and undirect runtime resources dependencies
-get_Bin_Component_Runtime_Resources(RES_RESOURCES ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE} FALSE)
+get_Bin_Component_Runtime_Resources(RES_RESOURCES ${PROJECT_NAME} ${real_comp_name} ${CMAKE_BUILD_TYPE} FALSE)
 list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
 
 if(ALL_RUNTIME_DEPS)
   list(REMOVE_DUPLICATES ALL_RUNTIME_DEPS)
 endif()
-create_Source_Component_Symlinks(${component} ${CMAKE_BUILD_TYPE} ALL_RUNTIME_DEPS)
-if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE"
-		AND ${PROJECT_NAME}_${component}_HAS_PYTHON_WRAPPER #this is a python wrapper => python needs additionnal configuration to work properly
+create_Source_Component_Symlinks(${real_comp_name} ${CMAKE_BUILD_TYPE} ALL_RUNTIME_DEPS)
+if(${PROJECT_NAME}_${real_comp_name}_TYPE STREQUAL "MODULE"
+		AND ${PROJECT_NAME}_${real_comp_name}_HAS_PYTHON_WRAPPER #this is a python wrapper => python needs additionnal configuration to work properly
 		AND CURRENT_PYTHON)#python is activated
 	# getting path to internal targets dependecies that produce a runtime code (not used for rpath but required for python modules)
 
@@ -1497,9 +1519,9 @@ if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE"
 	    set(suffix_ext .so)
 	endif()
 	set(prefix_path ${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_DEPLOY_PATH}/lib/lib)
-	get_Bin_Component_Direct_Internal_Runtime_Dependencies(RES_DEPS ${PROJECT_NAME} ${component} ${CMAKE_BUILD_TYPE} ${prefix_path} ${suffix_ext})
+	get_Bin_Component_Direct_Internal_Runtime_Dependencies(RES_DEPS ${PROJECT_NAME} ${real_comp_name} ${CMAKE_BUILD_TYPE} ${prefix_path} ${suffix_ext})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_DEPS})
-	create_Source_Component_Python_Symlinks(${component} ${CMAKE_BUILD_TYPE} "${ALL_RUNTIME_DEPS}")
+	create_Source_Component_Python_Symlinks(${real_comp_name} ${CMAKE_BUILD_TYPE} "${ALL_RUNTIME_DEPS}")
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)
 
@@ -1557,16 +1579,18 @@ endfunction(create_Source_Component_Symlinks_Build_Tree)
 function(resolve_Source_Component_Runtime_Dependencies_Build_Tree component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-is_Runtime_Component(COMP_IS_RUNTIME ${PROJECT_NAME} ${component})
+rename_If_Alias(real_comp_name ${PROJECT_NAME} FALSE ${component} Release)
+
+is_Runtime_Component(COMP_IS_RUNTIME ${PROJECT_NAME} ${real_comp_name})
 if(NOT COMP_IS_RUNTIME)
 	return()
 endif()
 
 # getting direct and undirect runtime resources for the component
-get_Source_Component_Runtime_Resources(RES_RESOURCES ${component} ${CMAKE_BUILD_TYPE})
+get_Source_Component_Runtime_Resources(RES_RESOURCES ${real_comp_name} ${CMAKE_BUILD_TYPE})
 if(RES_RESOURCES)
   list(REMOVE_DUPLICATES RES_RESOURCES)
-  create_Source_Component_Symlinks_Build_Tree(${component} ${CMAKE_BUILD_TYPE} RES_RESOURCES)
+  create_Source_Component_Symlinks_Build_Tree(${real_comp_name} ${CMAKE_BUILD_TYPE} RES_RESOURCES)
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies_Build_Tree)
 
@@ -1817,7 +1841,7 @@ function(collect_Local_Exported_Dependencies NATIVE_DEPS EXTERNAL_DEPS package m
   set(native_deps)
 
   foreach(comp IN LISTS ${package}_COMPONENTS)# foreach component defined by the package
-    will_be_Installed(RESULT ${comp})
+    will_be_Installed(RESULT ${comp})#Note: no need to resolve since component list only contains base names (even from Use file)
     if(RESULT)#OK take into account this component because it is present in install tree (i.e. it lies in the binary package version)
       get_Packages_Used_In_Component(USED_NATIVE_PACKAGES USED_EXT_PACKAGES ${package} ${comp} ${mode})
       if(USED_NATIVE_PACKAGES)

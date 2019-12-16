@@ -930,7 +930,7 @@ foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "APP"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
-		will_be_Built(RES ${component})
+		will_be_Built(RES ${component})#Note: no need to resolve alias since component list contains only base name in current project
 		if(RES)
 			if(EXISTS ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
 				file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
@@ -942,7 +942,7 @@ endforeach()
 
 #resolving runtime dependencies for install tree
 foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
-	will_be_Built(RES ${component})
+	will_be_Built(RES ${component})#Note: no need to resolve alias since component list contains only base name in current project
 	if(RES)
 		resolve_Source_Component_Runtime_Dependencies(${component} ${CMAKE_BUILD_TYPE})
 	endif()
@@ -950,7 +950,7 @@ endforeach()
 
 #resolving runtime dependencies for build tree
 foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
-	will_be_Built(RES ${component})
+	will_be_Built(RES ${component})#Note: no need to resolve alias since component list contains only base name in current project
 	if(RES)
 		resolve_Source_Component_Runtime_Dependencies_Build_Tree(${component} ${CMAKE_BUILD_TYPE})
 	endif()
@@ -1237,10 +1237,12 @@ endmacro(build_Package)
 #
 #     :is_loggable: if TRUE the componnet can be uniquely identified by the logging system.
 #
+#     :aliases: the list of alias for the component.
+#
 function(declare_Library_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs
                                    internal_compiler_options exported_defs exported_compiler_options
 																   internal_links exported_links runtime_resources more_headers more_sources
-															 		 is_loggable)
+																 	is_loggable aliases)
 
 #indicating that the component has been declared and need to be completed
 is_Library_Type(RES "${type}")
@@ -1396,6 +1398,14 @@ endif()
 # registering exported flags for all kinds of libs
 init_Component_Cached_Variables_For_Export(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}" "${runtime_resources}")
 
+
+#create local "real" CMake ALIAS target
+if(aliases)
+	add_Alias_To_Cache(${c_name} "${aliases}")
+	foreach(alias IN LISTS aliases)
+		add_library(${alias}${INSTALL_NAME_SUFFIX} ALIAS ${c_name}${INSTALL_NAME_SUFFIX})
+	endforeach()
+endif()
 #updating global variables of the CMake process
 append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS ${c_name})
 append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS_LIBS ${c_name})
@@ -1441,8 +1451,10 @@ endfunction(declare_Library_Component)
 #
 #     :is_loggable: if TRUE the componnet can be uniquely identified by the logging system.
 #
+#     :aliases: the list of alias for the component.
+#
 function(declare_Application_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs
-internal_compiler_options internal_link_flags runtime_resources more_sources is_loggable)
+internal_compiler_options internal_link_flags runtime_resources more_sources is_loggable aliases)
 
 is_Application_Type(RES "${type}")#double check, for internal use only (purpose: simplify PID code debugging)
 if(RES)
@@ -1501,7 +1513,7 @@ elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
 		return()
 	endif()
 endif()
-will_be_Installed(COMP_WILL_BE_INSTALLED ${c_name})
+will_be_Installed(COMP_WILL_BE_INSTALLED ${c_name})#no need to resolve since c_name defined the base component name by construction
 
 set(use_includes ${internal_inc_dirs})
 get_All_Sources_Absolute(${PROJECT_NAME}_${c_name}_ALL_SOURCES ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
@@ -1538,14 +1550,21 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
-init_Component_Cached_Variables_For_Export(${c_name} "${c_standard_used}" "${cxx_standard_used}" "" "" "" "${runtime_resources}")
+init_Component_Cached_Variables_For_Export(${c_name} "${c_standard_used}" "${cxx_standard_used}" "" "" "" "${runtime_resources}" "${aliases}")
+
+if(aliases)
+	add_Alias_To_Cache(${c_name} "${aliases}")
+	#create alias target on demand
+	foreach(alias IN LISTS aliases)
+		add_executable(${alias}${INSTALL_NAME_SUFFIX} ALIAS ${c_name}${INSTALL_NAME_SUFFIX})
+	endforeach()
+endif()
 
 #updating global variables of the CMake process
 append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS ${c_name})
 append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS_APPS ${c_name})
 # global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
 mark_As_Declared(${c_name})
-
 
 endfunction(declare_Application_Component)
 
@@ -2023,67 +2042,72 @@ endfunction(declare_External_Package_Dependency)
 #     :dep_defs: preprocessor definitions used in the interface of dep_component, that are set when component uses dep_component (may be an empty string). These definitions are exported if dep_component is exported by component.
 #
 function(declare_Internal_Component_Dependency component dep_component export comp_defs comp_exp_defs dep_defs)
-#message("declare_Internal_Component_Dependency : component = ${component}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
 set(COMP_WILL_BE_BUILT FALSE)
-will_be_Built(COMP_WILL_BE_BUILT ${component})
+set(DECLARED_COMP)
+is_Declared(${component} DECLARED_COMP)
+if(NOT DECLARED_COMP)
+	finish_Progress(${GLOBAL_PROGRESS_VAR})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR when defining dependency for ${component} in ${PROJECT_NAME} : component ${component} is not defined in current package ${PROJECT_NAME}.")
+endif()
+will_be_Built(COMP_WILL_BE_BUILT ${DECLARED_COMP})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
-set(DECLARED FALSE)
-is_Declared(${dep_component} DECLARED)
-if(NOT DECLARED)
+set(DECLARED_DEP)
+is_Declared(${dep_component} DECLARED_DEP)
+if(NOT DECLARED_DEP)
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : component ${dep_component} is not defined in current package ${PROJECT_NAME}.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR when when defining dependency for ${component} in ${PROJECT_NAME} : dependency ${dep_component} is not defined in current package ${PROJECT_NAME}.")
 endif()
 #guarding depending type of involved components
-is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
-is_HeaderFree_Component(IS_HF_DEP ${PROJECT_NAME} ${dep_component})
-is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
-set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")
+is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${DECLARED_COMP})
+is_HeaderFree_Component(IS_HF_DEP ${PROJECT_NAME} ${DECLARED_DEP})
+is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${DECLARED_COMP})
+set(${PROJECT_NAME}_${DECLARED_COMP}_INTERNAL_EXPORT_${DECLARED_DEP}${USE_MODE_SUFFIX} FALSE CACHE INTERNAL "")#export always expressed relative to realcomponent name, not relative to aliases
 if (IS_HF_COMP)
 		if(IS_HF_DEP)
 			# setting compile definitions for configuring the target
-			fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
+			fill_Component_Target_With_Dependency(${DECLARED_COMP} ${PROJECT_NAME} ${DECLARED_DEP} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
 		else()
 			# setting compile definitions for configuring the target
-			fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
+			fill_Component_Target_With_Dependency(${DECLARED_COMP} ${PROJECT_NAME} ${DECLARED_DEP} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
 		endif()
 elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)
-		configure_Install_Variables(${component} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
 		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
+		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${PROJECT_NAME} ${DECLARED_DEP} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 
 	else()
 		#prepare the dependancy export
 		if(export)
-			set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
+			set(${PROJECT_NAME}_${DECLARED_COMP}_INTERNAL_EXPORT_${DECLARED_DEP}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		endif()
-		configure_Install_Variables(${component} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${DECLARED_COMP} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 
 		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
+		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${PROJECT_NAME} ${DECLARED_DEP} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 	endif()
-elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER")
 	if(IS_HF_DEP)
-		configure_Install_Variables(${component} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
-		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
+		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${PROJECT_NAME} ${DECLARED_DEP} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
 	else()
 		#prepare the dependancy export
-		set(${PROJECT_NAME}_${component}_INTERNAL_EXPORT_${dep_component}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
-		configure_Install_Variables(${component} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		set(${PROJECT_NAME}_${DECLARED_COMP}_INTERNAL_EXPORT_${DECLARED_DEP}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
+		configure_Install_Variables(${DECLARED_COMP} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 		# setting compile definitions for configuring the "fake" target
-		fill_Component_Target_With_Dependency(${component} ${PROJECT_NAME} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
+		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${PROJECT_NAME} ${DECLARED_DEP} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 
 	endif()
 else()
-	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} of package ${PROJECT_NAME}.")
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${DECLARED_COMP}_TYPE}) for component ${component} of package ${PROJECT_NAME}.")
 	return()
 endif()
 # include directories and links do not require to be added
 # declare the internal dependency
-append_Unique_In_Cache(${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_component})
+append_Unique_In_Cache(${PROJECT_NAME}_${DECLARED_COMP}_INTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${DECLARED_DEP})
 endfunction(declare_Internal_Component_Dependency)
 
 #.rst:
@@ -2115,63 +2139,66 @@ endfunction(declare_Internal_Component_Dependency)
 #     :dep_defs: preprocessor definitions used in the interface of dep_component, that are set when component uses dep_component (may be an empty string). These definitions are exported if dep_component is exported by component.
 #
 function(declare_Package_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
-	# ${PROJECT_NAME}_${component}_DEPENDENCIES			# packages used by the component ${component} of the current package
-	# ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS	# components of package ${dep_package} used by component ${component} of current package
-#message("declare_Package_Component_Dependency : component = ${component}, dep_package = ${dep_package}, dep_component=${dep_component}, export=${export}, comp_defs=${comp_defs} comp_exp_defs=${comp_exp_defs} dep_defs=${dep_defs}")
-will_be_Built(COMP_WILL_BE_BUILT ${component})
+set(DECLARED_COMP)
+is_Declared(${component} DECLARED_COMP)
+if(NOT DECLARED_COMP)
+	finish_Progress(${GLOBAL_PROGRESS_VAR})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR when defining dependency for ${component} in ${PROJECT_NAME} : component ${component} is not defined in current package ${PROJECT_NAME}.")
+endif()
+will_be_Built(COMP_WILL_BE_BUILT ${DECLARED_COMP})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
-
-set(${PROJECT_NAME}_${c_name}_EXPORT_${dep_package}_${dep_component} FALSE CACHE INTERNAL "")
+rename_If_Alias(dep_name_to_use ${dep_package} FALSE ${dep_component} Release)
+set(${PROJECT_NAME}_${DECLARED_COMP}_EXPORT_${dep_package}_${dep_name_to_use} FALSE CACHE INTERNAL "")#Note: alawys use teh resolved alias name in current package
 #guarding depending type of involved components
-is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
-is_HeaderFree_Component(IS_HF_DEP ${dep_package} ${dep_component})
-is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${DECLARED_COMP})
+is_HeaderFree_Component(IS_HF_DEP ${dep_package} ${dep_name_to_use})
+is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${DECLARED_COMP})
 if (IS_HF_COMP)
 	# setting compile definitions for configuring the target
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
-		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
+		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "")
 	else()	#the dependency has a build interface
-		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
+		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
 	#do not export anything
 	endif()
 elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
 		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
-		configure_Install_Variables(${component} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
+		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
 	else()	#the dependency has a build interface
 		if(export)#prepare the dependancy export
-			set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "")
+			set(${PROJECT_NAME}_${DECLARED_COMP}_EXPORT_${dep_package}_${dep_name_to_use} TRUE CACHE INTERNAL "")
 		endif()
-		configure_Install_Variables(${component} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${DECLARED_COMP} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 
 		# setting compile definitions for configuring the target
-		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
+		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 	endif()
 
-elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER")
 		# setting compile definitions for configuring the target
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency => no export possible
-		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
+		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
-		configure_Install_Variables(${component} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
 	else()	#the dependency has a build interface
 
 		#prepare the dependancy export
-		set(${PROJECT_NAME}_${component}_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
-		configure_Install_Variables(${component} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
-		fill_Component_Target_With_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
+		set(${PROJECT_NAME}_${DECLARED_COMP}_EXPORT_${dep_package}_${dep_name_to_use} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
+		configure_Install_Variables(${DECLARED_COMP} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 	endif()
 else()
-	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${DECLARED_COMP}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 	return()
 endif()
 
 #links and include directories do not require to be added (will be found automatically)
-append_Unique_In_Cache(${PROJECT_NAME}_${component}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
-append_Unique_In_Cache(${PROJECT_NAME}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${dep_component})
+append_Unique_In_Cache(${PROJECT_NAME}_${DECLARED_COMP}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+append_Unique_In_Cache(${PROJECT_NAME}_${DECLARED_COMP}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${dep_name_to_use})
 endfunction(declare_Package_Component_Dependency)
 
 #.rst:
@@ -2203,12 +2230,16 @@ endfunction(declare_Package_Component_Dependency)
 #     :dep_defs: preprocessor definitions used in the interface of dep_component, that are set when component uses dep_component (may be an empty string). These definitions are exported if dep_component is exported by component.
 #
 function(declare_External_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
-
-will_be_Built(COMP_WILL_BE_BUILT ${component})
+set(DECLARED_COMP)
+is_Declared(${component} DECLARED_COMP)
+if(NOT DECLARED_COMP)
+	finish_Progress(${GLOBAL_PROGRESS_VAR})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR when defining depoendency for ${component} in ${PROJECT_NAME} : component ${component} is not defined in current package ${PROJECT_NAME}.")
+endif()
+will_be_Built(COMP_WILL_BE_BUILT ${DECLARED_COMP})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
-
 if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
 	message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
 	install_External_Package(INSTALL_OK ${dep_package} TRUE FALSE)#force the reinstall of binary
@@ -2232,42 +2263,43 @@ if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided
 	message ("[PID] INFO when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} now provides content description.")
 endif()
 
-will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
+will_be_Installed(COMP_WILL_BE_INSTALLED ${DECLARED_COMP})
 #guarding depending on type of involved components
-is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
-is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${DECLARED_COMP})
+is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${DECLARED_COMP})
+rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${CMAKE_BUILD_TYPE})#resolve alias for dependency (more homogeneous solution)
 
 if (IS_HF_COMP) #a component without headers
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
+	fill_Component_Target_With_External_Component_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
 	if(COMP_WILL_BE_INSTALLED)
-		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "" "" "" "")#standard is not propagated in this situation (no symbols exported in binaries)
+		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "" "" "" "" "" "" "")#standard is not propagated in this situation (no symbols exported in binaries)
 	endif()
 elseif(IS_BUILT_COMP) #a component that is built by the build procedure
 	# setting compile definitions for configuring the target
-	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
+	fill_Component_Target_With_External_Component_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 	if(export)#prepare the dependancy export
-		set(${PROJECT_NAME}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "")
+		set(${PROJECT_NAME}_${DECLARED_COMP}_EXTERNAL_EXPORT_${dep_package}_${dep_name_to_use} TRUE CACHE INTERNAL "")
 		# for install variables do the same as for native package => external info will be deduced from external component description
-		configure_Install_Variables(${component} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${DECLARED_COMP} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 	else()
 		# for install variables do the same as for native package => external info will be deduced from external component description
-		configure_Install_Variables(${component} ${export} "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables(${DECLARED_COMP} ${export} "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
 	endif()
 
-elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER") #a pure header component
+elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER") #a pure header component
 	# setting compile definitions for configuring the target
 	#prepare the dependancy export
-	set(${PROJECT_NAME}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
+	set(${PROJECT_NAME}_${DECLARED_COMP}_EXTERNAL_EXPORT_${dep_package}_${dep_name_to_use} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 	#prepare the dependancy export
-	fill_Component_Target_With_External_Component_Dependency(${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
-	configure_Install_Variables(${component} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+	fill_Component_Target_With_External_Component_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
+	configure_Install_Variables(${DECLARED_COMP} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
 else()
-	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${DECLARED_COMP}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()
 #links and include directories do not require to be added (will be found automatically)
-append_Unique_In_Cache(${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
-append_Unique_In_Cache(${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${dep_component})
+append_Unique_In_Cache(${PROJECT_NAME}_${DECLARED_COMP}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+append_Unique_In_Cache(${PROJECT_NAME}_${DECLARED_COMP}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${dep_name_to_use})
 endfunction(declare_External_Component_Dependency)
 
 #.rst:
@@ -2313,35 +2345,42 @@ endfunction(declare_External_Component_Dependency)
 #     :runtime_resources: set of path to files or folder used at runtime (may be left empty).
 #
 function(declare_System_Component_Dependency component export inc_dirs lib_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
-will_be_Built(COMP_WILL_BE_BUILT ${component})
+set(DECLARED_COMP)
+is_Declared(${component} DECLARED_COMP)
+if(NOT DECLARED_COMP)
+	finish_Progress(${GLOBAL_PROGRESS_VAR})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR when defining depoendency for ${component} in ${PROJECT_NAME} : component ${component} is not defined in current package ${PROJECT_NAME}.")
+endif()
+
+will_be_Built(COMP_WILL_BE_BUILT ${DECLARED_COMP})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
-will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
+will_be_Installed(COMP_WILL_BE_INSTALLED ${DECLARED_COMP})
 
 #guarding depending type of involved components
-is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
-is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${DECLARED_COMP})
+is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${DECLARED_COMP})
 
 if (IS_HF_COMP) #no header to the component
 	if(COMP_WILL_BE_INSTALLED)
-		configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "" "" "" "${runtime_resources}")
+		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "" "" "" "" "" "" "${runtime_resources}")
 	endif()
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
-	configure_Install_Variables(${component} ${export} "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
+	configure_Install_Variables(${DECLARED_COMP} ${export} "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 
-elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER")
 	#prepare the dependancy export
-	configure_Install_Variables(${component} TRUE "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
+	configure_Install_Variables(${DECLARED_COMP} TRUE "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 else()
-	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${DECLARED_COMP}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()
 endfunction(declare_System_Component_Dependency)
 
@@ -2388,39 +2427,45 @@ endfunction(declare_System_Component_Dependency)
 #     :runtime_resources: st of path to files or folder used at runtime relative to dep_package root dir (may be let empty).
 #
 function(declare_External_Package_Component_Dependency component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
-will_be_Built(COMP_WILL_BE_BUILT ${component})
+set(DECLARED_COMP)
+is_Declared(${component} DECLARED_COMP)
+if(NOT DECLARED_COMP)
+	finish_Progress(${GLOBAL_PROGRESS_VAR})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR when defining depoendency for ${component} in ${PROJECT_NAME} : component ${component} is not defined in current package ${PROJECT_NAME}.")
+endif()
+will_be_Built(COMP_WILL_BE_BUILT ${DECLARED_COMP})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
-will_be_Installed(COMP_WILL_BE_INSTALLED ${component})
+will_be_Installed(COMP_WILL_BE_INSTALLED ${DECLARED_COMP})
 
 if(NOT ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX})
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} is not defined !")
 else()
 
 	#guarding depending type of involved components
-	is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${component})
-	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+	is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${DECLARED_COMP})
+	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${DECLARED_COMP})
 
 	if (IS_HF_COMP)
 		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${component} FALSE "" "" "" "" "" "" "${shared_links}" "" "" "${runtime_resources}")
+			configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "" "" "" "${shared_links}" "" "" "${runtime_resources}")
 		endif()
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
-		configure_Install_Variables(${component} ${export} "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
+		configure_Install_Variables(${DECLARED_COMP} ${export} "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${component} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
-	elseif(	${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
+		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+	elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER")
 		#prepare the dependancy export
-		configure_Install_Variables(${component} TRUE "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
+		configure_Install_Variables(${DECLARED_COMP} TRUE "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
 
 		# setting compile definitions for the "fake" target
-		fill_Component_Target_With_External_Dependency(${component} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 	else()
-		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${component}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
+		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${DECLARED_COMP}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 	endif()
 endif()
 endfunction(declare_External_Package_Component_Dependency)

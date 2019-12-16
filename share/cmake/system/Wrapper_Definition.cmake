@@ -917,7 +917,7 @@ endmacro(PID_Wrapper_Component)
 
 macro(declare_PID_Wrapper_Component)
 set(oneValueArgs COMPONENT C_STANDARD CXX_STANDARD SONAME)
-set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPEND) #known versions of the external package that can be used to build/run it
+set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPEND ALIAS) #known versions of the external package that can be used to build/run it
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_COMPONENT)
   if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^CXX_STANDARD|C_STANDARD|SONAME|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|RUNTIME_RESOURCES$")
@@ -939,7 +939,8 @@ declare_Wrapped_Component(${component_name}
 	"${DECLARE_PID_WRAPPER_COMPONENT_OPTIONS}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_C_STANDARD}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_CXX_STANDARD}"
-	"${DECLARE_PID_WRAPPER_COMPONENT_RUNTIME_RESOURCES}")
+	"${DECLARE_PID_WRAPPER_COMPONENT_RUNTIME_RESOURCES}"
+	"${DECLARE_PID_WRAPPER_COMPONENT_ALIAS}")
 
 
 #dealing with dependencies
@@ -1704,7 +1705,7 @@ endfunction(get_Target_Platform_Info)
 #     .. rubric:: Required parameters
 #
 #     :ARCHIVE|GIT_CLONE_COMMIT <string>: The name of the archive downloaded (or its path relative to current source dir if not download) or the identifier of the commit to checkout to. Both keyword ARCHIVE and GIT_CLONE_COMMIT are exclusive.
-#     :FOLDER <string>: The folder resulting from archive extraction.
+#     :FOLDER <string>: The folder resulting from archive extraction or repository cloning.
 #
 #     .. rubric:: Optional parameters
 #

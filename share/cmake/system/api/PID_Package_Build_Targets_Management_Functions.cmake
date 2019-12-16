@@ -353,7 +353,7 @@ endfunction(resolve_Component_Language)
 function(resolve_Compile_Options_For_Targets mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
-	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})#no need to resolve alias since list of components contains only base name in current package
 	if(IS_BUILT_COMP)
 		resolve_Component_Language(${component}${TARGET_SUFFIX})
 	endif()
@@ -544,12 +544,12 @@ endfunction(create_Module_Lib_Target)
 function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
 	add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
 
-    if(WIN32)
-    	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .dll
-    	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .lib
-    else()
-      install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH})
-    endif()
+  if(WIN32)
+  	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .dll
+  	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .lib
+  else()
+    install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH})
+  endif()
 	#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
 	if(APPLE)
 		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
@@ -916,7 +916,7 @@ function(manage_Additional_Component_Inherited_Flags component dep_component mod
 						$<TARGET_PROPERTY:${dep_component}${mode_suffix},INTERFACE_COMPILE_OPTIONS>
 				)
 	endif()
-	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})
+	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})#Note: no need to resolve alias because component contains the base component name in current project
 	if(IS_BUILT_COMP)
 		target_include_directories(	${component}${INSTALL_NAME_SUFFIX}
 						PRIVATE
@@ -945,7 +945,7 @@ endfunction(manage_Additional_Component_Inherited_Flags)
 #
 #   .. command:: fill_Component_Target_With_External_Component_Dependency(component export comp_defs comp_exp_defs ext_defs)
 #
-#     Configure a component target to link with external content (from external packages or operating system).
+#     Configure a component target to link with a component defined in an external package.
 #
 #     :component: the name of the component to configure.
 #
@@ -966,7 +966,7 @@ endfunction(manage_Additional_Component_Inherited_Flags)
 function(fill_Component_Target_With_External_Component_Dependency component dep_package dep_component mode export comp_defs comp_exp_defs ext_defs)
   create_External_Component_Dependency_Target(${dep_package} ${dep_component} ${mode})
   #no need to check for target created, always bind !
-  bind_Target(${component} ${dep_package} ${dep_component} ${mode} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
+  bind_Target(${component} TRUE ${dep_package} ${dep_component} ${mode} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 endfunction(fill_Component_Target_With_External_Component_Dependency)
 
 #.rst:
@@ -1287,21 +1287,24 @@ endfunction(create_External_Dependency_Target)
 #
 function (create_Dependency_Target dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(NOT TARGET ${dep_package}-${dep_component}${TARGET_SUFFIX})#check that this target does not exist, otherwise naming conflict
+
+rename_If_Alias(comp_name_to_use ${dep_package} FALSE ${dep_component} Release)
+
+if(NOT TARGET ${dep_package}-${comp_name_to_use}${TARGET_SUFFIX})#check that this target does not exist, otherwise naming conflict
 #create the dependent target (#may produce recursion to build undirect dependencies of targets
-	if(${dep_package}_${dep_component}_TYPE STREQUAL "APP"
-		OR ${dep_package}_${dep_component}_TYPE STREQUAL "EXAMPLE")
-		create_Imported_Executable_Target(${dep_package} ${dep_component} ${mode})
-	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "MODULE")
-		create_Imported_Module_Library_Target(${dep_package} ${dep_component} ${mode})
-	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "SHARED")
-		create_Imported_Shared_Library_Target(${dep_package} ${dep_component} ${mode})
-	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "STATIC")
-		create_Imported_Static_Library_Target(${dep_package} ${dep_component} ${mode})
-	elseif(${dep_package}_${dep_component}_TYPE STREQUAL "HEADER")
-		create_Imported_Header_Library_Target(${dep_package} ${dep_component} ${mode})
+	if(${dep_package}_${comp_name_to_use}_TYPE STREQUAL "APP"
+		OR ${dep_package}_${comp_name_to_use}_TYPE STREQUAL "EXAMPLE")
+		create_Imported_Executable_Target(${dep_package} ${comp_name_to_use} ${mode})
+	elseif(${dep_package}_${comp_name_to_use}_TYPE STREQUAL "MODULE")
+		create_Imported_Module_Library_Target(${dep_package} ${comp_name_to_use} ${mode})
+	elseif(${dep_package}_${comp_name_to_use}_TYPE STREQUAL "SHARED")
+		create_Imported_Shared_Library_Target(${dep_package} ${comp_name_to_use} ${mode})
+	elseif(${dep_package}_${comp_name_to_use}_TYPE STREQUAL "STATIC")
+		create_Imported_Static_Library_Target(${dep_package} ${comp_name_to_use} ${mode})
+	elseif(${dep_package}_${comp_name_to_use}_TYPE STREQUAL "HEADER")
+		create_Imported_Header_Library_Target(${dep_package} ${comp_name_to_use} ${mode})
 	endif()
-	create_All_Imported_Dependency_Targets(${dep_package} ${dep_component} ${mode})
+	create_All_Imported_Dependency_Targets(${dep_package} ${comp_name_to_use} ${mode})
 endif()
 endfunction(create_Dependency_Target)
 
@@ -1329,17 +1332,19 @@ function(create_External_Component_Dependency_Target dep_package dep_component m
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(EXT_SH_LINKS_OPTIONS)
 set(EXT_ST_LINKS_OPTIONS)
+rename_If_Alias(comp_name_to_use ${dep_package} TRUE ${dep_component} ${mode})
+
 #contrarily to native dependencies we do not know the nature of the component
-set(target_name ${dep_package}-${dep_component}${TARGET_SUFFIX})
+set(target_name ${dep_package}-${comp_name_to_use}${TARGET_SUFFIX})
 if(NOT TARGET ${target_name})#check that this target does not exist, otherwise naming conflict
 
   # 0) create an imported target for the component
   add_library(${target_name} INTERFACE IMPORTED GLOBAL)#need to use an interface library to export all other proêrties of the component
-  list_Public_Includes(INCLUDES ${dep_package} ${dep_component} ${mode} FALSE)#external package does not define their own header dir, simply define a set of include dirs
-  list_Public_Lib_Dirs(LIBDIRS ${dep_package} ${dep_component} ${mode})
-	list_Public_Definitions(DEFS ${dep_package} ${dep_component} ${mode})
-	list_Public_Options(OPTS ${dep_package} ${dep_component} ${mode})
-  list_External_Links(SHARED_LNKS STATIC_LNKS ${dep_package} ${dep_component} ${mode})
+  list_Public_Includes(INCLUDES ${dep_package} ${comp_name_to_use} ${mode} FALSE)#external package does not define their own header dir, simply define a set of include dirs
+  list_Public_Lib_Dirs(LIBDIRS ${dep_package} ${comp_name_to_use} ${mode})
+	list_Public_Definitions(DEFS ${dep_package} ${comp_name_to_use} ${mode})
+	list_Public_Options(OPTS ${dep_package} ${comp_name_to_use} ${mode})
+  list_External_Links(SHARED_LNKS STATIC_LNKS ${dep_package} ${comp_name_to_use} ${mode})
 
   # 1) create dependent targets for each binary (also allow same global management of links as for legacy package dependencies)
   #shared first
@@ -1367,7 +1372,7 @@ if(NOT TARGET ${target_name})#check that this target does not exist, otherwise n
   #add all properties that are not system like links to explicit libraries (explicit library links will be added as targets)
   manage_Additional_Imported_Component_Flags(
     "${dep_package}"
-    "${dep_component}"
+    "${comp_name_to_use}"
     "${mode}"
     "${INCLUDES}"
     "${DEFS}"
@@ -1377,7 +1382,7 @@ if(NOT TARGET ${target_name})#check that this target does not exist, otherwise n
     "${EXT_ST_LINKS_OPTIONS}"
     "${LIBDIRS}"
   )
-  create_All_Imported_External_Component_Dependency_Targets(${dep_package} ${dep_component} ${mode})
+  create_All_Imported_External_Component_Dependency_Targets(${dep_package} ${comp_name_to_use} ${mode})
 endif()
 endfunction(create_External_Component_Dependency_Target)
 
@@ -1775,11 +1780,13 @@ endfunction(resolve_Standard_Before_Linking)
 #  bind_Target
 #  -----------
 #
-#   .. command:: bind_Target(component dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
+#   .. command:: bind_Target(component is_external dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
 #
 #   Bind the target of a component build locally to the target of a component belonging to another package.
 #
 #     :component: the name of the component whose target has to be bound to another target.
+#
+#     :is_external: if TRUE the dependent package is an external package.
 #
 #     :dep_package: the name of the package that contains the dependency.
 #
@@ -1795,53 +1802,66 @@ endfunction(resolve_Standard_Before_Linking)
 #
 #     :dep_defs: the preprocessor definitions used in dep_component interface that are defined by dep_component.
 #
-function(bind_Target component dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
+function(bind_Target component is_external dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
-is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
+
+
+rename_If_Alias(comp_name_to_use ${PROJECT_NAME} FALSE ${component} Release)
+#  the dependency may refer to an ALIAS name of dependent component
+# as it is NOT internal an ALIAS target is NOT defined so we need to resolved alias before
+if(is_external)
+  rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${mode})
+  set(DEP_IS_HF FALSE)#by default we consider that external components have headers
+else()
+  rename_If_Alias(dep_name_to_use ${dep_package} FALSE ${dep_component} Release)
+  is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_name_to_use})
+endif()
+
+is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${comp_name_to_use})
+
 if(COMP_IS_BUILT)
 	#use definitions and links for building the target
 	set(internal_defs ${comp_defs} ${comp_exp_defs} ${dep_defs})
-	manage_Additional_Component_Internal_Flags(${component} "" "" "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
+	manage_Additional_Component_Internal_Flags(${comp_name_to_use} "" "" "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
 
 	if(NOT DEP_IS_HF)
-		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_package}-${dep_component}${TARGET_SUFFIX})
+		target_link_libraries(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX})#Note: since dependency is imported we cannot used its alias
 
-    target_include_directories(${component}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+    target_include_directories(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)#Note: since dependency is imported we cannot used its alias
 
-		target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+		target_compile_definitions(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)#Note: since dependency is imported we cannot used its alias
 
-		target_compile_options(${component}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
+		target_compile_options(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)#Note: since dependency is imported we cannot used its alias
 	endif()
 
 	# set adequately language standard for component depending on the value of dep_component
-	resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${mode} TRUE)
+	resolve_Standard_Before_Linking(${PROJECT_NAME} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} TRUE)
 else()#for headers lib do not set the language standard build property (othewise CMake complains on recent versions)
 	# set adequately language standard for component depending on the value of dep_component
-	resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${dep_package} ${dep_component} ${mode} FALSE)
+	resolve_Standard_Before_Linking(${PROJECT_NAME} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
 endif()
 
 if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
 	if(export)#the library export something
 		set(exp_defs ${comp_exp_defs} ${dep_defs})
-		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "" "${exp_defs}" "" "")
+		manage_Additional_Component_Exported_Flags(${comp_name_to_use} "${TARGET_SUFFIX}" "" "" "${exp_defs}" "" "")
 
-		target_include_directories(${component}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+		target_include_directories(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)#Note: since dependency is imported we cannot used its alias
 
-		target_compile_definitions(${component}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+		target_compile_definitions(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)#Note: since dependency is imported we cannot used its alias
 
-		target_compile_options(${component}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
+		target_compile_options(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)#Note: since dependency is imported we cannot used its alias
 
 	else()#the library do not export anything
-		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "" "${comp_exp_defs}" "" "")
+		manage_Additional_Component_Exported_Flags(${comp_name_to_use} "${TARGET_SUFFIX}" "" "" "${comp_exp_defs}" "" "")
 	endif()
-  target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_package}-${dep_component}${TARGET_SUFFIX})
+  target_link_libraries(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX})#Note: since dependency is imported we cannot used its alias
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Target)
 
@@ -1876,53 +1896,63 @@ endfunction(bind_Target)
 function(bind_Internal_Target component dep_component mode export comp_defs comp_exp_defs dep_defs)
 
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${component})
-is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_component})
+rename_If_Alias(comp_name_to_use ${PROJECT_NAME} FALSE ${component} Release)
+rename_If_Alias(dep_name_to_use ${PROJECT_NAME} FALSE ${dep_component} Release)
+
+is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_name_to_use})
+is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${comp_name_to_use})#by definition this is always called on real target (not alias so no need to check for alias)
+
+#  the dependency may refer to an ALIAS name of another internal component
+# as it is internal an ALIAS target is defined so theretically no need to check for specific cases
+# but all PID properties are defined on real names only so calling functions on components require their alias names to be resolved
+# here needed for is_HeaderFree_Component, resolve_Standard_Before_Linking
+
+
 if(COMP_IS_BUILT)# interface library cannot receive PRIVATE PROPERTIES
 	#use definitions and links for building the target
 	set(internal_defs ${comp_defs} ${comp_exp_defs} ${dep_defs})
-	manage_Additional_Component_Internal_Flags(${component} "" "" "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
+	manage_Additional_Component_Internal_Flags(${comp_name_to_use} "" "" "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
 
 	if(NOT DEP_IS_HF)#the dependency may export some things, so we need to bind definitions
-		target_link_libraries(${component}${TARGET_SUFFIX} PRIVATE ${dep_component}${TARGET_SUFFIX})
+		target_link_libraries(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE ${dep_component}${TARGET_SUFFIX})# since dependency is local we can use its alias
 
-		target_include_directories(${component}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+		target_include_directories(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)# since dependency is local we can use its alias
 
-		target_compile_definitions(${component}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+		target_compile_definitions(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)# since dependency is local we can use its alias
 
-		target_compile_options(${component}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
+		target_compile_options(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)# since dependency is local we can use its alias
 	endif()
 
 		# set adequately language standard for component depending on the value of dep_component
-		resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${mode} TRUE)
+		resolve_Standard_Before_Linking(${PROJECT_NAME} ${comp_name_to_use} ${PROJECT_NAME} ${dep_name_to_use} ${mode} TRUE)
 else() #for header lib do not set the build property to avoid troubles
 		# set adequately language standard for component depending on the value of dep_component
-		resolve_Standard_Before_Linking(${PROJECT_NAME} ${component} ${PROJECT_NAME} ${dep_component} ${mode} FALSE)
+		resolve_Standard_Before_Linking(${PROJECT_NAME} ${comp_name_to_use} ${PROJECT_NAME} ${dep_name_to_use} ${mode} FALSE)
 endif()
 
 
 if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
 	if(export)
 		set(internal_defs ${comp_exp_defs} ${dep_defs})
-		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
+		manage_Additional_Component_Exported_Flags(${comp_name_to_use} "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
 
-		target_include_directories(${component}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+		target_include_directories(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)# since dependency is local we can use its alias
 
-		target_compile_definitions(${component}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+		target_compile_definitions(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)# since dependency is local we can use its alias
 
-		target_compile_options(${component}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
+		target_compile_options(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)# since dependency is local we can use its alias
 
 	else()
-		manage_Additional_Component_Exported_Flags(${component} "${TARGET_SUFFIX}" "" "" "${comp_exp_defs}" "" "")
+		manage_Additional_Component_Exported_Flags(${comp_name_to_use} "${TARGET_SUFFIX}" "" "" "${comp_exp_defs}" "" "")
 		#else non exported shared
 	endif()
-  target_link_libraries(${component}${TARGET_SUFFIX} INTERFACE ${dep_component}${TARGET_SUFFIX})
+  target_link_libraries(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE ${dep_component}${TARGET_SUFFIX})# since dependency is local we can use its alias
 
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Internal_Target)
@@ -1953,25 +1983,30 @@ endfunction(bind_Internal_Target)
 #
 function(bind_Imported_External_Component_Target package component dep_package dep_component mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-  export_External_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${mode})
-	if(IS_EXPORTING)
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
+
+  rename_If_Alias(comp_name_to_use ${package} TRUE ${component} ${mode})
+  rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${mode})
+  #Note: original and component and dep_component are considered as alias (they can have same value as base name)
+  export_External_Component_Resolving_Alias(IS_EXPORTING ${package} ${comp_name_to_use} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${mode})
+
+  if(IS_EXPORTING)
+		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
 		)
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
+		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
 		)
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
+		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
 		)
 	endif()
   #exporting the linked libraries in any case
-  set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-    INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+  set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+    INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
   )
-  
+
 	# set adequately language standard for component depending on the value of dep_component
-	resolve_Standard_Before_Linking(${package} ${component} ${dep_package} ${dep_component} ${mode} FALSE)
+	resolve_Standard_Before_Linking(${package} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
 endfunction(bind_Imported_External_Component_Target)
 
 #.rst:
@@ -2000,37 +2035,43 @@ endfunction(bind_Imported_External_Component_Target)
 #
 function(bind_Imported_Target package component dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-export_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${mode})
-is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
-if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
+
+rename_If_Alias(dep_name_to_use ${dep_package} FALSE ${dep_component} Release)
+rename_If_Alias(comp_name_to_use ${package} FALSE ${component} Release)
+
+# Note: in this call component and dep_component can be aliases
+export_Component_Resolving_Alias(IS_EXPORTING ${package} ${comp_name_to_use} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${mode})
+
+is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_name_to_use})
+if(NOT DEP_IS_HF)#the required package component is a library with header it defins symbols so it can be exported
 	if(IS_EXPORTING)
 
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
+		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
 		)
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
+		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
 		)
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
+		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
 		)
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
 		)
 	else()
-		if(${package}_${component}_TYPE STREQUAL "SHARED")
-      set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-				IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+		if(${package}_${comp_name_to_use}_TYPE STREQUAL "SHARED")
+      set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+				IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
 			)
     else()#static OR header lib always export links
-    	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-				INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+    	set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+				INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
 			)
 		endif()
 	endif()#exporting the linked libraries in any case
 
 	# set adequately language standard for component depending on the value of dep_component
-	resolve_Standard_Before_Linking(${package} ${component} ${dep_package} ${dep_component} ${mode} FALSE)
+	resolve_Standard_Before_Linking(${package} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
 
 endif()	#else, it is an application or a module => runtime dependency declaration only (build recursion is stopped)
 endfunction(bind_Imported_Target)
@@ -2062,34 +2103,38 @@ endfunction(bind_Imported_Target)
 #
 function(bind_Imported_External_Target package component dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-export_External_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${mode})
+
+rename_If_Alias(comp_name_to_use ${package} FALSE ${component} Release)
+rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${mode})
+export_External_Component_Resolving_Alias(IS_EXPORTING ${package} ${comp_name_to_use} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${mode})
+
 if(IS_EXPORTING)
-	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-		INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
+	set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
 	)
-	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-		INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
+	set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
 	)
-	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-		INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
+	set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
 	)
-	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-		INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+	set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
 	)
 else()
-  if(${package}_${component}_TYPE STREQUAL "SHARED")
-    set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-      IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+  if(${package}_${comp_name_to_use}_TYPE STREQUAL "SHARED")
+    set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+      IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
     )
   else()#static OR header lib always export links
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_component}${TARGET_SUFFIX}
+		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
 		)
 	endif()
 endif()#exporting the linked libraries in any case
 
 # set adequately language standard for component depending on the value of dep_component
-resolve_Standard_Before_Linking(${package} ${component} ${dep_package} ${dep_component} ${mode} FALSE)
+resolve_Standard_Before_Linking(${package} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
 endfunction(bind_Imported_External_Target)
 
 #
@@ -2129,6 +2174,6 @@ if(PROJECT_NAME STREQUAL ${dep_package})#target already created elsewhere since 
 	bind_Internal_Target(${component} ${dep_component} ${mode} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 else()# it is a dependency to another package
 	create_Dependency_Target(${dep_package} ${dep_component} ${mode})
-	bind_Target(${component} ${dep_package} ${dep_component} ${mode} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
+	bind_Target(${component} FALSE ${dep_package} ${dep_component} ${mode} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 endif()
 endfunction(fill_Component_Target_With_Dependency)

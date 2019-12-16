@@ -2753,7 +2753,7 @@ endfunction(create_Component_Symlinks_In_System_Tree)
 #
 function(install_Component_Runtime_Symlinks_In_Folder package component)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-is_Runtime_Component(IS_RUNTIME ${package} ${component})
+is_Runtime_Component(IS_RUNTIME ${package} ${component})#no need to resolve alias since component is supposed to be a base name
 if(	IS_RUNTIME )#symlinks need to be generated only for runtime components
 	#3) getting direct and undirect runtime resources dependencies
 	get_Bin_Component_Runtime_Resources(RES_RESOURCES ${package} ${component} ${CMAKE_BUILD_TYPE} TRUE)
@@ -2763,8 +2763,6 @@ if(	IS_RUNTIME )#symlinks need to be generated only for runtime components
   endif()
 endif()
 endfunction(install_Component_Runtime_Symlinks_In_Folder)
-
-
 
 #.rst:
 #
@@ -2889,7 +2887,7 @@ foreach(nat_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
 endforeach()
 
 if(is_external)
-	foreach(component IN LISTS ${package}_COMPONENTS${VAR_SUFFIX})
+	foreach(component IN LISTS ${package}_COMPONENTS${VAR_SUFFIX})#creating local target for each component
 
 		file(APPEND ${file_name} "add_library(${package}::${component} INTERFACE IMPORTED GLOBAL)\n")#creating the target
 		if(NOT is_system)#if it is a system olibrary then its include is supposed to be public
@@ -2961,33 +2959,35 @@ if(is_external)
 
 		# managing dependencies
 		foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-			export_External_Component(IS_EXPORTING ${package} ${component} ${package} ${dep_component} ${CMAKE_BUILD_TYPE})
+			rename_If_Alias(dep_name_to_use ${package} TRUE ${dep_component} ${CMAKE_BUILD_TYPE})#dependent component name may be an alias
+			export_External_Component(IS_EXPORTING ${package} ${component} ${package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE})
 			if(IS_EXPORTING)
-				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_INCLUDE_DIRECTORIES>)\n")
-				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_COMPILE_DEFINITIONS>)\n")
-				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_COMPILE_OPTIONS>)\n")
-				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${package}::${dep_component})\n")
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${package}::${dep_name_to_use},INTERFACE_INCLUDE_DIRECTORIES>)\n")
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${package}::${dep_name_to_use},INTERFACE_COMPILE_DEFINITIONS>)\n")
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${package}::${dep_name_to_use},INTERFACE_COMPILE_OPTIONS>)\n")
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${package}::${dep_name_to_use})\n")
 			else()
-				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${package}::${dep_component})\n")
+				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${package}::${dep_name_to_use})\n")
 			endif()#exporting the linked libraries in any case
 		endforeach()
 
-		foreach(a_dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
-			foreach(a_dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${a_dep_package}_COMPONENTS${VAR_SUFFIX})
-				export_External_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE})
+		foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+			foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
+				rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${CMAKE_BUILD_TYPE})#dependent component name may be an alias
+				export_External_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE})
   			if(IS_EXPORTING)
-  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_INCLUDE_DIRECTORIES>)\n")
-  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_DEFINITIONS>)\n")
-  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_OPTIONS>)\n")
-  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_component})\n")
+  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_INCLUDE_DIRECTORIES>)\n")
+  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_DEFINITIONS>)\n")
+  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_OPTIONS>)\n")
+  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
   			else()
-  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_component})\n")
+  				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
   			endif()#exporting the linked libraries in any case
 		  endforeach()
 		endforeach()
 	endforeach()
 
-else()
+else()#Note: part for native packages
 	#searching elements to make sure the package is well installed
 	foreach(component IN LISTS ${package}_COMPONENTS)
 		is_Built_Component(IS_BUILT ${package} ${component})
@@ -3093,31 +3093,33 @@ else()
 			#now dealing with dependencies
 			foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 			  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-					export_External_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE})
+					rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${CMAKE_BUILD_TYPE})#dependent component name may be an alias
+					export_External_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE})
 					if(IS_EXPORTING)
-						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_INCLUDE_DIRECTORIES>)\n")
-						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_DEFINITIONS>)\n")
-						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_OPTIONS>)\n")
-						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_component})\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_INCLUDE_DIRECTORIES>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_DEFINITIONS>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_OPTIONS>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
 					else()
-						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_component})\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
 					endif()#exporting the linked libraries in any case
 			  endforeach()
 			endforeach()
 
 			#dealing with internal dependencies
 			foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-				export_Component(IS_EXPORTING ${package} ${component} ${package} ${dep_component} ${CMAKE_BUILD_TYPE})
-				is_HeaderFree_Component(DEP_IS_HF ${package} ${dep_component})
+				rename_If_Alias(dep_name_to_use ${package} FALSE ${dep_component} Release)#dependent component name may be an alias
+				export_Component_Resolving_Alias(IS_EXPORTING ${package} ${component} ${component} ${package} ${dep_name_to_use} ${dep_component} ${CMAKE_BUILD_TYPE})
+				is_HeaderFree_Component(DEP_IS_HF ${package} ${dep_name_to_use})
 				if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
 					if(IS_EXPORTING)
 						#use to this to be compatible with CMake >= 3.1
-						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_INCLUDE_DIRECTORIES>)\n")
-						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_COMPILE_DEFINITIONS>)\n")
-						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${package}::${dep_component},INTERFACE_COMPILE_OPTIONS>)\n")
-						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${package}::${dep_component})\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${package}::${dep_name_to_use},INTERFACE_INCLUDE_DIRECTORIES>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${package}::${dep_name_to_use},INTERFACE_COMPILE_DEFINITIONS>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${package}::${dep_name_to_use},INTERFACE_COMPILE_OPTIONS>)\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${package}::${dep_name_to_use})\n")
 					else()
-						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${package}::${dep_component})\n")
+						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${package}::${dep_name_to_use})\n")
 					endif()#exporting th
 				endif()
 			endforeach()
@@ -3125,16 +3127,18 @@ else()
 			#dealing with package dependencies
 			foreach(dep_package IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 				foreach(dep_component IN LISTS ${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-					export_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE})
-					is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_component})
+					#TODO use: export_Component_Resolving_Alias(IS_EXPORTING ${package} ${comp_name_to_use} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${mode})
+					rename_If_Alias(dep_name_to_use ${dep_package} FALSE ${dep_component} Release)#dependent component name may be an alias
+					export_Component_Resolving_Alias(IS_EXPORTING ${package} ${component} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${CMAKE_BUILD_TYPE})
+					is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_name_to_use})
 					if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
 						if(IS_EXPORTING)
-							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_INCLUDE_DIRECTORIES>)\n")
-							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_DEFINITIONS>)\n")
-							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_component},INTERFACE_COMPILE_OPTIONS>)\n")
-							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_component})\n")
+							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_INCLUDE_DIRECTORIES>)\n")
+							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_DEFINITIONS>)\n")
+							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_OPTIONS>)\n")
+							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
 						else()
-							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_component})\n")
+							file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
 						endif()
 					endif()
 				endforeach()

@@ -179,7 +179,7 @@ function(add_Static_Check component is_library)
   filter_All_Sources(SOURCES_TO_CHECK)
 
 	# getting specific settings of the target (using generator expression to make it robust)
-	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})
+	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})#no need to check for alias as in current project component only base component names (by construction)
 	if(NOT IS_HF)#component has a public interface
     append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>")
     append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>, -D>>")

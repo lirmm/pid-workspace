@@ -665,7 +665,7 @@ function(define_Component_Documentation_Content component file)
 set(DECLARED FALSE)
 is_Declared(${component} DECLARED)
 if(DECLARED AND EXISTS ${CMAKE_SOURCE_DIR}/share/site/${file})
-	define_Documentation_Content(${component} ${file})
+	define_Documentation_Content(${DECLARED} ${file})
 else()
 	message("[PID] WARNING : documentation file for component ${component} cannot be found at ${CMAKE_SOURCE_DIR}/share/site/${file}. Documentation for this component will not reference this specific content.")
 endif()
@@ -1349,7 +1349,7 @@ endfunction(generate_External_Dependency_Site)
 #      :RES_CONTENT: output variable containing the markdown content used to describe the component.
 #
 function(generate_Component_Site_For_Package component RES_CONTENT)
-is_Externally_Usable(IS_EXT_USABLE ${component})
+is_Externally_Usable(IS_EXT_USABLE ${component})#Note: no need to resolve since component is supposed to be already resolved if necessary.
 if(NOT IS_EXT_USABLE)#component cannot be used from outside package => no need to document it
 	set(${RES_CONTENT} "" PARENT_SCOPE)
 	return()

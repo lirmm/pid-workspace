@@ -136,6 +136,12 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	endforeach()
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENTS CACHE INTERNAL "")
 
+	#reset aliases
+	foreach(alias IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_ALIASES)
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_ALIAS_${alias} CACHE INTERNAL "")
+	endforeach()
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_ALIASES CACHE INTERNAL "")
+
 	#reset current version general information
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME CACHE INTERNAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH CACHE INTERNAL "")
@@ -1146,7 +1152,9 @@ endfunction(declare_Wrapped_External_Dependency)
 #
 #      :runtime_resources: the list of path to file and folder used at runtime by the component, relative to external package root install folder.
 #
-function(declare_Wrapped_Component component shared_links soname static_links includes definitions options c_standard cxx_standard runtime_resources)
+#      :aliases: the list of alias of the component.
+#
+function(declare_Wrapped_Component component shared_links soname static_links includes definitions options c_standard cxx_standard runtime_resources aliases)
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENTS ${component})
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SHARED_LINKS ${shared_links} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SONAME ${soname} CACHE INTERNAL "")
@@ -1158,6 +1166,12 @@ set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${compone
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_C_STANDARD ${c_standard} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_CXX_STANDARD ${cxx_standard} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_RUNTIME_RESOURCES ${runtime_resources} CACHE INTERNAL "")
+if(aliases)
+	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_ALIASES "${aliases}")
+	foreach(alias IN LISTS aliases)
+		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_ALIAS_${alias} ${component} CACHE INTERNAL "")
+	endforeach()
+endif()
 endfunction(declare_Wrapped_Component)
 
 #.rst:
@@ -1262,6 +1276,7 @@ endfunction(declare_Wrapped_Component_Dependency_To_Implicit_Components)
 #      :definitions: the list preprocessor definitions used in dependency_component headers but defined by component.
 #
 function(declare_Wrapped_Component_Internal_Dependency component dependency_component exported definitions)
+#Note: the dependency may refer to an alias => no problem now but needs to be resolve when use file will be generated at build time
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_INTERNAL_DEPENDENCIES ${dependency_component})
 escape_Guillemet_From_String(definitions)#special case, definition may contain complex string exprtession that we may want to escape using \". We generally want to preserve these espaces
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency_component}_DEFINITIONS "${definitions}")
@@ -1828,6 +1843,17 @@ function(generate_Description_For_External_Component file_for_version package pl
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES)
 		fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES RES_STR)
 		set(options_str "${options_str} RUNTIME_RESOURCES ${RES_STR}")
+	endif()
+	#management of aliases
+	set(alias_list)
+	foreach(alias IN LISTS ${package}_KNOWN_VERSION_${version}_ALIASES)
+		if(${package}_KNOWN_VERSION_${version}_ALIAS_${alias} STREQUAL "${component}")#if the alias targets the component it is added
+			list(APPEND alias_list ${alias})
+		endif()
+	endforeach()
+	if(alias_list)#there are aliases
+		fill_String_From_List(alias_list RES_ALIAS)
+		set(options_str "${options_str} ALIAS ${RES_ALIAS}")
 	endif()
 	file(APPEND ${file_for_version} "declare_PID_External_Component(PACKAGE ${package} COMPONENT ${component}${options_str})\n")
 

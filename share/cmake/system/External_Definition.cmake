@@ -311,6 +311,7 @@ endmacro(declare_PID_External_Package_Dependency)
 #     :SHARED_LINKS <list of shared links>: list of path to shared library binaries, relative to external package version folder.
 #     :STATIC_LINKS <list of static links>: list of path to static library binaries, relative to external package version folder.
 #     :RUNTIME_RESOURCES <list of path>: list of path to runtime resources (i.e. files) that are used by the external component. These resources will be referenced by the rpath of native components that use this external component.
+#     :ALIAS <list of alias>: list of alias names of the component. Used to facilitate renaming of components while preserving backward compatibility.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -333,7 +334,7 @@ endmacro(declare_PID_External_Package_Dependency)
 macro(declare_PID_External_Component)
 	set(options)
 	set(oneValueArgs PACKAGE COMPONENT C_STANDARD CXX_STANDARD)
-	set(multiValueArgs INCLUDES STATIC_LINKS SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
+	set(multiValueArgs INCLUDES STATIC_LINKS SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS ALIAS)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 
 	cmake_parse_arguments(DECLARE_PID_EXTERNAL_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -347,10 +348,13 @@ macro(declare_PID_External_Component)
 	endif()
 	set(curr_ext_package ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE})
 	set(curr_ext_comp ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT})
-	set(comps_list ${${curr_ext_package}_COMPONENTS${VAR_SUFFIX}} ${curr_ext_comp})
-	list(REMOVE_DUPLICATES comps_list)
-	set(${curr_ext_package}_COMPONENTS${VAR_SUFFIX} ${comps_list} CACHE INTERNAL "")
-
+  append_Unique_In_Cache(${curr_ext_package}_COMPONENTS${VAR_SUFFIX} ${curr_ext_comp})
+  if(DECLARE_PID_EXTERNAL_COMPONENT_ALIAS)#an alias is defined for the component
+    append_Unique_In_Cache(${curr_ext_package}_ALIASES${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_ALIAS}")
+    foreach(alias IN LISTS ${curr_ext_package}_ALIASES${VAR_SUFFIX})
+      set(${curr_ext_package}_${alias}_IS_ALIAS_OF${VAR_SUFFIX} ${curr_ext_comp} CACHE INTERNAL "")
+    endforeach()
+  endif()
 	#manage include folders
 	set(incs)
 	foreach(an_include IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_INCLUDES)
@@ -499,7 +503,8 @@ macro(declare_PID_External_Component_Dependency)
 		return() #return will exit from current Use file included (because we are in a macro)
 	endif()
 	set(LOCAL_PACKAGE ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE})
-	set(LOCAL_COMPONENT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT})
+  rename_If_Alias(LOCAL_COMPONENT ${LOCAL_PACKAGE} TRUE ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT} ${CMAKE_BUILD_TYPE})
+
 	set(TARGET_COMPONENT)
 	set(EXPORT_TARGET FALSE)
 
@@ -530,26 +535,26 @@ macro(declare_PID_External_Component_Dependency)
 			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: in package ${LOCAL_PACKAGE} you must use either USE OR EXPORT keywords not both.")
 			return()
 		endif()
-		set(TARGET_COMPONENT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_USE})
+    set(TARGET_COMPONENT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_USE})
 	elseif(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXPORT)
 		set(TARGET_COMPONENT ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_EXPORT})
 		set(EXPORT_TARGET TRUE)
 	endif()
 
-	if(TARGET_COMPONENT AND NOT TARGET_PACKAGE) #this is a link to a component locally defined
-		list(FIND ${LOCAL_PACKAGE}_COMPONENTS${VAR_SUFFIX} ${TARGET_COMPONENT} INDEX)
-		if(INDEX EQUAL -1)
-			message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE} does not define component ${TARGET_COMPONENT} used as a dependency for ${LOCAL_COMPONENT}.")
-			return()
-		endif()
-	endif()
-
 	# more checks
 	if(TARGET_COMPONENT)
-		if(NOT TARGET_PACKAGE)
+		if(NOT TARGET_PACKAGE)#this MUST BE a link to a component locally defined
+      list(FIND ${LOCAL_PACKAGE}_COMPONENTS${VAR_SUFFIX} ${TARGET_COMPONENT} INDEX)
+      if(INDEX EQUAL -1)
+        message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE} does not define component ${TARGET_COMPONENT} used as a dependency for ${LOCAL_COMPONENT}.")
+        return()
+      endif()
+      rename_If_Alias(TARGET_COMPONENT ${LOCAL_PACKAGE} TRUE ${TARGET_COMPONENT} ${CMAKE_BUILD_TYPE})#resolve alias if needed
+
       append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} ${TARGET_COMPONENT})
 			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_EXPORT_${TARGET_COMPONENT}${VAR_SUFFIX} ${EXPORT_TARGET} CACHE INTERNAL "")
 		else()
+      rename_If_Alias(TARGET_COMPONENT ${TARGET_PACKAGE} TRUE ${TARGET_COMPONENT} ${CMAKE_BUILD_TYPE})#resolve alias if needed
       append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${TARGET_PACKAGE})
       append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCY_${TARGET_PACKAGE}_COMPONENTS${VAR_SUFFIX} ${TARGET_COMPONENT})
 			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_EXPORT_${TARGET_PACKAGE}_${TARGET_COMPONENT}${VAR_SUFFIX} ${EXPORT_TARGET} CACHE INTERNAL "")

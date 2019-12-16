@@ -948,6 +948,7 @@ set(${package}_${component}_AUX_MONITORED_PATH CACHE INTERNAL "")
 set(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE INTERNAL "")
 set(${package}_${component}_DESCRIPTION CACHE INTERNAL "")
 set(${package}_${component}_USAGE_INCLUDES CACHE INTERNAL "")
+set(${package}_${component}_USAGE_INCLUDES CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
 
 #.rst:
@@ -988,6 +989,80 @@ set(${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX} "${c_standard}" CA
 set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} "${cxx_standard}" CACHE INTERNAL "")#minimum C++ standard of the component interface
 endfunction(init_Component_Cached_Variables_For_Export)
 
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Alias_To_Cache| replace:: ``add_Alias_To_Cache``
+#  .. _add_Alias_To_Cache:
+#
+#  add_Alias_To_Cache
+#  ------------------
+#
+#   .. command:: add_Alias_To_Cache(component alias_list)
+#
+#   Add an alias to a component of teh current project.
+#
+#     :component: the name of the component.
+#
+#     :alias_list: list of aliases names for the component.
+#
+function(add_Alias_To_Cache component alias_list)
+  foreach(alias IN LISTS alias_list)
+    list(FIND ${PROJECT_NAME}_ALIASES ${alias} INDEX)
+    if(NOT INDEX EQUAL -1)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: the alias ${alias} used for component ${component} is already used as alias for another component")
+    endif()
+    list(FIND ${PROJECT_NAME}_COMPONENTS ${alias} INDEX)
+    if(NOT INDEX EQUAL -1)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: the alias ${alias} used for component ${component} is already the name of another component")
+    endif()
+    set(${PROJECT_NAME}_${alias}_IS_ALIAS_OF ${component} CACHE INTERNAL "")
+  endforeach()
+  append_Unique_In_Cache(${PROJECT_NAME}_ALIASES "${alias_list}")
+endfunction(add_Alias_To_Cache)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |rename_If_Alias| replace:: ``rename_If_Alias``
+#  .. _rename_If_Alias:
+#
+#  rename_If_Alias
+#  --------------
+#
+#   .. command:: rename_If_Alias(IS_ALIAS package external component mode)
+#
+#     Return the real name of the component from the given input name, this later can be the real name or an alias name.
+#
+#     :package: name of package containing the component.
+#
+#     :external: TRUE if package is an external package.
+#
+#     :component: the name of the component or an alias.
+#
+#     :mode: the current build mode.
+#
+#     :ALIAS_NAME: the output variable that contains the real name of the aliased component if component is an alias, FALSE otherwise.
+#
+function(rename_If_Alias ALIAS_NAME package external component mode)
+  if(external)
+    get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+    set(use_suffix ${VAR_SUFFIX})
+  else()#variable is unique for native packages between debug and release modes
+    set(use_suffix)
+  endif()
+  list(FIND ${package}_ALIASES${use_suffix} ${component} INDEX)
+  if(INDEX EQUAL -1)#not found in aliases
+    set(${ALIAS_NAME} ${component} PARENT_SCOPE)
+  else()
+    set(${ALIAS_NAME} ${${package}_${component}_IS_ALIAS_OF${use_suffix}} PARENT_SCOPE)
+  endif()
+endfunction(rename_If_Alias)
 
 #.rst:
 #
@@ -1061,13 +1136,17 @@ function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode)
   endforeach()
   set(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} CACHE INTERNAL "")
 
-  foreach(comp IN LISTS ${package}_COMPONENTS${VAR_SUFFIX})
+  foreach(comp IN LISTS ${package}_COMPONENTS)
     reset_Component_Cached_Variables(${package} ${comp} ${mode})
+  endforeach()
+  foreach(alias IN LISTS ${package}_ALIASES)
+    set(${package}_${alias}_IS_ALIAS_OF CACHE INTERNAL "")
   endforeach()
   set(${package}_COMPONENTS CACHE INTERNAL "")
   set(${package}_COMPONENTS_APPS CACHE INTERNAL "")
   set(${package}_COMPONENTS_LIBS CACHE INTERNAL "")
   set(${package}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
+  set(${package}_ALIASES CACHE INTERNAL "")
 
   foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_ALL_POSSIBLE_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
@@ -1141,6 +1220,11 @@ function(reset_External_Package_Dependency_Cached_Variables_From_Use package mod
   endforeach()
   set(${package}_COMPONENTS${VAR_SUFFIX} CACHE INTERNAL "")
 
+  foreach(alias IN LISTS ${package}_ALIASES${VAR_SUFFIX})
+    set(${package}_${alias}_IS_ALIAS_OF${VAR_SUFFIX} CACHE INTERNAL "")
+  endforeach()
+  set(${package}_ALIASES${VAR_SUFFIX} CACHE INTERNAL "")
+
   foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_ALL_POSSIBLE_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_ALL_EXACT_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
@@ -1196,11 +1280,16 @@ function(reset_Package_Description_Cached_Variables)
 	foreach(a_component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 		reset_Component_Cached_Variables(${PROJECT_NAME} ${a_component} ${CMAKE_BUILD_TYPE})
 	endforeach()
+
+  foreach(alias IN LISTS ${PROJECT_NAME}_ALIASES)
+    set(${PROJECT_NAME}_${alias}_IS_ALIAS_OF CACHE INTERNAL "")
+  endforeach()
 	reset_Declared()
 	set(${PROJECT_NAME}_COMPONENTS CACHE INTERNAL "")
 	set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
 	set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
 	set(${PROJECT_NAME}_COMPONENTS_SCRIPTS CACHE INTERNAL "")
+	set(${PROJECT_NAME}_ALIASES CACHE INTERNAL "")
 endfunction(reset_Package_Description_Cached_Variables)
 
 #.rst:
@@ -1303,16 +1392,21 @@ endfunction(mark_As_Declared)
 #
 #   Check whether a component has been declared in current configuration process, or not.
 #
-#     :component: the name of the component to check.
+#     :component: the name of the component or one of its aliases to check.
 #
-#     :RESULT: the output variable that is TRUE if component has been declared, FALSE otherwise.
+#     :RESULT: the output variable that contains the name of the component if component has been declared, FALSE otherwise.
 #
 function(is_Declared component RESULT)
 list(FIND ${PROJECT_NAME}_DECLARED_COMPS ${component} INDEX)
 if(INDEX EQUAL -1)
-	set(${RESULT} FALSE PARENT_SCOPE)
+  list(FIND ${PROJECT_NAME}_ALIASES ${component} INDEX)
+  if(INDEX EQUAL -1)
+	   set(${RESULT} FALSE PARENT_SCOPE)
+  else()#the given name is an alias
+    set(${RESULT} ${${PROJECT_NAME}_${component}_IS_ALIAS_OF} PARENT_SCOPE)
+  endif()
 else()
-	set(${RESULT} TRUE PARENT_SCOPE)
+	set(${RESULT} ${component} PARENT_SCOPE)
 endif()
 endfunction(is_Declared)
 
@@ -1358,25 +1452,98 @@ endfunction(reset_Declared)
 #
 #     :mode: the build mode to consider (Debug or Release)
 #
-#     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise.
+#     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise. It is UNSET if either variable used for declaring export is unset
 #
 function(export_External_Component IS_EXPORTING package component dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 if(package STREQUAL "${dep_package}")# both components belong to smae external package
-	if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
+  if(NOT DEFINED ${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
+    unset(${IS_EXPORTING} PARENT_SCOPE)#Note: required to manage aliases (if variable not defined means either component or dep_component is not a valid name)
+  elseif(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
 		set(${IS_EXPORTING} TRUE PARENT_SCOPE)
 	else()
 		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
 	endif()
 else()
-	if(${package}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX})
+  if(NOT DEFINED ${package}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX})
+    unset(${IS_EXPORTING} PARENT_SCOPE)#Note: required to manage aliases (if variable not defined means either component or dep_component is not a valid name)
+  elseif(${package}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX})
 		set(${IS_EXPORTING} TRUE PARENT_SCOPE)
 	else()
 		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
 	endif()
 endif()
 endfunction(export_External_Component)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |export_External_Component_Resolving_Alias| replace:: ``export_External_Component_Resolving_Alias``
+#  .. _export_External_Component_Resolving_Alias:
+#
+#  export_External_Component_Resolving_Alias
+#  -----------------------------------------
+#
+#   .. command:: export_External_Component_Resolving_Alias(IS_EXPORTING package component component_alias dep_package dep_component dep_component_alias mode)
+#
+#   Check whether an external component exports another external component. This function returns exact result wether components names are base names or aliases.
+#
+#     :package: the name of the package containing the exporting component.
+#
+#     :component: the name of the exporting component.
+#
+#     :component_alias: the alias of the exporting component or base name if no alias used.
+#
+#     :dep_package: the name of the package containing the exported component.
+#
+#     :dep_component: the name of the exported component.
+#
+#     :dep_component_alias: the alias of the exported component or base name if no alias used.
+#
+#     :mode: the build mode to consider (Debug or Release)
+#
+#     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise.
+#
+function(export_External_Component_Resolving_Alias IS_EXPORTING package component component_alias dep_package dep_component dep_component_alias mode)
+set(${IS_EXPORTING} FALSE PARENT_SCOPE)
+export_External_Component(FIRST_TRIAL_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${mode})#using base name to verify export
+if(DEFINED FIRST_TRIAL_EXPORTING)#as soon as variable is defined it means we used the good name for component AND dependency, so result is meaningful
+  if(FIRST_TRIAL_EXPORTING)
+    set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+  endif()
+  return()
+endif()
+if(NOT component STREQUAL component_alias)#we can check with alias name for the component
+  export_External_Component(SECOND_TRIAL_EXPORTING ${package} ${component_alias} ${dep_package} ${dep_component} ${mode})#using base name to verify export
+  if(DEFINED SECOND_TRIAL_EXPORTING)#as soon as variable is defined it means we used the good name for component AND dependency, so result is meaningful
+    if(SECOND_TRIAL_EXPORTING)
+      set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+    endif()
+    return()
+  endif()
+endif()
+if(NOT dep_component STREQUAL dep_component_alias)#we can check with alias name for the component
+  export_External_Component(THIRD_TRIAL_EXPORTING ${package} ${component} ${dep_package} ${dep_component_alias} ${mode})#using base name to verify export
+  if(DEFINED THIRD_TRIAL_EXPORTING)#as soon as variable is defined it means we used the good name for component AND dependency, so result is meaningful
+    if(THIRD_TRIAL_EXPORTING)
+      set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+    endif()
+    return()
+  endif()
+endif()
+if((NOT component STREQUAL component_alias) AND (NOT dep_component STREQUAL dep_component_alias))
+  export_External_Component(LAST_TRIAL_EXPORTING ${package} ${component_alias} ${dep_package} ${dep_component_alias} ${mode})#using base name to verify export
+  if(DEFINED LAST_TRIAL_EXPORTING)#as soon as variable is defined it means we used the good name for component AND dependency, so result is meaningful
+    if(LAST_TRIAL_EXPORTING)
+      set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+    endif()
+    return()
+  endif()
+endif()
+endfunction(export_External_Component_Resolving_Alias)
+
 
 #.rst:
 #
@@ -1402,30 +1569,105 @@ endfunction(export_External_Component)
 #
 #     :mode: the build mode to consider (Debug or Release)
 #
-#     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise.
+#     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise. It is UNSET if either variable used for declaring export is not defined.
 #
 function(export_Component IS_EXPORTING package component dep_package dep_component mode)
 is_HeaderFree_Component(IS_HF ${package} ${component})
-if(IS_HF)
+if(NOT DEFINED IS_HF)
+  unset(${IS_EXPORTING} PARENT_SCOPE)
+  return()
+elseif(IS_HF)
 	set(${IS_EXPORTING} FALSE PARENT_SCOPE)
 	return()
 endif()
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 if(package STREQUAL "${dep_package}")
-	if(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
+  if(NOT DEFINED ${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
+    unset(${IS_EXPORTING} PARENT_SCOPE)
+  elseif(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
 		set(${IS_EXPORTING} TRUE PARENT_SCOPE)
 	else()
 		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
 	endif()
 else()
-	if(${package}_${component}_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX})
+  if(NOT DEFINED ${package}_${component}_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX})
+    unset(${IS_EXPORTING} PARENT_SCOPE)
+  elseif(${package}_${component}_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX})
 		set(${IS_EXPORTING} TRUE PARENT_SCOPE)
 	else()
 		set(${IS_EXPORTING} FALSE PARENT_SCOPE)
 	endif()
 endif()
 endfunction(export_Component)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |export_Component_Resolving_Alias| replace:: ``export_Component_Resolving_Alias``
+#  .. _export_Component_Resolving_Alias:
+#
+#  export_Component_Resolving_Alias
+#  --------------------------------
+#
+#   .. command:: export_Component_Resolving_Alias(IS_EXPORTING package component component_alias dep_package dep_component dep_component_alias mode)
+#
+#   Check whether a component exports another component. This function returns exact result wether components names are base names or aliases.
+#
+#     :package: the name of the package containing the exporting component.
+#
+#     :component: the name of the exporting component.
+#
+#     :component_alias: the alias of the exporting component or base name if no alias used.
+#
+#     :dep_package: the name of the package containing the exported component.
+#
+#     :dep_component: the name of the exported component.
+#
+#     :dep_component_alias: the alias of the exported component or base name if no alias used.
+#
+#     :mode: the build mode to consider (Debug or Release)
+#
+#     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise.
+#
+function(export_Component_Resolving_Alias IS_EXPORTING package component component_alias dep_package dep_component dep_component_alias mode)
+set(${IS_EXPORTING} FALSE PARENT_SCOPE)
+export_Component(FIRST_TRIAL_EXPORTING ${package} ${component} ${dep_package} ${dep_component} ${mode})#using base name to verify export
+if(DEFINED FIRST_TRIAL_EXPORTING)#as soon as variable is defined it means we used the good name for component AND dependency, so result is meaningful
+  if(FIRST_TRIAL_EXPORTING)
+    set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+  endif()
+  return()
+endif()
+if(NOT component STREQUAL component_alias)#we can check with alias name for the component
+  export_Component(SECOND_TRIAL_EXPORTING ${package} ${component_alias} ${dep_package} ${dep_component} ${mode})#using base name to verify export
+  if(DEFINED SECOND_TRIAL_EXPORTING)#as soon as variable is defined it means we used the good name for component AND dependency, so result is meaningful
+    if(SECOND_TRIAL_EXPORTING)
+      set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+    endif()
+    return()
+  endif()
+endif()
+if(NOT dep_component STREQUAL dep_component_alias)#we can check with alias name for the component
+  export_Component(THIRD_TRIAL_EXPORTING ${package} ${component} ${dep_package} ${dep_component_alias} ${mode})#using base name to verify export
+  if(DEFINED THIRD_TRIAL_EXPORTING)#as soon as variable is defined it means we used the good name for component AND dependency, so result is meaningful
+    if(THIRD_TRIAL_EXPORTING)
+      set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+    endif()
+    return()
+  endif()
+endif()
+if((NOT component STREQUAL component_alias) AND (NOT dep_component STREQUAL dep_component_alias))
+  export_Component(LAST_TRIAL_EXPORTING ${package} ${component_alias} ${dep_package} ${dep_component_alias} ${mode})#using base name to verify export
+  if(DEFINED LAST_TRIAL_EXPORTING)#as soon as variable is defined it means we used the good name for component AND dependency, so result is meaningful
+    if(LAST_TRIAL_EXPORTING)
+      set(${IS_EXPORTING} TRUE PARENT_SCOPE)
+    endif()
+    return()
+  endif()
+endif()
+endfunction(export_Component_Resolving_Alias)
 
 #.rst:
 #
@@ -1448,7 +1690,9 @@ endfunction(export_Component)
 #     :RESULT: the output variable that is TRUE if component has NO public interface, FALSE otherwise.
 #
 function(is_HeaderFree_Component RESULT package component)
-if (	${package}_${component}_TYPE STREQUAL "APP"
+if(NOT DEFINED ${package}_${component}_TYPE)
+  unset(${RESULT} PARENT_SCOPE)#Note : useful to manage cases where we do not know if component is base or alias name (can be considered as false anyway in this situation)
+elseif (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${package}_${component}_TYPE STREQUAL "TEST"
 	OR ${package}_${component}_TYPE STREQUAL "MODULE"
@@ -1544,7 +1788,7 @@ endfunction(is_Executable_Component)
 #
 #     :RESULT: the output variable that is TRUE if component is built, FALSE otherwise.
 #
-function (is_Built_Component RESULT  package component)
+function (is_Built_Component RESULT package component)
 if (	${package}_${component}_TYPE STREQUAL "APP"
 	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
 	OR ${package}_${component}_TYPE STREQUAL "TEST"
@@ -1640,7 +1884,7 @@ endfunction(will_be_Installed)
 #
 #   .. command:: is_Externally_Usable(RESULT component)
 #
-#   Check whether a component of the currently defined package is, by nature, usable by another package.
+#   Check whether a component of the currently defined package is, by nature, usable by another package (not a test or example).
 #
 #     :component: the name of the component.
 #
@@ -1819,6 +2063,15 @@ endif()
 if(NOT INDEX EQUAL -1)#the same component name has been found
   list(APPEND result ${package})
 endif()
+#now find in aliases names
+if(is_external)#external components may have variations among their DEBUG VS RELEASE VERSION
+  list(FIND ${package}_ALIASES${USE_MODE_SUFFIX} ${component} INDEX)
+else()
+  list(FIND ${package}_ALIASES ${component} INDEX)
+endif()
+if(NOT INDEX EQUAL -1)#the same component name has been found
+  list(APPEND result ${package})
+endif()
 #searching into direct external dependencies
 foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
   find_Packages_Containing_Component(CONTAINER ${ext_dep} TRUE ${component})
@@ -1923,6 +2176,7 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${${package}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_SCRIPTS ${${package}_COMPONENTS_SCRIPTS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${package}_ALIASES ${${package}_ALIASES} CACHE INTERNAL \"\")\n")
 
 	file(APPEND ${file} "####### internal specs of package components #######\n")
 	foreach(a_component IN LISTS ${package}_COMPONENTS_LIBS)
@@ -1938,6 +2192,9 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 	foreach(a_component IN LISTS ${package}_COMPONENTS_SCRIPTS)
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
 	endforeach()
+  foreach(an_alias IN LISTS ${package}_ALIASES)
+    file(APPEND ${file} "set(${package}_${an_alias}_IS_ALIAS_OF ${${package}_${an_alias}_IS_ALIAS_OF} CACHE INTERNAL \"\")\n")
+  endforeach()
 else()
 	set(MODE_SUFFIX _DEBUG)
 endif()
@@ -2010,8 +2267,8 @@ endif()
 # 3) internal+external components specifications
 file(APPEND ${file} "#### declaration of components exported flags and binary in ${CMAKE_BUILD_TYPE} mode ####\n")
 foreach(a_component IN LISTS ${package}_COMPONENTS)
-	is_Built_Component(IS_BUILT_COMP ${package} ${a_component})
-	is_HeaderFree_Component(IS_HF_COMP ${package} ${a_component})
+	is_Built_Component(IS_BUILT_COMP ${package} ${a_component})#nNote: o need to manage aliases since variable contains only base name of components in current project (by construction)
+	is_HeaderFree_Component(IS_HF_COMP ${package} ${a_component})#Note: no need to manage aliases since variable contains only base name of components in current project (by construction)
 	if(IS_BUILT_COMP)#if not a pure header library
 		file(APPEND ${file} "set(${package}_${a_component}_BINARY_NAME${MODE_SUFFIX} ${${package}_${a_component}_BINARY_NAME${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
