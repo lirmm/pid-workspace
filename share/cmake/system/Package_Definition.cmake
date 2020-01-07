@@ -387,7 +387,6 @@ endmacro(add_PID_Package_Reference)
 #
 #    PID_Category(example/packaging)
 #
-
 macro(PID_Category)
   add_PID_Package_Category(${ARGN})
 endmacro(PID_Category)
@@ -421,8 +420,6 @@ endmacro(declare_PID_Documentation)
 #
 #   .. rubric:: Required parameters
 #
-#   :PROJECT <url>: Where to find the project page.
-#
 #   One of the two following options must be selected.
 #
 #   :FRAMEWORK <name>: The package belongs to the ``name`` framework. It will contribute to that site.
@@ -431,6 +428,10 @@ endmacro(declare_PID_Documentation)
 #   When the ``GIT`` option is used, the following argument is also required:
 #
 #   :PAGE <url>: ``<url>`` is the online url of the static site.
+#
+#   When the ``GIT`` option is used, the following argument is also required:
+#
+#   :PROJECT <url>: Where to find the project page. This can also be used for same prupose with ``FRAMEWORK`` but when not used the documentation for the package is not generated (only used to reference the project as part of the framework).
 #
 #   .. rubric:: Optional parameters
 #
@@ -472,7 +473,7 @@ endmacro(declare_PID_Documentation)
 #    			PUBLISH_BINARIES
 #         ALLOWED_PLATFORMS x86_64_linux_abi11)
 #
-#   Declaring the publication of the ``pid-rpath`` package into the ``PID`` framework:
+#   Declaring the publication of the ``pid-rpath`` package into the ``pid`` framework:
 #
 #   .. code-block:: cmake
 #
@@ -505,10 +506,6 @@ else()
 endif()
 
 if(DECLARE_PID_PUBLISHING_FRAMEWORK)
-	if(NOT DECLARE_PID_PUBLISHING_PROJECT)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, you must tell where to find the project page of the official package repository using PROJECT keyword.")
-	endif()
 	if(${PROJECT_NAME}_FRAMEWORK)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: a framework (${${PROJECT_NAME}_FRAMEWORK}) has already been defined, cannot define a new one !")
@@ -518,8 +515,10 @@ if(DECLARE_PID_PUBLISHING_FRAMEWORK)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: a static site (${${PROJECT_NAME}_SITE_GIT_ADDRESS}) has already been defined, cannot define a framework !")
 		return()
 	endif()
-	init_Documentation_Info_Cache_Variables("${DECLARE_PID_PUBLISHING_FRAMEWORK}" "${DECLARE_PID_PUBLISHING_PROJECT}" "" "" "${DECLARE_PID_PUBLISHING_DESCRIPTION}")
-	set(PUBLISH_DOC TRUE)
+  if(DECLARE_PID_PUBLISHING_PROJECT)
+    set(PUBLISH_DOC TRUE)#publish the doc only if project page has been defined
+	endif()#otherwise publishing in only used to define project framework
+  init_Documentation_Info_Cache_Variables("${DECLARE_PID_PUBLISHING_FRAMEWORK}" "${DECLARE_PID_PUBLISHING_PROJECT}" "" "" "${DECLARE_PID_PUBLISHING_DESCRIPTION}")
 elseif(DECLARE_PID_PUBLISHING_GIT)
 	if(NOT DECLARE_PID_PUBLISHING_PROJECT)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -909,7 +908,7 @@ endmacro(build_PID_Package)
 #   :DEPEND ...: Specify a list of components that the current component depends on. These components are not exported.
 #   :EXPORT ...: Specify a list of components that the current component depends on and exports.
 #   :LOGGABLE: specifies that the component generate logs using the pid-log system.
-#   :ALIAS ...: specifies tha alias names of the component. Used to ensure backward compatiblity after component renaming.
+#   :ALIAS ...: specifies the alias names of the component.
 #
 #   The following options are supported by the ``INTERNAL`` and ``EXPORTED`` commands:
 #
@@ -1109,10 +1108,12 @@ if(DECLARE_PID_COMPONENT_LOGGABLE)
   # check that pid-log is a dependency of the package
   is_Package_Dependency(IS_DEPENDENCY "pid-log")
   if(NOT IS_DEPENDENCY AND NOT PROJECT_NAME STREQUAL "pid-log")#avoid special case of component used to test logging system inside pid-log
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : ${DECLARE_PID_COMPONENT_NAME} is declared as loggable, but its containing package ${PROJECT_NAME} does not depends on pid-log package. Please add pid-log as a dependency of your package.")
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${DECLARE_PID_COMPONENT_NAME} is declared as loggable, but its containing package ${PROJECT_NAME} does not depends on pid-log package. Please add pid-log as a dependency of your package.")
 	endif()
   if(IS_DEPENDENCY AND pid-log_VERSION_STRING VERSION_LESS 3.0)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : ${DECLARE_PID_COMPONENT_NAME} is declared as loggable, but its containing package ${PROJECT_NAME} depends on a too old version of pid-log package. Please add pid-log version 3.0 or more as a dependency of your package.")
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${DECLARE_PID_COMPONENT_NAME} is declared as loggable, but its containing package ${PROJECT_NAME} depends on a too old version of pid-log package. Please add pid-log version 3.0 or more as a dependency of your package.")
   endif()
 endif()
 
@@ -1183,8 +1184,19 @@ endif()
 if(DECLARE_PID_COMPONENT_EXPORT)#exported dependencies
   foreach(dep IN LISTS DECLARE_PID_COMPONENT_EXPORT)
     extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
-    if(RES_PACK)
-      set(PACKAGE_ARG "PACKAGE;${RES_PACK}")
+    if(RES_PACK)#here the package name may be a framework name
+      get_Package_Type(${RES_PACK} PACK_TYPE)
+      if(PACK_TYPE STREQUAL "UNKNOWN")#not a known package => it is maybe a framework
+        check_Framework_Exists(CHECK_OK ${RES_PACK})
+        if(CHECK_OK)
+          set(PACKAGE_ARG "FRAMEWORK;${RES_PACK}")
+        else()
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR : name ${RES_PACK} used to denote namespace of component ${DECLARE_PID_COMPONENT_NAME} does not refer to any known package or framework.")
+        endif()
+      else()
+        set(PACKAGE_ARG "PACKAGE;${RES_PACK}")
+      endif()
     else()
       set(PACKAGE_ARG)
     endif()
@@ -1195,8 +1207,19 @@ endif()
 if(DECLARE_PID_COMPONENT_DEPEND)#non exported dependencies
   foreach(dep IN LISTS DECLARE_PID_COMPONENT_DEPEND)
     extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
-    if(RES_PACK)
-      set(PACKAGE_ARG "PACKAGE;${RES_PACK}")
+    if(RES_PACK)#here the package name may be a framework name
+      get_Package_Type(${RES_PACK} PACK_TYPE)
+      if(PACK_TYPE STREQUAL "UNKNOWN")#not a known package => it is maybe a framework
+        check_Framework_Exists(CHECK_OK ${RES_PACK})
+        if(CHECK_OK)
+          set(PACKAGE_ARG "FRAMEWORK;${RES_PACK}")
+        else()
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR : name ${RES_PACK} used to denote namespace of component ${DECLARE_PID_COMPONENT_NAME} does not refer to any known package or framework.")
+        endif()
+      else()
+        set(PACKAGE_ARG "PACKAGE;${RES_PACK}")
+      endif()
     else()
       set(PACKAGE_ARG)
     endif()
@@ -1486,6 +1509,7 @@ endfunction(used_PID_Package_Dependency)
 #   :[EXPORT]: If this flag is present, the dependency is exported. It means that symbols of this dependency appears in component public headers. Cannot be used together with DEPEND keyword.
 #   :[DEPEND]: If this flag is present, the dependency is NOT exported. It means that symbols of this dependency do not appear in component public headers. Cannot be used together with EXPORT keyword. If none of EXPORT or DEPEND keyword are used, you must either use NATIVE or EXTERNAL keyword to specify the dependency.
 #   :[PACKAGE <package>]: ``package`` is the native package that contains the component. If ``PACKAGE`` is not used, it means either ``component`` is part of the current package or it can be found in current package dependencies.
+#   :[FRAMEWORK <framework>]: ``framework`` is the name of the framework containing the package that itself contains the component. Usable instead of ``PACKAGE``.
 #
 #   .. rubric:: Second signature
 #
@@ -1546,7 +1570,7 @@ endmacro(PID_Component_Dependency)
 
 macro(declare_PID_Component_Dependency)
 set(options EXPORT DEPEND)
-set(oneValueArgs COMPONENT NATIVE PACKAGE EXTERNAL C_STANDARD CXX_STANDARD)
+set(oneValueArgs COMPONENT NATIVE PACKAGE EXTERNAL FRAMEWORK C_STANDARD CXX_STANDARD)
 set(multiValueArgs INCLUDE_DIRS LIBRARY_DIRS LINKS COMPILER_OPTIONS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -1687,10 +1711,49 @@ if(NOT target_package AND target_component)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, component ${target_component} cannot be found in ${PROJECT_NAME} or its dependencies.")
   elseif(SIZE GREATER 1)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, cannot deduce the package containing component ${target_component} because many packages contain a component with same name: ${CONTAINERS}.")
+    if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, cannot deduce the package containing component ${target_component} because many packages contain a component with same name: ${CONTAINERS}.")
+    endif()
+    #in case there is more than one package defining same component name, if a framework is defined
+    # we can find if there is only one package of teh list belonging to that framework
+    check_Framework_Exists(CHECK_OK ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK})
+    if(NOT CHECK_OK)#specified framework does not exists
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} containing component ${target_component} is unknown.")
+    endif()
+    set(CONTAINERS_IN_FRAMEWORK)
+    foreach(pack IN LISTS CONTAINERS)
+      if(${pack}_FRAMEWORK STREQUAL "${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK}")
+        list(APPEND CONTAINERS_IN_FRAMEWORK ${pack})
+      endif()
+    endforeach()
+    list(LENGTH CONTAINERS_IN_FRAMEWORK SIZE)
+    if(SIZE EQUAL 0)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, no package defining component ${target_component} belongs to framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK}.")
+    elseif(SIZE GREATER 1)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, many packages (${CONTAINERS_IN_FRAMEWORK}) of the framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} define a component named ${target_component}. This denotes a bad design of framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} because this later should ensure component names unicity.")
+    else()
+      set(target_package ${CONTAINERS_IN_FRAMEWORK})
+    endif()
   else()
-    set(target_package ${CONTAINERS})
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK)#we need to check that the package really belongs to the framework
+      check_Framework_Exists(CHECK_OK ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK})
+      if(NOT CHECK_OK)#specified framework does not exists
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} containing component ${target_component} is unknown.")
+      endif()
+      if(${CONTAINERS}_FRAMEWORK STREQUAL "${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK}")#OK adequate framework specified
+        set(target_package ${CONTAINERS})
+      else()
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, only package that belongs to framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} is ${CONTAINERS} but this later does not contain component ${target_component}.")
+      endif()
+    else()
+      set(target_package ${CONTAINERS})
+    endif()
   endif()
 endif()
 
