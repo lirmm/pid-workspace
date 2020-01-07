@@ -343,15 +343,15 @@ endfunction(bind_Local_Component)
 #  add_Runtime_Resources
 #  ---------------------
 #
-#  .. command:: add_Runtime_Resources(TARGET ... FILES ... DIRECTORIES)
+#  .. command:: add_Runtime_Resources(TARGET ... FILES ... DIRECTORIES ...)
 #
 #   Make the given files and directories discoverable by pid-rpath
 #
 #   .. rubric:: Required parameters
 #
 #   :TARGET <string>: the name of the local target
-#   :FILES <list of paths>: the list of files to install
-#   :DIRECTORIES <list of paths>: the list of directories to install
+#   :FILES <list of paths>: the list of files to install. Path are relative to current project root folder.
+#   :DIRECTORIES <list of paths>: the list of directories to install. Path are relative to current project root folder.
 #
 #   .. rubric:: Example
 #
@@ -370,16 +370,22 @@ function(add_Runtime_Resources)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling add_Runtime_Resources, runtime resources add must specified using the FILES and/or DIRECTORIES keywords.")
 	endif()
 
-	if(ADD_RUNTIME_RESOURCES_FILES)
-		install(
-			FILES ${ADD_RUNTIME_RESOURCES_FILES}
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/.rpath/$<TARGET_FILE_BASE_NAME:${ADD_RUNTIME_RESOURCES_TARGET}>
-		)
+	if(NOT ADD_RUNTIME_RESOURCES_FILES AND NOT ADD_RUNTIME_RESOURCES_DIRECTORIES)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling add_Runtime_Resources, at list one file (using FILES) or one directory (using DIRECTORIES) must be defined.")
 	endif()
-	if(ADD_RUNTIME_RESOURCES_DIRECTORIES)
-		install(
-			DIRECTORY ${ADD_RUNTIME_RESOURCES_DIRECTORIES}
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/.rpath/$<TARGET_FILE_BASE_NAME:${ADD_RUNTIME_RESOURCES_TARGET}>
-		)
-	endif()
+
+	foreach(a_file IN LISTS ADD_RUNTIME_RESOURCES_FILES)
+		if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${a_file})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling add_Runtime_Resources, cannot find resource file ${CMAKE_CURRENT_SOURCE_DIR}/${a_file}.")
+		endif()
+	endforeach()
+
+	foreach(a_dir IN LISTS ADD_RUNTIME_RESOURCES_DIRECTORIES)
+		if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${a_dir} OR NOT IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${a_dir})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling add_Runtime_Resources, cannot find resource folder ${CMAKE_CURRENT_SOURCE_DIR}/${a_dir}.")
+		endif()
+	endforeach()
+
+	#OK we can proceed
+	add_Managed_PID_Resources(${ADD_RUNTIME_RESOURCES_TARGET} "${ADD_RUNTIME_RESOURCES_FILES}" "${ADD_RUNTIME_RESOURCES_DIRECTORIES}")
 endfunction(add_Runtime_Resources)
