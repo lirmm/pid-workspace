@@ -889,18 +889,19 @@ endmacro(build_PID_Package)
 #
 #   .. rubric:: Required parameters
 #
-#   :<type>: - ``STATIC_LIB|STATIC``: static library
+#   :<type>: this is the type of the library. It can be ommited, in this case it is deduced automatically with default values (SHARED, MODULE or HEADER for libraries, APP for applications, TEST for tests)
+#            - ``STATIC_LIB|STATIC``: static library
 #            - ``SHARED_LIB|SHARED``: shared library
 #            - ``MODULE_LIB|MODULE``: shared library without header
 #            - ``HEADER_LIB|HEADER``: header-only library
 #            - ``APPLICATION|APP``: standard application
 #            - ``EXAMPLE_APPLICATION|EXAMPLE``: example code
 #            - ``TEST_APPLICATION|TEST``: unit test
-#   :NAME <name>: Unique identifier of the component. ``name`` cannot contain whitespaces.
-#   :DIRECTORY <dir>: Sub-folder where to find the component sources. This is relative to the current `CMakeLists.txt` folder.
+#   :NAME <name>: Unique identifier of the component. ``name`` cannot contain whitespaces. The NAME keyword can be omitted if the name of the dependency is the first argument.
 #
 #   .. rubric:: Optional parameters
 #
+#   :DIRECTORY <dir>: Sub-folder where to find the component sources. This is relative to the current `CMakeLists.txt` folder. If ommitted then the folder name is considered the same as the component name.
 #   :DESCRIPTION <text>: Provides a description of the component. This will be used in generated documentation.
 #   :USAGE <list of headers to include>: This should be used to list useful includes to put in client code. This is used for documentation purpose.
 #   :DOCUMENTATION: specifies a file (markdown) used to generate an online documentaion for the component.
@@ -954,31 +955,44 @@ set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEA
 set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD DOCUMENTATION)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES DEPEND EXPORT ALIAS)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}.")
-endif()
 
 #check for the name argument
-if(NOT DECLARE_PID_COMPONENT_NAME)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the component using NAME keyword.")
+set(comp_name)
+if(DECLARE_PID_COMPONENT_NAME)
+  set(comp_name ${DECLARE_PID_COMPONENT_NAME})
+  if(DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)#if name is given there is no unparsed arguments
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS}.")
+  endif()
+else()
+  if(NOT DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the component using NAME keyword (or if it is the first argument).")
+  endif()
+  list(REMOVE_ITEM DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS ${ARGV0})
+  list(LENGTH DECLARE_PID_COMPONENT_UNPARSED_ARGUMENTS SIZE)
+  if(NOT SIZE EQUAL 0)#means argv0 has been parsed => so it is not the component name
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name must be given to the component using NAME keyword (or if it is the first argument).")
+  else()
+    set(comp_name ${ARGV0})
+  endif()
 endif()
 
 #check unique names
 set(DECLARED FALSE)
-is_Declared(${DECLARE_PID_COMPONENT_NAME} DECLARED)
+is_Declared(${comp_name} DECLARED)
 if(DECLARED)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : a component with the same name than ${DECLARE_PID_COMPONENT_NAME} is already defined.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : a component with the same name than ${comp_name} is already defined.")
 	return()
 endif()
 unset(DECLARED)
 
-#check for directory argument
-if(NOT DECLARE_PID_COMPONENT_DIRECTORY AND NOT DECLARE_PID_COMPONENT_HEADER_LIB)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a source directory must be given using DIRECTORY keyword (except for pure header library).")
+if(DECLARE_PID_COMPONENT_DIRECTORY)
+  set(dir_name ${DECLARE_PID_COMPONENT_DIRECTORY})
+else()
+  set(dir_name ${comp_name})#when directory is not specified than we consider that folder name is same as component name
 endif()
 
 if(DECLARE_PID_COMPONENT_C_STANDARD)
@@ -1037,18 +1051,66 @@ if(DECLARE_PID_COMPONENT_PYTHON_PACK OR DECLARE_PID_COMPONENT_PYTHON)
 	math(EXPR nb_options "${nb_options}+1")
 	set(type "PYTHON")
 endif()
-if(NOT nb_options EQUAL 1)
+if(nb_options GREATER 1)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, only one type among (STATIC_LIB|STATIC, SHARED_LIB|SHARED, MODULE_LIB|MODULE, HEADER_LIB|HEADER, APPLICATION|APP, EXAMPLE_APPLICATION|EXAMPLE or TEST_APPLICATION|TEST) must be given for the component.")
+elseif(nb_options LESS 1)
+  #need to deduce the type
+  set(type "UNKNOWN")
 endif()
-#checking that the required directories exist
-if(DECLARE_PID_COMPONENT_DIRECTORY)
-  check_Required_Directories_Exist(PROBLEM ${type} ${DECLARE_PID_COMPONENT_DIRECTORY})
-  if(PROBLEM)
+
+if(type STREQUAL "UNKNOWN")
+  if(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${CMAKE_SOURCE_DIR}/src.*$")#it is a library
+    check_Required_Directories_Exist(PROBLEM "SHARED" ${dir_name})
+    if(PROBLEM)
+      check_Required_Directories_Exist(PROBLEM "HEADER" ${dir_name})
+      if(PROBLEM)
+        check_Required_Directories_Exist(PROBLEM "MODULE" ${dir_name})
+        if(NOT PROBLEM)
+          #OK let's consider it is a shared library
+          set(type "MODULE")
+        endif()
+      else()#OK let's consider it is a header library
+        set(type "HEADER")
+      endif()
+    else()#OK let's consider it is a shared library
+      set(type "SHARED")
+    endif()
+  elseif(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${CMAKE_SOURCE_DIR}/apps.*$")#it is an application
+    check_Required_Directories_Exist(PROBLEM "APP" ${dir_name})
+    if(NOT PROBLEM)
+      set(type "APP")
+    endif()
+  elseif(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${CMAKE_SOURCE_DIR}/test.*$")#it is a test unit
+    check_Required_Directories_Exist(PROBLEM "TEST" ${dir_name})
+    if(NOT PROBLEM)
+      set(type "TEST")
+    endif()
+  elseif(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${CMAKE_SOURCE_DIR}/share/script.*$")#it is a python script
+    check_Required_Directories_Exist(PROBLEM "PYTHON" ${dir_name})
+    if(NOT PROBLEM)
+      set(type "PYTHON")
+    endif()
+  else()#shitty situation !!
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring ${DECLARE_PID_COMPONENT_NAME}, the source directory ${DECLARE_PID_COMPONENT_DIRECTORY} cannot be found in ${CMAKE_CURRENT_SOURCE_DIR} (${PROBLEM}).")
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot deduce type of the component please use the keywords (STATIC_LIB|STATIC, SHARED_LIB|SHARED, MODULE_LIB|MODULE, HEADER_LIB|HEADER, APPLICATION|APP, EXAMPLE_APPLICATION|EXAMPLE, TEST_APPLICATION|TEST or PYTHON|PYTHON_PACK).")
   endif()
 endif()
+
+if(type STREQUAL "UNKNOWN")#no folder found => let's consider it is a header library without folder (pure interface library)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
+  message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot deduce type of the component because no adequate folder found with name ${dir_name}. Please use the keywords (STATIC_LIB|STATIC, SHARED_LIB|SHARED, MODULE_LIB|MODULE, HEADER_LIB|HEADER, APPLICATION|APP, EXAMPLE_APPLICATION|EXAMPLE, TEST_APPLICATION|TEST or PYTHON|PYTHON_PACK). If you want to define a header library without folder you must use the HEADER keyword. Otherwise you should use the DIRECTORY keyword to specify the name of the folder containing the source code, if its name differs from ${dir_name}.")
+endif()
+
+#checking that the required directories exist
+if(NOT type STREQUAL "HEADER")#header libraries can define no folder (simple interfaces)
+  check_Required_Directories_Exist(PROBLEM ${type} ${dir_name})
+  if(PROBLEM)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring ${comp_name}, the source directory ${dir_name} cannot be found in ${CMAKE_CURRENT_SOURCE_DIR} (${PROBLEM}). Specify the source directory using DIRECTORY keyword and check that its path is correct")
+  endif()
+endif()
+
 
 set(internal_defs "")
 set(internal_inc_dirs "")
@@ -1115,11 +1177,11 @@ if(DECLARE_PID_COMPONENT_LOGGABLE)
   is_Package_Dependency(IS_DEPENDENCY "pid-log")
   if(NOT IS_DEPENDENCY AND NOT PROJECT_NAME STREQUAL "pid-log")#avoid special case of component used to test logging system inside pid-log
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${DECLARE_PID_COMPONENT_NAME} is declared as loggable, but its containing package ${PROJECT_NAME} does not depends on pid-log package. Please add pid-log as a dependency of your package.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${comp_name} is declared as loggable, but its containing package ${PROJECT_NAME} does not depends on pid-log package. Please add pid-log as a dependency of your package.")
 	endif()
   if(IS_DEPENDENCY AND pid-log_VERSION_STRING VERSION_LESS 3.0)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${DECLARE_PID_COMPONENT_NAME} is declared as loggable, but its containing package ${PROJECT_NAME} depends on a too old version of pid-log package. Please add pid-log version 3.0 or more as a dependency of your package.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${comp_name} is declared as loggable, but its containing package ${PROJECT_NAME} depends on a too old version of pid-log package. Please add pid-log version 3.0 or more as a dependency of your package.")
   endif()
 endif()
 
@@ -1136,8 +1198,8 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 		endif()
 	endif()
 
-	declare_Application_Component(	${DECLARE_PID_COMPONENT_NAME}
-					${DECLARE_PID_COMPONENT_DIRECTORY}
+	declare_Application_Component(	${comp_name}
+					${dir_name}
 					${type}
 					"${c_language_standard}"
 					"${cxx_language_standard}"
@@ -1150,7 +1212,7 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
           "${DECLARE_PID_COMPONENT_LOGGABLE}"
           "${DECLARE_PID_COMPONENT_ALIAS}")
 elseif(type MATCHES "PYTHON")#declare a python package
-	declare_Python_Component(${DECLARE_PID_COMPONENT_NAME} ${DECLARE_PID_COMPONENT_DIRECTORY})
+	declare_Python_Component(${comp_name} ${dir_name})
 else() #it is a library
 	if(ENABLE_SANITIZERS)
 		if(SANITIZE_ADDRESS)
@@ -1164,8 +1226,8 @@ else() #it is a library
 		endif()
 	endif()
 
-	declare_Library_Component(	${DECLARE_PID_COMPONENT_NAME}
-					"${DECLARE_PID_COMPONENT_DIRECTORY}"
+	declare_Library_Component(	${comp_name}
+					"${dir_name}"
 					${type}
 					"${c_language_standard}"
 					"${cxx_language_standard}"
@@ -1183,7 +1245,7 @@ else() #it is a library
           "${DECLARE_PID_COMPONENT_ALIAS}")
 endif()
 if(DECLARE_PID_COMPONENT_DESCRIPTION)
-	init_Component_Description(${DECLARE_PID_COMPONENT_NAME} "${DECLARE_PID_COMPONENT_DESCRIPTION}" "${DECLARE_PID_COMPONENT_USAGE}")
+	init_Component_Description(${comp_name} "${DECLARE_PID_COMPONENT_DESCRIPTION}" "${DECLARE_PID_COMPONENT_USAGE}")
 endif()
 
 #dealing with dependencies
@@ -1198,7 +1260,7 @@ if(DECLARE_PID_COMPONENT_EXPORT)#exported dependencies
           set(PACKAGE_ARG "FRAMEWORK;${RES_PACK}")
         else()
           finish_Progress(${GLOBAL_PROGRESS_VAR})
-          message(FATAL_ERROR "[PID] CRITICAL ERROR : name ${RES_PACK} used to denote namespace of component ${DECLARE_PID_COMPONENT_NAME} does not refer to any known package or framework.")
+          message(FATAL_ERROR "[PID] CRITICAL ERROR : name ${RES_PACK} used to denote namespace of component ${comp_name} does not refer to any known package or framework.")
         endif()
       else()
         set(PACKAGE_ARG "PACKAGE;${RES_PACK}")
@@ -1206,7 +1268,7 @@ if(DECLARE_PID_COMPONENT_EXPORT)#exported dependencies
     else()
       set(PACKAGE_ARG)
     endif()
-    declare_PID_Component_Dependency(COMPONENT ${DECLARE_PID_COMPONENT_NAME} EXPORT ${COMPONENT_NAME} ${PACKAGE_ARG})
+    declare_PID_Component_Dependency(COMPONENT ${comp_name} EXPORT ${COMPONENT_NAME} ${PACKAGE_ARG})
   endforeach()
 endif()
 
@@ -1221,7 +1283,7 @@ if(DECLARE_PID_COMPONENT_DEPEND)#non exported dependencies
           set(PACKAGE_ARG "FRAMEWORK;${RES_PACK}")
         else()
           finish_Progress(${GLOBAL_PROGRESS_VAR})
-          message(FATAL_ERROR "[PID] CRITICAL ERROR : name ${RES_PACK} used to denote namespace of component ${DECLARE_PID_COMPONENT_NAME} does not refer to any known package or framework.")
+          message(FATAL_ERROR "[PID] CRITICAL ERROR : name ${RES_PACK} used to denote namespace of component ${comp_name} does not refer to any known package or framework.")
         endif()
       else()
         set(PACKAGE_ARG "PACKAGE;${RES_PACK}")
@@ -1229,19 +1291,19 @@ if(DECLARE_PID_COMPONENT_DEPEND)#non exported dependencies
     else()
       set(PACKAGE_ARG)
     endif()
-    declare_PID_Component_Dependency(COMPONENT ${DECLARE_PID_COMPONENT_NAME} DEPEND ${COMPONENT_NAME} ${PACKAGE_ARG})
+    declare_PID_Component_Dependency(COMPONENT ${comp_name} DEPEND ${COMPONENT_NAME} ${PACKAGE_ARG})
     endforeach()
 endif()
 
 if(DECLARE_PID_COMPONENT_LOGGABLE)#need to deal with dependency to pid-log if not explicitly managed
-  list(FIND ${PROJECT_NAME}_${DECLARE_PID_COMPONENT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} pid-log INDEX)
+  list(FIND ${PROJECT_NAME}_${comp_name}_DEPENDENCIES${USE_MODE_SUFFIX} pid-log INDEX)
   if(INDEX EQUAL -1)#pid-log is not already a dependency
-    declare_PID_Component_Dependency(COMPONENT ${DECLARE_PID_COMPONENT_NAME} EXPORT pid-log PACKAGE pid-log)
+    declare_PID_Component_Dependency(COMPONENT ${comp_name} EXPORT pid-log PACKAGE pid-log)
   endif()
 endif()
 
 if(DECLARE_PID_COMPONENT_DOCUMENTATION)
-  declare_PID_Component_Documentation(COMPONENT ${DECLARE_PID_COMPONENT_NAME} FILE ${DECLARE_PID_COMPONENT_DOCUMENTATION})
+  declare_PID_Component_Documentation(COMPONENT ${comp_name} FILE ${DECLARE_PID_COMPONENT_DOCUMENTATION})
 endif()
 endmacro(declare_PID_Component)
 
