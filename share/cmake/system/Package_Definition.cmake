@@ -441,6 +441,7 @@ endmacro(declare_PID_Documentation)
 #   :PUBLISH_BINARIES: If this is present, the package will automatically publish new binaries to the publication site.
 #   :PUBLISH_DEVELOPMENT_INFO: If this is present, the package website will contain information for developpers such as coverage reports and static checks.
 #   :ALLOWED_PLATFORMS <list of platforms>: list of platforms used for CI, only the specified platforms will be managed in the CI process. **WARNING: Due to gitlab limitation (only one pipeline can be defined) only ONE platform is allowed at the moment OR all pipelines must build to produce the output.**
+#   :CATEGORIES <list of string>: list of category strings, used to specify to which categories the package contributes in a framework with same syntax as with PID_Category function. Used together with FRAMEWORK keyword.
 #
 #   When the ``GIT`` option is used, the following argument is also accepted:
 #
@@ -492,7 +493,7 @@ endmacro(PID_Publishing)
 macro(declare_PID_Publishing)
 set(optionArgs PUBLISH_BINARIES PUBLISH_DEVELOPMENT_INFO)
 set(oneValueArgs PROJECT FRAMEWORK GIT PAGE ADVANCED TUTORIAL LOGO)
-set(multiValueArgs DESCRIPTION ALLOWED_PLATFORMS)
+set(multiValueArgs DESCRIPTION ALLOWED_PLATFORMS CATEGORIES)
 cmake_parse_arguments(DECLARE_PID_PUBLISHING "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
 	#manage configuration of CI
@@ -519,6 +520,11 @@ if(DECLARE_PID_PUBLISHING_FRAMEWORK)
     set(PUBLISH_DOC TRUE)#publish the doc only if project page has been defined
 	endif()#otherwise publishing in only used to define project framework
   init_Documentation_Info_Cache_Variables("${DECLARE_PID_PUBLISHING_FRAMEWORK}" "${DECLARE_PID_PUBLISHING_PROJECT}" "" "" "${DECLARE_PID_PUBLISHING_DESCRIPTION}")
+  if(DECLARE_PID_PUBLISHING_CATEGORIES)
+    foreach(category IN LISTS DECLARE_PID_PUBLISHING_CATEGORIES)
+      PID_Category(${category})
+    endforeach()
+  endif()
 elseif(DECLARE_PID_PUBLISHING_GIT)
 	if(NOT DECLARE_PID_PUBLISHING_PROJECT)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
