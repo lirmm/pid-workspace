@@ -1702,11 +1702,12 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 					message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${available_versions}.")
 					return()
 				endif()
-			endif()
-			if(SIZE EQUAL 1)#no alternative a given version constraint must be satisfied
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ${force_version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
-			else() #we can choose among many versions, use the first specified by default
-				set(${dep_package}_ALTERNATIVE_VERSION_USED ${force_version} CACHE STRING "${message_str}" FORCE)#explicitlty set the dependency to the chosen version number
+			else()
+				if(SIZE EQUAL 1)#no alternative a given version constraint must be satisfied
+					set(${dep_package}_ALTERNATIVE_VERSION_USED ${force_version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
+				else() #we can choose among many versions, use the first specified by default
+					set(${dep_package}_ALTERNATIVE_VERSION_USED ${force_version} CACHE STRING "${message_str}" FORCE)#explicitlty set the dependency to the chosen version number
+				endif()
 			endif()
 		else()#no constraint on version => use the required one
 			set(${dep_package}_ALTERNATIVE_VERSION_USED ${REQUIRED_VERSION} CACHE STRING "${message_str}" FORCE)#explicitlty set the dependency to the chosen version number
@@ -1886,17 +1887,18 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${available_versions}.")
 				return()
 			endif()
-		endif()
-		if(IS_SYSTEM)
-			set(chosen_version_for_selection "SYSTEM")#specific keyword to use to specify that the SYSTEM version is in use
-		else()
-			set(chosen_version_for_selection ${force_version})
-		endif()
-		#simply reset the description to first found
-		if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ${chosen_version_for_selection} CACHE INTERNAL "" FORCE)
-		else()#many possible versions now !!
-			set(${dep_package}_ALTERNATIVE_VERSION_USED ${chosen_version_for_selection} CACHE STRING "${message_str}" FORCE)
+		else()#a version is forced
+			if(IS_SYSTEM)
+				set(chosen_version_for_selection "SYSTEM")#specific keyword to use to specify that the SYSTEM version is in use
+			else()
+				set(chosen_version_for_selection ${force_version})
+			endif()
+			#simply reset the description to first found
+			if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${chosen_version_for_selection} CACHE INTERNAL "" FORCE)
+			else()#many possible versions now !!
+				set(${dep_package}_ALTERNATIVE_VERSION_USED ${chosen_version_for_selection} CACHE STRING "${message_str}" FORCE)
+			endif()
 		endif()
 	else()#no constraint on version => use the required one
 		if(IS_SYSTEM)
