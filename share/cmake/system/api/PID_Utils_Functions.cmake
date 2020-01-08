@@ -998,6 +998,9 @@ function(parse_Package_Dependency_All_Version_Arguments package all_args LIST_OF
     list(APPEND all_versions ${RES_INTERVAL_VERSIONS})
   endif()
   #produce the reply
+  if(all_versions)
+    list(REVERSE all_versions)
+  endif()
   set(${REMAINING_TO_PARSE} ${TO_PARSE} PARENT_SCOPE)
   set(${LIST_OF_VERSIONS} ${all_versions} PARENT_SCOPE)
   set(${EXACT_VERSIONS} ${all_exact_versions} PARENT_SCOPE)

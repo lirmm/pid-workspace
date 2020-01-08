@@ -1331,7 +1331,7 @@ endmacro(declare_PID_Component)
 #   :EXTERNAL: Use this keyword when you want to specify ``name`` as an external package. In most cases this keyword can be omitted as PID can automatically detect the type of packages.
 #   :NATIVE: Use this keyword when you want to specify  ``name`` as a native package. In most cases this keyword can be omitted as PID can automatically detect the type of packages.
 #   :OPTIONAL: Make the dependency optional.
-#   :[EXACT] VERSION <version>: Specifies the requested package version. ``EXACT`` means this exact version is required (patch revision may be ignored for native packages), otherwise this is treated as a minimum version requirement. Multiple exact versions may be specified. In that case, the first one is the default version.
+#   :[EXACT|FROM|TO] VERSION <version>: Specifies the requested package version. ``EXACT`` means this exact version is required (patch revision may be ignored for native packages), otherwise this is treated as a minimum version requirement. Multiple exact versions may be specified. In that case, the first one is the default version. Another option is to define ranges of versions with FROM VERSION ... TO VERSION .. expressions.
 #   :COMPONENTS <components>: Specify which components of the given package are required.
 #
 #   .. admonition:: Constraints
