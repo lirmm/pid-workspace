@@ -874,7 +874,7 @@ if(NOT DEFINED ${package}_PID_KNOWN_VERSION)
   include(${WORKSPACE_DIR}/share/cmake/find/Find${package}.cmake)
   unset(DO_NOT_FIND_${package})
 endif()
-set(ALL_VERSIONS ${package_PID_KNOWN_VERSION})
+set(ALL_VERSIONS ${${package}_PID_KNOWN_VERSION})
 
 #then perform additionnal actions to get version that are only local (not published yet)
 set(MORE_VERSIONS)
