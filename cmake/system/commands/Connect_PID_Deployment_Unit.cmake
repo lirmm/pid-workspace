@@ -21,9 +21,9 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/commands)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/references)
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/licenses)
 
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
+
 load_Current_Platform() #loading the current platform configuration
 
 #first check that commmand parameters are not passed as environment variables

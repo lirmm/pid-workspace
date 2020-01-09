@@ -21,7 +21,6 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/commands)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/references)
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/licenses)
 include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE) # to be able to interpret description of external components
 

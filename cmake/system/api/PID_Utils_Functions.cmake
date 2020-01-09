@@ -1575,12 +1575,13 @@ function(package_License_Is_Closed_Source CLOSED package is_external)
 	endif()#otherwise license is unknown for now
 	if(NOT found_license_description)
 		#trying to find that license
-		include(${WORKSPACE_DIR}/cmake/licenses/License${${package}_LICENSE}.cmake RESULT_VARIABLE res)
-		if(res MATCHES NOTFOUND)
+    get_Path_To_License_File(PATH_TO_FILE ${${package}_LICENSE})
+  	if(NOT PATH_TO_FILE)
 			set(${CLOSED} TRUE PARENT_SCOPE)
 			message("[PID] ERROR : cannot find description file for license ${${package}_LICENSE}, specified for package ${package}. Package is supposed to be closed source.")
 			return()
 		endif()
+    include(${PATH_TO_FILE})
 		set(temp_list ${KNOWN_LICENSES} ${${package}_LICENSE} CACHE INTERNAL "")
 		list(REMOVE_DUPLICATES temp_list)
 		set(KNOWN_LICENSES ${temp_list} CACHE INTERNAL "")#adding the license to known licenses

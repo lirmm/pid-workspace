@@ -118,10 +118,9 @@ set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")
 list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/system/commands)
-list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/references)
-list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/licenses)
-list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/find)
 list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/platforms)
+list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/references)
+list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/find)
 list(APPEND CMAKE_MODULE_PATH ${workspace_path}/configurations)
 ########################################################################
 ############ inclusion of required macros and functions ################

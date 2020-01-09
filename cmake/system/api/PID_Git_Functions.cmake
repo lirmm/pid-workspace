@@ -1447,13 +1447,43 @@ endfunction(is_Package_Connected)
 #
 # .. ifmode:: internal
 #
-#  .. |clone_Repository| replace:: ``clone_Repository``
-#  .. _clone_Repository:
+#  .. |clone_Contribution_Space_Repository| replace:: ``clone_Contribution_Space_Repository``
+#  .. clone_Contribution_Space_Repository:
 #
-#  clone_Repository
-#  ----------------
+#  clone_Contribution_Space_Repository
+#  -----------------------------------
 #
-#   .. command:: clone_Repository(IS_DEPLOYED package url)
+#   .. command:: clone_Contribution_Space_Repository(IS_CLONED url)
+#
+#     Cloning the repository of a contribution space.
+#
+#     :url: the git url to clone
+#
+#     :IS_CLONED: the output variable that is TRUE if repository has been cloned, FALSE otherwise
+#
+function(clone_Contribution_Space_Repository IS_CLONED url)
+  set(PATH_TO_CONTRIB ${WORKSPACE_DIR}/contributions)
+  execute_process(COMMAND git clone ${url} WORKING_DIRECTORY ${PATH_TO_CONTRIB})
+  get_Repository_Name(RES_NAME ${url})
+  if(NOT EXISTS ${PATH_TO_CONTRIB}/${RES_NAME} OR NOT IS_DIRECTORY ${PATH_TO_CONTRIB}/${RES_NAME})
+    set(${IS_CLONED} FALSE PARENT_SCOPE)
+    message("[PID] ERROR : the url of the controntribution space repository (${url}) cannot be cloned.")
+    return()
+  endif()
+  set(${IS_CLONED} TRUE PARENT_SCOPE)
+endfunction(clone_Contribution_Space_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |clone_Package_Repository| replace:: ``clone_Package_Repository``
+#  .. _clone_Package_Repository:
+#
+#  clone_Package_Repository
+#  ------------------------
+#
+#   .. command:: clone_Package_Repository(IS_DEPLOYED package url)
 #
 #     Cloning the repository of a package.
 #
@@ -1463,7 +1493,7 @@ endfunction(is_Package_Connected)
 #
 #     :IS_DEPLOYED: the output variable that is TRUE if package has been cloned, FALSE otherwise
 #
-function(clone_Repository IS_DEPLOYED package url)
+function(clone_Package_Repository IS_DEPLOYED package url)
 execute_process(COMMAND git clone ${url}
                 WORKING_DIRECTORY ${WORKSPACE_DIR}/packages)
 if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
@@ -1487,7 +1517,7 @@ else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : impossible to clone the repository of package ${package} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
 endif()
-endfunction(clone_Repository)
+endfunction(clone_Package_Repository)
 
 #.rst:
 #

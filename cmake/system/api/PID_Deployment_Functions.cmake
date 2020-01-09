@@ -863,12 +863,12 @@ if(${package}_ADDRESS)
 		message("[PID] INFO : cloning the repository of source package ${package}...")
 	endif()
 	if(${package}_PUBLIC_ADDRESS)#there is a public address where to fetch (without any )
-		clone_Repository(DEPLOYED ${package} ${${package}_PUBLIC_ADDRESS}) #we clone from public address
+		clone_Package_Repository(DEPLOYED ${package} ${${package}_PUBLIC_ADDRESS}) #we clone from public address
 		if(DEPLOYED)
 			initialize_Git_Repository_Push_Address(${package} ${${package}_ADDRESS})#the push address is modified accordingly
 		endif()
 	else() #basic case where package deployment requires identification : push/fetch address are the same
-		clone_Repository(DEPLOYED ${package} ${${package}_ADDRESS})
+		clone_Package_Repository(DEPLOYED ${package} ${${package}_ADDRESS})
 	endif()
 	if(DEPLOYED)
 		if(ADDITIONNAL_DEBUG_INFO)

@@ -32,6 +32,7 @@ include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to interpret content description of external packages
+include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
 
 ########################################################################
 ########## Categories (classification of packages) management ##########
@@ -3401,19 +3402,17 @@ endfunction(install_Package_In_System)
 #     Print brief description of all licenses available in workspace.
 #
 function(print_Available_Licenses)
-file(GLOB ALL_AVAILABLE_LICENSES ${WORKSPACE_DIR}/cmake/licenses/*.cmake)
-list(REMOVE_DUPLICATES ALL_AVAILABLE_LICENSES)
-set(licenses "")
-foreach(licensefile IN LISTS ALL_AVAILABLE_LICENSES)
-	get_filename_component(licensefilename ${licensefile} NAME)
-	string(REGEX REPLACE "^License([^\\.]+)\\.cmake$" "\\1" a_license "${licensefilename}")
-	if(NOT "${a_license}" STREQUAL "${licensefilename}")#it matches
-		list(APPEND licenses ${a_license})
-	endif()
-endforeach()
-set(res_licenses_string "")
-fill_String_From_List(licenses res_licenses_string)
-message("AVAILABLE LICENSES: ${res_licenses_string}")
+	get_All_Available_Licenses(ALL_AVAILABLE_LICENSES)
+	set(licenses "")
+	foreach(licensefile IN LISTS ALL_AVAILABLE_LICENSES)
+		get_filename_component(licensefilename ${licensefile} NAME)
+		if(licensefilename MATCHES "^License([^\\.]+)\\.cmake$")#it matches
+			list(APPEND licenses ${CMAKE_MATCH_1})
+		endif()
+	endforeach()
+	set(res_licenses_string "")
+	fill_String_From_List(licenses res_licenses_string)
+	message("AVAILABLE LICENSES: ${res_licenses_string}")
 endfunction(print_Available_Licenses)
 
 #.rst:
@@ -3890,7 +3889,7 @@ endfunction(manage_Platforms)
 #     Find available plugins in workspace and create user options to (de)activate them.
 #
 function(register_Available_Plugins)
-file(GLOB ALL_AVAILABLE_PLUGINS RELATIVE ${CMAKE_SOURCE_DIR}/cmake/plugins ${CMAKE_SOURCE_DIR}/cmake/plugins/*) #getting plugins container folders names
+	get_All_Available_Plugins(ALL_AVAILABLE_PLUGINS)
 	if(NOT ALL_AVAILABLE_PLUGINS)
 		set(WORKSPACE_ALL_PLUGINS CACHE INTERNAL "")
 		set(WORKSPACE_ACTIVE_PLUGINS CACHE INTERNAL "")
@@ -3899,9 +3898,8 @@ file(GLOB ALL_AVAILABLE_PLUGINS RELATIVE ${CMAKE_SOURCE_DIR}/cmake/plugins ${CMA
 	endif()
 	set(ALL_PLUGINS_DEFINED)
 	foreach(plugin IN LISTS ALL_AVAILABLE_PLUGINS)#filtering plugins description files (check if these are really cmake files related to plugins description, according to the PID standard)
-		include(${CMAKE_SOURCE_DIR}/cmake/plugins/${plugin}/plugin_description.cmake OPTIONAL RESULT_VARIABLE res)
-
-		if(NOT res STREQUAL NOTFOUND)# there may have other dirty files in the folder and we just do not consider them
+		plugin_Description(${plugin})#only get descriptive information
+		if(${plugin}_PLUGIN_DESCRIPTION)
 			list(APPEND ALL_PLUGINS_DEFINED ${plugin})
 			option(PLUGIN_${plugin} "${${plugin}_PLUGIN_DESCRIPTION}" OFF)
 		endif()

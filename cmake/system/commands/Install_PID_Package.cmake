@@ -22,9 +22,10 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/commands)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/find)
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/licenses)
+
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 include(Package_Definition NO_POLICY_SCOPE) # to be able to interpret description of external components
+
 load_Current_Platform() #loading the current platform configuration
 # needed to parse adequately CMAKe variables passed to the script
 

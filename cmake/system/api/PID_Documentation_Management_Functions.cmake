@@ -234,7 +234,7 @@ endfunction(generate_API)
 #
 #   .. command:: generate_Package_License_File()
 #
-#     Create the license.txt file current package project.
+#     Create the license.txt file for current package project.
 #
 function(generate_Package_License_File)
 if(CMAKE_BUILD_TYPE MATCHES Release)
@@ -245,15 +245,10 @@ if(CMAKE_BUILD_TYPE MATCHES Release)
 	endif()
 
 	if(	${PROJECT_NAME}_LICENSE )
-		find_file(	LICENSE
-				"License${${PROJECT_NAME}_LICENSE}.cmake"
-				PATH "${WORKSPACE_DIR}/cmake/licenses"
-				NO_DEFAULT_PATH
-			)
-		set(LICENSE ${LICENSE} CACHE INTERNAL "")
+    get_Path_To_License_File(RESULT_PATH ${${PROJECT_NAME}_LICENSE})
 
-		if(LICENSE_IN STREQUAL LICENSE_IN-NOTFOUND)
-			message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
+	  if(NOT RESULT_PATH)
+			message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in any contribution space, license file will not be generated")
 		else()
 			#prepare license generation
 			set(${PROJECT_NAME}_FOR_LICENSE ${PROJECT_NAME})
@@ -264,7 +259,7 @@ if(CMAKE_BUILD_TYPE MATCHES Release)
 				set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
 			endforeach()
 
-			include(${WORKSPACE_DIR}/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
+			include(${RESULT_PATH})#include the license
 			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
 			install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
 			file(WRITE ${CMAKE_BINARY_DIR}/share/file_header_comment.txt.in ${LICENSE_HEADER_FILE_DESCRIPTION})
@@ -1843,16 +1838,11 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/license.txt)# a license has already been generated
 	endif()
 endif()
 if(${PROJECT_NAME}_LICENSE)
+  get_Path_To_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
 
-  find_file(LICENSE_IN
-			"License${${PROJECT_NAME}_LICENSE}.cmake"
-			PATH "${WORKSPACE_DIR}/cmake/licenses"
-			NO_DEFAULT_PATH
-		)
-	if(LICENSE_IN STREQUAL LICENSE_IN-NOTFOUND)
+	if(NOT PATH_TO_FILE)
 		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
 	else()
-
 		#prepare license generation
 		set(${PROJECT_NAME}_FOR_LICENSE "${PROJECT_NAME} PID Wrapper")
 		set(${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE ${${PROJECT_NAME}_DESCRIPTION})
@@ -1861,8 +1851,7 @@ if(${PROJECT_NAME}_LICENSE)
 			generate_Full_Author_String(${author} STRING_TO_APPEND)
 			set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
 		endforeach()
-
-		include(${WORKSPACE_DIR}/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
+		include(${PATH_TO_FILE})
 		file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
 	endif()
 endif()

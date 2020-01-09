@@ -22,7 +22,6 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/commands)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/references)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/find) # using common find modules of the workspace
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/licenses)
 
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration

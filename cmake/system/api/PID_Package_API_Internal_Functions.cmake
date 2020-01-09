@@ -37,6 +37,7 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 include(PID_Plugins_Management NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
+include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
 
 ##################################################################################
 #################### package management public functions and macros ##############
@@ -417,7 +418,7 @@ elseif(DIR_NAME STREQUAL "build")
 	# if a code style is provided, copy the configuration file to the package root folder
 	set(no_format TRUE)
 	if(NOT "${code_style}" STREQUAL "")
-		set(PATH_TO_STYLE ${WORKSPACE_DIR}/cmake/patterns/format/.clang-format.${code_style})
+		get_Path_To_Format_File(PATH_TO_STYLE ${code_style})
 		if(NOT EXISTS ${PATH_TO_STYLE})
 			message("[PID] WARNING: you use an undefined code format ${code_style}")
 			set(format_cmd_message " no format called ${code_style} found. Formatting aborted.")

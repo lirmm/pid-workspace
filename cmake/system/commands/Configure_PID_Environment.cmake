@@ -32,7 +32,6 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/commands)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/references)
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/licenses)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/find)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/platforms)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/configurations)
@@ -42,6 +41,7 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Environment_API_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
 
 ### script used to configure the environment to another one
 

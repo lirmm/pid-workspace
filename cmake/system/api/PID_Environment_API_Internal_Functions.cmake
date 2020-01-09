@@ -169,7 +169,6 @@ macro(declare_Environment author institution mail year license address public_ad
     list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/api)
     list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/commands)
     list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/references)
-    list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/licenses)
     list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/find)
     list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/platforms)
     init_PID_Version_Variable() # getting the workspace version used to generate the code
@@ -1054,12 +1053,8 @@ endfunction(generate_Environment_Readme_Files)
 function(generate_Environment_License_File)
 
   if(${PROJECT_NAME}_LICENSE)
-  	find_file(	LICENSE_IN
-  			"License${${PROJECT_NAME}_LICENSE}.cmake"
-  			PATH "${WORKSPACE_DIR}/cmake/licenses"
-  			NO_DEFAULT_PATH
-  		)
-  	if(LICENSE_IN STREQUAL LICENSE_IN-NOTFOUND)
+    get_Path_To_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
+  	if(NOT PATH_TO_FILE)
   		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
   	else()
   		#prepare license generation
@@ -1071,7 +1066,7 @@ function(generate_Environment_License_File)
   			set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
   		endforeach()
 
-  		include(${WORKSPACE_DIR}/cmake/licenses/License${${PROJECT_NAME}_LICENSE}.cmake)
+  		include(${PATH_TO_FILE})
   		file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
   	endif()
   endif()

@@ -499,16 +499,11 @@ endfunction(generate_Framework_Readme_File)
 function(generate_Framework_License_File)
 if(	DEFINED ${PROJECT_NAME}_FRAMEWORK_LICENSE
 	AND NOT ${${PROJECT_NAME}_FRAMEWORK_LICENSE} STREQUAL "")
+	get_Path_To_License_File(PATH_TO_FILE ${${PROJECT_NAME}_FRAMEWORK_LICENSE})
 
-	find_file(	LICENSE_IN
-			"License${${PROJECT_NAME}_FRAMEWORK_LICENSE}.cmake"
-			PATH "${WORKSPACE_DIR}/cmake/licenses"
-			NO_DEFAULT_PATH
-		)
-	if(LICENSE_IN STREQUAL LICENSE_IN-NOTFOUND)
+	if(NOT PATH_TO_FILE)
 		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_FRAMEWORK_LICENSE} not found in workspace, license file will not be generated")
 	else()
-
 		#prepare license generation
 		set(${PROJECT_NAME}_FOR_LICENSE "${PROJECT_NAME} framework")
 		set(${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE ${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION})
@@ -518,7 +513,7 @@ if(	DEFINED ${PROJECT_NAME}_FRAMEWORK_LICENSE
 			set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
 		endforeach()
 
-		include(${WORKSPACE_DIR}/cmake/licenses/License${${PROJECT_NAME}_FRAMEWORK_LICENSE}.cmake)
+		include(${PATH_TO_FILE})
 		file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
 	endif()
 endif()

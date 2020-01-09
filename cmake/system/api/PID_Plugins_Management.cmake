@@ -26,6 +26,8 @@ endif()
 set(PID_PLUGINS_MANAGEMENT_INCLUDED TRUE)
 ##########################################################################################
 
+include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -75,15 +77,40 @@ endfunction(manage_Plugins_In_Package)
 #      :plugin: The name of the plugin
 #
 function(activate_Plugin plugin)
-	include(${WORKSPACE_DIR}/cmake/plugins/${plugin}/plugin_activate.cmake OPTIONAL RESULT_VARIABLE res)#activation simply consists in adding the good cmake script
-	if(res STREQUAL NOTFOUND)
-		message("[PID] WARNING: plugin ${plugin} is corrupted, no file to activate it.")
-	else()
-		if(${plugin}_PLUGIN_ACTIVATION_MESSAGE)
-			message("[PID] INFO : plugin ${plugin}: ${${plugin}_PLUGIN_ACTIVATION_MESSAGE}.")
-		endif()
-	endif()
+  get_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
+  if(PLUG_PATH AND EXISTS ${PLUG_PATH}/plugin_activate.cmake)
+    include(${PLUG_PATH}/plugin_activate.cmake)
+  	if(${plugin}_PLUGIN_ACTIVATION_MESSAGE)
+  		message("[PID] INFO : plugin ${plugin}: ${${plugin}_PLUGIN_ACTIVATION_MESSAGE}.")
+  	endif()
+  else()
+    message("[PID] WARNING: plugin ${plugin} is corrupted, no file to activate it.")
+  endif()
 endfunction(activate_Plugin)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |plugin_Description| replace:: ``plugin_Description``
+#  .. _plugin_Description:
+#
+#  plugin_Description
+#  ------------------
+#
+#   .. command:: plugin_Description(plugin)
+#
+#   include the plugin description in current context
+#
+#      :plugin: The name of the plugin
+#
+macro(plugin_Description plugin)
+  get_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
+  if(PLUG_PATH)
+    include(${PLUG_PATH}/plugin_description.cmake OPTIONAL)
+  endif()
+  set(PLUG_PATH)
+endmacro(plugin_Description)
 
 #.rst:
 #
@@ -102,15 +129,15 @@ endfunction(activate_Plugin)
 #      :plugin: The name of the plugin
 #
 function(deactivate_Plugin plugin)
-	include(${WORKSPACE_DIR}/cmake/plugins/${plugin}/plugin_deactivate.cmake OPTIONAL RESULT_VARIABLE res)#activation simply consists in adding the good cmake script
-	if(res STREQUAL NOTFOUND)
-    if(ADDITIONNAL_DEBUG_INFO)
-		    message("[PID] INFO: plugin ${plugin} defines no file for deactivation.")
+  get_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
+	if(PLUG_PATH AND EXISTS ${PLUG_PATH}/plugin_deactivate.cmake)
+    if(${plugin}_PLUGIN_DEACTIVATION_MESSAGE)
+      message("[PID] INFO : plugin ${plugin} : ${${plugin}_PLUGIN_DEACTIVATION_MESSAGE}.")
     endif()
   else()
-		if(${plugin}_PLUGIN_DEACTIVATION_MESSAGE)
-			message("[PID] INFO : plugin ${plugin} : ${${plugin}_PLUGIN_DEACTIVATION_MESSAGE}.")
-		endif()
+    if(ADDITIONNAL_DEBUG_INFO)
+      message("[PID] INFO: plugin ${plugin} defines no file for deactivation.")
+    endif()
 	endif()
 endfunction(deactivate_Plugin)
 
