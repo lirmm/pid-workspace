@@ -1179,9 +1179,9 @@ if(DECLARE_PID_COMPONENT_LOGGABLE)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${comp_name} is declared as loggable, but its containing package ${PROJECT_NAME} does not depends on pid-log package. Please add pid-log as a dependency of your package.")
 	endif()
-  if(IS_DEPENDENCY AND pid-log_VERSION_STRING VERSION_LESS 3.0)
+  if(IS_DEPENDENCY AND pid-log_VERSION_STRING VERSION_LESS 3.1)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${comp_name} is declared as loggable, but its containing package ${PROJECT_NAME} depends on a too old version of pid-log package. Please add pid-log version 3.0 or more as a dependency of your package.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${comp_name} is declared as loggable, but its containing package ${PROJECT_NAME} depends on a too old version of pid-log package. Please add pid-log version 3.1 or more as a dependency of your package.")
   endif()
 endif()
 
@@ -1448,8 +1448,6 @@ else()#otherwise a native package
 	declare_Native_Package_Dependency(${name_of_dependency} "${DECLARE_PID_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
 endif()
 endmacro(declare_PID_Package_Dependency)
-
-###
 
 #.rst:
 # .. ifmode:: user

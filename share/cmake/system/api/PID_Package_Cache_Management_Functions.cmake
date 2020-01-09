@@ -1033,7 +1033,7 @@ endfunction(add_Alias_To_Cache)
 #  .. _rename_If_Alias:
 #
 #  rename_If_Alias
-#  --------------
+#  ---------------
 #
 #   .. command:: rename_If_Alias(IS_ALIAS package external component mode)
 #
